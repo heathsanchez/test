@@ -1,0 +1,44 @@
+[
+  {
+    "test": "init-prelude",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Nat.modCore_lt:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "test": "perf/grind-ring-5",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Nat.modCore_lt:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "test": "perf/magma-list-pair-n7",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Nat.modCore_lt:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "test": "perf/magma-list-pair-n21",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Nat.modCore_lt:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "test": "perf/magma-list-deep-n21",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Option:stage=inductive:verdict=Unknown"
+    ]
+  },
+  {
+    "test": "perf/magma-list-deep-n36",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Option:stage=inductive:verdict=Unknown"
+    ]
+  }
+]

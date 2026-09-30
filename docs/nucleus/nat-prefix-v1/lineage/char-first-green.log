@@ -1,0 +1,32 @@
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/76f1ca9d581d/nucleus-residual30/offline/kernel-sharing)
+warning: function `closed_data_proof_record_obligations` is never used
+    --> src/checker.rs:1613:4
+     |
+1613 | fn closed_data_proof_record_obligations(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `metatron-kernel` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.01s
+     Running tests/dependent_record.rs (target/debug/deps/dependent_record-a95fbd9ffe5aacc9)
+
+running 3 tests
+test record_rule_cannot_swap_dependent_fields ... ok
+test dependent_data_and_proof_record_checks_actual_char_prefix ... ok
+test record_admission_preserves_metadata_and_recursor_controls ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.50s
+
+     Running tests/recursor_literal.rs (target/debug/deps/recursor_literal-774777c2cce5c50a)
+
+running 6 tests
+test literal_zero_uses_certified_zero_rule ... ok
+test literal_successor_supplies_predecessor_absent_from_expression_table ... ok
+test literal_view_requires_nat_authority_and_full_exposure ... ok
+test huge_recursive_literal_exhausts_fuel_without_a_verdict ... ok
+test literal_recursion_consumes_induction_result_and_preserves_pending_application ... ok
+test actual_nat_boolean_matcher_prefix_checks ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+

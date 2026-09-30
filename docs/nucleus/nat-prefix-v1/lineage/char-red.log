@@ -1,0 +1,26 @@
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/76f1ca9d581d/nucleus-residual30/offline/kernel-sharing)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.27s
+     Running tests/dependent_record.rs (target/debug/deps/dependent_record-a95fbd9ffe5aacc9)
+
+running 3 tests
+test record_rule_cannot_swap_dependent_fields ... ok
+test dependent_data_and_proof_record_checks_actual_char_prefix ... FAILED
+test record_admission_preserves_metadata_and_recursor_controls ... ok
+
+failures:
+
+---- dependent_data_and_proof_record_checks_actual_char_prefix stdout ----
+
+thread 'dependent_data_and_proof_record_checks_actual_char_prefix' (101) panicked at tests/dependent_record.rs:14:5:
+assertion `left == right` failed
+  left: Unknown
+ right: Accept
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    dependent_data_and_proof_record_checks_actual_char_prefix
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s
+
+error: test failed, to rerun pass `--test dependent_record`

@@ -1,0 +1,3 @@
+CHECK_FAILURE:expr=ExprId(5785):inferred=Pi { domain: Term(Closure { term: Expression(ExprId(3761)), env: EnvFrame { id: 238300, .. }, levels: LevelSubstitution([]) }), body: Term(Closure { term: Expression(ExprId(5626)), env: EnvFrame { id: 239338, .. }, levels: LevelSubstitution([]) }) }:expected=Term(Closure { term: Expression(ExprId(4922)), env: EnvFrame { id: 239202, .. }, levels: LevelSubstitution([]) }):result=Refuted { obstruction: ObstructionId("distinct-neutral-heads") }:budget=65378
+RESOLVED_TYPE:E4922@239202:Some(Pi { domain: ExprId(3765), body: ExprId(4921) })
+NUCLEUS_DOWNSTREAM:name=Nat.modCore_lt:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type

@@ -1,0 +1,66 @@
+diff --git a/src/convert.rs b/src/convert.rs
+index 036f51e..d4641c9 100644
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -987,6 +987,12 @@ fn compare_neutral_heads(
+                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
+                     left.head, left.spine, right.head, right.spine, budget
+                 );
++                for n in [left,right] {
++                    if let NeutralHead::Projection{structure,..}=&n.head {
++                        for arg in &structure.spine {eprintln!("STRUCTURE_ARG:{}",diagnostic_closure(checker,arg,24));}
++                    }
++                }
++
+             }
+             Judgment::refuted("distinct-neutral-heads")
+         }
+@@ -1075,3 +1081,17 @@ fn positive_projection_congruence(
+             .is_proven()
+         })
+ }
++
++pub(crate) fn diagnostic_closure(checker:&TypeChecker<'_>, c:&Closure, d:usize)->String {
++ if let Some(n)=c.literal(){return format!("{n:?}");}
++ let Some(id)=c.expression() else {return "?".into();};
++ if d==0 {return format!("E{}@{}",id.0,c.env.id());}
++ let sub=|i|diagnostic_closure(checker,&c.sibling(i,c.env.clone()),d-1);
++ match checker.expression(id) {
++ Some(Expr::BVar(i))=>match c.env.lookup(*i) {Some(EnvBinding::Closure(b))=>diagnostic_closure(checker,&b,d-1),Some(EnvBinding::Free(f))=>format!("FREE{}",f.0),v=>format!("BVAR{i}:{v:?}")},
++ Some(Expr::Const{name,levels})=>format!("C{}{:?}",name.0,levels),
++ Some(Expr::App{fun,arg})=>format!("({} {})",sub(*fun),sub(*arg)),
++ Some(Expr::Proj{type_name,index,structure})=>format!("PROJ{}.{}({})",type_name.0,index,sub(*structure)),
++ v=>format!("E{}@{}:{v:?}",id.0,c.env.id())
++ }
++}
+diff --git a/src/typecheck.rs b/src/typecheck.rs
+index 50a14c1..e66d5e1 100644
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -519,6 +519,12 @@ impl<'a> TypeChecker<'a> {
+                     context.len(),
+                     context,
+                 );
++                if !conversion.is_proven() && std::env::var_os("NUCLEUS_TRACE_CHECK_FAILURE").is_some() {
++                    eprintln!("CHECK_FAILURE:expr={expression:?}:inferred={value:?}:expected={expected:?}:result={conversion:?}:budget={remaining}");
++                    for ty in [&value, expected] {
++                        if let TypeValue::Term(c)=ty { eprintln!("RESOLVED_TYPE:{}", crate::convert::diagnostic_closure(self,c,22)); }
++                    }
++                }
+                 match conversion {
+                     Judgment::Refuted { obstruction }
+                         if conversion_refutation_is_unknown
+@@ -625,8 +631,11 @@ impl<'a> TypeChecker<'a> {
+         let Some(right_normal) = self.normalize_type_value(&right_ty, budget) else {
+             return false;
+         };
+-        left_normal == right_normal
+-            && self.normalized_type_is_proposition(&left_normal, context, budget, 0)
++        self.normalized_type_is_proposition(&left_normal, context, budget, 0)
++            && self.normalized_type_is_proposition(&right_normal, context, budget, 0)
++            && (left_normal == right_normal || crate::convert::convert_with_policy_in_context(
++                self, &left_ty, &right_ty, budget.saturating_sub(1).min(256),
++                self.delta_policy, context.len(), context).is_proven())
+     }
+ 
+     fn normalize_type_value(&self, ty: &TypeValue, budget: usize) -> Option<Value> {

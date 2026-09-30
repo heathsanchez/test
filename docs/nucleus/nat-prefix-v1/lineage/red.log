@@ -1,0 +1,46 @@
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/76f1ca9d581d/nucleus-residual30/offline/kernel-sharing)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.59s
+     Running tests/recursor_literal.rs (target/debug/deps/recursor_literal-774777c2cce5c50a)
+
+running 5 tests
+test literal_successor_supplies_predecessor_absent_from_expression_table ... FAILED
+test huge_recursive_literal_exhausts_fuel_without_a_verdict ... FAILED
+test literal_view_requires_nat_authority_and_full_exposure ... ok
+test literal_zero_uses_certified_zero_rule ... FAILED
+test literal_recursion_consumes_induction_result_and_preserves_pending_application ... FAILED
+
+failures:
+
+---- literal_successor_supplies_predecessor_absent_from_expression_table stdout ----
+
+thread 'literal_successor_supplies_predecessor_absent_from_expression_table' (303) panicked at tests/recursor_literal.rs:53:9:
+assertion `left == right` failed
+  left: Some(Neutral(Neutral { head: Const { name: NameId(30), levels: [] }, spine: [Closure { expr: ExprId(0), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(0), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(23), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(2), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }] }))
+ right: Some(NatLit(BigNat([])))
+
+---- huge_recursive_literal_exhausts_fuel_without_a_verdict stdout ----
+
+thread 'huge_recursive_literal_exhausts_fuel_without_a_verdict' (301) panicked at tests/recursor_literal.rs:70:5:
+assertion failed: matches!(run("123456789012345678901234567890",true,true,Transparency::Full,false,256),Judgment::Unknown{..})
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- literal_zero_uses_certified_zero_rule stdout ----
+
+thread 'literal_zero_uses_certified_zero_rule' (305) panicked at tests/recursor_literal.rs:48:5:
+assertion failed: matches!(run("0",false,true,Transparency::Full,false,1024).proven_value(),Some(Value::Sort(_)))
+
+---- literal_recursion_consumes_induction_result_and_preserves_pending_application stdout ----
+
+thread 'literal_recursion_consumes_induction_result_and_preserves_pending_application' (302) panicked at tests/recursor_literal.rs:59:9:
+assertion failed: matches!(run(n,true,true,Transparency::Full,true,4096).proven_value(),Some(Value::Sort(_)))
+
+
+failures:
+    huge_recursive_literal_exhausts_fuel_without_a_verdict
+    literal_recursion_consumes_induction_result_and_preserves_pending_application
+    literal_successor_supplies_predecessor_absent_from_expression_table
+    literal_zero_uses_certified_zero_rule
+
+test result: FAILED. 1 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test recursor_literal`

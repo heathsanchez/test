@@ -1,0 +1,15 @@
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/76f1ca9d581d/nucleus-residual30/offline/kernel-sharing)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.98s
+     Running tests/dependent_record.rs (target/debug/deps/dependent_record-a95fbd9ffe5aacc9)
+
+running 7 tests
+test second_field_must_be_a_proposition_for_this_schema ... ok
+test rule_lambda_annotations_are_checked ... ok
+test data_universe_cannot_exceed_record_universe ... ok
+test data_proof_schema_is_independent_of_char_name ... ok
+test record_rule_cannot_swap_dependent_fields ... ok
+test dependent_data_and_proof_record_checks_actual_char_prefix ... ok
+test record_admission_preserves_metadata_and_recursor_controls ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+

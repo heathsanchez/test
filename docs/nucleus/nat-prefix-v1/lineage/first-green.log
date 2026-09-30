@@ -1,0 +1,13 @@
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/76f1ca9d581d/nucleus-residual30/offline/kernel-sharing)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.40s
+     Running tests/recursor_literal.rs (target/debug/deps/recursor_literal-774777c2cce5c50a)
+
+running 5 tests
+test literal_zero_uses_certified_zero_rule ... ok
+test literal_view_requires_nat_authority_and_full_exposure ... ok
+test huge_recursive_literal_exhausts_fuel_without_a_verdict ... ok
+test literal_successor_supplies_predecessor_absent_from_expression_table ... ok
+test literal_recursion_consumes_induction_result_and_preserves_pending_application ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

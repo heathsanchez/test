@@ -1,0 +1,115 @@
+{
+  "base_sha": "84c35be307d3c154c6d1bab5dd9b0fdc0a696417",
+  "candidate_sha": "e5916cf9d2863377d84a717604ef1da452eb62ea",
+  "checker_worker_stack_bytes": 67108864,
+  "current": {
+    "base_accept": 110,
+    "base_reject": 60,
+    "base_residual": 24,
+    "candidate_accept": 110,
+    "candidate_reject": 60,
+    "candidate_residual": 24,
+    "changes": [],
+    "earned": [],
+    "errors": [],
+    "regressions": [],
+    "tests": 194,
+    "wrong": []
+  },
+  "judgment_steps": 65536,
+  "protected_negatives": [
+    {
+      "base": 2,
+      "base_ns": 17020141,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 31658474,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "4bdc45de8980cf9cb6e712ab6260f42a89201876f096441fb5ec49e3a0052a22",
+      "test": "bugs/proj-of-stuck-prop"
+    },
+    {
+      "base": 2,
+      "base_ns": 16443460,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 27141704,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "c1e3e96748ade2a9806837460821ea725f460a1f8bc1601d7ce121a9b28ffed0",
+      "test": "bugs/proj-of-subst-prop"
+    },
+    {
+      "base": 2,
+      "base_ns": 14511006,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 25025004,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "572d2eb54a4e7d98d2e1a7bad01c5574f85ed5dacfd5bd1734f88ac37d515759",
+      "test": "bugs/rec-of-subst-prop"
+    },
+    {
+      "base": 2,
+      "base_ns": 1464226,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 1519239,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "2147c3416825e1c7f78382501f4c3e2f8165d23d464c998a077e69a12e51697a",
+      "test": "tutorial/100_ruleKbad"
+    },
+    {
+      "base": 2,
+      "base_ns": 2349847,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 2120257,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "59a4dc34b1175f59d9efd17c4c5b9d9f07bdb54c882dc66a65737d29be6d4356",
+      "test": "tutorial/101_ruleKAcc"
+    },
+    {
+      "base": 2,
+      "base_ns": 2090922,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 2152587,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "7868dfaa2a5574fa383e4fbf42f84d3eab78c43614f0034d2f78f2069ca00f64",
+      "test": "tutorial/125_accRecNoEta"
+    }
+  ],
+  "round1": {
+    "base_accept": 108,
+    "base_reject": 61,
+    "base_residual": 24,
+    "candidate_accept": 108,
+    "candidate_reject": 61,
+    "candidate_residual": 24,
+    "changes": [],
+    "earned": [],
+    "errors": [],
+    "regressions": [],
+    "tests": 193,
+    "wrong": []
+  },
+  "schema": "nucleus-nat-prefix-v1",
+  "stack_kib": 65536,
+  "target": {
+    "base": 0,
+    "base_ns": 19968898,
+    "base_stderr": [],
+    "candidate": 0,
+    "candidate_ns": 16409977,
+    "candidate_stderr": [],
+    "expected": 0,
+    "input_sha256": "b2fed80e90e956f24bcbe898ce7cfef5ae4c92d0f81daf42e0a2a3c817012f6f",
+    "test": "perf/proj-stuck-struct"
+  }
+}

@@ -1,0 +1,70 @@
+[
+  {
+    "test": "perf/magma-list-pair-n7",
+    "part": "prefix",
+    "binary": "base",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.le_of_ble_eq_true.match_1_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "test": "perf/magma-list-pair-n7",
+    "part": "full",
+    "binary": "base",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.le_of_ble_eq_true.match_1_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "test": "perf/magma-list-pair-n7",
+    "part": "prefix",
+    "binary": "candidate",
+    "rc": 0,
+    "terminal": []
+  },
+  {
+    "test": "perf/magma-list-pair-n7",
+    "part": "full",
+    "binary": "candidate",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Nat.le.below:stage=inductive:verdict=Unknown"
+    ]
+  },
+  {
+    "test": "init-prelude",
+    "part": "prefix",
+    "binary": "base",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Nat.div.go.match_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "test": "init-prelude",
+    "part": "full",
+    "binary": "base",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Nat.div.go.match_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "test": "init-prelude",
+    "part": "prefix",
+    "binary": "candidate",
+    "rc": 0,
+    "terminal": []
+  },
+  {
+    "test": "init-prelude",
+    "part": "full",
+    "binary": "candidate",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Char:stage=inductive:verdict=Unknown"
+    ]
+  }
+]

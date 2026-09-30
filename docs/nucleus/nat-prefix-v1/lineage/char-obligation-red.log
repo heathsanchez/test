@@ -1,0 +1,55 @@
+warning: function `closed_data_proof_record_obligations` is never used
+    --> src/checker.rs:1613:4
+     |
+1613 | fn closed_data_proof_record_obligations(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `metatron-kernel` (lib) generated 1 warning
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/76f1ca9d581d/nucleus-residual30/offline/kernel-sharing)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s
+     Running tests/dependent_record.rs (target/debug/deps/dependent_record-a95fbd9ffe5aacc9)
+
+running 7 tests
+test data_proof_schema_is_independent_of_char_name ... ok
+test data_universe_cannot_exceed_record_universe ... FAILED
+test second_field_must_be_a_proposition_for_this_schema ... FAILED
+test rule_lambda_annotations_are_checked ... FAILED
+test record_rule_cannot_swap_dependent_fields ... ok
+test dependent_data_and_proof_record_checks_actual_char_prefix ... ok
+test record_admission_preserves_metadata_and_recursor_controls ... ok
+
+failures:
+
+---- data_universe_cannot_exceed_record_universe stdout ----
+
+thread 'data_universe_cannot_exceed_record_universe' (102) panicked at tests/dependent_record.rs:48:5:
+assertion `left != right` failed
+  left: Accept
+ right: Accept
+
+---- second_field_must_be_a_proposition_for_this_schema stdout ----
+
+thread 'second_field_must_be_a_proposition_for_this_schema' (107) panicked at tests/dependent_record.rs:55:5:
+assertion `left != right` failed
+  left: Accept
+ right: Accept
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- rule_lambda_annotations_are_checked stdout ----
+
+thread 'rule_lambda_annotations_are_checked' (106) panicked at tests/dependent_record.rs:62:5:
+assertion `left != right` failed
+  left: Accept
+ right: Accept
+
+
+failures:
+    data_universe_cannot_exceed_record_universe
+    rule_lambda_annotations_are_checked
+    second_field_must_be_a_proposition_for_this_schema
+
+test result: FAILED. 4 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.49s
+
+error: test failed, to rerun pass `--test dependent_record`
