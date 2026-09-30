@@ -319,11 +319,22 @@ fn convert_in_context_with_congruence(
                 }
                 let cheap_left = machine.expose(left.clone(), Transparency::Reducible, remaining);
                 let cheap_right = machine.expose(right.clone(), Transparency::Reducible, remaining);
-                let (Some(cheap_left), Some(cheap_right)) =
+                let (Some(cheap_left_value), Some(cheap_right_value)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
+                    if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXPOSURE").is_some() {
+                        let status = |v: &Judgment<Value>| match v {
+                            Judgment::Proven { .. } => "proven",
+                            Judgment::Unknown { residual } => residual.0,
+                            Judgment::Refuted { obstruction } => obstruction.0,
+                        };
+                        eprintln!("NUCLEUS_CONVERSION_EXPOSURE:left={:?}:right={:?}:left_status={}:right_status={}:depth={}:budget={}",
+                            left.expr, right.expr, status(&cheap_left), status(&cheap_right), depth, remaining);
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
+                let cheap_left = cheap_left_value;
+                let cheap_right = cheap_right_value;
                 match compare_values(
                     checker,
                     cheap_left,
@@ -832,7 +843,8 @@ fn compare_neutral_heads(
             if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
                 eprintln!(
                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
-                    left.head, left.spine, right.head, right.spine, budget
+                    left.head, left.spine.iter().map(|a| a.expr).collect::<Vec<_>>(),
+                    right.head, right.spine.iter().map(|a| a.expr).collect::<Vec<_>>(), budget
                 );
             }
             Judgment::refuted("distinct-neutral-heads")
