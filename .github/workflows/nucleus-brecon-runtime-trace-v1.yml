@@ -1,0 +1,85 @@
+name: Nucleus brecOn Runtime Trace V1
+
+on:
+  push:
+    branches: [nucleus-brecon-runtime-trace-v1]
+    paths:
+      - "metatron-kernel/src/convert.rs"
+      - ".github/workflows/nucleus-brecon-runtime-trace-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BASE_SHA: 2c7217e9ad4e43c7aeabad06decffeb6fcd1bb07
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Assert diagnostic-only boundary
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "$BASE_SHA"..HEAD -- metatron-kernel | tr '\n' ' ')"
+          test "$changed" = "metatron-kernel/src/convert.rs "
+          git diff "$BASE_SHA"..HEAD -- metatron-kernel/src/convert.rs | grep -q 'NUCLEUS_TRACE_BRECON_RUNTIME'
+
+      - name: Build diagnostic
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml --check
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen 193-case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/art /tmp/tests /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Trace frozen brecOn residuals
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/nucleus-brecon-runtime-trace-v1
+          : > evidence/nucleus-brecon-runtime-trace-v1/trace.txt
+          BIN="$PWD/metatron-kernel/target/release/metatron-kernel"
+          for name in             perf/magma-list-deep-n21             perf/magma-list-deep-n36             perf/magma-list-pair-n21             perf/magma-list-pair-n7
+          do
+            echo "===== $name =====" | tee -a evidence/nucleus-brecon-runtime-trace-v1/trace.txt
+            set +e
+            NUCLEUS_TRACE_BRECON_RUNTIME=1             NUCLEUS_TRACE_NEUTRAL_HEADS=1             NUCLEUS_TRACE_DOWNSTREAM=1               timeout 180 "$BIN" < "/tmp/tests/good/$name.ndjson"               >/dev/null 2>"/tmp/stderr.txt"
+            rc=$?
+            set -e
+            echo "RC=$rc" | tee -a evidence/nucleus-brecon-runtime-trace-v1/trace.txt
+            test "$rc" -eq 2
+            grep -E 'NUCLEUS_BRECON_|NUCLEUS_NEUTRAL_HEAD_MISMATCH|NUCLEUS_DOWNSTREAM'               /tmp/stderr.txt >> evidence/nucleus-brecon-runtime-trace-v1/trace.txt
+          done
+
+      - name: Assert shared residual shape
+        run: |
+          set -euo pipefail
+          f=evidence/nucleus-brecon-runtime-trace-v1/trace.txt
+          test "$(grep -c '^RC=2$' "$f")" -eq 4
+          test "$(grep -c 'NUCLEUS_BRECON_PROJECTION:side=right' "$f")" -ge 4
+          test "$(grep -c 'Nat.le_of_ble_eq_true.match_1_1' "$f")" -eq 4
+          sha256sum "$f" | tee evidence/nucleus-brecon-runtime-trace-v1/sha256.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-brecon-runtime-trace-v1
+          path: evidence/nucleus-brecon-runtime-trace-v1/
+          if-no-files-found: error
