@@ -5,6 +5,8 @@ on:
     branches: [collatz-crystal-eoc-realizer-bridge-v55]
     paths:
       - 'experiments/collatz_crystal_eoc_realizer_bridge_v55.py'
+      - 'formal/Collatz/LowOriginRealizerBridge.lean'
+      - 'lakefile.lean'
       - '.github/workflows/collatz-crystal-eoc-realizer-bridge-v55.yml'
   workflow_dispatch:
 
@@ -41,6 +43,28 @@ jobs:
           print('V55_CERT',d['certificate_sha256'])
           PY
           git rev-parse HEAD > evidence/collatz-crystal-eoc-realizer-bridge-v55/commit.txt
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Qualify universal low-origin bridge lemmas
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean --version | tee evidence/collatz-crystal-eoc-realizer-bridge-v55/toolchain.txt
+          lake build CollatzFinal
+          f=formal/Collatz/LowOriginRealizerBridge.lean
+          if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' "$f"; then
+            echo "Forbidden source token in $f" >&2
+            exit 1
+          fi
+          lake env lean -DautoImplicit=false "$f" \
+            | tee evidence/collatz-crystal-eoc-realizer-bridge-v55/LowOriginRealizerBridge.lean.log
+          grep -q "stateAt_source_freeze" evidence/collatz-crystal-eoc-realizer-bridge-v55/LowOriginRealizerBridge.lean.log
+          grep -q "exists_odd_after_of_coefficient_survival" evidence/collatz-crystal-eoc-realizer-bridge-v55/LowOriginRealizerBridge.lean.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-crystal-eoc-realizer-bridge-v55/LowOriginRealizerBridge.lean.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
