@@ -266,8 +266,10 @@ pub(crate) fn convert_with_policy_in_context(
                         index: right_index,
                         structure: right_structure,
                     }),
-                ) = (checker.expression(left.expr), checker.expression(right.expr))
-                    && left_type == right_type
+                ) = (
+                    checker.expression(left.expr),
+                    checker.expression(right.expr),
+                ) && left_type == right_type
                     && left_index == right_index
                 {
                     work.push((
