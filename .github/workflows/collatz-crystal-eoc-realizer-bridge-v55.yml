@@ -1,0 +1,49 @@
+name: Collatz Crystal EOC Realizer Bridge V55
+
+on:
+  push:
+    branches: [collatz-crystal-eoc-realizer-bridge-v55]
+    paths:
+      - 'experiments/collatz_crystal_eoc_realizer_bridge_v55.py'
+      - '.github/workflows/collatz-crystal-eoc-realizer-bridge-v55.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact ordinary-to-accelerated realizer bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-eoc-realizer-bridge-v55
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_eoc_realizer_bridge_v55.py \
+            | tee evidence/collatz-crystal-eoc-realizer-bridge-v55/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-eoc-realizer-bridge-v55/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_EOC_REALIZER_BRIDGE_V55'
+          assert d['verdict']=='BOUNDED_EXACT_REALIZER_ADAPTER_GREEN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V55_VERDICT',d['verdict'])
+          print('V55_CHECKS',d['checks'])
+          print('V55_WINDOWS',d['windows_checked'],d['nonempty_windows'])
+          print('V55_WORDS',d['distinct_accelerated_words_seen'])
+          print('V55_LARGEST',d['largest_window'])
+          print('V55_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-eoc-realizer-bridge-v55/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-eoc-realizer-bridge-v55
+          path: evidence/collatz-crystal-eoc-realizer-bridge-v55
+          if-no-files-found: error
