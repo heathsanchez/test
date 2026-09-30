@@ -258,11 +258,19 @@ pub(crate) fn convert_with_policy_in_context(
                 let machine = checker.machine();
                 let cheap_left = machine.expose(left.clone(), Transparency::Reducible, remaining);
                 let cheap_right = machine.expose(right.clone(), Transparency::Reducible, remaining);
-                let (Some(cheap_left), Some(cheap_right)) =
+                let (Some(cheap_left_value), Some(cheap_right_value)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
+                    if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXPOSURE").is_some() {
+                        eprintln!(
+                            "NUCLEUS_CONVERSION_EXPOSURE:left={:?}:left_result={:?}:right={:?}:right_result={:?}:depth={}:remaining={}",
+                            left, cheap_left, right, cheap_right, depth, remaining
+                        );
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
+                let cheap_left = cheap_left_value;
+                let cheap_right = cheap_right_value;
                 match compare_values(
                     checker,
                     cheap_left,
