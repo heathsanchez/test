@@ -626,6 +626,12 @@ fn compare_values(
                 structure: right_structure,
             },
         ) if left_type == right_type && left_index == right_index => {
+            if std::env::var_os("NUCLEUS_TRACE_CONVERSION_STUCK_PROJECTION").is_some() {
+                eprintln!(
+                    "NUCLEUS_CONVERSION_STUCK_PROJECTION_COMPARE:type={:?}:index={}:left={:?}:right={:?}:budget={}",
+                    left_type, left_index, left_structure, right_structure, budget
+                );
+            }
             work.push((
                 TypeValue::Term(left_structure.clone()),
                 TypeValue::Term(right_structure.clone()),
@@ -633,6 +639,12 @@ fn compare_values(
             ));
         }
         (Value::StuckProjection { .. }, _) | (_, Value::StuckProjection { .. }) => {
+            if std::env::var_os("NUCLEUS_TRACE_CONVERSION_STUCK_PROJECTION").is_some() {
+                eprintln!(
+                    "NUCLEUS_CONVERSION_STUCK_PROJECTION_MISMATCH:left={:?}:right={:?}:budget={}",
+                    left, right, budget
+                );
+            }
             return Judgment::unknown("stuck-projection-comparison");
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
