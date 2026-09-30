@@ -1,0 +1,3876 @@
+{
+  "round1": [
+    {
+      "test": "corner-cases/proof-param-ok",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 900543,
+      "candidate_ns": 759146,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "init-prelude",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 51334030,
+      "candidate_ns": 51238676,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/level-index-out-of-order",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 897035,
+      "candidate_ns": 677466,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/nat-lit-add",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 3129525,
+      "candidate_ns": 3157907,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/nat-lit-ble",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 3608511,
+      "candidate_ns": 3418213,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/nat-lit-sub",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 3855038,
+      "candidate_ns": 3824574,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/sparse-name-index",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 763907,
+      "candidate_ns": 733619,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/app-lam",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 173291587,
+      "candidate_ns": 180845244,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/args-before-unfold",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 18107793,
+      "candidate_ns": 24121594,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/beta-ladder",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 182959180,
+      "candidate_ns": 179488980,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/church-numerals",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 35713534,
+      "candidate_ns": 35572627,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/discarded-argument-match",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 4812359,
+      "candidate_ns": 11405172,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/discarded-argument",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 2603757,
+      "candidate_ns": 10170819,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/folded-constant-first",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 5020406900,
+      "candidate_ns": 17805436,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/folded-constant-last",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 12637733,
+      "candidate_ns": 12056440,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/fueled-chain",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 8457409,
+      "candidate_ns": 9149660,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/grind-ring-5",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 165251281,
+      "candidate_ns": 177609534,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/identical-nesting",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 3117510,
+      "candidate_ns": 1356863,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/irrelevance-before-evaluation",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 2495324,
+      "candidate_ns": 2340642,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/let-ladder",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 55601567,
+      "candidate_ns": 57274380,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/magma-list-deep-n21",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 47726416,
+      "candidate_ns": 46779960,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/magma-list-deep-n36",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 46501558,
+      "candidate_ns": 44494915,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/magma-list-pair-n21",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 23657027,
+      "candidate_ns": 23481661,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/magma-list-pair-n7",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 24699455,
+      "candidate_ns": 24116335,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/repeated-subproblem",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 2227135,
+      "candidate_ns": 3054798,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/shared-subterm",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 24305496,
+      "candidate_ns": 14364664,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/shift-cascade",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 43142142,
+      "candidate_ns": 43092968,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/unroll-versus-evaluate",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 6088785076,
+      "candidate_ns": 6017948710,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/001_basicDef",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 907076,
+      "candidate_ns": 602680,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/003_arrowType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 564609,
+      "candidate_ns": 554176,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/004_dependentType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 525642,
+      "candidate_ns": 536223,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/005_constType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 562162,
+      "candidate_ns": 556649,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/006_betaReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 615048,
+      "candidate_ns": 586094,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/007_betaReduction2",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 593175,
+      "candidate_ns": 580481,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/008_forallSortWhnf",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 589066,
+      "candidate_ns": 593619,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/013_thmProof",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 588207,
+      "candidate_ns": 775018,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/015_levelComp1",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 754887,
+      "candidate_ns": 597805,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/016_levelComp2",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 548768,
+      "candidate_ns": 560630,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/017_levelComp3",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 535682,
+      "candidate_ns": 557852,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/018_levelParams",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 660205,
+      "candidate_ns": 709321,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/020_levelComp4",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 594302,
+      "candidate_ns": 544388,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/021_levelComp5",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 543303,
+      "candidate_ns": 524016,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/022_imax1",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 544076,
+      "candidate_ns": 647938,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/023_imax2",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 619605,
+      "candidate_ns": 579655,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/024_levelMaxComm",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 596210,
+      "candidate_ns": 615186,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/025_levelMaxAssoc",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 586384,
+      "candidate_ns": 626862,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/026_levelMaxIdem",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 573839,
+      "candidate_ns": 578889,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/027_levelMaxAbsorb",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 609175,
+      "candidate_ns": 568102,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/028_inferVar",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 606285,
+      "candidate_ns": 698559,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/029_defEqLambda",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 659303,
+      "candidate_ns": 662742,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/030_peano1",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 912572,
+      "candidate_ns": 901790,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/031_peano2",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1011957,
+      "candidate_ns": 1031554,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/032_peano3",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1057368,
+      "candidate_ns": 1027992,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/033_letType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 715350,
+      "candidate_ns": 538637,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/034_letTypeDep",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 566166,
+      "candidate_ns": 598110,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/035_letRed",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 542027,
+      "candidate_ns": 562136,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/036_empty",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 571658,
+      "candidate_ns": 572078,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/037_boolType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 632603,
+      "candidate_ns": 601097,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/038_twoBool",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 688595,
+      "candidate_ns": 687263,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/039_andType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 810147,
+      "candidate_ns": 705102,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/040_prodType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 796831,
+      "candidate_ns": 788046,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/041_pprodType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 713892,
+      "candidate_ns": 743055,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/042_pUnitType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 620287,
+      "candidate_ns": 616319,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/043_eqType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 710176,
+      "candidate_ns": 676602,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/044_natDef",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 654954,
+      "candidate_ns": 645293,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/045_rbTreeDef",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1227269,
+      "candidate_ns": 1245321,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/055_reduceCtorParam.mk",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 783139,
+      "candidate_ns": 947812,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/058_predWithTypeField",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 649645,
+      "candidate_ns": 594115,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/059_typeWithTypeField",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 632084,
+      "candidate_ns": 618569,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/060_typeWithTypeFieldPoly",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 609628,
+      "candidate_ns": 638334,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/062_emptyRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 583986,
+      "candidate_ns": 574931,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/063_boolRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 697158,
+      "candidate_ns": 709084,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/064_twoBoolRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 753133,
+      "candidate_ns": 858865,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/065_andRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 728503,
+      "candidate_ns": 715878,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/066_prodRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 849523,
+      "candidate_ns": 824562,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/067_pprodRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 812227,
+      "candidate_ns": 841128,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/068_punitRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 663398,
+      "candidate_ns": 652752,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/069_eqRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 774809,
+      "candidate_ns": 899057,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/070_nRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 679688,
+      "candidate_ns": 678886,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/071_rbTreeRef",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1747333,
+      "candidate_ns": 1885057,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/072_boolPropRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 684842,
+      "candidate_ns": 620821,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/074_existsRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 931843,
+      "candidate_ns": 823507,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/075_typeSingletonRecReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1007404,
+      "candidate_ns": 1002521,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/076_sortElimPropRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 890816,
+      "candidate_ns": 868366,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/077_sortElimProp2Rec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1011506,
+      "candidate_ns": 959382,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/078_boolRecEqns",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1497378,
+      "candidate_ns": 1425013,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/079_prodRecEqns",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1407216,
+      "candidate_ns": 1391686,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/080_nRecReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1973328,
+      "candidate_ns": 2147967,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/081_listRecReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 3306758,
+      "candidate_ns": 3131577,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/082_RBTree.id_spec",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 2595373,
+      "candidate_ns": 2594064,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/083_And.right",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 750271,
+      "candidate_ns": 758466,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/084_Prod.snd",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 837658,
+      "candidate_ns": 867986,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/085_PProd.snd",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 772741,
+      "candidate_ns": 780117,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/086_PSigma.snd",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 887114,
+      "candidate_ns": 915813,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/089_projProp1",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1101956,
+      "candidate_ns": 1041755,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/091_projProp3",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 948442,
+      "candidate_ns": 954973,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/095_projDataIndexRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 887513,
+      "candidate_ns": 896546,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/098_projRed",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1119149,
+      "candidate_ns": 1153196,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/099_ruleK",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 886736,
+      "candidate_ns": 910831,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/102_aNatLit",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 659162,
+      "candidate_ns": 641357,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/103_natLitEq",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 796536,
+      "candidate_ns": 789699,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/104_proofIrrelevance",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 808050,
+      "candidate_ns": 803597,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/106_proofIrrelevanceWhnf",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 875549,
+      "candidate_ns": 837966,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/107_proofIrrelevanceUnderBinder",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 607486,
+      "candidate_ns": 617953,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/108_unitEta1",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 846364,
+      "candidate_ns": 859051,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/109_unitEta2",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 832769,
+      "candidate_ns": 849917,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/110_unitEta3",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 818848,
+      "candidate_ns": 832556,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/112_structEta",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 1525591,
+      "candidate_ns": 1551834,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/114_funEta",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 834567,
+      "candidate_ns": 821216,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/115_funEtaDep",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 838304,
+      "candidate_ns": 857479,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/119_reduceCtorParamRefl.mk",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 798819,
+      "candidate_ns": 838784,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/120_reduceCtorParamRefl2.mk",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 789671,
+      "candidate_ns": 856811,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/121_rTreeRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 886074,
+      "candidate_ns": 891050,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/122_rtreeRecReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1208508,
+      "candidate_ns": 1246112,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/123_accRecType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1307777,
+      "candidate_ns": 1414316,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/124_accRecReduction",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 1371511,
+      "candidate_ns": 1608922,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/126_quotMkType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 858532,
+      "candidate_ns": 848000,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/127_quotIndType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 906692,
+      "candidate_ns": 898117,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/128_quotLiftType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 986732,
+      "candidate_ns": 874491,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/129_quotSoundType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 979430,
+      "candidate_ns": 988966,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/130_quotLiftReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1154259,
+      "candidate_ns": 1172104,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/131_quotIndReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1216265,
+      "candidate_ns": 1304172,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/constlevels",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1563787,
+      "candidate_ns": 1649141,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/ctor-num-fields",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1578462,
+      "candidate_ns": 1602188,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/k-rec-conv",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1295313,
+      "candidate_ns": 1289012,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/large-elim-param",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 682677,
+      "candidate_ns": 668414,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/large-elim-prop-bool",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1912153,
+      "candidate_ns": 1917562,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/level-imax-leq",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 729015,
+      "candidate_ns": 679250,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/level-imax-normalization",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 967209,
+      "candidate_ns": 843106,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/nat-rec-k-lie",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 744788,
+      "candidate_ns": 719984,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/nat-rec-rules",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 779407,
+      "candidate_ns": 701714,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/nested-unused-param",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1501752,
+      "candidate_ns": 1395820,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/orphan-rec",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 567912,
+      "candidate_ns": 562710,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/proj-non-structure",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 602322,
+      "candidate_ns": 609284,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/proj-of-imax-prop",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 840887,
+      "candidate_ns": 882129,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/proj-of-stuck-prop",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 10502650,
+      "candidate_ns": 10749824,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/proj-of-subst-prop",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 10821179,
+      "candidate_ns": 10128679,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/rec-k-lie",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 689768,
+      "candidate_ns": 622564,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/rec-missing-ih",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 12497073,
+      "candidate_ns": 12253411,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/rec-of-subst-prop",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 9088622,
+      "candidate_ns": 9273585,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/extra-rec",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 612327,
+      "candidate_ns": 592879,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/nat-lit-add-bad",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 2930557,
+      "candidate_ns": 2832991,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/orphan-ctor",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 596888,
+      "candidate_ns": 564700,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/proj-of-prop",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 711656,
+      "candidate_ns": 662070,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/refute-cheap-first",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 1052610750,
+      "candidate_ns": 1056377213,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/refute-cheap-last",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 3550917,
+      "candidate_ns": 4321649,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/002_badDef",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 617331,
+      "candidate_ns": 588720,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/009_forallSortBad",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 592210,
+      "candidate_ns": 607382,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/010_nonTypeType",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 596179,
+      "candidate_ns": 564669,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/011_nonTypeAxiom",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 573229,
+      "candidate_ns": 560200,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/012_nonPropThm",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 562632,
+      "candidate_ns": 562061,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/014_selfProof",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 533752,
+      "candidate_ns": 538726,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/019_tut06_bad01",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 530890,
+      "candidate_ns": 519042,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/046_inductBadNonSort",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 564570,
+      "candidate_ns": 590133,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/047_inductBadNonSort2",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 655035,
+      "candidate_ns": 538126,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/048_inductLevelParam",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 536356,
+      "candidate_ns": 513106,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/049_inductTooFewParams",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 526399,
+      "candidate_ns": 534307,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/050_inductWrongCtorParams",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 583388,
+      "candidate_ns": 726245,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/051_inductWrongCtorResParams",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 598943,
+      "candidate_ns": 589275,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/052_inductWrongCtorResLevel",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 595787,
+      "candidate_ns": 551870,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/053_inductInIndex",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 559850,
+      "candidate_ns": 541251,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/054_indNeg",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 545383,
+      "candidate_ns": 542636,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/056_reduceCtorType.mk",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 570309,
+      "candidate_ns": 594808,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/057_indNegReducible",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 581106,
+      "candidate_ns": 604779,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/061_typeWithTooHighTypeField.mk",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 726365,
+      "candidate_ns": 555811,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/073_BogusRecursor",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 607084,
+      "candidate_ns": 599527,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/087_projOutOfRange",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 670109,
+      "candidate_ns": 698189,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/088_projNotStruct",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 782669,
+      "candidate_ns": 597536,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/090_projProp2",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 667935,
+      "candidate_ns": 669160,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/092_projProp4",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 700168,
+      "candidate_ns": 673153,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/093_projProp5",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 726747,
+      "candidate_ns": 685515,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/094_projProp6",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 687671,
+      "candidate_ns": 676548,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/096_projIndexData",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 659346,
+      "candidate_ns": 730320,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/097_projIndexData2",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 641740,
+      "candidate_ns": 638414,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/100_ruleKbad",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 865502,
+      "candidate_ns": 931180,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/101_ruleKAcc",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 1282814,
+      "candidate_ns": 1235905,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/105_proofIrrelevanceBad",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 776972,
+      "candidate_ns": 800920,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/111_indexedUnitEta",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 805323,
+      "candidate_ns": 697131,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/113_indexedStructEta",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 735613,
+      "candidate_ns": 730102,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/116_funEtaBad",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 787203,
+      "candidate_ns": 1122290,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/117_reflOccLeft",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 674032,
+      "candidate_ns": 641331,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/118_reflOccInIndex",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 643833,
+      "candidate_ns": 651310,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/125_accRecNoEta",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 1253743,
+      "candidate_ns": 1233550,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/132_dup_defs",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 552040,
+      "candidate_ns": 515437,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/133_dup_ind_def",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 644393,
+      "candidate_ns": 593789,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/134_dup_ctor_def",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 562742,
+      "candidate_ns": 566748,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/135_dup_rec_def",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 571016,
+      "candidate_ns": 561921,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/136_misnamed_rec_user",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 588633,
+      "candidate_ns": 550647,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/137_dup_rec_def2",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 579532,
+      "candidate_ns": 563316,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/138_dup_ctor_rec",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 536583,
+      "candidate_ns": 617751,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/139_DupConCon",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 555312,
+      "candidate_ns": 558523,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/140_falseFromUnsafe",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 581571,
+      "candidate_ns": 568033,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/141_falseFromPartial",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 588489,
+      "candidate_ns": 556916,
+      "base_stderr": [],
+      "candidate_stderr": []
+    }
+  ],
+  "current": [
+    {
+      "test": "corner-cases/proof-param-ok",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 720701,
+      "candidate_ns": 662606,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "init-prelude",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 51973429,
+      "candidate_ns": 50575361,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/level-index-out-of-order",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 821861,
+      "candidate_ns": 570493,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/nat-lit-add",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 3217572,
+      "candidate_ns": 2915827,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/nat-lit-ble",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 3622371,
+      "candidate_ns": 3643002,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/nat-lit-sub",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 3950046,
+      "candidate_ns": 3463855,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/sparse-name-index",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 575065,
+      "candidate_ns": 552901,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/app-lam",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 174102536,
+      "candidate_ns": 175824645,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/args-before-unfold",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 18403316,
+      "candidate_ns": 26013785,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/beta-ladder",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 180922775,
+      "candidate_ns": 172794250,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/church-numerals",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 35016734,
+      "candidate_ns": 33913904,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/discarded-argument-match",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 5242943,
+      "candidate_ns": 11321035,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/discarded-argument",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 2644337,
+      "candidate_ns": 10082172,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/folded-constant-first",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 5276653315,
+      "candidate_ns": 17828080,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/folded-constant-last",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 12425643,
+      "candidate_ns": 12425483,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/fueled-chain",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 13596261,
+      "candidate_ns": 12826946,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/grind-ring-5",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 164624880,
+      "candidate_ns": 171551960,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/identical-nesting",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 3176739,
+      "candidate_ns": 1354614,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/irrelevance-before-evaluation",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 2459821,
+      "candidate_ns": 2376623,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/let-ladder",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 55609161,
+      "candidate_ns": 56048332,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/magma-list-deep-n21",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 46682639,
+      "candidate_ns": 45832863,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/magma-list-deep-n36",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 47993486,
+      "candidate_ns": 46552199,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/magma-list-pair-n21",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 23674348,
+      "candidate_ns": 23025804,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/magma-list-pair-n7",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 24867441,
+      "candidate_ns": 24203654,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/proj-stuck-struct",
+      "expected": 0,
+      "base": 2,
+      "candidate": 0,
+      "base_ns": 7113081,
+      "candidate_ns": 7709957,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/repeated-subproblem",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 2175217,
+      "candidate_ns": 2970126,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/shared-subterm",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 14373336,
+      "candidate_ns": 14459192,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/shift-cascade",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 42344554,
+      "candidate_ns": 42544597,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/unroll-versus-evaluate",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 6072015761,
+      "candidate_ns": 6043407206,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/001_basicDef",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 885563,
+      "candidate_ns": 630099,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/003_arrowType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 583454,
+      "candidate_ns": 590310,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/004_dependentType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 566028,
+      "candidate_ns": 544037,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/005_constType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 566491,
+      "candidate_ns": 545004,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/006_betaReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 633005,
+      "candidate_ns": 601413,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/007_betaReduction2",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 590707,
+      "candidate_ns": 592486,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/008_forallSortWhnf",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 596214,
+      "candidate_ns": 568238,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/013_thmProof",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 606693,
+      "candidate_ns": 596258,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/015_levelComp1",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 554600,
+      "candidate_ns": 544933,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/016_levelComp2",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 572156,
+      "candidate_ns": 569391,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/017_levelComp3",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 570138,
+      "candidate_ns": 560031,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/018_levelParams",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 633900,
+      "candidate_ns": 612181,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/020_levelComp4",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 699805,
+      "candidate_ns": 571911,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/021_levelComp5",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 566343,
+      "candidate_ns": 565289,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/022_imax1",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 598110,
+      "candidate_ns": 582497,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/023_imax2",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 613275,
+      "candidate_ns": 577155,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/024_levelMaxComm",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 592778,
+      "candidate_ns": 589033,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/025_levelMaxAssoc",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 567560,
+      "candidate_ns": 542433,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/026_levelMaxIdem",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 528277,
+      "candidate_ns": 694551,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/027_levelMaxAbsorb",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 553329,
+      "candidate_ns": 557982,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/028_inferVar",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 567097,
+      "candidate_ns": 565494,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/029_defEqLambda",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 636794,
+      "candidate_ns": 741000,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/030_peano1",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 886752,
+      "candidate_ns": 879334,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/031_peano2",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1034484,
+      "candidate_ns": 1084392,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/032_peano3",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1111771,
+      "candidate_ns": 1135071,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/033_letType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 633497,
+      "candidate_ns": 579962,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/034_letTypeDep",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 614645,
+      "candidate_ns": 635769,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/035_letRed",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 596585,
+      "candidate_ns": 606485,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/036_empty",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 715377,
+      "candidate_ns": 632408,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/037_boolType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 661212,
+      "candidate_ns": 664666,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/038_twoBool",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 725619,
+      "candidate_ns": 719905,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/039_andType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 780654,
+      "candidate_ns": 717991,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/040_prodType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 788593,
+      "candidate_ns": 784200,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/041_pprodType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 768426,
+      "candidate_ns": 1093943,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/042_pUnitType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 755229,
+      "candidate_ns": 719656,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/043_eqType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 739077,
+      "candidate_ns": 762365,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/044_natDef",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 655045,
+      "candidate_ns": 667744,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/045_rbTreeDef",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1367514,
+      "candidate_ns": 1493706,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/055_reduceCtorParam.mk",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 911217,
+      "candidate_ns": 878903,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/058_predWithTypeField",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 717841,
+      "candidate_ns": 658412,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/059_typeWithTypeField",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 724471,
+      "candidate_ns": 727595,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/060_typeWithTypeFieldPoly",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 712834,
+      "candidate_ns": 675955,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/062_emptyRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 666329,
+      "candidate_ns": 663581,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/063_boolRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 753612,
+      "candidate_ns": 757417,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/064_twoBoolRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 855493,
+      "candidate_ns": 848612,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/065_andRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 798182,
+      "candidate_ns": 816557,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/066_prodRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 889883,
+      "candidate_ns": 858323,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/067_pprodRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 826652,
+      "candidate_ns": 853906,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/068_punitRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 799141,
+      "candidate_ns": 704943,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/069_eqRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 865842,
+      "candidate_ns": 841582,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/070_nRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 661541,
+      "candidate_ns": 857256,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/071_rbTreeRef",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1796335,
+      "candidate_ns": 1974100,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/072_boolPropRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 699000,
+      "candidate_ns": 662426,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/074_existsRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 820154,
+      "candidate_ns": 885229,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/075_typeSingletonRecReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1032817,
+      "candidate_ns": 1014286,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/076_sortElimPropRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 909483,
+      "candidate_ns": 906730,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/077_sortElimProp2Rec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1041386,
+      "candidate_ns": 1023724,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/078_boolRecEqns",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1520711,
+      "candidate_ns": 2685081,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/079_prodRecEqns",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1529669,
+      "candidate_ns": 1692602,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/080_nRecReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1988902,
+      "candidate_ns": 2027431,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/081_listRecReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 3031689,
+      "candidate_ns": 3129505,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/082_RBTree.id_spec",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 2575808,
+      "candidate_ns": 2609776,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/083_And.right",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 755415,
+      "candidate_ns": 768478,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/084_Prod.snd",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 820742,
+      "candidate_ns": 823914,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/085_PProd.snd",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 813082,
+      "candidate_ns": 775191,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/086_PSigma.snd",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 904286,
+      "candidate_ns": 917488,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/089_projProp1",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 907343,
+      "candidate_ns": 908321,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/091_projProp3",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 945572,
+      "candidate_ns": 904956,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/095_projDataIndexRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 875847,
+      "candidate_ns": 863113,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/098_projRed",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1190688,
+      "candidate_ns": 1138920,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/099_ruleK",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 895651,
+      "candidate_ns": 898679,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/102_aNatLit",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 723366,
+      "candidate_ns": 636241,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/103_natLitEq",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 777024,
+      "candidate_ns": 818788,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/104_proofIrrelevance",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 854900,
+      "candidate_ns": 935575,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/106_proofIrrelevanceWhnf",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 894438,
+      "candidate_ns": 1089751,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/107_proofIrrelevanceUnderBinder",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 699023,
+      "candidate_ns": 640218,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/108_unitEta1",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 900934,
+      "candidate_ns": 929310,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/109_unitEta2",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 902740,
+      "candidate_ns": 928752,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/110_unitEta3",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 884519,
+      "candidate_ns": 883951,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/112_structEta",
+      "expected": 0,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 1506412,
+      "candidate_ns": 1612957,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/114_funEta",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 840724,
+      "candidate_ns": 838271,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/115_funEtaDep",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 844535,
+      "candidate_ns": 905104,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/119_reduceCtorParamRefl.mk",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 802949,
+      "candidate_ns": 789708,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/120_reduceCtorParamRefl2.mk",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 765310,
+      "candidate_ns": 799849,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/121_rTreeRec",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 891290,
+      "candidate_ns": 812412,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/122_rtreeRecReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1123590,
+      "candidate_ns": 1149377,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/123_accRecType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1235609,
+      "candidate_ns": 1217765,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/124_accRecReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1638597,
+      "candidate_ns": 1751557,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/126_quotMkType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 888797,
+      "candidate_ns": 884306,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/127_quotIndType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 939891,
+      "candidate_ns": 899065,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/128_quotLiftType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 881833,
+      "candidate_ns": 893784,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/129_quotSoundType",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1008695,
+      "candidate_ns": 993788,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/130_quotLiftReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1265571,
+      "candidate_ns": 1290447,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/131_quotIndReduction",
+      "expected": 0,
+      "base": 0,
+      "candidate": 0,
+      "base_ns": 1370686,
+      "candidate_ns": 1331119,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/constlevels",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1697923,
+      "candidate_ns": 1939242,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/ctor-num-fields",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1700777,
+      "candidate_ns": 1661728,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/k-rec-conv",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1519048,
+      "candidate_ns": 1689753,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/large-elim-param",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 737010,
+      "candidate_ns": 685352,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/large-elim-prop-bool",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1836155,
+      "candidate_ns": 1732006,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/level-imax-leq",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 678987,
+      "candidate_ns": 650904,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/level-imax-normalization",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 698105,
+      "candidate_ns": 696696,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/nat-rec-k-lie",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 680285,
+      "candidate_ns": 738424,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/nat-rec-rules",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 725376,
+      "candidate_ns": 718869,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/nested-unused-param",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 1598048,
+      "candidate_ns": 1681557,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/orphan-rec",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 620649,
+      "candidate_ns": 597726,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/proj-non-structure",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 666986,
+      "candidate_ns": 644025,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/proj-of-imax-prop",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 863268,
+      "candidate_ns": 862824,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/proj-of-stuck-prop",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 10962484,
+      "candidate_ns": 10930318,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/proj-of-subst-prop",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 11009875,
+      "candidate_ns": 10596987,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/rec-k-lie",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 750628,
+      "candidate_ns": 694742,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/rec-missing-ih",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 12827273,
+      "candidate_ns": 13014181,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "bugs/rec-of-subst-prop",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 9051161,
+      "candidate_ns": 8951115,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/extra-rec",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 681767,
+      "candidate_ns": 593030,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/nat-lit-add-bad",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 3303596,
+      "candidate_ns": 3142122,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/orphan-ctor",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 643004,
+      "candidate_ns": 591143,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "other/proj-of-prop",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 711662,
+      "candidate_ns": 690211,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/refute-cheap-first",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 1052432609,
+      "candidate_ns": 1061440491,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "perf/refute-cheap-last",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 3844125,
+      "candidate_ns": 4591479,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/002_badDef",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 684647,
+      "candidate_ns": 593614,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/009_forallSortBad",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 639332,
+      "candidate_ns": 630962,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/010_nonTypeType",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 647428,
+      "candidate_ns": 608460,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/011_nonTypeAxiom",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 617608,
+      "candidate_ns": 597808,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/012_nonPropThm",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 578854,
+      "candidate_ns": 571850,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/014_selfProof",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 564507,
+      "candidate_ns": 586599,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/019_tut06_bad01",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 593003,
+      "candidate_ns": 551402,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/046_inductBadNonSort",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 625817,
+      "candidate_ns": 605741,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/047_inductBadNonSort2",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 590154,
+      "candidate_ns": 594124,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/048_inductLevelParam",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 562754,
+      "candidate_ns": 558247,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/049_inductTooFewParams",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 570731,
+      "candidate_ns": 551707,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/050_inductWrongCtorParams",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 595275,
+      "candidate_ns": 554389,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/051_inductWrongCtorResParams",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 568197,
+      "candidate_ns": 539612,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/052_inductWrongCtorResLevel",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 785020,
+      "candidate_ns": 610738,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/053_inductInIndex",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 577244,
+      "candidate_ns": 540911,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/054_indNeg",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 571442,
+      "candidate_ns": 531161,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/056_reduceCtorType.mk",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 816487,
+      "candidate_ns": 618347,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/057_indNegReducible",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 598088,
+      "candidate_ns": 600580,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/061_typeWithTooHighTypeField.mk",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 587171,
+      "candidate_ns": 551287,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/073_BogusRecursor",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 651549,
+      "candidate_ns": 783664,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/087_projOutOfRange",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 751334,
+      "candidate_ns": 688194,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/088_projNotStruct",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 631974,
+      "candidate_ns": 675518,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/090_projProp2",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 680193,
+      "candidate_ns": 679890,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/092_projProp4",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 684556,
+      "candidate_ns": 687026,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/093_projProp5",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 684661,
+      "candidate_ns": 815426,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/094_projProp6",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 710422,
+      "candidate_ns": 685163,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/096_projIndexData",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1122685,
+      "candidate_ns": 1196350,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/097_projIndexData2",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 1109247,
+      "candidate_ns": 1117491,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/100_ruleKbad",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 921869,
+      "candidate_ns": 899554,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/101_ruleKAcc",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 1391076,
+      "candidate_ns": 1517708,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/105_proofIrrelevanceBad",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 959258,
+      "candidate_ns": 862855,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/111_indexedUnitEta",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 764019,
+      "candidate_ns": 738955,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/113_indexedStructEta",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 781745,
+      "candidate_ns": 810194,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/116_funEtaBad",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 840320,
+      "candidate_ns": 851749,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/117_reflOccLeft",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 717565,
+      "candidate_ns": 702365,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/118_reflOccInIndex",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 770196,
+      "candidate_ns": 689776,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/125_accRecNoEta",
+      "expected": 1,
+      "base": 2,
+      "candidate": 2,
+      "base_ns": 1354220,
+      "candidate_ns": 1421480,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/132_dup_defs",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 568213,
+      "candidate_ns": 547392,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/133_dup_ind_def",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 572648,
+      "candidate_ns": 556422,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/134_dup_ctor_def",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 622138,
+      "candidate_ns": 589019,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/135_dup_rec_def",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 665236,
+      "candidate_ns": 658070,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/136_misnamed_rec_user",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 633792,
+      "candidate_ns": 841192,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/137_dup_rec_def2",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 690175,
+      "candidate_ns": 657983,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/138_dup_ctor_rec",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 599822,
+      "candidate_ns": 603169,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/139_DupConCon",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 617141,
+      "candidate_ns": 590933,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/140_falseFromUnsafe",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 634208,
+      "candidate_ns": 624970,
+      "base_stderr": [],
+      "candidate_stderr": []
+    },
+    {
+      "test": "tutorial/141_falseFromPartial",
+      "expected": 1,
+      "base": 1,
+      "candidate": 1,
+      "base_ns": 616572,
+      "candidate_ns": 594844,
+      "base_stderr": [],
+      "candidate_stderr": []
+    }
+  ]
+}

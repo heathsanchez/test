@@ -1,0 +1,88 @@
+{
+  "base_sha": "98f87d9e66fb97987427d68180f51a653d626fdb",
+  "candidate_sha": "c362f35db5a2efe5c629e64c1a3b71e392b473fb",
+  "current": {
+    "base_accept": 104,
+    "base_reject": 59,
+    "base_residual": 31,
+    "candidate_accept": 105,
+    "candidate_reject": 59,
+    "candidate_residual": 30,
+    "changes": [
+      {
+        "base": 2,
+        "base_ns": 7113081,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 7709957,
+        "candidate_stderr": [],
+        "expected": 0,
+        "test": "perf/proj-stuck-struct"
+      }
+    ],
+    "earned": [
+      "perf/proj-stuck-struct"
+    ],
+    "errors": [],
+    "regressions": [],
+    "tests": 194,
+    "wrong": []
+  },
+  "protected_negatives": [
+    {
+      "base": 2,
+      "base_ns": 10962484,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 10930318,
+      "candidate_stderr": [],
+      "expected": 1,
+      "test": "bugs/proj-of-stuck-prop"
+    },
+    {
+      "base": 2,
+      "base_ns": 11009875,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 10596987,
+      "candidate_stderr": [],
+      "expected": 1,
+      "test": "bugs/proj-of-subst-prop"
+    },
+    {
+      "base": 2,
+      "base_ns": 9051161,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 8951115,
+      "candidate_stderr": [],
+      "expected": 1,
+      "test": "bugs/rec-of-subst-prop"
+    }
+  ],
+  "round1": {
+    "base_accept": 103,
+    "base_reject": 60,
+    "base_residual": 30,
+    "candidate_accept": 103,
+    "candidate_reject": 60,
+    "candidate_residual": 30,
+    "changes": [],
+    "earned": [],
+    "errors": [],
+    "regressions": [],
+    "tests": 193,
+    "wrong": []
+  },
+  "schema": "nucleus-projection-arguments-first-v1",
+  "target": {
+    "base": 2,
+    "base_ns": 7113081,
+    "base_stderr": [],
+    "candidate": 0,
+    "candidate_ns": 7709957,
+    "candidate_stderr": [],
+    "expected": 0,
+    "test": "perf/proj-stuck-struct"
+  }
+}

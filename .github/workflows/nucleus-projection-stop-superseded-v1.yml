@@ -1,0 +1,29 @@
+name: Stop superseded Nucleus projection experiment
+on:
+  push:
+    branches: [nucleus-projection-arguments-first-v1]
+    paths: [".github/workflows/nucleus-projection-stop-superseded-v1.yml"]
+permissions:
+  actions: write
+jobs:
+  stop-superseded:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Cancel only the superseded depth-only experiment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api=repos/heathsanchez/test/actions/runs/36774091517
+          gh api "$api" > /tmp/superseded.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open("/tmp/superseded.json"))
+          assert r["head_sha"]=="2519f7b18da274b462b9f611c697894e659b3e19"
+          assert r["head_branch"]=="nucleus-projection-arguments-first-v1"
+          print("Superseded experiment status:",r["status"])
+          PY
+          if [ "$(gh api "$api" --jq .status)" != completed ]; then
+            gh api --method POST "$api/cancel"
+          fi
