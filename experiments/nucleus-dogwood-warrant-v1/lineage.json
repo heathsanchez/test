@@ -1,0 +1,26 @@
+{
+  "schema": "nucleus-dogwood-warrant-lineage-v1",
+  "dogwood": {
+    "repository": "dogwood-policy/dogwood",
+    "sha": "996d756de1013b7ae209a14f566a80375a59f2f0"
+  },
+  "failed_candidate": {
+    "sha": "a1b62bd3dfb05ae5d95c019d9eb37ca8b3c31cf5",
+    "branch": "nucleus-rule-aware-major-v1",
+    "run_id": 35960340790,
+    "expected_run_conclusion": "failure",
+    "disposition": "REJECTED_RESOURCE_NEGATIVE"
+  },
+  "warranted_candidate": {
+    "sha": "a12353b7cce96c48d9a0c684c3e9d81031168e1b",
+    "branch": "nucleus-crystal-independent-33-v1",
+    "run_id": 36627307769,
+    "expected_run_conclusion": "success",
+    "artifact_id": 11061162830,
+    "native_accept": 102,
+    "native_reject": 58,
+    "residual": 33,
+    "wrong": 0,
+    "disposition": "WARRANTED_INDEPENDENT"
+  }
+}
