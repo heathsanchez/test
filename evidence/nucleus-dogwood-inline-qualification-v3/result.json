@@ -1,0 +1,40 @@
+{
+  "schema": "nucleus-dogwood-inline-qualification-v3-authority",
+  "status": "WARRANTED_BOUNDED",
+  "branch": "nucleus-dogwood-inline-qualification-v3",
+  "workflow_sha": "4b84d8ce820b5a499cb3a3bc2b76bb230384cad1",
+  "run_id": 36651213523,
+  "job_id": 109685533755,
+  "artifact": {
+    "id": 11070617564,
+    "name": "nucleus-dogwood-inline-qualification-4b84d8ce820b5a499cb3a3bc2b76bb230384cad1",
+    "digest": "sha256:9e88195190da4b2d3c581007ad29427d6b9072c65a4f79b37b82c8682562a71f"
+  },
+  "semantic_candidate_sha": "98f87d9e66fb97987427d68180f51a653d626fdb",
+  "base_sha": "d2bdeadceb1bb6d0695f15126fb23b50f732c4ce",
+  "arena_artifact": 10712869614,
+  "dogwood_sha": "996d756de1013b7ae209a14f566a80375a59f2f0",
+  "fresh_reclosure": {
+    "native_accept": 103,
+    "native_reject": 60,
+    "residual": 30,
+    "wrong": 0,
+    "regressions": 0,
+    "errors": 0,
+    "earned": ["other/proj-of-prop"]
+  },
+  "same_run_dogwood_verdict": "ALLOW",
+  "hashes": {
+    "compiled_policy": "33fb7f75a24337e3df4a37913956624d428b33246919ca2d7ca02ca0d5c8bf03",
+    "event_compiler": "bb16cbe5abd6ad91a8745d9d1660650c7192c500067aa0f3da59c72accb1e908",
+    "fresh_nucleus_result": "969f1f5f4953397d23d2312c8b29ba079c5bfa42d7bbaf1c863dde498b62d23e",
+    "generated_lifecycle": "6534d49ef9b8eb424fe9bc3939d05372dd51f3dab17082f3f78095dc5661a73e"
+  },
+  "claim": "A fresh 193-case independent Nucleus requalification can emit its own lifecycle evidence and pass the pinned Dogwood promotion gate in the same CI run without a hand-authored history.",
+  "boundary": [
+    "exact 31-to-30 Nucleus semantic lineage only",
+    "Dogwood governs promotion but does not establish Lean-kernel correctness independently of the Nucleus reclosure",
+    "event compiler is tested but not formally verified",
+    "no canonical branch mutation is performed by the gate"
+  ]
+}
