@@ -41,12 +41,10 @@ fn record_admission_preserves_metadata_and_recursor_controls() {
 }
 #[test]
 fn record_rule_cannot_swap_dependent_fields() {
-    let mut records = char_records();
-    let mut rhs = records
-        .iter()
-        .rev()
-        .find_map(|r| r.get("inductive"))
-        .unwrap()["recs"][0]["rules"][0]["rhs"]
+    // This isolated fixture has no earlier inductives. Mutating Char's shared
+    // expression DAG can instead fail at Nat.le before reaching this law.
+    let mut records = small_record();
+    let mut rhs = records.last().unwrap()["inductive"]["recs"][0]["rules"][0]["rhs"]
         .as_u64()
         .unwrap();
     for _ in 0..4 {
@@ -62,6 +60,7 @@ fn record_rule_cannot_swap_dependent_fields() {
         .find(|r| r["ie"].as_u64() == Some(rhs))
         .unwrap();
     let fun = outer["app"]["fn"].as_u64().unwrap();
+    let second_arg = outer["app"]["arg"].clone();
     let first_arg = records
         .iter()
         .find(|r| r["ie"].as_u64() == Some(fun))
@@ -71,6 +70,10 @@ fn record_rule_cannot_swap_dependent_fields() {
         .iter_mut()
         .find(|r| r["ie"].as_u64() == Some(rhs))
         .unwrap()["app"]["arg"] = first_arg;
+    records
+        .iter_mut()
+        .find(|r| r["ie"].as_u64() == Some(fun))
+        .unwrap()["app"]["arg"] = second_arg;
     assert_ne!(run(records), Verdict::Accept);
 }
 
