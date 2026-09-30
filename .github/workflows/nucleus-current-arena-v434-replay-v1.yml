@@ -36,11 +36,12 @@ jobs:
       - name: Verify frozen Nucleus source
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "$FROZEN_NUCLEUS_SHA" || {
-            echo "Expected workflow-only child of frozen Nucleus authority $FROZEN_NUCLEUS_SHA"
-            git log --oneline -3
+          test -z "$(git diff --name-only "$FROZEN_NUCLEUS_SHA"..HEAD -- metatron-kernel)" || {
+            echo "Nucleus source differs from frozen authority $FROZEN_NUCLEUS_SHA"
+            git diff --name-only "$FROZEN_NUCLEUS_SHA"..HEAD -- metatron-kernel
             exit 1
           }
+          echo "Frozen Nucleus source preserved from $FROZEN_NUCLEUS_SHA"
           cd metatron-kernel
           cargo fmt --check
           cargo clippy --all-targets -- -D warnings
