@@ -113,9 +113,18 @@ impl Hash for EnvFrame {
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Closure {
-    pub expr: ExprId,
+    term: ClosureTerm,
     pub env: EnvFrame,
     pub levels: LevelSubstitution,
+}
+
+// Runtime predecessors need not occur in the immutable export expression table.
+// Keeping them distinct from ExprId prevents syntax shortcuts or memo keys from
+// accidentally identifying a computed literal with an unrelated expression.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum ClosureTerm {
+    Expression(ExprId),
+    NatLiteral(BigNat),
 }
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
@@ -143,18 +152,52 @@ impl crate::level::LevelSubstitutionLookup for LevelSubstitution {
 impl Closure {
     pub fn new(expr: ExprId, env: EnvFrame) -> Self {
         Self {
-            expr,
+            term: ClosureTerm::Expression(expr),
             env,
             levels: LevelSubstitution::default(),
         }
     }
 
     pub fn with_levels(expr: ExprId, env: EnvFrame, levels: LevelSubstitution) -> Self {
-        Self { expr, env, levels }
+        Self {
+            term: ClosureTerm::Expression(expr),
+            env,
+            levels,
+        }
+    }
+
+    pub fn nat_literal(value: BigNat) -> Self {
+        Self {
+            term: ClosureTerm::NatLiteral(value),
+            env: EnvFrame::empty(),
+            levels: LevelSubstitution::default(),
+        }
+    }
+
+    pub fn expression(&self) -> Option<ExprId> {
+        match self.term {
+            ClosureTerm::Expression(expr) => Some(expr),
+            ClosureTerm::NatLiteral(_) => None,
+        }
+    }
+
+    pub fn literal(&self) -> Option<&BigNat> {
+        match &self.term {
+            ClosureTerm::NatLiteral(value) => Some(value),
+            ClosureTerm::Expression(_) => None,
+        }
+    }
+
+    pub fn with_env(&self, env: EnvFrame) -> Self {
+        Self {
+            term: self.term.clone(),
+            env,
+            levels: self.levels.clone(),
+        }
     }
 
     pub fn under_free(&self, free: FreeId) -> Self {
-        Self::with_levels(self.expr, self.env.extend_free(free), self.levels.clone())
+        self.with_env(self.env.extend_free(free))
     }
 
     pub fn sibling(&self, expr: ExprId, env: EnvFrame) -> Self {

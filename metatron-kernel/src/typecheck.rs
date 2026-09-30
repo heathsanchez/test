@@ -329,11 +329,9 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Proven { .. } => Judgment::proven(
                         match body {
                             PiBody::Fixed(body) => body,
-                            PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
-                                body.expr,
-                                body.env.extend(self.closure(*arg, frame.clone())),
-                                body.levels,
-                            )),
+                            PiBody::Closure(body) => TypeValue::Term(
+                                body.with_env(body.env.extend(self.closure(*arg, frame.clone()))),
+                            ),
                         },
                         "application-type-instantiation",
                     ),
@@ -708,11 +706,9 @@ impl<'a> TypeChecker<'a> {
             let _ = domain;
             current = match body {
                 PiBody::Fixed(body) => body,
-                PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
-                    body.expr,
-                    body.env.extend(argument.clone()),
-                    body.levels,
-                )),
+                PiBody::Closure(body) => {
+                    TypeValue::Term(body.with_env(body.env.extend(argument.clone())))
+                }
             };
         }
         Some(current)

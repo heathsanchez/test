@@ -70,7 +70,7 @@ fn stuck_constant_projection_preserves_field_and_pending_arguments() {
         }
     ));
     assert_eq!(n.spine.len(), 1);
-    assert_eq!(n.spine[0].expr, ExprId(1));
+    assert_eq!(n.spine[0].expression(), Some(ExprId(1)));
 }
 
 #[test]

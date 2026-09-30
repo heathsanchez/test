@@ -230,11 +230,21 @@ impl<'a> Machine<'a> {
                 return Judgment::unknown("reduction-budget-exhausted");
             }
             budget -= 1;
-            if !visited.insert((self.authority, closure.expr, closure.env.id())) {
+            if let Some(value) = closure.literal() {
+                if !pending.is_empty() {
+                    return Judgment::unknown("nat-literal-applied-as-function");
+                }
+                record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
+                return exposed(Value::NatLit(value.clone()), transitions);
+            }
+            let expr = closure
+                .expression()
+                .expect("nonliteral closure has an expression");
+            if !visited.insert((self.authority, expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
             }
 
-            let Some(expression) = self.expressions.get(closure.expr) else {
+            let Some(expression) = self.expressions.get(expr) else {
                 return Judgment::unknown("missing-expression-during-reduction");
             };
             match expression {
@@ -436,7 +446,11 @@ impl<'a> Machine<'a> {
                                     if transparency != Transparency::Full {
                                         return None;
                                     }
-                                    self.reduced_constructor_application(target, budget.min(256))
+                                    self.reduced_constructor_application(
+                                        *name,
+                                        target,
+                                        budget.min(256),
+                                    )
                                 })
                                 && let Some(rule) = reduction
                                     .rules
@@ -704,6 +718,7 @@ impl<'a> Machine<'a> {
     // Only a matching independently admitted constructor rule can consume it.
     fn reduced_constructor_application(
         &self,
+        recursor: NameId,
         target: &Closure,
         budget: usize,
     ) -> Option<(NameId, Vec<Closure>)> {
@@ -713,20 +728,33 @@ impl<'a> Machine<'a> {
             budget.saturating_sub(1),
             false,
         );
-        let Value::Neutral(neutral) = &result.proven_value()?.value else {
-            return None;
-        };
-        let NeutralHead::Const { name, .. } = neutral.head else {
-            return None;
-        };
-        Some((name, neutral.spine.clone()))
+        match &result.proven_value()?.value {
+            Value::Neutral(neutral) => {
+                let NeutralHead::Const { name, .. } = neutral.head else {
+                    return None;
+                };
+                Some((name, neutral.spine.clone()))
+            }
+            Value::NatLit(value) => {
+                let nat = self.nat_primitives.as_ref()?;
+                if recursor != nat.recursor {
+                    return None;
+                }
+                if value.is_zero() {
+                    Some((nat.zero, Vec::new()))
+                } else {
+                    Some((nat.succ, vec![Closure::nat_literal(value.pred()?)]))
+                }
+            }
+            _ => None,
+        }
     }
 
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
         let mut closure = target.clone();
         let mut arguments = Vec::new();
         loop {
-            match self.expressions.get(closure.expr)? {
+            match self.expressions.get(closure.expression()?)? {
                 Expr::App { fun, arg } => {
                     arguments.push(closure.sibling(*arg, closure.env.clone()));
                     closure = closure.sibling(*fun, closure.env.clone());

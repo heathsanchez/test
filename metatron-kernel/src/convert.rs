@@ -657,7 +657,7 @@ fn unit_like_free_pair(
 
 fn eta_contract(checker: &TypeChecker<'_>, closure: &Closure, depth: usize) -> Option<Closure> {
     let closure = resolve_local_closure(checker, closure)?;
-    let Expr::Lam { body, .. } = checker.expression(closure.expr)? else {
+    let Expr::Lam { body, .. } = checker.expression(closure.expression()?)? else {
         return None;
     };
     let Expr::App { fun, arg } = checker.expression(*body)? else {
@@ -676,7 +676,7 @@ fn eta_contract(checker: &TypeChecker<'_>, closure: &Closure, depth: usize) -> O
 fn resolve_local_closure(checker: &TypeChecker<'_>, closure: &Closure) -> Option<Closure> {
     let mut current = closure.clone();
     for _ in 0..64 {
-        match checker.expression(current.expr)? {
+        match checker.expression(current.expression()?)? {
             Expr::BVar(index) => match current.env.lookup(*index)? {
                 EnvBinding::Closure(bound) => current = bound,
                 EnvBinding::Free(_) | EnvBinding::Neutral(_) => return Some(current),

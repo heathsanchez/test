@@ -1,3 +1,4 @@
+mod nat_le_below;
 use std::collections::HashMap;
 
 use crate::convert::DeltaPolicy;
@@ -791,6 +792,14 @@ fn check_inductive(
     }
 
     if let [inductive] = block.types.as_slice()
+        && matches!(export.names.get(inductive.name), Some(Name::Str { prefix, value })
+            if value == "below" && environment.nat_primitives().is_some_and(|nat|
+                name_is_child_str(export, *prefix, nat.type_name, "le")))
+    {
+        return nat_le_below::check(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
         && (name_is_root_str(export, inductive.name, "N")
             || name_is_root_str(export, inductive.name, "Nat"))
     {
@@ -865,7 +874,12 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         && constructor.num_params == 0
         && constructor.num_fields == 1;
 
-    if !dependent_pair && !scalar_structure {
+    let closed_data_proof_record = inductive.num_params == 0
+        && inductive.level_params.is_empty()
+        && constructor.num_params == 0
+        && constructor.num_fields == 2;
+
+    if !dependent_pair && !scalar_structure && !closed_data_proof_record {
         return false;
     }
 
@@ -1600,6 +1614,47 @@ fn check_generic_nonrecursive_prop_small(
     install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
+// A closed record with data A : Sort u and a proof P x : Prop may live
+// in the same nonzero Sort u. This extension is deliberately restricted to
+// exactly two fields; neither exported nonrecursion nor field counts supply
+// positivity or universe authority. Both domains are checked against the
+// preceding environment, where the new inductive does not yet exist.
+fn closed_data_proof_record_obligations(
+    export: &ResolvedExport,
+    environment: &Environment,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> bool {
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 2) else { return false; };
+    if fields.iter().any(|field| expression_contains_constant(export, *field, inductive.name)) {
+        return false;
+    }
+    let checker = TypeChecker::new(&export.exprs, &export.levels, environment)
+        .with_delta_policy(delta_policy);
+    if !matches!(checker.check(fields[0],
+        &TypeValue::Term(checker.closure(inductive.ty, EnvFrame::empty())),
+        limits.judgment_steps), Judgment::Proven { .. }) {
+        return false;
+    }
+    let context = [TypeValue::Term(checker.closure(fields[0], EnvFrame::empty()))];
+    let frame = EnvFrame::empty().extend_free(FreeId(0));
+    if !matches!(checker.is_proposition_in_context(fields[1], &context, &frame,
+        limits.judgment_steps), Judgment::Proven { .. }) {
+        return false;
+    }
+    // Validate the lambda annotations as well as the generic RHS field order.
+    let Some((rec_domains, _)) = pi_spine(export, recursor.ty, 3) else { return false; };
+    let [rule] = recursor.rules.as_slice() else { return false; };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, 4) else { return false; };
+    rec_domains[..2].iter().zip(&rule_domains[..2]).all(|(a,b)|
+        expr_eq_with_bvar_shift(export, *a, *b, 0, 0))
+        && fields.iter().zip(&rule_domains[2..]).enumerate().all(|(i,(a,b))|
+            expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
+}
+
 fn check_generic_nonrecursive_type(
     export:&ResolvedExport, environment:&Environment, block:&InductiveBlock,
     limits:Limits, delta_policy:DeltaPolicy,
@@ -1607,6 +1662,12 @@ fn check_generic_nonrecursive_type(
     let [inductive]=block.types.as_slice() else{return Err(Verdict::Unknown);};
     let [recursor]=block.recursors.as_slice() else{return Err(Verdict::Unknown);};
     if !generic_nonrecursive_type_candidate(export,block){return Err(Verdict::Unknown);}
+    if inductive.num_params == 0 && block.constructors[0].num_fields == 2
+        && !closed_data_proof_record_obligations(export, environment, inductive,
+            &block.constructors[0], recursor, limits, delta_policy)
+    {
+        return Err(Verdict::Unknown);
+    }
     let arity_ok = inductive_arity_metadata_is_well_formed(export, inductive);
     let all_ok = inductive.all == [inductive.name];
     let constructors_ok = inductive.constructors

@@ -9,7 +9,7 @@ import pathlib
 import sys
 
 
-def slice_prefix(source):
+def slice_prefix(source, target="_private.Init.Prelude.0.noConfusion_of_Nat.aux._f"):
     records, names, expressions, declarations = [], {0: ""}, {}, {}
     root = None
     for line in source.read_text().splitlines():
@@ -24,15 +24,17 @@ def slice_prefix(source):
             for kind in ("types", "ctors", "recs"):
                 for declaration in record["inductive"][kind]:
                     declarations[declaration["name"]] = record
+                    if names[declaration["name"]] == target:
+                        root = declaration["name"]
         for kind in ("def", "thm", "axiom", "opaque"):
             if kind in record:
                 name = record[kind]["name"]
                 declarations[name] = record
-                if names[name] == "_private.Init.Prelude.0.noConfusion_of_Nat.aux._f":
+                if names[name] == target:
                     root = name
         if root is not None:
             break
-    assert root is not None, "Pinned helper absent"
+    assert root is not None, f"Target declaration absent: {target}"
     needed_expressions, needed_declarations = set(), set()
 
     def expression(index):
@@ -74,4 +76,4 @@ def slice_prefix(source):
 
 
 if __name__ == "__main__":
-    pathlib.Path(sys.argv[2]).write_text(slice_prefix(pathlib.Path(sys.argv[1])))
+    pathlib.Path(sys.argv[2]).write_text(slice_prefix(pathlib.Path(sys.argv[1]), *sys.argv[3:]))
