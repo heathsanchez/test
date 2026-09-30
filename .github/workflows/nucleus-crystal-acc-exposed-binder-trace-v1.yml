@@ -1,0 +1,132 @@
+name: Nucleus Crystal Acc Exposed Binder Trace v1
+
+on:
+  push:
+    branches: [nucleus-crystal-acc-exposed-binder-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-acc-exposed-binder-trace-v1.yml"
+      - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/convert.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-crystal-acc-exposed-binder-trace-v1
+  cancel-in-progress: true
+
+env:
+  AUTHORITY_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic and exact authority
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$AUTHORITY_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Prove diagnostic identity
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          changed=[]
+          for d in ('good','bad'):
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  def rr(b):
+                      with p.open('rb') as f:
+                          return subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=120).returncode
+                  a=rr(base); b=rr(cand)
+                  if a!=b: changed.append((str(p.relative_to(root)),a,b))
+          assert not changed,changed
+          print({'cases':193,'semantic_changes':0})
+          PY
+
+      - name: Trace exposed binders in Acc separator trio
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-acc-exposed-binder-trace-v1
+          python3 - <<'PY'
+          import json,os,pathlib,re,subprocess
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          specs=[
+              ('good','tutorial/124_accRecReduction','accept'),
+              ('bad','tutorial/101_ruleKAcc','reject'),
+              ('bad','tutorial/125_accRecNoEta','reject'),
+          ]
+          rows=[]
+          for bucket,name,expected in specs:
+              p=root/bucket/(name+'.ndjson')
+              env=os.environ.copy()
+              env['NUCLEUS_TRACE_APP_PI']='1'
+              env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+              env['NUCLEUS_TRACE_EXPOSED_BINDERS']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=120,env=env)
+              assert q.returncode in (2,3),(name,q.returncode)
+              lines=q.stderr.decode(errors='replace').splitlines()
+              mismatch_indices=[
+                  i for i,x in enumerate(lines)
+                  if x.startswith('NUCLEUS_NEUTRAL_HEAD_MISMATCH:')
+                  and 'Free(FreeId(7))' in x and 'Free(FreeId(9))' in x
+              ]
+              assert mismatch_indices,(name,'missing Free7/9 mismatch')
+              m=mismatch_indices[0]
+              binders=[
+                  x for x in lines[:m]
+                  if x.startswith('NUCLEUS_EXPOSED_BINDER:')
+                  and any(f':free={k}:' in x for k in range(5,11))
+              ]
+              rows.append({
+                  'test':name,
+                  'expected':expected,
+                  'candidate_rc':q.returncode,
+                  'mismatch':lines[m],
+                  'preceding_exposed_binders':binders[-30:],
+              })
+          out={
+              'schema':'nucleus-crystal-acc-exposed-binder-trace-v1',
+              'authority_sha':os.environ['AUTHORITY_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'rows':rows,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/crystal-acc-exposed-binder-trace-v1/result.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps(rows,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-acc-exposed-binder-trace-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-acc-exposed-binder-trace-v1
+          if-no-files-found: error
