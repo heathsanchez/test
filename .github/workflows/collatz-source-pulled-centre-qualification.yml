@@ -1,0 +1,33 @@
+name: Collatz Source-Pulled Centre Qualification
+on:
+  push:
+    branches: [collatz-mixed-place-tournament-20260930]
+    paths: ['.github/workflows/collatz-source-pulled-centre-qualification.yml']
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Requalify unchanged V60 experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-source-pulled-centre-qualification
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_pulled_centre_height_v60.py             | tee evidence/collatz-source-pulled-centre-qualification/raw.txt
+          grep -q '"schema": "COLLATZ_CRYSTAL_PULLED_CENTRE_HEIGHT_V60"' evidence/collatz-source-pulled-centre-qualification/raw.txt
+          grep -q '"global_collatz": "UNKNOWN"' evidence/collatz-source-pulled-centre-qualification/raw.txt
+          grep -q '"same_center_preserves_pulled_center_and_precision": true' evidence/collatz-source-pulled-centre-qualification/raw.txt
+          grep -q '"every_switch_strictly_increases_source_precision": true' evidence/collatz-source-pulled-centre-qualification/raw.txt
+          grep -q '"centre_switches": 613' evidence/collatz-source-pulled-centre-qualification/raw.txt
+          git rev-parse HEAD | tee evidence/collatz-source-pulled-centre-qualification/commit.txt
+          echo SOURCE_PULLED_CENTRE_MONOTONICITY_REQUALIFIED
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-source-pulled-centre-qualification
+          path: evidence/collatz-source-pulled-centre-qualification
+          if-no-files-found: error
