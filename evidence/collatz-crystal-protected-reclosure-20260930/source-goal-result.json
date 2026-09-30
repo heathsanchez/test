@@ -1,0 +1,72 @@
+{
+  "boundary": "Previously observed V53 corpus, fixed four/two motif synthesis split. All 5487 residual starts have actual finite source-bound exit certificates, but frozen-word transfer is not universal coverage. No all-depth availability, completeness, or new global Collatz theorem.",
+  "certificate_sha256": "4edd72e3371700118074b58438efeaaf6c7612cf289da6e86dcd0e1ce704302d",
+  "first_bad_origin_binding": {
+    "actual_eventual_exit": {
+      "certificate": {
+        "endpoint": "502537304463537972723296272726065659",
+        "extra_steps": 0,
+        "kind": "D"
+      },
+      "depth": 62,
+      "kind": "D"
+    },
+    "candidate_endpoint": "4885487661144355404124240485286155262",
+    "candidate_steps": 8,
+    "law": {
+      "A": "243",
+      "B": "373",
+      "P": "256",
+      "rho": "9"
+    },
+    "root_depth": 127,
+    "root_endpoint": "5146851198571831207637059935116278793",
+    "source": "658276232354127303000690663176011803",
+    "wrong_kind": "D"
+  },
+  "first_uncovered": {
+    "actual_eventual_exit": {
+      "certificate": {
+        "endpoint": "502537304463537972723296272726065659",
+        "extra_steps": 0,
+        "kind": "D"
+      },
+      "depth": 60,
+      "kind": "D"
+    },
+    "anchor": 3,
+    "frozen_words_admitted": 0,
+    "has_observed_same_anchor_repayment": false,
+    "root_depth": 129,
+    "root_endpoint": "3860138398928873405727794951337209095",
+    "source": "658276232354127303000690663176011803",
+    "t": "174047741798852"
+  },
+  "global_collatz": "UNKNOWN",
+  "parent_certificate": "49c67affb77a79518286d2e89e0c6b9a646807c8ce710ff86faff2550739158d",
+  "schema": "COLLATZ_SOURCE_GOAL_CERTIFICATE_TRANSFER_20260930",
+  "source_binding_ablation": "Replace original n by current endpoint x; not a valid OrdinaryExit certificate for n.",
+  "stats": {
+    "all_starts_actual_exit_D": 1891,
+    "all_starts_actual_exit_M1": 374,
+    "all_starts_actual_exit_S": 3222
+  },
+  "successes_sha256": "31ce96b644ec42f794f1bb937bd8577389803fef94d77e8ef1498aac0c7140d0",
+  "synthesis_holdout": {
+    "admitted_word_but_original_source_guard_fails": 710,
+    "certificate_D": 77,
+    "certificate_M1": 8,
+    "certificate_S": 127,
+    "no_frozen_word_admitted": 665,
+    "prior_1349_exits_without_observed_repayment": 750,
+    "prior_1349_has_observed_repayment": 599,
+    "prior_1349_source_bound_certificate": 140,
+    "prior_1349_still_uncovered": 1209,
+    "source_bound_frozen_certificate": 212,
+    "starts": 1587,
+    "uncovered": 1375,
+    "wrong_binding_selected_certificate_invalid_for_source": 607,
+    "wrong_current_endpoint_binding_accepts": 675
+  },
+  "training_word_certificates": 3489
+}
