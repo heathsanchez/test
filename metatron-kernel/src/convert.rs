@@ -250,6 +250,29 @@ pub(crate) fn convert_with_policy_in_context(
                     {
                         proof_function_frees.insert(free, left_key);
                     }
+
+                    if std::env::var_os("NUCLEUS_TRACE_FREE_BINDERS").is_some() {
+                        let left_prop_sort =
+                            checker.type_value_is_prop_sort(&left_domain, remaining);
+                        let right_prop_sort =
+                            checker.type_value_is_prop_sort(&right_domain, remaining);
+                        let left_bare = bare_free_type(checker, &left_domain, remaining);
+                        let right_bare = bare_free_type(checker, &right_domain, remaining);
+                        eprintln!(
+                            "NUCLEUS_BINDER_REG:depth={}:free={}:left_prop_sort={}:right_prop_sort={}:left_bare={:?}:right_bare={:?}:prop_registered={}:proof_parent={:?}:proof_function_registered={}:left_domain={:?}:right_domain={:?}",
+                            depth,
+                            free.0,
+                            left_prop_sort,
+                            right_prop_sort,
+                            left_bare,
+                            right_bare,
+                            proposition_frees.contains(&free),
+                            proof_frees.get(&free),
+                            proof_function_frees.contains_key(&free),
+                            left_domain,
+                            right_domain
+                        );
+                    }
                 }
                 work.push((*left_body, *right_body, depth.saturating_add(1)));
                 work.push((*left_domain, *right_domain, depth));
@@ -417,10 +440,21 @@ fn proof_free_pair(
     if left == right {
         return false;
     }
-    proof_frees
+    let accepted = proof_frees
         .get(left)
         .zip(proof_frees.get(right))
-        .is_some_and(|(left_prop, right_prop)| left_prop == right_prop)
+        .is_some_and(|(left_prop, right_prop)| left_prop == right_prop);
+    if std::env::var_os("NUCLEUS_TRACE_FREE_BINDERS").is_some() {
+        eprintln!(
+            "NUCLEUS_PROOF_FREE_CHECK:left={}:right={}:left_prop={:?}:right_prop={:?}:accepted={}",
+            left.0,
+            right.0,
+            proof_frees.get(left),
+            proof_frees.get(right),
+            accepted
+        );
+    }
+    accepted
 }
 
 fn unit_like_free_pair(
