@@ -1,0 +1,22 @@
+name: Collatz Backward Cover Smoke
+on:
+  push:
+    branches: [collatz-backward-cover-smoke-20260930]
+    paths: ['.github/workflows/collatz-backward-cover-smoke.yml']
+permissions: {contents: read}
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check three transport instances
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build CollatzFinal
+          lake env lean -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean
+          lake env lean -o .lake/build/lib/lean/Collatz/BackwardParameterCover.olean formal/Collatz/BackwardParameterCover.lean
+          lake env lean formal/Collatz/BackwardCoverSmoke.lean
