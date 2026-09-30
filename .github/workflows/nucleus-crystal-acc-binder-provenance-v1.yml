@@ -1,0 +1,210 @@
+name: Nucleus Crystal Acc Binder Provenance v1
+
+on:
+  push:
+    branches: [nucleus-crystal-acc-binder-provenance-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-acc-binder-provenance-v1.yml"
+      - "metatron-kernel/src/convert.rs"
+      - "metatron-kernel/src/typecheck.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-crystal-acc-binder-provenance-v1
+  cancel-in-progress: true
+
+env:
+  AUTHORITY_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  APP_DIAGNOSTIC_SHA: ff1abf91aa7295c056c04bee5891fb0e7220202d
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic candidate and exact authority
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$AUTHORITY_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Prove tracing is semantically inert
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib, subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          changed=[]
+          total=0
+          for d in ('good','bad'):
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  total += 1
+                  def rr(binary):
+                      with p.open('rb') as f:
+                          return subprocess.run(
+                              [str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL,timeout=120
+                          ).returncode
+                  a=rr(base); b=rr(cand)
+                  if a != b:
+                      changed.append((str(p.relative_to(root)),a,b))
+          assert total == 193
+          assert not changed, changed
+          print({'cases':total,'semantic_changes':len(changed)})
+          PY
+
+      - name: Trace exact Acc separator trio
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-acc-binder-provenance-v1
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess
+
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          specs=[
+              ('good','tutorial/124_accRecReduction','accept'),
+              ('bad','tutorial/101_ruleKAcc','reject'),
+              ('bad','tutorial/125_accRecNoEta','reject'),
+          ]
+
+          rows=[]
+          for bucket,name,expected in specs:
+              p=root/bucket/(name+'.ndjson')
+              assert p.exists(),p
+              env=os.environ.copy()
+              env['NUCLEUS_TRACE_APP_PI']='1'
+              env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+              env['NUCLEUS_TRACE_FREE_BINDERS']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                      [str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE,timeout=120,env=env
+                  )
+              assert q.returncode in (2,3),(name,q.returncode)
+              lines=q.stderr.decode(errors='replace').splitlines()
+              mismatches=[x for x in lines if x.startswith('NUCLEUS_NEUTRAL_HEAD_MISMATCH:')]
+              target_mismatches=[
+                  x for x in mismatches
+                  if ('Free(FreeId(7))' in x and 'Free(FreeId(9))' in x)
+                  or ('Free(FreeId(9))' in x and 'Free(FreeId(7))' in x)
+              ]
+              assert target_mismatches,(name,'missing Free7/Free9 mismatch')
+              binder=[
+                  x for x in lines
+                  if x.startswith('NUCLEUS_BINDER_REG:')
+                  and (':free=7:' in x or ':free=9:' in x)
+              ]
+              proof_checks=[
+                  x for x in lines
+                  if x.startswith('NUCLEUS_PROOF_FREE_CHECK:')
+                  and (
+                      'left=7:right=9:' in x or 'left=9:right=7:' in x
+                  )
+              ]
+              app=[
+                  x for x in lines
+                  if x.startswith('NUCLEUS_APP_PI_FAIL:')
+              ]
+              row={
+                  'test':name,
+                  'expected':expected,
+                  'candidate_rc':q.returncode,
+                  'free_7_9_mismatch_count':len(target_mismatches),
+                  'binder_events':binder,
+                  'proof_free_checks':proof_checks,
+                  'root_app_events':app[:4],
+                  'last_app_events':app[-4:],
+                  'target_mismatches':target_mismatches[-4:],
+              }
+              rows.append(row)
+
+          def compact_event(line):
+              keep={}
+              for part in line.split(':')[1:]:
+                  if '=' in part:
+                      k,v=part.split('=',1)
+                      if k in {
+                          'depth','free','left_prop_sort','right_prop_sort',
+                          'left_bare','right_bare','prop_registered','proof_parent',
+                          'proof_function_registered','left','right','left_prop',
+                          'right_prop','accepted'
+                      }:
+                          keep[k]=v
+              return keep
+
+          summary=[]
+          for row in rows:
+              summary.append({
+                  'test':row['test'],
+                  'expected':row['expected'],
+                  'candidate_rc':row['candidate_rc'],
+                  'mismatch_count':row['free_7_9_mismatch_count'],
+                  'binder7_9':[compact_event(x) for x in row['binder_events']],
+                  'proof_checks':[compact_event(x) for x in row['proof_free_checks']],
+              })
+
+          # Find exact provenance coordinates that differ between good and both bad controls.
+          good=summary[0]
+          bads=summary[1:]
+          good_fingerprint=json.dumps(
+              {'binder7_9':good['binder7_9'],'proof_checks':good['proof_checks']},
+              sort_keys=True
+          )
+          bad_fingerprints=[
+              json.dumps({'binder7_9':b['binder7_9'],'proof_checks':b['proof_checks']},sort_keys=True)
+              for b in bads
+          ]
+          separator_exists=all(good_fingerprint != b for b in bad_fingerprints)
+
+          out={
+              'schema':'nucleus-crystal-acc-binder-provenance-v1',
+              'authority_sha':os.environ['AUTHORITY_SHA'],
+              'app_diagnostic_sha':os.environ['APP_DIAGNOSTIC_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'semantic_change_count':0,
+              'rows':rows,
+              'summary':summary,
+              'provenance_separator_exists':separator_exists,
+          }
+          pathlib.Path(
+              'metatron-kernel/evidence-out/crystal-acc-binder-provenance-v1/result.json'
+          ).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'provenance_separator_exists':separator_exists,
+              'summary':summary,
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-acc-binder-provenance-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-acc-binder-provenance-v1
+          if-no-files-found: error
