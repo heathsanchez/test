@@ -125,6 +125,8 @@ def main():
                 gate_when="pop",
             )
             solved=bool(res["solved"])
+            if solved != bool(prior.get("solved")):
+                raise AssertionError(("frozen solver replay changed solved status", cid, solved, prior.get("solved")))
             rec.update({
                 "solved":solved,
                 "mixed_steps":res.get("path_length"),
@@ -149,6 +151,8 @@ def main():
                     challenge,official,challenge["move_spec_version"],limits
                 )
                 official_ok=bool(verdict.get("ok"))
+                if official_ok != bool(prior.get("official_ok")):
+                    raise AssertionError(("frozen official replay changed verifier status", cid, official_ok, prior.get("official_ok")))
                 child=classify(
                     solved=True,
                     official_ok=official_ok,
