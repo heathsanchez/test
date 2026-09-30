@@ -6704,6 +6704,7 @@ fn install_certified_recursor_reduction(
         })
         .collect::<Result<Vec<_>, Verdict>>()?;
     let reduction = RecursorReduction {
+        eq_k: false,
         num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
         num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
         level_params: recursor.level_params.clone(),
@@ -8253,6 +8254,7 @@ fn check_binary_enum(
             })
             .collect::<Result<Vec<_>, Verdict>>()?;
         let reduction = RecursorReduction {
+            eq_k: false,
             num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
             num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
             level_params: recursor.level_params.clone(),
@@ -8819,13 +8821,14 @@ impl ExactBinaryProductDerivation<'_> {
             environment
         };
 
-        // G32 reuses G31's already-qualified constructor-iota machine. Only
-        // exact Prod opts in here; And/PProd/PUnit/Eq remain opaque.
-        if matches!(self.law, BinaryProductSortLaw::Prod { .. }) {
+        // Install computation only for independently validated exact families.
+        // Eq adds constructor iota and K when its endpoints expose identically.
+        if matches!(self.law, BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::Eq { .. }) {
             let [rule] = self.recursor.rules.as_slice() else {
                 return Err(Verdict::Reject);
             };
             let reduction = RecursorReduction {
+                eq_k: matches!(self.law, BinaryProductSortLaw::Eq { .. }),
                 num_params: usize::try_from(self.recursor.num_params)
                     .map_err(|_| Verdict::Reject)?,
                 num_indices: usize::try_from(self.recursor.num_indices)

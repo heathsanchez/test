@@ -27,6 +27,7 @@ pub enum TransitionWitness {
     Delta,
     SingletonRecursor,
     ConstructorRecursor,
+    EqualityK,
     NatExtension,
     Quotient,
     Rigid,
@@ -49,6 +50,9 @@ pub struct RecursorRule {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RecursorReduction {
+    /// Enabled only after the exact Eq declaration, recursor type and rule
+    /// have been independently validated by the admission checker.
+    pub eq_k: bool,
     pub num_params: usize,
     pub num_indices: usize,
     pub level_params: Vec<NameId>,
@@ -391,6 +395,34 @@ impl<'a> Machine<'a> {
                             let offset = pending.len() - required;
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
+                            if reduction.eq_k && arguments.len() == 6 {
+                                let left = self.expose_internal(
+                                    arguments[1].clone(),
+                                    Transparency::Opaque,
+                                    budget.min(64),
+                                    false,
+                                );
+                                let right = self.expose_internal(
+                                    arguments[4].clone(),
+                                    Transparency::Opaque,
+                                    budget.min(64),
+                                    false,
+                                );
+                                if let (Some(l), Some(r)) =
+                                    (left.proven_value(), right.proven_value())
+                                    && l.value == r.value
+                                {
+                                    pending.truncate(offset);
+                                    closure = arguments[3].clone();
+                                    visited.clear();
+                                    record_transition(
+                                        &mut transitions,
+                                        record_witnesses,
+                                        TransitionWitness::EqualityK,
+                                    );
+                                    continue;
+                                }
+                            }
                             let target = arguments.last().expect("required includes target");
                             if let Some((constructor, constructor_arguments)) =
                                 self.constructor_application(target)
