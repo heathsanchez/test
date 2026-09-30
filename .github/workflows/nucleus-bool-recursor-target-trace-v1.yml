@@ -1,0 +1,130 @@
+name: Nucleus Bool Recursor Target Trace v1
+
+on:
+  push:
+    branches: [nucleus-crystal-bool-recursor-target-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-bool-recursor-target-trace-v1.yml"
+      - "metatron-kernel/src/machine.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-bool-recursor-target-trace-v1
+  cancel-in-progress: true
+
+env:
+  BASE_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic candidate and exact authority
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/art /tmp/tests /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Prove diagnostic is verdict-identical and trace exact four cases
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/bool-recursor-target-trace-v1
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          def rr(binary,p,trace=False):
+              env=os.environ.copy()
+              if trace:
+                  env['NUCLEUS_TRACE_BOOL_RECURSOR_TARGET']='1'
+                  env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+                  env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.PIPE if trace else subprocess.DEVNULL,
+                                   timeout=180,env=env)
+              return q.returncode,(q.stderr.decode(errors='replace') if trace else '')
+
+          rows=[]
+          for bucket,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/bucket).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/bucket)).removesuffix('.ndjson')
+                  brc,_=rr(base,p)
+                  crc,_=rr(cand,p)
+                  assert crc==brc,(name,brc,crc)
+                  rows.append({'test':name,'expected':expected,'rc':crc})
+
+          assert len(rows)==193
+          assert sum(r['rc']==0 for r in rows)==103
+          assert sum(r['rc']==1 for r in rows)==60
+          assert sum(r['rc'] in (2,3) for r in rows)==30
+
+          targets=[
+              'perf/magma-list-deep-n21',
+              'perf/magma-list-deep-n36',
+              'perf/magma-list-pair-n21',
+              'perf/magma-list-pair-n7',
+          ]
+          traces={}
+          for name in targets:
+              p=root/'good'/(name+'.ndjson')
+              rc,err=rr(cand,p,True)
+              assert rc in (2,3),(name,rc)
+              marks=[x for x in err.splitlines() if 'NUCLEUS_BOOL_RECURSOR_TARGET:' in x]
+              assert marks,(name,err[-10000:])
+              traces[name]={
+                  'rc':rc,
+                  'bool_target_marks':marks[-80:],
+                  'neutral_marks':[x for x in err.splitlines() if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-20:],
+                  'terminal':[x for x in err.splitlines() if 'NUCLEUS_DOWNSTREAM:' in x][-5:],
+              }
+
+          out={
+              'schema':'nucleus-bool-recursor-target-trace-v1',
+              'base_sha':os.environ['BASE_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'verdict_identical':True,
+              'counts':{'accept':103,'reject':60,'residual':30},
+              'targets':traces,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/bool-recursor-target-trace-v1/result.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps({
+              name: data['bool_target_marks'][-12:]
+              for name,data in traces.items()
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-bool-recursor-target-trace-${{ github.sha }}
+          path: metatron-kernel/evidence-out/bool-recursor-target-trace-v1
+          if-no-files-found: warn
