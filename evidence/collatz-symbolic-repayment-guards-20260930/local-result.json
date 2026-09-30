@@ -1,6 +1,6 @@
 {
   "boundary": "Exact conditional affine guards, finite discovery and lifted raw-orbit checks. No universal macro availability, source admission, protected no-exit coverage, or origin-source transport theorem. Owner-cylinder lifts need not belong to the original source family.",
-  "certificate_sha256": "4beaa9b1a006de75774afcd4b0dd582786f556e6dcfaba28efbc069ee459e994",
+  "certificate_sha256": "49c67affb77a79518286d2e89e0c6b9a646807c8ce710ff86faff2550739158d",
   "distinct_guards": 2081,
   "distinct_guards_proved_by_existing_live_floor": 2081,
   "distinct_whole_cylinder_guards": 2081,
@@ -96,7 +96,10 @@
   },
   "synthesis_holdout": {
     "exact_guard_in_frozen_training_bank": 188,
-    "heldout_repaying_starts": 787
+    "frozen_guard_capability_applies": 238,
+    "heldout_all_residual_starts": 1587,
+    "heldout_repaying_starts": 787,
+    "no_matching_frozen_guard": 1349
   },
   "training_distinct_guards": 1488
 }
