@@ -286,7 +286,17 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
-                let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                let pi = self.pi_view(function_type.clone(), *remaining);
+                if pi.is_none() {
+                    self.trace_application_function_type(
+                        *fun,
+                        *arg,
+                        &function_type,
+                        context.len(),
+                        *remaining,
+                    );
+                }
+                let Some((domain, body)) = pi else {
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true) {
@@ -520,6 +530,101 @@ impl<'a> TypeChecker<'a> {
                 }
             }
             TypeValue::Pi { .. } => Judgment::refuted("pi-value-is-not-a-sort"),
+        }
+    }
+
+    fn trace_application_function_type(
+        &self,
+        fun: ExprId,
+        arg: ExprId,
+        ty: &Judgment<TypeValue>,
+        context_depth: usize,
+        budget: usize,
+    ) {
+        if std::env::var_os("NUCLEUS_TRACE_APP_FUNCTION_TYPE").is_none() {
+            return;
+        }
+        match ty {
+            Judgment::Unknown { residual } => {
+                eprintln!(
+                    "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=UNKNOWN:reason={}",
+                    fun.0, arg.0, context_depth, residual.0
+                );
+            }
+            Judgment::Refuted { obstruction } => {
+                eprintln!(
+                    "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=REFUTED:reason={}",
+                    fun.0, arg.0, context_depth, obstruction.0
+                );
+            }
+            Judgment::Proven { value, warrant } => match value {
+                TypeValue::Sort(_) => {
+                    eprintln!(
+                        "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=PROVEN:warrant={}:type=sort",
+                        fun.0, arg.0, context_depth, warrant.0
+                    );
+                }
+                TypeValue::Pi { .. } => {
+                    eprintln!(
+                        "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=PROVEN:warrant={}:type=pi:pi_view=unexpected-none",
+                        fun.0, arg.0, context_depth, warrant.0
+                    );
+                }
+                TypeValue::Term(closure) => {
+                    let exposed = self.machine().expose(
+                        closure.clone(),
+                        Transparency::Reducible,
+                        budget,
+                    );
+                    match exposed {
+                        Judgment::Unknown { residual } => eprintln!(
+                            "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=PROVEN:warrant={}:type=term:closure_expr={}:expose=UNKNOWN:reason={}",
+                            fun.0, arg.0, context_depth, warrant.0, closure.expr.0, residual.0
+                        ),
+                        Judgment::Refuted { obstruction } => eprintln!(
+                            "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=PROVEN:warrant={}:type=term:closure_expr={}:expose=REFUTED:reason={}",
+                            fun.0, arg.0, context_depth, warrant.0, closure.expr.0, obstruction.0
+                        ),
+                        Judgment::Proven { value, warrant: expose_warrant } => match value {
+                            Value::Pi { .. } => eprintln!(
+                                "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=PROVEN:warrant={}:type=term:closure_expr={}:expose=pi:warrant={}:pi_view=unexpected-none",
+                                fun.0, arg.0, context_depth, warrant.0, closure.expr.0, expose_warrant.0
+                            ),
+                            Value::Sort(_) => eprintln!(
+                                "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=PROVEN:warrant={}:type=term:closure_expr={}:expose=sort:warrant={}",
+                                fun.0, arg.0, context_depth, warrant.0, closure.expr.0, expose_warrant.0
+                            ),
+                            Value::Lam { .. } => eprintln!(
+                                "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=PROVEN:warrant={}:type=term:closure_expr={}:expose=lam:warrant={}",
+                                fun.0, arg.0, context_depth, warrant.0, closure.expr.0, expose_warrant.0
+                            ),
+                            Value::NatLit(_) => eprintln!(
+                                "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=PROVEN:warrant={}:type=term:closure_expr={}:expose=natlit:warrant={}",
+                                fun.0, arg.0, context_depth, warrant.0, closure.expr.0, expose_warrant.0
+                            ),
+                            Value::Neutral(neutral) => {
+                                let (head_kind, head_id) = match &neutral.head {
+                                    NeutralHead::Free(free) => ("free", free.0.to_string()),
+                                    NeutralHead::Const { name, .. } => ("const", name.0.to_string()),
+                                    NeutralHead::Projection { .. } => ("projection", "-".to_string()),
+                                };
+                                eprintln!(
+                                    "NUCLEUS_APP_FUNCTION_TYPE:fun={}:arg={}:context={}:judgment=PROVEN:warrant={}:type=term:closure_expr={}:expose=neutral:warrant={}:head={}:head_id={}:spine={}",
+                                    fun.0,
+                                    arg.0,
+                                    context_depth,
+                                    warrant.0,
+                                    closure.expr.0,
+                                    expose_warrant.0,
+                                    head_kind,
+                                    head_id,
+                                    neutral.spine.len()
+                                );
+                            }
+                        },
+                    }
+                }
+            },
         }
     }
 
