@@ -1,0 +1,37 @@
+name: Collatz Zero Block Grammar Crystal
+on:
+  push:
+    branches: [collatz-zero-block-grammar-crystal-20260930]
+    paths:
+      - 'experiments/collatz_zero_block_grammar_crystal_20260930.py'
+      - '.github/workflows/collatz-zero-block-grammar-crystal.yml'
+permissions: {contents: read}
+jobs:
+  grammar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Expose zero-block grammar
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-zero-block-grammar-crystal
+          PYTHONPATH=experiments python -u experiments/collatz_zero_block_grammar_crystal_20260930.py             | tee evidence/collatz-zero-block-grammar-crystal/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-zero-block-grammar-crystal/result.json'))
+          print('GRAPH',d['graph'])
+          print('TERMINATION',d['termination_histogram'])
+          for i,p in enumerate(d['maximal_rank_paths']):
+              print('PATH',i,'RANKS',p['ranks'],'CHARTS',
+                    [(x['q'],x['D']) for x in p['charts']])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-zero-block-grammar-crystal
+          path: evidence/collatz-zero-block-grammar-crystal
+          if-no-files-found: error
