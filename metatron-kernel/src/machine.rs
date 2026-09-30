@@ -556,6 +556,16 @@ impl<'a> Machine<'a> {
                             continue;
                         }
                         NeutralHead::Const { .. } => {
+                            if preserve_stuck_projection {
+                                return exposed(
+                                    Value::StuckProjection {
+                                        type_name: *type_name,
+                                        index,
+                                        structure,
+                                    },
+                                    transitions,
+                                );
+                            }
                             return Judgment::unknown("projection-constructor-mismatch");
                         }
                         NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
