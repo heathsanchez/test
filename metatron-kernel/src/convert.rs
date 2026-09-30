@@ -270,6 +270,12 @@ pub(crate) fn convert_with_policy_in_context(
                     remaining,
                     depth,
                     &mut work,
+                    &mut unit_like_frees,
+
+                    &mut proposition_frees,
+
+                    &mut proof_frees,
+
                     &mut proof_function_frees,
                 ) {
                     Judgment::Proven { .. } => {}
@@ -290,6 +296,12 @@ pub(crate) fn convert_with_policy_in_context(
                             remaining,
                             depth,
                             &mut work,
+                            &mut unit_like_frees,
+
+                            &mut proposition_frees,
+
+                            &mut proof_frees,
+
                             &mut proof_function_frees,
                         ) {
                             Judgment::Proven { .. } => {}
@@ -530,6 +542,9 @@ fn compare_values(
     budget: usize,
     depth: usize,
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    unit_like_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    proposition_frees: &mut HashSet<FreeId>,
+    proof_frees: &mut HashMap<FreeId, FreeId>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
     match (left, right) {
@@ -546,6 +561,9 @@ fn compare_values(
                 budget,
                 depth,
                 work,
+                unit_like_frees,
+                proposition_frees,
+                proof_frees,
                 proof_function_frees,
             );
         }
@@ -557,6 +575,9 @@ fn compare_values(
                 budget,
                 depth,
                 work,
+                unit_like_frees,
+                proposition_frees,
+                proof_frees,
                 proof_function_frees,
             );
         }
@@ -592,6 +613,28 @@ fn compare_values(
             };
             let left_domain_type = TypeValue::Term(left_domain.clone());
             let right_domain_type = TypeValue::Term(right_domain.clone());
+
+            if let (Some(left_key), Some(right_key)) = (
+                checker.unit_like_type_key(&left_domain_type, budget),
+                checker.unit_like_type_key(&right_domain_type, budget),
+            ) && left_key == right_key
+            {
+                unit_like_frees.insert(free, left_key);
+            }
+
+            if checker.type_value_is_prop_sort(&left_domain_type, budget)
+                && checker.type_value_is_prop_sort(&right_domain_type, budget)
+            {
+                proposition_frees.insert(free);
+            } else if let (Some(left_prop), Some(right_prop)) = (
+                bare_free_type(checker, &left_domain_type, budget),
+                bare_free_type(checker, &right_domain_type, budget),
+            ) && left_prop == right_prop
+                && proposition_frees.contains(&left_prop)
+            {
+                proof_frees.insert(free, left_prop);
+            }
+
             if let (Some(left_key), Some(right_key)) = (
                 checker.fixed_proof_function_type_key(&left_domain_type, budget),
                 checker.fixed_proof_function_type_key(&right_domain_type, budget),
@@ -611,6 +654,27 @@ fn compare_values(
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
+            if left.spine.is_empty()
+                && right.spine.is_empty()
+                && let (NeutralHead::Free(left_free), NeutralHead::Free(right_free)) =
+                    (&left.head, &right.head)
+                && left_free != right_free
+            {
+                if unit_like_frees
+                    .get(left_free)
+                    .zip(unit_like_frees.get(right_free))
+                    .is_some_and(|(left_key, right_key)| left_key == right_key)
+                {
+                    return Judgment::proven((), "exposed-unit-like-free-equivalence");
+                }
+                if proof_frees
+                    .get(left_free)
+                    .zip(proof_frees.get(right_free))
+                    .is_some_and(|(left_prop, right_prop)| left_prop == right_prop)
+                {
+                    return Judgment::proven((), "exposed-proof-free-equivalence");
+                }
+            }
             match compare_neutral_heads(checker, left, right, budget) {
                 Judgment::Proven { .. } => {}
                 other => return other,
@@ -638,6 +702,9 @@ fn compare_nat_literal_neutral(
     budget: usize,
     depth: usize,
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    unit_like_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    proposition_frees: &mut HashSet<FreeId>,
+    proof_frees: &mut HashMap<FreeId, FreeId>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
     let Some(primitives) = checker.nat_primitives() else {
@@ -677,6 +744,9 @@ fn compare_nat_literal_neutral(
             budget.saturating_sub(1),
             depth,
             work,
+            unit_like_frees,
+            proposition_frees,
+            proof_frees,
             proof_function_frees,
         );
     }
