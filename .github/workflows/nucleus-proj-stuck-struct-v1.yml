@@ -1,0 +1,242 @@
+name: Nucleus proj-stuck-struct v1
+
+on:
+  push:
+    branches: [nucleus-proj-stuck-struct-v1]
+    paths:
+      - ".github/workflows/nucleus-proj-stuck-struct-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-proj-stuck-struct-v1
+  cancel-in-progress: true
+
+env:
+  AUTHORITY_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_SHA: 4c30c4ac4f14a3a899116beb3ea6131880e79a98
+  ARENA_RUN_ID: "36700836088"
+  ARENA_TEST_ARTIFACT_ID: "11090525747"
+
+jobs:
+  qualify:
+    name: Exact proj-stuck-struct N=12/16/20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build exact warranted Nucleus authority
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$AUTHORITY_SHA" HEAD
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch exact current Arena test tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_TEST_ARTIFACT_ID/zip" > /tmp/arena-test.zip
+          mkdir -p /tmp/arena-art /tmp/arena-tests
+          unzip -q /tmp/arena-test.zip -d /tmp/arena-art
+          tarball="$(find /tmp/arena-art -type f -name 'lean-arena-tests.tar.gz' -print -quit)"
+          test -n "$tarball"
+          tar -xzf "$tarball" -C /tmp/arena-tests
+          target="$(find /tmp/arena-tests -type f -path '*/good/perf/proj-stuck-struct.ndjson' -print -quit)"
+          test -n "$target"
+          cp "$target" /tmp/proj-stuck-struct.ndjson
+          sha256sum /tmp/proj-stuck-struct.ndjson
+          wc -l -c /tmp/proj-stuck-struct.ndjson
+
+      - name: Split exact export into isolated N variants
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/proj-stuck-variants metatron-kernel/evidence-out/proj-stuck-struct-v1
+          python3 - <<'PY'
+          import json
+          import pathlib
+
+          src = pathlib.Path("/tmp/proj-stuck-struct.ndjson")
+          lines = src.read_text().splitlines()
+          parsed = [json.loads(line) for line in lines]
+
+          targets = {"step12", "step16", "step20"}
+          root_name_ids = {}
+          for obj in parsed:
+              if "str" in obj and "in" in obj:
+                  s = obj["str"]
+                  if s.get("pre") == 0 and s.get("str") in targets:
+                      root_name_ids[s["str"]] = obj["in"]
+
+          assert set(root_name_ids) == targets, root_name_ids
+          id_to_name = {v: k for k, v in root_name_ids.items()}
+
+          target_decl_rows = {}
+          for i, obj in enumerate(parsed):
+              if "thm" in obj:
+                  name_id = obj["thm"].get("name")
+                  if name_id in id_to_name:
+                      target_decl_rows[id_to_name[name_id]] = i
+
+          assert set(target_decl_rows) == targets, target_decl_rows
+
+          out_dir = pathlib.Path("/tmp/proj-stuck-variants")
+          manifest = {
+              "source_lines": len(lines),
+              "root_name_ids": root_name_ids,
+              "target_decl_rows": target_decl_rows,
+              "variants": {},
+          }
+
+          for keep in sorted(targets):
+              drop = targets - {keep}
+              drop_ids = {root_name_ids[n] for n in drop}
+              out = []
+              removed = []
+              for line, obj in zip(lines, parsed):
+                  if "thm" in obj and obj["thm"].get("name") in drop_ids:
+                      removed.append(id_to_name[obj["thm"]["name"]])
+                      continue
+                  out.append(line)
+              path = out_dir / f"{keep}.ndjson"
+              path.write_text("\n".join(out) + "\n")
+              manifest["variants"][keep] = {
+                  "path": str(path),
+                  "lines": len(out),
+                  "removed_theorems": sorted(removed),
+              }
+
+          pathlib.Path(
+              "metatron-kernel/evidence-out/proj-stuck-struct-v1/split-manifest.json"
+          ).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(manifest, sort_keys=True))
+          PY
+
+      - name: Run exact Arena test and isolated scaling benchmark
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import statistics
+          import subprocess
+          import time
+
+          binary = pathlib.Path("metatron-kernel/target/release/metatron-kernel").resolve()
+          exact = pathlib.Path("/tmp/proj-stuck-struct.ndjson")
+          variants = {
+              12: pathlib.Path("/tmp/proj-stuck-variants/step12.ndjson"),
+              16: pathlib.Path("/tmp/proj-stuck-variants/step16.ndjson"),
+              20: pathlib.Path("/tmp/proj-stuck-variants/step20.ndjson"),
+          }
+          evidence = pathlib.Path("metatron-kernel/evidence-out/proj-stuck-struct-v1")
+          evidence.mkdir(parents=True, exist_ok=True)
+
+          def run_once(path, label, rep):
+              metric = pathlib.Path(f"/tmp/time-{label}-{rep}.txt")
+              with path.open("rb") as stream:
+                  t0 = time.perf_counter()
+                  q = subprocess.run(
+                      [
+                          "/usr/bin/time", "-f", "%U\t%S\t%M",
+                          "-o", str(metric), str(binary)
+                      ],
+                      stdin=stream,
+                      stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE,
+                      timeout=50,
+                      check=False,
+                  )
+                  wall = time.perf_counter() - t0
+              fields = metric.read_text().strip().split("\t")
+              user_s, sys_s, max_rss_kb = float(fields[0]), float(fields[1]), int(fields[2])
+              return {
+                  "rc": q.returncode,
+                  "wall_s": wall,
+                  "user_s": user_s,
+                  "sys_s": sys_s,
+                  "max_rss_kb": max_rss_kb,
+                  "stderr_tail": q.stderr.decode(errors="replace")[-2000:],
+              }
+
+          # Exact upstream Arena export: must be accepted natively.
+          exact_run = run_once(exact, "exact", 0)
+
+          per_size = {}
+          for n, path in variants.items():
+              warmup = run_once(path, f"n{n}-warmup", 0)
+              reps = [run_once(path, f"n{n}", i) for i in range(5)]
+              per_size[n] = {"warmup": warmup, "reps": reps}
+
+          def summarize(rows):
+              return {
+                  "rcs": [r["rc"] for r in rows],
+                  "median_wall_s": statistics.median(r["wall_s"] for r in rows),
+                  "min_wall_s": min(r["wall_s"] for r in rows),
+                  "max_wall_s": max(r["wall_s"] for r in rows),
+                  "median_cpu_s": statistics.median(r["user_s"] + r["sys_s"] for r in rows),
+                  "max_rss_kb": max(r["max_rss_kb"] for r in rows),
+              }
+
+          summaries = {str(n): summarize(v["reps"]) for n, v in per_size.items()}
+          all_accept = exact_run["rc"] == 0 and all(
+              r["rc"] == 0
+              for v in per_size.values()
+              for r in [v["warmup"], *v["reps"]]
+          )
+
+          t12 = summaries["12"]["median_wall_s"]
+          t16 = summaries["16"]["median_wall_s"]
+          t20 = summaries["20"]["median_wall_s"]
+          ratios = {
+              "n16_over_n12": t16 / t12 if t12 else None,
+              "n20_over_n16": t20 / t16 if t16 else None,
+              "n20_over_n12": t20 / t12 if t12 else None,
+          }
+          # Classification only: the semantic gate is native acceptance.
+          # "Near-flat" means no exponential signature on this hosted runner.
+          near_flat = (
+              all_accept
+              and t20 <= max(0.25, 4.0 * t12)
+              and t16 <= max(0.25, 4.0 * t12)
+          )
+
+          out = {
+              "schema": "nucleus-proj-stuck-struct-v1",
+              "authority_sha": os.environ["AUTHORITY_SHA"],
+              "arena_sha": os.environ["ARENA_SHA"],
+              "arena_run_id": os.environ["ARENA_RUN_ID"],
+              "arena_test_artifact_id": os.environ["ARENA_TEST_ARTIFACT_ID"],
+              "exact_upstream_export": exact_run,
+              "sizes": summaries,
+              "ratios": ratios,
+              "all_native_accept": all_accept,
+              "near_flat_on_hosted_runner": near_flat,
+              "raw": {str(n): v for n, v in per_size.items()},
+          }
+          (evidence / "result.json").write_text(
+              json.dumps(out, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(out, sort_keys=True))
+
+          assert exact_run["rc"] == 0, exact_run
+          assert all_accept, summaries
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-proj-stuck-struct-${{ github.sha }}
+          path: metatron-kernel/evidence-out/proj-stuck-struct-v1
+          if-no-files-found: warn
