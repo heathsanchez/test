@@ -1,0 +1,236 @@
+{
+  "boundary": "Every depth partitions all natural parameters; closed cells have source-bound universally admitted exit words. Residual cells are not infinite orbits. This is one affine family, not a global least-bad-source cover.",
+  "certificate_sha256": "bca7a47524a79847d7a4aa0471d167e6fe7571247254ba9ab07f7533fe05b05f",
+  "closed_kinds": {
+    "D": 892,
+    "M1": 232,
+    "S": 2170
+  },
+  "family": {
+    "N0": "38911100780481085467",
+    "NC": "3782158995862761504768"
+  },
+  "global_collatz": "UNKNOWN",
+  "schema": "COLLATZ_BACKWARD_SYMBOLIC_SOURCE_COVER_20260930",
+  "snapshots": [
+    {
+      "closed_leaves": 0,
+      "coverage_denominator": "1",
+      "coverage_numerator": "0",
+      "depth": 0,
+      "least_residual": 0,
+      "new_closed": {},
+      "residual_cells": 1
+    },
+    {
+      "closed_leaves": 0,
+      "coverage_denominator": "1",
+      "coverage_numerator": "0",
+      "depth": 1,
+      "least_residual": 0,
+      "new_closed": {},
+      "residual_cells": 2
+    },
+    {
+      "closed_leaves": 1,
+      "coverage_denominator": "4",
+      "coverage_numerator": "1",
+      "depth": 2,
+      "least_residual": 0,
+      "new_closed": {
+        "S": 1
+      },
+      "residual_cells": 3
+    },
+    {
+      "closed_leaves": 3,
+      "coverage_denominator": "2",
+      "coverage_numerator": "1",
+      "depth": 3,
+      "least_residual": 1,
+      "new_closed": {
+        "D": 1,
+        "S": 1
+      },
+      "residual_cells": 4
+    },
+    {
+      "closed_leaves": 4,
+      "coverage_denominator": "16",
+      "coverage_numerator": "9",
+      "depth": 4,
+      "least_residual": 1,
+      "new_closed": {
+        "S": 1
+      },
+      "residual_cells": 7
+    },
+    {
+      "closed_leaves": 6,
+      "coverage_denominator": "8",
+      "coverage_numerator": "5",
+      "depth": 5,
+      "least_residual": 1,
+      "new_closed": {
+        "S": 2
+      },
+      "residual_cells": 12
+    },
+    {
+      "closed_leaves": 12,
+      "coverage_denominator": "32",
+      "coverage_numerator": "23",
+      "depth": 6,
+      "least_residual": 1,
+      "new_closed": {
+        "D": 3,
+        "S": 3
+      },
+      "residual_cells": 18
+    },
+    {
+      "closed_leaves": 16,
+      "coverage_denominator": "4",
+      "coverage_numerator": "3",
+      "depth": 7,
+      "least_residual": 1,
+      "new_closed": {
+        "S": 4
+      },
+      "residual_cells": 32
+    },
+    {
+      "closed_leaves": 23,
+      "coverage_denominator": "256",
+      "coverage_numerator": "199",
+      "depth": 8,
+      "least_residual": 1,
+      "new_closed": {
+        "D": 1,
+        "S": 6
+      },
+      "residual_cells": 57
+    },
+    {
+      "closed_leaves": 35,
+      "coverage_denominator": "256",
+      "coverage_numerator": "205",
+      "depth": 9,
+      "least_residual": 1,
+      "new_closed": {
+        "M1": 1,
+        "S": 11
+      },
+      "residual_cells": 102
+    },
+    {
+      "closed_leaves": 47,
+      "coverage_denominator": "16",
+      "coverage_numerator": "13",
+      "depth": 10,
+      "least_residual": 1,
+      "new_closed": {
+        "D": 5,
+        "S": 7
+      },
+      "residual_cells": 192
+    },
+    {
+      "closed_leaves": 107,
+      "coverage_denominator": "512",
+      "coverage_numerator": "431",
+      "depth": 11,
+      "least_residual": 1,
+      "new_closed": {
+        "D": 36,
+        "S": 24
+      },
+      "residual_cells": 324
+    },
+    {
+      "closed_leaves": 162,
+      "coverage_denominator": "4096",
+      "coverage_numerator": "3503",
+      "depth": 12,
+      "least_residual": 1,
+      "new_closed": {
+        "M1": 7,
+        "S": 48
+      },
+      "residual_cells": 593
+    },
+    {
+      "closed_leaves": 247,
+      "coverage_denominator": "8192",
+      "coverage_numerator": "7091",
+      "depth": 13,
+      "least_residual": 1,
+      "new_closed": {
+        "D": 25,
+        "S": 60
+      },
+      "residual_cells": 1101
+    },
+    {
+      "closed_leaves": 593,
+      "coverage_denominator": "256",
+      "coverage_numerator": "227",
+      "depth": 14,
+      "least_residual": 1,
+      "new_closed": {
+        "D": 206,
+        "S": 140
+      },
+      "residual_cells": 1856
+    },
+    {
+      "closed_leaves": 896,
+      "coverage_denominator": "32768",
+      "coverage_numerator": "29359",
+      "depth": 15,
+      "least_residual": 1,
+      "new_closed": {
+        "M1": 42,
+        "S": 261
+      },
+      "residual_cells": 3409
+    },
+    {
+      "closed_leaves": 1372,
+      "coverage_denominator": "32768",
+      "coverage_numerator": "29597",
+      "depth": 16,
+      "least_residual": 1,
+      "new_closed": {
+        "D": 130,
+        "S": 346
+      },
+      "residual_cells": 6342
+    },
+    {
+      "closed_leaves": 2333,
+      "coverage_denominator": "131072",
+      "coverage_numerator": "119349",
+      "depth": 17,
+      "least_residual": 1,
+      "new_closed": {
+        "M1": 182,
+        "S": 779
+      },
+      "residual_cells": 11723
+    },
+    {
+      "closed_leaves": 3294,
+      "coverage_denominator": "262144",
+      "coverage_numerator": "239659",
+      "depth": 18,
+      "least_residual": 1,
+      "new_closed": {
+        "D": 485,
+        "S": 476
+      },
+      "residual_cells": 22485
+    }
+  ],
+  "unresolved_cell_count": 22485
+}
