@@ -1,0 +1,44 @@
+name: Collatz Crystal Actual Centre Switch V58
+on:
+  push:
+    branches: [collatz-crystal-actual-centre-switch-v58]
+    paths:
+      - 'experiments/collatz_crystal_actual_centre_switch_v58.py'
+      - '.github/workflows/collatz-crystal-actual-centre-switch-v58.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Audit actual centre switching
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-actual-centre-switch-v58
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_actual_centre_switch_v58.py \
+            | tee evidence/collatz-crystal-actual-centre-switch-v58/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-actual-centre-switch-v58/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_ACTUAL_CENTRE_SWITCH_V58'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V58_VERDICT',d['verdict'])
+          print('V58_SAME',d['same_exact_law_edges'],d['same_actual_center_edges'])
+          print('V58_MONO',d['candidate_monotonicity'])
+          print('V58_ULTRA',d['ultrametric_switch_counts'])
+          print('V58_LAYERS',d['actual_laws_by_rank'])
+          print('V58_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-actual-centre-switch-v58/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-actual-centre-switch-v58
+          path: evidence/collatz-crystal-actual-centre-switch-v58
+          if-no-files-found: error
