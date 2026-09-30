@@ -1,0 +1,83 @@
+namespace Nucleus {
+  type CandidateInput = {
+    candidate: String
+  };
+
+  type StageOutput = {
+    success: Bool
+  };
+
+  type ReplayOutput = {
+    success: Bool,
+    wrong: Long,
+    regressions: Long,
+    errors: Long
+  };
+
+  type ArtifactOutput = {
+    success: Bool,
+    artifact: String
+  };
+
+  entity ResearchAgent = {
+    id: String
+  };
+
+  entity Repository = {
+    name: String
+  };
+
+  action "Build" appliesTo {
+    principal: [ResearchAgent],
+    resource: [Repository],
+    context: {
+      input: CandidateInput,
+      output?: StageOutput
+    }
+  };
+
+  action "Qualify" appliesTo {
+    principal: [ResearchAgent],
+    resource: [Repository],
+    context: {
+      input: CandidateInput,
+      output?: StageOutput
+    }
+  };
+
+  action "FullReplay" appliesTo {
+    principal: [ResearchAgent],
+    resource: [Repository],
+    context: {
+      input: CandidateInput,
+      output?: ReplayOutput
+    }
+  };
+
+  action "RecordArtifact" appliesTo {
+    principal: [ResearchAgent],
+    resource: [Repository],
+    context: {
+      input: CandidateInput,
+      output?: ArtifactOutput
+    }
+  };
+
+  action "Promote" appliesTo {
+    principal: [ResearchAgent],
+    resource: [Repository],
+    context: {
+      input: CandidateInput,
+      output?: StageOutput
+    }
+  };
+
+  action "Revoke" appliesTo {
+    principal: [ResearchAgent],
+    resource: [Repository],
+    context: {
+      input: CandidateInput,
+      output?: StageOutput
+    }
+  };
+}
