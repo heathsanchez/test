@@ -153,11 +153,74 @@ theorem dyadic_switch_zero_injection {x y A : Int} {v D : Nat}
     D ≤ v ∧ DyadicOrder y (v - D) := by
   exact dyadic_divide (dyadic_mul_odd hx hA) hstep
 
+/-- If the denominator exceeds the incoming reserve, exact integrality forces
+equal-order injection. Cancellation is then necessary for admission. -/
+theorem dyadic_switch_forced_tie {x J y A : Int} {v D : Nat}
+    (hx : DyadicOrder x v) (hA : A % 2 = 1)
+    (hstep : (2 : Int) ^ D * y = A * x + J) (hv : v < D) :
+    DyadicOrder J v := by
+  have hJ : J ≠ 0 := by
+    intro hz
+    have ht : (2 : Int) ^ D * y = A * x := by simpa [hz] using hstep
+    have hd := (dyadic_switch_zero_injection hx hA ht).1
+    omega
+  obtain ⟨w, hw⟩ := dyadic_order_exists hJ
+  by_cases he : v = w
+  · simpa [he] using hw
+  · have hd := (dyadic_switch_unequal hx hw hA he hstep).1
+    have hm : min v w ≤ v := by omega
+    omega
+
+/-- Exact normalized injection constraint; it retains the whole congruence,
+not merely the shared valuation. -/
+theorem dyadic_switch_injection_constraint {x J y A : Int} {v D : Nat}
+    (hx : DyadicOrder x v) (hstep : (2 : Int)^D * y = A*x + J)
+    (hv : v ≤ D) :
+    ∃ u : Int, x = (2 : Int)^v*u ∧ u % 2 = 1 ∧
+      J = (2 : Int)^v * ((2 : Int)^(D-v)*y - A*u) := by
+  obtain ⟨u, hxu, hu⟩ := hx
+  refine ⟨u, hxu, hu, ?_⟩
+  have he : D = v + (D-v) := by omega
+  have hh : (2 : Int)^v * ((2 : Int)^(D-v)*y - A*u) =
+      (2 : Int)^D*y - A*x := by
+    rw [Int.mul_sub, ← Int.mul_assoc, ← Int.pow_add, ← he]
+    have hc : (2 : Int)^v * (A*u) = A*((2 : Int)^v*u) := by
+      simp [Int.mul_assoc, Int.mul_comm, Int.mul_left_comm]
+    rw [hc, ← hxu]
+  rw [hh]
+  omega
+
 /-- Complete signed input split: zero is a distinct branch. -/
 theorem dyadic_input_cases (x : Int) : x = 0 ∨ ∃ v, DyadicOrder x v := by
   by_cases hx : x = 0
   · exact Or.inl hx
   · exact Or.inr (dyadic_order_exists hx)
+
+theorem dyadic_even_perturbation {x : Int} {v : Nat}
+    (hx : DyadicOrder x v) (t : Int) :
+    DyadicOrder (x + (2 : Int)^(v+1)*t) v := by
+  obtain ⟨u, hxu, hu⟩ := hx
+  refine ⟨u + 2*t, ?_, ?_⟩
+  · rw [hxu, Int.pow_succ, Int.mul_assoc, Int.mul_add]
+  · omega
+
+/-- Linear defect transport used to retain the full source ray. -/
+theorem returnDefect_linear_ray (A B P m s t : Int) :
+    returnDefect A B P (m+s*t) =
+      returnDefect A B P m + ((P-A)*s)*t := by
+  simp only [returnDefect, Int.mul_add, Int.mul_assoc]
+  omega
+
+def TernaryOrder (x : Int) (v : Nat) : Prop :=
+  ∃ u : Int, x = (3 : Int)^v*u ∧ u % 3 ≠ 0
+
+theorem ternary_multiple_perturbation {x : Int} {v : Nat}
+    (hx : TernaryOrder x v) (t : Int) :
+    TernaryOrder (x + (3 : Int)^(v+1)*t) v := by
+  obtain ⟨u, hxu, hu⟩ := hx
+  refine ⟨u + 3*t, ?_, ?_⟩
+  · rw [hxu, Int.pow_succ, Int.mul_assoc, Int.mul_add]
+  · omega
 
 /-- No infinite nonzero integer defect chain can consume positive depth forever. -/
 theorem fixed_centre_exhaustion
@@ -198,6 +261,17 @@ theorem return_zero_defect_fixed_point
     omega
   have he : P * m' = P * m := by omega
   exact Int.eq_of_mul_eq_mul_left hP he
+
+/-- Positive expanding returns with positive bias cannot have zero defect. -/
+theorem expanding_return_defect_negative
+    (A B P m : Int) (hAP : P ≤ A) (hB : 0 < B) (hm : 0 < m) :
+    returnDefect A B P m < 0 := by
+  have hC : P-A ≤ 0 := by omega
+  have hmn : 0 ≤ m := by omega
+  have hp : m*(P-A) ≤ 0 := Int.mul_nonpos_of_nonneg_of_nonpos hmn hC
+  rw [Int.mul_comm] at hp
+  simp only [returnDefect]
+  omega
 
 /-- Equal-order cancellation can have arbitrarily large finite output order.
 This is an algebraic obstruction, not an admitted Collatz itinerary. -/
@@ -250,10 +324,13 @@ theorem shared_centre_return_exhaustion
 #print axioms dyadic_switch_unequal
 #print axioms dyadic_switch_equal
 #print axioms dyadic_switch_zero_injection
+#print axioms dyadic_switch_forced_tie
+#print axioms dyadic_switch_injection_constraint
 #print axioms fixed_centre_exhaustion
 #print axioms return_zero_defect_fixed_point
 #print axioms equal_order_cancellation_unbounded
 #print axioms return_switch_unequal
 #print axioms shared_centre_return_exhaustion
+#print axioms expanding_return_defect_negative
 
 end CollatzFinal.SourceProduct
