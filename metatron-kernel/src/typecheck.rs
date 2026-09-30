@@ -286,9 +286,28 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
-                let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                let trace_app = std::env::var_os("NUCLEUS_TRACE_APP_FUNCTION_TYPE").is_some();
+                if trace_app {
+                    eprintln!(
+                        "NUCLEUS_APP_FUNCTION_INFER:fun={:?}:judgment={:?}",
+                        fun, function_type
+                    );
+                }
+                let Some((domain, body)) = self.pi_view(function_type.clone(), *remaining) else {
+                    if trace_app {
+                        eprintln!(
+                            "NUCLEUS_APP_FUNCTION_NONPI:fun={:?}:inferred={:?}",
+                            fun, function_type
+                        );
+                    }
                     return Judgment::unknown("application-function-type");
                 };
+                if trace_app {
+                    eprintln!(
+                        "NUCLEUS_APP_FUNCTION_PI:fun={:?}:domain={:?}:body={:?}",
+                        fun, domain, body
+                    );
+                }
                 match self.check_in(*arg, &domain, context, frame, remaining, true) {
                     Judgment::Proven { .. } => Judgment::proven(
                         match body {
