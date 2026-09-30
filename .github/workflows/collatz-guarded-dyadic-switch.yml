@@ -22,13 +22,16 @@ jobs:
           set -euo pipefail
           mkdir -p evidence/collatz-guarded-dyadic-switch-20260930
           lake env lean --version | tee evidence/collatz-guarded-dyadic-switch-20260930/toolchain.txt
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean | tee evidence/collatz-guarded-dyadic-switch-20260930/source-lift.log
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean | tee evidence/collatz-guarded-dyadic-switch-20260930/dyadic.log
           lake env lean -DautoImplicit=false formal/Collatz/GuardedDyadicSwitchTest.lean | tee evidence/collatz-guarded-dyadic-switch-20260930/consumer.log
+          lake env lean -DautoImplicit=false formal/Collatz/SourceSwitchWitness.lean | tee evidence/collatz-guarded-dyadic-switch-20260930/source-switch.log
+          python experiments/collatz_guarded_switch_audit_20260930.py > evidence/collatz-guarded-dyadic-switch-20260930/exact-audit.json
           python - <<'PY'
           from pathlib import Path
           import re
           p=Path('evidence/collatz-guarded-dyadic-switch-20260930')
-          s=(p/'dyadic.log').read_text()
+          s=(p/'dyadic.log').read_text()+(p/'source-switch.log').read_text()
           assert 'sorryAx' not in s and 'Lean.ofReduceBool' not in s
           for name in ('dyadic_order_exists','dyadic_order_unique','dyadic_sum_unequal','dyadic_equal_sum_even','dyadic_switch_unequal','dyadic_switch_equal','dyadic_switch_zero_injection','fixed_centre_exhaustion','return_zero_defect_fixed_point','equal_order_cancellation_unbounded','return_switch_unequal','shared_centre_return_exhaustion'):
               assert name in s, name
@@ -37,6 +40,8 @@ jobs:
           print('UNIVERSAL_SIGNED_DYADIC_SWITCH_CASES_KERNEL_CHECKED')
           print('SHARED_CENTRE_NONZERO_INFINITE_CHAIN_EXCLUDED')
           print('EQUAL_ORDER_CANCELLATION_UNBOUNDED_ALGEBRAICALLY')
+          for name in ('dyadic_switch_forced_tie','dyadic_switch_injection_constraint','switch_own_orders_0','switch_own_orders_1'):
+              assert name in s, name
           print('GLOBAL_COLLATZ_UNKNOWN')
           PY
           git rev-parse HEAD > evidence/collatz-guarded-dyadic-switch-20260930/commit.txt
