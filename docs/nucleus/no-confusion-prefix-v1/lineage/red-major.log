@@ -1,0 +1,28 @@
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde_json v1.0.151
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/76f1ca9d581d/nucleus-residual30/offline/kernel-sharing)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.80s
+     Running tests/recursor_major.rs (target/debug/deps/recursor_major-07765ae761790e35)
+
+running 2 tests
+test recursor_does_not_reduce_free_or_wrong_constructor_major ... ok
+test recursor_reduces_computed_major_and_preserves_pending_application ... FAILED
+
+failures:
+
+---- recursor_reduces_computed_major_and_preserves_pending_application stdout ----
+
+thread 'recursor_reduces_computed_major_and_preserves_pending_application' (480) panicked at tests/recursor_major.rs:39:5:
+assertion failed: matches!(run(major.clone(), false), Value::Lam {..})
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    recursor_reduces_computed_major_and_preserves_pending_application
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test recursor_major`

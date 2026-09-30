@@ -1,0 +1,20 @@
+NUCLEUS_NEUTRAL_HEAD_MISMATCH:left=Const { name: NameId(64), levels: [] }:left_spine=[Closure { expr: ExprId(1), env: EnvFrame { id: 5659, .. }, levels: LevelSubstitution([]) }]:right=Free(FreeId(2)):right_spine=[]:budget=30
+RESOLVED_ARG:FREE2
+NUCLEUS_NEUTRAL_HEAD_MISMATCH:left=Const { name: NameId(64), levels: [] }:left_spine=[Closure { expr: ExprId(1), env: EnvFrame { id: 5659, .. }, levels: LevelSubstitution([]) }]:right=Free(FreeId(2)):right_spine=[]:budget=30
+RESOLVED_ARG:FREE2
+NUCLEUS_NEUTRAL_HEAD_MISMATCH:left=Const { name: NameId(64), levels: [] }:left_spine=[Closure { expr: ExprId(1), env: EnvFrame { id: 5659, .. }, levels: LevelSubstitution([]) }]:right=Free(FreeId(2)):right_spine=[]:budget=127
+RESOLVED_ARG:FREE2
+NUCLEUS_NEUTRAL_HEAD_MISMATCH:left=Const { name: NameId(64), levels: [] }:left_spine=[Closure { expr: ExprId(1), env: EnvFrame { id: 5659, .. }, levels: LevelSubstitution([]) }]:right=Free(FreeId(2)):right_spine=[]:budget=127
+RESOLVED_ARG:FREE2
+NUCLEUS_NEUTRAL_HEAD_MISMATCH:left=Const { name: NameId(170), levels: [Succ(Zero)] }:left_spine=[Closure { expr: ExprId(1224), env: EnvFrame { id: 14536, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) }, Closure { expr: ExprId(167), env: EnvFrame { id: 14536, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) }, Closure { expr: ExprId(1131), env: EnvFrame { id: 14536, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) }, Closure { expr: ExprId(1307), env: EnvFrame { id: 14536, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) }]:right=Const { name: NameId(47), levels: [] }:right_spine=[]:budget=65195
+RESOLVED_ARG:E1224@14536:Some(Lam { domain: ExprId(620), body: ExprId(2) })
+RESOLVED_ARG:C47[]
+RESOLVED_ARG:C267[]
+RESOLVED_ARG:((C270[] (C345[] C169[])) (C345[] C168[]))
+NUCLEUS_NEUTRAL_HEAD_MISMATCH:left=Const { name: NameId(170), levels: [Succ(Zero)] }:left_spine=[Closure { expr: ExprId(1224), env: EnvFrame { id: 14536, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) }, Closure { expr: ExprId(167), env: EnvFrame { id: 14536, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) }, Closure { expr: ExprId(1131), env: EnvFrame { id: 14536, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) }, Closure { expr: ExprId(1307), env: EnvFrame { id: 14536, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) }]:right=Const { name: NameId(47), levels: [] }:right_spine=[]:budget=65195
+RESOLVED_ARG:E1224@14536:Some(Lam { domain: ExprId(620), body: ExprId(2) })
+RESOLVED_ARG:C47[]
+RESOLVED_ARG:C267[]
+RESOLVED_ARG:((C270[] (C345[] C169[])) (C345[] C168[]))
+CHECK_FAILURE:expr=ExprId(1473):inferred=Term(Closure { expr: ExprId(1308), env: EnvFrame { id: 14536, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) }):expected=Term(Closure { expr: ExprId(167), env: EnvFrame { id: 14098, .. }, levels: LevelSubstitution([(NameId(2), Zero)]) }):result=Refuted { obstruction: ObstructionId("distinct-neutral-heads") }:budget=65196
+NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.le_of_ble_eq_true.match_1_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type

@@ -1,0 +1,18 @@
+{
+  "candidate_sha": "84c35be307d3c154c6d1bab5dd9b0fdc0a696417",
+  "semantic_base_sha": "0329400bbab751eb6ea645c0a65b30f019e99bfd",
+  "parent_with_existing_docs": "757365d7a1ca04c474db936cd403a7142e3c981a",
+  "arena_sha": "4c30c4ac4f14a3a899116beb3ea6131880e79a98",
+  "lean_export_kernel_sha": "5045d0056413266e57c625dcd7c365b10e377c52",
+  "lean_source": "https://github.com/leanprover/lean4/blob/5045d0056413266e57c625dcd7c365b10e377c52/src/kernel/type_checker.cpp",
+  "lazylean_sha": "68c66fa18c1afe029512b90ecfe0b162c0dcd8fb",
+  "lazylean_sources": [
+    "src/kam.cpp",
+    "src/tc.cpp"
+  ],
+  "reference_boundary": "lazylean is used only by qualification, never Nucleus runtime; two engines are two implementations within one checker lineage, not two independent checkers",
+  "workflow_run": 36786656490,
+  "rust_tests": 141,
+  "local_reclosure_note": "The local complete replay preceded the final delta-policy threading repair; CI qualifies the exact final commit. Guarded fallback (the Arena path) is unchanged by that repair.",
+  "local_reference_build": "Unavailable: GMP headers absent; hosted qualification builds the exact pinned reference with libgmp-dev."
+}

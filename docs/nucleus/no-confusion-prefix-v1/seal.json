@@ -1,0 +1,42 @@
+{
+  "status": "WARRANTED_BOUNDED_PREFIX_CLOSURE",
+  "candidate_sha": "84c35be307d3c154c6d1bab5dd9b0fdc0a696417",
+  "base_sha": "0329400bbab751eb6ea645c0a65b30f019e99bfd",
+  "run": 36786656490,
+  "job": 110129560974,
+  "artifact": 11130470956,
+  "artifact_sha256": "5e144422b3a2e3918b09760eaa2bb10b2cb3ca505444d94dc4f03e5080a1d42f",
+  "rust_tests": 141,
+  "prefixes_earned": 5,
+  "reference_engine_checks": 10,
+  "arena_verdicts_earned": 0,
+  "current": {
+    "base_accept": 110,
+    "base_reject": 60,
+    "base_residual": 24,
+    "candidate_accept": 110,
+    "candidate_reject": 60,
+    "candidate_residual": 24,
+    "changes": [],
+    "earned": [],
+    "errors": [],
+    "regressions": [],
+    "tests": 194,
+    "wrong": []
+  },
+  "round1": {
+    "base_accept": 108,
+    "base_reject": 61,
+    "base_residual": 24,
+    "candidate_accept": 108,
+    "candidate_reject": 61,
+    "candidate_residual": 24,
+    "changes": [],
+    "earned": [],
+    "errors": [],
+    "regressions": [],
+    "tests": 193,
+    "wrong": []
+  },
+  "boundary": "Five dependency-sliced valid prefixes and exact 194/193 downloadable corpora; no large-corpus or ranking qualification"
+}

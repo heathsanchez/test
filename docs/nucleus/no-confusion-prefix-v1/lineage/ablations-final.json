@@ -1,0 +1,21 @@
+{
+  "candidate_sha": "84c35be307d3c154c6d1bab5dd9b0fdc0a696417",
+  "source_sha256": {
+    "src/machine.rs": "f9c4170e82f1b2cb6000d39e97fa3c6ce0238bd9f3784e99420136770b85ae74",
+    "src/convert.rs": "556fd44aee501052551e61b721b52b23f8d3c6c23ce9a89dbc58a53fe565ea37"
+  },
+  "rows": [
+    {
+      "ablation": "without_computed_major",
+      "exit": 2
+    },
+    {
+      "ablation": "without_projection_representation",
+      "exit": 2
+    },
+    {
+      "ablation": "without_projection_congruence",
+      "exit": 2
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.00s
+     Running tests/stuck_projection.rs (target/debug/deps/stuck_projection-f54938f5f461df27)
+
+running 2 tests
+test projection_congruence_checks_structure_arguments_and_field_identity ... FAILED
+test stuck_constant_projection_preserves_field_and_pending_arguments ... FAILED
+
+failures:
+
+---- projection_congruence_checks_structure_arguments_and_field_identity stdout ----
+
+thread 'projection_congruence_checks_structure_arguments_and_field_identity' (9) panicked at tests/stuck_projection.rs:58:5:
+assertion failed: ck.convert(&ty(8), &ty(9), 1024).is_proven()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- stuck_constant_projection_preserves_field_and_pending_arguments stdout ----
+
+thread 'stuck_constant_projection_preserves_field_and_pending_arguments' (10) panicked at tests/stuck_projection.rs:25:49:
+stuck projection is a neutral value
+
+
+failures:
+    projection_congruence_checks_structure_arguments_and_field_identity
+    stuck_constant_projection_preserves_field_and_pending_arguments
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test stuck_projection`

@@ -1,0 +1,99 @@
+diff --git a/src/convert.rs b/src/convert.rs
+index 7e07a19..ba3faa1 100644
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -357,6 +357,10 @@ fn convert_in_context_with_congruence(
+                 else {
+                     return Judgment::unknown("conversion-exposure");
+                 };
++                if let (Value::Neutral(l),Value::Neutral(r))=(cheap_left,cheap_right)
++                    && matches!((&l.head,&r.head),(NeutralHead::Projection{..},NeutralHead::Projection{..}))
++                    && positive_projection_congruence(checker,l,r,remaining,depth,context,congruence_depth,&mut 32)
++                {continue;}
+                 match compare_values(
+                     checker,
+                     cheap_left,
+@@ -943,6 +947,7 @@ fn compare_neutral_heads(
+                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
+                     left.head, left.spine, right.head, right.spine, budget
+                 );
++                for c in left.spine.iter().chain(&right.spine) { eprintln!("RESOLVED_ARG:{}", diagnostic_closure(checker,c,14)); }
+             }
+             Judgment::refuted("distinct-neutral-heads")
+         }
+@@ -966,3 +971,24 @@ fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {
+ fn fresh_local(depth: usize) -> Option<FreeId> {
+     u64::try_from(depth).ok().map(FreeId)
+ }
++
++fn diagnostic_closure(checker:&TypeChecker<'_>,c:&Closure,d:usize)->String {
++ if d==0 {return format!("E{}@{}",c.expr.0,c.env.id());}
++ match checker.expression(c.expr) {
++ Some(Expr::BVar(i))=>match c.env.lookup(*i) {Some(EnvBinding::Closure(b))=>diagnostic_closure(checker,&b,d-1),Some(EnvBinding::Free(f))=>format!("FREE{}",f.0),v=>format!("BVAR{i}:{v:?}")},
++ Some(Expr::Const{name,levels})=>format!("C{}{:?}",name.0,levels),
++ Some(Expr::App{fun,arg})=>format!("({} {})",diagnostic_closure(checker,&c.sibling(*fun,c.env.clone()),d-1),diagnostic_closure(checker,&c.sibling(*arg,c.env.clone()),d-1)),
++ Some(Expr::Proj{type_name,index,structure})=>format!("PROJ{}.{}({})",type_name.0,index,diagnostic_closure(checker,&c.sibling(*structure,c.env.clone()),d-1)),
++ v=>format!("E{}@{}:{v:?}",c.expr.0,c.env.id())
++ }
++}
++
++fn positive_projection_congruence(checker:&TypeChecker<'_>,l:&Neutral,r:&Neutral,budget:usize,depth:usize,context:&[TypeValue],cd:usize,attempts:&mut usize)->bool {
++ if *attempts==0||cd>=16||l.spine.len()!=r.spine.len(){return false;}
++ *attempts-=1;
++ let heads=match (&l.head,&r.head){
++ (NeutralHead::Projection{type_name:a,index:i,structure:s},NeutralHead::Projection{type_name:b,index:j,structure:t})=>a==b&&i==j&&positive_projection_congruence(checker,s,t,budget,depth,context,cd+1,attempts),
++ _=>compare_neutral_heads(checker,l,r,budget).is_proven(),
++ };
++ heads&&l.spine.iter().zip(&r.spine).all(|(a,b)|convert_in_context_with_congruence(checker,&TypeValue::Term(a.clone()),&TypeValue::Term(b.clone()),budget.min(1024),DeltaPolicy::GuardedSemanticFallback,depth,context,cd+1,attempts).is_proven())
++}
+diff --git a/src/machine.rs b/src/machine.rs
+index e8160a8..edcab12 100644
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -426,6 +426,22 @@ impl<'a> Machine<'a> {
+                             let target = arguments.last().expect("required includes target");
+                             if let Some((constructor, constructor_arguments)) =
+                                 self.constructor_application(target)
++                                    .filter(|(name,_)| reduction.rules.iter().any(|r|r.constructor==*name))
++                                    .or_else(|| {
++                                        if transparency==Transparency::Opaque{return None;}
++                                        let v=self.expose_internal(target.clone(),transparency,budget.min(256).saturating_sub(1),false);
++                                        match &v.proven_value()?.value {
++                                            Value::Neutral(n)=>{let NeutralHead::Const{name,..}=n.head else {return None;};Some((name,n.spine.clone()))},
++                                            Value::NatLit(n)=>{
++                                                let nat=self.nat_primitives.as_ref()?;
++                                                if *name!=nat.recursor {return None;}
++                                                if n.is_zero(){return Some((nat.zero,vec![]));}
++                                                let pred=n.pred()?;
++                                                let id=self.expressions.iter_raw().find_map(|(id,e)|match e {Expr::NatLit(v) if *v==pred=>Some(ExprId(id)),_=>None})?;
++                                                Some((nat.succ,vec![Closure::new(id,EnvFrame::empty())]))
++                                            },_=>None
++                                        }
++                                    })
+                                 && let Some(rule) = reduction
+                                     .rules
+                                     .iter()
+@@ -551,10 +567,7 @@ impl<'a> Machine<'a> {
+                             closure = field;
+                             continue;
+                         }
+-                        NeutralHead::Const { .. } => {
+-                            return Judgment::unknown("projection-constructor-mismatch");
+-                        }
+-                        NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
++                        NeutralHead::Const { .. } | NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
+                             let mut spine = Vec::new();
+                             append_pending(&mut spine, &mut pending);
+                             record_transition(
+diff --git a/src/typecheck.rs b/src/typecheck.rs
+index 868a92d..da91d33 100644
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -521,6 +521,7 @@ impl<'a> TypeChecker<'a> {
+                     context.len(),
+                     context,
+                 );
++                if !conversion.is_proven() && std::env::var_os("NUCLEUS_TRACE_CHECK_FAILURE").is_some(){eprintln!("CHECK_FAILURE:expr={expression:?}:inferred={value:?}:expected={expected:?}:result={conversion:?}:budget={remaining}");}
+                 match conversion {
+                     Judgment::Refuted { obstruction }
+                         if conversion_refutation_is_unknown

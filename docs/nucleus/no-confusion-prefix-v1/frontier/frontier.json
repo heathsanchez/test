@@ -1,0 +1,341 @@
+{
+  "candidate_sha": "84c35be307d3c154c6d1bab5dd9b0fdc0a696417",
+  "rows": [
+    {
+      "test": "init-prelude",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=Nat.div.go.match_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "trace_file": "logs/init-prelude.log",
+      "trace_sha256": "03e6a66170e838f7b1143cd29e41d7ed3a91ae46a65bc590717407d298f69790"
+    },
+    {
+      "test": "perf/args-before-unfold",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "08e16707dc6623394c62125592462b7548dd647d0b8a93138dce433d80411d22",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_args_before_unfold:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_args_before_unfold:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/perf__args-before-unfold.log",
+      "trace_sha256": "d7bd823e1c396fbba38a07c4ed0fed293c0e310cad362ee7c269897f7536d12e"
+    },
+    {
+      "test": "perf/folded-constant-first",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "f11febc1959dd30a0c2b4f3491635b4d1279946d51286bd7dfec5fb19229d773",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/perf__folded-constant-first.log",
+      "trace_sha256": "86b93e714b95711adc7125ecae3d96e3b43ac13854e5921a7fe79da095aa33a6"
+    },
+    {
+      "test": "perf/folded-constant-last",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "e1a9380283d3285a7242a45e79ce760056c34201089d21fdc3b25a22e4997494",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_last:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_last:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/perf__folded-constant-last.log",
+      "trace_sha256": "79b728fd4532f37b551a8212f82968dfa52fb873ded0d95fda3dc39b1e771efe"
+    },
+    {
+      "test": "perf/fueled-chain",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=Except:stage=inductive:verdict=Unknown"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=Except:stage=inductive:verdict=Unknown"
+      ],
+      "trace_file": "logs/perf__fueled-chain.log",
+      "trace_sha256": "799003031a6fabc193b10ef3c8573289bdbffe75b5b1569e24c77fc92208f65e"
+    },
+    {
+      "test": "perf/grind-ring-5",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=Char:stage=inductive:verdict=Unknown"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=Char:stage=inductive:verdict=Unknown"
+      ],
+      "trace_file": "logs/perf__grind-ring-5.log",
+      "trace_sha256": "b313a0beaf0721e50ca97871fdb85f0929cb663652450fa7a8874833fd022a24"
+    },
+    {
+      "test": "perf/magma-list-deep-n21",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.le_of_ble_eq_true.match_1_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "trace_file": "logs/perf__magma-list-deep-n21.log",
+      "trace_sha256": "bdb45833ba8b5ebcf9215e33a942a224e26a0d2488ea882cf6c391dbf30abf54"
+    },
+    {
+      "test": "perf/magma-list-deep-n36",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.le_of_ble_eq_true.match_1_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "trace_file": "logs/perf__magma-list-deep-n36.log",
+      "trace_sha256": "bdb45833ba8b5ebcf9215e33a942a224e26a0d2488ea882cf6c391dbf30abf54"
+    },
+    {
+      "test": "perf/magma-list-pair-n21",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.le_of_ble_eq_true.match_1_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "trace_file": "logs/perf__magma-list-pair-n21.log",
+      "trace_sha256": "bdb45833ba8b5ebcf9215e33a942a224e26a0d2488ea882cf6c391dbf30abf54"
+    },
+    {
+      "test": "perf/magma-list-pair-n7",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.le_of_ble_eq_true.match_1_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "trace_file": "logs/perf__magma-list-pair-n7.log",
+      "trace_sha256": "bdb45833ba8b5ebcf9215e33a942a224e26a0d2488ea882cf6c391dbf30abf54"
+    },
+    {
+      "test": "perf/shared-subterm",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "dbc065108aa98512149c3f1a5bb6279630c53bdf64256516ba10ed256322883b",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_shared_subterm:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_shared_subterm:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/perf__shared-subterm.log",
+      "trace_sha256": "73ec40e886f756be389cf6033d4fbe93fc2a5ee3d2456c13edef233ae397795b"
+    },
+    {
+      "test": "tutorial/082_RBTree.id_spec",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "88349328dd81100fb22396180bef9b5c2b0997275b7c3c672b19a7ac87ed72f9",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=RBTree.id_spec:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=RBTree.id_spec:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "trace_file": "logs/tutorial__082_RBTree.id_spec.log",
+      "trace_sha256": "6c138029048c0c44edbb8f154c7a5754d7b321bf1cd36a0554a4848ce071356c"
+    },
+    {
+      "test": "tutorial/112_structEta",
+      "expected": 0,
+      "exit": 2,
+      "input_sha256": "a686b22362e05728ef0fce00646dd6f63996ab66e89290bf13ecd492cac17a6d",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=structEta:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=structEta:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ],
+      "trace_file": "logs/tutorial__112_structEta.log",
+      "trace_sha256": "86dd33cd582df550ab46d7a58faec7a6545df8f231934ebb598f5d36c299752a"
+    },
+    {
+      "test": "bugs/nested-unused-param",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "25afcc9267523cfd26edf94ca01ebe34ca0e8a24954e4b4e3d397a61688b8778",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=T:stage=inductive:verdict=Unknown"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=T:stage=inductive:verdict=Unknown"
+      ],
+      "trace_file": "logs/bugs__nested-unused-param.log",
+      "trace_sha256": "a266c45675c4ecc0ed5b7eb14412610b1bd11ae6799a3fcfb5bbfee585e68dfd"
+    },
+    {
+      "test": "bugs/proj-of-stuck-prop",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "4bdc45de8980cf9cb6e712ab6260f42a89201876f096441fb5ec49e3a0052a22",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=RecClass.rcStep.match_1:stage=definition.type:verdict=UNKNOWN:reason=conversion-exposure"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=RecClass.rcStep.match_1:stage=definition.type:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/bugs__proj-of-stuck-prop.log",
+      "trace_sha256": "51d92e46d793cc220a2b939ca4f0fb28e936298f67ad52d27491b26a4009a793"
+    },
+    {
+      "test": "bugs/proj-of-subst-prop",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "c1e3e96748ade2a9806837460821ea725f460a1f8bc1601d7ce121a9b28ffed0",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=PR14806Subst.step.match_1:stage=definition.type:verdict=UNKNOWN:reason=conversion-exposure"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=PR14806Subst.step.match_1:stage=definition.type:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/bugs__proj-of-subst-prop.log",
+      "trace_sha256": "0524aa29af7f76cdad4be1343c4f45e6fdaa7c7c45f87ee05e8adb51208d64a1"
+    },
+    {
+      "test": "bugs/rec-missing-ih",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "8a240552317ba17d44d175c10531e5f988f55569db5eff734701735ce598fa73",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=RecClass.rcStep.match_1:stage=definition.type:verdict=UNKNOWN:reason=conversion-exposure"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=RecClass.rcStep.match_1:stage=definition.type:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/bugs__rec-missing-ih.log",
+      "trace_sha256": "51d92e46d793cc220a2b939ca4f0fb28e936298f67ad52d27491b26a4009a793"
+    },
+    {
+      "test": "bugs/rec-of-subst-prop",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "572d2eb54a4e7d98d2e1a7bad01c5574f85ed5dacfd5bd1734f88ac37d515759",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=Issue.gateStep.match_1:stage=definition.type:verdict=UNKNOWN:reason=conversion-exposure"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=Issue.gateStep.match_1:stage=definition.type:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/bugs__rec-of-subst-prop.log",
+      "trace_sha256": "651dd0c6c45583d9490e2d2106625413bd446621ef4f39c35c7d3e12460368e9"
+    },
+    {
+      "test": "perf/refute-cheap-first",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "5484b765b659b0d4a77aa75d82ae3d81f04d9731de30ee08dd5e4c58d0076fba",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/perf__refute-cheap-first.log",
+      "trace_sha256": "1c5d3fbb3feec74c193792d3f159163437eb262fe4c35cb7d3bbbb74232508c1"
+    },
+    {
+      "test": "tutorial/100_ruleKbad",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "2147c3416825e1c7f78382501f4c3e2f8165d23d464c998a077e69a12e51697a",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/tutorial__100_ruleKbad.log",
+      "trace_sha256": "e95cc3f214dcb317874f5bccab3835e5d93f45b21b3755b4620c2305cd375045"
+    },
+    {
+      "test": "tutorial/101_ruleKAcc",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "59a4dc34b1175f59d9efd17c4c5b9d9f07bdb54c882dc66a65737d29be6d4356",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/tutorial__101_ruleKAcc.log",
+      "trace_sha256": "049c3fbccb843c79c25f25db9e4eac0042d1ad850439437708586ec68f5c274a"
+    },
+    {
+      "test": "tutorial/111_indexedUnitEta",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "cbb7373c1ca899628177c7d6eb97dc6cf2f1faa3d14cdd1b1d90a5103e15f5d4",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=IndexedUnit:stage=inductive:verdict=Unknown"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=IndexedUnit:stage=inductive:verdict=Unknown"
+      ],
+      "trace_file": "logs/tutorial__111_indexedUnitEta.log",
+      "trace_sha256": "38f0a7c59ced3d8d52e3083aea8e471b05360fad50f46dc0466c26b8e30a0909"
+    },
+    {
+      "test": "tutorial/113_indexedStructEta",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "68793088cc096a96a4b7ed07f7417d88a4dafcc7ca4e8b53f6a756aed91e1b2d",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=IndexedSingleton:stage=inductive:verdict=Unknown"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=IndexedSingleton:stage=inductive:verdict=Unknown"
+      ],
+      "trace_file": "logs/tutorial__113_indexedStructEta.log",
+      "trace_sha256": "2597c4e4f5620b2448e10b788413309c32ff1119ba88899ed1a6a600b83768b2"
+    },
+    {
+      "test": "tutorial/125_accRecNoEta",
+      "expected": 1,
+      "exit": 2,
+      "input_sha256": "7868dfaa2a5574fa383e4fbf42f84d3eab78c43614f0034d2f78f2069ca00f64",
+      "old_boundary": [
+        "NUCLEUS_DOWNSTREAM:name=accRecNoEta:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "first_obstruction": [
+        "NUCLEUS_DOWNSTREAM:name=accRecNoEta:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ],
+      "trace_file": "logs/tutorial__125_accRecNoEta.log",
+      "trace_sha256": "2a9265b40285accd29cd6d37ff36885d360c0fc833c5666857e4a6ae7a9b0e1c"
+    }
+  ]
+}
