@@ -304,8 +304,8 @@ impl<'a> TypeChecker<'a> {
                 };
                 if trace_app {
                     eprintln!(
-                        "NUCLEUS_APP_FUNCTION_PI:fun={:?}:domain={:?}:body={:?}",
-                        fun, domain, body
+                        "NUCLEUS_APP_FUNCTION_PI:fun={:?}:domain={:?}",
+                        fun, domain
                     );
                 }
                 match self.check_in(*arg, &domain, context, frame, remaining, true) {
