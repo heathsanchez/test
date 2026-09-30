@@ -24,6 +24,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p .lake/build/lib/lean/Collatz
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > /tmp/guarded.log
           lake env lean -DautoImplicit=false formal/Collatz/NaturalZeroTailBridge.lean | tee /tmp/bridge.log
           python - <<'PY'
           from pathlib import Path
