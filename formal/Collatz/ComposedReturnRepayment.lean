@@ -1,5 +1,8 @@
 import Collatz.ReturnFixedPointDescent
 
+set_option maxRecDepth 100000
+set_option maxHeartbeats 0
+
 namespace CollatzFinal
 namespace SourceProduct
 
@@ -20,7 +23,7 @@ theorem composed_affine_return_repayment
       _ = P₁ * (A₂ * m₁ + B₂) := by rw [h₂]
       _ = A₂ * (P₁ * m₁) + B₂ * P₁ := by simp only [Nat.mul_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm, Nat.add_assoc]
       _ = A₂ * (A₁ * m + B₁) + B₂ * P₁ := by rw [h₁]
-      _ = (A₂ * A₁) * m + (A₂ * B₁ + B₂ * P₁) := by ring
+      _ = (A₂ * A₁) * m + (A₂ * B₁ + B₂ * P₁) := by simp only [Nat.mul_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm, Nat.add_assoc]
   exact affine_return_strict_descent_of_live_floor
     hcontract (Nat.le_refl m) hguard heq
 
@@ -64,8 +67,9 @@ theorem overshoot_witness_macro_repayment
     (hpositive : 0 < m)
     (heq : 1099511627776 * m' = 282429536481 * m + 592347247211) :
     m' < m := by
-  exact affine_return_strict_descent_of_live_floor (L := 1)
-    (by decide) (by omega) (by decide) heq
+  exact affine_return_strict_descent_of_live_floor
+    (A := 282429536481) (B := 592347247211) (P := 1099511627776) (L := 1)
+    (by decide) (Nat.succ_le_of_lt hpositive) (by decide) heq
 
 #print axioms affine_return_repayment_of_residue
 #print axioms overshoot_witness_macro_repayment
