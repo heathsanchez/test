@@ -30,7 +30,7 @@ jobs:
           assert d['global_collatz']=='UNKNOWN'
           print('V55_VERDICT',d['verdict'])
           print('V55_110',d['all_top_states_exact_110_owner_law'])
-          print('V55_MINUS1',d['all_top_centres_minus_one'])
+          print('V55_LAW_MINUS1',d['all_top_actual_law_centres_minus_one'])
           print('V55_V2DROP',d['all_top_realizations_drop_v2_mplus1_by_3'])
           print('V55_TOP',d['top_states'])
           print('V55_PATHS',d['maximal_residual_paths'])
