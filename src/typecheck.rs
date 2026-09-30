@@ -535,9 +535,11 @@ impl<'a> TypeChecker<'a> {
                         TypeValue::Term(domain.clone()),
                         PiBody::Closure(body.clone()),
                     )),
-                    Value::NatLit(_) | Value::Sort(_) | Value::Lam { .. } | Value::Neutral(_) => {
-                        None
-                    }
+                    Value::NatLit(_)
+                    | Value::Sort(_)
+                    | Value::Lam { .. }
+                    | Value::Neutral(_)
+                    | Value::StuckProjection { .. } => None
                 }
             }
             TypeValue::Sort(_) => None,
