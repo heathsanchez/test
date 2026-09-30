@@ -592,6 +592,25 @@ fn compare_values(
             };
             let left_domain_type = TypeValue::Term(left_domain.clone());
             let right_domain_type = TypeValue::Term(right_domain.clone());
+
+            if std::env::var_os("NUCLEUS_TRACE_EXPOSED_BINDERS").is_some() {
+                eprintln!(
+                    "NUCLEUS_EXPOSED_BINDER:depth={}:free={}:left_prop_sort={}:right_prop_sort={}:left_bare={:?}:right_bare={:?}:left_unit={:?}:right_unit={:?}:left_proof_fn={:?}:right_proof_fn={:?}:left_domain={:?}:right_domain={:?}",
+                    depth,
+                    free.0,
+                    checker.type_value_is_prop_sort(&left_domain_type, budget),
+                    checker.type_value_is_prop_sort(&right_domain_type, budget),
+                    bare_free_type(checker, &left_domain_type, budget),
+                    bare_free_type(checker, &right_domain_type, budget),
+                    checker.unit_like_type_key(&left_domain_type, budget),
+                    checker.unit_like_type_key(&right_domain_type, budget),
+                    checker.fixed_proof_function_type_key(&left_domain_type, budget),
+                    checker.fixed_proof_function_type_key(&right_domain_type, budget),
+                    left_domain_type,
+                    right_domain_type
+                );
+            }
+
             if let (Some(left_key), Some(right_key)) = (
                 checker.fixed_proof_function_type_key(&left_domain_type, budget),
                 checker.fixed_proof_function_type_key(&right_domain_type, budget),
