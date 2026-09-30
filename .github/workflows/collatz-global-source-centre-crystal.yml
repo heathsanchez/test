@@ -1,0 +1,40 @@
+name: Collatz Global Source Centre Crystal
+on:
+  push:
+    branches: [collatz-global-source-centre-crystal-20260930]
+    paths:
+      - 'experiments/collatz_global_source_centre_crystal_20260930.py'
+      - '.github/workflows/collatz-global-source-centre-crystal.yml'
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Test original-source pulled centres across anchors
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-global-source-centre-crystal
+          PYTHONPATH=experiments python -u experiments/collatz_global_source_centre_crystal_20260930.py             | tee evidence/collatz-global-source-centre-crystal/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-global-source-centre-crystal/result.json'))
+          print('VERDICT',d['verdict'])
+          for s in ('train','heldout'):
+              x=d[s]
+              print(s,'ALL',x['all']['rows'],x['all']['fail'],x['all']['first_fail'])
+              print(s,'SAME',x['same_anchor']['rows'],x['same_anchor']['fail'])
+              print(s,'CROSS',x['cross_anchor']['rows'],x['cross_anchor']['fail'],x['cross_anchor']['first_fail'])
+              print(s,'MAX_ANCHOR',x['max_anchor'])
+          assert d['global_collatz']=='UNKNOWN'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-global-source-centre-crystal
+          path: evidence/collatz-global-source-centre-crystal
+          if-no-files-found: error
