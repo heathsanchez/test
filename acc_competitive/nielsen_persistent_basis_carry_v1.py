@@ -9,7 +9,7 @@ tested at every compiled layer. Every emitted candidate is replayed by the pinne
 official verifier; only strict live improvements are written.
 """
 from __future__ import annotations
-import argparse, json, sqlite3, sys, time
+import argparse, json, sqlite3, subprocess, sys, time
 from pathlib import Path
 
 LETTER={1:"x",-1:"X",2:"y",-2:"Y"}
@@ -255,7 +255,47 @@ def main():
             rec.update({"error":f"{type(exc).__name__}: {exc}","strict_ac":False,"strict_stable":False})
         rows.append(rec);print("BASIS_CARRY_CASE",json.dumps(rec,sort_keys=True),flush=True)
 
-    (out/"results.json").write_text(json.dumps(rows,indent=2,sort_keys=True)+"\n")
+    (out/"results.json").write_text(json.dumps(rows,indent=2,sort_keys=True)+"\\n")
+    # The fixed-route gate above earned a route-selection change: on exactly
+    # the first target in each round-robin shard (the live top 16), search in
+    # augmented (quotient, persistent basis frame, physical official state)
+    # space and charge exact official cost while choosing the route.
+    official_report = None
+    if ids:
+        subout = out/"official_cost"
+        cmd = [
+            sys.executable,
+            str(Path(__file__).with_name("nielsen_official_cost_search_v1.py")),
+            "--acc-root", a.acc_root,
+            "--acsolverx-root", a.acsolverx_root,
+            "--atlas", a.atlas,
+            "--snapshot-ac", a.snapshot_ac,
+            "--snapshot-stable", a.snapshot_stable,
+            "--target-id", ids[0],
+            "--out-dir", str(subout),
+            "--node-cap", "25000",
+            "--frame-cap", "9",
+            "--basis-streak", "3",
+            "--topk-sub", "8",
+            "--virtual-cap", "90",
+            "--extra-total", "120",
+            "--score-weight", "0.5",
+            "--frame-weight", "0.5",
+        ]
+        subprocess.run(cmd, check=True)
+        rp = subout/"report.json"
+        if rp.exists():
+            official_report = json.loads(rp.read_text())
+        pp = subout/"pending_submission.txt"
+        if pp.exists():
+            for line in pp.read_text().splitlines():
+                if ":" not in line:
+                    continue
+                cid2, raw = line.split(":", 1)
+                moves = list(json.loads(raw.strip()))
+                prev = strict.get(cid2)
+                if prev is None or len(moves) < len(prev):
+                    strict[cid2] = moves
     (out/"pending_submission.txt").write_text("\n".join(
         f"{cid}: {json.dumps(list(m),separators=(',',':'))}" for cid,m in sorted(strict.items())
     )+("\n" if strict else ""))
@@ -265,7 +305,13 @@ def main():
          "pending_rows":len(strict),"errors":sum("error" in r for r in rows),
          "contacts":sum(r.get("atlas_contacts") or 0 for r in rows),
          "rejected":sum(bool(r.get("rejected")) for r in rows),
-         "seconds":round(time.time()-t0,3)}
+         "seconds":round(time.time()-t0,3),
+         "official_cost_target":None if official_report is None else official_report.get("challenge_id"),
+         "official_cost_found":False if official_report is None else bool(official_report.get("found")),
+         "official_cost_popped":0 if official_report is None else int(official_report.get("popped") or 0),
+         "official_cost_atlas_contacts":0 if official_report is None else int(official_report.get("atlas_contacts") or 0),
+         "official_cost_strict_ac":False if official_report is None else bool(official_report.get("strict_ac")),
+         "official_cost_strict_stable":False if official_report is None else bool(official_report.get("strict_stable"))}
     (out/"report.json").write_text(json.dumps(rep,indent=2,sort_keys=True)+"\n")
     print("BASIS_CARRY_SUMMARY",json.dumps(rep,sort_keys=True),flush=True)
     db.close()
