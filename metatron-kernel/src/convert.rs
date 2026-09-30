@@ -124,7 +124,14 @@ pub(crate) fn convert_with_policy_in_context(
 ) -> Judgment<()> {
     let mut congruence_attempts = 32;
     convert_in_context_with_congruence(
-        checker, left, right, budget, delta_policy, initial_depth, context, 0,
+        checker,
+        left,
+        right,
+        budget,
+        delta_policy,
+        initial_depth,
+        context,
+        0,
         &mut congruence_attempts,
     )
 }
@@ -148,14 +155,15 @@ fn convert_in_context_with_congruence(
     crate::diagnostics::conversion();
 
     let mut remaining = budget;
-    let mut work = vec![(left.clone(), right.clone(), initial_depth)];
+    let mut work = vec![(left.clone(), right.clone(), initial_depth, context.to_vec())];
     let mut visited = ConversionVisitSet::new();
     let mut unit_like_frees = HashMap::new();
     let mut proposition_frees = HashSet::new();
     let mut proof_frees = HashMap::new();
     let mut proof_function_frees = HashMap::new();
 
-    while let Some((left, right, depth)) = work.pop() {
+    while let Some((left, right, depth, local_context)) = work.pop() {
+        let context = local_context.as_slice();
         if left == right {
             continue;
         }
@@ -178,6 +186,7 @@ fn convert_in_context_with_congruence(
                     TypeValue::Term(contracted),
                     TypeValue::Term(right_term.clone()),
                     depth,
+                    local_context.clone(),
                 ));
                 continue;
             }
@@ -186,6 +195,7 @@ fn convert_in_context_with_congruence(
                     TypeValue::Term(left_term.clone()),
                     TypeValue::Term(contracted),
                     depth,
+                    local_context.clone(),
                 ));
                 continue;
             }
@@ -219,6 +229,12 @@ fn convert_in_context_with_congruence(
             )
         {
             continue;
+        }
+
+        if depth == context.len()
+            && distinct_rigid_local_terms(checker, &left, &right, context, remaining)
+        {
+            return Judgment::refuted("distinct-rigid-local-terms");
         }
 
         match (left, right) {
@@ -271,8 +287,17 @@ fn convert_in_context_with_congruence(
                         proof_function_frees.insert(free, left_key);
                     }
                 }
-                work.push((*left_body, *right_body, depth.saturating_add(1)));
-                work.push((*left_domain, *right_domain, depth));
+                let mut body_context = local_context.clone();
+                if body_context.len() == depth {
+                    body_context.push((*left_domain).clone());
+                }
+                work.push((
+                    *left_body,
+                    *right_body,
+                    depth.saturating_add(1),
+                    body_context,
+                ));
+                work.push((*left_domain, *right_domain, depth, local_context));
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
                 let machine = checker.machine();
@@ -292,27 +317,35 @@ fn convert_in_context_with_congruence(
                     if let (Some(Value::Neutral(lhs)), Some(Value::Neutral(rhs))) =
                         (opaque_left.proven_value(), opaque_right.proven_value())
                         && let (
-                            NeutralHead::Const { name: left_name, .. },
-                            NeutralHead::Const { name: right_name, .. },
+                            NeutralHead::Const {
+                                name: left_name, ..
+                            },
+                            NeutralHead::Const {
+                                name: right_name, ..
+                            },
                         ) = (&lhs.head, &rhs.head)
                         && left_name == right_name
                         && !lhs.spine.is_empty()
                         && lhs.spine.len() == rhs.spine.len()
                         && compare_neutral_heads(checker, lhs, rhs, probe_budget).is_proven()
-                        && lhs.spine.iter().zip(&rhs.spine).all(|(left_arg, right_arg)| {
-                            convert_in_context_with_congruence(
-                                checker,
-                                &TypeValue::Term(left_arg.clone()),
-                                &TypeValue::Term(right_arg.clone()),
-                                probe_budget / lhs.spine.len(),
-                                delta_policy,
-                                depth,
-                                context,
-                                congruence_depth + 1,
-                                congruence_attempts,
-                            )
-                            .is_proven()
-                        })
+                        && lhs
+                            .spine
+                            .iter()
+                            .zip(&rhs.spine)
+                            .all(|(left_arg, right_arg)| {
+                                convert_in_context_with_congruence(
+                                    checker,
+                                    &TypeValue::Term(left_arg.clone()),
+                                    &TypeValue::Term(right_arg.clone()),
+                                    probe_budget / lhs.spine.len(),
+                                    delta_policy,
+                                    depth,
+                                    context,
+                                    congruence_depth + 1,
+                                    congruence_attempts,
+                                )
+                                .is_proven()
+                            })
                     {
                         continue;
                     }
@@ -332,6 +365,7 @@ fn convert_in_context_with_congruence(
                     depth,
                     &mut work,
                     &mut proof_function_frees,
+                    context,
                 ) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { .. }
@@ -352,6 +386,7 @@ fn convert_in_context_with_congruence(
                             depth,
                             &mut work,
                             &mut proof_function_frees,
+                            context,
                         ) {
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
@@ -388,7 +423,7 @@ fn convert_in_context_with_congruence(
                 } else {
                     return Judgment::refuted("rigid-type-constructor-mismatch");
                 };
-                work.push((exposed, other, depth));
+                work.push((exposed, other, depth, local_context));
             }
             (TypeValue::Sort(_), TypeValue::Pi { .. })
             | (TypeValue::Pi { .. }, TypeValue::Sort(_)) => {
@@ -408,6 +443,67 @@ pub(crate) fn reset_test_conversion_calls() {
 #[cfg(test)]
 pub(crate) fn test_conversion_calls() -> u64 {
     TRUSTED_CONVERSION_CALLS.with(Cell::get)
+}
+
+fn distinct_rigid_local_terms(
+    checker: &TypeChecker<'_>,
+    left: &TypeValue,
+    right: &TypeValue,
+    context: &[TypeValue],
+    budget: usize,
+) -> bool {
+    let (Some(l), Some(r)) = (
+        opaque_free(checker, left, budget),
+        opaque_free(checker, right, budget),
+    ) else {
+        return false;
+    };
+    if l == r {
+        return false;
+    }
+    let (Some(lt), Some(rt)) = (context.get(l.0 as usize), context.get(r.0 as usize)) else {
+        return false;
+    };
+    let (Some(la), Some(ra)) = (
+        opaque_free(checker, lt, budget),
+        opaque_free(checker, rt, budget),
+    ) else {
+        return false;
+    };
+    if la != ra {
+        return false;
+    }
+    match context.get(la.0 as usize) {
+        Some(TypeValue::Sort(crate::level::LevelTerm::Succ(_))) => true,
+        Some(TypeValue::Term(t)) => matches!(
+            checker
+                .machine()
+                .expose(t.clone(), Transparency::Opaque, budget.min(32))
+                .proven_value(),
+            Some(Value::Sort(crate::level::LevelTerm::Succ(_)))
+        ),
+        _ => false,
+    }
+}
+
+fn opaque_free(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> Option<FreeId> {
+    let TypeValue::Term(c) = ty else {
+        return None;
+    };
+    let exposed = checker
+        .machine()
+        .expose(c.clone(), Transparency::Opaque, budget.min(32));
+    let Value::Neutral(n) = exposed.proven_value()? else {
+        return None;
+    };
+    if !n.spine.is_empty() {
+        return None;
+    }
+    if let NeutralHead::Free(f) = n.head {
+        Some(f)
+    } else {
+        None
+    }
 }
 
 fn bare_free_type(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> Option<FreeId> {
@@ -590,8 +686,9 @@ fn compare_values(
     right: &Value,
     budget: usize,
     depth: usize,
-    work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    context: &[TypeValue],
 ) -> Judgment<()> {
     match (left, right) {
         (Value::NatLit(left), Value::NatLit(right)) => {
@@ -608,6 +705,7 @@ fn compare_values(
                 depth,
                 work,
                 proof_function_frees,
+                context,
             );
         }
         (Value::Neutral(neutral), Value::NatLit(literal)) => {
@@ -619,6 +717,7 @@ fn compare_values(
                 depth,
                 work,
                 proof_function_frees,
+                context,
             );
         }
         (Value::Sort(left), Value::Sort(right)) => {
@@ -626,6 +725,7 @@ fn compare_values(
                 TypeValue::Sort(left.clone()),
                 TypeValue::Sort(right.clone()),
                 depth,
+                context.to_vec(),
             ));
         }
         (
@@ -660,15 +760,21 @@ fn compare_values(
             {
                 proof_function_frees.insert(free, left_key);
             }
+            let mut body_context = context.to_vec();
+            if body_context.len() == depth {
+                body_context.push(left_domain_type);
+            }
             work.push((
                 TypeValue::Term(left_body.under_free(free)),
                 TypeValue::Term(right_body.under_free(free)),
                 depth.saturating_add(1),
+                body_context,
             ));
             work.push((
                 TypeValue::Term(left_domain.clone()),
                 TypeValue::Term(right_domain.clone()),
                 depth,
+                context.to_vec(),
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
@@ -684,6 +790,7 @@ fn compare_values(
                     TypeValue::Term(left.clone()),
                     TypeValue::Term(right.clone()),
                     depth,
+                    context.to_vec(),
                 )
             }));
         }
@@ -698,8 +805,9 @@ fn compare_nat_literal_neutral(
     neutral: &Neutral,
     budget: usize,
     depth: usize,
-    work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    context: &[TypeValue],
 ) -> Judgment<()> {
     let Some(primitives) = checker.nat_primitives() else {
         return Judgment::unknown("Nat-literal-conversion-without-authority");
@@ -739,6 +847,7 @@ fn compare_nat_literal_neutral(
             depth,
             work,
             proof_function_frees,
+            context,
         );
     }
     Judgment::refuted("Nat-literal-non-Nat-head")

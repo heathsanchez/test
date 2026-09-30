@@ -869,6 +869,7 @@ fn definite_conversion_obstruction(obstruction: &str) -> bool {
             | "distinct-Nat-literals"
             | "rigid-value-constructor-mismatch"
             | "distinct-opaque-proposition-types"
+            | "distinct-rigid-local-terms"
     )
 }
 
