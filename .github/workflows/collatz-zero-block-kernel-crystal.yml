@@ -1,0 +1,39 @@
+name: Collatz Zero Block Kernel Crystal
+on:
+  push:
+    branches: [collatz-zero-block-kernel-crystal-20260930]
+    paths:
+      - 'experiments/collatz_zero_block_kernel_crystal_20260930.py'
+      - '.github/workflows/collatz-zero-block-kernel-crystal.yml'
+permissions: {contents: read}
+jobs:
+  kernel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run zero-block kernel falsifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-zero-block-kernel-crystal
+          PYTHONPATH=experiments python -u experiments/collatz_zero_block_kernel_crystal_20260930.py             | tee evidence/collatz-zero-block-kernel-crystal/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-zero-block-kernel-crystal/result.json'))
+          assert d['global_collatz']=='UNKNOWN'
+          print('VERDICT',d['verdict'])
+          for s in ('train','heldout'):
+              x=d[s]
+              print(s,'SWITCH',x['switch_events'],'ZERO',x['zero_events'],
+                    'MAXRUN',x['max_consecutive_zero_switches'],
+                    'SCC',x['cyclic_sccs'],'REPEAT',x['sourcewise_repeated_zero_switch_states'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-zero-block-kernel-crystal
+          path: evidence/collatz-zero-block-kernel-crystal
+          if-no-files-found: error
