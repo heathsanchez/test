@@ -1,0 +1,31 @@
+name: Collatz Zero-Exposure Switch Grammar
+on:
+  push:
+    branches: [collatz-zero-exposure-switch-grammar-20260930]
+    paths:
+      - 'experiments/collatz_zero_exposure_switch_grammar_20260930.py'
+      - '.github/workflows/collatz-zero-exposure-switch-grammar-20260930.yml'
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run zero-exposure subgrammar audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-zero-exposure-switch-grammar-20260930
+          PYTHONPATH=experiments python -u experiments/collatz_zero_exposure_switch_grammar_20260930.py \
+            | tee evidence/collatz-zero-exposure-switch-grammar-20260930/raw.txt
+          grep -E '"schema":|"verdict":|"zero_exposure_switches":|"law_recurrent_sccs":|"center_recurrent_sccs":|"max_consecutive_zero_exposure_switches":|"law_max_rank":|"global_collatz":' \
+            evidence/collatz-zero-exposure-switch-grammar-20260930/raw.txt | tail -20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-zero-exposure-switch-grammar-20260930
+          path: evidence/collatz-zero-exposure-switch-grammar-20260930
+          if-no-files-found: error
