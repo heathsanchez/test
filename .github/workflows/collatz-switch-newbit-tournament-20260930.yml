@@ -1,0 +1,42 @@
+name: Collatz Switch New-Bit Tournament
+on:
+  push:
+    branches: [collatz-switch-newbit-tournament-20260930]
+    paths:
+      - 'experiments/collatz_switch_newbit_tournament_20260930.py'
+      - '.github/workflows/collatz-switch-newbit-tournament-20260930.yml'
+permissions: {contents: read}
+jobs:
+  tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run exact new-bit tournament
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-switch-newbit-tournament-20260930
+          PYTHONPATH=experiments python -u experiments/collatz_switch_newbit_tournament_20260930.py \
+            | tee evidence/collatz-switch-newbit-tournament-20260930/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-switch-newbit-tournament-20260930/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_SWITCH_NEWBIT_TOURNAMENT_20260930'
+          assert d['global_collatz']=='UNKNOWN'
+          print('VERDICT',d['verdict'])
+          print('SWITCHES',d['switches'])
+          print('ALL_ZERO_NEW_BLOCKS',d['all_new_bits_zero_count'])
+          print('TOP_NEW_BIT_ZERO',d['top_new_bit_zero_count'])
+          print('BITLENGTH_MARGIN',d['minimum_bitlength_minus_new_precision'],d['maximum_bitlength_minus_new_precision'])
+          print('CERT',d['certificate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-switch-newbit-tournament-20260930
+          path: evidence/collatz-switch-newbit-tournament-20260930
+          if-no-files-found: error
