@@ -519,7 +519,7 @@ impl<'a> Machine<'a> {
                     }
                     let structure = closure.sibling(*structure, closure.env.clone());
                     let exposed_structure =
-                        self.expose_internal(structure, transparency, budget, false);
+                        self.expose_internal(structure.clone(), transparency, budget, false);
                     let Some(exposure) = exposed_structure.proven_value() else {
                         return Judgment::unknown("projection-structure-stuck");
                     };
