@@ -1,0 +1,71 @@
+name: Collatz Symbolic Repayment Guards 20260930
+on:
+  push:
+    branches: [collatz-symbolic-repayment-guards-20260930]
+    paths:
+      - '.github/workflows/collatz-symbolic-repayment-guards-20260930.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Independently reproduce exact guard synthesis
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-symbolic-repayment-guards-20260930/hosted
+          PYTHONPATH=experiments python -u experiments/collatz_symbolic_repayment_guards_20260930.py | tee evidence/collatz-symbolic-repayment-guards-20260930/hosted/replay.log
+          python - <<'PY'
+          import json
+          actual=json.load(open('repayment-result.json'))
+          expected=json.load(open('evidence/collatz-symbolic-repayment-guards-20260930/local-result.json'))
+          assert actual==expected
+          assert actual['global_collatz']=='UNKNOWN'
+          guards=json.load(open('repayment-guards.json'))
+          assert len(guards)==2081
+          with open('formal/Collatz/GeneratedRepaymentGuards.lean','w') as f:
+              f.write('import Collatz.ComposedReturnRepayment\nset_option maxRecDepth 100000\nset_option maxHeartbeats 0\nnamespace CollatzFinal.SourceProduct\n')
+              for i,g in enumerate(guards):
+                  A,B,P,rho,modulus=(int(g[k]) for k in ('A','B','P','rho','modulus'))
+                  assert A<P and B<(P-A)*rho and rho>0
+                  f.write(f'theorem repayment_guard_{i} {{m m2 : Nat}} (hres : m % {modulus} = {rho}) (heq : {P} * m2 = {A} * m + {B}) : m2 < m := by\n  exact affine_return_repayment_of_residue (by decide) (by decide) hres heq\n#print axioms repayment_guard_{i}\n')
+              f.write('end CollatzFinal.SourceProduct\n')
+          print('EXACT_REPLAY_AND_2081_GUARDS_GENERATED')
+          PY
+          cp repayment-result.json repayment-guards.json formal/Collatz/GeneratedRepaymentGuards.lean evidence/collatz-symbolic-repayment-guards-20260930/hosted/
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel check universal conditional repayment laws
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean --version | tee evidence/collatz-symbolic-repayment-guards-20260930/hosted/toolchain.txt
+          lake build Collatz.ReturnFixedPointDescent
+          lake env lean -DautoImplicit=false -o formal/Collatz/ComposedReturnRepayment.olean formal/Collatz/ComposedReturnRepayment.lean | tee evidence/collatz-symbolic-repayment-guards-20260930/hosted/composition.log
+          lake build Collatz.ComposedReturnRepayment
+          lake env lean -DautoImplicit=false formal/Collatz/GeneratedRepaymentGuards.lean | tee evidence/collatz-symbolic-repayment-guards-20260930/hosted/guards.log
+          python - <<'PY'
+          import re
+          p='evidence/collatz-symbolic-repayment-guards-20260930/hosted/'
+          logs=open(p+'composition.log').read()+open(p+'guards.log').read()
+          assert 'sorryAx' not in logs and 'Lean.ofReduceBool' not in logs
+          assert len(re.findall(r"repayment_guard_[0-9]+.*depends on axioms",logs))==2081
+          print('2081_KERNEL_CHECKED_CONDITIONAL_REPAYMENT_LAWS')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-symbolic-repayment-guards-20260930/hosted/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-symbolic-repayment-guards-20260930
+          path: evidence/collatz-symbolic-repayment-guards-20260930/hosted
+          if-no-files-found: error
