@@ -1,0 +1,219 @@
+{
+  "after_fifth_reclosure": {
+    "cells": 19563,
+    "max_rank": 28,
+    "nonexit_edges": 12022,
+    "nonfunctional_successor_cells": 439,
+    "observed_recurrent_kernel": 0,
+    "rows": 20300
+  },
+  "boundary": "All terminal and macro witnesses are exact for this finite source set. Successor aliases are allowed when every admitted observation exits or strictly decreases the common rank. Reclosure earns no universal coverage. Rank layers are finite-boundary certificates, not an all-depth rank bound.",
+  "certificate_sha256": "4eaf172ffe4fbd33da5f4f7b0fdebcdd64be0a8f1145d94bd83fad06b913ba97",
+  "fifth_motif_frozen_check": {
+    "actual_source_exit": 89,
+    "frozen_rank_failure": 8,
+    "recognized_current_cell": 258,
+    "rows": 4871,
+    "strict_rank_progress": 20,
+    "unseen_current_cell": 4613,
+    "unseen_successor_cell": 141
+  },
+  "first_frozen_rank_counterexample": {
+    "current_key": [
+      1,
+      3,
+      1,
+      749,
+      6,
+      27
+    ],
+    "depth": [
+      126,
+      128
+    ],
+    "old_rank": 0,
+    "old_successor_rank": 1,
+    "reclosed_rank": 8,
+    "reclosed_successor_rank": 7,
+    "source": "1500378110648990379701702473386295323",
+    "t": "396698846423492"
+  },
+  "foundation_commit": "metalogiclabs/mathgraph@2c6a845f113ea902734b242b1a3c9795574e30ff",
+  "foundation_source_hashes": {
+    "crystal.py": "9b9e68e70f89ee66c9c2619b010bba01a386e793bbf13d390efbf88215aa4197",
+    "research_controller.py": "c5c0711deb43e5cabfb8522334f5f4c2b0ccb6c541035e3e7ece56d61a8825e3"
+  },
+  "frozen_protected_rank_falsifier_pairs": 19,
+  "full_observed_reclosure": {
+    "cells": 21167,
+    "max_rank": 28,
+    "nonexit_edges": 12979,
+    "nonfunctional_successor_cells": 497,
+    "observed_recurrent_kernel": 0,
+    "rows": 22019
+  },
+  "global_collatz": "UNKNOWN",
+  "global_controller": {
+    "assessments": [
+      {
+        "candidate_id": "grow_constructor_bank",
+        "eligible": false,
+        "mode": "SEARCH",
+        "reasons": [
+          "reopens_retained_negative:finite_bank_completeness"
+        ],
+        "score": 0.0
+      },
+      {
+        "candidate_id": "split_all_successor_aliases",
+        "eligible": false,
+        "mode": "REFINE",
+        "reasons": [
+          "refinement_without_separator"
+        ],
+        "score": 0.0
+      }
+    ],
+    "campaign_id": "collatz-protected-future-loop",
+    "rationale": "No action: every proposal violates the residual-first or verification gate.",
+    "residual_id": "universal_admission_and_progress_transport",
+    "selected_candidate_id": null,
+    "selected_score": 0.0,
+    "status": "HOLD"
+  },
+  "local_controller": {
+    "assessments": [
+      {
+        "candidate_id": "reclose_warranted_transitions",
+        "eligible": true,
+        "mode": "REUSE",
+        "reasons": [],
+        "score": 1.05
+      },
+      {
+        "candidate_id": "grow_constructor_bank",
+        "eligible": false,
+        "mode": "SEARCH",
+        "reasons": [
+          "reopens_retained_negative:finite_bank_completeness"
+        ],
+        "score": 0.0
+      },
+      {
+        "candidate_id": "split_all_successor_aliases",
+        "eligible": false,
+        "mode": "REFINE",
+        "reasons": [
+          "refinement_without_separator"
+        ],
+        "score": 0.0
+      }
+    ],
+    "campaign_id": "collatz-protected-future-loop",
+    "rationale": "Selected the eligible proposal with maximum declared expected verified residual contraction per unit cost. Promotion still depends on its downstream verifier.",
+    "residual_id": "frozen_rank_transport_failure",
+    "selected_candidate_id": "reclose_warranted_transitions",
+    "selected_score": 1.05,
+    "status": "ACT"
+  },
+  "native_Crystal_recurrent_kernel_size": 0,
+  "progress_sufficient_rank_layers": 29,
+  "proof_admission": {
+    "finite_normalized_macro_transitions": "WARRANTED_BOUNDED",
+    "finite_ranked_kernel_empty": "WARRANTED_BOUNDED",
+    "finite_source_replay": "WARRANTED_BOUNDED",
+    "source_bound_exit_certificates": "WARRANTED_BOUNDED",
+    "universal_macro_admission_totality": "UNKNOWN",
+    "universal_progress_or_exit_transport": "UNKNOWN",
+    "universal_source_coverage": "UNKNOWN"
+  },
+  "protected_object": {
+    "coverage": "finite observed boundary only; no universal adequacy claim",
+    "normalization": "post-zero-tail same-anchor owner x=2^r*m-1, every observed return retained",
+    "objective": "eventual descent below fixed original n, or warranted smaller-source merge",
+    "quotient": "frozen V53 source-free key interpreted as a nondeterministic abstract relation",
+    "source_family": {
+      "N0": "38911100780481085467",
+      "NC": "3782158995862761504768",
+      "parameter": "t >= 0"
+    }
+  },
+  "protected_rank_violations_after_reclosure": 0,
+  "qed_admitted": false,
+  "rank_layer_edges": 105,
+  "return_rows_independently_replayed": 22019,
+  "schema": "COLLATZ_CRYSTAL_PROTECTED_OBJECT_RECLOSURE_20260930",
+  "sixth_motif_frozen_check": {
+    "actual_source_exit": 44,
+    "frozen_rank_failure": 6,
+    "recognized_current_cell": 114,
+    "rows": 1719,
+    "strict_rank_progress": 11,
+    "unseen_current_cell": 1605,
+    "unseen_successor_cell": 53
+  },
+  "source_binding_control": {
+    "admitted_word_but_original_source_guard_fails": 710,
+    "certificate_D": 77,
+    "certificate_M1": 8,
+    "certificate_S": 127,
+    "no_frozen_word_admitted": 665,
+    "prior_1349_exits_without_observed_repayment": 750,
+    "prior_1349_has_observed_repayment": 599,
+    "prior_1349_source_bound_certificate": 140,
+    "prior_1349_still_uncovered": 1209,
+    "source_bound_frozen_certificate": 212,
+    "starts": 1587,
+    "uncovered": 1375,
+    "wrong_binding_selected_certificate_invalid_for_source": 607,
+    "wrong_current_endpoint_binding_accepts": 675
+  },
+  "source_binding_policy_ablation": {
+    "assessments": [
+      {
+        "candidate_id": "reclose_warranted_transitions",
+        "eligible": false,
+        "mode": "REUSE",
+        "reasons": [
+          "drops_protected_invariants:original_source_binding"
+        ],
+        "score": 0.0
+      },
+      {
+        "candidate_id": "grow_constructor_bank",
+        "eligible": false,
+        "mode": "SEARCH",
+        "reasons": [
+          "reopens_retained_negative:finite_bank_completeness"
+        ],
+        "score": 0.0
+      },
+      {
+        "candidate_id": "split_all_successor_aliases",
+        "eligible": false,
+        "mode": "REFINE",
+        "reasons": [
+          "refinement_without_separator"
+        ],
+        "score": 0.0
+      }
+    ],
+    "campaign_id": "collatz-protected-future-loop",
+    "rationale": "No action: every proposal violates the residual-first or verification gate.",
+    "residual_id": "frozen_rank_transport_failure",
+    "selected_candidate_id": null,
+    "selected_score": 0.0,
+    "status": "HOLD"
+  },
+  "sources_independently_replayed": 4808,
+  "terminal_certificate_sha256": "64a7275fcf37ee38781a9b3fb660cabee827ac9698081ba7dc418599dcf0aca5",
+  "terminal_macro_certificates": 8999,
+  "training_reclosure": {
+    "cells": 14977,
+    "max_rank": 24,
+    "nonexit_edges": 9030,
+    "nonfunctional_successor_cells": 267,
+    "observed_recurrent_kernel": 0,
+    "rows": 15429
+  }
+}
