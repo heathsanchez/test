@@ -392,6 +392,32 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
+                            if std::env::var_os("NUCLEUS_TRACE_BOOL_RECURSOR_TARGET").is_some()
+                                && self.is_bool_recursor_reduction(reduction)
+                            {
+                                let surface = self.constructor_application(target);
+                                let head = surface
+                                    .as_ref()
+                                    .map(|(name, _)| name.0.to_string())
+                                    .unwrap_or_else(|| "none".to_string());
+                                let args = surface
+                                    .as_ref()
+                                    .map(|(_, args)| {
+                                        args.iter()
+                                            .map(|arg| self.describe_closure_surface(arg))
+                                            .collect::<Vec<_>>()
+                                            .join(",")
+                                    })
+                                    .unwrap_or_else(|| "none".to_string());
+                                eprintln!(
+                                    "NUCLEUS_BOOL_RECURSOR_TARGET:recursor={}:target_expr={}:target_env={}:surface_head={}:surface_args=[{}]",
+                                    name.0,
+                                    target.expr.0,
+                                    target.env.id(),
+                                    head,
+                                    args
+                                );
+                            }
                             if let Some((constructor, constructor_arguments)) =
                                 self.constructor_application(target)
                                 && let Some(rule) = reduction
@@ -652,6 +678,61 @@ impl<'a> Machine<'a> {
                 })
             }
         })
+    }
+
+    fn is_bool_recursor_reduction(&self, reduction: &RecursorReduction) -> bool {
+        let Some(bools) = self.bool_primitives.as_ref() else {
+            return false;
+        };
+        reduction.rules.len() == 2
+            && reduction
+                .rules
+                .iter()
+                .any(|rule| rule.constructor == bools.false_ctor)
+            && reduction
+                .rules
+                .iter()
+                .any(|rule| rule.constructor == bools.true_ctor)
+    }
+
+    fn describe_closure_surface(&self, closure: &Closure) -> String {
+        let mut current = closure.clone();
+        for _ in 0..8 {
+            let Some(expression) = self.expressions.get(current.expr) else {
+                return format!("missing-expr:{}", current.expr.0);
+            };
+            match expression {
+                Expr::BVar(index) => match current.env.lookup(*index) {
+                    Some(EnvBinding::Closure(bound)) => {
+                        current = bound;
+                    }
+                    Some(EnvBinding::Free(free)) => {
+                        return format!("bvar:{}->free:{}", index, free.0);
+                    }
+                    Some(EnvBinding::Neutral(neutral)) => {
+                        return format!("bvar:{}->neutral:{:?}", index, neutral.head);
+                    }
+                    None => return format!("bvar:{}->unbound", index),
+                },
+                Expr::Const { name, .. } => {
+                    return format!("const:{}:expr:{}", name.0, current.expr.0);
+                }
+                Expr::App { fun, arg } => {
+                    return format!(
+                        "app:expr:{}:fun:{}:arg:{}",
+                        current.expr.0, fun.0, arg.0
+                    );
+                }
+                Expr::NatLit(_) => return format!("natlit:expr:{}", current.expr.0),
+                Expr::StrLit(_) => return format!("strlit:expr:{}", current.expr.0),
+                Expr::Sort(_) => return format!("sort:expr:{}", current.expr.0),
+                Expr::Pi { .. } => return format!("pi:expr:{}", current.expr.0),
+                Expr::Lam { .. } => return format!("lam:expr:{}", current.expr.0),
+                Expr::Let { .. } => return format!("let:expr:{}", current.expr.0),
+                Expr::Proj { .. } => return format!("proj:expr:{}", current.expr.0),
+            }
+        }
+        format!("binding-depth-limit:expr:{}", current.expr.0)
     }
 
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
