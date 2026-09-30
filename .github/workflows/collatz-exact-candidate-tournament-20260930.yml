@@ -1,0 +1,71 @@
+name: Collatz Exact Candidate Tournament 20260930
+on:
+  push:
+    branches: [collatz-exact-candidate-tournament-20260930]
+    paths: ['.github/workflows/collatz-exact-candidate-tournament-20260930.yml']
+permissions: {contents: read}
+
+jobs:
+  switch-state-rank:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exact switch-state rank tournament arm
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-exact-candidate-tournament-20260930
+          PYTHONPATH=experiments python -u experiments/collatz_switch_state_rank_probe.py --K 128 \
+            | tee evidence/collatz-exact-candidate-tournament-20260930/switch-state-rank.txt
+          grep -E 'TRAIN_EDGES|HELD_EDGES|LINEAR_CANDIDATES|LEX_CANDIDATES|NO_SIMPLE_GLOBAL_SWITCH_RANK|STATUS' \
+            evidence/collatz-exact-candidate-tournament-20260930/switch-state-rank.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: switch-state-rank
+          path: evidence/collatz-exact-candidate-tournament-20260930/switch-state-rank.txt
+
+  ultrametric-rank:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ultrametric rank falsifier arm
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-exact-candidate-tournament-20260930
+          PYTHONPATH=experiments python -u experiments/collatz_ultrametric_switch_rank_falsifier_v0.py \
+            | tee evidence/collatz-exact-candidate-tournament-20260930/ultrametric-rank.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-exact-candidate-tournament-20260930/ultrametric-rank.json'
+          d=json.load(open(p))
+          print('ULTRAMETRIC_VERDICT',d['verdict'])
+          for r in d['rows']:
+              print('ULTRAMETRIC_ROW',r['range'],r['edges'],r['strict_decrease'],r['violations'])
+          assert d['global_collatz']=='UNKNOWN'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrametric-rank
+          path: evidence/collatz-exact-candidate-tournament-20260930/ultrametric-rank.json
+
+  zero-defect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run zero-defect exceptional-set arm
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-exact-candidate-tournament-20260930
+          PYTHONPATH=experiments python -u experiments/collatz_zero_defect_gcd_probe.py \
+            | tee evidence/collatz-exact-candidate-tournament-20260930/zero-defect.txt
+          grep -E 'GCD_GT1|POSITIVE_C_GT0|INTEGRAL_FIXEDPOINTS|STATUS' \
+            evidence/collatz-exact-candidate-tournament-20260930/zero-defect.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zero-defect
+          path: evidence/collatz-exact-candidate-tournament-20260930/zero-defect.txt
