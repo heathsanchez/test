@@ -593,6 +593,29 @@ impl<'a> TypeChecker<'a> {
             && self.normalized_type_is_proposition(&left_normal, context, budget, 0)
     }
 
+    pub(crate) fn neutral_values_same_proposition(
+        &self,
+        left: &crate::value::Neutral,
+        right: &crate::value::Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        let Some(left_ty) = self.neutral_result_type(left, context, budget) else {
+            return false;
+        };
+        let Some(right_ty) = self.neutral_result_type(right, context, budget) else {
+            return false;
+        };
+        let Some(left_normal) = self.normalize_type_value(&left_ty, budget) else {
+            return false;
+        };
+        let Some(right_normal) = self.normalize_type_value(&right_ty, budget) else {
+            return false;
+        };
+        left_normal == right_normal
+            && self.normalized_type_is_proposition(&left_normal, context, budget, 0)
+    }
+
     fn normalize_type_value(&self, ty: &TypeValue, budget: usize) -> Option<Value> {
         match ty {
             TypeValue::Sort(level) => Some(Value::Sort(level.clone())),
