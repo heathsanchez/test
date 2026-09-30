@@ -286,7 +286,17 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
-                let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                let pi_view = self.pi_view(function_type.clone(), *remaining);
+                if pi_view.is_none() {
+                    self.trace_application_function_type(
+                        expression,
+                        *fun,
+                        &function_type,
+                        context.len(),
+                        *remaining,
+                    );
+                }
+                let Some((domain, body)) = pi_view else {
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true) {
@@ -520,6 +530,213 @@ impl<'a> TypeChecker<'a> {
                 }
             }
             TypeValue::Pi { .. } => Judgment::refuted("pi-value-is-not-a-sort"),
+        }
+    }
+
+    fn trace_application_function_type(
+        &self,
+        app: ExprId,
+        fun: ExprId,
+        function_type: &Judgment<TypeValue>,
+        context_depth: usize,
+        budget: usize,
+    ) {
+        if std::env::var_os("NUCLEUS_TRACE_APP_FUNCTION_TYPE").is_none() {
+            return;
+        }
+
+        let fun_kind = match self.expression(fun) {
+            Some(Expr::NatLit(_)) => "NatLit",
+            Some(Expr::StrLit(_)) => "StrLit",
+            Some(Expr::BVar(_)) => "BVar",
+            Some(Expr::Sort(_)) => "Sort",
+            Some(Expr::Const { .. }) => "Const",
+            Some(Expr::App { .. }) => "App",
+            Some(Expr::Lam { .. }) => "Lam",
+            Some(Expr::Pi { .. }) => "Pi",
+            Some(Expr::Proj { .. }) => "Proj",
+            Some(Expr::Let { .. }) => "Let",
+            None => "Missing",
+        };
+
+        match function_type {
+            Judgment::Unknown { residual } => {
+                eprintln!(
+                    "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=infer-unknown:detail={}",
+                    app,
+                    fun,
+                    fun_kind,
+                    context_depth,
+                    budget,
+                    residual.0
+                );
+            }
+            Judgment::Refuted { obstruction } => {
+                eprintln!(
+                    "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=infer-refuted:detail={}",
+                    app,
+                    fun,
+                    fun_kind,
+                    context_depth,
+                    budget,
+                    obstruction.0
+                );
+            }
+            Judgment::Proven {
+                value: TypeValue::Sort(level),
+                ..
+            } => {
+                eprintln!(
+                    "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=inferred-sort:level={:?}",
+                    app,
+                    fun,
+                    fun_kind,
+                    context_depth,
+                    budget,
+                    level
+                );
+            }
+            Judgment::Proven {
+                value: TypeValue::Pi { .. },
+                ..
+            } => {
+                eprintln!(
+                    "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=inferred-pi-unexpected",
+                    app,
+                    fun,
+                    fun_kind,
+                    context_depth,
+                    budget
+                );
+            }
+            Judgment::Proven {
+                value: TypeValue::Term(closure),
+                ..
+            } => {
+                let exposed =
+                    self.machine()
+                        .expose(closure.clone(), Transparency::Reducible, budget);
+                match exposed {
+                    Judgment::Unknown { residual } => {
+                        eprintln!(
+                            "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=expose-unknown:detail={}:closure_expr={:?}:closure_env={}:closure_levels={:?}",
+                            app,
+                            fun,
+                            fun_kind,
+                            context_depth,
+                            budget,
+                            residual.0,
+                            closure.expr,
+                            closure.env.id(),
+                            closure.levels
+                        );
+                    }
+                    Judgment::Refuted { obstruction } => {
+                        eprintln!(
+                            "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=expose-refuted:detail={}:closure_expr={:?}:closure_env={}:closure_levels={:?}",
+                            app,
+                            fun,
+                            fun_kind,
+                            context_depth,
+                            budget,
+                            obstruction.0,
+                            closure.expr,
+                            closure.env.id(),
+                            closure.levels
+                        );
+                    }
+                    Judgment::Proven {
+                        value: Value::NatLit(value),
+                        ..
+                    } => {
+                        eprintln!(
+                            "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=exposed-nat:normal={:?}:closure_expr={:?}:closure_env={}:closure_levels={:?}",
+                            app,
+                            fun,
+                            fun_kind,
+                            context_depth,
+                            budget,
+                            value,
+                            closure.expr,
+                            closure.env.id(),
+                            closure.levels
+                        );
+                    }
+                    Judgment::Proven {
+                        value: Value::Sort(level),
+                        ..
+                    } => {
+                        eprintln!(
+                            "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=exposed-sort:normal={:?}:closure_expr={:?}:closure_env={}:closure_levels={:?}",
+                            app,
+                            fun,
+                            fun_kind,
+                            context_depth,
+                            budget,
+                            level,
+                            closure.expr,
+                            closure.env.id(),
+                            closure.levels
+                        );
+                    }
+                    Judgment::Proven {
+                        value: Value::Lam { .. },
+                        ..
+                    } => {
+                        eprintln!(
+                            "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=exposed-lam:closure_expr={:?}:closure_env={}:closure_levels={:?}",
+                            app,
+                            fun,
+                            fun_kind,
+                            context_depth,
+                            budget,
+                            closure.expr,
+                            closure.env.id(),
+                            closure.levels
+                        );
+                    }
+                    Judgment::Proven {
+                        value: Value::Pi { .. },
+                        ..
+                    } => {
+                        eprintln!(
+                            "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=exposed-pi-unexpected:closure_expr={:?}:closure_env={}:closure_levels={:?}",
+                            app,
+                            fun,
+                            fun_kind,
+                            context_depth,
+                            budget,
+                            closure.expr,
+                            closure.env.id(),
+                            closure.levels
+                        );
+                    }
+                    Judgment::Proven {
+                        value: Value::Neutral(neutral),
+                        ..
+                    } => {
+                        let head_kind = match &neutral.head {
+                            NeutralHead::Free(_) => "Free",
+                            NeutralHead::Const { .. } => "Const",
+                            NeutralHead::Projection { .. } => "Projection",
+                        };
+                        eprintln!(
+                            "NUCLEUS_APP_FUNCTION_TYPE:app={:?}:fun={:?}:fun_kind={}:context_depth={}:budget={}:kind=exposed-neutral:head_kind={}:head={:?}:spine_len={}:closure_expr={:?}:closure_env={}:closure_levels={:?}",
+                            app,
+                            fun,
+                            fun_kind,
+                            context_depth,
+                            budget,
+                            head_kind,
+                            neutral.head,
+                            neutral.spine.len(),
+                            closure.expr,
+                            closure.env.id(),
+                            closure.levels
+                        );
+                    }
+                }
+            }
         }
     }
 
