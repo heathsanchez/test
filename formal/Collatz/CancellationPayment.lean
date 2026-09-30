@@ -1,5 +1,6 @@
 import Collatz.GuardedDyadicSwitch
 import Collatz.Shortcut
+import Collatz.OrdinaryExitReduction
 
 namespace CollatzFinal.SourceProduct
 
@@ -126,6 +127,36 @@ theorem plateau_cell_orders (n : Nat) (hn : PlateauCell n) :
   have he : (864*z-5+1)/4 = 216*z-1 := by omega
   rw [he]
   exact plateau_reference_orders z hz
+
+/-- The entire plateau cell has a smaller three-step predecessor.
+The family therefore cannot witness the full no-OrdinaryExit hypothesis. -/
+theorem plateau_lower_source_merge (z : Nat) (hz : 0 < z) :
+    0 < 768*z-5 ∧ LowerMerge shortcut (864*z-5) (768*z-5) := by
+  have ht := shortcut_three_eight_nine (24*z) (by omega)
+  have he : iter shortcut 3 (768*z-5) = 864*z-5 := by
+    simpa only [← Nat.mul_assoc] using ht
+  refine ⟨by omega, by omega, 0, 3, ?_⟩
+  simpa only [iter] using he.symm
+
+theorem plateau_cell_ordinary_exit (n : Nat) (hn : PlateauCell n) :
+    OrdinaryExit n n := by
+  obtain ⟨z, hz, rfl⟩ := hn
+  right
+  right
+  refine ⟨768*z-5, 3, by omega, by omega, ?_⟩
+  have ht := shortcut_three_eight_nine (24*z) (by omega)
+  simpa only [← Nat.mul_assoc] using ht
+
+theorem plateau_cell_not_minimal_bad (n : Nat) (hn : PlateauCell n) :
+    ¬ MinimalBad PositiveBad n := by
+  intro hmin
+  have hno := minimal_bad_has_no_ordinary_exit hmin 0
+  exact hno (by simpa only [iter] using plateau_cell_ordinary_exit n hn)
+
+#print axioms plateau_cell_ordinary_exit
+#print axioms plateau_cell_not_minimal_bad
+
+#print axioms plateau_lower_source_merge
 
 /-- Any payment depending only on source and the two frozen orders is unchanged. -/
 theorem frozen_order_payment_cannot_pay (H : Nat → Nat → Nat → Int)
