@@ -1,0 +1,215 @@
+name: Nucleus Projection Environment Quotient V2
+
+on:
+  push:
+    branches: [nucleus-projection-env-quotient-v2]
+    paths:
+      - ".github/workflows/nucleus-projection-env-quotient-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  QUALIFIED_SEMANTIC_PARENT: 6a129656ae84ef4448d52c0c4a164ccfe24e4ca4
+  PARENT_DIAGNOSTIC_RUN: "36655228695"
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Bind to qualified semantic parent and V1 quotient
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$QUALIFIED_SEMANTIC_PARENT"..HEAD -- metatron-kernel/
+          test "$(gh api repos/heathsanchez/test/actions/runs/$PARENT_DIAGNOSTIC_RUN --jq .conclusion)" = "success"
+
+      - name: Build unchanged qualified candidate
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/art /tmp/tests /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Resolve closure and environment distinction
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/nucleus-projection-env-quotient-v2
+          python3 - <<'PY'
+          import json,os,pathlib,re,subprocess
+
+          root=pathlib.Path('/tmp/tests/good')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          targets=[
+            'perf/magma-list-deep-n21',
+            'perf/magma-list-deep-n36',
+            'perf/magma-list-pair-n21',
+            'perf/magma-list-pair-n7',
+          ]
+
+          def run(name):
+              env=os.environ.copy()
+              env.update({
+                'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                'NUCLEUS_TRACE_RESIDUAL':'1',
+                'NUCLEUS_TRACE_BOOL_WHNF':'1',
+                'NUCLEUS_TRACE_APP_FUNCTION_TYPE':'1',
+                'NUCLEUS_TRACE_CONVERSION_EXPOSURE':'1',
+                'NUCLEUS_TRACE_PROJECTION_MISMATCH':'1',
+              })
+              p=root/(name+'.ndjson')
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                    [str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,timeout=180,env=env
+                  )
+              return q.returncode,q.stderr.decode(errors='replace')
+
+          def closure_pairs(text):
+              return [
+                (int(expr),int(env))
+                for expr,env in re.findall(
+                  r'Closure \{ expr: ExprId\((\d+)\), env: EnvFrame \{ id: (\d+)',
+                  text
+                )
+              ]
+
+          def erase_env(text):
+              return re.sub(
+                r'EnvFrame \{ id: \d+',
+                'EnvFrame { id: *',
+                text
+              )
+
+          def erase_env_and_expr(text):
+              text=erase_env(text)
+              return re.sub(r'ExprId\(\d+\)','ExprId(*)',text)
+
+          rows=[]
+          pattern_counts={}
+          for name in targets:
+              rc,err=run(name)
+              assert rc in (2,3),(name,rc)
+              neutral=[x for x in err.splitlines() if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x]
+              assert neutral,(name,err[-12000:])
+              raw=neutral[-1]
+              line=raw.split('NUCLEUS_NEUTRAL_HEAD_MISMATCH:',1)[1]
+              left,rest=line.split(':left_spine=',1)
+              left=left.removeprefix('left=')
+              left_spine,rest=rest.split(':right=',1)
+              right,rest=rest.split(':right_spine=',1)
+              right_spine,budget=rest.rsplit(':budget=',1)
+
+              lstruct=closure_pairs(left)
+              rstruct=closure_pairs(right)
+              louter=closure_pairs(left_spine)
+              router=closure_pairs(right_spine)
+              assert len(lstruct)==len(rstruct),(name,lstruct,rstruct)
+              assert len(louter)==len(router),(name,louter,router)
+
+              struct_expr_equal=[a[0]==b[0] for a,b in zip(lstruct,rstruct)]
+              struct_env_equal=[a[1]==b[1] for a,b in zip(lstruct,rstruct)]
+              struct_env_delta=[b[1]-a[1] for a,b in zip(lstruct,rstruct)]
+              outer_expr_equal=[a[0]==b[0] for a,b in zip(louter,router)]
+              outer_env_equal=[a[1]==b[1] for a,b in zip(louter,router)]
+              outer_env_delta=[b[1]-a[1] for a,b in zip(louter,router)]
+
+              env_erased_equal=erase_env(left)==erase_env(right)
+              env_expr_erased_equal=erase_env_and_expr(left)==erase_env_and_expr(right)
+              row={
+                'atom':name,
+                'budget':int(budget),
+                'structure_left':lstruct,
+                'structure_right':rstruct,
+                'structure_expr_equal':struct_expr_equal,
+                'structure_env_equal':struct_env_equal,
+                'structure_env_delta':struct_env_delta,
+                'outer_left':louter,
+                'outer_right':router,
+                'outer_expr_equal':outer_expr_equal,
+                'outer_env_equal':outer_env_equal,
+                'outer_env_delta':outer_env_delta,
+                'head_equal_raw':left==right,
+                'head_equal_after_env_erasure':env_erased_equal,
+                'head_equal_after_env_and_expr_erasure':env_expr_erased_equal,
+              }
+              signature=json.dumps({
+                'struct_expr_equal':struct_expr_equal,
+                'struct_env_equal':struct_env_equal,
+                'struct_env_delta':struct_env_delta,
+                'outer_expr_equal':outer_expr_equal,
+                'outer_env_equal':outer_env_equal,
+                'outer_env_delta':outer_env_delta,
+                'env_erased_equal':env_erased_equal,
+                'env_expr_erased_equal':env_expr_erased_equal,
+              },sort_keys=True,separators=(',',':'))
+              row['difference_signature']=signature
+              pattern_counts[signature]=pattern_counts.get(signature,0)+1
+              rows.append(row)
+
+          all_env_erased=all(r['head_equal_after_env_erasure'] for r in rows)
+          all_exprs_equal=all(
+            all(r['structure_expr_equal']) and all(r['outer_expr_equal'])
+            for r in rows
+          )
+          result={
+            'schema':'nucleus.projection-env-quotient.v2',
+            'qualified_semantic_parent':os.environ['QUALIFIED_SEMANTIC_PARENT'],
+            'parent_diagnostic_run':int(os.environ['PARENT_DIAGNOSTIC_RUN']),
+            'atoms':rows,
+            'unique_difference_signatures':len(pattern_counts),
+            'difference_signature_counts':pattern_counts,
+            'all_structure_and_outer_expr_ids_equal':all_exprs_equal,
+            'all_projection_heads_equal_after_env_erasure':all_env_erased,
+            'status':(
+              'ENVIRONMENT_PROVENANCE_ISOLATED'
+              if all_env_erased and all_exprs_equal
+              else f'RESIDUAL_STILL_SPLIT_{len(pattern_counts)}'
+            ),
+            'boundary':'Diagnostic only. Environment-ID differences are observations, not proof of environment equivalence; no conversion or projection rule is promoted.'
+          }
+          pathlib.Path(
+            'evidence/nucleus-projection-env-quotient-v2/result.json'
+          ).write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+            'status':result['status'],
+            'unique_difference_signatures':result['unique_difference_signatures'],
+            'all_structure_and_outer_expr_ids_equal':all_exprs_equal,
+            'all_projection_heads_equal_after_env_erasure':all_env_erased,
+            'rows':[
+              {
+                'atom':r['atom'],
+                'structure_left':r['structure_left'],
+                'structure_right':r['structure_right'],
+                'structure_env_delta':r['structure_env_delta'],
+                'outer_left':r['outer_left'],
+                'outer_right':r['outer_right'],
+                'outer_env_delta':r['outer_env_delta'],
+                'head_equal_after_env_erasure':r['head_equal_after_env_erasure'],
+              } for r in rows
+            ]
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-projection-env-quotient-v2
+          path: evidence/nucleus-projection-env-quotient-v2/result.json
+          if-no-files-found: error
