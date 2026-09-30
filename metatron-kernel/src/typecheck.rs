@@ -286,6 +286,15 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
+                if let Judgment::Unknown { residual } = &function_type {
+                    if std::env::var_os("NUCLEUS_TRACE_APP_FUNCTION_TYPE").is_some() {
+                        eprintln!(
+                            "NUCLEUS_APP_FUNCTION_PROPAGATE_UNKNOWN:fun={:?}:residual={:?}",
+                            fun, residual
+                        );
+                    }
+                    return Judgment::Unknown { residual: *residual };
+                }
                 let trace_app = std::env::var_os("NUCLEUS_TRACE_APP_FUNCTION_TYPE").is_some();
                 if trace_app {
                     eprintln!(
