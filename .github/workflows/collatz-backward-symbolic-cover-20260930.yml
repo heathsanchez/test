@@ -1,7 +1,7 @@
 name: Collatz Backward Symbolic Cover 20260930
 on:
   push:
-    branches: [collatz-backward-symbolic-cover-20260930]
+    branches: [collatz-backward-symbolic-cover-chunks-20260930]
     paths:
       - '.github/workflows/collatz-backward-symbolic-cover-20260930.yml'
       - 'formal/Collatz/BackwardParameterCover.lean'
