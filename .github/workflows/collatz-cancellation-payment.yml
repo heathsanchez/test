@@ -34,11 +34,13 @@ jobs:
               s=(root/name).read_text()
               assert 'sorryAx' not in s and 'Lean.ofReduceBool' not in s
           r=json.loads((root/'audit.json').read_text())
-          assert r['certificate_sha256']=='2030dab71b4447724ca91e8a380e35be3c0796db57a4f7fa9127a0039d85387a'
+          assert r['certificate_sha256']=='56d3ffb5d6552eb339e643422f853915bbfcd9956e7c53b371ba562aa9198541'
           for name in ('CancellationPayment.lean','PaymentWitness.lean'):
               s=Path('formal/Collatz',name).read_text()
               assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',s)
           print('ARBITRARY_FINITE_PLATEAUS_AND_EXACT_PAYMENT_CONE_REJECTION_QUALIFIED')
+          assert 'plateau_cell_not_minimal_bad' in (root/'payment.log').read_text()
+          print('PLATEAU_FAMILY_EXCLUDED_FROM_MINIMAL_BAD_SOURCES')
           print('GLOBAL_COLLATZ_UNKNOWN')
           PY
           git rev-parse HEAD > evidence/collatz-cancellation-payment/commit.txt
