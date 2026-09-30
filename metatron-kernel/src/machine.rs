@@ -197,7 +197,17 @@ impl<'a> Machine<'a> {
         transparency: Transparency,
         budget: usize,
     ) -> Judgment<Value> {
-        self.expose_internal(closure, transparency, budget, false)
+        self.expose_internal(closure, transparency, budget, false, false)
+            .map(|exposure| exposure.value)
+    }
+
+    pub fn expose_for_conversion(
+        &self,
+        closure: Closure,
+        transparency: Transparency,
+        budget: usize,
+    ) -> Judgment<Value> {
+        self.expose_internal(closure, transparency, budget, false, true)
             .map(|exposure| exposure.value)
     }
 
@@ -207,7 +217,7 @@ impl<'a> Machine<'a> {
         transparency: Transparency,
         budget: usize,
     ) -> Judgment<Exposure> {
-        self.expose_internal(closure, transparency, budget, true)
+        self.expose_internal(closure, transparency, budget, true, false)
     }
 
     fn expose_internal(
@@ -216,6 +226,7 @@ impl<'a> Machine<'a> {
         transparency: Transparency,
         mut budget: usize,
         record_witnesses: bool,
+        preserve_stuck_projection: bool,
     ) -> Judgment<Exposure> {
         let mut pending = Vec::new();
         let mut visited = VisitSet::new();
@@ -501,12 +512,37 @@ impl<'a> Machine<'a> {
                         return Judgment::unknown("projection-index-out-of-range");
                     }
                     let structure = closure.sibling(*structure, closure.env.clone());
-                    let exposed_structure =
-                        self.expose_internal(structure, transparency, budget, false);
+                    let exposed_structure = self.expose_internal(
+                        structure.clone(),
+                        transparency,
+                        budget,
+                        false,
+                        preserve_stuck_projection,
+                    );
                     let Some(exposure) = exposed_structure.proven_value() else {
+                        if preserve_stuck_projection {
+                            return exposed(
+                                Value::StuckProjection {
+                                    type_name: *type_name,
+                                    index,
+                                    structure,
+                                },
+                                transitions,
+                            );
+                        }
                         return Judgment::unknown("projection-structure-stuck");
                     };
                     let Value::Neutral(neutral) = &exposure.value else {
+                        if preserve_stuck_projection {
+                            return exposed(
+                                Value::StuckProjection {
+                                    type_name: *type_name,
+                                    index,
+                                    structure,
+                                },
+                                transitions,
+                            );
+                        }
                         return Judgment::unknown("projection-structure-stuck");
                     };
                     match &neutral.head {
@@ -617,12 +653,12 @@ impl<'a> Machine<'a> {
         let first = pending[pending.len() - 1].clone();
         let second = pending[pending.len() - 2].clone();
         let first_value = self
-            .expose_internal(first, transparency, budget.saturating_sub(1), false)
+            .expose_internal(first, transparency, budget.saturating_sub(1), false, false)
             .proven_value()?
             .value
             .clone();
         let second_value = self
-            .expose_internal(second, transparency, budget.saturating_sub(1), false)
+            .expose_internal(second, transparency, budget.saturating_sub(1), false, false)
             .proven_value()?
             .value
             .clone();
