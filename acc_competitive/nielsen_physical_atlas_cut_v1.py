@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# workflow-trigger: 2026-09-30T00:23Z
 from __future__ import annotations
 import argparse, json, sqlite3, sys, time
 from pathlib import Path
