@@ -65,7 +65,7 @@ jobs:
           git clone -q https://github.com/dogwood-policy/dogwood /tmp/dogwood
           git -C /tmp/dogwood checkout -q "$DOGWOOD_SHA"
           test "$(git -C /tmp/dogwood rev-parse HEAD)" = "$DOGWOOD_SHA"
-          cargo build --release --locked --manifest-path /tmp/dogwood/Cargo.toml -p dogwood-cli
+          cargo build --release --manifest-path /tmp/dogwood/Cargo.toml -p dogwood-cli
           /tmp/dogwood/target/release/dogwood --help >/dev/null
 
       - name: Validate Nucleus temporal warrant policy
