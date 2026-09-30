@@ -392,8 +392,25 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
+                            let constructor_application = self
+                                .constructor_application(target)
+                                .filter(|(constructor, _)| {
+                                    reduction
+                                        .rules
+                                        .iter()
+                                        .any(|rule| rule.constructor == *constructor)
+                                })
+                                .or_else(|| {
+                                    self.is_bool_recursor_reduction(reduction).then(|| {
+                                        self.reduced_constructor_application(
+                                            target,
+                                            transparency,
+                                            budget.min(512),
+                                        )
+                                    })?
+                                });
                             if let Some((constructor, constructor_arguments)) =
-                                self.constructor_application(target)
+                                constructor_application
                                 && let Some(rule) = reduction
                                     .rules
                                     .iter()
@@ -518,6 +535,36 @@ impl<'a> Machine<'a> {
                             visited.clear();
                             closure = field;
                             continue;
+                        }
+                        NeutralHead::Const { name, levels }
+                            if self.recursor_reductions.get(name).is_some_and(|reduction| {
+                                let required = reduction.num_params
+                                    + 1
+                                    + reduction.rules.len()
+                                    + reduction.num_indices
+                                    + 1;
+                                neutral.spine.len() >= required
+                                    && reduction.level_params.len() == levels.len()
+                            }) =>
+                        {
+                            let mut spine = Vec::new();
+                            append_pending(&mut spine, &mut pending);
+                            record_transition(
+                                &mut transitions,
+                                record_witnesses,
+                                TransitionWitness::Rigid,
+                            );
+                            return exposed(
+                                Value::Neutral(Neutral {
+                                    head: NeutralHead::Projection {
+                                        type_name: *type_name,
+                                        index,
+                                        structure: Box::new(neutral.clone()),
+                                    },
+                                    spine,
+                                }),
+                                transitions,
+                            );
                         }
                         NeutralHead::Const { .. } => {
                             return Judgment::unknown("projection-constructor-mismatch");
@@ -652,6 +699,46 @@ impl<'a> Machine<'a> {
                 })
             }
         })
+    }
+
+    fn is_bool_recursor_reduction(&self, reduction: &RecursorReduction) -> bool {
+        let Some(bools) = self.bool_primitives.as_ref() else {
+            return false;
+        };
+        reduction.rules.len() == 2
+            && reduction
+                .rules
+                .iter()
+                .any(|rule| rule.constructor == bools.false_ctor)
+            && reduction
+                .rules
+                .iter()
+                .any(|rule| rule.constructor == bools.true_ctor)
+    }
+
+    fn reduced_constructor_application(
+        &self,
+        target: &Closure,
+        transparency: Transparency,
+        budget: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        let exposure = self
+            .expose_internal(
+                target.clone(),
+                transparency,
+                budget.saturating_sub(1),
+                false,
+            )
+            .proven_value()?
+            .value
+            .clone();
+        let Value::Neutral(neutral) = exposure else {
+            return None;
+        };
+        let NeutralHead::Const { name, .. } = neutral.head else {
+            return None;
+        };
+        Some((name, neutral.spine))
     }
 
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
