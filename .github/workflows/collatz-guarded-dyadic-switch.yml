@@ -17,7 +17,7 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           export PATH="$HOME/.elan/bin:$PATH"
           lake build CollatzFinal
-      - name: Kernel qualify exact dyadic switch cases and infinite-chain exclusion
+      - name: Kernel requalify exact dyadic switch cases and infinite-chain exclusion
         run: |
           set -euo pipefail
           mkdir -p evidence/collatz-guarded-dyadic-switch-20260930
