@@ -611,20 +611,10 @@ fn compare_values(
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
-            match compare_neutral_heads(checker, left, right, budget) {
+            match compare_neutrals(checker, left, right, budget, depth, work) {
                 Judgment::Proven { .. } => {}
                 other => return other,
             }
-            if left.spine.len() != right.spine.len() {
-                return Judgment::refuted("neutral-spine-length");
-            }
-            work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
-                (
-                    TypeValue::Term(left.clone()),
-                    TypeValue::Term(right.clone()),
-                    depth,
-                )
-            }));
         }
         _ => return Judgment::refuted("rigid-value-constructor-mismatch"),
     }
@@ -681,6 +671,61 @@ fn compare_nat_literal_neutral(
         );
     }
     Judgment::refuted("Nat-literal-non-Nat-head")
+}
+
+fn compare_neutrals(
+    checker: &TypeChecker<'_>,
+    left: &Neutral,
+    right: &Neutral,
+    budget: usize,
+    depth: usize,
+    work: &mut Vec<(TypeValue, TypeValue, usize)>,
+) -> Judgment<()> {
+    match (&left.head, &right.head) {
+        (
+            NeutralHead::Projection {
+                type_name: left_type,
+                index: left_index,
+                structure: left_structure,
+            },
+            NeutralHead::Projection {
+                type_name: right_type,
+                index: right_index,
+                structure: right_structure,
+            },
+        ) if left_type == right_type && left_index == right_index => {
+            if budget == 0 {
+                return Judgment::unknown("projection-congruence-budget");
+            }
+            match compare_neutrals(
+                checker,
+                left_structure,
+                right_structure,
+                budget - 1,
+                depth,
+                work,
+            ) {
+                Judgment::Proven { .. } => {}
+                other => return other,
+            }
+        }
+        _ => match compare_neutral_heads(checker, left, right, budget) {
+            Judgment::Proven { .. } => {}
+            other => return other,
+        },
+    }
+
+    if left.spine.len() != right.spine.len() {
+        return Judgment::refuted("neutral-spine-length");
+    }
+    work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
+        (
+            TypeValue::Term(left.clone()),
+            TypeValue::Term(right.clone()),
+            depth,
+        )
+    }));
+    Judgment::proven((), "neutral-congruence")
 }
 
 fn compare_neutral_heads(
