@@ -258,6 +258,26 @@ pub(crate) fn convert_with_policy_in_context(
                 let machine = checker.machine();
                 let cheap_left = machine.expose(left.clone(), Transparency::Reducible, remaining);
                 let cheap_right = machine.expose(right.clone(), Transparency::Reducible, remaining);
+                if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXPOSURE").is_some()
+                    && (cheap_left.proven_value().is_none() || cheap_right.proven_value().is_none())
+                {
+                    let status = |j: &Judgment<Value>| match j {
+                        Judgment::Proven { .. } => "PROVEN".to_string(),
+                        Judgment::Unknown { residual } => format!("UNKNOWN:{}", residual.0),
+                        Judgment::Refuted { obstruction } => format!("REFUTED:{}", obstruction.0),
+                    };
+                    eprintln!(
+                        "NUCLEUS_CONVERSION_EXPOSURE:kind=term-term:depth={}:remaining={}:left_expr={}:left_env={}:left_status={}:right_expr={}:right_env={}:right_status={}",
+                        depth,
+                        remaining,
+                        left.expr.0,
+                        left.env.id(),
+                        status(&cheap_left),
+                        right.expr.0,
+                        right.env.id(),
+                        status(&cheap_right)
+                    );
+                }
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
@@ -310,6 +330,23 @@ pub(crate) fn convert_with_policy_in_context(
             (TypeValue::Term(term), other) | (other, TypeValue::Term(term)) => {
                 let machine = checker.machine();
                 let exposed = machine.expose(term.clone(), Transparency::Reducible, remaining);
+                if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXPOSURE").is_some()
+                    && exposed.proven_value().is_none()
+                {
+                    let status = match &exposed {
+                        Judgment::Proven { .. } => "PROVEN".to_string(),
+                        Judgment::Unknown { residual } => format!("UNKNOWN:{}", residual.0),
+                        Judgment::Refuted { obstruction } => format!("REFUTED:{}", obstruction.0),
+                    };
+                    eprintln!(
+                        "NUCLEUS_CONVERSION_EXPOSURE:kind=term-other:depth={}:remaining={}:term_expr={}:term_env={}:status={}",
+                        depth,
+                        remaining,
+                        term.expr.0,
+                        term.env.id(),
+                        status
+                    );
+                }
                 let Some(exposed) = exposed.proven_value() else {
                     return Judgment::unknown("conversion-exposure");
                 };
