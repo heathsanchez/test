@@ -31,7 +31,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git diff --name-only "$PARENT_SHA"..HEAD -- metatron-kernel | tr '\n' ' ')" = "metatron-kernel/src/convert.rs "
-          gh api             repos/metalogiclabs/mathgraph/contents/experiments/crystal_program_controller_live_v2/nucleus_projection_congruence_freeze.json             -f ref="$FREEZE_SHA" --jq .content             | tr -d '\n' | base64 -d > /tmp/freeze.json
+          gh api "repos/metalogiclabs/mathgraph/contents/experiments/crystal_program_controller_live_v2/nucleus_projection_congruence_freeze.json?ref=$FREEZE_SHA" --jq .content | tr -d '\\n' | base64 -d > /tmp/freeze.json
           python3 - <<'PY'
           import json
           p=json.load(open('/tmp/freeze.json'))
