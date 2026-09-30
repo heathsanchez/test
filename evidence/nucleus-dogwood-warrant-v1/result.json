@@ -1,0 +1,66 @@
+{
+  "schema": "nucleus-dogwood-warrant-gate-authority-v1",
+  "status": "WARRANTED_BOUNDED",
+  "qualified_head": "be4ddce7f276bdd6ea8fc7548e6a401daf22e4ba",
+  "branch": "nucleus-dogwood-warrant-gate-v1",
+  "run_id": 36649935603,
+  "job_id": 109681480647,
+  "artifact": {
+    "id": 11069804976,
+    "name": "nucleus-dogwood-warrant-gate-be4ddce7f276bdd6ea8fc7548e6a401daf22e4ba",
+    "digest": "sha256:5f50585aed95fa1ff39677a43a4129f49bba1096720fb05a94319ffd397302cf"
+  },
+  "dogwood": {
+    "repository": "dogwood-policy/dogwood",
+    "sha": "996d756de1013b7ae209a14f566a80375a59f2f0"
+  },
+  "failed_control": {
+    "candidate_sha": "a1b62bd3dfb05ae5d95c019d9eb37ca8b3c31cf5",
+    "run_id": 35960340790,
+    "run_conclusion": "failure",
+    "qualification_request": "ALLOW",
+    "full_replay_request": "DENY",
+    "artifact_request": "DENY",
+    "promotion_request": "DENY"
+  },
+  "warranted_control": {
+    "candidate_sha": "a12353b7cce96c48d9a0c684c3e9d81031168e1b",
+    "run_id": 36627307769,
+    "run_conclusion": "success",
+    "artifact_id": 11061162830,
+    "native_accept": 102,
+    "native_reject": 58,
+    "residual": 33,
+    "wrong": 0,
+    "qualification_request": "ALLOW",
+    "full_replay_request": "ALLOW",
+    "artifact_request": "ALLOW",
+    "promotion_before_revoke": "ALLOW",
+    "promotion_after_revoke": "DENY"
+  },
+  "decision_stream": [
+    "@10 (time point 0): ALLOW",
+    "@30 (time point 1): DENY",
+    "@40 (time point 2): DENY",
+    "@50 (time point 3): DENY",
+    "@110 (time point 4): ALLOW",
+    "@130 (time point 5): ALLOW",
+    "@150 (time point 6): ALLOW",
+    "@170 (time point 7): ALLOW",
+    "@190 (time point 8): DENY"
+  ],
+  "hashes": {
+    "policy_sha256": "a33416b3a3c22c94519a2155ed648bd2cefdff2f5b08b78b81ece7732f0b5cb6",
+    "schema_sha256": "887699d2f43af305a1b9326787fdd5f7859207d60d9b4b60b8f4902c8228b577",
+    "trace_sha256": "34fa1975133048fd6f4b6c6eba6a9b4f2ea31c7eabdf05b2630e79d26d44486c",
+    "lineage_sha256": "5b68ae543e18031567f3cafd85946f2c67868b58fb43d29453bbf115d6fc7466"
+  },
+  "claim": "The declared Nucleus dependency-closed promotion rule is representable and enforceable in pinned Dogwood on these source-pinned traces.",
+  "boundary": [
+    "GitHub event provenance is trusted input",
+    "source-pinned projected traces only",
+    "not full ROS policy coverage",
+    "not Dogwood/Metatron/CLC semantic equivalence",
+    "not authentication of external events by Dogwood"
+  ]
+}
