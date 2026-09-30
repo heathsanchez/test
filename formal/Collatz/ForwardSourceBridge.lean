@@ -2,6 +2,7 @@ import Collatz.SourceCylinderExit
 
 set_option maxRecDepth 10000
 set_option maxHeartbeats 2000000
+set_option exponentiation.threshold 512
 
 namespace CollatzFinal.SourceProduct
 
@@ -34,15 +35,17 @@ theorem multiple_three_no_smaller_start_preimage (k : Nat) {p y : Nat}
     (hy : y%3 = 0) (hlt : p < y) : iter shortcut k p ≠ y := by
   intro ht
   have he := iter_multiple_three_preimage k hy ht
-  have hb : y ≤ 2^k*y := by
-    induction k with
+  have hbound : ∀ i, y ≤ 2^i*y := by
+    intro i
+    induction i with
     | zero => simp
-    | succ k ih =>
+    | succ i ih =>
       rw [Nat.pow_succ]
-      have hm : 2^k*2*y = 2*(2^k*y) := by
+      have hm : 2^i*2*y = 2*(2^i*y) := by
         simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
       rw [hm]
       omega
+  have hb := hbound k
   omega
 
 def hardSource : Nat := 3294206330938702138381104133963803
@@ -51,7 +54,8 @@ def hardRay (t : Nat) : Nat := hardSource + (2^191*27)*t
 theorem hard_ray_has_no_smaller_start_preimage (t k p : Nat)
     (hp : p < hardRay t) : iter shortcut k p ≠ hardRay t := by
   apply multiple_three_no_smaller_start_preimage k _ hp
-  simp only [hardRay, hardSource, Nat.add_mod, Nat.mul_mod]
+  change (3294206330938702138381104133963803 +
+    84740873427720190311783157213303496617381798500264465924096*t)%3 = 0
   omega
 
 /-- The exact base witness exits at 279; the qualified cylinder is explicitly narrow. -/
