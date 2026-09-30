@@ -1,0 +1,37 @@
+name: Collatz exit guard audit
+on:
+  push:
+    branches: [collatz-exit-guard-audit-20261001]
+    paths:
+      - .github/workflows/collatz-exit-guard-audit.yml
+      - experiments/collatz_exit_guard_audit_20261001.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay exact bounded guard audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-exit-guard-audit
+          python3 experiments/collatz_exit_guard_audit_20261001.py > evidence/collatz-exit-guard-audit/audit.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/collatz-exit-guard-audit/audit.json').read_text())
+          assert r['certificate_sha256']=='8f0e2552110c14e7ad41944ca0f30209bc5162f6787caa8a548ee35bc50a9804'
+          assert r['global_collatz']=='UNKNOWN'
+          print('BOUNDED_EXACT_GUARD_AUDIT_PASSED')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-exit-guard-audit/commit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-exit-guard-audit
+          path: evidence/collatz-exit-guard-audit
+          if-no-files-found: error
