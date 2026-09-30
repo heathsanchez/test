@@ -42,5 +42,33 @@ theorem composed_affine_return_repayment_of_floor
 #print axioms composed_affine_return_repayment
 #print axioms composed_affine_return_repayment_of_floor
 
+/-- A known return residue can certify the whole matching owner cylinder. -/
+theorem affine_return_repayment_of_residue
+    {A B P modulus rho m m' : Nat}
+    (hcontract : A < P)
+    (hguard : B < (P - A) * rho)
+    (hresidue : m % modulus = rho)
+    (heq : P * m' = A * m + B) :
+    m' < m := by
+  have hfloor : rho ≤ m := by
+    rw [← hresidue]
+    exact Nat.mod_le m modulus
+  exact affine_return_strict_descent_of_live_floor
+    hcontract hfloor hguard heq
+
+/-- Concrete 128→168 owner macro from the independently checked overshoot
+trace: this law repays at every positive starting owner satisfying its equation.
+This theorem does not assert that every source eventually admits this law. -/
+theorem overshoot_witness_macro_repayment
+    {m m' : Nat}
+    (hpositive : 0 < m)
+    (heq : 1099511627776 * m' = 282429536481 * m + 592347247211) :
+    m' < m := by
+  exact affine_return_strict_descent_of_live_floor
+    (by decide) (by omega) (by decide) heq
+
+#print axioms affine_return_repayment_of_residue
+#print axioms overshoot_witness_macro_repayment
+
 end SourceProduct
 end CollatzFinal
