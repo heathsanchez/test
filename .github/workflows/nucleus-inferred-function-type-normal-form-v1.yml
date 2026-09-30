@@ -199,6 +199,8 @@ jobs:
               'verified_residual_contraction': 0,
               'coarse_signature_count': len(coarse_counts),
               'coarse_signatures': out['coarse_signatures'],
+              'full_signature_count': len(full_counts),
+              'full_signatures': out['full_signatures'],
           }, sort_keys=True))
           PY
 
