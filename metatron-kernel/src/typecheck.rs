@@ -286,7 +286,19 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
+                let app_function_trace =
+                    std::env::var_os("NUCLEUS_TRACE_APP_FUNCTION_TYPE").is_some().then(|| {
+                        self.application_function_type_signature(
+                            *fun,
+                            &function_type,
+                            context,
+                            *remaining,
+                        )
+                    });
                 let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                    if let Some(trace) = app_function_trace {
+                        eprintln!("NUCLEUS_APP_FUNCTION_TYPE:{trace}");
+                    }
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true) {
@@ -521,6 +533,144 @@ impl<'a> TypeChecker<'a> {
             }
             TypeValue::Pi { .. } => Judgment::refuted("pi-value-is-not-a-sort"),
         }
+    }
+
+    fn application_function_type_signature(
+        &self,
+        function: ExprId,
+        ty: &Judgment<TypeValue>,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let function_expr = match self.expressions.get(function) {
+            Some(Expr::BVar(_)) => "bvar",
+            Some(Expr::NatLit(_)) => "natlit",
+            Some(Expr::StrLit(_)) => "strlit",
+            Some(Expr::Sort(_)) => "sort",
+            Some(Expr::Const { .. }) => "const",
+            Some(Expr::App { .. }) => "app",
+            Some(Expr::Lam { .. }) => "lam",
+            Some(Expr::Pi { .. }) => "pi",
+            Some(Expr::Let { .. }) => "let",
+            Some(Expr::Proj { .. }) => "proj",
+            None => "missing",
+        };
+
+        let (type_kind, exposed_kind, head_kind, spine_len, result_type_kind) = match ty {
+            Judgment::Proven {
+                value: TypeValue::Sort(_),
+                ..
+            } => ("sort", "na", "na".to_string(), 0usize, "na"),
+            Judgment::Proven {
+                value: TypeValue::Pi { .. },
+                ..
+            } => ("pi", "pi", "na".to_string(), 0usize, "na"),
+            Judgment::Proven {
+                value: TypeValue::Term(closure),
+                ..
+            } => {
+                let exposed = self.machine().expose(
+                    closure.clone(),
+                    Transparency::Reducible,
+                    budget,
+                );
+                match exposed {
+                    Judgment::Proven {
+                        value: Value::Pi { .. },
+                        ..
+                    } => ("term", "pi", "na".to_string(), 0usize, "na"),
+                    Judgment::Proven {
+                        value: Value::Sort(_),
+                        ..
+                    } => ("term", "sort", "na".to_string(), 0usize, "na"),
+                    Judgment::Proven {
+                        value: Value::Lam { .. },
+                        ..
+                    } => ("term", "lam", "na".to_string(), 0usize, "na"),
+                    Judgment::Proven {
+                        value: Value::NatLit(_),
+                        ..
+                    } => ("term", "natlit", "na".to_string(), 0usize, "na"),
+                    Judgment::Proven {
+                        value: Value::Neutral(neutral),
+                        ..
+                    } => {
+                        let head = match &neutral.head {
+                            NeutralHead::Free(free) => format!("free:{}", free.0),
+                            NeutralHead::Const { name, levels } => {
+                                format!("const:{}:levels={}", name.0, levels.len())
+                            }
+                            NeutralHead::Projection {
+                                type_name,
+                                index,
+                                ..
+                            } => format!("proj:{}:{}", type_name.0, index),
+                        };
+                        let result_kind = self
+                            .neutral_result_type(&neutral, context, budget)
+                            .map(|result| match result {
+                                TypeValue::Sort(_) => "sort",
+                                TypeValue::Pi { .. } => "pi",
+                                TypeValue::Term(result) => match self.machine().expose(
+                                    result,
+                                    Transparency::Reducible,
+                                    budget,
+                                ) {
+                                    Judgment::Proven {
+                                        value: Value::Pi { .. },
+                                        ..
+                                    } => "term->pi",
+                                    Judgment::Proven {
+                                        value: Value::Sort(_),
+                                        ..
+                                    } => "term->sort",
+                                    Judgment::Proven {
+                                        value: Value::Neutral(_),
+                                        ..
+                                    } => "term->neutral",
+                                    Judgment::Proven {
+                                        value: Value::Lam { .. },
+                                        ..
+                                    } => "term->lam",
+                                    Judgment::Proven {
+                                        value: Value::NatLit(_),
+                                        ..
+                                    } => "term->natlit",
+                                    Judgment::Refuted { .. } => "term->refuted",
+                                    Judgment::Unknown { .. } => "term->unknown",
+                                },
+                            })
+                            .unwrap_or("none");
+                        ("term", "neutral", head, neutral.spine.len(), result_kind)
+                    }
+                    Judgment::Refuted { .. } => {
+                        ("term", "refuted", "na".to_string(), 0usize, "na")
+                    }
+                    Judgment::Unknown { .. } => {
+                        ("term", "unknown", "na".to_string(), 0usize, "na")
+                    }
+                }
+            }
+            Judgment::Refuted { obstruction } => (
+                "refuted",
+                "na",
+                format!("obstruction:{}", obstruction.0),
+                0usize,
+                "na",
+            ),
+            Judgment::Unknown { residual } => (
+                "unknown",
+                "na",
+                format!("residual:{}", residual.0),
+                0usize,
+                "na",
+            ),
+        };
+
+        format!(
+            "fun_expr={function_expr}:type={type_kind}:exposed={exposed_kind}:head={head_kind}:spine={spine_len}:result_type={result_type_kind}:context_depth={}:budget={budget}",
+            context.len()
+        )
     }
 
     fn pi_view(&self, ty: Judgment<TypeValue>, budget: usize) -> Option<(TypeValue, PiBody)> {
