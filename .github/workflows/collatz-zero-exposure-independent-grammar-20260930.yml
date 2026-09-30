@@ -1,0 +1,45 @@
+name: Collatz Zero-Exposure Independent Grammar
+on:
+  push:
+    branches: [collatz-zero-exposure-independent-grammar-20260930]
+    paths:
+      - 'experiments/collatz_zero_exposure_independent_grammar_20260930.py'
+      - '.github/workflows/collatz-zero-exposure-independent-grammar-20260930.yml'
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run independent zero-exposure grammar audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-zero-exposure-independent-grammar-20260930
+          PYTHONPATH=experiments python -u experiments/collatz_zero_exposure_independent_grammar_20260930.py             | tee evidence/collatz-zero-exposure-independent-grammar-20260930/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-zero-exposure-independent-grammar-20260930/result.json'))
+          assert d['schema']=='COLLATZ_ZERO_EXPOSURE_INDEPENDENT_GRAMMAR_20260930'
+          assert d['global_collatz']=='UNKNOWN'
+          print('VERDICT',d['verdict'])
+          for k in ('train','heldout','union'):
+              z=d[k]
+              print(k.upper(),'ZERO',z['zero_switches'],
+                    'LAW_SCC',z['law_recurrent_sccs'],
+                    'CENTER_SCC',z['center_recurrent_sccs'],
+                    'MAX_RUN',z['max_zero_run'],
+                    'RANK',z['max_rank'],
+                    'LEFT',z['leftover_nodes'])
+              print(k.upper(),'LAYERS',z['elimination_layers'])
+          print('CERT',d['certificate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-zero-exposure-independent-grammar-20260930
+          path: evidence/collatz-zero-exposure-independent-grammar-20260930
+          if-no-files-found: error
