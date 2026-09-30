@@ -1,0 +1,101 @@
+name: Nucleus v4.34 Exposure Separator v1
+
+on:
+  push:
+    branches: [nucleus-v434-exposure-separator-v1]
+    paths:
+      - ".github/workflows/nucleus-v434-exposure-separator-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NUCLEUS_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Prove exact semantic base and build
+        run: |
+          set -euo pipefail
+          git fetch -q origin "$NUCLEUS_SHA" --depth=1
+          git diff --exit-code "$NUCLEUS_SHA" HEAD -- metatron-kernel
+          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
+          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch current v4.34 public corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/current /tmp/art
+          mkdir -p /tmp/current /tmp/art
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/art
+          tar -xzf "$(find /tmp/art -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Trace seven exact conversion-exposure cases
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/v434-exposure-separator-v1
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+
+          targets = {
+            "perf/church-numerals",
+            "perf/shared-subterm",
+            "perf/unroll-versus-evaluate",
+            "bugs/proj-of-stuck-prop",
+            "bugs/proj-of-subst-prop",
+            "bugs/rec-of-subst-prop",
+            "perf/proj-stuck-struct",
+          }
+          root=pathlib.Path("/tmp/current")
+          binary=pathlib.Path("metatron-kernel/target/release/metatron-kernel").resolve()
+          rows=[]
+          for bucket,expected in [("good",0),("bad",1)]:
+            for p in sorted((root/bucket).rglob("*.ndjson")):
+              name=str(p.relative_to(root/bucket)).removesuffix(".ndjson")
+              if name not in targets:
+                continue
+              env=os.environ.copy()
+              env["NUCLEUS_TRACE_CONVERSION_EXPOSURE"]="1"
+              env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
+              env["NUCLEUS_TRACE_NEUTRAL_HEADS"]="1"
+              with p.open("rb") as f:
+                q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.PIPE,timeout=240,env=env)
+              lines=q.stderr.decode(errors="replace").splitlines()
+              exposures=[x for x in lines if "NUCLEUS_CONVERSION_EXPOSURE:" in x]
+              down=[x for x in lines if "NUCLEUS_DOWNSTREAM:" in x]
+              rows.append({
+                "test":name,"expected":expected,"rc":q.returncode,
+                "exposures":exposures[-12:],"downstream":down[-4:],
+              })
+          assert len(rows)==7, [r["test"] for r in rows]
+          out={
+            "schema":"nucleus-v434-exposure-separator-v1",
+            "nucleus_authority_sha":os.environ["NUCLEUS_SHA"],
+            "current_test_artifact":int(os.environ["CURRENT_TEST_ARTIFACT"]),
+            "rows":sorted(rows,key=lambda x:x["test"]),
+          }
+          path=pathlib.Path("metatron-kernel/evidence-out/v434-exposure-separator-v1/result.json")
+          path.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-v434-exposure-separator-${{ github.sha }}
+          path: metatron-kernel/evidence-out/v434-exposure-separator-v1
+          if-no-files-found: error
