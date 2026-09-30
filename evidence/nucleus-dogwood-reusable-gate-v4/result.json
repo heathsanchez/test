@@ -1,0 +1,31 @@
+{
+  "schema": "nucleus-dogwood-reusable-gate-v4-authority",
+  "status": "WARRANTED_BOUNDED",
+  "branch": "nucleus-dogwood-reusable-gate-v4",
+  "workflow_sha": "bab9a53f7c95157feccb746c4b81a8d37c577ae6",
+  "run_id": 36651754267,
+  "job_id": 109687244505,
+  "artifact": {
+    "id": 11070691608,
+    "name": "nucleus-dogwood-reusable-gate-bab9a53f7c95157feccb746c4b81a8d37c577ae6",
+    "digest": "sha256:3f0d76fde7021d8e067d91d203f23df993c660519c09dad6d28484b54e217f41"
+  },
+  "source_v3_run": 36651213523,
+  "source_v3_artifact": 11070617564,
+  "source_v3_digest": "sha256:9e88195190da4b2d3c581007ad29427d6b9072c65a4f79b37b82c8682562a71f",
+  "clean_verdict": "ALLOW",
+  "tampered_verdict": "DENY",
+  "tampered_action_outcome": "failure",
+  "hashes": {
+    "action": "eba5cd0b90faba665caa955e72f342001ee3cf865e232af174f34c2cc329b3d9",
+    "event_compiler": "bb16cbe5abd6ad91a8745d9d1660650c7192c500067aa0f3da59c72accb1e908",
+    "renderer": "98fe516f168d65f24b0962346e58270f9e0ee25b9bb5f45027ba256a952cce1b"
+  },
+  "claim": "The Nucleus-to-Dogwood admission path is packaged as a reusable local GitHub Action that authorizes sealed clean evidence and fails closed on a wrong-decision mutation.",
+  "boundary": [
+    "qualified on the sealed V3 31-to-30 lineage",
+    "not yet a generic proof for every Nucleus result schema",
+    "action does not mutate canonical branches",
+    "Dogwood event authenticity remains outside this bounded qualification"
+  ]
+}
