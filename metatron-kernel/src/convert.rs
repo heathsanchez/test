@@ -294,10 +294,8 @@ pub(crate) fn convert_with_policy_in_context(
                         else {
                             return Judgment::unknown("full-conversion-exposure");
                         };
-                        if let (
-                            Value::Neutral(left_neutral),
-                            Value::Neutral(right_neutral),
-                        ) = (full_left, full_right)
+                        if let (Value::Neutral(left_neutral), Value::Neutral(right_neutral)) =
+                            (full_left, full_right)
                             && checker.neutral_values_same_proposition(
                                 left_neutral,
                                 right_neutral,
