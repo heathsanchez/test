@@ -1,0 +1,38 @@
+name: Collatz Zero Block Rank Crystal
+on:
+  push:
+    branches: [collatz-zero-block-rank-crystal-20260930]
+    paths:
+      - 'experiments/collatz_zero_block_rank_crystal_20260930.py'
+      - '.github/workflows/collatz-zero-block-rank-crystal.yml'
+permissions: {contents: read}
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Discover zero-block rank law
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-zero-block-rank-crystal
+          PYTHONPATH=experiments python -u experiments/collatz_zero_block_rank_crystal_20260930.py             | tee evidence/collatz-zero-block-rank-crystal/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-zero-block-rank-crystal/result.json'))
+          x=d['discovery']
+          print('VERDICT',d['verdict'])
+          print('GRAPH',x['nodes'],x['edges'],x['layers'],x['max_rank'],x['rank_drop_histogram'])
+          print('SCALAR',d['strict_scalar_candidates'])
+          print('LEX',x['lex'])
+          print('FUNCTIONAL',x['minimum_rank_functional_subsets'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-zero-block-rank-crystal
+          path: evidence/collatz-zero-block-rank-crystal
+          if-no-files-found: error
