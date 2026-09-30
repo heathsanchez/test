@@ -1,6 +1,9 @@
 import Collatz.GuardedDyadicSwitch
 import Collatz.SourceCylinderExit
 
+set_option maxRecDepth 10000
+set_option maxHeartbeats 2000000
+
 namespace CollatzFinal.SourceProduct
 
 def switchSource (t : Nat) := 3294206330938702138381104133963803 + 84740873427720190311783157213303496617381798500264465924096*t
@@ -14,6 +17,8 @@ theorem iter_at_source_period {n k y q period unit : Nat}
   have hp := (sourceOrbit_correct n k).symm.trans htrace
   have hy := congrArg Prod.fst hp
   have hq := congrArg Prod.snd hp
+  change iter shortcut k n = y at hy
+  change oddCount n k = q at hq
   have he : n+period*t = n+2^k*(unit*t) := by rw [hperiod, Nat.mul_assoc]
   rw [he, shortcut_iter_source_lift, hy, hq, Nat.mul_assoc]
 
@@ -82,6 +87,7 @@ theorem switch_own_orders_0 (t : Nat) :
     unfold switchOwner0
     simp only [Int.natCast_add,Int.natCast_mul]
     rw [returnDefect_linear_ray]
+    simp [returnDefect]
   rw [hr]
   constructor
   · have hb : DyadicOrder (-1813869915301352679501979330449017491456:Int) 12 := ⟨-442839334790369306519037922472904661, by decide, by decide⟩
@@ -100,6 +106,7 @@ theorem switch_own_orders_1 (t : Nat) :
     unfold switchOwner1
     simp only [Int.natCast_add,Int.natCast_mul]
     rw [returnDefect_linear_ray]
+    simp [returnDefect]
   rw [hr]
   constructor
   · have hb : DyadicOrder (-1287599767586799477097898430908365824:Int) 10 := ⟨-1257421648033983864353416436433951, by decide, by decide⟩
