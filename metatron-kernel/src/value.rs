@@ -169,6 +169,11 @@ pub enum Value {
     Pi { domain: Closure, body: Closure },
     Lam { domain: Closure, body: Closure },
     Neutral(Neutral),
+    StuckProjection {
+        type_name: NameId,
+        index: usize,
+        structure: Closure,
+    },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
