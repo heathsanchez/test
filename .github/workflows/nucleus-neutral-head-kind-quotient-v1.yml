@@ -1,0 +1,186 @@
+name: Nucleus Neutral Head Kind Quotient V1
+
+on:
+  push:
+    branches: [nucleus-neutral-head-kind-quotient-v1]
+    paths:
+      - ".github/workflows/nucleus-neutral-head-kind-quotient-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AUTHORITY_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_ARTIFACT: 10712869614
+  CALIBRATION_CONTRACT: metalogiclabs/mathgraph@2d59a95ab6c28c1a1814863ab9becaaba9c83356
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build exact current Nucleus
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen 193-case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Full reclosure and neutral-head residual quotient
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/nucleus-neutral-head-kind-quotient-v1
+          python3 - <<'PY'
+          import collections,json,os,pathlib,re,subprocess,time
+
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          frozen_atoms=[
+            "init-prelude",
+            "perf/args-before-unfold",
+            "perf/folded-constant-first",
+            "perf/folded-constant-last",
+            "perf/magma-list-deep-n21",
+            "perf/magma-list-deep-n36",
+            "perf/magma-list-pair-n21",
+            "perf/magma-list-pair-n7",
+            "tutorial/082_RBTree.id_spec",
+            "tutorial/099_ruleK",
+            "tutorial/112_structEta",
+            "tutorial/124_accRecReduction",
+            "perf/refute-cheap-first",
+            "tutorial/100_ruleKbad",
+            "tutorial/101_ruleKAcc",
+            "tutorial/105_proofIrrelevanceBad",
+            "tutorial/125_accRecNoEta",
+          ]
+          next_action={
+            "free-vs-free":"audit binder/context identity and substitution provenance",
+            "free-vs-const":"audit free-to-rigid head provenance before conversion",
+            "const-vs-free":"audit rigid-to-free head provenance before conversion",
+            "const-vs-const":"audit rigid constant lineage/spines and earned convertibility",
+            "projection-involved":"audit projection owner/field authority",
+          }
+
+          def child(line):
+              lm=re.search(r'left=(.*?):left_spine=',line)
+              rm=re.search(r':right=(.*?):right_spine=',line)
+              if not lm or not rm: return "other-neutral-shape"
+              left,right=lm.group(1),rm.group(1)
+              def kind(s):
+                  if s.startswith("Free"): return "free"
+                  if s.startswith("Const"): return "const"
+                  if s.startswith("Projection"): return "projection"
+                  return "other"
+              a,b=kind(left),kind(right)
+              if "projection" in (a,b): return "projection-involved"
+              v=f"{a}-vs-{b}"
+              return v if v in next_action else "other-neutral-shape"
+
+          rows=[]
+          residuals=[]
+          counts=collections.Counter()
+          started=time.time()
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  env=os.environ.copy()
+                  env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+                  env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+                  with p.open('rb') as f:
+                      q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                          stderr=subprocess.PIPE,timeout=120,env=env)
+                  err=q.stderr.decode(errors='replace')
+                  downs=[x for x in err.splitlines() if 'NUCLEUS_DOWNSTREAM:' in x]
+                  neutrals=[x for x in err.splitlines() if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x]
+                  reason=""
+                  if q.returncode in (2,3):
+                      terminal=downs[-1] if downs else ""
+                      m=re.search(r'reason=([^:]+)$',terminal)
+                      reason=m.group(1) if m else "untraced"
+                      residuals.append(name)
+                      counts[reason]+=1
+                  rows.append({"test":name,"expected":expected,"rc":q.returncode,"reason":reason,
+                               "neutral_tail":neutrals[-2:]})
+
+          elapsed=time.time()-started
+          assert len(rows)==193,len(rows)
+          assert len(residuals)==30,(len(residuals),counts)
+          assert counts["distinct-neutral-heads"]==17,counts
+
+          atom_rows=[]
+          by_child=collections.Counter()
+          for name in frozen_atoms:
+              row=next((r for r in rows if r["test"]==name),None)
+              assert row is not None,name
+              assert row["reason"]=="distinct-neutral-heads",(name,row["reason"])
+              assert row["neutral_tail"],name
+              c=child(row["neutral_tail"][-1])
+              by_child[c]+=1
+              atom_rows.append({
+                  "atom":name,
+                  "parent_residual":"distinct-neutral-heads",
+                  "child_residual":c,
+                  "credited":c in next_action,
+                  "next_action":next_action.get(c,""),
+                  "witness":row["neutral_tail"][-1],
+              })
+
+          credited=sum(1 for r in atom_rows if r["credited"])
+          result={
+              "schema":"nucleus.neutral-head-kind-quotient.v1",
+              "calibration_contract":os.environ["CALIBRATION_CONTRACT"],
+              "authority_sha":os.environ["AUTHORITY_SHA"],
+              "candidate_sha":os.environ["GITHUB_SHA"],
+              "full_corpus_cases":193,
+              "residual_total":30,
+              "verdict_counts_note":"semantic verdict totals unchanged from 103 ACCEPT / 60 REJECT / 30 residual authority",
+              "parent_residual":"distinct-neutral-heads",
+              "frozen_atoms":len(frozen_atoms),
+              "credited_atoms":credited,
+              "contraction_fraction":credited/len(frozen_atoms),
+              "child_counts":dict(by_child),
+              "atoms":atom_rows,
+              "scientific_elapsed_seconds":elapsed,
+              "status":"WARRANTED_BOUNDED_RESIDUAL_QUOTIENT" if credited else "NO_CONTRACTION",
+              "boundary":"Diagnostic refinement only. No new ACCEPT/REJECT authority; full 193-case verdict boundary is preserved."
+          }
+          out=pathlib.Path('evidence/nucleus-neutral-head-kind-quotient-v1/result.json')
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({k:result[k] for k in [
+            "frozen_atoms","credited_atoms","contraction_fraction","child_counts","residual_total","status"
+          ]},sort_keys=True))
+          PY
+
+      - name: Assert shared calibration boundary
+        run: |
+          python3 - <<'PY'
+          import json
+          p=json.load(open('evidence/nucleus-neutral-head-kind-quotient-v1/result.json'))
+          assert p['frozen_atoms']==17,p
+          assert p['residual_total']==30,p
+          assert p['credited_atoms']<=17,p
+          assert set(p['child_counts']) <= {
+              'free-vs-free','free-vs-const','const-vs-free','const-vs-const',
+              'projection-involved','other-neutral-shape'
+          },p
+          print("NUCLEUS_SHARED_CALIBRATION",p['credited_atoms'],p['frozen_atoms'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-neutral-head-kind-quotient-v1
+          path: evidence/nucleus-neutral-head-kind-quotient-v1/result.json
+          if-no-files-found: error
