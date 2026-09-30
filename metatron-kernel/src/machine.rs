@@ -708,6 +708,14 @@ impl<'a> Machine<'a> {
         let NeutralHead::Const { name, .. } = neutral.head else {
             return None;
         };
+        if std::env::var_os("NUCLEUS_TRACE_BOOL_WHNF").is_some() {
+            eprintln!(
+                "NUCLEUS_BOOL_WHNF:target_expr={}:constructor={}:spine={}",
+                target.expr.0,
+                name.0,
+                neutral.spine.len()
+            );
+        }
         Some((name, neutral.spine))
     }
 
