@@ -536,7 +536,20 @@ impl<'a> Machine<'a> {
                             closure = field;
                             continue;
                         }
-                        NeutralHead::Const { .. } => {
+                        NeutralHead::Const { name, .. } => {
+                            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_MISMATCH").is_some() {
+                                eprintln!(
+                                    "NUCLEUS_PROJECTION_MISMATCH:type={}:index={}:expected_ctor={}:actual_ctor={}:structure_expr={}:structure_env={}:actual_spine={}:params={}",
+                                    type_name.0,
+                                    index,
+                                    spec.constructor.0,
+                                    name.0,
+                                    structure.expr.0,
+                                    structure.env.id(),
+                                    neutral.spine.len(),
+                                    spec.num_params
+                                );
+                            }
                             return Judgment::unknown("projection-constructor-mismatch");
                         }
                         NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
