@@ -1,0 +1,157 @@
+name: Nucleus Dogwood Promotion Guard v1
+
+on:
+  push:
+    branches: [nucleus-dogwood-promotion-guard-v1]
+    paths:
+      - ".github/workflows/nucleus-dogwood-promotion-guard-v1.yml"
+      - "experiments/nucleus-dogwood-promotion-guard-v1/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nucleus-dogwood-promotion-guard-v1
+  cancel-in-progress: true
+
+env:
+  AUTHORITY_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_ARTIFACT: "10712869614"
+  ORIGIN_RUN: "36638671203"
+  ORIGIN_ARTIFACT_ID: "11065053909"
+  ORIGIN_DIGEST: "sha256:15313a7fc30156ad75e090866a6d72510cc5194bd5dabc882110aaa182b0ff5e"
+  DOGWOOD_SHA: 996d756de1013b7ae209a14f566a80375a59f2f0
+  EXP: experiments/nucleus-dogwood-promotion-guard-v1
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify exact Nucleus origin evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$AUTHORITY_SHA" "$GITHUB_SHA"
+
+          gh api "repos/heathsanchez/test/actions/artifacts/$ORIGIN_ARTIFACT_ID" > /tmp/origin-meta.json
+          jq -e --arg d "$ORIGIN_DIGEST" '.expired == false and .digest == $d' /tmp/origin-meta.json
+
+          rm -rf /tmp/origin /tmp/origin.zip
+          mkdir -p /tmp/origin
+          gh api "repos/heathsanchez/test/actions/artifacts/$ORIGIN_ARTIFACT_ID/zip" > /tmp/origin.zip
+          unzip -q /tmp/origin.zip -d /tmp/origin
+          RESULT="$(find /tmp/origin -name result.json -print -quit)"
+          test -n "$RESULT"
+          jq -e --arg a "$AUTHORITY_SHA" '
+            .authority_sha == $a
+            and .residual_count == 30
+            and .reason_counts["application-function-type"] == 11
+            and (.by_reason["application-function-type"] | length) == 11
+          ' "$RESULT"
+          cp "$RESULT" /tmp/origin-result.json
+
+      - name: Build pinned Dogwood
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/dogwood-policy/dogwood /tmp/dogwood
+          git -C /tmp/dogwood checkout "$DOGWOOD_SHA"
+          cargo build --release -p dogwood-cli --manifest-path /tmp/dogwood/Cargo.toml
+          /tmp/dogwood/target/release/dogwood --help >/dev/null
+
+      - name: Validate temporal policy
+        run: |
+          set -euo pipefail
+          /tmp/dogwood/target/release/dogwood validate             "$EXP/policy.dw"             --policy-schema "$EXP/schema.cedarschema"
+
+      - name: Replay lawful and adversarial histories
+        run: |
+          set -euo pipefail
+          mkdir -p "$EXP/evidence-out/replays"
+          DOGWOOD=/tmp/dogwood/target/release/dogwood
+
+          check() {
+            name="$1"
+            expect="$2"
+            out="$EXP/evidence-out/replays/$name.out"
+            "$DOGWOOD" replay "$EXP/policy.dw"               --policy-schema "$EXP/schema.cedarschema"               --trace "$EXP/traces/$name.log" | tee "$out"
+            final="$(grep -E 'ALLOW|DENY' "$out" | tail -n 1)"
+            test -n "$final"
+            echo "$final" | grep -q "$expect"
+          }
+
+          check valid ALLOW
+          check missing-residual DENY
+          check out-of-order DENY
+          check missing-controls DENY
+          check missing-reclosure DENY
+          check wrong-authority DENY
+          check stale-corpus DENY
+          check rejected DENY
+
+      - name: Emit qualification evidence
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re
+          exp=pathlib.Path(os.environ["EXP"])
+          origin=json.loads(pathlib.Path("/tmp/origin-result.json").read_text())
+          expected={
+            "valid":"ALLOW",
+            "missing-residual":"DENY",
+            "out-of-order":"DENY",
+            "missing-controls":"DENY",
+            "missing-reclosure":"DENY",
+            "wrong-authority":"DENY",
+            "stale-corpus":"DENY",
+            "rejected":"DENY",
+          }
+          rows=[]
+          for name,want in expected.items():
+              text=(exp/"evidence-out"/"replays"/f"{name}.out").read_text()
+              verdicts=re.findall(r"\b(ALLOW|DENY)\b",text)
+              assert verdicts, (name,text)
+              got=verdicts[-1]
+              assert got==want,(name,got,want)
+              rows.append({"trace":name,"expected":want,"observed":got})
+
+          def sha(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          out={
+            "schema":"nucleus-dogwood-promotion-guard-v1",
+            "status":"WARRANTED_BOUNDED",
+            "nucleus_authority_sha":os.environ["AUTHORITY_SHA"],
+            "arena_artifact":int(os.environ["ARENA_ARTIFACT"]),
+            "origin_run":int(os.environ["ORIGIN_RUN"]),
+            "origin_artifact_id":int(os.environ["ORIGIN_ARTIFACT_ID"]),
+            "origin_digest":os.environ["ORIGIN_DIGEST"],
+            "origin_residual_count":origin["residual_count"],
+            "origin_application_function_type_count":origin["reason_counts"]["application-function-type"],
+            "origin_application_cases":origin["by_reason"]["application-function-type"],
+            "dogwood_sha":os.environ["DOGWOOD_SHA"],
+            "policy_sha256":sha(exp/"policy.dw"),
+            "schema_sha256":sha(exp/"schema.cedarschema"),
+            "replays":rows,
+            "claim_boundary":"Temporal promotion policy only; no new Nucleus semantic verdict is promoted."
+          }
+          p=exp/"evidence-out"/"result.json"
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-dogwood-promotion-guard-${{ github.sha }}
+          path: experiments/nucleus-dogwood-promotion-guard-v1/evidence-out
+          if-no-files-found: warn
