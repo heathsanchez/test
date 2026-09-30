@@ -1,0 +1,132 @@
+name: Nucleus Recursor Target WHNF v1
+
+on:
+  push:
+    branches: [nucleus-crystal-recursor-target-whnf-v1]
+    paths:
+      - ".github/workflows/nucleus-recursor-target-whnf-v1.yml"
+      - "metatron-kernel/src/machine.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-recursor-target-whnf-v1
+  cancel-in-progress: true
+
+env:
+  BASE_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build candidate and exact 30-residual authority
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/art /tmp/tests /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Full 193-case causal reclosure
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/recursor-target-whnf-v1
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          def rr(binary,p):
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL,timeout=180)
+              return q.returncode
+
+          rows=[]
+          for bucket,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/bucket).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/bucket)).removesuffix('.ndjson')
+                  rows.append({
+                      'test':name,'expected':expected,
+                      'base':rr(base,p),'candidate':rr(cand,p)
+                  })
+
+          assert len(rows)==193
+          assert sum(r['base']==0 for r in rows)==103
+          assert sum(r['base']==1 for r in rows)==60
+          assert sum(r['base'] in (2,3) for r in rows)==30
+
+          wrong=[r for r in rows if r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          regressions=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
+          errors=[r for r in rows if r['candidate'] not in (0,1,2,3)]
+          earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
+          changes=[r for r in rows if r['base']!=r['candidate']]
+
+          assert not wrong,wrong
+          assert not regressions,regressions
+          assert not errors,errors
+
+          targets=[
+              'perf/magma-list-deep-n21',
+              'perf/magma-list-deep-n36',
+              'perf/magma-list-pair-n21',
+              'perf/magma-list-pair-n7',
+          ]
+          earned_names=[r['test'] for r in earned]
+          missing=[t for t in targets if t not in earned_names]
+          assert not missing,(missing,earned_names,changes)
+
+          out={
+              'schema':'nucleus-recursor-target-whnf-v1',
+              'base_sha':os.environ['BASE_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'base_residual':30,
+              'candidate_residual':sum(r['candidate'] in (2,3) for r in rows),
+              'native_accept':sum(r['candidate']==0 for r in rows),
+              'native_reject':sum(r['candidate']==1 for r in rows),
+              'earned':earned_names,
+              'changes':changes,
+              'wrong':wrong,'regressions':regressions,'errors':errors,
+              'required_targets':targets,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/recursor-target-whnf-v1/result.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps({
+              'candidate_residual':out['candidate_residual'],
+              'native_accept':out['native_accept'],
+              'native_reject':out['native_reject'],
+              'earned':out['earned'],
+              'changes':[(r['test'],r['base'],r['candidate']) for r in changes],
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-recursor-target-whnf-${{ github.sha }}
+          path: metatron-kernel/evidence-out/recursor-target-whnf-v1
+          if-no-files-found: warn
