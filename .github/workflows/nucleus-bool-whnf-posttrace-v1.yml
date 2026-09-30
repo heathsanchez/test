@@ -1,0 +1,132 @@
+name: Nucleus Bool WHNF Posttrace v1
+
+on:
+  push:
+    branches: [nucleus-crystal-bool-whnf-posttrace-v1]
+    paths:
+      - ".github/workflows/nucleus-bool-whnf-posttrace-v1.yml"
+      - "metatron-kernel/src/machine.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-bool-whnf-posttrace-v1
+  cancel-in-progress: true
+
+env:
+  BASE_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build candidate and exact authority
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/art /tmp/tests /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Compare pre/post Bool-WHNF causal traces
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/bool-whnf-posttrace-v1
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tests/good')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          targets=[
+              'perf/magma-list-deep-n21',
+              'perf/magma-list-deep-n36',
+              'perf/magma-list-pair-n21',
+              'perf/magma-list-pair-n7',
+          ]
+          def rr(binary,p,candidate=False):
+              env=os.environ.copy()
+              env.update({
+                'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                'NUCLEUS_TRACE_RESIDUAL':'1',
+              })
+              if candidate:
+                  env['NUCLEUS_TRACE_BOOL_WHNF']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.PIPE,timeout=180,env=env)
+              return q.returncode,q.stderr.decode(errors='replace')
+
+          out={}
+          for name in targets:
+              p=root/(name+'.ndjson')
+              brc,berr=rr(base,p,False)
+              crc,cerr=rr(cand,p,True)
+              assert brc in (2,3),(name,brc)
+              assert crc==brc,(name,brc,crc)
+              bneutral=[x for x in berr.splitlines() if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x]
+              cneutral=[x for x in cerr.splitlines() if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x]
+              whnf=[x for x in cerr.splitlines() if 'NUCLEUS_BOOL_WHNF:' in x]
+              bdown=[x for x in berr.splitlines() if 'NUCLEUS_DOWNSTREAM:' in x]
+              cdown=[x for x in cerr.splitlines() if 'NUCLEUS_DOWNSTREAM:' in x]
+              assert whnf,(name,cerr[-12000:])
+              out[name]={
+                  'base_rc':brc,'candidate_rc':crc,
+                  'whnf_count':len(whnf),
+                  'whnf':whnf[-40:],
+                  'base_neutral_count':len(bneutral),
+                  'candidate_neutral_count':len(cneutral),
+                  'base_neutral_tail':bneutral[-30:],
+                  'candidate_neutral_tail':cneutral[-30:],
+                  'base_downstream_tail':bdown[-8:],
+                  'candidate_downstream_tail':cdown[-8:],
+              }
+
+          result={
+              'schema':'nucleus-bool-whnf-posttrace-v1',
+              'base_sha':os.environ['BASE_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'terminal_delta':False,
+              'targets':out,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/bool-whnf-posttrace-v1/result.json').write_text(
+              json.dumps(result,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps({
+              name:{
+                  'whnf_count':v['whnf_count'],
+                  'base_neutral_tail':v['base_neutral_tail'][-6:],
+                  'candidate_neutral_tail':v['candidate_neutral_tail'][-6:],
+                  'base_downstream_tail':v['base_downstream_tail'][-2:],
+                  'candidate_downstream_tail':v['candidate_downstream_tail'][-2:],
+              } for name,v in out.items()
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-bool-whnf-posttrace-${{ github.sha }}
+          path: metatron-kernel/evidence-out/bool-whnf-posttrace-v1
+          if-no-files-found: warn
