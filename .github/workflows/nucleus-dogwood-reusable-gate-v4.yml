@@ -1,0 +1,152 @@
+name: Nucleus Dogwood Reusable Gate v4
+
+on:
+  push:
+    branches: [nucleus-dogwood-reusable-gate-v4]
+    paths:
+      - ".github/workflows/nucleus-dogwood-reusable-gate-v4.yml"
+      - ".github/actions/nucleus-dogwood-admission/**"
+      - "experiments/nucleus-dogwood-reusable-gate-v4/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nucleus-dogwood-reusable-gate-v4
+  cancel-in-progress: true
+
+env:
+  V3_RUN: "36651213523"
+  V3_SHA: 4b84d8ce820b5a499cb3a3bc2b76bb230384cad1
+  V3_ARTIFACT: "11070617564"
+  V3_DIGEST: "sha256:9e88195190da4b2d3c581007ad29427d6b9072c65a4f79b37b82c8682562a71f"
+  TARGET_TEST: other/proj-of-prop
+  ARENA_ARTIFACT: "10712869614"
+  OUT: experiments/nucleus-dogwood-reusable-gate-v4/evidence-out
+
+jobs:
+  qualify-action:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch sealed V3 result
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run="$(gh api "repos/heathsanchez/test/actions/runs/$V3_RUN")"
+          test "$(jq -r .head_sha <<<"$run")" = "$V3_SHA"
+          test "$(jq -r .conclusion <<<"$run")" = "success"
+
+          meta="$(gh api "repos/heathsanchez/test/actions/artifacts/$V3_ARTIFACT")"
+          test "$(jq -r .digest <<<"$meta")" = "$V3_DIGEST"
+          test "$(jq -r '.workflow_run.head_sha' <<<"$meta")" = "$V3_SHA"
+          test "$(jq -r .expired <<<"$meta")" = "false"
+
+          rm -rf /tmp/v3 /tmp/v3.zip
+          mkdir -p /tmp/v3
+          gh api "repos/heathsanchez/test/actions/artifacts/$V3_ARTIFACT/zip" > /tmp/v3.zip
+          unzip -q /tmp/v3.zip -d /tmp/v3
+          RESULT="$(find /tmp/v3 -type f -name result.json -print -quit)"
+          test -n "$RESULT"
+          cp "$RESULT" /tmp/v3-result.json
+
+          jq -e --arg t "$TARGET_TEST" '
+            .base_sha == "d2bdeadceb1bb6d0695f15126fb23b50f732c4ce"
+            and .candidate_sha == "98f87d9e66fb97987427d68180f51a653d626fdb"
+            and .candidate_residual == 30
+            and .native_accept == 103
+            and .native_reject == 60
+            and (.wrong | length) == 0
+            and ([.changes[] | select(.test == $t and .base == 2 and .candidate == 1 and .expected == 1)] | length) == 1
+          ' /tmp/v3-result.json
+
+      - id: clean
+        name: Clean evidence must authorize
+        uses: ./.github/actions/nucleus-dogwood-admission
+        with:
+          result_json: /tmp/v3-result.json
+          target_test: ${{ env.TARGET_TEST }}
+          corpus: arena-193:${{ env.ARENA_ARTIFACT }}
+          evidence: v3-artifact:${{ env.V3_ARTIFACT }}:${{ env.V3_SHA }}
+          output_dir: ${{ env.OUT }}/clean
+
+      - name: Build tampered evidence
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          p=json.load(open('/tmp/v3-result.json'))
+          p['wrong']=[{'test':'synthetic/wrong','candidate':0,'expected':1}]
+          json.dump(p,open('/tmp/v3-tampered.json','w'),indent=2,sort_keys=True)
+          PY
+
+      - id: tampered
+        name: Tampered evidence must fail closed
+        continue-on-error: true
+        uses: ./.github/actions/nucleus-dogwood-admission
+        with:
+          result_json: /tmp/v3-tampered.json
+          target_test: ${{ env.TARGET_TEST }}
+          corpus: arena-193:${{ env.ARENA_ARTIFACT }}
+          evidence: v3-artifact:${{ env.V3_ARTIFACT }}:${{ env.V3_SHA }}
+          output_dir: ${{ env.OUT }}/tampered
+
+      - name: Assert reusable gate behavior
+        env:
+          CLEAN_VERDICT: ${{ steps.clean.outputs.verdict }}
+          TAMPERED_VERDICT: ${{ steps.tampered.outputs.verdict }}
+          TAMPERED_OUTCOME: ${{ steps.tampered.outcome }}
+        run: |
+          set -euo pipefail
+          test "$CLEAN_VERDICT" = "ALLOW"
+          test "$TAMPERED_VERDICT" = "DENY"
+          test "$TAMPERED_OUTCOME" = "failure"
+
+      - name: Seal reusable action qualification
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path('.')
+          out=pathlib.Path(os.environ['OUT'])
+          def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+          result={
+            'schema':'nucleus-dogwood-reusable-gate-v4',
+            'status':'WARRANTED_BOUNDED',
+            'workflow_sha':os.environ['GITHUB_SHA'],
+            'source_v3_run':int(os.environ['V3_RUN']),
+            'source_v3_artifact':int(os.environ['V3_ARTIFACT']),
+            'source_v3_digest':os.environ['V3_DIGEST'],
+            'clean_verdict':'ALLOW',
+            'tampered_verdict':'DENY',
+            'tampered_action_outcome':'failure',
+            'hashes':{
+              'action':sha(root/'.github/actions/nucleus-dogwood-admission/action.yml'),
+              'renderer':sha(root/'.github/actions/nucleus-dogwood-admission/render_policy.py'),
+              'event_compiler':sha(root/'experiments/nucleus-dogwood-live-events-v2/compile_events.py'),
+            },
+            'claim':'The Nucleus-to-Dogwood admission path is packaged as a reusable local GitHub Action that authorizes sealed clean evidence and fails closed on a wrong-decision mutation.',
+            'boundary':[
+              'qualified on the sealed V3 31-to-30 lineage',
+              'not yet a generic proof for every Nucleus result schema',
+              'action does not mutate canonical branches',
+              'Dogwood event authenticity remains outside this bounded qualification',
+            ],
+          }
+          (out/'result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-dogwood-reusable-gate-${{ github.sha }}
+          path: experiments/nucleus-dogwood-reusable-gate-v4/evidence-out
+          if-no-files-found: warn
