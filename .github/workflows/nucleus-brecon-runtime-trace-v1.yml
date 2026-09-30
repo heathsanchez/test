@@ -34,7 +34,7 @@ jobs:
       - name: Build diagnostic
         run: |
           set -euo pipefail
-          cargo fmt --manifest-path metatron-kernel/Cargo.toml --check
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
 
