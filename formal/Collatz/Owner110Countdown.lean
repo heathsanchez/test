@@ -72,13 +72,8 @@ theorem owner110_no_chain_self_bound (m : Nat) :
   have hp :
       2 ^ (m + 1) ≤ 2 ^ (3 * (m + 1)) :=
     Nat.pow_le_pow_of_le (by decide) hexp
-  have hlt : m + 1 < 2 ^ (m + 1) := by
-    induction m with
-    | zero => decide
-    | succ m ih =>
-        rw [Nat.pow_succ]
-        have hp0 : 0 < 2 ^ (m + 1) := Nat.pow_pos (by decide)
-        omega
+  have hlt : m + 1 < 2 ^ (m + 1) :=
+    (m + 1).lt_two_pow_self
   omega
 
 #print axioms owner110_plus_one
