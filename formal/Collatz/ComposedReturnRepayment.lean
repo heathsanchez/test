@@ -64,7 +64,7 @@ theorem overshoot_witness_macro_repayment
     (hpositive : 0 < m)
     (heq : 1099511627776 * m' = 282429536481 * m + 592347247211) :
     m' < m := by
-  exact affine_return_strict_descent_of_live_floor
+  exact affine_return_strict_descent_of_live_floor (L := 1)
     (by decide) (by omega) (by decide) heq
 
 #print axioms affine_return_repayment_of_residue
