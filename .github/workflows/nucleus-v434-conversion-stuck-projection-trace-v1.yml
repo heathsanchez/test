@@ -1,0 +1,46 @@
+name: Nucleus v4.34 Conversion Stuck Projection Trace v1
+
+on:
+  push:
+    branches: [nucleus-v434-conversion-stuck-projection-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-v434-conversion-stuck-projection-trace-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build candidate
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch current public corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/current /tmp/art
+          mkdir -p /tmp/current /tmp/art
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/art
+          tar -xzf "$(find /tmp/art -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+      - name: Trace target
+        run: |
+          set -euo pipefail
+          p=/tmp/current/good/perf/proj-stuck-struct.ndjson
+          NUCLEUS_TRACE_CONVERSION_STUCK_PROJECTION=1           NUCLEUS_TRACE_DOWNSTREAM=1           metatron-kernel/target/release/metatron-kernel < "$p" > /dev/null 2> /tmp/trace.log || rc=$?
+          rc=${rc:-0}
+          echo "RC=$rc"
+          grep 'NUCLEUS_' /tmp/trace.log || true
+          test "$rc" -eq 2
