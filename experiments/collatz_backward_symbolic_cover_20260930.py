@@ -79,14 +79,24 @@ with open('GeneratedBackwardCover.lean','w') as f:
             f.write(f'  have hx := ordinary_exit_of_source_cylinder_odd_merge (n := {n}) (k := {k}) (q := {q-1}) (y := {y}) (p := {p}) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) ({unit} * u)\n')
         f.write('  simpa [familySource, Nat.mul_add, Nat.mul_assoc] using hx\n')
         f.write(f'#print axioms backward_cell_exit_{i}\n')
-    def term(r,h):
+    residual_set=set(residual)
+    closed_early=[c for c in closed if c['h']<=12]
+    frontier=[r for r in range(2**12) if not any(r%(2**c['h'])==c['r'] for c in closed_early)]
+    assert len(frontier)==593
+    def term(r,h,use_chunks=True):
         if (r,h) in lookup:
-            i=lookup[r,h];return f'(.closed {closed[i]["k"]} backward_cell_exit_{i})'
+            i=lookup[r,h];return f'(@CertifiedParameterCover.closed {r} {h} {closed[i]["k"]} backward_cell_exit_{i})'
         if h==18:
-            assert r in residual
-            return '.unresolved'
-        return f'(.split {term(r,h+1)} {term(r+2**h,h+1)})'
+            assert r in residual_set
+            return f'(@CertifiedParameterCover.unresolved {r} {h})'
+        if use_chunks and h==12:
+            return f'backwardSubcover_{r}'
+        return f'(@CertifiedParameterCover.split {r} {h} {term(r,h+1,use_chunks)} {term(r+2**h,h+1,use_chunks)})'
+    f.write('#eval IO.println "CELL_LAWS_CHECKED_BEGIN_SUBTREES"\n')
+    for r in frontier:
+        f.write(f'def backwardSubcover_{r} : CertifiedParameterCover {r} 12 := '+term(r,12,False)+'\n')
     f.write('def backwardCertifiedCover : CertifiedParameterCover 0 0 := '+term(0,0)+'\n')
+    f.write('#eval IO.println "CERTIFIED_TREE_CHECKED_BEGIN_COUNTS"\n')
     f.write('theorem backward_closed_leaf_count : parameterCoverClosedLeaves backwardCertifiedCover = 3294 := by decide\n')
     f.write('theorem backward_residual_leaf_count : parameterCoverResidualLeaves backwardCertifiedCover = 22485 := by decide\n')
     f.write('theorem backward_covered_parameter_slots : parameterCoverClosedSlots backwardCertifiedCover 18 = 239659 := by decide\n')
