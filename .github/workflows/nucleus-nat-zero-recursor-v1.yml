@@ -1,0 +1,171 @@
+name: Nucleus Nat Zero Recursor V1
+
+on:
+  push:
+    branches: [nucleus-nat-zero-recursor-v1]
+    paths:
+      - ".github/workflows/nucleus-nat-zero-recursor-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SEMANTIC_BASE_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  PARENT_SHA: 2c7217e9ad4e43c7aeabad06decffeb6fcd1bb07
+  CANDIDATE_SHA: 7d3f36dd080e497e421aeed59b8129ed3a4a49b2
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Freeze semantic delta
+        run: |
+          set -euo pipefail
+          git diff --name-only "$PARENT_SHA" "$CANDIDATE_SHA" -- metatron-kernel | tee /tmp/changed.txt
+          test "$(cat /tmp/changed.txt)" = "metatron-kernel/src/machine.rs"
+          git diff "$PARENT_SHA" "$CANDIDATE_SHA" -- metatron-kernel/src/machine.rs             | grep -q 'nat_zero_constructor_application'
+
+      - name: Build exact candidate and authorities
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/candidate "$CANDIDATE_SHA"
+          git worktree add --detach /tmp/parent "$PARENT_SHA"
+          git worktree add --detach /tmp/base "$SEMANTIC_BASE_SHA"
+          for w in /tmp/candidate /tmp/parent /tmp/base; do
+            cargo fmt --manifest-path "$w/metatron-kernel/Cargo.toml"
+            cargo test --release --locked --manifest-path "$w/metatron-kernel/Cargo.toml"
+            cargo build --release --locked --manifest-path "$w/metatron-kernel/Cargo.toml"
+          done
+
+      - name: Fetch exact frozen 193-case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/art /tmp/tests /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Four-case decisive screen
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/nucleus-nat-zero-recursor-v1
+          python - <<'PY'
+          import json, pathlib, subprocess
+          root=pathlib.Path('/tmp/tests/good')
+          bins={
+            'parent': pathlib.Path('/tmp/parent/metatron-kernel/target/release/metatron-kernel'),
+            'candidate': pathlib.Path('/tmp/candidate/metatron-kernel/target/release/metatron-kernel'),
+          }
+          names=[
+            'perf/magma-list-deep-n21',
+            'perf/magma-list-deep-n36',
+            'perf/magma-list-pair-n21',
+            'perf/magma-list-pair-n7',
+          ]
+          rows=[]
+          for name in names:
+            p=root/f'{name}.ndjson'
+            row={'test':name}
+            for k,b in bins.items():
+              with p.open('rb') as f:
+                cp=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=180)
+              row[k]=cp.returncode
+              row[k+'_stderr']=cp.stderr.decode(errors='replace')[-4000:]
+            rows.append(row)
+          out={'schema':'nucleus.nat-zero-recursor.screen.v1','rows':rows}
+          path=pathlib.Path('evidence/nucleus-nat-zero-recursor-v1/screen.json')
+          path.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          assert all(r['parent']==2 for r in rows), rows
+          assert all(r['candidate']==0 for r in rows), rows
+          PY
+
+      - name: Full 193-case differential
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+          root=pathlib.Path('/tmp/tests')
+          bins={
+            'base': pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel'),
+            'parent': pathlib.Path('/tmp/parent/metatron-kernel/target/release/metatron-kernel'),
+            'candidate': pathlib.Path('/tmp/candidate/metatron-kernel/target/release/metatron-kernel'),
+          }
+          def rr(binary,p):
+            with p.open('rb') as f:
+              cp=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=180)
+            return cp.returncode, cp.stderr.decode(errors='replace')[-2000:]
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+            for p in sorted((root/d).rglob('*.ndjson')):
+              name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+              row={'test':name,'expected':expected}
+              for k,b in bins.items():
+                rc,err=rr(b,p); row[k]=rc; row[k+'_stderr']=err
+              rows.append(row)
+          assert len(rows)==193, len(rows)
+
+          fa=[r for r in rows if r['expected']==1 and r['candidate']==0]
+          fr=[r for r in rows if r['expected']==0 and r['candidate']==1]
+          regressions=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
+          wrong=[r for r in rows if r['base'] in (2,3) and r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          errors=[r for r in rows if r['candidate'] not in (0,1,2)]
+          earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
+          changes=[r for r in rows if r['base']!=r['candidate']]
+          parent_changes=[r for r in rows if r['parent']!=r['candidate']]
+
+          out={
+            'schema':'nucleus.nat-zero-recursor.v1',
+            'semantic_base_sha':os.environ['SEMANTIC_BASE_SHA'],
+            'parent_sha':os.environ['PARENT_SHA'],
+            'candidate_sha':os.environ['CANDIDATE_SHA'],
+            'full_corpus_cases':len(rows),
+            'base_correct':sum(r['base']==r['expected'] for r in rows),
+            'parent_correct':sum(r['parent']==r['expected'] for r in rows),
+            'candidate_correct':sum(r['candidate']==r['expected'] for r in rows),
+            'native_accept':sum(r['expected']==0 and r['candidate']==0 for r in rows),
+            'native_reject':sum(r['expected']==1 and r['candidate']==1 for r in rows),
+            'candidate_residual':sum(r['candidate']==2 for r in rows),
+            'earned':[r['test'] for r in earned],
+            'changes':[{'test':r['test'],'expected':r['expected'],'base':r['base'],'candidate':r['candidate']} for r in changes],
+            'parent_changes':[{'test':r['test'],'expected':r['expected'],'parent':r['parent'],'candidate':r['candidate']} for r in parent_changes],
+            'false_accepts':[r['test'] for r in fa],
+            'false_rejects':[r['test'] for r in fr],
+            'regressions':[r['test'] for r in regressions],
+            'wrong_deltas':[r['test'] for r in wrong],
+            'errors':[r['test'] for r in errors],
+          }
+          path=pathlib.Path('evidence/nucleus-nat-zero-recursor-v1/result.json')
+          path.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+
+          assert not fa, fa
+          assert not fr, fr
+          assert not regressions, regressions
+          assert not wrong, wrong
+          assert not errors, errors
+          assert out['candidate_correct'] > out['base_correct'], out
+          PY
+
+      - name: Seal evidence
+        run: |
+          set -euo pipefail
+          sha256sum evidence/nucleus-nat-zero-recursor-v1/*.json             | tee evidence/nucleus-nat-zero-recursor-v1/sha256.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-nat-zero-recursor-v1
+          path: evidence/nucleus-nat-zero-recursor-v1/
+          if-no-files-found: error
