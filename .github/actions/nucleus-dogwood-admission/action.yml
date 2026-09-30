@@ -1,0 +1,68 @@
+name: Nucleus Dogwood Admission Gate
+description: Compile Nucleus qualification evidence into a Dogwood lifecycle and require temporal admission.
+inputs:
+  result_json:
+    description: Path to a Nucleus qualification result.json
+    required: true
+  target_test:
+    description: Exact residual/test whose promotion is being authorized
+    required: true
+  corpus:
+    description: Exact corpus lineage identifier
+    required: true
+  evidence:
+    description: Exact evidence/run lineage identifier
+    required: true
+  dogwood_sha:
+    description: Pinned dogwood-policy/dogwood commit
+    required: false
+    default: 996d756de1013b7ae209a14f566a80375a59f2f0
+  output_dir:
+    description: Directory for generated gate evidence
+    required: true
+outputs:
+  verdict:
+    description: Final Dogwood verdict
+    value: ${{ steps.gate.outputs.verdict }}
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+
+    - id: gate
+      shell: bash
+      env:
+        RESULT_JSON: ${{ inputs.result_json }}
+        TARGET_TEST: ${{ inputs.target_test }}
+        CORPUS: ${{ inputs.corpus }}
+        EVIDENCE: ${{ inputs.evidence }}
+        DOGWOOD_SHA: ${{ inputs.dogwood_sha }}
+        OUT: ${{ inputs.output_dir }}
+      run: |
+        set -euo pipefail
+        ROOT="$(cd "$GITHUB_ACTION_PATH/../../.." && pwd)"
+        mkdir -p "$OUT"
+
+        python3 "$ROOT/experiments/nucleus-dogwood-live-events-v2/compile_events.py"           --result "$RESULT_JSON"           --test "$TARGET_TEST"           --corpus "$CORPUS"           --evidence "$EVIDENCE"           --out "$OUT/lifecycle.log"           | tee "$OUT/compiler.json"
+
+        python3 "$GITHUB_ACTION_PATH/render_policy.py"           --result "$RESULT_JSON"           --test "$TARGET_TEST"           --corpus "$CORPUS"           --evidence "$EVIDENCE"           --out "$OUT/policy.dw"
+
+        cp "$ROOT/experiments/nucleus-dogwood-live-events-v2/schema.cedarschema"           "$OUT/schema.cedarschema"
+
+        DOGWOOD_DIR="$RUNNER_TEMP/nucleus-dogwood-$DOGWOOD_SHA"
+        if [ ! -x "$DOGWOOD_DIR/target/release/dogwood" ]; then
+          rm -rf "$DOGWOOD_DIR"
+          git clone -q https://github.com/dogwood-policy/dogwood "$DOGWOOD_DIR"
+          git -C "$DOGWOOD_DIR" checkout -q "$DOGWOOD_SHA"
+          test "$(git -C "$DOGWOOD_DIR" rev-parse HEAD)" = "$DOGWOOD_SHA"
+          cargo build --release --manifest-path "$DOGWOOD_DIR/Cargo.toml" -p dogwood-cli
+        fi
+
+        DOGWOOD="$DOGWOOD_DIR/target/release/dogwood"
+        "$DOGWOOD" validate "$OUT/policy.dw" --policy-schema "$OUT/schema.cedarschema"
+        "$DOGWOOD" replay "$OUT/policy.dw"           --policy-schema "$OUT/schema.cedarschema"           --trace "$OUT/lifecycle.log"           | tee "$OUT/replay.out"
+
+        verdict="$(grep -E 'ALLOW|DENY' "$OUT/replay.out" | tail -n 1 | sed -E 's/.*: (ALLOW|DENY).*/\1/')"
+        test -n "$verdict"
+        echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+        test "$verdict" = "ALLOW"
