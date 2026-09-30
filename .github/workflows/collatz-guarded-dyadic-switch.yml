@@ -1,0 +1,38 @@
+name: Collatz Guarded Dyadic Switch
+on:
+  push:
+    branches: [collatz-guarded-dyadic-switch-20260930]
+    paths: ['.github/workflows/collatz-guarded-dyadic-switch.yml']
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean and build parent authority
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build CollatzFinal
+      - name: Observe missing dyadic capability
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-guarded-dyadic-switch-20260930
+          if lake env lean formal/Collatz/GuardedDyadicSwitchTest.lean > evidence/collatz-guarded-dyadic-switch-20260930/red.log 2>&1; then
+            echo "Missing capability test unexpectedly passed"; exit 1
+          fi
+          cat evidence/collatz-guarded-dyadic-switch-20260930/red.log
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('evidence/collatz-guarded-dyadic-switch-20260930/red.log').read_text()
+          assert 'dyadic_sum_unequal' in s and 'Unknown' in s
+          print('RED_MISSING_GUARDED_DYADIC_CAPABILITY_CONFIRMED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-guarded-dyadic-switch-20260930
+          path: evidence/collatz-guarded-dyadic-switch-20260930
