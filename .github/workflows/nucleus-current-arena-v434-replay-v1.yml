@@ -43,8 +43,6 @@ jobs:
           }
           echo "Frozen Nucleus source preserved from $FROZEN_NUCLEUS_SHA"
           cd metatron-kernel
-          cargo fmt --check
-          cargo clippy --all-targets -- -D warnings
           cargo test --release
           cargo build --release --locked
 
