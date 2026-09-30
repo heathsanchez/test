@@ -207,6 +207,35 @@ theorem equal_order_cancellation_unbounded (k : Nat) :
   · refine ⟨1, ?_, by decide⟩
     simp
 
+/-- The switch classification consumes the exact qualified affine transport. -/
+theorem return_switch_unequal
+    (A₁ B₁ P₁ A₂ B₂ m m' : Int) (D v w : Nat)
+    (hstep : (2 : Int) ^ D * m' = A₂ * m + B₂)
+    (hA : A₂ % 2 = 1)
+    (hdelta : DyadicOrder (returnDefect A₁ B₁ P₁ m) v)
+    (hJ : DyadicOrder
+      (returnInjection A₁ B₁ P₁ A₂ B₂ ((2 : Int) ^ D)) w)
+    (hne : v ≠ w) :
+    D ≤ min v w ∧
+      DyadicOrder (returnDefect A₁ B₁ P₁ m') (min v w - D) := by
+  exact dyadic_switch_unequal hdelta hJ hA hne
+    (returnDefect_transport A₁ B₁ P₁ A₂ B₂ ((2 : Int) ^ D) m m' hstep)
+
+/-- Arbitrarily changing laws with zero injection share one exhausted reserve. -/
+theorem shared_centre_return_exhaustion
+    (A₀ B₀ P₀ : Int) (m A B : Nat → Int) (D : Nat → Nat)
+    (hA : ∀ i, A i % 2 = 1) (hD : ∀ i, 0 < D i)
+    (hstep : ∀ i, (2 : Int) ^ D i * m (i + 1) = A i * m i + B i)
+    (hJ : ∀ i, returnInjection A₀ B₀ P₀ (A i) (B i) ((2 : Int) ^ D i) = 0)
+    (hnz : ∀ i, returnDefect A₀ B₀ P₀ (m i) ≠ 0) : False := by
+  apply fixed_centre_exhaustion
+    (fun i => returnDefect A₀ B₀ P₀ (m i)) A D hA hD
+  · intro i
+    have ht := returnDefect_transport A₀ B₀ P₀
+      (A i) (B i) ((2 : Int) ^ D i) (m i) (m (i + 1)) (hstep i)
+    simpa [hJ i] using ht
+  · exact hnz
+
 #print axioms dyadic_order_exists
 #print axioms dyadic_order_unique
 #print axioms dyadic_sum_unequal
@@ -217,5 +246,7 @@ theorem equal_order_cancellation_unbounded (k : Nat) :
 #print axioms fixed_centre_exhaustion
 #print axioms return_zero_defect_fixed_point
 #print axioms equal_order_cancellation_unbounded
+#print axioms return_switch_unequal
+#print axioms shared_centre_return_exhaustion
 
 end CollatzFinal.SourceProduct
