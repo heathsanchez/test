@@ -36,10 +36,10 @@ theorem zeroExposurePair_no_infinite_laps
     have h :=
       returnDefect_self_scale 81 95 256 (m i) (m (i + 1)) (hstep i)
     simpa using h
-  have hA : ∀ i, (81 : Int) % 2 = 1 := by
+  have hA : ∀ i : Nat, (81 : Int) % 2 = 1 := by
     intro i
     decide
-  have hD : ∀ i, 0 < (8 : Nat) := by
+  have hD : ∀ i : Nat, 0 < (8 : Nat) := by
     intro i
     omega
   have hnz : ∀ i, delta i ≠ 0 := by
