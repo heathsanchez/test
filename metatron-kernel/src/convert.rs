@@ -357,6 +357,28 @@ fn convert_in_context_with_congruence(
                 else {
                     return Judgment::unknown("conversion-exposure");
                 };
+                if let (Value::Neutral(l), Value::Neutral(r)) = (cheap_left, cheap_right)
+                    && matches!(
+                        (&l.head, &r.head),
+                        (
+                            NeutralHead::Projection { .. },
+                            NeutralHead::Projection { .. }
+                        )
+                    )
+                    && positive_projection_congruence(
+                        checker,
+                        l,
+                        r,
+                        remaining,
+                        depth,
+                        context,
+                        delta_policy,
+                        congruence_depth,
+                        &mut 32,
+                    )
+                {
+                    continue;
+                }
                 match compare_values(
                     checker,
                     cheap_left,
@@ -378,6 +400,28 @@ fn convert_in_context_with_congruence(
                         else {
                             return Judgment::unknown("full-conversion-exposure");
                         };
+                        if let (Value::Neutral(l), Value::Neutral(r)) = (full_left, full_right)
+                            && matches!(
+                                (&l.head, &r.head),
+                                (
+                                    NeutralHead::Projection { .. },
+                                    NeutralHead::Projection { .. }
+                                )
+                            )
+                            && positive_projection_congruence(
+                                checker,
+                                l,
+                                r,
+                                remaining,
+                                depth,
+                                context,
+                                delta_policy,
+                                congruence_depth,
+                                &mut 32,
+                            )
+                        {
+                            continue;
+                        }
                         match compare_values(
                             checker,
                             full_left,
@@ -965,4 +1009,69 @@ fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {
 
 fn fresh_local(depth: usize) -> Option<FreeId> {
     u64::try_from(depth).ok().map(FreeId)
+}
+
+// Positive-only congruence for exposed stuck projections. Unequal structures
+// never imply unequal fields. Scoped typing context and conversion depth are
+// retained. A separate probe quota cannot directly spend the existing shortcut's
+// shared application-attempt quota; failure falls back to ordinary conversion.
+fn positive_projection_congruence(
+    checker: &TypeChecker<'_>,
+    left: &Neutral,
+    right: &Neutral,
+    budget: usize,
+    depth: usize,
+    context: &[TypeValue],
+    delta_policy: DeltaPolicy,
+    congruence_depth: usize,
+    attempts: &mut usize,
+) -> bool {
+    if *attempts == 0 || congruence_depth >= 16 || left.spine.len() != right.spine.len() {
+        return false;
+    }
+    *attempts -= 1;
+    let heads = match (&left.head, &right.head) {
+        (
+            NeutralHead::Projection {
+                type_name: lt,
+                index: li,
+                structure: ls,
+            },
+            NeutralHead::Projection {
+                type_name: rt,
+                index: ri,
+                structure: rs,
+            },
+        ) => {
+            lt == rt
+                && li == ri
+                && positive_projection_congruence(
+                    checker,
+                    ls,
+                    rs,
+                    budget,
+                    depth,
+                    context,
+                    delta_policy,
+                    congruence_depth + 1,
+                    attempts,
+                )
+        }
+        _ => compare_neutral_heads(checker, left, right, budget).is_proven(),
+    };
+    heads
+        && left.spine.iter().zip(&right.spine).all(|(l, r)| {
+            convert_in_context_with_congruence(
+                checker,
+                &TypeValue::Term(l.clone()),
+                &TypeValue::Term(r.clone()),
+                budget.min(1024),
+                delta_policy,
+                depth,
+                context,
+                congruence_depth + 1,
+                attempts,
+            )
+            .is_proven()
+        })
 }

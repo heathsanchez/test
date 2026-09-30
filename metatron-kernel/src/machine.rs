@@ -424,8 +424,20 @@ impl<'a> Machine<'a> {
                                 }
                             }
                             let target = arguments.last().expect("required includes target");
-                            if let Some((constructor, constructor_arguments)) =
-                                self.constructor_application(target)
+                            if let Some((constructor, constructor_arguments)) = self
+                                .constructor_application(target)
+                                .filter(|(constructor, _)| {
+                                    reduction
+                                        .rules
+                                        .iter()
+                                        .any(|r| r.constructor == *constructor)
+                                })
+                                .or_else(|| {
+                                    if transparency != Transparency::Full {
+                                        return None;
+                                    }
+                                    self.reduced_constructor_application(target, budget.min(256))
+                                })
                                 && let Some(rule) = reduction
                                     .rules
                                     .iter()
@@ -551,10 +563,11 @@ impl<'a> Machine<'a> {
                             closure = field;
                             continue;
                         }
-                        NeutralHead::Const { .. } => {
-                            return Judgment::unknown("projection-constructor-mismatch");
-                        }
-                        NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
+                        // A nonconstructor head is stuck, not a projection refutation.
+                        // Preserve the field identity and every pending application.
+                        NeutralHead::Const { .. }
+                        | NeutralHead::Free(_)
+                        | NeutralHead::Projection { .. } => {
                             let mut spine = Vec::new();
                             append_pending(&mut spine, &mut pending);
                             record_transition(
@@ -684,6 +697,29 @@ impl<'a> Machine<'a> {
                 })
             }
         })
+    }
+
+    // Full conversion may expose a computed major. Cheap/opaque conversion
+    // retains the original spine, preserving the qualified congruence shortcut.
+    // Only a matching independently admitted constructor rule can consume it.
+    fn reduced_constructor_application(
+        &self,
+        target: &Closure,
+        budget: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        let result = self.expose_internal(
+            target.clone(),
+            Transparency::Full,
+            budget.saturating_sub(1),
+            false,
+        );
+        let Value::Neutral(neutral) = &result.proven_value()?.value else {
+            return None;
+        };
+        let NeutralHead::Const { name, .. } = neutral.head else {
+            return None;
+        };
+        Some((name, neutral.spine.clone()))
     }
 
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
