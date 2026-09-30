@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Check three transport instances
+      - name: Check three explicit coordinate transport instances
         shell: bash
         run: |
           set -euo pipefail
