@@ -1,0 +1,54 @@
+diff --git a/src/convert.rs b/src/convert.rs
+index 7e07a19..561001f 100644
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -778,6 +778,11 @@ fn compare_values(
+             ));
+         }
+         (Value::Neutral(left), Value::Neutral(right)) => {
++            if checker.structure_eta(left,right,context,budget)
++                || checker.structure_eta(right,left,context,budget)
++            {
++                return Judgment::proven((),"qualified-structure-eta");
++            }
+             match compare_neutral_heads(checker, left, right, budget) {
+                 Judgment::Proven { .. } => {}
+                 other => return other,
+diff --git a/src/typecheck.rs b/src/typecheck.rs
+index 9a9b26c..654bd5e 100644
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -633,6 +633,33 @@ impl<'a> TypeChecker<'a> {
+         }
+     }
+ 
++    /// Positive eta contraction for an admitted non-indexed structure.
++    /// Require its exact type parameters, universes and ordered projections.
++    /// Failed premises confer no negative conversion authority.
++    pub(crate) fn structure_eta(
++        &self, constructor: &Neutral, structure: &Neutral,
++        context: &[TypeValue], budget: usize,
++    ) -> bool {
++        let NeutralHead::Const { name, levels } = &constructor.head else { return false; };
++        let Some((type_name,spec))=self.environment.projection_specs().into_iter().find(|(_,s)|s.constructor==*name) else{return false;};
++        if spec.field_types.is_empty() || spec.field_types.len()>32 || constructor.spine.len()!=spec.num_params+spec.field_types.len() {return false;}
++        let Some(ty)=self.neutral_result_type(structure,context,budget.min(256)) else{return false;};
++        let Some(Value::Neutral(ty))=self.normalize_type_value(&ty,budget.min(256)) else{return false;};
++        let NeutralHead::Const{name:tn,levels:ls}=&ty.head else{return false;};
++        if *tn!=type_name || ls!=levels || ty.spine.len()!=spec.num_params {return false;}
++        let machine=self.machine();
++        for (a,b) in ty.spine.iter().zip(&constructor.spine) {
++            let l=machine.expose(a.clone(),Transparency::Opaque,budget.min(64));
++            let r=machine.expose(b.clone(),Transparency::Opaque,budget.min(64));
++            if !matches!((l.proven_value(),r.proven_value()),(Some(l),Some(r)) if l==r){return false;}
++        }
++        constructor.spine[spec.num_params..].iter().enumerate().all(|(index,field)|{
++            let actual=machine.expose(field.clone(),Transparency::Opaque,budget.min(64));
++            let expected=Value::Neutral(Neutral{head:NeutralHead::Projection{type_name,index,structure:Box::new(structure.clone())},spine:vec![]});
++            actual.proven_value()==Some(&expected)
++        })
++    }
++
+     fn neutral_result_type(
+         &self,
+         neutral: &crate::value::Neutral,

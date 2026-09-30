@@ -1,0 +1,17 @@
+NUCLEUS_SINGLE_FIELD:name=LT:stage=candidate:value=true
+NUCLEUS_SINGLE_FIELD:name=LT:stage=precheck:metadata=true:shape=true
+NUCLEUS_SINGLE_FIELD:name=LT:stage=type-promotion:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LT:stage=parameter-telescopes:value=true
+NUCLEUS_SINGLE_FIELD:name=LT:stage=constructor-recursor-promotion:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LT:stage=projection-install:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LT:stage=recursor-install:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=Pow:stage=candidate:value=true
+NUCLEUS_SINGLE_FIELD:name=Pow:stage=precheck:metadata=true:shape=true
+NUCLEUS_SINGLE_FIELD:name=Pow:stage=type-promotion:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=Pow:stage=parameter-telescopes:value=true
+NUCLEUS_SINGLE_FIELD:name=Pow:stage=constructor-recursor-promotion:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=Pow:stage=projection-install:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=Pow:stage=recursor-install:verdict=PASS
+NUCLEUS_NEUTRAL_HEAD_MISMATCH:left=Const { name: NameId(131), levels: [Succ(Zero)] }:left_spine=[Closure { expr: ExprId(1144), env: EnvFrame { id: 5585, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(828), env: EnvFrame { id: 5585, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(895), env: EnvFrame { id: 5585, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(1156), env: EnvFrame { id: 5585, .. }, levels: LevelSubstitution([]) }]:right=Const { name: NameId(134), levels: [] }:right_spine=[]:budget=65434
+NUCLEUS_NEUTRAL_HEAD_MISMATCH:left=Const { name: NameId(131), levels: [Succ(Zero)] }:left_spine=[Closure { expr: ExprId(1144), env: EnvFrame { id: 5585, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(828), env: EnvFrame { id: 5585, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(895), env: EnvFrame { id: 5585, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(1156), env: EnvFrame { id: 5585, .. }, levels: LevelSubstitution([]) }]:right=Const { name: NameId(134), levels: [] }:right_spine=[]:budget=65434
+NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type

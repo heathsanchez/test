@@ -1,0 +1,45 @@
+diff --git a/src/convert.rs b/src/convert.rs
+index 7e07a19..6ec019d 100644
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -309,7 +309,7 @@ fn convert_in_context_with_congruence(
+                 // nothing about the applications (the function can ignore it).
+                 if congruence_depth < 16 && *congruence_attempts > 0 {
+                     *congruence_attempts -= 1;
+-                    let probe_budget = remaining.min(256);
++                    let probe_budget = remaining.min(4096);
+                     let opaque_left =
+                         machine.expose(left.clone(), Transparency::Opaque, probe_budget);
+                     let opaque_right =
+@@ -333,7 +333,7 @@ fn convert_in_context_with_congruence(
+                             .iter()
+                             .zip(&rhs.spine)
+                             .all(|(left_arg, right_arg)| {
+-                                convert_in_context_with_congruence(
++                                let outcome=convert_in_context_with_congruence(
+                                     checker,
+                                     &TypeValue::Term(left_arg.clone()),
+                                     &TypeValue::Term(right_arg.clone()),
+@@ -344,7 +344,9 @@ fn convert_in_context_with_congruence(
+                                     congruence_depth + 1,
+                                     congruence_attempts,
+                                 )
+-                                .is_proven()
++                                ;
++                                if !outcome.is_proven() && std::env::var_os("NUCLEUS_PROBE_TRACE").is_some() { eprintln!("PROBE_FAIL:head={left_name:?}:depth={congruence_depth}:budget={probe_budget}:attempts={congruence_attempts}:left={:?}:right={:?}:result={outcome:?}",left_arg.expr,right_arg.expr); }
++                                outcome.is_proven()
+                             })
+                     {
+                         continue;
+diff --git a/src/typecheck.rs b/src/typecheck.rs
+index 9a9b26c..da2afc7 100644
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -281,6 +281,7 @@ impl<'a> TypeChecker<'a> {
+             }
+             Expr::App { fun, arg } => {
+                 let function_type = self.infer_in(*fun, context, frame, remaining);
++                if function_type.is_unknown() && std::env::var_os("NUCLEUS_PROBE_TRACE").is_some() {eprintln!("APP_FUNCTION_UNKNOWN:expr={expression:?}:fun={fun:?}:budget={remaining}:result={function_type:?}");}
+                 if let Judgment::Refuted { obstruction } = &function_type {
+                     return Judgment::Refuted {
+                         obstruction: *obstruction,

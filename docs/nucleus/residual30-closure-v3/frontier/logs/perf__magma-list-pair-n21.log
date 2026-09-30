@@ -1,0 +1,24 @@
+NUCLEUS_SINGLE_FIELD:name=Magma:stage=candidate:value=true
+NUCLEUS_SINGLE_FIELD:name=Magma:stage=precheck:metadata=true:shape=true
+NUCLEUS_SINGLE_FIELD:name=Magma:stage=type-promotion:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=Magma:stage=parameter-telescopes:value=true
+NUCLEUS_SINGLE_FIELD:name=Magma:stage=constructor-recursor-promotion:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=Magma:stage=projection-install:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=Magma:stage=recursor-install:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LT:stage=candidate:value=true
+NUCLEUS_SINGLE_FIELD:name=LT:stage=precheck:metadata=true:shape=true
+NUCLEUS_SINGLE_FIELD:name=LT:stage=type-promotion:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LT:stage=parameter-telescopes:value=true
+NUCLEUS_SINGLE_FIELD:name=LT:stage=constructor-recursor-promotion:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LT:stage=projection-install:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LT:stage=recursor-install:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LE:stage=candidate:value=true
+NUCLEUS_SINGLE_FIELD:name=LE:stage=precheck:metadata=true:shape=true
+NUCLEUS_SINGLE_FIELD:name=LE:stage=type-promotion:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LE:stage=parameter-telescopes:value=true
+NUCLEUS_SINGLE_FIELD:name=LE:stage=constructor-recursor-promotion:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LE:stage=projection-install:verdict=PASS
+NUCLEUS_SINGLE_FIELD:name=LE:stage=recursor-install:verdict=PASS
+NUCLEUS_NEUTRAL_HEAD_MISMATCH:left=Const { name: NameId(170), levels: [Succ(Zero)] }:left_spine=[Closure { expr: ExprId(1221), env: EnvFrame { id: 5193, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(163), env: EnvFrame { id: 5193, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(1128), env: EnvFrame { id: 5193, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(1233), env: EnvFrame { id: 5193, .. }, levels: LevelSubstitution([]) }]:right=Const { name: NameId(267), levels: [] }:right_spine=[]:budget=65434
+NUCLEUS_NEUTRAL_HEAD_MISMATCH:left=Const { name: NameId(170), levels: [Succ(Zero)] }:left_spine=[Closure { expr: ExprId(1221), env: EnvFrame { id: 5193, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(163), env: EnvFrame { id: 5193, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(1128), env: EnvFrame { id: 5193, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(1233), env: EnvFrame { id: 5193, .. }, levels: LevelSubstitution([]) }]:right=Const { name: NameId(267), levels: [] }:right_spine=[]:budget=65434
+NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type

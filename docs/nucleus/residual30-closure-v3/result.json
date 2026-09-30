@@ -1,0 +1,263 @@
+{
+  "base_sha": "c362f35db5a2efe5c629e64c1a3b71e392b473fb",
+  "candidate_sha": "0329400bbab751eb6ea645c0a65b30f019e99bfd",
+  "checker_worker_stack_bytes": 67108864,
+  "current": {
+    "base_accept": 105,
+    "base_reject": 59,
+    "base_residual": 30,
+    "candidate_accept": 110,
+    "candidate_reject": 60,
+    "candidate_residual": 24,
+    "changes": [
+      {
+        "base": 2,
+        "base_ns": 193126618,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 1267078646,
+        "candidate_stderr": [],
+        "expected": 0,
+        "input_sha256": "552d6e8398f579fcf59ab9abd8187fc7a8a037697da66c129aacb4cc1b9dd414",
+        "test": "perf/app-lam"
+      },
+      {
+        "base": 2,
+        "base_ns": 39244613,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 122040615,
+        "candidate_stderr": [],
+        "expected": 0,
+        "input_sha256": "4895c59c421bb395f830aaa778db01cf166e9319b546a994e373e640298f4bb7",
+        "test": "perf/church-numerals"
+      },
+      {
+        "base": 2,
+        "base_ns": 62881625,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 539265098,
+        "candidate_stderr": [],
+        "expected": 0,
+        "input_sha256": "d02afad06729004912e5feeaf25379240b106d98b571cfcfffd974d08853ad65",
+        "test": "perf/let-ladder"
+      },
+      {
+        "base": 2,
+        "base_ns": 6809043433,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 44750088118,
+        "candidate_stderr": [],
+        "expected": 0,
+        "input_sha256": "3839db32d95b2ded9bf2ac70960ae4a060b9a998bd67422ed41bc087b1f74179",
+        "test": "perf/unroll-versus-evaluate"
+      },
+      {
+        "base": 2,
+        "base_ns": 1116700,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 1428372,
+        "candidate_stderr": [],
+        "expected": 0,
+        "input_sha256": "39dab799309ad05a2f30670776d74b4e6b177175271291dd078a3d3737eef338",
+        "test": "tutorial/099_ruleK"
+      },
+      {
+        "base": 2,
+        "base_ns": 960156,
+        "base_stderr": [],
+        "candidate": 1,
+        "candidate_ns": 1212095,
+        "candidate_stderr": [],
+        "expected": 1,
+        "input_sha256": "2a1fa7289c339a899efdc2a1e4db11cc3d27064caa6cfb4b345a0bc1c247e95d",
+        "test": "tutorial/105_proofIrrelevanceBad"
+      }
+    ],
+    "earned": [
+      "perf/app-lam",
+      "perf/church-numerals",
+      "perf/let-ladder",
+      "perf/unroll-versus-evaluate",
+      "tutorial/099_ruleK",
+      "tutorial/105_proofIrrelevanceBad"
+    ],
+    "errors": [],
+    "regressions": [],
+    "tests": 194,
+    "wrong": []
+  },
+  "judgment_steps": 65536,
+  "protected_negatives": [
+    {
+      "base": 2,
+      "base_ns": 12254897,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 16600786,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "4bdc45de8980cf9cb6e712ab6260f42a89201876f096441fb5ec49e3a0052a22",
+      "test": "bugs/proj-of-stuck-prop"
+    },
+    {
+      "base": 2,
+      "base_ns": 11949619,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 16177653,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "c1e3e96748ade2a9806837460821ea725f460a1f8bc1601d7ce121a9b28ffed0",
+      "test": "bugs/proj-of-subst-prop"
+    },
+    {
+      "base": 2,
+      "base_ns": 10678287,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 14672875,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "572d2eb54a4e7d98d2e1a7bad01c5574f85ed5dacfd5bd1734f88ac37d515759",
+      "test": "bugs/rec-of-subst-prop"
+    },
+    {
+      "base": 2,
+      "base_ns": 1094246,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 1367490,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "2147c3416825e1c7f78382501f4c3e2f8165d23d464c998a077e69a12e51697a",
+      "test": "tutorial/100_ruleKbad"
+    },
+    {
+      "base": 2,
+      "base_ns": 1592514,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 2121369,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "59a4dc34b1175f59d9efd17c4c5b9d9f07bdb54c882dc66a65737d29be6d4356",
+      "test": "tutorial/101_ruleKAcc"
+    },
+    {
+      "base": 2,
+      "base_ns": 1717727,
+      "base_stderr": [],
+      "candidate": 2,
+      "candidate_ns": 2153451,
+      "candidate_stderr": [],
+      "expected": 1,
+      "input_sha256": "7868dfaa2a5574fa383e4fbf42f84d3eab78c43614f0034d2f78f2069ca00f64",
+      "test": "tutorial/125_accRecNoEta"
+    }
+  ],
+  "round1": {
+    "base_accept": 103,
+    "base_reject": 60,
+    "base_residual": 30,
+    "candidate_accept": 108,
+    "candidate_reject": 61,
+    "candidate_residual": 24,
+    "changes": [
+      {
+        "base": 2,
+        "base_ns": 189541278,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 1274392056,
+        "candidate_stderr": [],
+        "expected": 0,
+        "input_sha256": "3f7b7a595dc29b0e289c9031c4edaef42d0e12b8aee3cbb48cf15cb715adc09a",
+        "test": "perf/app-lam"
+      },
+      {
+        "base": 2,
+        "base_ns": 39017140,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 121443108,
+        "candidate_stderr": [],
+        "expected": 0,
+        "input_sha256": "1234703fc7082cdf99eaf7ecd18fe09f1e11191c9c5b4ffcc5c159c50595927a",
+        "test": "perf/church-numerals"
+      },
+      {
+        "base": 2,
+        "base_ns": 62598348,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 537971211,
+        "candidate_stderr": [],
+        "expected": 0,
+        "input_sha256": "b7f15b7399cd86b2a7c8b5c0c72d395a7cfc37a949d7e49520fd354dc4842305",
+        "test": "perf/let-ladder"
+      },
+      {
+        "base": 2,
+        "base_ns": 6788556478,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 44434908625,
+        "candidate_stderr": [],
+        "expected": 0,
+        "input_sha256": "815d75fa70b6c06f4164e86ff77050b9679162f3be939c6757bd66f73f432203",
+        "test": "perf/unroll-versus-evaluate"
+      },
+      {
+        "base": 2,
+        "base_ns": 1050431,
+        "base_stderr": [],
+        "candidate": 0,
+        "candidate_ns": 1354045,
+        "candidate_stderr": [],
+        "expected": 0,
+        "input_sha256": "9c06a9ca2b5d6dadc1575796a858d5285695d4401cceaaf77d9c26fbc426f1da",
+        "test": "tutorial/099_ruleK"
+      },
+      {
+        "base": 2,
+        "base_ns": 962791,
+        "base_stderr": [],
+        "candidate": 1,
+        "candidate_ns": 1172166,
+        "candidate_stderr": [],
+        "expected": 1,
+        "input_sha256": "9423911316ad18c0ec158f1f004f9e79c3a0f9580bb6a1a0f798cf04066e5a27",
+        "test": "tutorial/105_proofIrrelevanceBad"
+      }
+    ],
+    "earned": [
+      "perf/app-lam",
+      "perf/church-numerals",
+      "perf/let-ladder",
+      "perf/unroll-versus-evaluate",
+      "tutorial/099_ruleK",
+      "tutorial/105_proofIrrelevanceBad"
+    ],
+    "errors": [],
+    "regressions": [],
+    "tests": 193,
+    "wrong": []
+  },
+  "schema": "nucleus-residual30-closure-v3",
+  "stack_kib": 65536,
+  "target": {
+    "base": 0,
+    "base_ns": 8986107,
+    "base_stderr": [],
+    "candidate": 0,
+    "candidate_ns": 11815323,
+    "candidate_stderr": [],
+    "expected": 0,
+    "input_sha256": "b2fed80e90e956f24bcbe898ce7cfef5ae4c92d0f81daf42e0a2a3c817012f6f",
+    "test": "perf/proj-stuck-struct"
+  }
+}
