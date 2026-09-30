@@ -838,6 +838,17 @@ fn compare_neutral_heads(
                                 argument.env.id(),
                                 argument.levels
                             );
+                            let exposed_argument = checker.machine().expose(
+                                argument.clone(),
+                                Transparency::Reducible,
+                                budget.min(4096),
+                            );
+                            eprintln!(
+                                "NUCLEUS_BRECON_ARG_EXPOSED:side={}:arg={}:value={:?}",
+                                side,
+                                arg_index,
+                                exposed_argument
+                            );
                             for binding_index in 0..16u64 {
                                 let Some(binding) = argument.env.lookup(binding_index) else {
                                     break;
@@ -877,6 +888,17 @@ fn compare_neutral_heads(
                                 argument.expr,
                                 argument.env.id(),
                                 argument.levels
+                            );
+                            let exposed_outer = checker.machine().expose(
+                                argument.clone(),
+                                Transparency::Reducible,
+                                budget.min(4096),
+                            );
+                            eprintln!(
+                                "NUCLEUS_BRECON_OUTER_ARG_EXPOSED:side={}:arg={}:value={:?}",
+                                side,
+                                arg_index,
+                                exposed_outer
                             );
                         }
                     }
