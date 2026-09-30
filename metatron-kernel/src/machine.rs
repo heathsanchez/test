@@ -502,11 +502,33 @@ impl<'a> Machine<'a> {
                     }
                     let structure = closure.sibling(*structure, closure.env.clone());
                     let exposed_structure =
-                        self.expose_internal(structure, transparency, budget, false);
+                        self.expose_internal(structure.clone(), transparency, budget, false);
                     let Some(exposure) = exposed_structure.proven_value() else {
+                        if std::env::var_os("NUCLEUS_TRACE_STUCK_PROJECTION").is_some() {
+                            eprintln!(
+                                "NUCLEUS_STUCK_PROJECTION:type={:?}:index={}:structure={:?}:node={:?}:exposure={:?}:budget={}",
+                                type_name,
+                                index,
+                                structure,
+                                self.expressions.get(structure.expr),
+                                exposed_structure,
+                                budget
+                            );
+                        }
                         return Judgment::unknown("projection-structure-stuck");
                     };
                     let Value::Neutral(neutral) = &exposure.value else {
+                        if std::env::var_os("NUCLEUS_TRACE_STUCK_PROJECTION").is_some() {
+                            eprintln!(
+                                "NUCLEUS_STUCK_PROJECTION_NONNEUTRAL:type={:?}:index={}:structure={:?}:node={:?}:value={:?}:budget={}",
+                                type_name,
+                                index,
+                                structure,
+                                self.expressions.get(structure.expr),
+                                exposure.value,
+                                budget
+                            );
+                        }
                         return Judgment::unknown("projection-structure-stuck");
                     };
                     match &neutral.head {
