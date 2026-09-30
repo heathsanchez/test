@@ -110,7 +110,7 @@ for p in paths:
     path_rows.append({
       "ranks":[rank[x] for x in p],
       "keys":[repr(x) for x in p],
-      "centres":[list(center_of(x)) for x in p],
+      "nearest_classifier_centres":[list(center_of(x)) for x in p],
       "forced":[x[1] for x in p],
       "radius":[x[4] for x in p],
       "extra":[x[5] for x in p],
@@ -131,7 +131,9 @@ result={
  "path_count":len(path_rows),
  "verdict":(
    "MAXIMAL_STRATUM_IS_EXACT_110_MINUS_ONE_COUNTDOWN"
-   if all_top_110 and all_top_center_minus1 and all_v2_drop3
+   if all_top_110 and all(
+     row["actual_law_centres"]==[[-1,1]] for row in top_rows
+   ) and all_v2_drop3
    else "RANK4_STRATUM_NOT_ONE_UNIVERSAL_110_LAW"
  ),
  "interpretation":(
