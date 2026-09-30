@@ -1,0 +1,44 @@
+name: Collatz Crystal V23 Source Shadow V56
+on:
+  push:
+    branches: [collatz-crystal-v23-source-shadow-v56]
+    paths:
+      - 'experiments/collatz_crystal_v23_source_shadow_v56.py'
+      - '.github/workflows/collatz-crystal-v23-source-shadow-v56.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Qualify exact V23 shadow pullback
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-v23-source-shadow-v56
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_v23_source_shadow_v56.py \
+            | tee evidence/collatz-crystal-v23-source-shadow-v56/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-v23-source-shadow-v56/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_V23_SOURCE_SHADOW_V56'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V56_VERDICT',d['verdict'])
+          print('V56_PULLBACK',d['derived_source_pullback'])
+          print('V56_PREZERO',d['all_shadows_finish_before_source_tail_zero'])
+          print('V56_MARGIN',d['minimum_source_bit_margin_over_shadow_end'])
+          print('V56_LAST',d['last_row'])
+          print('V56_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-v23-source-shadow-v56/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-v23-source-shadow-v56
+          path: evidence/collatz-crystal-v23-source-shadow-v56
+          if-no-files-found: error
