@@ -392,12 +392,25 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
+                            let constructor_application = self
+                                .constructor_application(target)
+                                .filter(|(constructor, _)| {
+                                    reduction
+                                        .rules
+                                        .iter()
+                                        .any(|rule| rule.constructor == *constructor)
+                                })
+                                .or_else(|| {
+                                    self.is_bool_recursor_reduction(reduction).then(|| {
+                                        self.reduced_constructor_application(
+                                            target,
+                                            transparency,
+                                            budget.min(512),
+                                        )
+                                    })?
+                                });
                             if let Some((constructor, constructor_arguments)) =
-                                self.constructor_application_after_reduction(
-                                    target,
-                                    transparency,
-                                    budget,
-                                )
+                                constructor_application
                                 && let Some(rule) = reduction
                                     .rules
                                     .iter()
@@ -658,20 +671,27 @@ impl<'a> Machine<'a> {
         })
     }
 
-    fn constructor_application_after_reduction(
+    fn is_bool_recursor_reduction(&self, reduction: &RecursorReduction) -> bool {
+        let Some(bools) = self.bool_primitives.as_ref() else {
+            return false;
+        };
+        reduction.rules.len() == 2
+            && reduction
+                .rules
+                .iter()
+                .any(|rule| rule.constructor == bools.false_ctor)
+            && reduction
+                .rules
+                .iter()
+                .any(|rule| rule.constructor == bools.true_ctor)
+    }
+
+    fn reduced_constructor_application(
         &self,
         target: &Closure,
         transparency: Transparency,
         budget: usize,
     ) -> Option<(NameId, Vec<Closure>)> {
-        if let Some(direct) = self.constructor_application(target) {
-            if self.recursor_reductions.values().any(|reduction| {
-                reduction.rules.iter().any(|rule| rule.constructor == direct.0)
-            }) {
-                return Some(direct);
-            }
-        }
-
         let exposure = self
             .expose_internal(
                 target.clone(),
