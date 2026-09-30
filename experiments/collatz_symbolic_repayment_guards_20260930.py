@@ -29,11 +29,12 @@ def replay(m,anchor,steps):
 
 groups=defaultdict(list)
 for z in v.rows: groups[z['t'],z['anchor']].append(z)
-stats=Counter(); bank={}; observed=[]; examples=[]
+stats=Counter(); bank={}; observed=[]; examples=[]; residual_starts=[]
 for rs in groups.values():
     rs.sort(key=lambda z:(z['k0'],z['k1']))
     for i,start in enumerate(rs):
         if not start['residual']: continue
+        residual_starts.append(start)
         stats['residual_starts']+=1
         total=(1,0,1); first_local=None; found=None
         for j,z in enumerate(rs[i:]):
@@ -92,6 +93,31 @@ holdstats=Counter()
 for start,key,wait in held:
     holdstats['heldout_repaying_starts']+=1
     holdstats['exact_guard_in_frozen_training_bank']+=key in trainbank
+
+# A previously learned law may apply even when it is not the first repayment
+# seen in the recorded return list. Test its actual applicability guard rather
+# than requiring identity with the observed first law.
+guardindex=defaultdict(lambda:defaultdict(dict))
+for key in trainbank:
+    g=bank[key]
+    guardindex[g['anchor']][g['D']][int(g['rho'])]=g
+for start in residual_starts:
+    if start['motif'] in train: continue
+    holdstats['heldout_all_residual_starts']+=1
+    matches=[]
+    for D,rhos in guardindex[start['anchor']].items():
+        g=rhos.get(start['m0']%(1<<(D+1)))
+        if g is not None and start['m0']>=int(g['floor']): matches.append(g)
+    if matches:
+        holdstats['frozen_guard_capability_applies']+=1
+        g=min(matches,key=lambda z:z['D'])
+        out,bits=replay(start['m0'],start['anchor'],g['D'])
+        assert ''.join(map(str,bits))==g['word']
+        assert (out+1)%(1<<start['anchor'])==0
+        mout=(out+1)>>start['anchor']
+        assert int(g['P'])*mout==int(g['A'])*start['m0']+int(g['B'])
+        assert mout<start['m0']
+    else: holdstats['no_matching_frozen_guard']+=1
 
 result={'schema':'COLLATZ_SYMBOLIC_REPAYMENT_GUARDS_20260930',
     'parent_certificate':v.result['certificate_sha256'],'stats':dict(stats),
