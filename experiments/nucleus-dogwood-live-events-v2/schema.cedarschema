@@ -1,0 +1,44 @@
+namespace Nucleus {
+  type PromotionInput = {
+    campaign: String,
+    residual: String,
+    candidate: String,
+    authority: String,
+    corpus: String,
+    originEvidence: String
+  };
+
+  entity ResearchAgent = { id: String };
+  entity PromotionGate;
+
+  action "ResidualObserved" appliesTo {
+    principal: [ResearchAgent],
+    resource: [PromotionGate],
+    context: { input: PromotionInput }
+  };
+  action "CandidateDerived" appliesTo {
+    principal: [ResearchAgent],
+    resource: [PromotionGate],
+    context: { input: PromotionInput }
+  };
+  action "ControlsGreen" appliesTo {
+    principal: [ResearchAgent],
+    resource: [PromotionGate],
+    context: { input: PromotionInput }
+  };
+  action "FullReclosureGreen" appliesTo {
+    principal: [ResearchAgent],
+    resource: [PromotionGate],
+    context: { input: PromotionInput }
+  };
+  action "CandidateRejected" appliesTo {
+    principal: [ResearchAgent],
+    resource: [PromotionGate],
+    context: { input: PromotionInput }
+  };
+  action "Admit" appliesTo {
+    principal: [ResearchAgent],
+    resource: [PromotionGate],
+    context: { input: PromotionInput }
+  };
+}
