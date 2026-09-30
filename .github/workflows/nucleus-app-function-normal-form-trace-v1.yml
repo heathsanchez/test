@@ -1,0 +1,261 @@
+name: Nucleus Application Function Normal Form Trace v1
+
+on:
+  push:
+    branches: [nucleus-app-function-normal-form-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-app-function-normal-form-trace-v1.yml"
+      - "metatron-kernel/src/typecheck.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nucleus-app-function-normal-form-trace-v1
+  cancel-in-progress: true
+
+env:
+  AUTHORITY_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_ARTIFACT: "10712869614"
+  ORIGIN_RUN: "36638671203"
+  ORIGIN_ARTIFACT: "11065053909"
+  ORIGIN_DIGEST: "sha256:15313a7fc30156ad75e090866a6d72510cc5194bd5dabc882110aaa182b0ff5e"
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Prove diagnostic-only ancestry
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$AUTHORITY_SHA" HEAD
+          changed="$(git diff --name-only "$AUTHORITY_SHA"...HEAD | sort)"
+          echo "$changed"
+          echo "$changed" | grep -qx '.github/workflows/nucleus-app-function-normal-form-trace-v1.yml'
+          echo "$changed" | grep -qx 'metatron-kernel/src/typecheck.rs'
+          test "$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)" -eq 2
+
+      - name: Build trace candidate and exact authority
+        run: |
+          set -euo pipefail
+          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/authority "$AUTHORITY_SHA"
+          cargo build --release --locked --manifest-path /tmp/authority/metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen corpus and exact 30-case origin quotient
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/tests.zip
+          rm -rf /tmp/tests-art /tmp/tests
+          mkdir -p /tmp/tests-art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/tests-art
+          tarball="$(find /tmp/tests-art -type f -name 'lean-arena-tests.tar.gz' -print -quit)"
+          test -n "$tarball"
+          tar -xzf "$tarball" -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+          meta="$(gh api "repos/heathsanchez/test/actions/artifacts/$ORIGIN_ARTIFACT")"
+          test "$(jq -r .expired <<<"$meta")" = "false"
+          test "$(jq -r .digest <<<"$meta")" = "$ORIGIN_DIGEST"
+
+          rm -rf /tmp/origin /tmp/origin.zip
+          mkdir -p /tmp/origin
+          gh api "repos/heathsanchez/test/actions/artifacts/$ORIGIN_ARTIFACT/zip" > /tmp/origin.zip
+          unzip -q /tmp/origin.zip -d /tmp/origin
+          ORIGIN="$(find /tmp/origin -name result.json -print -quit)"
+          test -n "$ORIGIN"
+          cp "$ORIGIN" /tmp/origin-result.json
+          jq -e --arg a "$AUTHORITY_SHA" '
+            .authority_sha == $a
+            and .residual_count == 30
+            and .reason_counts["application-function-type"] == 11
+            and (.by_reason["application-function-type"] | length) == 11
+          ' /tmp/origin-result.json
+
+      - name: Prove trace instrumentation preserves all 193 verdicts
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/app-function-normal-form-trace-v1
+          python3 - <<'PY'
+          import json, pathlib, subprocess
+
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/authority/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          rows=[]
+          for bucket,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/bucket).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/bucket)).removesuffix('.ndjson')
+                  def run(binary):
+                      with p.open('rb') as f:
+                          return subprocess.run(
+                              [str(binary)], stdin=f,
+                              stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL,
+                              timeout=180,
+                          ).returncode
+                  brc=run(base)
+                  crc=run(cand)
+                  rows.append({
+                      'test':name,'expected':expected,
+                      'authority':brc,'trace_candidate':crc,
+                  })
+
+          assert len(rows)==193
+          deltas=[r for r in rows if r['authority'] != r['trace_candidate']]
+          wrong=[r for r in rows if r['trace_candidate'] in (0,1) and r['trace_candidate'] != r['expected']]
+          assert not deltas, deltas
+          assert not wrong, wrong
+          assert sum(r['trace_candidate']==0 for r in rows)==103
+          assert sum(r['trace_candidate']==1 for r in rows)==60
+          assert sum(r['trace_candidate'] in (2,3) for r in rows)==30
+
+          out={
+              'schema':'nucleus-app-function-trace-noop-v1',
+              'cases':len(rows),
+              'native_accept':103,
+              'native_reject':60,
+              'residual':30,
+              'deltas':deltas,
+              'wrong':wrong,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/app-function-normal-form-trace-v1/noop-reclosure.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Trace and quotient the exact 11 application residuals
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections, json, os, pathlib, re, subprocess
+
+          origin=json.load(open('/tmp/origin-result.json'))
+          target_names=origin['by_reason']['application-function-type']
+          rows_by_name={r['test']:r for r in origin['rows']}
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          kind_re=re.compile(r':kind=([^:]+)')
+          fun_kind_re=re.compile(r':fun_kind=([^:]+)')
+          head_kind_re=re.compile(r':head_kind=([^:]+)')
+          spine_re=re.compile(r':spine_len=([0-9]+)')
+          detail_re=re.compile(r':detail=([^:]+)')
+          closure_re=re.compile(r':closure_expr=ExprId\(([0-9]+)\)')
+
+          by_test={}
+          signature_groups=collections.defaultdict(list)
+          kind_counts=collections.Counter()
+          last_signature_counts=collections.Counter()
+
+          for name in target_names:
+              source=rows_by_name[name]
+              expected=source['expected']
+              bucket='good' if expected==0 else 'bad'
+              p=root/bucket/(name+'.ndjson')
+              assert p.exists(), p
+
+              env=os.environ.copy()
+              env['NUCLEUS_TRACE_APP_FUNCTION_TYPE']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                      [str(binary)], stdin=f,
+                      stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE,
+                      timeout=180,
+                      env=env,
+                  )
+              assert q.returncode in (2,3), (name,q.returncode)
+              stderr=q.stderr.decode(errors='replace')
+              markers=[line for line in stderr.splitlines() if line.startswith('NUCLEUS_APP_FUNCTION_TYPE:')]
+              assert markers, (name,stderr[-4000:])
+
+              parsed=[]
+              for line in markers:
+                  def grab(rx, default=None):
+                      m=rx.search(line)
+                      return m.group(1) if m else default
+                  item={
+                      'kind':grab(kind_re,'missing'),
+                      'fun_kind':grab(fun_kind_re,'missing'),
+                      'head_kind':grab(head_kind_re),
+                      'spine_len':int(grab(spine_re,'-1')) if grab(spine_re) is not None else None,
+                      'detail':grab(detail_re),
+                      'closure_expr':int(grab(closure_re,'-1')) if grab(closure_re) is not None else None,
+                      'raw':line,
+                  }
+                  parsed.append(item)
+                  kind_counts[item['kind']]+=1
+
+              last=parsed[-1]
+              last_sig=(
+                  last['kind'],
+                  last['fun_kind'],
+                  last['head_kind'],
+                  last['spine_len'],
+                  last['detail'],
+              )
+              last_key='|'.join('' if x is None else str(x) for x in last_sig)
+              signature_groups[last_key].append(name)
+              last_signature_counts[last_key]+=1
+
+              by_test[name]={
+                  'expected':expected,
+                  'rc':q.returncode,
+                  'terminal':source.get('terminal'),
+                  'marker_count':len(parsed),
+                  'unique_kinds':sorted({x['kind'] for x in parsed}),
+                  'first':parsed[0],
+                  'last':last,
+                  'all':parsed,
+              }
+
+          groups=[
+              {'signature':sig,'count':len(names),'tests':sorted(names)}
+              for sig,names in sorted(signature_groups.items(), key=lambda kv:(-len(kv[1]),kv[0]))
+          ]
+
+          out={
+              'schema':'nucleus-app-function-normal-form-trace-v1',
+              'authority_sha':os.environ['AUTHORITY_SHA'],
+              'origin_run':int(os.environ['ORIGIN_RUN']),
+              'origin_artifact':int(os.environ['ORIGIN_ARTIFACT']),
+              'target_count':len(target_names),
+              'targets':target_names,
+              'kind_counts':dict(sorted(kind_counts.items())),
+              'last_signature_count':len(groups),
+              'last_signature_groups':groups,
+              'by_test':by_test,
+          }
+          path=pathlib.Path('metatron-kernel/evidence-out/app-function-normal-form-trace-v1/result.json')
+          path.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'target_count':out['target_count'],
+              'kind_counts':out['kind_counts'],
+              'last_signature_count':out['last_signature_count'],
+              'last_signature_groups':out['last_signature_groups'],
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-app-function-normal-form-trace-${{ github.sha }}
+          path: metatron-kernel/evidence-out/app-function-normal-form-trace-v1
+          if-no-files-found: warn
