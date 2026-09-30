@@ -1,0 +1,40 @@
+name: Collatz Switch Tournament Closeout
+on:
+  push:
+    branches: [collatz-switch-tournament-closeout-20260930]
+    paths: ['.github/workflows/collatz-switch-tournament-closeout.yml']
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean and build parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          lake build CollatzFinal
+      - name: Kernel-check switch closeout
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .lake/build/lib/lean/Collatz
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean | tee /tmp/guarded.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean | tee /tmp/cylinder.log
+          lake env lean -DautoImplicit=false formal/Collatz/SourceSwitchWitness.lean | tee /tmp/witness.log
+          python - <<'PY'
+          from pathlib import Path
+          text='\n'.join(Path(p).read_text() for p in ['/tmp/guarded.log','/tmp/cylinder.log','/tmp/witness.log'])
+          assert 'sorryAx' not in text and 'Lean.ofReduceBool' not in text
+          src=Path('formal/Collatz/GuardedDyadicSwitch.lean').read_text()+Path('formal/Collatz/SourceSwitchWitness.lean').read_text()
+          import re
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',src)
+          print('DYADIC_SWITCH_KERNEL_CHECKED')
+          print('FIXED_CENTRE_EXHAUSTION_KERNEL_CHECKED')
+          print('SOURCE_CYLINDER_SWITCH_WITNESS_KERNEL_CHECKED')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
