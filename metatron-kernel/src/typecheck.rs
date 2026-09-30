@@ -286,8 +286,9 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
-                let app_function_trace =
-                    std::env::var_os("NUCLEUS_TRACE_APP_FUNCTION_TYPE").is_some().then(|| {
+                let app_function_trace = std::env::var_os("NUCLEUS_TRACE_APP_FUNCTION_TYPE")
+                    .is_some()
+                    .then(|| {
                         self.application_function_type_signature(
                             *fun,
                             &function_type,
@@ -569,11 +570,9 @@ impl<'a> TypeChecker<'a> {
                 value: TypeValue::Term(closure),
                 ..
             } => {
-                let exposed = self.machine().expose(
-                    closure.clone(),
-                    Transparency::Reducible,
-                    budget,
-                );
+                let exposed =
+                    self.machine()
+                        .expose(closure.clone(), Transparency::Reducible, budget);
                 match exposed {
                     Judgment::Proven {
                         value: Value::Pi { .. },
@@ -601,9 +600,7 @@ impl<'a> TypeChecker<'a> {
                                 format!("const:{}:levels={}", name.0, levels.len())
                             }
                             NeutralHead::Projection {
-                                type_name,
-                                index,
-                                ..
+                                type_name, index, ..
                             } => format!("proj:{}:{}", type_name.0, index),
                         };
                         let result_kind = self
@@ -643,12 +640,8 @@ impl<'a> TypeChecker<'a> {
                             .unwrap_or("none");
                         ("term", "neutral", head, neutral.spine.len(), result_kind)
                     }
-                    Judgment::Refuted { .. } => {
-                        ("term", "refuted", "na".to_string(), 0usize, "na")
-                    }
-                    Judgment::Unknown { .. } => {
-                        ("term", "unknown", "na".to_string(), 0usize, "na")
-                    }
+                    Judgment::Refuted { .. } => ("term", "refuted", "na".to_string(), 0usize, "na"),
+                    Judgment::Unknown { .. } => ("term", "unknown", "na".to_string(), 0usize, "na"),
                 }
             }
             Judgment::Refuted { obstruction } => (
