@@ -1,0 +1,41 @@
+name: Collatz Zero-Exposure SCC Separator
+on:
+  push:
+    branches: [collatz-zero-exposure-scc-separator-20260930]
+    paths:
+      - 'experiments/collatz_zero_exposure_scc_separator_20260930.py'
+      - '.github/workflows/collatz-zero-exposure-scc-separator-20260930.yml'
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Compose recurrent zero-exposure SCC
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-zero-exposure-scc-separator-20260930
+          PYTHONPATH=experiments python -u experiments/collatz_zero_exposure_scc_separator_20260930.py             | tee evidence/collatz-zero-exposure-scc-separator-20260930/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-zero-exposure-scc-separator-20260930/result.json'))
+          assert d['schema']=='COLLATZ_ZERO_EXPOSURE_SCC_SEPARATOR_20260930'
+          assert d['global_collatz']=='UNKNOWN'
+          print('VERDICT',d['verdict'])
+          print('SCC',d['scc'])
+          print('OCC',d['edge_occurrences'])
+          print('CONCRETE_CYCLE_RUNS',len(d['concrete_zero_cycle_runs']))
+          print('AB_FP',d['compose_a_then_b']['fixed_point'])
+          print('BA_FP',d['compose_b_then_a']['fixed_point'])
+          print('CERT',d['certificate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-zero-exposure-scc-separator-20260930
+          path: evidence/collatz-zero-exposure-scc-separator-20260930
+          if-no-files-found: error
