@@ -256,8 +256,10 @@ pub(crate) fn convert_with_policy_in_context(
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
                 let machine = checker.machine();
-                let cheap_left = machine.expose(left.clone(), Transparency::Reducible, remaining);
-                let cheap_right = machine.expose(right.clone(), Transparency::Reducible, remaining);
+                let cheap_left =
+                    machine.expose_for_conversion(left.clone(), Transparency::Reducible, remaining);
+                let cheap_right =
+                    machine.expose_for_conversion(right.clone(), Transparency::Reducible, remaining);
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
@@ -276,8 +278,10 @@ pub(crate) fn convert_with_policy_in_context(
                     Judgment::Refuted { .. }
                         if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
                     {
-                        let full_left = machine.expose(left, Transparency::Full, remaining);
-                        let full_right = machine.expose(right, Transparency::Full, remaining);
+                        let full_left =
+                            machine.expose_for_conversion(left, Transparency::Full, remaining);
+                        let full_right =
+                            machine.expose_for_conversion(right, Transparency::Full, remaining);
                         let (Some(full_left), Some(full_right)) =
                             (full_left.proven_value(), full_right.proven_value())
                         else {
@@ -610,6 +614,27 @@ fn compare_values(
                 depth,
             ));
         }
+        (
+            Value::StuckProjection {
+                type_name: left_type,
+                index: left_index,
+                structure: left_structure,
+            },
+            Value::StuckProjection {
+                type_name: right_type,
+                index: right_index,
+                structure: right_structure,
+            },
+        ) if left_type == right_type && left_index == right_index => {
+            work.push((
+                TypeValue::Term(left_structure.clone()),
+                TypeValue::Term(right_structure.clone()),
+                depth,
+            ));
+        }
+        (Value::StuckProjection { .. }, _) | (_, Value::StuckProjection { .. }) => {
+            return Judgment::unknown("stuck-projection-comparison");
+        }
         (Value::Neutral(left), Value::Neutral(right)) => {
             match compare_neutral_heads(checker, left, right, budget) {
                 Judgment::Proven { .. } => {}
@@ -789,7 +814,10 @@ fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {
                 body: Box::new(TypeValue::Term(body.under_free(free))),
             })
         }
-        Value::NatLit(_) | Value::Lam { .. } | Value::Neutral(_) => None,
+        Value::NatLit(_)
+        | Value::Lam { .. }
+        | Value::Neutral(_)
+        | Value::StuckProjection { .. } => None,
     }
 }
 
