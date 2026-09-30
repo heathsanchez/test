@@ -88,26 +88,32 @@ theorem dyadic_equal_sum_even {x y : Int} {v : Nat}
   obtain ⟨w, hyw, hw⟩ := hy
   have he : u + w = 2 * ((u + w) / 2) := by omega
   refine ⟨(u + w) / 2, ?_⟩
-  rw [hxu, hyw, ← Int.mul_add, he, Int.pow_succ, Int.mul_assoc]
+  rw [hxu, hyw, ← Int.mul_add]
+  calc
+    (2 : Int)^v * (u + w) = (2 : Int)^v * (2 * ((u + w) / 2)) :=
+      congrArg (fun z : Int => (2 : Int)^v * z) he
+    _ = (2 : Int)^(v + 1) * ((u + w) / 2) := by
+      rw [Int.pow_succ, Int.mul_assoc]
 
 theorem dyadic_divide {x y : Int} {v D : Nat}
     (hx : DyadicOrder x v) (hstep : (2 : Int) ^ D * y = x) :
     D ≤ v ∧ DyadicOrder y (v - D) := by
   obtain ⟨u, hxu, hu⟩ := hx
   have hle : D ≤ v := by
-    by_contra hn
-    have hlt : v < D := by omega
-    let e := D - v - 1
-    have he : D = v + (e + 1) := by dsimp [e]; omega
-    have hh : (2 : Int) ^ v * ((2 : Int) ^ (e + 1) * y) =
-        (2 : Int) ^ v * u := by
-      rw [← Int.mul_assoc, ← Int.pow_add, ← he, hstep, hxu]
-    have hc : (2 : Int) ^ (e + 1) * y = u :=
-      Int.eq_of_mul_eq_mul_left (Int.pow_ne_zero (by decide)) hh
-    have hp : ((2 : Int) ^ (e + 1) * y) % 2 = 0 := by
-      simp [Int.mul_emod, pow_two_succ_even]
-    rw [hc] at hp
-    omega
+    by_cases hn : D ≤ v
+    · exact hn
+    · have hlt : v < D := by omega
+      let e := D - v - 1
+      have he : D = v + (e + 1) := by dsimp [e]; omega
+      have hh : (2 : Int) ^ v * ((2 : Int) ^ (e + 1) * y) =
+          (2 : Int) ^ v * u := by
+        rw [← Int.mul_assoc, ← Int.pow_add, ← he, hstep, hxu]
+      have hc : (2 : Int) ^ (e + 1) * y = u :=
+        Int.eq_of_mul_eq_mul_left (Int.pow_ne_zero (by decide)) hh
+      have hp : ((2 : Int) ^ (e + 1) * y) % 2 = 0 := by
+        simp [Int.mul_emod, pow_two_succ_even]
+      rw [hc] at hp
+      omega
   have hv : v = D + (v - D) := by omega
   have hh : (2 : Int) ^ D * y =
       (2 : Int) ^ D * ((2 : Int) ^ (v - D) * u) := by
@@ -205,7 +211,8 @@ theorem equal_order_cancellation_unbounded (k : Nat) :
     have he := pow_two_succ_even k
     omega
   · refine ⟨1, ?_, by decide⟩
-    simp
+    simp only [Int.mul_one]
+    omega
 
 /-- The switch classification consumes the exact qualified affine transport. -/
 theorem return_switch_unequal
