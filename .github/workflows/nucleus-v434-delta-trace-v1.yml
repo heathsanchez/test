@@ -22,14 +22,13 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Build exact independent authority
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD~1)" = "$NUCLEUS_SHA"
+          git fetch -q origin "$NUCLEUS_SHA" --depth=1
+          git diff --exit-code "$NUCLEUS_SHA" HEAD -- metatron-kernel
           ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
 
