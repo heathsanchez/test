@@ -1,0 +1,182 @@
+name: ACC Number1 Persistent Basis Carry Qualification V1
+
+on:
+  push:
+    branches:
+      - acc-number1-basis-macro-harvest-v1
+    paths:
+      - ".github/workflows/acc-number1-basis-macro-qualification-v1.yml"
+      - "acc_competitive/nielsen_persistent_basis_carry_v1.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: acc-number1-basis-macro-qualification-v1
+  cancel-in-progress: false
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-basis-macro-harvest-v1
+      - name: Freeze top #1 singleton frontier
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/number1_basis
+          python3 - <<'PY'
+          import json,pathlib,urllib.request,urllib.parse
+          B='https://server-9527.sair.foundation'; H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          root=pathlib.Path('acc_competitive/number1_basis')
+          def get(path):
+              req=urllib.request.Request(B+path,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:return json.loads(r.read().decode())
+          def data(o):return o.get('data',o)
+          lb=data(get('/api/acc/leaderboard?problem=ac')); sid=lb['snapshotId']; leader=lb['items'][0]
+          tid=leader['team']['teamId']; name=leader['team'].get('teamName') or tid
+          items=[]; cursor=None
+          while True:
+              q={'problem':'ac','snapshotId':sid,'limit':100}
+              if cursor:q['cursor']=cursor
+              dd=data(get('/api/acc/leaderboard/teams/'+urllib.parse.quote(tid,safe='')+'/challenges?'+urllib.parse.urlencode(q)))
+              items.extend(dd.get('items',[]));cursor=dd.get('nextCursor')
+              if not cursor:break
+          cand=[x for x in items if x.get('kTeams')==1 and isinstance(x.get('currentBestLength'),int)]
+          cand.sort(key=lambda x:(-x['currentBestLength'],x['challengeId']))
+          cand=cand[:128]; ids=[x['challengeId'] for x in cand]
+          if len(ids)!=128:raise SystemExit(f'expected 128 singleton targets, got {len(ids)}')
+          for problem in ('ac','stable_ac'):
+              snap=get('/api/acc/discoveries/snapshot?problem='+problem)
+              (root/f'snapshot_{problem}.json').write_text(json.dumps(snap,indent=2,sort_keys=True)+'\n')
+          (root/'leader.json').write_text(json.dumps({
+              'teamId':tid,'teamName':name,'rank':leader['rank'],'score':leader['score'],
+              'currentBestCount':leader['currentBestCount'],'snapshotId':sid,
+              'targets':len(ids),'max_best':cand[0]['currentBestLength'],'min_best':cand[-1]['currentBestLength']
+          },indent=2,sort_keys=True)+'\n')
+          for shard in range(16):
+              (root/f'shard_{shard}.json').write_text(json.dumps(ids[shard::16],indent=2)+'\n')
+          print('BASIS_NUMBER1_FRONTIER',json.dumps({
+              'leader':name,'score':leader['score'],'leader_records':leader['currentBestCount'],
+              'targets':len(ids),'max_best':cand[0]['currentBestLength'],'min_best':cand[-1]['currentBestLength']
+          },sort_keys=True))
+          PY
+      - name: Recover Proof Atlas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/atlas
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$ID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          test -n "$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-number1-basis-freeze
+          path: acc_competitive/number1_basis/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-number1-basis-atlas
+          path: /tmp/atlas/
+          retention-days: 1
+
+  search:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-basis-macro-harvest-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-number1-basis-freeze
+          path: /tmp/freeze
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-number1-basis-atlas
+          path: /tmp/atlas
+      - name: Fetch pinned authorities
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Avi161/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 5ae1bd8eda6d80dfbea51680636f825da19fb802
+          python3 -m pip install --quiet numpy numba
+      - name: Compile Nielsen routes with persistent basis frame
+        run: |
+          set -euo pipefail
+          OUT="acc_competitive/number1_basis_shard_${{ matrix.shard }}"
+          python3 acc_competitive/nielsen_persistent_basis_carry_v1.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)"             --snapshot-ac /tmp/freeze/snapshot_ac.json             --snapshot-stable /tmp/freeze/snapshot_stable_ac.json             --target-ids-file "/tmp/freeze/shard_${{ matrix.shard }}.json"             --out-dir "$OUT"             --budget 1000 --beam 32 --extra-total 120 | tee "$OUT.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-number1-basis-shard-${{ matrix.shard }}
+          path: |
+            acc_competitive/number1_basis_shard_${{ matrix.shard }}/
+            acc_competitive/number1_basis_shard_${{ matrix.shard }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  pool:
+    needs: search
+    if: always() && needs.search.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-basis-macro-harvest-v1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acc-number1-basis-shard-*
+          path: /tmp/shards
+          merge-multiple: false
+      - name: Pool verifier-clean strict candidates
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/number1_basis_pool
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('/tmp/shards');rows=[];best={}
+          for p in root.rglob('results.json'):rows.extend(json.loads(p.read_text()))
+          for p in root.rglob('pending_submission.txt'):
+              for line in p.read_text().splitlines():
+                  if ':' not in line:continue
+                  cid,raw=line.split(':',1)
+                  try:m=list(json.loads(raw.strip()))
+                  except Exception:continue
+                  if cid not in best or len(m)<len(best[cid]):best[cid]=m
+          out=pathlib.Path('acc_competitive/number1_basis_pool')
+          rows.sort(key=lambda x:x['challenge_id'])
+          (out/'results.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          (out/'pending_submission.txt').write_text('\n'.join(
+              f'{cid}: {json.dumps(m,separators=(",",":"))}' for cid,m in sorted(best.items())
+          )+('\n' if best else ''))
+          rep={'targets':len(rows),'mixed_solved':sum(bool(r.get('solved')) for r in rows),
+               'strict_ac':sum(bool(r.get('strict_ac')) for r in rows),
+               'strict_stable':sum(bool(r.get('strict_stable')) for r in rows),
+               'pending_rows':len(best),'errors':sum('error' in r for r in rows),
+               'contacts':sum(r.get('atlas_contacts') or 0 for r in rows),
+               'rejected':sum(bool(r.get('rejected')) for r in rows)}
+          (out/'report.json').write_text(json.dumps(rep,indent=2,sort_keys=True)+'\n')
+          print('BASIS_NUMBER1_POOL',json.dumps(rep,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-number1-basis-pool
+          path: acc_competitive/number1_basis_pool/
+          retention-days: 90
