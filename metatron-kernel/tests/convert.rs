@@ -250,3 +250,24 @@ fn failed_congruence_still_reduces_a_function_that_ignores_its_argument() {
     let (fixture, left, right) = application_congruence_fixture(false, true);
     assert!(fixture.checker().convert(&Fixture::term(left), &Fixture::term(right), 128).is_proven());
 }
+
+#[test]
+fn application_congruence_checks_universe_arguments() {
+    let mut fixture = Fixture::conversion();
+    fixture.expressions.insert(ExprId(20), Expr::Sort(LevelId(2))).unwrap();
+    fixture.expressions.insert(ExprId(21), Expr::Pi {
+        domain: ExprId(7), body: ExprId(20)
+    }).unwrap();
+    fixture.environment = fixture.environment.extend(
+        NameId(31), ConstantDecl::axiom(vec![NameId(10)], ExprId(21))
+    ).unwrap();
+    for (head, app, level) in [(22, 24, 0), (23, 25, 1)] {
+        fixture.expressions.insert(ExprId(head), Expr::Const {
+            name: NameId(31), levels: vec![LevelId(level)]
+        }).unwrap();
+        fixture.expressions.insert(ExprId(app), Expr::App {
+            fun: ExprId(head), arg: ExprId(0)
+        }).unwrap();
+    }
+    assert!(!fixture.checker().convert(&Fixture::term(24), &Fixture::term(25), 128).is_proven());
+}

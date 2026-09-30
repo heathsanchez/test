@@ -122,6 +122,23 @@ pub(crate) fn convert_with_policy_in_context(
     initial_depth: usize,
     context: &[TypeValue],
 ) -> Judgment<()> {
+    convert_in_context_with_congruence(
+        checker, left, right, budget, delta_policy, initial_depth, context, 0,
+    )
+}
+
+// Speculative congruence has a separate depth bound. Exhaustion merely
+// declines this sufficient rule and leaves the established conversion path.
+fn convert_in_context_with_congruence(
+    checker: &TypeChecker<'_>,
+    left: &TypeValue,
+    right: &TypeValue,
+    budget: usize,
+    delta_policy: DeltaPolicy,
+    initial_depth: usize,
+    context: &[TypeValue],
+    congruence_depth: usize,
+) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
     #[cfg(feature = "diagnostics")]
@@ -256,6 +273,45 @@ pub(crate) fn convert_with_policy_in_context(
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
                 let machine = checker.machine();
+                // Compare equal constant heads and their arguments before
+                // delta reduction can erase a shared application. In particular,
+                // this preserves a projection function's original structure
+                // argument while proving id c = c inside that argument.
+                // This is a positive-only rule: failure of a premise says
+                // nothing about the applications (the function can ignore it).
+                if congruence_depth < 16 {
+                    let probe_budget = remaining.min(256);
+                    let opaque_left =
+                        machine.expose(left.clone(), Transparency::Opaque, probe_budget);
+                    let opaque_right =
+                        machine.expose(right.clone(), Transparency::Opaque, probe_budget);
+                    if let (Some(Value::Neutral(lhs)), Some(Value::Neutral(rhs))) =
+                        (opaque_left.proven_value(), opaque_right.proven_value())
+                        && let (
+                            NeutralHead::Const { name: left_name, .. },
+                            NeutralHead::Const { name: right_name, .. },
+                        ) = (&lhs.head, &rhs.head)
+                        && left_name == right_name
+                        && !lhs.spine.is_empty()
+                        && lhs.spine.len() == rhs.spine.len()
+                        && compare_neutral_heads(checker, lhs, rhs, probe_budget).is_proven()
+                        && lhs.spine.iter().zip(&rhs.spine).all(|(left_arg, right_arg)| {
+                            convert_in_context_with_congruence(
+                                checker,
+                                &TypeValue::Term(left_arg.clone()),
+                                &TypeValue::Term(right_arg.clone()),
+                                probe_budget / lhs.spine.len(),
+                                delta_policy,
+                                depth,
+                                context,
+                                congruence_depth + 1,
+                            )
+                            .is_proven()
+                        })
+                    {
+                        continue;
+                    }
+                }
                 let cheap_left = machine.expose(left.clone(), Transparency::Reducible, remaining);
                 let cheap_right = machine.expose(right.clone(), Transparency::Reducible, remaining);
                 let (Some(cheap_left), Some(cheap_right)) =
