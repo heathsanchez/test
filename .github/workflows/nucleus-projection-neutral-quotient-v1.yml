@@ -1,0 +1,178 @@
+name: Nucleus Projection Neutral Quotient V1
+
+on:
+  push:
+    branches: [nucleus-projection-neutral-quotient-v1]
+    paths:
+      - ".github/workflows/nucleus-projection-neutral-quotient-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AUTHORITY_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  QUALIFIED_PARENT_SHA: 6a129656ae84ef4448d52c0c4a164ccfe24e4ca4
+  PARENT_RUN: "36654690171"
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Bind to qualified semantic parent
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$QUALIFIED_PARENT_SHA"..HEAD -- metatron-kernel/
+          test "$(gh api repos/heathsanchez/test/actions/runs/$PARENT_RUN --jq .conclusion)" = "success"
+          test "$(gh api repos/heathsanchez/test/actions/runs/$PARENT_RUN --jq .head_sha)" = "$QUALIFIED_PARENT_SHA"
+
+      - name: Build unchanged qualified candidate
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/art /tmp/tests /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Quotient exact projection-involved neutral pairs
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/nucleus-projection-neutral-quotient-v1
+          python3 - <<'PY'
+          import collections,json,os,pathlib,re,subprocess
+
+          root=pathlib.Path('/tmp/tests/good')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          targets=[
+            'perf/magma-list-deep-n21',
+            'perf/magma-list-deep-n36',
+            'perf/magma-list-pair-n21',
+            'perf/magma-list-pair-n7',
+          ]
+
+          def run(name):
+              env=os.environ.copy()
+              env.update({
+                'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                'NUCLEUS_TRACE_RESIDUAL':'1',
+                'NUCLEUS_TRACE_BOOL_WHNF':'1',
+                'NUCLEUS_TRACE_APP_FUNCTION_TYPE':'1',
+                'NUCLEUS_TRACE_CONVERSION_EXPOSURE':'1',
+                'NUCLEUS_TRACE_PROJECTION_MISMATCH':'1',
+              })
+              p=root/(name+'.ndjson')
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,timeout=180,env=env)
+              return q.returncode,q.stderr.decode(errors='replace')
+
+          def parse_side(head,spine):
+              kind='other'
+              if head.startswith('Projection'):
+                  kind='projection'
+              elif head.startswith('Const'):
+                  kind='const'
+              elif head.startswith('Free'):
+                  kind='free'
+              type_name=None
+              field_index=None
+              structure_kind=None
+              structure_name=None
+              if kind=='projection':
+                  m=re.search(r'type_name: NameId\((\d+)\)',head)
+                  type_name=int(m.group(1)) if m else None
+                  m=re.search(r'index: (\d+)',head)
+                  field_index=int(m.group(1)) if m else None
+                  sm=re.search(r'structure: Neutral \{ head: ([A-Za-z]+)',head)
+                  structure_kind=sm.group(1).lower() if sm else None
+                  nm=re.search(r'structure: Neutral \{ head: Const \{ name: NameId\((\d+)\)',head)
+                  structure_name=int(nm.group(1)) if nm else None
+              elif kind=='const':
+                  m=re.search(r'name: NameId\((\d+)\)',head)
+                  structure_name=int(m.group(1)) if m else None
+              return {
+                'kind':kind,
+                'type_name':type_name,
+                'field_index':field_index,
+                'structure_kind':structure_kind,
+                'structure_name':structure_name,
+                'outer_spine_len':spine.count('Closure {'),
+              }
+
+          rows=[]
+          pair_counts=collections.Counter()
+          for name in targets:
+              rc,err=run(name)
+              assert rc in (2,3),(name,rc)
+              neutral=[x for x in err.splitlines() if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x]
+              assert neutral,(name,err[-12000:])
+              line=neutral[-1].split('NUCLEUS_NEUTRAL_HEAD_MISMATCH:',1)[1]
+              left,rest=line.split(':left_spine=',1)
+              left=left.removeprefix('left=')
+              left_spine,rest=rest.split(':right=',1)
+              right,rest=rest.split(':right_spine=',1)
+              right_spine,budget=rest.rsplit(':budget=',1)
+              lf=parse_side(left,left_spine)
+              rf=parse_side(right,right_spine)
+              signature=json.dumps({'left':lf,'right':rf},sort_keys=True,separators=(',',':'))
+              pair_counts[signature]+=1
+              rows.append({
+                'atom':name,
+                'rc':rc,
+                'left':lf,
+                'right':rf,
+                'budget':int(budget),
+                'pair_signature':signature,
+                'raw_neutral_mismatch':neutral[-1],
+              })
+
+          result={
+            'schema':'nucleus.projection-neutral-quotient.v1',
+            'authority_sha':os.environ['AUTHORITY_SHA'],
+            'qualified_parent_sha':os.environ['QUALIFIED_PARENT_SHA'],
+            'qualified_parent_run':int(os.environ['PARENT_RUN']),
+            'atoms':rows,
+            'frozen_atom_count':len(rows),
+            'unique_pair_signatures':len(pair_counts),
+            'pair_signature_counts':dict(pair_counts),
+            'status':(
+              'COMMON_PROJECTION_PAIR_SIGNATURE'
+              if len(pair_counts)==1 else
+              f'PROJECTION_PAIR_SPLIT_{len(pair_counts)}'
+            ),
+            'boundary':'Diagnostic quotient over the four already-qualified projection-involved neutral residuals only. No semantic rule or verdict is promoted.'
+          }
+          pathlib.Path(
+            'evidence/nucleus-projection-neutral-quotient-v1/result.json'
+          ).write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+            'status':result['status'],
+            'unique_pair_signatures':result['unique_pair_signatures'],
+            'rows':[
+              {'atom':r['atom'],'left':r['left'],'right':r['right'],'budget':r['budget']}
+              for r in rows
+            ]
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-projection-neutral-quotient-v1
+          path: evidence/nucleus-projection-neutral-quotient-v1/result.json
+          if-no-files-found: error
