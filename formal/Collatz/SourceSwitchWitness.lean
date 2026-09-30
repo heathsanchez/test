@@ -97,25 +97,25 @@ theorem switch_own_orders_0 (t : Nat) :
   · have hb : DyadicOrder
         (returnDefect 6561 2443 2048 (401921098006060864059822585962556501 : Int)) 12 := by
       refine ⟨-442839334790369306519037922472904661, ?_, by decide⟩
-      norm_num [returnDefect]
+      decide
     have hc :
         ((2048 - 6561 : Int) *
           10339104923144442364280990139412146030954577709855307334680576) =
         (2 : Int)^(12+1) *
           (-5695847231219588426513685119527223515343995264230591064625664 : Int) := by
-      norm_num
+      decide
     rw [hc, Int.mul_assoc]
     exact dyadic_even_perturbation hb _
   · have hb : TernaryOrder
         (returnDefect 6561 2443 2048 (401921098006060864059822585962556501 : Int)) 0 := by
       refine ⟨-1813869915301352679501979330449017491456, ?_, by decide⟩
-      norm_num [returnDefect]
+      decide
     have hc :
         ((2048 - 6561 : Int) *
           10339104923144442364280990139412146030954577709855307334680576) =
         (3 : Int)^(0+1) *
           (-15553460172716956130000036166389005012566003068192334000471146496 : Int) := by
-      norm_num
+      decide
     rw [hc, Int.mul_assoc]
     exact ternary_multiple_perturbation hb _
 
@@ -136,25 +136,25 @@ theorem switch_own_orders_1 (t : Nat) :
   · have hb : DyadicOrder
         (returnDefect 9 1 8 (1287599767586799477097898430908365823 : Int)) 10 := by
       refine ⟨-1257421648033983864353416436433951, ?_, by decide⟩
-      norm_num [returnDefect]
+      decide
     have hc :
         ((8 - 9 : Int) *
           33122493848022796070335730617521040092330558766777671593183232) =
         (2 : Int)^(10+1) *
           (-16173092699229880893718618465586445357583280647840659957609 : Int) := by
-      norm_num
+      decide
     rw [hc, Int.mul_assoc]
     exact dyadic_even_perturbation hb _
   · have hb : TernaryOrder
         (returnDefect 9 1 8 (1287599767586799477097898430908365823 : Int)) 2 := by
       refine ⟨-143066640842977719677544270100929536, ?_, by decide⟩
-      norm_num [returnDefect]
+      decide
     have hc :
         ((8 - 9 : Int) *
           33122493848022796070335730617521040092330558766777671593183232) =
         (3 : Int)^(2+1) *
           (-1226759031408251706308730763611890373790020695065839688636416 : Int) := by
-      norm_num
+      decide
     rw [hc, Int.mul_assoc]
     exact ternary_multiple_perturbation hb _
 
