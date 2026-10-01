@@ -855,11 +855,7 @@ fn check_inductive(
         return check_exact_closed_reflexive_tree(export, environment, block, limits, delta_policy);
     }
 
-    if closed_sum::candidate(export, block) {
-        return closed_sum::check(export, environment, block, limits, delta_policy);
-    }
-
-    match block.constructors.len() {
+    let established = match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
         2 => check_binary_enum(export, environment, block, limits, delta_policy),
@@ -868,6 +864,11 @@ fn check_inductive(
             crate::diagnostics::causal("admission-route-miss", format_args!("route=constructor-cardinality;constructors={};registered-dispatch=0,1,2", block.constructors.len()));
             Err(Verdict::Unknown)
         },
+    };
+    match established {
+        Err(Verdict::Unknown) if closed_sum::candidate(export, block) =>
+            closed_sum::check(export, environment, block, limits, delta_policy),
+        other => other,
     }
 }
 
