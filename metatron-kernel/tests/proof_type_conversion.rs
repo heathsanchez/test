@@ -60,3 +60,36 @@ impl Fixture {
 #[test] fn exhausted_budget_grants_no_equality() {
  assert!(!Fixture::new(false,false,false,false).check(DeltaPolicy::GuardedSemanticFallback,0));
 }
+
+#[test]
+fn nested_proof_type_conversion_cannot_reset_its_permission() {
+ let mut f=Fixture::new(false,false,false,false);
+ assert!(f.check(DeltaPolicy::GuardedSemanticFallback,4096));
+ let domain=f.env.get(NameId(7)).unwrap().ty;
+ let prop=ExprId(1000);f.es.insert(prop,Expr::Sort(LevelId(0))).unwrap();
+ let rty=ExprId(1001);f.es.insert(rty,Expr::Pi{domain,body:prop}).unwrap();
+ f.env=f.env.extend(NameId(8),ConstantDecl::axiom(vec![],rty)).unwrap();
+ let r=ExprId(1002);f.es.insert(r,Expr::Const{name:NameId(8),levels:vec![]}).unwrap();
+ for (id,name,arg) in [(1003,9,f.left),(1005,10,f.right)] {
+  let ty=ExprId(id);f.es.insert(ty,Expr::App{fun:r,arg}).unwrap();
+  f.env=f.env.extend(NameId(name),ConstantDecl::axiom(vec![],ty)).unwrap();
+  f.es.insert(ExprId(id+1),Expr::Const{name:NameId(name),levels:vec![]}).unwrap();
+ }
+ f.left=ExprId(1004);f.right=ExprId(1006);
+ // The propositions R p and R q need the new rule again to compare p and q.
+ // This deliberately bounded extension declines that nested obligation.
+ assert!(!f.check(DeltaPolicy::GuardedSemanticFallback,10000));
+}
+
+#[test]
+fn proposition_probe_cap_survives_a_large_outer_budget() {
+ let mut f=Fixture::new(false,false,false,false);
+ let original_ty=f.env.get(NameId(6)).unwrap().ty;
+ let Expr::App{fun:family,arg:beta}=f.es.get(original_ty).unwrap().clone() else {panic!("fixture");};
+ let Expr::App{fun:identity,arg:mut body}=f.es.get(beta).unwrap().clone() else {panic!("fixture");};
+ for i in 1000..1512 {let next=ExprId(i);f.es.insert(next,Expr::App{fun:identity,arg:body}).unwrap();body=next;}
+ let ty=ExprId(1512);f.es.insert(ty,Expr::App{fun:family,arg:body}).unwrap();
+ f.env=f.env.extend(NameId(8),ConstantDecl::axiom(vec![],ty)).unwrap();
+ f.left=ExprId(1513);f.es.insert(f.left,Expr::Const{name:NameId(8),levels:vec![]}).unwrap();
+ assert!(!f.check(DeltaPolicy::GuardedSemanticFallback,1_000_000));
+}
