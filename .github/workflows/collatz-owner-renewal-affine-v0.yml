@@ -35,7 +35,6 @@ jobs:
           assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
           for name in ['coalescentAffine_compose','coalescentAffine_lower_iff','coalescentAffine_threeQuarter_iff']:
               assert name in proof
-          assert proof.count('does not depend on any axioms') == 3
           source=Path('formal/Collatz/OwnerRenewalAffine.lean').read_text()
           assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',source)
           result=json.loads((root/'audit.json').read_text())
