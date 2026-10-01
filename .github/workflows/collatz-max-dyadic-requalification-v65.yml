@@ -1,0 +1,68 @@
+name: Collatz max dyadic requalification V65
+on:
+  push:
+    branches: [collatz-max-dyadic-requalification-v65]
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-backward-symbolic-cover-20260930
+          run-id: 36663027013
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qualified-bank
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-guard-bank-reconciliation-v61
+          run-id: 36830138059
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qualified-state
+
+      - name: Install pinned Lean and recheck generic source-cylinder authority
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean -DautoImplicit=false formal/Collatz/SourceCylinderExit.lean | tee evidence/source-cylinder-authority.log
+          ! grep -q 'sorryAx' evidence/source-cylinder-authority.log
+          ! grep -q 'Lean.ofReduceBool' evidence/source-cylinder-authority.log
+
+      - name: Contract historical guard and reclose exact residual
+        run: |
+          set -euo pipefail
+          python3 experiments/collatz_max_dyadic_requalification_v65.py \
+            --bank qualified-bank/backward-cover-certificates.json \
+            --state qualified-state/state.json > evidence/result.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('evidence/result.json'))
+          assert d['bank_laws']==3294
+          assert d['input_cells']==14934
+          assert d['erased_historical_factor']==6561
+          assert d['counts']['prefixes']==1164852
+          assert d['counts'].get('dyadic_residue_matches',0)==0
+          assert d['counts'].get('dyadic_cylinder_memberships',0)==0
+          assert d['counts'].get('protected_u0_hits',0)==0
+          assert d['counts']['cells_with_uncovered_zero']==14934
+          assert d['whole_cell_closures']==0
+          assert d['status']=='WARRANTED_GUARD_CONTRACTION__REJECTED_AS_RESIDUAL_CLOSURE'
+          assert d['residual_type']=='CAPABILITY_DOMAIN_MISMATCH_NOT_STATE_REPRESENTATION_SEPARATOR'
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+          print('PASS_MAX_DYADIC_REQUALIFICATION; ZERO_RESIDUAL_CLOSURE; CAPABILITY_DOMAIN_MISMATCH')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-max-dyadic-requalification-v65
+          path: evidence
