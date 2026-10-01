@@ -1,0 +1,67 @@
+name: Collatz switch bit interval V72
+on:
+  push:
+    branches: [collatz-switch-bit-interval-v72]
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Replay qualified V60 switch corpus and test zero-only runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          PYTHONPATH=experiments python3 -u experiments/collatz_switch_bit_interval_v72.py > evidence/result.json
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib, json
+          d=json.load(open('evidence/result.json'))
+          assert d['schema']=='COLLATZ_SWITCH_BIT_INTERVAL_V72'
+          assert d['parent_certificate_sha256']=='0983c58430f54935a9af9d5f115e44653831c6770aec57eb1593df4a93816ac0'
+          assert d['qualified_switches_replayed']==613
+          assert d['strong_candidate_every_switch_has_nonzero_new_interval']=='REJECTED'
+          assert d['zero_only_switches']>0
+          assert d['zero_only_switches']+d['nonzero_interval_switches']==613
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+
+          if d['candidate_no_two_consecutive_zero_only']:
+              status='WARRANTED_BOUNDED_CANDIDATE_SURVIVES'
+              assert d['max_consecutive_zero_only_switches']<=1
+              assert d['consecutive_zero_witnesses']==[]
+          else:
+              status='WARRANTED_BOUNDED_REJECTION'
+              assert d['max_consecutive_zero_only_switches']>=2
+              assert d['consecutive_zero_witnesses']
+
+          result={
+              'schema':'COLLATZ_SWITCH_BIT_INTERVAL_V72_QUALIFICATION',
+              'status':status,
+              'qualified_switches':613,
+              'zero_only_switches':d['zero_only_switches'],
+              'max_consecutive_zero_only_switches':d['max_consecutive_zero_only_switches'],
+              'no_two_consecutive_zero_only':d['candidate_no_two_consecutive_zero_only'],
+              'strong_every_switch_nonzero':'REJECTED',
+              'global_collatz':'UNKNOWN',
+              'qed':False,
+          }
+          result['certificate_sha256']=hashlib.sha256(
+              json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-switch-bit-interval-v72
+          path: evidence
+          if-no-files-found: error
