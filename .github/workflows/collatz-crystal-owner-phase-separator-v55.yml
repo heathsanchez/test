@@ -1,0 +1,46 @@
+name: Collatz Crystal owner phase separator V55
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - collatz-crystal-owner-cylinder-reclosure-v54
+    paths:
+      - 'experiments/collatz_crystal_owner_phase_separator_v55.py'
+      - '.github/workflows/collatz-crystal-owner-phase-separator-v55.yml'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact one-bit successor separator
+        run: |
+          mkdir -p evidence/collatz-crystal-owner-phase-separator-v55
+          python experiments/collatz_crystal_owner_phase_separator_v55.py \
+            > evidence/collatz-crystal-owner-phase-separator-v55/result.json
+      - name: Verify collision, separator, and live-kernel boundary
+        run: |
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-owner-phase-separator-v55/result.json'
+          d=json.load(open(p))
+          assert d['parent_cells']==64
+          assert [g['count'] for g in d['parent_phase_groups']]==[61,3]
+          assert [g['future_profiles'] for g in d['parent_phase_groups']]==[8,1]
+          assert d['separator_scan'][4]['collision_count']==4
+          assert d['selected_separator']['minimum_k_on_frozen_boundary']==5
+          assert d['selected_separator']['modulus']==243
+          assert d['future_kernel_empty'] is False
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('PASS_BOUNDED_3ADIC_SEPARATOR_LIVE_KERNEL',d['certificate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-owner-phase-separator-v55
+          path: evidence/collatz-crystal-owner-phase-separator-v55/result.json
