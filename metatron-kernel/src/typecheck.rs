@@ -959,3 +959,24 @@ fn take_step(remaining: &mut usize) -> bool {
 fn fresh_local(depth: usize) -> Option<FreeId> {
     u64::try_from(depth).ok().map(FreeId)
 }
+
+#[cfg(test)]
+mod telescope_sort_tests {
+    use super::*;
+
+    #[test]
+    fn sort_obligation_uses_the_validated_local_context() {
+        let mut levels = IdTable::default();
+        levels.insert(LevelId(0), Level::Zero).unwrap();
+        let mut expressions = IdTable::default();
+        expressions.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
+        expressions.insert(ExprId(1), Expr::BVar(0)).unwrap();
+        let environment = Environment::default();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        assert!(matches!(checker.infer_sort_in_context(ExprId(0), &[], &EnvFrame::empty(), 128), Judgment::Proven { .. }));
+        assert!(matches!(checker.infer_sort_in_context(ExprId(1), &[], &EnvFrame::empty(), 128), Judgment::Refuted { .. }));
+        let context = [TypeValue::Term(checker.closure(ExprId(0), EnvFrame::empty()))];
+        assert!(matches!(checker.infer_sort_in_context(ExprId(1), &context,
+            &EnvFrame::empty().extend_free(FreeId(0)), 128), Judgment::Proven { .. }));
+    }
+}

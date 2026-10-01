@@ -64,7 +64,10 @@ pub(super) fn check(export: &ResolvedExport, prior: &Environment, block: &Induct
         |_,k,a,b|expr_eq_with_bvar_shift(export,a,b,k as u64,1)) { return Err(Verdict::Unknown); }
     let Some((rec_domains,_))=pi_spine(export,r.ty,p+3) else { return Err(Verdict::Unknown); };
     let Some((annotations,_))=lam_spine(export,r.rules[0].rhs,p+2+f) else { return Err(Verdict::Unknown); };
-    if !(0..p).all(|k|equal(rec_domains[k],annotations[k],&prefixes[k].0,&prefixes[k].1))
+    if !(0..p).all(|k|
+        matches!(checker.infer_sort_in_context(annotations[k],&prefixes[k].0,&prefixes[k].1,
+            limits.judgment_steps),Judgment::Proven { .. })
+        && equal(rec_domains[k],annotations[k],&prefixes[k].0,&prefixes[k].1))
         || !(p..p+2).all(|k|expr_eq_with_bvar_shift(export,rec_domains[k],annotations[k],0,0))
         || !domains[p..].iter().zip(&annotations[p+2..]).enumerate().all(|(k,(a,b))|
             expr_eq_with_bvar_shift(export,*a,*b,k as u64,2)) { return Err(Verdict::Unknown); }
