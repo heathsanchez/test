@@ -43,6 +43,14 @@ jobs:
           cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
           cp /tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-base-bin
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-record-binaries-${{ github.sha }}
+          path: |
+            /tmp/nucleus-candidate
+            /tmp/nucleus-base-bin
+          if-no-files-found: error
+
       - name: Fetch frozen Round 1 and current v4.34 public corpora
         env:
           GH_TOKEN: ${{ github.token }}

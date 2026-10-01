@@ -12,6 +12,9 @@ class RecordTelescopes(unittest.TestCase):
     def test_real_record_prefixes_close(self):
         for n,t in OBLIGATIONS:
             with self.subTest(target=t,source=n):self.assertEqual(self.run_rows(self.rows(n,t)),0)
+    def test_successor_dependency_prefixes_close(self):
+        for t in ['Applicative','Monad']:
+            with self.subTest(target=t):self.assertEqual(self.run_rows(self.rows('perf/fueled-chain',t)),0)
     def test_renamed_records_close(self):
         for n,t in OBLIGATIONS[::2]:
             r=self.rows(n,t);b=[x['inductive']for x in r if 'inductive'in x][-1]
