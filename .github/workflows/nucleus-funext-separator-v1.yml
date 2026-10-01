@@ -42,29 +42,28 @@ jobs:
           unzip -q /tmp/current.zip -d /tmp/a
           tar -xzf "$(find /tmp/a -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
 
-      - name: Trace first rigid mismatch on official valid fueled-chain
+      - name: Extract exact funext slice and trace rigid mismatch
         run: |
           set -euo pipefail
           mkdir -p metatron-kernel/evidence-out/funext-separator-v1
           python3 - <<'PY'
-          import pathlib,subprocess,os,json,hashlib
+          import pathlib,sys,subprocess,os,json,hashlib
+          sys.path.insert(0,"metatron-kernel/tests")
+          from slice_no_confusion import slice_prefix
           src=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
-          data=src.read_bytes()
+          data=slice_prefix(src,"funext").encode()
           out=pathlib.Path("metatron-kernel/evidence-out/funext-separator-v1")
+          sl=out/"funext-prefix.ndjson"; sl.write_bytes(data)
           env=os.environ|{"NUCLEUS_TRACE_VALUE_MISMATCH":"1","NUCLEUS_TRACE_DOWNSTREAM":"1"}
-          r=subprocess.run(["/tmp/nucleus"],input=data,capture_output=True,env=env,timeout=90)
-          rec={
-            "candidate_sha":os.environ["GITHUB_SHA"],
-            "input_sha256":hashlib.sha256(data).hexdigest(),
-            "input_bytes":len(data),
-            "exit":r.returncode,
-            "stderr":r.stderr.decode(errors="replace"),
-          }
+          r=subprocess.run(["/tmp/nucleus"],input=data,capture_output=True,env=env,timeout=60)
+          rec={"candidate_sha":os.environ["GITHUB_SHA"],"slice_sha256":hashlib.sha256(data).hexdigest(),
+               "slice_bytes":len(data),"slice_exit":r.returncode,
+               "slice_stderr":r.stderr.decode(errors="replace")}
           (out/"diagnostic.json").write_text(json.dumps(rec,indent=2)+"\n")
           print(json.dumps(rec),flush=True)
           assert r.returncode==1,rec
-          assert "NUCLEUS_VALUE_MISMATCH:" in rec["stderr"],rec
-          assert "name=funext:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch" in rec["stderr"],rec
+          assert "NUCLEUS_VALUE_MISMATCH:" in rec["slice_stderr"],rec
+          assert "name=funext:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch" in rec["slice_stderr"],rec
           PY
 
       - name: Check out pinned independent reference
@@ -74,7 +73,7 @@ jobs:
           ref: 68c66fa18c1afe029512b90ecfe0b162c0dcd8fb
           path: reference-lazylean
 
-      - name: Verify official fueled-chain in both reference engines
+      - name: Verify exact funext slice in both reference engines
         run: |
           set -euo pipefail
           sudo apt-get update -qq
@@ -82,8 +81,8 @@ jobs:
           cd reference-lazylean
           g++ -std=c++20 -O2 -Isrc src/name.cpp src/level.cpp src/expr.cpp src/loader.cpp src/tc.cpp src/inductive.cpp src/kam.cpp src/fuse.cpp src/fix.cpp src/main.cpp -lgmpxx -lgmp -lpthread -o lazylean
           cd ..
-          reference-lazylean/lazylean --engine kam -j 1 /tmp/current/good/perf/fueled-chain.ndjson
-          reference-lazylean/lazylean --engine subst -j 1 /tmp/current/good/perf/fueled-chain.ndjson
+          reference-lazylean/lazylean --engine kam -j 1 metatron-kernel/evidence-out/funext-separator-v1/funext-prefix.ndjson
+          reference-lazylean/lazylean --engine subst -j 1 metatron-kernel/evidence-out/funext-separator-v1/funext-prefix.ndjson
 
       - uses: actions/upload-artifact@v4
         if: always()
