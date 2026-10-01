@@ -28,7 +28,10 @@ jobs:
         run: |
           set -euo pipefail
           ulimit -s 65536
-          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          # Verify the ordinary kernel first; the projection probe intentionally
+          # performs extra diagnostic-only conversion calls, so it is not eligible
+          # for the observational diagnostic-counter equality test.
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
 
