@@ -185,6 +185,8 @@ impl<'a> TypeChecker<'a> {
         // This cache is local to one public judgment. A frame has one fixed
         // typing context in that judgment, and every binder allocates a fresh
         // frame identity. Never reuse UNKNOWN, refutations, or another scope.
+        #[cfg(feature = "diagnostics")]
+        crate::diagnostics::inference_frame(expression, frame.id());
         let key = (expression, frame.id());
         if let Some(value) = cache.get(&key) {
             return if take_step(remaining) {
