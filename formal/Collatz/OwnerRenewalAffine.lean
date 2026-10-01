@@ -12,7 +12,7 @@ Lean checks the composition and descent margins at every depth.
 -/
 
 theorem coalescentAffine_compose
-    (P₁ A₁ C₁ P₂ A₂ C₂ x p q : ℤ)
+    (P₁ A₁ C₁ P₂ A₂ C₂ x p q : Int)
     (h₁ : P₁ * p = A₁ * x + C₁)
     (h₂ : P₂ * q = A₂ * p + C₂) :
     (P₁ * P₂) * q = (A₂ * A₁) * x + (A₂ * C₁ + P₁ * C₂) := by
@@ -24,7 +24,7 @@ theorem coalescentAffine_compose
     _ = (A₂ * A₁) * x + (A₂ * C₁ + P₁ * C₂) := by ring
 
 theorem coalescentAffine_lower_margin
-    (P A C x p : ℤ)
+    (P A C x p : Int)
     (h : P * p = A * x + C) :
     (P - A) * x - C = P * (x - p) := by
   calc
@@ -33,7 +33,7 @@ theorem coalescentAffine_lower_margin
     _ = P * (x - p) := by ring
 
 theorem coalescentAffine_threeQuarter_margin
-    (P A C x p : ℤ)
+    (P A C x p : Int)
     (h : P * p = A * x + C) :
     (3 * P - 4 * A) * x - 4 * C = P * (3 * x - 4 * p) := by
   calc
@@ -42,7 +42,7 @@ theorem coalescentAffine_threeQuarter_margin
     _ = P * (3 * x - 4 * p) := by ring
 
 theorem coalescentAffine_lower_iff
-    (P A C x p : ℤ)
+    (P A C x p : Int)
     (hP : 0 < P)
     (h : P * p = A * x + C) :
     p < x ↔ C < (P - A) * x := by
@@ -51,7 +51,7 @@ theorem coalescentAffine_lower_iff
   exact (Int.mul_pos_iff_of_pos_left hP).symm
 
 theorem coalescentAffine_threeQuarter_iff
-    (P A C x p : ℤ)
+    (P A C x p : Int)
     (hP : 0 < P)
     (h : P * p = A * x + C) :
     4 * p ≤ 3 * x ↔ 4 * C ≤ (3 * P - 4 * A) * x := by
