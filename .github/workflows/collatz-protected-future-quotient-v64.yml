@@ -23,7 +23,8 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           export PATH="$HOME/.elan/bin:$PATH"
           mkdir -p evidence/collatz-protected-future-quotient-v64
-          lake build Collatz.GuardedExitObligation Collatz.SourceProductZeroTail
+          lake build Collatz.OrdinaryExitReduction Collatz.EventualMacroProgress
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean formal/Collatz/GuardedExitObligation.lean > evidence/collatz-protected-future-quotient-v64/obligation-parent.log
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ProtectedFutureQuotient.olean formal/Collatz/ProtectedFutureQuotient.lean | tee evidence/collatz-protected-future-quotient-v64/proof.log
           cat > /tmp/consumer.lean <<'LEAN'
           import Collatz.ProtectedFutureQuotient
