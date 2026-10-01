@@ -403,6 +403,143 @@ impl<'a> TypeChecker<'a> {
             .collect()
     }
 
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_closure_support_signature(
+        &self,
+        closure: &Closure,
+    ) -> Vec<String> {
+        fn walk_neutral(
+            checker: &TypeChecker<'_>,
+            neutral: &Neutral,
+            path: String,
+            budget: &mut usize,
+            out: &mut Vec<String>,
+        ) {
+            if *budget == 0 {
+                out.push(format!("{path}:budget-exhausted"));
+                return;
+            }
+            *budget -= 1;
+            match &neutral.head {
+                NeutralHead::Free(free) => {
+                    out.push(format!("{path}:neutral-free={}", free.0));
+                }
+                NeutralHead::Const { name, levels } => {
+                    out.push(format!("{path}:neutral-const={:?}:levels={:?}", name, levels));
+                }
+                NeutralHead::Projection {
+                    type_name,
+                    index,
+                    structure,
+                } => {
+                    out.push(format!(
+                        "{path}:neutral-projection={:?}:{}",
+                        type_name, index
+                    ));
+                    walk_neutral(
+                        checker,
+                        structure,
+                        format!("{path}/structure"),
+                        budget,
+                        out,
+                    );
+                }
+            }
+            for (index, spine) in neutral.spine.iter().enumerate() {
+                walk_closure(
+                    checker,
+                    spine,
+                    format!("{path}/spine{index}"),
+                    budget,
+                    out,
+                );
+            }
+        }
+
+        fn walk_binding(
+            checker: &TypeChecker<'_>,
+            binding: EnvBinding,
+            path: String,
+            budget: &mut usize,
+            out: &mut Vec<String>,
+        ) {
+            match binding {
+                EnvBinding::Free(free) => out.push(format!("{path}:free={}", free.0)),
+                EnvBinding::Closure(closure) => {
+                    out.push(format!(
+                        "{path}:closure-expr={:?}:levels={:?}",
+                        closure.expression(),
+                        closure.levels
+                    ));
+                    walk_closure(checker, &closure, path, budget, out);
+                }
+                EnvBinding::Neutral(neutral) => {
+                    walk_neutral(checker, &neutral, path, budget, out);
+                }
+            }
+        }
+
+        fn walk_closure(
+            checker: &TypeChecker<'_>,
+            closure: &Closure,
+            path: String,
+            budget: &mut usize,
+            out: &mut Vec<String>,
+        ) {
+            if *budget == 0 {
+                out.push(format!("{path}:budget-exhausted"));
+                return;
+            }
+            *budget -= 1;
+            let Some(expression) = closure.expression() else {
+                out.push(format!("{path}:literal={:?}", closure.literal()));
+                return;
+            };
+            let mut offsets = Vec::new();
+            if checker
+                .collect_outer_bvars(expression, 0, 4096, &mut offsets)
+                .is_none()
+            {
+                out.push(format!("{path}:support-unknown={:?}", expression));
+                return;
+            }
+            offsets.sort_unstable();
+            offsets.dedup();
+            if offsets.is_empty() {
+                out.push(format!(
+                    "{path}:closed-expr={:?}:levels={:?}",
+                    expression, closure.levels
+                ));
+                return;
+            }
+            for offset in offsets {
+                let Ok(index) = u64::try_from(offset) else {
+                    out.push(format!("{path}:offset-overflow={offset}"));
+                    continue;
+                };
+                let Some(binding) = closure.env.lookup(index) else {
+                    out.push(format!(
+                        "{path}/expr{}@{}:missing-binding",
+                        expression.0, offset
+                    ));
+                    continue;
+                };
+                walk_binding(
+                    checker,
+                    binding,
+                    format!("{path}/expr{}@{}", expression.0, offset),
+                    budget,
+                    out,
+                );
+            }
+        }
+
+        let mut out = Vec::new();
+        let mut budget = 256;
+        walk_closure(self, closure, "root".to_owned(), &mut budget, &mut out);
+        out
+    }
+
     fn infer_uncached(
         &self,
         expression: ExprId,
