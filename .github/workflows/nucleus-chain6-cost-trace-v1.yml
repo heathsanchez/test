@@ -66,6 +66,7 @@ jobs:
           env=os.environ.copy()
           env["NUCLEUS_ETA_ATTEMPT_CAP"]="1"
           env["NUCLEUS_TRACE_CAUSAL"]="1"
+          env["NUCLEUS_TRACE_INFERENCE_FRAMES"]="1"
           out=pathlib.Path("metatron-kernel/evidence-out/chain6-cost-trace-v1")
           result={}
           for name,data in prefixes.items():
