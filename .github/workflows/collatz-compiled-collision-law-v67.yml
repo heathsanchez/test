@@ -18,7 +18,13 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           export PATH="$HOME/.elan/bin:$PATH"
           mkdir -p evidence/collatz-compiled-collision-law-v67
-          lake build Collatz.EarlierSourceCollision
+          lake build Collatz.OrdinaryExitReduction Collatz.EventualMacroProgress
+          lake env lean -DautoImplicit=false \
+            -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean \
+            formal/Collatz/GuardedExitObligation.lean >/dev/null
+          lake env lean -DautoImplicit=false \
+            -o .lake/build/lib/lean/Collatz/EarlierSourceCollision.olean \
+            formal/Collatz/EarlierSourceCollision.lean >/dev/null
           lake env lean -DautoImplicit=false \
             -o .lake/build/lib/lean/Collatz/CompiledCollisionLaw.olean \
             formal/Collatz/CompiledCollisionLaw.lean \
