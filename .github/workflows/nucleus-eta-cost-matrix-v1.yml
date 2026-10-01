@@ -1,0 +1,106 @@
+name: Nucleus eta cost matrix v1
+
+on:
+  push:
+    branches: [nucleus-eta-cost-tournament-v1]
+    paths:
+      - ".github/workflows/nucleus-eta-cost-matrix-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  cap:
+    strategy:
+      fail-fast: false
+      matrix:
+        cap: [0, 1, 2, 4, 8, 16]
+    name: cap-${{ matrix.cap }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Measure cap
+        env:
+          CAP: ${{ matrix.cap }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python3 - <<'PY'
+          import json,pathlib,subprocess,os,time
+          cap=int(os.environ["CAP"])
+          src=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
+          names={0:""}; rows=[]; found=False
+          for line in src.read_text().splitlines():
+              rec=json.loads(line); rows.append(line)
+              if "in" in rec:
+                  value=rec.get("str",rec.get("num"))
+                  names[rec["in"]]=names[value["pre"]]+("." if value["pre"] else "")+str(value.get("str",value.get("i")))
+              decls=[]
+              if "inductive" in rec:
+                  for kind in ("types","ctors","recs"): decls.extend(rec["inductive"][kind])
+              for kind in ("def","thm","axiom","opaque"):
+                  if kind in rec: decls.append(rec[kind])
+              if any(names.get(d["name"])=="funext" for d in decls):
+                  found=True; break
+          assert found
+          funext=("\n".join(rows)+"\n").encode()
+          env=os.environ.copy(); env["NUCLEUS_ETA_ATTEMPT_CAP"]=str(cap)
+
+          def run(path=None,data=None,timeout=30):
+              t=time.monotonic()
+              try:
+                  if data is not None:
+                      q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=timeout)
+                  else:
+                      with pathlib.Path(path).open("rb") as f:
+                          q=subprocess.run(["/tmp/nucleus"],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=timeout)
+                  return {"exit":q.returncode,"seconds":time.monotonic()-t,"stderr":q.stderr.decode(errors="replace")[-1500:]}
+              except subprocess.TimeoutExpired:
+                  return {"exit":124,"seconds":time.monotonic()-t,"stderr":"TIMEOUT"}
+
+          result={
+            "cap":cap,
+            "sha":os.environ["GITHUB_SHA"],
+            "funext":run(data=funext,timeout=15),
+            "k_rec_conv":run("/tmp/current/bad/bugs/k-rec-conv.ndjson",timeout=10),
+            "fun_eta_bad":run("/tmp/current/bad/tutorial/116_funEtaBad.ndjson",timeout=10),
+            "r1_fueled_chain":run("/tmp/r1/good/perf/fueled-chain.ndjson",timeout=30),
+          }
+          pathlib.Path("out/result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result),flush=True)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eta-cap-${{ matrix.cap }}-${{ github.sha }}
+          path: out/result.json
+          if-no-files-found: error
