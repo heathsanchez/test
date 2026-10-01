@@ -1,0 +1,43 @@
+name: Collatz Crystal phase precision growth V56
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - collatz-crystal-owner-cylinder-reclosure-v54
+    paths:
+      - 'experiments/collatz_crystal_phase_precision_growth_v56.py'
+      - '.github/workflows/collatz-crystal-phase-precision-growth-v56.yml'
+
+jobs:
+  qualify-negative:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact consecutive-seam precision audit
+        run: |
+          mkdir -p evidence/collatz-crystal-phase-precision-growth-v56
+          python experiments/collatz_crystal_phase_precision_growth_v56.py \
+            > evidence/collatz-crystal-phase-precision-growth-v56/result.json
+      - name: Verify precision growth and live kernel
+        run: |
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-phase-precision-growth-v56/result.json'
+          d=json.load(open(p))
+          assert d['precision_sequence']==[5,6]
+          assert d['reports']['10']['separator_scan'][5]['collision_count']==5
+          assert d['fixed_mod_243_status']=='REJECTED_BY_DEPTH10_SUCCESSOR_COLLISIONS'
+          assert d['future_kernel_empty'] is False
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('PASS_FIXED_PRECISION_REJECTION',d['certificate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-phase-precision-growth-v56
+          path: evidence/collatz-crystal-phase-precision-growth-v56/result.json
