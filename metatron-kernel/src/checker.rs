@@ -1,6 +1,7 @@
 mod nat_le_below;
 mod closed_sum;
 mod parameter_sum;
+mod record_telescope;
 use std::collections::HashMap;
 
 use crate::convert::DeltaPolicy;
@@ -871,6 +872,8 @@ fn check_inductive(
             closed_sum::check(export, environment, block, limits, delta_policy),
         Err(Verdict::Unknown) if parameter_sum::candidate(block) =>
             parameter_sum::check(export, environment, block, limits, delta_policy),
+        Err(Verdict::Unknown) if record_telescope::candidate(export, block) =>
+            record_telescope::check(export, environment, block, limits, delta_policy),
         other => other,
     }
 }
@@ -1053,6 +1056,18 @@ fn generic_nonrecursive_recursor_shape_with_fields(
     inductive: &crate::syntax::InductiveType,
     constructors: &[Constructor],
     recursor: &Recursor,
+    field_equal: impl FnMut(usize, usize, ExprId, ExprId) -> bool,
+) -> bool {
+    generic_nonrecursive_recursor_shape_with_checks(export,inductive,constructors,recursor,
+        |_,a,b| a==b,field_equal)
+}
+
+fn generic_nonrecursive_recursor_shape_with_checks(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructors: &[Constructor],
+    recursor: &Recursor,
+    mut parameter_equal: impl FnMut(usize, ExprId, ExprId) -> bool,
     mut field_equal: impl FnMut(usize, usize, ExprId, ExprId) -> bool,
 ) -> bool {
     macro_rules! shape_miss {
@@ -1067,7 +1082,7 @@ fn generic_nonrecursive_recursor_shape_with_fields(
     let c = constructors.len();
     let Some((ind_params,_)) = pi_spine(export,inductive.ty,p) else { return shape_miss!(2); };
     let Some((domains,result)) = pi_spine(export,recursor.ty,p+c+2) else { return shape_miss!(3); };
-    if domains[..p] != ind_params[..] { return shape_miss!(4); }
+    if !domains[..p].iter().zip(&ind_params).enumerate().all(|(k,(a,b))|parameter_equal(k,*a,*b)) { return shape_miss!(4); }
 
     let motive=domains[p];
     let Some((motive_domains,motive_sort))=pi_spine(export,motive,1) else{return shape_miss!(5);};

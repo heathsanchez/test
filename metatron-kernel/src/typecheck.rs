@@ -544,6 +544,14 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    /// Infer the universe of a type in an already validated telescope.
+    pub(crate) fn infer_sort_in_context(&self, expression: ExprId,
+        context: &[TypeValue], frame: &EnvFrame, budget: usize) -> Judgment<LevelTerm> {
+        let mut remaining=budget;
+        let inferred=self.infer_in(expression,context,frame,&mut remaining,&mut HashMap::new());
+        self.sort_level(inferred,remaining)
+    }
+
     fn sort_level(&self, ty: Judgment<TypeValue>, budget: usize) -> Judgment<LevelTerm> {
         let ty = match ty {
             Judgment::Proven { value, .. } => value,
