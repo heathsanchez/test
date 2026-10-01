@@ -1,8 +1,8 @@
-name: Nucleus projected inference cache v2
+name: Nucleus support signature cache v1
 
 on:
   push:
-    branches: [nucleus-projected-inference-cache-v2]
+    branches: [nucleus-support-signature-cache-v1]
     paths:
       - ".github/workflows/nucleus-projected-inference-cache-v2.yml"
       - "metatron-kernel/src/typecheck.rs"
