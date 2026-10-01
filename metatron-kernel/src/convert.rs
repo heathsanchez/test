@@ -133,7 +133,20 @@ pub(crate) fn convert_with_policy_in_context(
         context,
         0,
         &mut congruence_attempts,
+        true,
     )
+}
+
+// The new proof-irrelevance premise gets one bounded conversion probe.
+// Disable this extension throughout the nested comparison, including all
+// application/projection congruence branches, so it cannot recursively reset
+// its own quota. Existing structurally established proof equality is retained.
+pub(crate) fn convert_proof_types_in_context(
+    checker: &TypeChecker<'_>, left: &TypeValue, right: &TypeValue,
+    budget: usize, delta_policy: DeltaPolicy, depth: usize, context: &[TypeValue],
+) -> Judgment<()> {
+    convert_in_context_with_congruence(checker, left, right, budget.min(256),
+        delta_policy, depth, context, 0, &mut 32, false)
 }
 
 // Speculative congruence has shared attempt and depth bounds. Exhaustion merely
@@ -148,6 +161,7 @@ fn convert_in_context_with_congruence(
     context: &[TypeValue],
     congruence_depth: usize,
     congruence_attempts: &mut usize,
+    allow_proof_type_conversion: bool,
 ) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
@@ -202,7 +216,8 @@ fn convert_in_context_with_congruence(
         }
 
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
-            && checker.proof_terms_same_proposition(left_term, right_term, context, remaining)
+            && checker.proof_terms_same_proposition(left_term, right_term, context, remaining,
+                delta_policy, depth, allow_proof_type_conversion)
         {
             continue;
         }
@@ -343,6 +358,7 @@ fn convert_in_context_with_congruence(
                                     context,
                                     congruence_depth + 1,
                                     congruence_attempts,
+                                    allow_proof_type_conversion,
                                 )
                                 .is_proven()
                             })
@@ -375,6 +391,7 @@ fn convert_in_context_with_congruence(
                         delta_policy,
                         congruence_depth,
                         &mut 32,
+                        allow_proof_type_conversion,
                     )
                 {
                     continue;
@@ -418,6 +435,7 @@ fn convert_in_context_with_congruence(
                                 delta_policy,
                                 congruence_depth,
                                 &mut 32,
+                                allow_proof_type_conversion,
                             )
                         {
                             continue;
@@ -1025,6 +1043,7 @@ fn positive_projection_congruence(
     delta_policy: DeltaPolicy,
     congruence_depth: usize,
     attempts: &mut usize,
+    allow_proof_type_conversion: bool,
 ) -> bool {
     if *attempts == 0 || congruence_depth >= 16 || left.spine.len() != right.spine.len() {
         return false;
@@ -1055,6 +1074,7 @@ fn positive_projection_congruence(
                     delta_policy,
                     congruence_depth + 1,
                     attempts,
+                    allow_proof_type_conversion,
                 )
         }
         _ => compare_neutral_heads(checker, left, right, budget).is_proven(),
@@ -1071,6 +1091,7 @@ fn positive_projection_congruence(
                 context,
                 congruence_depth + 1,
                 attempts,
+                allow_proof_type_conversion,
             )
             .is_proven()
         })

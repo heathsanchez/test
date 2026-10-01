@@ -590,6 +590,9 @@ impl<'a> TypeChecker<'a> {
         right: &Closure,
         context: &[TypeValue],
         budget: usize,
+        delta_policy: crate::convert::DeltaPolicy,
+        depth: usize,
+        allow_type_conversion: bool,
     ) -> bool {
         let Some(left_value) = self
             .machine()
@@ -625,8 +628,22 @@ impl<'a> TypeChecker<'a> {
         let Some(right_normal) = self.normalize_type_value(&right_ty, budget) else {
             return false;
         };
-        left_normal == right_normal
-            && self.normalized_type_is_proposition(&left_normal, context, budget, 0)
+        if !self.normalized_type_is_proposition(&left_normal, context, budget, 0) {
+            return false;
+        }
+        if left_normal == right_normal {
+            return true;
+        }
+        // Equality of representations is sufficient but not necessary for
+        // equality of propositions. Erase proofs only after independently
+        // establishing the right type is also Prop and proving type conversion.
+        // Failure or exhausted fuel declines this shortcut, never refutes.
+        allow_type_conversion
+            && self.normalized_type_is_proposition(&right_normal, context, budget, 0)
+            && crate::convert::convert_proof_types_in_context(
+                self, &left_ty, &right_ty, budget.saturating_sub(1),
+                delta_policy, depth, context,
+            ).is_proven()
     }
 
     fn normalize_type_value(&self, ty: &TypeValue, budget: usize) -> Option<Value> {
