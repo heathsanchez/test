@@ -853,14 +853,12 @@ fn g14_candidate_preserves_the_sealed_g13_behavior_vector() {
 }
 
 #[test]
-fn g15_shared_representation_earns_no_fourth_family() {
+fn checked_record_telescope_admits_renamed_type_product() {
     let pprod = include_str!("../evidence/residuals/G14-001/fixture.ndjson");
     let renamed = pprod.replacen("\"str\":\"PProd\"", "\"str\":\"PProd2\"", 1);
-
-    assert_eq!(
-        run_with_g15_oracle("renamed fourth family", renamed),
-        Verdict::Unknown,
-    );
+    // Historical G15 remains UNKNOWN; the new checked telescope law earns this.
+    if let Some(old) = sealed_g15_verdict(&renamed) { assert_eq!(old, Verdict::Unknown); }
+    assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Accept);
 }
 
 fn run_g16_perturbations(replacements: &[(&str, &str)]) -> Verdict {
