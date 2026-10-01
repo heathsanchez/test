@@ -1,0 +1,82 @@
+name: Collatz zero switch continuation V74
+on:
+  push:
+    branches: [collatz-zero-switch-continuation-v74]
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 8d03454ac42dc476dc23b57fad8a280b31c3b71b
+          path: frozen-v60
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Bind frozen V60 authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C frozen-v60 rev-parse HEAD)" = "8d03454ac42dc476dc23b57fad8a280b31c3b71b"
+          mkdir -p evidence
+
+      - name: Extend only terminal zero-switch continuations
+        shell: bash
+        run: |
+          set -euo pipefail
+          V60_EXPERIMENTS_DIR="$GITHUB_WORKSPACE/frozen-v60/experiments" \
+            python3 -u experiments/collatz_zero_switch_continuation_v74.py > evidence/result.json
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib, json
+          d=json.load(open('evidence/result.json'))
+          assert d['schema']=='COLLATZ_ZERO_SWITCH_CONTINUATION_V74'
+          assert d['parent_v60_certificate_sha256']=='0983c58430f54935a9af9d5f115e44653831c6770aec57eb1593df4a93816ac0'
+          assert d['parent_v72_qualification_sha256']=='fe3149242a1499e40efcab04c0c9da908984304de974613d924361b9d8ee9946'
+          assert d['parent_v73_qualification_sha256']=='f565153ca7b22adbeaea591ec0b781e0973b8e744c625285c9c1b68cf9db9d7b'
+          assert d['terminal_zero_targets']==44
+          assert sum(d['outcome_counts'].values())==44
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+
+          if d['next_zero_switches']:
+              status='WARRANTED_BOUNDED_PAIR_REJECTED'
+          elif d['streak_resets_to_residual']:
+              status='WARRANTED_BOUNDED_TRANSPORT_RESIDUAL'
+          elif d['still_censored']:
+              status='WARRANTED_BOUNDED_STILL_CENSORED'
+          else:
+              status='WARRANTED_BOUNDED_PAIR_SURVIVES_EXTENDED'
+
+          result={
+              'schema':'COLLATZ_ZERO_SWITCH_CONTINUATION_V74_QUALIFICATION',
+              'status':status,
+              'terminal_zero_targets':44,
+              'extended_cap':d['extended_cap'],
+              'outcome_counts':d['outcome_counts'],
+              'next_zero_switches':d['next_zero_switches'],
+              'next_nonzero_switches':d['next_nonzero_switches'],
+              'streak_resets_to_residual':d['streak_resets_to_residual'],
+              'still_censored':d['still_censored'],
+              'pair_candidate_status':d['pair_candidate_status'],
+              'global_collatz':'UNKNOWN',
+              'qed':False,
+          }
+          result['certificate_sha256']=hashlib.sha256(
+              json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+          git -C frozen-v60 rev-parse HEAD > evidence/frozen-v60-commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-zero-switch-continuation-v74
+          path: evidence
+          if-no-files-found: error
