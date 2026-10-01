@@ -36,7 +36,7 @@ jobs:
           gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
           unzip -q /tmp/current.zip -d /tmp/a
           tar -xzf "$(find /tmp/a -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
-      - name: Trace reachable funext mismatch
+      - name: Probe evaluated eta repair and expose next frontier
         run: |
           set -euo pipefail
           mkdir -p metatron-kernel/evidence-out/funext-repair-v1
@@ -50,9 +50,8 @@ jobs:
           rec={"candidate_sha":os.environ["GITHUB_SHA"],"input_sha256":hashlib.sha256(data).hexdigest(),"exit":r.returncode,"stderr":r.stderr.decode(errors="replace")}
           (out/"diagnostic.json").write_text(json.dumps(rec,indent=2)+"\n")
           print(json.dumps(rec),flush=True)
-          assert r.returncode==1,rec
-          assert "NUCLEUS_VALUE_MISMATCH:" in rec["stderr"],rec
-          assert "name=funext:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch" in rec["stderr"],rec
+          assert "name=funext:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch" not in rec["stderr"],rec
+          assert r.returncode in (0,1,2),rec
           PY
       - uses: actions/upload-artifact@v4
         if: always()
