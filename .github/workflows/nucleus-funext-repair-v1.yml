@@ -43,11 +43,26 @@ jobs:
           python3 - <<'PY'
           import pathlib,subprocess,os,json,hashlib
           src=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
-          data=src.read_bytes()
+          names={0:""}; rows=[]; found=False
+          for line in src.read_text().splitlines():
+              record=json.loads(line); rows.append(line)
+              if "in" in record:
+                  value=record.get("str",record.get("num"))
+                  names[record["in"]]=names[value["pre"]]+("." if value["pre"] else "")+str(value.get("str",value.get("i")))
+              decls=[]
+              if "inductive" in record:
+                  for kind in ("types","ctors","recs"): decls.extend(record["inductive"][kind])
+              for kind in ("def","thm","axiom","opaque"):
+                  if kind in record: decls.append(record[kind])
+              if any(names.get(d["name"])=="funext" for d in decls):
+                  found=True; break
+          assert found
+          data=("\n".join(rows)+"\n").encode()
           out=pathlib.Path("metatron-kernel/evidence-out/funext-repair-v1")
-          env=os.environ|{"NUCLEUS_TRACE_VALUE_MISMATCH":"1","NUCLEUS_TRACE_DOWNSTREAM":"1","NUCLEUS_TRACE_ETA":"1"}
-          r=subprocess.run(["/tmp/nucleus"],input=data,capture_output=True,env=env,timeout=90)
-          rec={"candidate_sha":os.environ["GITHUB_SHA"],"input_sha256":hashlib.sha256(data).hexdigest(),"exit":r.returncode,"stderr":r.stderr.decode(errors="replace")}
+          (out/"funext-complete-prefix.ndjson").write_bytes(data)
+          env=os.environ|{"NUCLEUS_TRACE_VALUE_MISMATCH":"1","NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          r=subprocess.run(["/tmp/nucleus"],input=data,capture_output=True,env=env,timeout=30)
+          rec={"candidate_sha":os.environ["GITHUB_SHA"],"input_sha256":hashlib.sha256(data).hexdigest(),"input_bytes":len(data),"exit":r.returncode,"stderr":r.stderr.decode(errors="replace")}
           (out/"diagnostic.json").write_text(json.dumps(rec,indent=2)+"\n")
           print(json.dumps(rec),flush=True)
           assert "name=funext:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch" not in rec["stderr"],rec
