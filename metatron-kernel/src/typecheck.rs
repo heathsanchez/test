@@ -288,15 +288,27 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Proven { .. } => Some(true),
                     Judgment::Refuted { obstruction } => {
                         eprintln!(
-                            "NUCLEUS_FRAME_PROJECTION_COLLISION:expression={expression:?}:frame={}:prior_frames={:?}:key={:?}:obstruction={}:prior={:?}:current={:?}",
-                            frame.id(), prior_frames, projected, obstruction.0, prior_result, value
+                            "NUCLEUS_RESULT_SUPPORT_COLLISION:expression={expression:?}:frame={}:prior_frames={:?}:obstruction={}:prior_support={:?}:current_support={:?}:prior={:?}:current={:?}",
+                            frame.id(),
+                            prior_frames,
+                            obstruction.0,
+                            self.type_value_capture_support(&prior_result),
+                            self.type_value_capture_support(value),
+                            prior_result,
+                            value
                         );
                         Some(false)
                     }
                     Judgment::Unknown { residual } => {
                         eprintln!(
-                            "NUCLEUS_FRAME_PROJECTION_UNRESOLVED:expression={expression:?}:frame={}:prior_frames={:?}:key={:?}:residual={}:prior={:?}:current={:?}",
-                            frame.id(), prior_frames, projected, residual.0, prior_result, value
+                            "NUCLEUS_RESULT_SUPPORT_UNRESOLVED:expression={expression:?}:frame={}:prior_frames={:?}:residual={}:prior_support={:?}:current_support={:?}:prior={:?}:current={:?}",
+                            frame.id(),
+                            prior_frames,
+                            residual.0,
+                            self.type_value_capture_support(&prior_result),
+                            self.type_value_capture_support(value),
+                            prior_result,
+                            value
                         );
                         None
                     }
@@ -337,6 +349,48 @@ impl<'a> TypeChecker<'a> {
                     frames: vec![frame.id()],
                 });
         });
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn closure_capture_support(&self, closure: &Closure) -> Option<Vec<(usize, EnvBinding)>> {
+        let expression = closure.expression()?;
+        let mut offsets = Vec::new();
+        self.collect_outer_bvars(expression, 0, 4096, &mut offsets)?;
+        offsets.sort_unstable();
+        offsets.dedup();
+        let mut support = Vec::with_capacity(offsets.len());
+        for offset in offsets {
+            let index = u64::try_from(offset).ok()?;
+            support.push((offset, closure.env.lookup(index)?));
+        }
+        Some(support)
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn type_value_capture_support(
+        &self,
+        value: &TypeValue,
+    ) -> Vec<(String, Option<Vec<(usize, EnvBinding)>>)> {
+        fn walk(
+            checker: &TypeChecker<'_>,
+            value: &TypeValue,
+            path: String,
+            out: &mut Vec<(String, Option<Vec<(usize, EnvBinding)>>)>,
+        ) {
+            match value {
+                TypeValue::Sort(_) => {}
+                TypeValue::Term(closure) => {
+                    out.push((path, checker.closure_capture_support(closure)));
+                }
+                TypeValue::Pi { domain, body } => {
+                    walk(checker, domain, format!("{path}.domain"), out);
+                    walk(checker, body, format!("{path}.body"), out);
+                }
+            }
+        }
+        let mut out = Vec::new();
+        walk(self, value, "root".to_string(), &mut out);
+        out
     }
 
     #[cfg(feature = "diagnostics")]
