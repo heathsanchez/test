@@ -718,14 +718,6 @@ fn evaluated_free_eta(
     let NeutralHead::Free(function_free) = neutral.head else {
         return false;
     };
-    let Some(function_type) = context.get(function_free.0 as usize) else {
-        return false;
-    };
-    let function_domain = match function_type {
-        TypeValue::Pi { domain, .. } => (**domain).clone(),
-        TypeValue::Term(_) => return false,
-        TypeValue::Sort(_) => return false,
-    };
     let Some(argument_free) = fresh_local(depth) else {
         return false;
     };
@@ -749,6 +741,26 @@ fn evaluated_free_eta(
     {
         return false;
     }
+
+    // Pay for function-domain exposure only after the eta shape is established.
+    // This preserves the exact semantic condition while rejecting non-eta
+    // Neutral/Lam pairs before the expensive type exposure.
+    let Some(function_type) = context.get(function_free.0 as usize) else {
+        return false;
+    };
+    let function_domain = match function_type {
+        TypeValue::Pi { domain, .. } => (**domain).clone(),
+        TypeValue::Term(closure) => {
+            let exposed = checker
+                .machine()
+                .expose(closure.clone(), Transparency::Reducible, budget);
+            let Some(Value::Pi { domain, .. }) = exposed.proven_value() else {
+                return false;
+            };
+            TypeValue::Term(domain.clone())
+        }
+        TypeValue::Sort(_) => return false,
+    };
     work.push((
         function_domain,
         TypeValue::Term(lambda_domain.clone()),
