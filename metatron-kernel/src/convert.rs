@@ -697,6 +697,75 @@ fn eta_contract(checker: &TypeChecker<'_>, closure: &Closure, depth: usize) -> O
     Some(closure.sibling(*fun, closure.env.extend_free(free)))
 }
 
+// Evaluated function eta for a bare local function versus an explicit lambda.
+// This is the semantic counterpart of eta_contract above: it is admitted only
+// when evaluating the lambda body under a fresh local yields exactly f x, where
+// f is the same bare local function and x is that fresh local.  The local's
+// declared Pi domain is still compared through the ordinary conversion worklist.
+fn evaluated_free_eta(
+    checker: &TypeChecker<'_>,
+    neutral: &Neutral,
+    lambda_domain: &Closure,
+    lambda_body: &Closure,
+    budget: usize,
+    depth: usize,
+    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
+    context: &[TypeValue],
+) -> bool {
+    if !neutral.spine.is_empty() {
+        return false;
+    }
+    let NeutralHead::Free(function_free) = neutral.head else {
+        return false;
+    };
+    let Some(function_type) = context.get(function_free.0 as usize) else {
+        return false;
+    };
+    let function_domain = match function_type {
+        TypeValue::Pi { domain, .. } => (**domain).clone(),
+        TypeValue::Term(closure) => {
+            let exposed = checker
+                .machine()
+                .expose(closure.clone(), Transparency::Reducible, budget);
+            let Some(Value::Pi { domain, .. }) = exposed.proven_value() else {
+                return false;
+            };
+            TypeValue::Term(domain.clone())
+        }
+        TypeValue::Sort(_) => return false,
+    };
+    let Some(argument_free) = fresh_local(depth) else {
+        return false;
+    };
+    let exposed_body = checker
+        .machine()
+        .expose(lambda_body.under_free(argument_free), Transparency::Reducible, budget);
+    let Some(Value::Neutral(body_neutral)) = exposed_body.proven_value() else {
+        return false;
+    };
+    if body_neutral.head != NeutralHead::Free(function_free) || body_neutral.spine.len() != 1 {
+        return false;
+    }
+    let exposed_argument = checker
+        .machine()
+        .expose(body_neutral.spine[0].clone(), Transparency::Reducible, budget);
+    let Some(Value::Neutral(argument_neutral)) = exposed_argument.proven_value() else {
+        return false;
+    };
+    if argument_neutral.head != NeutralHead::Free(argument_free)
+        || !argument_neutral.spine.is_empty()
+    {
+        return false;
+    }
+    work.push((
+        function_domain,
+        TypeValue::Term(lambda_domain.clone()),
+        depth,
+        context.to_vec(),
+    ));
+    true
+}
+
 fn resolve_local_closure(checker: &TypeChecker<'_>, closure: &Closure) -> Option<Closure> {
     let mut current = closure.clone();
     for _ in 0..64 {
@@ -862,6 +931,23 @@ fn compare_values(
                 )
             }));
         }
+        (
+            Value::Neutral(neutral),
+            Value::Lam { domain, body },
+        )
+        | (
+            Value::Lam { domain, body },
+            Value::Neutral(neutral),
+        ) if evaluated_free_eta(
+            checker,
+            neutral,
+            domain,
+            body,
+            budget,
+            depth,
+            work,
+            context,
+        ) => {}
         _ => {
             if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
                 eprintln!(
