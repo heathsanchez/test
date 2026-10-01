@@ -33,7 +33,7 @@ def report(root,frontier):
   terminal=downstream[-1]
   name=terminal.split('name=',1)[1].split(':stage=',1)[0]
   names={0:''};block={};declaration=None
-  for line in source.open():
+  for line in source.read_text().splitlines():
    r=json.loads(line)
    if 'in' in r:
     v=r.get('str',r.get('num'));names[r['in']]=names[v['pre']]+('.' if v['pre'] else '')+str(v.get('str',v.get('i')))
@@ -43,12 +43,14 @@ def report(root,frontier):
     declaration=r;break
   events=[json.loads(s.split(':',1)[1]) for s in row['trace'].splitlines() if s.startswith('NUCLEUS_CAUSAL:')]
   boundaries=[e for e in events if e['kind']=='boundary']
+  unscoped_events=[]
   if boundaries:
    scope=boundaries[-1]['scope'];events=[e for e in events if e['scope']==scope]
    outcome=classify(block,events)
   else:
-   outcome={'status':'UNRESOLVED_MISSING_BOUNDARY','contracts':[],'candidates':[]}
-  rows.append(dict(test=row['test'],expected=row['expected'],verdict=row['candidate'],object_id=digest+':'+name,input_sha256=digest,terminal=terminal,declaration=declaration,events=events,plan=outcome,
+   outcome={'status':'UNRESOLVED_INCOMPLETE_TRACE' if any(e.get('truncated') for e in events) else 'UNRESOLVED_MISSING_BOUNDARY','contracts':[],'candidates':[]}
+   unscoped_events=events;events=[]
+  rows.append(dict(test=row['test'],expected=row['expected'],verdict=row['candidate'],object_id=digest+':'+name,input_sha256=digest,terminal=terminal,declaration=declaration,events=events,unscoped_events=unscoped_events,plan=outcome,
    causal_limit='Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise.'))
  from collections import Counter
  return {'schema':'nucleus-causal-contracts-v1','base_sha':'0659bc671a4ef536ed4a096deacd0c61b1ca927e',

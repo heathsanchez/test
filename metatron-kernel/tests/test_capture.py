@@ -9,7 +9,10 @@ class Capture(unittest.TestCase):
             r=subprocess.run([binary],stdin=f,capture_output=True,timeout=240,env=os.environ|{'NUCLEUS_TRACE_CAUSAL':'1'})
         self.assertEqual(r.returncode,2)
         events=[json.loads(x.split(':',1)[1]) for x in r.stderr.decode().splitlines() if x.startswith('NUCLEUS_CAUSAL:')]
-        failures=[e for e in events if e['kind']=='typed-comparison']
+        boundaries=[e for e in events if e['kind']=='boundary']
+        self.assertTrue(boundaries,'missing failed typed comparison: terminal boundary absent')
+        scope=boundaries[-1]['scope']
+        failures=[e for e in events if e['kind']=='typed-comparison' and e['scope']==scope]
         self.assertTrue(failures,'missing failed typed comparison')
         for e in failures:
             for field in ['expression','inferred','expected','context','frame','policy','budget','result']:

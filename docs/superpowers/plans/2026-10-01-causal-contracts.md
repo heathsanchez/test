@@ -29,3 +29,7 @@ Candidate-taint loss; shared-path double counting; cross-object evidence; bounde
 - Offline Python replaces historical Rust planning module: smaller separation from verdict production, locally executable planner tests; cost is maintaining the diagnostic adapter boundary.
 - Historical planner loses candidate lineage when derived interfaces are inserted into the seed set. New planner retains support sets throughout closure.
 - RED: eight tests ran, five intended failures against no-path stub; GREEN: eight pass.
+
+- Review Important fixed: missing terminal boundary no longer attaches preceding declarations' events to the terminal object. Reproducer RED (mixed scopes under terminal) → GREEN; full Python suite12pass1skip.
+- Review coverage fixes: CI includes report tests; real capture test requires terminal-scope comparison.
+- Registry scope: three qualified contracts are explicitly bound but this adapter does not manufacture their validated-premise witnesses; NO_REGISTERED_PATH is not global saturation or proof that a law is absent.
