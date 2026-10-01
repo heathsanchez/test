@@ -98,7 +98,7 @@ def main():
                 status='EXECUTED_SCOPED_ADAPTER_OF_EXISTING_WARRANT')],
         symbolic_four_block_reclosure=rows,
         execution=execution,
-        ablation=dict(origin_retained='UNKNOWN at block 4',origin_erased='incorrect EXIT at block 4'),
+        ablation=dict(origin_retained='UNKNOWN at block 4',origin_erased='unsupported EXIT certificate at block 4'),
         surviving_obligation=dict(owner0=str(a),owner_slope=str(c),source0=str(n0),source_slope=str(s),
             next_event='first nonuniform valuation; no split performed',
             required_law='all source-admitted continuations eventually produce a positive composed origin margin, or another original-source exit',
