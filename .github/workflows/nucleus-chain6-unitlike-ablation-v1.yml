@@ -1,0 +1,127 @@
+name: Nucleus chain6 unit-like ablation v1
+
+on:
+  push:
+    branches: [nucleus-chain6-unitlike-ablation-v1]
+    paths:
+      - ".github/workflows/nucleus-chain6-unitlike-ablation-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  ablate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build restored and unit-like-ablated candidates
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-restored
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("metatron-kernel/src/convert.rs")
+          s=p.read_text()
+          old="&& unit_like_free_pair(checker, left_term, right_term, &unit_like_frees, remaining)"
+          assert s.count(old)==1
+          s=s.replace(old,"&& false && unit_like_free_pair(checker, left_term, right_term, &unit_like_frees, remaining)",1)
+          p.write_text(s)
+          PY
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-ablated
+
+      - name: Fetch pinned corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Causal micro-gate
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python3 - <<'PY'
+          import json,pathlib,subprocess,time,os
+
+          def prefix_through(path,target):
+              names={0:""}; rows=[]
+              for line in pathlib.Path(path).read_text().splitlines():
+                  r=json.loads(line); rows.append(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      if isinstance(v,dict):
+                          pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  decls=[]
+                  if "inductive" in r:
+                      for k in ("types","ctors","recs"): decls.extend(r["inductive"].get(k,[]))
+                  for k in ("def","thm","axiom","opaque","quot"):
+                      if k in r: decls.append(r[k])
+                  if any(names.get(d.get("name"))==target for d in decls if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError(target)
+
+          current="/tmp/current/good/perf/fueled-chain.ndjson"
+          frozen="/tmp/r1/good/perf/fueled-chain.ndjson"
+          funext=prefix_through(current,"funext")
+          chain6=prefix_through(frozen,"chain6_datF")
+
+          tests={
+              "funext":("data",funext,8),
+              "frozen_chain6":("data",chain6,8),
+              "frozen_full":("path",frozen,8),
+              "current_full":("path",current,8),
+              "k_rec_conv":("path","/tmp/current/bad/bugs/k-rec-conv.ndjson",4),
+              "fun_eta_bad":("path","/tmp/current/bad/tutorial/116_funEtaBad.ndjson",4),
+          }
+
+          def run(binary,kind,obj,timeout):
+              t=time.monotonic()
+              env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"}
+              try:
+                  if kind=="data":
+                      q=subprocess.run([binary],input=obj,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout,env=env)
+                  else:
+                      with pathlib.Path(obj).open("rb") as f:
+                          q=subprocess.run([binary],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout,env=env)
+                  return {"exit":q.returncode,"seconds":time.monotonic()-t,"stderr":q.stderr.decode(errors="replace")[-1600:]}
+              except subprocess.TimeoutExpired as e:
+                  err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
+                  return {"exit":124,"seconds":time.monotonic()-t,"stderr":err[-1600:]}
+
+          result={}
+          for arm,binary in [("restored","/tmp/nucleus-restored"),("unit_like_ablated","/tmp/nucleus-ablated")]:
+              result[arm]={name:run(binary,*spec) for name,spec in tests.items()}
+              print(json.dumps({arm:result[arm]}),flush=True)
+
+          payload={
+              "sha":os.environ["GITHUB_SHA"],
+              "result":result,
+              "interpretation":"If ablation preserves funext and bad rejects but makes frozen chain6 fail closed before timeout, PUnit unit-like continuation is the causal cost driver."
+          }
+          pathlib.Path("out/result.json").write_text(json.dumps(payload,indent=2)+"\n")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-chain6-unitlike-ablation-${{ github.sha }}
+          path: out/result.json
+          if-no-files-found: error
