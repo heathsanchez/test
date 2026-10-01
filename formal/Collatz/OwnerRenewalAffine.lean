@@ -20,11 +20,12 @@ theorem coalescentAffine_compose
     (P₁ * P₂) * q = P₁ * (P₂ * q) := by rw [Int.mul_assoc]
     _ = P₁ * (A₂ * p + C₂) := by rw [h₂]
     _ = A₂ * (P₁ * p) + P₁ * C₂ := by
-      simp only [Int.mul_add, Int.mul_assoc]
-      rw [Int.mul_comm P₁ A₂]
+      simp only [Int.mul_add]
+      rw [← Int.mul_assoc, Int.mul_comm P₁ A₂, Int.mul_assoc]
     _ = A₂ * (A₁ * x + C₁) + P₁ * C₂ := by rw [h₁]
     _ = (A₂ * A₁) * x + (A₂ * C₁ + P₁ * C₂) := by
       simp only [Int.mul_add, Int.mul_assoc]
+      omega
 
 theorem coalescentAffine_lower_margin
     (P A C x p : Int)
@@ -37,8 +38,19 @@ theorem coalescentAffine_threeQuarter_margin
     (P A C x p : Int)
     (h : P * p = A * x + C) :
     (3 * P - 4 * A) * x - 4 * C = P * (3 * x - 4 * p) := by
-  simp only [Int.sub_mul, Int.mul_sub, Int.mul_add, Int.add_mul, Int.mul_assoc]
-  omega
+  have h3 : P * (3 * x) = 3 * (P * x) := by
+    rw [← Int.mul_assoc, Int.mul_comm P 3, Int.mul_assoc]
+  have h4 : P * (4 * p) = 4 * (P * p) := by
+    rw [← Int.mul_assoc, Int.mul_comm P 4, Int.mul_assoc]
+  calc
+    (3 * P - 4 * A) * x - 4 * C =
+        3 * (P * x) - 4 * (A * x + C) := by
+          simp only [Int.sub_mul, Int.mul_add, Int.mul_assoc]
+          omega
+    _ = 3 * (P * x) - 4 * (P * p) := by rw [h]
+    _ = P * (3 * x - 4 * p) := by
+          simp only [Int.mul_sub]
+          rw [h3, h4]
 
 theorem coalescentAffine_lower_iff
     (P A C x p : Int)
