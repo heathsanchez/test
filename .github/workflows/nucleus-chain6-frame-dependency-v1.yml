@@ -1,0 +1,88 @@
+name: Nucleus chain6 frame dependency v1
+
+on:
+  push:
+    branches: [nucleus-chain6-frame-dependency-v1]
+    paths:
+      - ".github/workflows/nucleus-chain6-frame-dependency-v1.yml"
+      - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/diagnostics.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic candidate
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/a
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/r1
+
+      - name: Trace outer-frame dependence at multiplicity thresholds
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/chain6-frame-dependency-v1
+          python3 - <<'PY'
+          import json,pathlib,subprocess,os,time
+          src=pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson")
+          names={0:""}; rows=[]; found=False
+          for line in src.read_text().splitlines():
+              rec=json.loads(line); rows.append(line)
+              if "in" in rec:
+                  val=rec.get("str",rec.get("num"))
+                  if isinstance(val,dict):
+                      pre=val.get("pre",0)
+                      atom=val.get("str",val.get("i",val.get("num","?")))
+                      names[rec["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+              ds=[]
+              for kind in ("def","thm","axiom","opaque","quot"):
+                  if kind in rec and isinstance(rec[kind],dict): ds.append(rec[kind])
+              if "inductive" in rec:
+                  for k in ("types","ctors","recs"): ds.extend(rec["inductive"].get(k,[]))
+              if any(names.get(d.get("name"))=="chain6_datF" for d in ds if isinstance(d,dict)):
+                  found=True; break
+          assert found
+          data=("\n".join(rows)+"\n").encode()
+          env=os.environ|{"NUCLEUS_TRACE_INFERENCE_FRAMES":"1","NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          t=time.monotonic()
+          try:
+              q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,
+                               stderr=subprocess.PIPE,timeout=15,env=env)
+              exit=q.returncode; err=q.stderr.decode(errors="replace")
+          except subprocess.TimeoutExpired as e:
+              exit=124
+              err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
+          classes=[x for x in err.splitlines() if x.startswith("NUCLEUS_INFERENCE_FRAME_CLASS:")]
+          result={"exit":exit,"seconds":time.monotonic()-t,"classes":classes[-300:]}
+          pathlib.Path("metatron-kernel/evidence-out/chain6-frame-dependency-v1/result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps({"exit":exit,"seconds":result["seconds"],"classes":classes[-120:]}),flush=True)
+          assert classes,result
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-chain6-frame-dependency-${{ github.sha }}
+          path: metatron-kernel/evidence-out/chain6-frame-dependency-v1
+          if-no-files-found: error
