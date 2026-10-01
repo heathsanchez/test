@@ -7,50 +7,51 @@ set_option maxHeartbeats 0
 
 namespace CollatzFinal.SourceProduct
 
-/-- After the first V68 split, the lexicographically first surviving sibling is
-still r=30, now at parameter depth 22.  Refinement depths 23..25 expose no
-currently compiled protected consequence.  At depth 26, the child with new
-four-bit value 14 has a uniform direct descent after 85 shortcut steps. -/
-theorem r30_depth26_second_split_merger (u : Nat) :
+/-- V69 first recursive separator.  Starting from the surviving r=30
+parameter cylinder at depth 22, no currently compiled protected consequence
+distinguishes either child through depths 23 and 24.  At depth 25 the child
+with new suffix value 6 has an exact odd lower-source merge after 84 source
+steps. -/
+theorem r30_depth25_recursive_split_merger (u : Nat) :
     EarlierSourceCollision
-      (222089457973445273090248409115 +
-        253816393679730624487911063552 * u)
-      (iter shortcut 85
-        (222089457973445273090248409115 +
-          253816393679730624487911063552 * u)) := by
+      (95181261133579960846292877339 +
+        126908196839865312243955531776 * u)
+      (iter shortcut 84
+        (95181261133579960846292877339 +
+          126908196839865312243955531776 * u)) := by
   have hx :=
-    ordinary_exit_of_source_cylinder_direct
-      (n := 222089457973445273090248409115)
-      (k := 85)
-      (y := 111276847342912191586928426644)
-      (q := 53)
-      (by decide) (by decide) (by decide) (by decide)
+    ordinary_exit_of_source_cylinder_odd_merge
+      (n := 95181261133579960846292877339)
+      (k := 84)
+      (y := 95380219860175772630973553685)
+      (q := 52)
+      (p := 63586813240117181753982369123)
+      (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
       (6561 * u)
   have hS :
-      2 ^ 85 * 6561 = 253816393679730624487911063552 := by decide
+      2 ^ 84 * 6561 = 126908196839865312243955531776 := by decide
   have heq :
-      222089457973445273090248409115 + 2 ^ 85 * (6561 * u) =
-        222089457973445273090248409115 +
-          253816393679730624487911063552 * u := by
+      95181261133579960846292877339 + 2 ^ 84 * (6561 * u) =
+        95181261133579960846292877339 +
+          126908196839865312243955531776 * u := by
     rw [← Nat.mul_assoc, hS]
   have ho :
       OrdinaryExit
-        (222089457973445273090248409115 +
-          253816393679730624487911063552 * u)
-        (iter shortcut 85
-          (222089457973445273090248409115 +
-            253816393679730624487911063552 * u)) := by
+        (95181261133579960846292877339 +
+          126908196839865312243955531776 * u)
+        (iter shortcut 84
+          (95181261133579960846292877339 +
+            126908196839865312243955531776 * u)) := by
     simpa only [heq] using hx
   have hsource :
-      1 < 222089457973445273090248409115 +
-        253816393679730624487911063552 * u := by omega
+      1 < 95181261133579960846292877339 +
+        126908196839865312243955531776 * u := by omega
   exact (ordinaryExit_iff_earlierSourceCollision hsource).mp ho
 
-/-- Prospective falsifier to the tempting repeated-four-bit pattern.  After the
-depth-26 zero sibling is retained, depths 27 and 28 expose no compiled merger;
-at depth 29 the first protected separator instead occurs after three bits, at
-new suffix value 3. -/
-theorem r30_depth29_third_split_merger (u : Nat) :
+/-- After retaining the zero sibling at depth 25, the licensed consequence
+grammar remains silent through depths 26..28.  At depth 29 the child with new
+suffix value 6 has a uniform direct descent after 88 shortcut steps. -/
+theorem r30_depth29_recursive_split_merger (u : Nat) :
     EarlierSourceCollision
       (761449294542872850127059419163 +
         2030531149437844995903288508416 * u)
@@ -85,7 +86,85 @@ theorem r30_depth29_third_split_merger (u : Nat) :
         2030531149437844995903288508416 * u := by omega
   exact (ordinaryExit_iff_earlierSourceCollision hsource).mp ho
 
-#print axioms r30_depth26_second_split_merger
-#print axioms r30_depth29_third_split_merger
+/-- Prospective rejection of the tempting repeated-suffix-6 rule.  From the
+depth-29 zero sibling, the first currently compiled protected separator occurs
+at depth 33 with new suffix value 1, not 6. -/
+theorem r30_depth33_pattern_falsifier_merger (u : Nat) :
+    EarlierSourceCollision
+      (2030531262941525972566614736923 +
+        32488498391005519934452616134656 * u)
+      (iter shortcut 92
+        (2030531262941525972566614736923 +
+          32488498391005519934452616134656 * u)) := by
+  have hx :=
+    ordinary_exit_of_source_cylinder_direct
+      (n := 2030531262941525972566614736923)
+      (k := 92)
+      (y := 1931447256879570512768032660349)
+      (q := 58)
+      (by decide) (by decide) (by decide) (by decide)
+      (6561 * u)
+  have hS :
+      2 ^ 92 * 6561 = 32488498391005519934452616134656 := by decide
+  have heq :
+      2030531262941525972566614736923 + 2 ^ 92 * (6561 * u) =
+        2030531262941525972566614736923 +
+          32488498391005519934452616134656 * u := by
+    rw [← Nat.mul_assoc, hS]
+  have ho :
+      OrdinaryExit
+        (2030531262941525972566614736923 +
+          32488498391005519934452616134656 * u)
+        (iter shortcut 92
+          (2030531262941525972566614736923 +
+            32488498391005519934452616134656 * u)) := by
+    simpa only [heq] using hx
+  have hsource :
+      1 < 2030531262941525972566614736923 +
+        32488498391005519934452616134656 * u := by omega
+  exact (ordinaryExit_iff_earlierSourceCollision hsource).mp ho
+
+/-- Fourth consequence-forced split on the same zero-tail lineage.  The
+depth-33 unsplit reverse grammar still reconstructs ancestry only; the first
+current protected consequence appears at depth 38, suffix value 21. -/
+theorem r30_depth38_recursive_split_merger (u : Nat) :
+    EarlierSourceCollision
+      (682258466324619599600168265056283 +
+        1039631948512176637902483716308992 * u)
+      (iter shortcut 97
+        (682258466324619599600168265056283 +
+          1039631948512176637902483716308992 * u)) := by
+  have hx :=
+    ordinary_exit_of_source_cylinder_direct
+      (n := 682258466324619599600168265056283)
+      (k := 97)
+      (y := 547565266808367096240406240668341)
+      (q := 61)
+      (by decide) (by decide) (by decide) (by decide)
+      (6561 * u)
+  have hS :
+      2 ^ 97 * 6561 = 1039631948512176637902483716308992 := by decide
+  have heq :
+      682258466324619599600168265056283 + 2 ^ 97 * (6561 * u) =
+        682258466324619599600168265056283 +
+          1039631948512176637902483716308992 * u := by
+    rw [← Nat.mul_assoc, hS]
+  have ho :
+      OrdinaryExit
+        (682258466324619599600168265056283 +
+          1039631948512176637902483716308992 * u)
+        (iter shortcut 97
+          (682258466324619599600168265056283 +
+            1039631948512176637902483716308992 * u)) := by
+    simpa only [heq] using hx
+  have hsource :
+      1 < 682258466324619599600168265056283 +
+        1039631948512176637902483716308992 * u := by omega
+  exact (ordinaryExit_iff_earlierSourceCollision hsource).mp ho
+
+#print axioms r30_depth25_recursive_split_merger
+#print axioms r30_depth29_recursive_split_merger
+#print axioms r30_depth33_pattern_falsifier_merger
+#print axioms r30_depth38_recursive_split_merger
 
 end CollatzFinal.SourceProduct
