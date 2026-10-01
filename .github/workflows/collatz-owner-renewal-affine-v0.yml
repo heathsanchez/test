@@ -21,6 +21,7 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           export PATH="$HOME/.elan/bin:$PATH"
           mkdir -p evidence/collatz-owner-renewal-affine-v0
+          lake build Collatz.ValuationPullback
           lake env lean -DautoImplicit=false formal/Collatz/OwnerRenewalAffine.lean | tee evidence/collatz-owner-renewal-affine-v0/proof.log
       - name: Qualify bounded owner-renewal accounting
         run: |
