@@ -45,7 +45,7 @@ jobs:
           src=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
           data=src.read_bytes()
           out=pathlib.Path("metatron-kernel/evidence-out/funext-repair-v1")
-          env=os.environ|{"NUCLEUS_TRACE_VALUE_MISMATCH":"1","NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          env=os.environ|{"NUCLEUS_TRACE_VALUE_MISMATCH":"1","NUCLEUS_TRACE_DOWNSTREAM":"1","NUCLEUS_TRACE_ETA":"1"}
           r=subprocess.run(["/tmp/nucleus"],input=data,capture_output=True,env=env,timeout=90)
           rec={"candidate_sha":os.environ["GITHUB_SHA"],"input_sha256":hashlib.sha256(data).hexdigest(),"exit":r.returncode,"stderr":r.stderr.decode(errors="replace")}
           (out/"diagnostic.json").write_text(json.dumps(rec,indent=2)+"\n")
