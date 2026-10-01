@@ -1,0 +1,80 @@
+name: Collatz r30 recursive refinement V69
+on:
+  push:
+    branches: [collatz-r30-recursive-refinement-v69]
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Lean and kernel-check recursive split consumers
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal | tee evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean >/dev/null
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean formal/Collatz/GuardedExitObligation.lean >/dev/null
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EarlierSourceCollision.olean formal/Collatz/EarlierSourceCollision.lean >/dev/null
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/R30FirstSplit.olean formal/Collatz/R30FirstSplit.lean >/dev/null
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/R30RecursiveRefinement.olean formal/Collatz/R30RecursiveRefinement.lean | tee evidence/recursive-splits.log
+
+      - name: Exhaust ancestry-only grammar and replay consequence-forced splits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/collatz_r30_recursive_refinement_v69.py > evidence/result.json
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          from pathlib import Path
+          d=json.load(open('evidence/result.json'))
+          assert d['total_exact_reverse_states']==143293400
+          assert d['all_nonexpanding_candidates_are_identity']
+          assert d['periodic_suffix_6_candidate']=='REJECTED_PROSPECTIVELY'
+          assert d['periodic_suffix_sequence']==[6,6,1,21]
+          assert [x['strict_lower_source_candidates'] for x in d['unsplit_reverse_audits']]==[0,0,0,0]
+          assert [x['identity_candidates'] for x in d['unsplit_reverse_audits']]==[81,84,88,92]
+          assert [x['first_consequential_depth'] for x in d['consequence_forced_splits']]==[25,29,33,38]
+          proof=Path('evidence/recursive-splits.log').read_text()
+          for name in [
+            'r30_depth25_recursive_split_merger',
+            'r30_depth29_recursive_split_merger',
+            'r30_depth33_pattern_falsifier_merger',
+            'r30_depth38_recursive_split_merger']:
+              assert name in proof
+          assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
+          result={
+            'schema':'COLLATZ_R30_RECURSIVE_REFINEMENT_V69_QUALIFICATION',
+            'status':'WARRANTED_BOUNDED',
+            'exact_reverse_states':d['total_exact_reverse_states'],
+            'ancestry_only_depths':[22,25,29,33],
+            'identity_candidate_counts':[81,84,88,92],
+            'strict_lower_source_candidates':0,
+            'kernel_checked_split_depths':[25,29,33,38],
+            'split_suffixes':[6,6,1,21],
+            'fixed_periodic_split_rule':'REJECTED',
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+          }
+          result['certificate_sha256']=hashlib.sha256(
+              json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-r30-recursive-refinement-v69
+          path: evidence
+          if-no-files-found: error
