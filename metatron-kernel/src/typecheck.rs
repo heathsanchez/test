@@ -186,7 +186,13 @@ impl<'a> TypeChecker<'a> {
         // typing context in that judgment, and every binder allocates a fresh
         // frame identity. Never reuse UNKNOWN, refutations, or another scope.
         #[cfg(feature = "diagnostics")]
-        crate::diagnostics::inference_frame(expression, frame.id());
+        if let Some(count) = crate::diagnostics::inference_frame(expression, frame.id()) {
+            eprintln!(
+                "NUCLEUS_INFERENCE_FRAME_CLASS:expression={expression:?}:distinct_frames={count}:outer_bvar={:?}:node={:?}",
+                self.expression_uses_outer_bvar(expression, 0, 4096),
+                self.expressions.get(expression)
+            );
+        }
         let key = (expression, frame.id());
         if let Some(value) = cache.get(&key) {
             return if take_step(remaining) {
@@ -200,6 +206,43 @@ impl<'a> TypeChecker<'a> {
             cache.insert(key, value.clone());
         }
         result
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn expression_uses_outer_bvar(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        budget: usize,
+    ) -> Option<bool> {
+        if budget == 0 {
+            return None;
+        }
+        let node = self.expressions.get(expression)?;
+        let next = budget - 1;
+        match node {
+            Expr::BVar(index) => {
+                let index = usize::try_from(*index).ok()?;
+                Some(index >= depth)
+            }
+            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => Some(false),
+            Expr::App { fun, arg } => Some(
+                self.expression_uses_outer_bvar(*fun, depth, next)?
+                    || self.expression_uses_outer_bvar(*arg, depth, next)?
+            ),
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => Some(
+                self.expression_uses_outer_bvar(*domain, depth, next)?
+                    || self.expression_uses_outer_bvar(*body, depth.checked_add(1)?, next)?
+            ),
+            Expr::Let { ty, value, body } => Some(
+                self.expression_uses_outer_bvar(*ty, depth, next)?
+                    || self.expression_uses_outer_bvar(*value, depth, next)?
+                    || self.expression_uses_outer_bvar(*body, depth.checked_add(1)?, next)?
+            ),
+            Expr::Proj { structure, .. } => {
+                self.expression_uses_outer_bvar(*structure, depth, next)
+            }
+        }
     }
 
     fn infer_uncached(
