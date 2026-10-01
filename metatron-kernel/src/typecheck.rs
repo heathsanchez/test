@@ -565,10 +565,11 @@ impl<'a> TypeChecker<'a> {
     fn infer_literal_beta_spine(&self, expression: ExprId, context: &[TypeValue],
         frame: &EnvFrame, remaining: &mut usize,
         cache: &mut HashMap<(ExprId,u64),TypeValue>) -> Option<Judgment<TypeValue>> {
+        let mut eligibility_remaining=*remaining;
         let mut head=expression;
         let mut arguments=Vec::new();
         while let Some(Expr::App { fun,arg })=self.expressions.get(head) {
-            if !take_step(remaining) { return Some(Judgment::unknown("beta-spine-budget")); }
+            if !take_step(&mut eligibility_remaining) { return None; }
             arguments.push(*arg);head=*fun;
         }
         if !matches!(self.expressions.get(head),Some(Expr::Lam { .. })) { return None; }
@@ -576,9 +577,12 @@ impl<'a> TypeChecker<'a> {
         // General returned-function representation remains a separate obligation.
         let mut probe=head;
         for _ in &arguments {
+            if !take_step(&mut eligibility_remaining) { return None; }
             let Some(Expr::Lam { body,.. })=self.expressions.get(probe) else { return None; };
             probe=*body;
         }
+        // Declining eligibility preserves the caller's remaining budget.
+        *remaining=eligibility_remaining;
         let mut lexical_context=context.to_vec();
         let mut lexical_frame=frame.clone();
         for arg in arguments.into_iter().rev() {
