@@ -145,6 +145,63 @@ def reverse_audit(N: int, S: int, X: int, R: int):
 
     return candidates, states, max_states
 
+
+def q7_bank():
+    """Reproduce the 13 exact q7 first-contraction merger laws from V67."""
+    Q = 7
+    D = 3**Q
+    max_depth = D.bit_length() - 1
+    raw = []
+    def visit(word, a, cc, d, odd):
+        if len(word) >= max_depth:
+            return
+        for ch in ("E", "O"):
+            if ch == "E":
+                na, nc, nd, no = 2*a, 2*cc, d, odd
+            else:
+                if odd >= Q:
+                    continue
+                na, nc, nd, no = 2*a, 2*cc + d, 3*d, odd + 1
+            nw = word + ch
+            if no and na < nd:
+                residue = (nc * pow(na, -1, nd)) % nd
+                raw.append((nw, len(nw), no, na, nc, nd, residue))
+            else:
+                visit(nw, na, nc, nd, no)
+    visit("", 1, 0, 1, 0)
+    killed = bytearray(D)
+    selected = []
+    for z in sorted(raw, key=lambda x: (x[2], x[6], x[1], x[0])):
+        added = 0
+        for rr in range(z[6], D, z[5]):
+            if not killed[rr]:
+                killed[rr] = 1
+                added += 1
+        if added:
+            selected.append(z)
+    assert len(selected) == 13 and sum(killed) == 1013
+    return selected
+
+Q7_LAWS = q7_bank()
+
+def q7_mergers(r: int, h: int):
+    """Replay the full current q7 capability on one refined source cell."""
+    N = N0 + NC*r
+    S = NC * 2**h
+    hits = []
+    for j, X, R, q in fixed_prefix(N, S):
+        for word, b, oq, a, cc, d, residue in Q7_LAWS:
+            if R % d or X % d != residue:
+                continue
+            p0 = (a*X - cc)//d
+            ps = a*R//d
+            if 0 < p0 < N and ps <= S:
+                hits.append(dict(
+                    kind="Q7", r=r, h=h, prefix_steps=j, word=word,
+                    lower0=p0, lower_slope=ps, source_slope=S,
+                ))
+    return hits
+
 def simple_certificate(r: int, h: int):
     """Reuse exactly the D/M1/S constructor grammar of the certified cover."""
     n = N0 + NC*r
@@ -242,18 +299,33 @@ def main():
     for h in range(DEPTH0, 23):
         closed, residual = [], []
         kinds = collections.Counter()
+        q7_closed = 0
+        overlap = 0
         for r in live:
             c = simple_certificate(r, h)
-            if c is None:
+            qhits = q7_mergers(r, h)
+            if c is None and not qhits:
                 residual.append(r)
             else:
-                closed.append(c)
-                kinds[c["kind"]] += 1
+                if c is not None:
+                    row = dict(c)
+                    kinds[c["kind"]] += 1
+                else:
+                    row = dict(qhits[0])
+                    kinds["Q7"] += 1
+                row["q7_hits"] = len(qhits)
+                if qhits:
+                    q7_closed += 1
+                if c is not None and qhits:
+                    overlap += 1
+                closed.append(row)
         refinement.append(dict(
             depth=h,
             input_cells=len(live),
             closed=len(closed),
             closed_kinds=dict(sorted(kinds.items())),
+            q7_closed=q7_closed,
+            compiled_overlap=overlap,
             residual=len(residual),
             closed_residues=[c["r"] for c in closed],
         ))
@@ -264,8 +336,11 @@ def main():
         live = [x for r in residual for x in (r, r + 2**h)]
 
     assert [z["closed"] for z in refinement[:4]] == [0, 0, 0, 0]
+    assert [z["q7_closed"] for z in refinement[:4]] == [0, 0, 0, 0]
     assert first_depth == 22
     assert len(first_closed) == 1
+    assert refinement[-1]["q7_closed"] == 1
+    assert refinement[-1]["compiled_overlap"] == 1
     c = first_closed[0]
     assert c["r"] == 3_670_046
     assert c["kind"] == "D"
@@ -299,8 +374,10 @@ def main():
             "child": c,
             "next_four_bit_value": (c["r"] - R30)//2**DEPTH0,
             "interpretation": (
-                "Within the reused D/M1/S constructor grammar, depths 19..21 "
-                "separate no protected consequence; depth 22 first does."
+                "After reclosure under the full currently compiled D/M1/S + q7 "
+                "capability set, depths 19..21 separate no protected "
+                "consequence; depth 22 first does. The one depth-22 child "
+                "is witnessed by both direct descent and q7."
             ),
         },
         "status": "CANDIDATE_NEGATIVE_EXHAUSTION_PLUS_POSITIVE_SPLIT_PENDING_KERNEL",
@@ -316,7 +393,7 @@ def main():
             "One V67 residual cell r=30. Reverse exhaustion covers every uniform "
             "affine reverse word from each of its 78 fixed prefixes that can have "
             "source slope no larger than the original r=30 cylinder. The split "
-            "minimality claim is only relative to the reused D/M1/S grammar."
+            "minimality claim is relative to the currently compiled D/M1/S + q7 capability set."
         ),
     }
     result["certificate_sha256"] = hashlib.sha256(
