@@ -1,0 +1,119 @@
+name: Nucleus frame projection v3
+
+on:
+  push:
+    branches: [nucleus-frame-projection-v3]
+    paths:
+      - ".github/workflows/nucleus-frame-projection-v3.yml"
+      - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/value.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic-only separator
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch pinned corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Test projected-frame sufficiency before caching
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/frame-projection-v3
+          python3 - <<'PY'
+          import json,pathlib,subprocess,time,os
+
+          def prefix(path,target):
+              names={0:""}; rows=[]
+              for line in pathlib.Path(path).read_text().splitlines():
+                  r=json.loads(line); rows.append(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      if isinstance(v,dict):
+                          pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  decls=[]
+                  if "inductive" in r:
+                      for k in ("types","ctors","recs"): decls.extend(r["inductive"].get(k,[]))
+                  for k in ("def","thm","axiom","opaque","quot"):
+                      if k in r and isinstance(r[k],dict): decls.append(r[k])
+                  if any(names.get(d.get("name"))==target for d in decls if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError(target)
+
+          frozen=pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson")
+          current=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
+          chain6=prefix(frozen,"chain6_datF")
+          funext=prefix(current,"funext")
+
+          env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          def run(data,timeout):
+              t=time.monotonic()
+              try:
+                  q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout,env=env)
+                  return q.returncode,time.monotonic()-t,q.stderr.decode(errors="replace")
+              except subprocess.TimeoutExpired as e:
+                  err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
+                  return 124,time.monotonic()-t,err
+
+          fexit,fsec,ferr=run(funext,15)
+          cexit,csec,cerr=run(chain6,20)
+          reuse=[x for x in cerr.splitlines() if x.startswith("NUCLEUS_FRAME_PROJECTION_REUSE:")]
+          collisions=[x for x in cerr.splitlines() if x.startswith("NUCLEUS_FRAME_PROJECTION_COLLISION:")]
+          unresolved=[x for x in cerr.splitlines() if x.startswith("NUCLEUS_FRAME_PROJECTION_UNRESOLVED:")]
+          result={
+              "candidate_sha":os.environ["GITHUB_SHA"],
+              "funext":{"exit":fexit,"seconds":fsec,"stderr_tail":ferr.splitlines()[-40:]},
+              "chain6":{"exit":cexit,"seconds":csec,"stderr_tail":cerr.splitlines()[-80:]},
+              "projected_reuse_events":len(reuse),
+              "projected_collision_events":len(collisions),
+              "projected_unresolved_events":len(unresolved),
+              "reuse_sample":reuse[-120:],
+              "collision_sample":collisions[-20:],
+              "unresolved_sample":unresolved[-20:]
+          }
+          out=pathlib.Path("metatron-kernel/evidence-out/frame-projection-v3")
+          (out/"result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result),flush=True)
+
+          assert fexit==0,result
+          assert reuse,result
+          assert not collisions,result
+          assert not unresolved,result
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-frame-projection-separator-${{ github.sha }}
+          path: metatron-kernel/evidence-out/frame-projection-v3
+          if-no-files-found: warn
