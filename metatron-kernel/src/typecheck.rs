@@ -191,11 +191,8 @@ impl<'a> TypeChecker<'a> {
         // binding from its external frame, quotient that irrelevant identity:
         // every lawful continuation sees the same expression, levels and
         // checker environment. UNKNOWN/refutations are never cached.
-        let cache_frame = if self.expression_is_frame_independent(expression) {
-            0
-        } else {
-            frame.id()
-        };
+        let frame_independent = self.expression_is_frame_independent(expression);
+        let cache_frame = if frame_independent { 0 } else { frame.id() };
         let key = (expression, cache_frame);
         if let Some(value) = cache.get(&key) {
             return if take_step(remaining) {
@@ -204,7 +201,20 @@ impl<'a> TypeChecker<'a> {
                 Judgment::unknown("type-inference-budget")
             };
         }
-        let result = self.infer_uncached(expression, context, frame, remaining, cache);
+        let empty_frame;
+        let (inference_context, inference_frame) = if frame_independent {
+            empty_frame = EnvFrame::empty();
+            (&[][..], &empty_frame)
+        } else {
+            (context, frame)
+        };
+        let result = self.infer_uncached(
+            expression,
+            inference_context,
+            inference_frame,
+            remaining,
+            cache,
+        );
         if let Judgment::Proven { value, .. } = &result {
             cache.insert(key, value.clone());
         }
