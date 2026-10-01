@@ -1,4 +1,4 @@
-//! Bounded nonrecursive Type records, validated in their actual telescope.
+//! Bounded nonrecursive Type records and one-proof Prop records, checked in their telescope.
 //! No authority is installed until field universes and every rule contract hold.
 use super::*;
 
@@ -10,8 +10,9 @@ pub(super) fn candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool
         && !i.is_unsafe && !c.is_unsafe && !r.is_unsafe
         && c.num_params==i.num_params && c.level_params==i.level_params
         && !has_duplicate_parameter(&i.level_params) && !has_duplicate_parameter(&r.level_params)
-        && matches!(export.exprs.get(result),Some(Expr::Sort(l))
-            if exported_level_is_definitely_nonzero(export,*l,128))
+        && ((c.num_fields == 1 && is_prop_sort(export,result))
+            || matches!(export.exprs.get(result),Some(Expr::Sort(l))
+                if exported_level_is_definitely_nonzero(export,*l,128)))
 }
 
 pub(super) fn check(export: &ResolvedExport, prior: &Environment, block: &InductiveBlock,
@@ -49,6 +50,9 @@ pub(super) fn check(export: &ResolvedExport, prior: &Environment, block: &Induct
         context.push(TypeValue::Term(checker.closure(ty,frame.clone())));
         frame=frame.extend_free(FreeId(k as u64));
     }
+    // For a Prop result the same universe inequality forces every field
+    // to be a proof. With exactly one constructor, this justifies singleton
+    // large elimination; no data field or index is erased.
     for ty in domains[p..].iter().copied() {
         if expression_contains_constant(export,ty,i.name) { return Err(Verdict::Unknown); }
         let Judgment::Proven { value:field_universe,.. }=checker.infer_sort_in_context(ty,&context,&frame,limits.judgment_steps)
