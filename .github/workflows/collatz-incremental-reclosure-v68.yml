@@ -1,0 +1,55 @@
+name: Collatz incremental reclosure V68
+on:
+  push:
+    branches: [collatz-incremental-reclosure-v68]
+    paths:
+      - experiments/collatz_incremental_reclosure_v68.py
+      - .github/workflows/collatz-incremental-reclosure-v68.yml
+permissions: {contents: read, actions: read}
+jobs:
+  reclose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-guard-bank-reconciliation-v61
+          run-id: 36830138059
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qualified-state
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-compiled-collision-reclosure-v66
+          run-id: 36841753656
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: compiled-bank
+      - name: Incremental consequence reclosure
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-incremental-reclosure-v68
+          python3 experiments/collatz_incremental_reclosure_v68.py \
+            --state qualified-state/state.json \
+            --v66 compiled-bank/result.json \
+            > evidence/collatz-incremental-reclosure-v68/result.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-incremental-reclosure-v68/result.json'))
+          assert d['new_reverse_search_states']==0
+          assert d['global_collatz']=='UNKNOWN' and not d['qed']
+          print('V68_RECLOSURE',
+                'covered_fraction=',d['covered_fraction_of_v61_residual'],
+                'new_slots=',d['new_closed_equivalent_slots'],
+                'survivor_slots=',d['final_survivor_slots'],
+                'by_kind=',d['new_closed_slots_by_kind'])
+          for level in d['levels']:
+              print('LEVEL',level['depth'],
+                    'input=',level['input_children'],
+                    'closed=',level['closed_by_kind'],
+                    'survivors=',level['survivors'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-incremental-reclosure-v68
+          path: evidence/collatz-incremental-reclosure-v68
