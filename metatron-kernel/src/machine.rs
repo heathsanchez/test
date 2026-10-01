@@ -763,7 +763,16 @@ impl<'a> Machine<'a> {
                     EnvBinding::Closure(bound) => {
                         closure = bound;
                     }
-                    EnvBinding::Free(_) | EnvBinding::Neutral(_) => return None,
+                    EnvBinding::Free(_) => return None,
+                    EnvBinding::Neutral(neutral) => {
+                        if std::env::var_os("NUCLEUS_TRACE_QUOT_TARGET").is_some() {
+                            eprintln!(
+                                "NUCLEUS_QUOT_TARGET_NEUTRAL:head={:?}:spine={:?}:outer_args={:?}",
+                                neutral.head, neutral.spine, arguments
+                            );
+                        }
+                        return None;
+                    }
                 },
                 Expr::Const { name, .. } => {
                     arguments.reverse();
