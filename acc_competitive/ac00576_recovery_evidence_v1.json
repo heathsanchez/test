@@ -1,0 +1,111 @@
+{
+  "schema": "acc-ac00576-recovery-evidence-v1",
+  "status": "CANDIDATE_BOUNDED_LOCAL",
+  "authority": {
+    "watchdog_run": 36910098850,
+    "watchdog_attempt": 2,
+    "snapshot_job": 110576388120,
+    "artifact": 11192748667,
+    "captured_at_utc": "2026-10-01T20:45:35.685347+00:00",
+    "live_state_sha256": "c37bd93461625afc489b9dff4683079f6fd77d8e9b807aedd3da4153c11bd8ba",
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    },
+    "quota": {
+      "used": 0,
+      "remaining": 40
+    },
+    "frontier": {
+      "rows": 96,
+      "aggregate_moves": 222
+    }
+  },
+  "phase_change": {
+    "previous_frontier": {
+      "rows": 93,
+      "aggregate_moves": 219
+    },
+    "newly_opened": [
+      {
+        "challenge_id": "ac-00576",
+        "ac_before": 39,
+        "ac_now": 38,
+        "ac_kteams_now": 1,
+        "stable_now": 41,
+        "stable_kteams_now": 5,
+        "lift_gain": 1
+      },
+      {
+        "challenge_id": "ac-02672",
+        "ac_before": 42,
+        "ac_now": 41,
+        "ac_kteams_now": 1,
+        "stable_now": 44,
+        "stable_kteams_now": 6,
+        "lift_gain": 1
+      },
+      {
+        "challenge_id": "ac-09590",
+        "ac_before": 52,
+        "ac_now": 51,
+        "ac_kteams_now": 1,
+        "stable_now": 54,
+        "stable_kteams_now": 3,
+        "lift_gain": 1
+      }
+    ]
+  },
+  "source_alignment": {
+    "ac-00576": {
+      "qualified_source": "AC1M",
+      "ac1m_index": 36345,
+      "canonical_pair": [
+        "YYXyx",
+        "YYYxxxYXYX"
+      ],
+      "official_pair": [
+        "YYXyx",
+        "YYYxxxYXYX"
+      ],
+      "exact_spelling_match": true
+    },
+    "ac-02672": {
+      "qualified_source": null
+    },
+    "ac-09590": {
+      "qualified_source": null
+    }
+  },
+  "bounded_candidate_rejections": [
+    {
+      "challenge_id": "ac-00576",
+      "mechanism": "public GS-Sub quotient route + existing exact official atomic compiler",
+      "quotient_pops": 135,
+      "quotient_discovered": 2917,
+      "quotient_steps": 37,
+      "official_moves": 175,
+      "final_target_replayed": true,
+      "current_ac_best": 38,
+      "stable_strict_requires_ac_moves_at_most": 38,
+      "verdict": "REJECT_FIXED_ROUTE"
+    },
+    {
+      "challenge_id": "ac-00576",
+      "mechanism": "independent local Nielsen/S20 best-first reconstruction + public decoder contract",
+      "mixed_steps": 36,
+      "elementary_ops": 1071,
+      "official_moves": 1086,
+      "final_target_replayed": true,
+      "verdict": "REJECT_THIS_TRAJECTORY",
+      "caveat": "does not reject the exact pinned ACSolverX fast trajectory"
+    }
+  ],
+  "next_residual": "Run exact ac-00576 through Avi161/ACSolverX@5ae1bd8eda6d80dfbea51680636f825da19fb802 and existing nielsen_official_harvest_v1.py; accept only if pinned official replay is <=38 AC moves and live Stable remains > AC+2.",
+  "pins": {
+    "official": "SAIRcompetition/Andrews-Curtis@99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "public_solver": "Avi161/ACSolverX@5ae1bd8eda6d80dfbea51680636f825da19fb802"
+  },
+  "publication": false
+}
