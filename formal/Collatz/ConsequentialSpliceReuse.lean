@@ -1,4 +1,6 @@
 import Collatz.SourceCylinderExit
+set_option maxRecDepth 10000
+set_option maxHeartbeats 2000000
 
 namespace CollatzFinal.SourceProduct
 
