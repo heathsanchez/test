@@ -778,7 +778,15 @@ impl<'a> Machine<'a> {
                     arguments.reverse();
                     return Some((*name, arguments));
                 }
-                _ => return None,
+                other => {
+                    if std::env::var_os("NUCLEUS_TRACE_QUOT_TARGET").is_some() {
+                        eprintln!(
+                            "NUCLEUS_CONSTRUCTOR_TARGET_BLOCKED:expr={:?}:outer_args={:?}:env={:?}",
+                            other, arguments, closure.env
+                        );
+                    }
+                    return None;
+                }
             }
         }
     }
