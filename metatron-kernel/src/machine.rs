@@ -99,7 +99,7 @@ pub(crate) struct CachedExposure {
     pub value: Value,
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub(crate) struct ExposureCacheData {
     exposures: HashMap<ExposureCacheKey, CachedExposure>,
     outer_bvar: HashMap<(ExprId, usize), bool>,
