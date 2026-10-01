@@ -33,6 +33,7 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           export PATH="$HOME/.elan/bin:$PATH"
           mkdir -p evidence
+          lake build Collatz.SourceCylinderExit
           lake env lean -DautoImplicit=false formal/Collatz/SourceCylinderExit.lean | tee evidence/source-cylinder-authority.log
           ! grep -q 'sorryAx' evidence/source-cylinder-authority.log
           ! grep -q 'Lean.ofReduceBool' evidence/source-cylinder-authority.log
