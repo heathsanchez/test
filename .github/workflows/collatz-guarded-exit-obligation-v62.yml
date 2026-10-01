@@ -40,7 +40,7 @@ jobs:
           if lake env lean /tmp/negative.lean > evidence/collatz-guarded-exit-obligation-v62/source-erasure-rejected.log 2>&1; then
             echo 'ERROR source-erasure consumer accepted'; exit 1
           fi
-          grep -q 'type mismatch' evidence/collatz-guarded-exit-obligation-v62/source-erasure-rejected.log
+          grep -qi 'type mismatch' evidence/collatz-guarded-exit-obligation-v62/source-erasure-rejected.log
       - name: Exact scoped preimage test and promotion boundary
         run: |
           set -euo pipefail
