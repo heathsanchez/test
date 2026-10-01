@@ -1,0 +1,91 @@
+name: Nucleus chain6 cost trace v1
+
+on:
+  push:
+    branches: [nucleus-eta-cost-tournament-v1]
+    paths:
+      - ".github/workflows/nucleus-chain6-cost-trace-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic candidate
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-diagnostic
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/a1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+
+      - name: Trace first expensive declaration
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/chain6-cost-trace-v1
+          python3 - <<'PY'
+          import json,pathlib,subprocess,os,time
+          src=pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson")
+          names={0:""}; rows=[]; prefixes={}
+          targets={"Fueled.atF_ite","chain6_datF"}
+          for line in src.read_text().splitlines():
+              rec=json.loads(line); rows.append(line)
+              if "in" in rec:
+                  v=rec.get("str",rec.get("num"))
+                  names[rec["in"]]=names[v["pre"]]+("." if v["pre"] else "")+str(v.get("str",v.get("i")))
+              decls=[]
+              if "inductive" in rec:
+                  for kind in ("types","ctors","recs"): decls.extend(rec["inductive"][kind])
+              for kind in ("def","thm","axiom","opaque"):
+                  if kind in rec: decls.append(rec[kind])
+              found=[names.get(d["name"]) for d in decls if names.get(d["name"]) in targets]
+              for name in found:
+                  prefixes[name]=("\n".join(rows)+"\n").encode()
+              if len(prefixes)==2: break
+          assert set(prefixes)==targets,prefixes.keys()
+
+          env=os.environ.copy()
+          env["NUCLEUS_ETA_ATTEMPT_CAP"]="1"
+          env["NUCLEUS_TRACE_CAUSAL"]="1"
+          out=pathlib.Path("metatron-kernel/evidence-out/chain6-cost-trace-v1")
+          result={}
+          for name,data in prefixes.items():
+              (out/(name.replace(".","_")+".ndjson")).write_bytes(data)
+              t=time.monotonic()
+              try:
+                  q=subprocess.run(["/tmp/nucleus-diagnostic"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=15)
+                  result[name]={"exit":q.returncode,"seconds":time.monotonic()-t,"stderr":q.stderr.decode(errors="replace")}
+              except subprocess.TimeoutExpired as e:
+                  err=e.stderr or b""
+                  if isinstance(err,str): err=err.encode()
+                  result[name]={"exit":124,"seconds":time.monotonic()-t,"stderr":err.decode(errors="replace")}
+          (out/"result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps({k:{"exit":v["exit"],"seconds":v["seconds"],"tail":v["stderr"].splitlines()[-40:]} for k,v in result.items()}),flush=True)
+          assert result["Fueled.atF_ite"]["exit"]==0,result
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-chain6-cost-trace-${{ github.sha }}
+          path: metatron-kernel/evidence-out/chain6-cost-trace-v1
+          if-no-files-found: error
