@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::environment::Environment;
@@ -24,6 +25,7 @@ pub struct TypeChecker<'a> {
     environment: &'a Environment,
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
+    frame_independence: RefCell<HashMap<(ExprId, usize), bool>>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -38,6 +40,7 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            frame_independence: RefCell::new(HashMap::new()),
         }
     }
 
@@ -53,6 +56,7 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            frame_independence: RefCell::new(HashMap::new()),
         }
     }
 
@@ -182,10 +186,17 @@ impl<'a> TypeChecker<'a> {
         remaining: &mut usize,
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<TypeValue> {
-        // This cache is local to one public judgment. A frame has one fixed
-        // typing context in that judgment, and every binder allocates a fresh
-        // frame identity. Never reuse UNKNOWN, refutations, or another scope.
-        let key = (expression, frame.id());
+        // This cache is local to one public judgment. Open expressions retain
+        // exact frame identity. If syntax proves an expression cannot read any
+        // binding from its external frame, quotient that irrelevant identity:
+        // every lawful continuation sees the same expression, levels and
+        // checker environment. UNKNOWN/refutations are never cached.
+        let cache_frame = if self.expression_is_frame_independent(expression) {
+            0
+        } else {
+            frame.id()
+        };
+        let key = (expression, cache_frame);
         if let Some(value) = cache.get(&key) {
             return if take_step(remaining) {
                 Judgment::proven(value.clone(), "shared-expression-inference")
@@ -198,6 +209,65 @@ impl<'a> TypeChecker<'a> {
             cache.insert(key, value.clone());
         }
         result
+    }
+
+    fn expression_is_frame_independent(&self, expression: ExprId) -> bool {
+        let mut budget = 4096usize;
+        self.expression_is_frame_independent_at(expression, 0, &mut budget)
+            == Some(true)
+    }
+
+    fn expression_is_frame_independent_at(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        budget: &mut usize,
+    ) -> Option<bool> {
+        if let Some(answer) = self
+            .frame_independence
+            .borrow()
+            .get(&(expression, depth))
+            .copied()
+        {
+            return Some(answer);
+        }
+        if *budget == 0 {
+            return None;
+        }
+        *budget -= 1;
+        let node = self.expressions.get(expression)?;
+        let answer = match node {
+            Expr::BVar(index) => usize::try_from(*index).ok()? < depth,
+            Expr::Sort(_) | Expr::Const { .. } | Expr::NatLit(_) | Expr::StrLit(_) => true,
+            Expr::App { fun, arg } => {
+                self.expression_is_frame_independent_at(*fun, depth, budget)?
+                    && self.expression_is_frame_independent_at(*arg, depth, budget)?
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                self.expression_is_frame_independent_at(*domain, depth, budget)?
+                    && self.expression_is_frame_independent_at(
+                        *body,
+                        depth.checked_add(1)?,
+                        budget,
+                    )?
+            }
+            Expr::Let { ty, value, body } => {
+                self.expression_is_frame_independent_at(*ty, depth, budget)?
+                    && self.expression_is_frame_independent_at(*value, depth, budget)?
+                    && self.expression_is_frame_independent_at(
+                        *body,
+                        depth.checked_add(1)?,
+                        budget,
+                    )?
+            }
+            Expr::Proj { structure, .. } => {
+                self.expression_is_frame_independent_at(*structure, depth, budget)?
+            }
+        };
+        self.frame_independence
+            .borrow_mut()
+            .insert((expression, depth), answer);
+        Some(answer)
     }
 
     fn infer_uncached(
