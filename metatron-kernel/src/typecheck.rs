@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::environment::Environment;
@@ -24,6 +25,7 @@ pub struct TypeChecker<'a> {
     environment: &'a Environment,
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
+    globally_cacheable: RefCell<HashMap<ExprId, bool>>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -38,6 +40,7 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            globally_cacheable: RefCell::new(HashMap::new()),
         }
     }
 
@@ -53,6 +56,7 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            globally_cacheable: RefCell::new(HashMap::new()),
         }
     }
 
@@ -174,6 +178,34 @@ impl<'a> TypeChecker<'a> {
         crate::convert::convert_with_policy(self, left, right, budget, policy)
     }
 
+    // A binder-free expression with no free de Bruijn variables cannot
+    // observe the caller's lexical frame and cannot manufacture a fresh local
+    // identity while being inferred. Its inferred type is therefore invariant
+    // across caller frames within this one public judgment.
+    fn expression_is_globally_cacheable(&self, expression: ExprId) -> bool {
+        if let Some(answer) = self.globally_cacheable.borrow().get(&expression).copied() {
+            return answer;
+        }
+        let answer = match self.expressions.get(expression) {
+            Some(Expr::Sort(_) | Expr::Const { .. } | Expr::NatLit(_) | Expr::StrLit(_)) => true,
+            Some(Expr::App { fun, arg }) => {
+                self.expression_is_globally_cacheable(*fun)
+                    && self.expression_is_globally_cacheable(*arg)
+            }
+            // Binders can create fresh locals whose identity depends on lexical
+            // depth. Projections are kept framed conservatively because their
+            // dependent field reconstruction builds an environment.
+            Some(Expr::BVar(_)
+                | Expr::Lam { .. }
+                | Expr::Pi { .. }
+                | Expr::Let { .. }
+                | Expr::Proj { .. }) => false,
+            None => false,
+        };
+        self.globally_cacheable.borrow_mut().insert(expression, answer);
+        answer
+    }
+
     fn infer_in(
         &self,
         expression: ExprId,
@@ -185,7 +217,12 @@ impl<'a> TypeChecker<'a> {
         // This cache is local to one public judgment. A frame has one fixed
         // typing context in that judgment, and every binder allocates a fresh
         // frame identity. Never reuse UNKNOWN, refutations, or another scope.
-        let key = (expression, frame.id());
+        let cache_frame = if self.expression_is_globally_cacheable(expression) {
+            0
+        } else {
+            frame.id()
+        };
+        let key = (expression, cache_frame);
         if let Some(value) = cache.get(&key) {
             return if take_step(remaining) {
                 Judgment::proven(value.clone(), "shared-expression-inference")
