@@ -1,0 +1,27 @@
+name: Nucleus Iff v1
+on:
+  push:
+    branches: [nucleus-iff-v1]
+    paths: [".github/workflows/nucleus-iff-v1.yml", "metatron-kernel/**"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Establish intended baseline failures
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          set +e
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test prop_function_pair > /tmp/red.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/red.log
+          test "$status" = 101
+          grep -q '6 passed; 2 failed' /tmp/red.log
+          grep -q 'function_proof_pair_accepts ... FAILED' /tmp/red.log
+          grep -q 'renamed_function_proof_pair_accepts ... FAILED' /tmp/red.log
