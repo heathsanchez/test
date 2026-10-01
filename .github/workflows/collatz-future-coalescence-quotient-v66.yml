@@ -1,0 +1,79 @@
+name: Collatz future coalescence quotient V66
+on:
+  push:
+    branches: [collatz-future-coalescence-quotient-v66]
+    paths:
+      - formal/Collatz/FutureCoalescenceQuotient.lean
+      - .github/workflows/collatz-future-coalescence-quotient-v66.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - formal/Collatz/FutureCoalescenceQuotient.lean
+      - .github/workflows/collatz-future-coalescence-quotient-v66.yml
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check future-coalescence quotient
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence/collatz-future-coalescence-quotient-v66
+          lake build Collatz.OrdinaryExitReduction Collatz.EventualMacroProgress
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean formal/Collatz/GuardedExitObligation.lean > evidence/collatz-future-coalescence-quotient-v66/obligation-parent.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EarlierSourceCollision.olean formal/Collatz/EarlierSourceCollision.lean > evidence/collatz-future-coalescence-quotient-v66/collision-parent.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/FutureCoalescenceQuotient.olean formal/Collatz/FutureCoalescenceQuotient.lean | tee evidence/collatz-future-coalescence-quotient-v66/proof.log
+          cat > /tmp/consumer.lean <<'LEAN'
+          import Collatz.FutureCoalescenceQuotient
+          open CollatzFinal CollatzFinal.SourceProduct
+          #check orbitCoalescentSetoid
+          #check step_same_coalescence_class
+          #check exitObligation_iff_smaller_coalescent
+          #check collatz_of_every_source_coalesces_lower
+          #check collatz_iff_single_positive_coalescence_class
+          example : OrbitCoalescent 3 5 := by
+            exact ⟨1, 0, by decide⟩
+          LEAN
+          lake env lean /tmp/consumer.lean | tee evidence/collatz-future-coalescence-quotient-v66/consumer.log
+      - name: Scope and proof-boundary audit
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/collatz-future-coalescence-quotient-v66/result.json
+          import hashlib,json,re
+          from pathlib import Path
+          src=Path('formal/Collatz/FutureCoalescenceQuotient.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',src)
+          proof=Path('evidence/collatz-future-coalescence-quotient-v66/proof.log').read_text()
+          assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
+          for n in [
+              'orbitCoalescent_trans',
+              'step_same_coalescence_class',
+              'eventual_earlierSourceCollision_iff_smaller_coalescent',
+              'exitObligation_iff_smaller_coalescent',
+              'collatz_of_every_source_coalesces_lower',
+              'collatz_iff_single_positive_coalescence_class']:
+              assert n in proof
+          result={
+            'schema':'COLLATZ_FUTURE_COALESCENCE_QUOTIENT_V66',
+            'status':'WARRANTED_QUOTIENT_IF_GATE_GREEN',
+            'equivalence':'x~y iff their shortcut futures meet',
+            'quotient_transition':'identity: x~shortcut(x)',
+            'protected_exit':'the current coalescence class contains a positive source smaller than the original source',
+            'qed_equivalent':'all positive naturals lie in the coalescence class of 1',
+            'local_rank_required':False,
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+            'next_residual':'exclude any second positive coalescence class by proving every n>1 coalesces with some smaller positive p'
+          }
+          result['certificate_sha256']=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-future-coalescence-quotient-v66
+          path: evidence/collatz-future-coalescence-quotient-v66
