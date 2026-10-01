@@ -1,0 +1,130 @@
+name: Nucleus chain6 judgment budget v1
+
+on:
+  push:
+    branches: [nucleus-chain6-judgment-budget-v1]
+    paths:
+      - ".github/workflows/nucleus-chain6-judgment-budget-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  cap:
+    strategy:
+      fail-fast: false
+      matrix:
+        cap: [256, 512, 1024, 2048, 4096, 8192, 16384]
+    name: cap-${{ matrix.cap }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Patch only the existing judgment budget and build
+        env:
+          CAP: ${{ matrix.cap }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p=Path("metatron-kernel/src/checker.rs")
+          s=p.read_text()
+          old="judgment_steps: 65_536,"
+          new=f"judgment_steps: {int(os.environ['CAP'])},"
+          assert s.count(old)==1
+          p.write_text(s.replace(old,new,1))
+          PY
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch pinned corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Measure protected separator set
+        env:
+          CAP: ${{ matrix.cap }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python3 - <<'PY'
+          import json,pathlib,subprocess,os,time,hashlib
+
+          current=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
+          frozen=pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson")
+
+          def prefix_through(path,target):
+              names={0:""}; rows=[]
+              for line in path.read_text().splitlines():
+                  r=json.loads(line); rows.append(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      if isinstance(v,dict):
+                          pre=v.get("pre",0)
+                          atom=v.get("str",v.get("i",v.get("num","?")))
+                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  decls=[]
+                  if "inductive" in r:
+                      for k in ("types","ctors","recs"): decls.extend(r["inductive"].get(k,[]))
+                  for k in ("def","thm","axiom","opaque","quot"):
+                      if k in r: decls.append(r[k])
+                  if any(names.get(d.get("name"))==target for d in decls if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError(target)
+
+          funext=prefix_through(current,"funext")
+          chain6=prefix_through(frozen,"chain6_datF")
+
+          def run(data=None,path=None,timeout=12):
+              t=time.monotonic()
+              try:
+                  if data is not None:
+                      q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout,
+                                       env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+                  else:
+                      with pathlib.Path(path).open("rb") as f:
+                          q=subprocess.run(["/tmp/nucleus"],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout,
+                                           env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+                  return {"exit":q.returncode,"seconds":time.monotonic()-t,"stderr":q.stderr.decode(errors="replace")[-2000:]}
+              except subprocess.TimeoutExpired as e:
+                  err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
+                  return {"exit":124,"seconds":time.monotonic()-t,"stderr":err[-2000:]}
+
+          result={
+              "cap":int(os.environ["CAP"]),
+              "sha":os.environ["GITHUB_SHA"],
+              "funext":run(data=funext,timeout=12),
+              "chain6_datF":run(data=chain6,timeout=12),
+              "k_rec_conv":run(path="/tmp/current/bad/bugs/k-rec-conv.ndjson",timeout=5),
+              "fun_eta_bad":run(path="/tmp/current/bad/tutorial/116_funEtaBad.ndjson",timeout=5),
+              "current_fueled_chain":run(path=current,timeout=12),
+              "funext_sha256":hashlib.sha256(funext).hexdigest(),
+              "chain6_sha256":hashlib.sha256(chain6).hexdigest(),
+          }
+          pathlib.Path("out/result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result),flush=True)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chain6-judgment-cap-${{ matrix.cap }}-${{ github.sha }}
+          path: out/result.json
+          if-no-files-found: error
