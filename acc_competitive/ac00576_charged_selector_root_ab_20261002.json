@@ -1,0 +1,116 @@
+{
+  "schema": "acc-ac00576-charged-selector-root-ab-v1",
+  "status": "CANDIDATE_BOUNDED_LOCAL",
+  "challenge_id": "ac-00576",
+  "authority": {
+    "watchdog_run": 36910098850,
+    "watchdog_artifact": 11195188319,
+    "captured_at_utc": "2026-10-01T21:39:56.328736+00:00",
+    "live_state_sha256": "80f8da313ef2d2dfe6f34a1cc29fe145808945df465ad71a8e0a4bf10db530c6",
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    },
+    "quota": {
+      "used": 0,
+      "remaining": 40,
+      "limit": 40
+    },
+    "ac_best": 38,
+    "stable_best": 41,
+    "frontier": {
+      "rows": 96,
+      "aggregate_moves": 222
+    }
+  },
+  "pins": {
+    "official": "SAIRcompetition/Andrews-Curtis@99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "acsolverx": "Avi161/ACSolverX@5ae1bd8eda6d80dfbea51680636f825da19fb802",
+    "proof_atlas_artifact_id": 10589688184,
+    "proof_atlas_states": 433272
+  },
+  "root_selector": {
+    "raw_children": 50,
+    "unique_children": 34,
+    "compiled_children": 34,
+    "official_representatives_replayed": 100,
+    "topk": 8,
+    "score_weight": 0.5,
+    "structural_vs_objective_overlap": 5,
+    "structural_vs_pure_cost_overlap": 1,
+    "structural_costs": [
+      2,
+      5,
+      6,
+      9,
+      6,
+      10,
+      11,
+      5
+    ],
+    "objective_costs": [
+      2,
+      3,
+      5,
+      2,
+      6,
+      5,
+      6,
+      4
+    ],
+    "structural_objective_ranks": [
+      1,
+      3,
+      5,
+      13,
+      7,
+      17,
+      20,
+      6
+    ]
+  },
+  "bounded_equal_pop_ab": {
+    "node_cap": 200,
+    "strict_source_bound_exclusive": 39,
+    "frame_cap": 9,
+    "basis_streak": 3,
+    "topk_sub": 8,
+    "virtual_cap": 90,
+    "total_cap": 135,
+    "structural": {
+      "popped": 200,
+      "basis_generated": 432,
+      "compiled_qchildren": 1600,
+      "compiled_representatives": 5668,
+      "sub_generated": 1516,
+      "physical_states": 150,
+      "physical_g_median": 12,
+      "physical_g_le_5": 12,
+      "physical_g_le_10": 59,
+      "physical_g_le_20": 143,
+      "atlas_contacts": 0,
+      "virtual_terminal": 0
+    },
+    "compile_before_admission": {
+      "popped": 200,
+      "basis_generated": 431,
+      "compiled_qchildren": 8688,
+      "compiled_representatives": 19070,
+      "sub_generated": 1771,
+      "physical_states": 183,
+      "physical_g_median": 10,
+      "physical_g_le_5": 23,
+      "physical_g_le_10": 98,
+      "physical_g_le_20": 155,
+      "atlas_contacts": 0,
+      "virtual_terminal": 0
+    },
+    "objective_unique_or_cheaper_physical_states": 74,
+    "common_physical_states": 110
+  },
+  "claim": "On ac-00576, exact compile-before-admission materially changes the persistent-basis search before any widening: only 5/8 root structural admissions survive the official-cost objective, and at an equal 200-pop boundary the charged selector reaches 183 exact physical states versus 150, with 98 versus 59 at official cost <=10. Neither arm reaches the qualified Proof Atlas or a virtual terminal. This promotes selector misalignment on this target to a bounded local obstruction and justifies selector replacement before any deeper search; it does not certify a solution.",
+  "next_residual": "Use compile-before-admission only, not structural top-K, for the next bounded persistent-basis search on fresh high-value lift rows; do not deepen ac-00576 unless the selector-corrected search produces an Atlas contact or terminal lower bound that changes the boundary.",
+  "publication": false,
+  "submission_attempted": false
+}
