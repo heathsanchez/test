@@ -1,0 +1,186 @@
+{
+  "schema": "acc-competitive-phase-20261001T054202Z-v1",
+  "status": "WARRANTED_BOUNDED_LIVE_AUTHORITY",
+  "authority": {
+    "run_id": 36723490865,
+    "run_attempt": 13,
+    "artifact_id": 11143301345,
+    "current_utc": "2026-10-01T05:42:02.795157+00:00",
+    "current_live_state_sha256": "6d0a008a682e83010872ba275fc1d183e9e4e21b327a44b96166d81c1aa5ffcb",
+    "previous_artifact_id": 11140714950,
+    "previous_utc": "2026-10-01T04:40:16.045051+00:00",
+    "previous_live_state_sha256": "6bb49f43dd265def0c730db34afd765f9452cfbe1b4fb73b099cc70d039db392",
+    "public_source_map_artifact_id": 10847946381,
+    "public_source_map_run_id": 34727788755,
+    "public_source_map_matches_sha256": "e514f741f923e29eb6cfe23b97886fd3625bdcb37cca0090ec9e82b74597d0b8"
+  },
+  "current": {
+    "ac_unsolved": 2672,
+    "stable_unsolved": 2672,
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    },
+    "quota": {
+      "used": 0,
+      "remaining": 40,
+      "limit": 40
+    },
+    "ac_singletons": 2862,
+    "stable_singletons": 2939
+  },
+  "delta_from_previous": {
+    "ac_rows_changed": 440,
+    "ac_records_shortened": 14,
+    "ac_tie_or_other_changes": 426,
+    "stable_rows_changed": 369,
+    "stable_records_shortened": 24,
+    "stable_tie_or_other_changes": 345,
+    "ac_singletons_delta": -129,
+    "stable_singletons_delta": -84
+  },
+  "fresh_ac_shortening_shadow_relation": {
+    "count": 14,
+    "rows_with_stable_gap_gt_2": 0,
+    "rows": [
+      [
+        "ac-00122",
+        64,
+        63,
+        64
+      ],
+      [
+        "ac-03003",
+        62,
+        60,
+        61
+      ],
+      [
+        "ac-03803",
+        66,
+        64,
+        66
+      ],
+      [
+        "ac-06496",
+        97,
+        96,
+        98
+      ],
+      [
+        "ac-06977",
+        89,
+        87,
+        89
+      ],
+      [
+        "ac-07333",
+        42,
+        41,
+        42
+      ],
+      [
+        "ac-08091",
+        68,
+        65,
+        67
+      ],
+      [
+        "ac-08392",
+        57,
+        56,
+        58
+      ],
+      [
+        "ac-08518",
+        69,
+        66,
+        67
+      ],
+      [
+        "ac-09024",
+        51,
+        49,
+        51
+      ],
+      [
+        "ac-09450",
+        68,
+        66,
+        68
+      ],
+      [
+        "ac-09491",
+        72,
+        71,
+        73
+      ],
+      [
+        "ac-09549",
+        63,
+        61,
+        63
+      ],
+      [
+        "ac-10045",
+        53,
+        52,
+        54
+      ]
+    ],
+    "interpretation": "Every fresh AC shortening already has Stable <= AC+2; no new exact +2 shadow opportunity opened."
+  },
+  "current_exact_plus2_shadow_frontier": {
+    "rows": 33,
+    "aggregate_record_moves": 55,
+    "removed_since_previous": [
+      "ac-08271"
+    ],
+    "top": [
+      {
+        "challenge_id": "ac-04396",
+        "ac_best": 68,
+        "stable_best": 76,
+        "compiled_plus2": 70,
+        "improvement": 6
+      },
+      {
+        "challenge_id": "ac-09400",
+        "ac_best": 35,
+        "stable_best": 40,
+        "compiled_plus2": 37,
+        "improvement": 3
+      },
+      {
+        "challenge_id": "ac-05899",
+        "ac_best": 176,
+        "stable_best": 181,
+        "compiled_plus2": 178,
+        "improvement": 3
+      },
+      {
+        "challenge_id": "ac-05303",
+        "ac_best": 44,
+        "stable_best": 49,
+        "compiled_plus2": 46,
+        "improvement": 3
+      },
+      {
+        "challenge_id": "ac-01322",
+        "ac_best": 127,
+        "stable_best": 132,
+        "compiled_plus2": 129,
+        "improvement": 3
+      }
+    ]
+  },
+  "public_source_acquisition_obstruction": {
+    "map_scope": "qualified AC19/AC1M exact canonical source map",
+    "fresh_ac_shortening_rows_checked": 14,
+    "fresh_rows_with_exact_ac19_or_ac1m_match": 0,
+    "current_shadow_rows_checked": 33,
+    "shadow_rows_with_exact_ac19_or_ac1m_match": 0
+  },
+  "qualification_boundary": "Board deltas are exact between authenticated watchdog snapshots. Public-source obstruction applies only to the qualified AC19/AC1M exact canonical source map. No solution candidate or submission is asserted."
+}
