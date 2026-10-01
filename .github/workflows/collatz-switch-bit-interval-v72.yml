@@ -11,16 +11,28 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 8d03454ac42dc476dc23b57fad8a280b31c3b71b
+          path: frozen-v60
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Verify frozen V60 source binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C frozen-v60 rev-parse HEAD)" = "8d03454ac42dc476dc23b57fad8a280b31c3b71b"
+          test -f frozen-v60/experiments/collatz_crystal_pulled_centre_height_v60.py
 
       - name: Replay qualified V60 switch corpus and test zero-only runs
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p evidence
-          PYTHONPATH=experiments python3 -u experiments/collatz_switch_bit_interval_v72.py > evidence/result.json
+          V60_EXPERIMENTS_DIR="$GITHUB_WORKSPACE/frozen-v60/experiments" \
+            python3 -u experiments/collatz_switch_bit_interval_v72.py > evidence/result.json
           python3 - <<'PY' | tee evidence/qualification.json
           import hashlib, json
           d=json.load(open('evidence/result.json'))
@@ -49,6 +61,7 @@ jobs:
               'max_consecutive_zero_only_switches':d['max_consecutive_zero_only_switches'],
               'no_two_consecutive_zero_only':d['candidate_no_two_consecutive_zero_only'],
               'strong_every_switch_nonzero':'REJECTED',
+              'frozen_v60_commit':'8d03454ac42dc476dc23b57fad8a280b31c3b71b',
               'global_collatz':'UNKNOWN',
               'qed':False,
           }
@@ -58,6 +71,7 @@ jobs:
           print(json.dumps(result,indent=2,sort_keys=True))
           PY
           git rev-parse HEAD > evidence/commit.txt
+          git -C frozen-v60 rev-parse HEAD > evidence/frozen-v60-commit.txt
 
       - uses: actions/upload-artifact@v4
         if: always()
