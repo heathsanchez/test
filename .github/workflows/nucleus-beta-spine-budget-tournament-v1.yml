@@ -1,0 +1,129 @@
+name: Nucleus beta spine budget tournament v1
+
+on:
+  push:
+    branches: [nucleus-beta-spine-budget-tournament-v1]
+    paths:
+      - ".github/workflows/nucleus-beta-spine-budget-tournament-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build bounded beta-spine variants
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cp metatron-kernel/src/typecheck.rs /tmp/typecheck.rs.orig
+          for cap in 64 256 1024 4096; do
+            CAP="$cap" python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p=Path("metatron-kernel/src/typecheck.rs")
+          s=Path("/tmp/typecheck.rs.orig").read_text()
+          needle='''    fn infer_literal_beta_spine(&self, expression: ExprId, context: &[TypeValue],
+              frame: &EnvFrame, remaining: &mut usize,
+              cache: &mut HashMap<(ExprId,u64),TypeValue>) -> Option<Judgment<TypeValue>> {
+          '''
+          assert needle in s
+          cap=os.environ["CAP"]
+          repl=needle+f'''        let mut bounded_remaining = (*remaining).min({cap});
+              let remaining = &mut bounded_remaining;
+          '''
+          p.write_text(s.replace(needle,repl,1))
+          PY
+            cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+            cp metatron-kernel/target/release/metatron-kernel "/tmp/nucleus-cap-$cap"
+          done
+          cp /tmp/typecheck.rs.orig metatron-kernel/src/typecheck.rs
+
+      - name: Fetch frozen and current corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Run beta-spine cap tournament
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/beta-spine-budget-tournament-v1
+          python3 - <<'PY'
+          import json,pathlib,subprocess,time,os
+
+          def complete_prefix(path,target):
+              lines=path.read_text().splitlines()
+              names={0:""}; rows=[]
+              for line in lines:
+                  rec=json.loads(line); rows.append(line)
+                  if "in" in rec:
+                      val=rec.get("str",rec.get("num"))
+                      if isinstance(val,dict):
+                          pre=val.get("pre",0)
+                          atom=val.get("str",val.get("i",val.get("num","?")))
+                          names[rec["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  ds=[]
+                  for kind in ("def","thm","axiom","opaque","quot"):
+                      if kind in rec and isinstance(rec[kind],dict):
+                          ds.append(rec[kind])
+                  if "inductive" in rec:
+                      for key in ("types","ctors","recs"):
+                          ds.extend(rec["inductive"].get(key,[]))
+                  if any(names.get(d.get("name"))==target for d in ds if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError(target)
+
+          current=complete_prefix(pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson"),"funext")
+          frozen=complete_prefix(pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson"),"chain6_datF")
+          env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"}
+
+          def run(binary,data,timeout=15):
+              t=time.monotonic()
+              try:
+                  r=subprocess.run([binary],input=data,stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.PIPE,timeout=timeout,env=env)
+                  return {"exit":r.returncode,"seconds":time.monotonic()-t,
+                          "stderr_tail":r.stderr.decode(errors="replace").splitlines()[-12:]}
+              except subprocess.TimeoutExpired as e:
+                  err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
+                  return {"exit":124,"seconds":time.monotonic()-t,"stderr_tail":err.splitlines()[-12:]}
+
+          rows=[]
+          for cap in (64,256,1024,4096):
+              row={"cap":cap}
+              row["current_through_funext"]=run(f"/tmp/nucleus-cap-{cap}",current)
+              row["frozen_through_chain6"]=run(f"/tmp/nucleus-cap-{cap}",frozen)
+              rows.append(row)
+              print(json.dumps(row),flush=True)
+
+          viable=[r for r in rows if r["current_through_funext"]["exit"]==0 and r["frozen_through_chain6"]["exit"]!=124]
+          result={"rows":rows,"viable_caps":[r["cap"] for r in viable],
+                  "boundary":"diagnostic local beta-spine budget; caller budget intentionally unchanged"}
+          pathlib.Path("metatron-kernel/evidence-out/beta-spine-budget-tournament-v1/result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result),flush=True)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-beta-spine-budget-tournament-${{ github.sha }}
+          path: metatron-kernel/evidence-out/beta-spine-budget-tournament-v1
+          if-no-files-found: error
