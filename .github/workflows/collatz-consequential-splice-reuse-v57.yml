@@ -1,0 +1,48 @@
+name: Collatz consequential splice reuse V57
+on:
+  push:
+    branches: [collatz-consequential-splice-reuse-v57]
+    paths:
+      - formal/Collatz/ConsequentialSpliceReuse.lean
+      - experiments/collatz_consequential_splice_reuse_v57.py
+      - .github/workflows/collatz-consequential-splice-reuse-v57.yml
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check reused universal cylinder consequence
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence/collatz-consequential-splice-reuse-v57
+          lake build Collatz.SourceCylinderExit
+          lake env lean -DautoImplicit=false formal/Collatz/ConsequentialSpliceReuse.lean | tee evidence/collatz-consequential-splice-reuse-v57/proof.log
+      - name: Exact collision and full frozen reclosure
+        run: |
+          set -euo pipefail
+          python3 experiments/collatz_consequential_splice_reuse_v57.py > evidence/collatz-consequential-splice-reuse-v57/result.json
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          root=Path('evidence/collatz-consequential-splice-reuse-v57')
+          d=json.loads((root/'result.json').read_text())
+          assert d['frozen_child_reclosure']==dict(input=128,matched=1,new_closures=0,closed=13,remaining=115)
+          assert d['source_family_expansion_factor']==6561
+          assert d['global_collatz']=='UNKNOWN'
+          proof=(root/'proof.log').read_text()
+          assert 'collision_splice_dyadic_exit' in proof
+          assert 'collision_splice_not_minimal_bad' in proof
+          assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
+          source=Path('formal/Collatz/ConsequentialSpliceReuse.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',source)
+          print('PASS_EXISTING_WARRANT_REUSE; NEW_LIVE_CLOSURES=0; GLOBAL_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-consequential-splice-reuse-v57
+          path: evidence/collatz-consequential-splice-reuse-v57
