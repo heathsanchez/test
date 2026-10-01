@@ -1,0 +1,102 @@
+name: Collatz class merger ledger V67
+on:
+  push:
+    branches: [collatz-class-merger-ledger-v67]
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-guard-bank-reconciliation-v61
+          run-id: 36830138059
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qualified-state
+
+      - name: Install pinned Lean and build formal parents
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal | tee evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean > evidence/source-cylinder.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean formal/Collatz/GuardedExitObligation.lean > evidence/guarded-obligation.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EarlierSourceCollision.olean formal/Collatz/EarlierSourceCollision.lean > evidence/earlier-collision.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ClassMergerCylinder.olean formal/Collatz/ClassMergerCylinder.lean | tee evidence/class-merger-generic.log
+
+      - name: Reclose frozen residual with q7 merger consequences
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/collatz_class_merger_ledger_v67.py \
+            --state qualified-state/state.json \
+            --lean-out GeneratedClassMergerV67.lean \
+            > evidence/result.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('evidence/result.json'))
+          assert d['q7_nonredundant_laws']==13
+          assert d['q7_killed_residues_mod_2187']==1013
+          assert d['input_cells']==14934
+          assert d['counts']['prefixes']==1164852
+          assert d['counts']['valid_q7_merger_hits']==130
+          assert d['whole_cells_closed']==121
+          assert d['remaining_cells']==14813
+          assert d['first_residual_separator']['residual']==30
+          assert d['first_residual_separator']['q7_congruence_matches']==74
+          b=d['first_residual_separator']['best_candidate']
+          assert b['source_minus_lower0']==0
+          assert b['source_slope_minus_lower_slope']==0
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+          print('121_Q7_CLASS_MERGER_CELLS_DISCOVERED; FIRST_RESIDUAL_30_IDENTITY_MARGIN')
+          PY
+
+      - name: Kernel check all generated class-merger consumers
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean -DautoImplicit=false GeneratedClassMergerV67.lean | tee evidence/generated-mergers.log
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json,re
+          from pathlib import Path
+          logs=''.join(Path('evidence',p).read_text() for p in [
+            'class-merger-generic.log','generated-mergers.log'])
+          assert 'sorryAx' not in logs
+          assert 'Lean.ofReduceBool' not in logs
+          assert len(re.findall(r"v67_q7_merge_[0-9]+.*depends on axioms",logs))==121
+          d=json.load(open('evidence/result.json'))
+          result={
+            'schema':'COLLATZ_CLASS_MERGER_LEDGER_V67_QUALIFICATION',
+            'status':'WARRANTED_BOUNDED',
+            'kernel_checked_whole_cell_mergers':121,
+            'input_cells':d['input_cells'],
+            'remaining_cells':d['remaining_cells'],
+            'first_residual_separator':d['first_residual_separator'],
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+            'boundary':'q7 class-merger capability reclosed on exact frozen V61 residual; no universal completeness claim'
+          }
+          result['certificate_sha256']=hashlib.sha256(
+              json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+          cp GeneratedClassMergerV67.lean evidence/
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-class-merger-ledger-v67
+          path: evidence
+          if-no-files-found: error
