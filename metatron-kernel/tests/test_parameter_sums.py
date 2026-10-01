@@ -80,7 +80,8 @@ class ParameterSums(unittest.TestCase):
     def test_each_parameter_iota_branch(self):
         for name,target in OBLIGATIONS[::2]:
             for j in range(2):
-                self.assertEqual(self.run_rows(self.iota_rows(name,target,j)),0)
+                with self.subTest(target=target,constructor=j):
+                    self.assertEqual(self.run_rows(self.iota_rows(name,target,j)),0)
 
     def iota_rows(self,name,target,index):
         r=self.rows(name,target)
@@ -89,6 +90,7 @@ class ParameterSums(unittest.TestCase):
         nn=max(x.get('in',0)for x in r)+1
         nl=max(x.get('il',0)for x in r)+1
         r.append({'il':nl,'succ':0})
+        r.append({'il':nl+1,'succ':nl})
         def expr(kind,v):
             nonlocal ne
             n=ne;ne+=1;r.append({'ie':n,kind:v});return n
@@ -112,7 +114,8 @@ class ParameterSums(unittest.TestCase):
         c=b['ctors'][index]
         major=app(const(c['name'],levels),*params)
         if c['numFields']:major=app(major,proposition)
-        reduced=app(const(b['recs'][0]['name'],[nl]+levels),*params,motive,*minors,major)
+        # motive returns Type 0, hence it inhabits (sum -> Type 1).
+        reduced=app(const(b['recs'][0]['name'],[nl+1]+levels),*params,motive,*minors,major)
         r.append({'in':nn,'str':{'pre':0,'str':f'parameterIota{index}'}})
         r.append({'def':{'name':nn,'levelParams':[],'all':[nn],'type':reduced,'value':proposition,'hints':'opaque','safety':'safe'}})
         return r
