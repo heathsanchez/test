@@ -1,0 +1,131 @@
+name: Nucleus beta eta cost locate v1
+
+on:
+  push:
+    branches: [nucleus-beta-eta-cost-locate-v1]
+    paths:
+      - ".github/workflows/nucleus-beta-eta-cost-locate-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+
+jobs:
+  locate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build candidate
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch frozen Round 1 corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/a
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/r1
+
+      - name: Binary-search first expensive declaration boundary
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/beta-eta-cost-locate-v1
+          python3 - <<'PY'
+          import json,pathlib,subprocess,time,os
+
+          src=pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson")
+          lines=src.read_text().splitlines()
+          names={0:""}
+          boundaries=[]
+
+          def nname(i):
+              return names.get(i,f"#{i}")
+
+          for idx,line in enumerate(lines):
+              rec=json.loads(line)
+              if "in" in rec:
+                  val=rec.get("str",rec.get("num"))
+                  if isinstance(val,dict):
+                      pre=val.get("pre",0)
+                      atom=val.get("str",val.get("i",val.get("num","?")))
+                      names[rec["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+              labels=[]
+              for kind in ("def","thm","axiom","opaque","quot"):
+                  if kind in rec:
+                      d=rec[kind]
+                      if isinstance(d,dict) and "name" in d:
+                          labels.append(f"{kind}:{nname(d['name'])}")
+              if "inductive" in rec:
+                  ind=rec["inductive"]
+                  ds=[]
+                  for key in ("types","ctors","recs"):
+                      for d in ind.get(key,[]):
+                          if isinstance(d,dict) and "name" in d:
+                              ds.append(nname(d["name"]))
+                  labels.append("inductive:"+",".join(ds[:4]))
+              if labels:
+                  boundaries.append({"line":idx+1,"label":"|".join(labels)})
+
+          env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          trials=[]
+
+          def run_boundary(k,timeout=6):
+              b=boundaries[k]
+              data=("\n".join(lines[:b["line"]])+"\n").encode()
+              t=time.monotonic()
+              try:
+                  r=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.PIPE,timeout=timeout,env=env)
+                  rec={"k":k,"line":b["line"],"label":b["label"],"exit":r.returncode,
+                       "seconds":time.monotonic()-t,
+                       "stderr_tail":r.stderr.decode(errors="replace").splitlines()[-8:]}
+              except subprocess.TimeoutExpired as e:
+                  err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
+                  rec={"k":k,"line":b["line"],"label":b["label"],"exit":124,
+                       "seconds":time.monotonic()-t,"stderr_tail":err.splitlines()[-8:]}
+              trials.append(rec)
+              print(json.dumps(rec),flush=True)
+              return rec
+
+          lo=-1
+          hi=len(boundaries)-1
+          full=run_boundary(hi)
+          if full["exit"] != 124:
+              result={"classification":"NO_6S_PREFIX_TIMEOUT","boundaries":len(boundaries),
+                      "full":full,"trials":trials}
+          else:
+              while hi-lo>1:
+                  mid=(lo+hi)//2
+                  r=run_boundary(mid)
+                  if r["exit"]==124:
+                      hi=mid
+                  else:
+                      lo=mid
+              slow=trials[-1] if trials[-1]["k"]==hi else run_boundary(hi)
+              fast=None if lo<0 else (next((x for x in trials if x["k"]==lo),None) or run_boundary(lo))
+              result={"classification":"FIRST_6S_TIMEOUT_BOUNDARY","boundaries":len(boundaries),
+                      "last_fast":fast,"first_slow":slow,"trials":trials}
+
+          out=pathlib.Path("metatron-kernel/evidence-out/beta-eta-cost-locate-v1/result.json")
+          out.write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result),flush=True)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-beta-eta-cost-locate-${{ github.sha }}
+          path: metatron-kernel/evidence-out/beta-eta-cost-locate-v1
+          if-no-files-found: error
