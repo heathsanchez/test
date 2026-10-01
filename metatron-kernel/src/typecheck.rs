@@ -185,7 +185,17 @@ impl<'a> TypeChecker<'a> {
         // This cache is local to one public judgment. A frame has one fixed
         // typing context in that judgment, and every binder allocates a fresh
         // frame identity. Never reuse UNKNOWN, refutations, or another scope.
-        let key = (expression, frame.id());
+        // Constants and sorts are term-frame independent. Constant inference
+        // constructs its result with EnvFrame::empty(), and sort inference uses
+        // only the level substitution, so fresh local frame identity cannot
+        // affect either result. Quotient that irrelevant distinction in the
+        // per-judgment inference cache; all other expressions retain exact
+        // frame identity.
+        let cache_frame = match self.expressions.get(expression) {
+            Some(Expr::Const { .. }) | Some(Expr::Sort(_)) => 0,
+            _ => frame.id(),
+        };
+        let key = (expression, cache_frame);
         if let Some(value) = cache.get(&key) {
             return if take_step(remaining) {
                 Judgment::proven(value.clone(), "shared-expression-inference")
