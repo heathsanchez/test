@@ -1,0 +1,91 @@
+{
+  "candidate_sha": "0659bc671a4ef536ed4a096deacd0c61b1ca927e",
+  "reference_sha": "68c66fa18c1afe029512b90ecfe0b162c0dcd8fb",
+  "rows": [
+    {
+      "test": "perf/magma-list-pair-n7",
+      "target": "Iff",
+      "input_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "slice_sha256": "9272c4000bc8a7be079dbc1a1c18a2bd0c9c64e9913d533dd63147c7cfd59c27",
+      "slice_bytes": 58074,
+      "base": 2,
+      "candidate": 0,
+      "references": {
+        "kam": {
+          "exit": 0,
+          "stderr": "loaded 1 declarations, 48 exprs (48 unique), 1304 names in 0.000458925s\nchecked 1 declarations, 0 failed, 0 added unchecked, in 0.00068593s; 0 reduction steps; 49 exprs live\ncounters: defeq 14 (quick 14, proof-irrel 0, lazy 0, binding 0); infer 62 (hit 20); whnf 0 (hit 0); whnf_core 0 (hit 0)\nsubst engine: unfold 0, iota/proj/quot 0; spine-prefix cache hits 0\nmachine: app 0, bvar 0, beta 0, let 0, delta 0, iota 0, proj 0, enter value/delayed/re-eval 0/0/0, memo hit/insert 0/0\ndeclarations rechecked with fusion: 0\nintern: permanent probes 0 (hits 0), temporary hits 0, new 0; by kind bvar 0 fvar 0 sort 0 const 0 app 0 lam 0 pi 0 let 0 lit 0 proj 0 clos 0\nfixpoint rules: derived 0, rejected 0, applied 0\nfusion: bodies 0, unfolds 0, betas 0, iotas 0, projs 0, overflows 0\nclosures: 54 created, 41 exposed, 26 envs, 7 composed, 0 expanded\nnat ops: 0, first-operand limbs 0, GMP 0 Gcycles, literal interning 0 Gcycles\npeak exprs in a declaration: 172; thunk pool 0 MB; env pool 0 MB; thunks live/total 0/0; envs live/total 0/0; peak live thunks 0, envs 0, frames 0\n"
+        },
+        "subst": {
+          "exit": 0,
+          "stderr": "loaded 1 declarations, 48 exprs (48 unique), 1304 names in 0.000480235s\nchecked 1 declarations, 0 failed, 0 added unchecked, in 0.000361845s; 0 reduction steps; 49 exprs live\ncounters: defeq 14 (quick 14, proof-irrel 0, lazy 0, binding 0); infer 62 (hit 20); whnf 0 (hit 0); whnf_core 0 (hit 0)\nsubst engine: unfold 0, iota/proj/quot 0; spine-prefix cache hits 0\nmachine: app 0, bvar 0, beta 0, let 0, delta 0, iota 0, proj 0, enter value/delayed/re-eval 0/0/0, memo hit/insert 0/0\ndeclarations rechecked with fusion: 0\nintern: permanent probes 0 (hits 0), temporary hits 0, new 0; by kind bvar 0 fvar 0 sort 0 const 0 app 0 lam 0 pi 0 let 0 lit 0 proj 0 clos 0\nfixpoint rules: derived 0, rejected 0, applied 0\nfusion: bodies 0, unfolds 0, betas 0, iotas 0, projs 0, overflows 0\nclosures: 54 created, 41 exposed, 26 envs, 7 composed, 0 expanded\nnat ops: 0, first-operand limbs 0, GMP 0 Gcycles, literal interning 0 Gcycles\npeak exprs in a declaration: 172; thunk pool 0 MB; env pool 0 MB; thunks live/total 0/0; envs live/total 0/0; peak live thunks 0, envs 0, frames 0\n"
+        }
+      },
+      "full_exit": 2,
+      "next": "NUCLEUS_DOWNSTREAM:name=Nat.decEq.match_1:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "test": "perf/magma-list-pair-n21",
+      "target": "Iff",
+      "input_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "slice_sha256": "86b5a80be9373781fb7e1a077da5f3514f39085cd81ff666f0312eac801e7c99",
+      "slice_bytes": 58074,
+      "base": 2,
+      "candidate": 0,
+      "references": {
+        "kam": {
+          "exit": 0,
+          "stderr": "loaded 1 declarations, 48 exprs (48 unique), 1304 names in 0.000631718s\nchecked 1 declarations, 0 failed, 0 added unchecked, in 0.000641296s; 0 reduction steps; 49 exprs live\ncounters: defeq 14 (quick 14, proof-irrel 0, lazy 0, binding 0); infer 62 (hit 20); whnf 0 (hit 0); whnf_core 0 (hit 0)\nsubst engine: unfold 0, iota/proj/quot 0; spine-prefix cache hits 0\nmachine: app 0, bvar 0, beta 0, let 0, delta 0, iota 0, proj 0, enter value/delayed/re-eval 0/0/0, memo hit/insert 0/0\ndeclarations rechecked with fusion: 0\nintern: permanent probes 0 (hits 0), temporary hits 0, new 0; by kind bvar 0 fvar 0 sort 0 const 0 app 0 lam 0 pi 0 let 0 lit 0 proj 0 clos 0\nfixpoint rules: derived 0, rejected 0, applied 0\nfusion: bodies 0, unfolds 0, betas 0, iotas 0, projs 0, overflows 0\nclosures: 54 created, 41 exposed, 26 envs, 7 composed, 0 expanded\nnat ops: 0, first-operand limbs 0, GMP 0 Gcycles, literal interning 0 Gcycles\npeak exprs in a declaration: 172; thunk pool 0 MB; env pool 0 MB; thunks live/total 0/0; envs live/total 0/0; peak live thunks 0, envs 0, frames 0\n"
+        },
+        "subst": {
+          "exit": 0,
+          "stderr": "loaded 1 declarations, 48 exprs (48 unique), 1304 names in 0.000437276s\nchecked 1 declarations, 0 failed, 0 added unchecked, in 0.000325296s; 0 reduction steps; 49 exprs live\ncounters: defeq 14 (quick 14, proof-irrel 0, lazy 0, binding 0); infer 62 (hit 20); whnf 0 (hit 0); whnf_core 0 (hit 0)\nsubst engine: unfold 0, iota/proj/quot 0; spine-prefix cache hits 0\nmachine: app 0, bvar 0, beta 0, let 0, delta 0, iota 0, proj 0, enter value/delayed/re-eval 0/0/0, memo hit/insert 0/0\ndeclarations rechecked with fusion: 0\nintern: permanent probes 0 (hits 0), temporary hits 0, new 0; by kind bvar 0 fvar 0 sort 0 const 0 app 0 lam 0 pi 0 let 0 lit 0 proj 0 clos 0\nfixpoint rules: derived 0, rejected 0, applied 0\nfusion: bodies 0, unfolds 0, betas 0, iotas 0, projs 0, overflows 0\nclosures: 54 created, 41 exposed, 26 envs, 7 composed, 0 expanded\nnat ops: 0, first-operand limbs 0, GMP 0 Gcycles, literal interning 0 Gcycles\npeak exprs in a declaration: 172; thunk pool 0 MB; env pool 0 MB; thunks live/total 0/0; envs live/total 0/0; peak live thunks 0, envs 0, frames 0\n"
+        }
+      },
+      "full_exit": 2,
+      "next": "NUCLEUS_DOWNSTREAM:name=Nat.decEq.match_1:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "test": "init-prelude",
+      "target": "Substring.Raw",
+      "input_sha256": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5",
+      "slice_sha256": "bc78880943443606295f3ad9fd900711690d180e179fc09705c4c3eb3169fb6b",
+      "slice_bytes": 534012,
+      "base": 2,
+      "candidate": 0,
+      "references": {
+        "kam": {
+          "exit": 0,
+          "stderr": "loaded 263 declarations, 7664 exprs (7664 unique), 1687 names in 0.00208129s\nchecked 263 declarations, 0 failed, 0 added unchecked, in 0.0162347s; 5462 reduction steps; 7665 exprs live\ncounters: defeq 8052 (quick 7147, proof-irrel 2, lazy 587, binding 284); infer 21541 (hit 7060); whnf 591 (hit 90); whnf_core 0 (hit 0)\nsubst engine: unfold 813, iota/proj/quot 161; spine-prefix cache hits 0\nmachine: app 1913, bvar 53, beta 812, let 0, delta 327, iota 76, proj 35, enter value/delayed/re-eval 12/299/0, memo hit/insert 2/29\ndeclarations rechecked with fusion: 0\nintern: permanent probes 0 (hits 0), temporary hits 0, new 0; by kind bvar 0 fvar 0 sort 0 const 0 app 0 lam 0 pi 0 let 0 lit 0 proj 0 clos 0\nfixpoint rules: derived 0, rejected 0, applied 0\nfusion: bodies 0, unfolds 0, betas 0, iotas 0, projs 0, overflows 0\nclosures: 26145 created, 17135 exposed, 11939 envs, 3839 composed, 132 expanded\nnat ops: 23, first-operand limbs 3, GMP 0 Gcycles, literal interning 0 Gcycles\npeak exprs in a declaration: 8861; thunk pool 0 MB; env pool 0 MB; thunks live/total 1/1372; envs live/total 0/1161; peak live thunks 60, envs 54, frames 8\n"
+        },
+        "subst": {
+          "exit": 0,
+          "stderr": "loaded 263 declarations, 7664 exprs (7664 unique), 1687 names in 0.00180706s\nchecked 263 declarations, 0 failed, 0 added unchecked, in 0.0154555s; 2410 reduction steps; 7665 exprs live\ncounters: defeq 8050 (quick 7147, proof-irrel 2, lazy 585, binding 284); infer 21536 (hit 7057); whnf 714 (hit 128); whnf_core 0 (hit 0)\nsubst engine: unfold 1132, iota/proj/quot 179; spine-prefix cache hits 0\nmachine: app 0, bvar 0, beta 0, let 0, delta 0, iota 0, proj 0, enter value/delayed/re-eval 0/0/0, memo hit/insert 0/0\ndeclarations rechecked with fusion: 0\nintern: permanent probes 0 (hits 0), temporary hits 0, new 0; by kind bvar 0 fvar 0 sort 0 const 0 app 0 lam 0 pi 0 let 0 lit 0 proj 0 clos 0\nfixpoint rules: derived 0, rejected 0, applied 0\nfusion: bodies 0, unfolds 0, betas 0, iotas 0, projs 0, overflows 0\nclosures: 27171 created, 18043 exposed, 12023 envs, 3974 composed, 132 expanded\nnat ops: 0, first-operand limbs 0, GMP 0 Gcycles, literal interning 0 Gcycles\npeak exprs in a declaration: 8861; thunk pool 0 MB; env pool 0 MB; thunks live/total 0/0; envs live/total 0/0; peak live thunks 0, envs 0, frames 0\n"
+        }
+      },
+      "full_exit": 2,
+      "next": "NUCLEUS_DOWNSTREAM:name=Lean.SourceInfo:stage=inductive:verdict=Unknown\n"
+    },
+    {
+      "test": "perf/grind-ring-5",
+      "target": "Substring.Raw",
+      "input_sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "slice_sha256": "fb45b585a85d3f6866ea5b9039913d0a59e8a657474ca45c15652eb6735fd8b0",
+      "slice_bytes": 532941,
+      "base": 2,
+      "candidate": 0,
+      "references": {
+        "kam": {
+          "exit": 0,
+          "stderr": "loaded 263 declarations, 7664 exprs (7664 unique), 1653 names in 0.00299806s\nchecked 263 declarations, 0 failed, 0 added unchecked, in 0.0175633s; 5462 reduction steps; 7665 exprs live\ncounters: defeq 8052 (quick 7147, proof-irrel 2, lazy 587, binding 284); infer 21541 (hit 7060); whnf 591 (hit 90); whnf_core 0 (hit 0)\nsubst engine: unfold 813, iota/proj/quot 161; spine-prefix cache hits 0\nmachine: app 1913, bvar 53, beta 812, let 0, delta 327, iota 76, proj 35, enter value/delayed/re-eval 12/299/0, memo hit/insert 2/29\ndeclarations rechecked with fusion: 0\nintern: permanent probes 0 (hits 0), temporary hits 0, new 0; by kind bvar 0 fvar 0 sort 0 const 0 app 0 lam 0 pi 0 let 0 lit 0 proj 0 clos 0\nfixpoint rules: derived 0, rejected 0, applied 0\nfusion: bodies 0, unfolds 0, betas 0, iotas 0, projs 0, overflows 0\nclosures: 26145 created, 17135 exposed, 11939 envs, 3839 composed, 132 expanded\nnat ops: 23, first-operand limbs 3, GMP 0 Gcycles, literal interning 0 Gcycles\npeak exprs in a declaration: 8861; thunk pool 0 MB; env pool 0 MB; thunks live/total 1/1372; envs live/total 0/1161; peak live thunks 60, envs 54, frames 8\n"
+        },
+        "subst": {
+          "exit": 0,
+          "stderr": "loaded 263 declarations, 7664 exprs (7664 unique), 1653 names in 0.00177533s\nchecked 263 declarations, 0 failed, 0 added unchecked, in 0.0138709s; 2410 reduction steps; 7665 exprs live\ncounters: defeq 8050 (quick 7147, proof-irrel 2, lazy 585, binding 284); infer 21536 (hit 7057); whnf 714 (hit 128); whnf_core 0 (hit 0)\nsubst engine: unfold 1132, iota/proj/quot 179; spine-prefix cache hits 0\nmachine: app 0, bvar 0, beta 0, let 0, delta 0, iota 0, proj 0, enter value/delayed/re-eval 0/0/0, memo hit/insert 0/0\ndeclarations rechecked with fusion: 0\nintern: permanent probes 0 (hits 0), temporary hits 0, new 0; by kind bvar 0 fvar 0 sort 0 const 0 app 0 lam 0 pi 0 let 0 lit 0 proj 0 clos 0\nfixpoint rules: derived 0, rejected 0, applied 0\nfusion: bodies 0, unfolds 0, betas 0, iotas 0, projs 0, overflows 0\nclosures: 27171 created, 18043 exposed, 12023 envs, 3974 composed, 132 expanded\nnat ops: 0, first-operand limbs 0, GMP 0 Gcycles, literal interning 0 Gcycles\npeak exprs in a declaration: 8861; thunk pool 0 MB; env pool 0 MB; thunks live/total 0/0; envs live/total 0/0; peak live thunks 0, envs 0, frames 0\n"
+        }
+      },
+      "full_exit": 2,
+      "next": "NUCLEUS_DOWNSTREAM:name=Lean.SourceInfo:stage=inductive:verdict=Unknown\n"
+    }
+  ],
+  "boundary": "Dependency-sliced valid prefixes; no final Arena gain claimed"
+}
