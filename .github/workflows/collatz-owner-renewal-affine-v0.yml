@@ -1,0 +1,58 @@
+name: Collatz Owner Renewal Affine V0
+on:
+  push:
+    branches: [collatz-owner-renewal-affine-v0]
+    paths:
+      - .github/workflows/collatz-owner-renewal-affine-v0.yml
+      - formal/Collatz/OwnerRenewalAffine.lean
+      - experiments/collatz_owner_renewal_affine_v0.py
+      - lakefile.lean
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact affine bridge
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence/collatz-owner-renewal-affine-v0
+          lake env lean -DautoImplicit=false formal/Collatz/OwnerRenewalAffine.lean | tee evidence/collatz-owner-renewal-affine-v0/proof.log
+      - name: Qualify bounded owner-renewal accounting
+        run: |
+          set -euo pipefail
+          python3 experiments/collatz_owner_renewal_affine_v0.py --limit 4194304 --cap 256 | tee evidence/collatz-owner-renewal-affine-v0/audit.json
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          root=Path('evidence/collatz-owner-renewal-affine-v0')
+          proof=(root/'proof.log').read_text()
+          assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
+          for name in ['coalescentAffine_compose','coalescentAffine_lower_iff','coalescentAffine_threeQuarter_iff']:
+              assert name in proof
+          assert proof.count('does not depend on any axioms') == 3
+          source=Path('formal/Collatz/OwnerRenewalAffine.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',source)
+          result=json.loads((root/'audit.json').read_text())
+          assert result['certificate_sha256']=='6c7e4a86cafc2c110c242fd08e37b19d6279340deb122865345a4452540ceef0'
+          assert result['tested']==349525 and result['unresolved']==0
+          assert result['exact_replay_failures']==0 and result['affine_margin_mismatches']==0
+          assert result['low_word_quotient_status']=='REJECTED_BOUNDED'
+          assert result['extended_word_quotient_status']=='NOT_REJECTED_BOUNDED'
+          assert result['affine_source_margin_status']=='EXACT_ACCOUNTING_BOUNDED'
+          assert result['universal_status']=='UNKNOWN' and result['global_collatz']=='UNKNOWN'
+          print('OWNER_RENEWAL_AFFINE_ACCOUNTING_QUALIFIED_BOUNDED')
+          print('LOW_WORD_QUOTIENT_REJECTED; TERMINAL_VALUATION_REQUIRED')
+          print('UNIVERSAL_RECLOSURE_UNPROVED; GLOBAL_COLLATZ_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-owner-renewal-affine-v0/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-owner-renewal-affine-v0
+          path: evidence/collatz-owner-renewal-affine-v0
+          if-no-files-found: error
