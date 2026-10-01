@@ -211,7 +211,7 @@ jobs:
           set -euo pipefail
           cargo test --release contract_graph::tests::emits_canonical_path_evidence -- --nocapture \
             2>&1 | tee evidence-out/contract-path-rebind-v1/canonical-path.txt
-          cargo test --release contract_graph::tests::emits_live_residual_planner_evidence -- --nocapture \
+          cargo test --release contract_graph::tests::live_planner_distinguishes_candidate_path_from_absence -- --nocapture \
             2>&1 | tee evidence-out/contract-path-rebind-v1/live-planner.txt
 
       - uses: actions/upload-artifact@v4
