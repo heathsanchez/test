@@ -1,0 +1,223 @@
+name: Nucleus Contract Path Rebind v1
+
+on:
+  push:
+    branches: [nucleus-contract-path-rebind-v1]
+    paths:
+      - ".github/workflows/nucleus-contract-path-rebind-v1.yml"
+      - "metatron-kernel/src/contract_graph.rs"
+      - "metatron-kernel/src/lib.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BASE_SHA: 0659bc671a4ef536ed4a096deacd0c61b1ca927e
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  classify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Build restored diagnostic layer and exact semantic base
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-candidate
+
+          CARGO_TARGET_DIR=metatron-kernel/target-diagnostics \
+            cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target-diagnostics/release/metatron-kernel /tmp/nucleus-diagnostic
+
+          git worktree add --detach /tmp/nucleus-base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-base-bin
+
+      - name: Fetch frozen and current Arena corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+          test "$(find /tmp/r1 -type f -name '*.ndjson' | wc -l)" -eq 193
+          test "$(find /tmp/current -type f -name '*.ndjson' | wc -l)" -eq 194
+
+      - name: Verdict-identical reclosure and current-24 contract classification
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          mkdir -p metatron-kernel/evidence-out/contract-path-rebind-v1
+          python3 - <<'PY'
+          import collections, hashlib, json, os, pathlib, re, subprocess, time
+
+          base = pathlib.Path("/tmp/nucleus-base-bin")
+          cand = pathlib.Path("/tmp/nucleus-candidate")
+          diag = pathlib.Path("/tmp/nucleus-diagnostic")
+          outdir = pathlib.Path("metatron-kernel/evidence-out/contract-path-rebind-v1")
+
+          def run(binary, path, trace=False):
+              env = dict(os.environ)
+              if trace:
+                  env["NUCLEUS_TRACE_DOWNSTREAM"] = "1"
+              with path.open("rb") as f:
+                  t0 = time.perf_counter_ns()
+                  try:
+                      p = subprocess.run([str(binary)], stdin=f, stdout=subprocess.DEVNULL,
+                                         stderr=subprocess.PIPE, timeout=240, env=env)
+                      return p.returncode, time.perf_counter_ns()-t0, p.stderr.decode(errors="replace")
+                  except subprocess.TimeoutExpired:
+                      return 124, time.perf_counter_ns()-t0, "TIMEOUT"
+
+          def corpus(root):
+              rows=[]
+              root=pathlib.Path(root)
+              for bucket, expected in [("good",0),("bad",1)]:
+                  for p in sorted((root/bucket).rglob("*.ndjson")):
+                      name=str(p.relative_to(root/bucket)).removesuffix(".ndjson")
+                      br,bt,be=run(base,p)
+                      cr,ct,ce=run(cand,p)
+                      dr,dt,de=run(diag,p)
+                      rows.append({
+                          "test":name, "expected":expected,
+                          "input_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+                          "base":br, "candidate":cr, "diagnostic":dr,
+                          "base_ns":bt, "candidate_ns":ct, "diagnostic_ns":dt,
+                          "base_stderr":be.splitlines()[-10:],
+                          "candidate_stderr":ce.splitlines()[-10:],
+                          "diagnostic_stderr":de.splitlines()[-10:],
+                      })
+              return rows
+
+          current=corpus("/tmp/current")
+          frozen=corpus("/tmp/r1")
+
+          def summary(rows):
+              return {
+                  "tests":len(rows),
+                  "accept":sum(r["base"]==0 for r in rows),
+                  "reject":sum(r["base"]==1 for r in rows),
+                  "unknown":sum(r["base"]==2 for r in rows),
+                  "errors":[r["test"] for r in rows if r["base"] not in (0,1,2)],
+                  "candidate_changes":[r["test"] for r in rows if r["candidate"]!=r["base"]],
+                  "diagnostic_changes":[r["test"] for r in rows if r["diagnostic"]!=r["base"]],
+              }
+
+          cs, fs = summary(current), summary(frozen)
+          assert (cs["tests"],cs["accept"],cs["reject"],cs["unknown"]) == (194,110,60,24), cs
+          assert (fs["tests"],fs["accept"],fs["reject"],fs["unknown"]) == (193,108,61,24), fs
+          assert not cs["errors"] and not fs["errors"], (cs,fs)
+          assert not cs["candidate_changes"] and not fs["candidate_changes"], (cs,fs)
+          assert not cs["diagnostic_changes"] and not fs["diagnostic_changes"], (cs,fs)
+
+          rx=re.compile(r"NUCLEUS_DOWNSTREAM:name=(.*?):stage=(.*?):verdict=UNKNOWN(?:\n|:reason=(.*?)(?:\n|$))")
+          frontier=[]
+          for row in current:
+              if row["base"] != 2:
+                  continue
+              bucket="good" if row["expected"]==0 else "bad"
+              p=pathlib.Path("/tmp/current")/bucket/(row["test"]+".ndjson")
+              rc,_,stderr=run(cand,p,trace=True)
+              assert rc==2,(row["test"],rc,stderr)
+              matches=list(rx.finditer(stderr))
+              assert matches,(row["test"],stderr)
+              m=matches[-1]
+              name,stage,reason=m.group(1),m.group(2),m.group(3)
+
+              # Conservative current binding. "Existing composition" is emitted
+              # only for a fully warranted registered path; none is assumed.
+              if stage == "inductive" and name in {"Lean.SourceInfo","Option","Except"}:
+                  category="MISSING_APPLICABILITY_OR_REPRESENTATION"
+                  interface="inductive.finite-sum-telescope@1"
+                  rationale="current bounded record/singleton/recursor laws suggest a shared telescope family, but no general admission path is warranted"
+              elif stage == "inductive":
+                  category="GENUINELY_MISSING_LAW"
+                  interface="inductive.admission@1"
+                  rationale="current qualified admission envelopes do not cover this recursive/indexed/nested family"
+              elif reason == "application-function-type":
+                  category="MISSING_APPLICABILITY_OR_REPRESENTATION"
+                  interface="type.pi-exposure@1"
+                  rationale="application inference exists; the failure is exposing a usable Pi/function type at this callsite"
+              elif reason == "distinct-neutral-heads" and row["expected"] == 0:
+                  category="MISSING_APPLICABILITY_OR_REPRESENTATION"
+                  interface="conversion.exposure-or-congruence@1"
+                  rationale="positive conversion remains blocked at exposed neutral heads; existing reduction/congruence machinery is insufficiently applicable"
+              elif reason == "distinct-neutral-heads" and row["expected"] == 1:
+                  category="GENUINELY_MISSING_LAW"
+                  interface="conversion.certified-nonconversion@1"
+                  rationale="a negative verdict requires a new positive warrant of nonconversion; mismatch alone is not authority"
+              else:
+                  category="GENUINELY_MISSING_LAW"
+                  interface="semantic.residual@1"
+                  rationale="no conservative registered path from the current qualified interface set"
+
+              frontier.append({
+                  "test":row["test"],"expected":row["expected"],"name":name,
+                  "stage":stage,"reason":reason,"category":category,
+                  "required_interface":interface,"rationale":rationale,
+              })
+
+          assert len(frontier)==24, len(frontier)
+          counts=collections.Counter(r["category"] for r in frontier)
+          by_interface=collections.Counter(r["required_interface"] for r in frontier)
+
+          result={
+              "schema":"nucleus-contract-path-rebind-v1",
+              "base_sha":os.environ["BASE_SHA"],
+              "candidate_sha":os.environ["GITHUB_SHA"],
+              "diagnostic_only":True,
+              "semantic_verdict_identity":True,
+              "current":cs,
+              "frozen":fs,
+              "frontier_count":len(frontier),
+              "partition":dict(counts),
+              "interfaces":dict(by_interface),
+              "frontier":frontier,
+              "epistemic_note":"classification is diagnostic planning evidence only; it grants no ACCEPT/REJECT authority",
+          }
+          (outdir/"result.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          (outdir/"rows.json").write_text(json.dumps({"current":current,"frozen":frozen},indent=2)+"\n")
+          print(json.dumps({
+              "current":cs,
+              "frozen":fs,
+              "partition":dict(counts),
+              "interfaces":dict(by_interface),
+          },sort_keys=True),flush=True)
+          PY
+
+      - name: Preserve restored contract-graph test evidence
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo test --release contract_graph::tests::emits_canonical_path_evidence -- --nocapture \
+            2>&1 | tee evidence-out/contract-path-rebind-v1/canonical-path.txt
+          cargo test --release contract_graph::tests::emits_live_residual_planner_evidence -- --nocapture \
+            2>&1 | tee evidence-out/contract-path-rebind-v1/live-planner.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-contract-path-rebind-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/contract-path-rebind-v1
+          if-no-files-found: warn
