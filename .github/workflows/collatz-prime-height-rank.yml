@@ -1,0 +1,56 @@
+name: Collatz Prime Height Rank
+on:
+  push:
+    branches: [collatz-prime-height-rank-20261001]
+    paths:
+      - .github/workflows/collatz-prime-height-rank.yml
+      - formal/Collatz/PrimeHeightRank.lean
+      - experiments/collatz_prime_height_rank_20261001.py
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned parent
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build CollatzFinal
+      - name: Qualify exact theorem and orbit witnesses
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-prime-height-rank
+          for module in ReturnFixedPointDescent AffineBudget ReturnDefectTransport GuardedDyadicSwitch SourceCylinderExit; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" >> evidence/collatz-prime-height-rank/parents.log
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/PrimeHeightRank.lean | tee evidence/collatz-prime-height-rank/proof.log
+          python3 experiments/collatz_prime_height_rank_20261001.py > evidence/collatz-prime-height-rank/audit.json
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          root=Path('evidence/collatz-prime-height-rank')
+          s=(root/'proof.log').read_text()
+          assert 'sorryAx' not in s and 'Lean.ofReduceBool' not in s
+          for name in ['affineBudget_debt_identity','affineBudget_anchored_exit_iff','prime_height_rank_cone_empty']+[f'prime_height_point_{k}' for k in (175,178,187,195,220,225,230,237,243,247)]:
+              assert name in s
+          assert s.count('does not depend on any axioms')==10
+          source=Path('formal/Collatz/PrimeHeightRank.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',source)
+          r=json.loads((root/'audit.json').read_text())
+          assert r['certificate_sha256']=='18b26928552898aaab415cc8aabdbee6c3e8bd7b4fd04ff65ce7bb80e1cf7567'
+          assert r['global_collatz']=='UNKNOWN'
+          print('ANCHORED_BUDGET_CRITERION_AND_DECLARED_PRIME_HEIGHT_RANK_OBSTRUCTION_QUALIFIED')
+          print('IMMEDIATE_LINEAR_RANK_REJECTED; EVENTUAL_PROGRESS_UNPROVED')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-prime-height-rank/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-prime-height-rank
+          path: evidence/collatz-prime-height-rank
+          if-no-files-found: error
