@@ -1,0 +1,37 @@
+name: Collatz guard bank reconciliation V61
+on:
+  push:
+    branches: [collatz-guard-bank-reconciliation-v61]
+    paths:
+      - experiments/collatz_guard_bank_reconciliation_v61.py
+      - .github/workflows/collatz-guard-bank-reconciliation-v61.yml
+permissions: {contents: read, actions: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-backward-symbolic-cover-20260930
+          run-id: 36663027013
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qualified-bank
+      - name: Saturate from qualified durable evidence before measuring gain
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-guard-bank-reconciliation-v61
+          python3 experiments/collatz_guard_bank_reconciliation_v61.py --bank-dir qualified-bank > evidence/collatz-guard-bank-reconciliation-v61/state.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-guard-bank-reconciliation-v61/state.json'))
+          assert d['v60_lineage']['incremental_original_family_closure']==0
+          assert d['saturation']['residual_slots']==22485
+          assert len(d['active_900_residual']['full_bank_residues'])==114
+          assert d['global_collatz']=='UNKNOWN'
+          print('PASS_FULL_BANK_SATURATION; V60_REDISCOVERY_NOT_NEW_CLOSURE; GLOBAL_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-guard-bank-reconciliation-v61
+          path: evidence/collatz-guard-bank-reconciliation-v61
