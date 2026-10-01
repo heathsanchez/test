@@ -77,7 +77,7 @@ theorem smaller_than_27_in_bank (p : Nat) (hp : 0 < p) (hlt : p < 27) :
 theorem small27_forward : ForwardInvariant shortcut Small27 := by
   intro y hy
   simp only [Small27, List.mem_cons, List.not_mem_nil, or_false] at hy
-  rcases hy with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+  rcases hy with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> unfold Small27 <;> decide
 
 theorem small27_iter (p b : Nat) (hp : Small27 p) :
     Small27 (iter shortcut b p) := by
@@ -136,6 +136,13 @@ theorem source_27_macro_recharges :
   exact ⟨⟨-69, by decide, by decide⟩,
     ⟨-39, by decide, by decide⟩, ⟨-3, by decide, by decide⟩⟩
 
+/-- Its own centre still spends exactly three dyadic bits. The missing rule
+is about choosing/resetting centres, not failure of self-transport. -/
+theorem source_27_macro_own_defect_consumption :
+    DyadicOrder (returnDefect 9 7 8 137) 4 ∧
+    DyadicOrder (returnDefect 9 7 8 155) 1 := by
+  exact ⟨⟨-9, by decide, by decide⟩, ⟨-81, by decide, by decide⟩⟩
+
 /-- Reject universal strict decrease of this fixed-reference rank for arbitrary
 actual negative-budget macros. No membership in a narrower frozen protected
 return grammar is asserted. Eventual progress remains possible. -/
@@ -153,6 +160,7 @@ theorem fixed_reference_rank_not_universal :
 #print axioms source_27_recharge_segment_live
 #print axioms source_27_macro_budget
 #print axioms source_27_macro_recharges
+#print axioms source_27_macro_own_defect_consumption
 #print axioms fixed_reference_rank_not_universal
 
 end CollatzFinal.SourceProduct
