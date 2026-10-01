@@ -80,7 +80,7 @@ jobs:
           current=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
           chain6=prefix(frozen,"chain6_datF")
           funext=prefix(current,"funext")
-          env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1","NUCLEUS_TRACE_PROJECTED_CACHE":"1"}
 
           def run(binary,data=None,path=None,timeout=20):
               t=time.monotonic()
@@ -105,7 +105,10 @@ jobs:
             "k_rec_conv":run("/tmp/nucleus-candidate",path="/tmp/current/bad/bugs/k-rec-conv.ndjson",timeout=5),
             "fun_eta_bad":run("/tmp/nucleus-candidate",path="/tmp/current/bad/tutorial/116_funEtaBad.ndjson",timeout=5),
           }
-          result["cache_hits"]="not_traced_in_timing_run"
+          result["cache_hits"]=sum(
+              x=="NUCLEUS_PROJECTED_CACHE_HIT" or x.startswith("NUCLEUS_PROJECTED_CACHE_HIT:")
+              for x in result["candidate_chain6"]["stderr"].splitlines()
+          ) if "stderr" in result["candidate_chain6"] else 0
           for x in result.values():
               if isinstance(x,dict) and "stderr" in x:
                   x["stderr_tail"]=x["stderr"].splitlines()[-40:]
