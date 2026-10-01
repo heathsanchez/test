@@ -71,7 +71,7 @@ There is no unresolved or unsupported cycle constructor. -/
 inductive ExitCertificate (source : Nat) : Nat → Type where
   | hit (current : Nat) (hexit : OrdinaryExit source current) :
       ExitCertificate source current
-  | macro (current target depth : Nat)
+  | viaMacro (current target depth : Nat)
       (hadmit : iter shortcut depth current = target)
       (child : ExitCertificate source target) : ExitCertificate source current
   | coalescent (current target a b : Nat)
@@ -83,7 +83,7 @@ theorem ExitCertificate.sound {source current : Nat}
     ExitObligation source current := by
   induction certificate with
   | hit current hexit => exact ⟨0, hexit⟩
-  | macro current target depth hadmit child ih =>
+  | viaMacro current target depth hadmit child ih =>
       exact exit_obligation_of_guarded_macro source current target depth hadmit ih
   | coalescent current target a b hmerge child ih =>
       exact (exit_obligation_coalescent_iff source current target a b hmerge).mpr ih
