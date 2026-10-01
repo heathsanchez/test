@@ -1205,9 +1205,20 @@ fn positive_projection_congruence(
                 {
                     let left_support = checker.diagnostic_closure_outer_support(l);
                     let right_support = checker.diagnostic_closure_outer_support(r);
+                    let left_signature = checker.diagnostic_closure_support_signature(l);
+                    let right_signature = checker.diagnostic_closure_support_signature(r);
                     eprintln!(
-                        "NUCLEUS_PROJECTION_CONGRUENCE_SEPARATOR:depth={}:congruence_depth={}:index={}:verdict={:?}:left={:?}:right={:?}:left_support={:?}:right_support={:?}",
-                        depth, congruence_depth, index, verdict, l, r, left_support, right_support
+                        "NUCLEUS_PROJECTION_CONGRUENCE_SEPARATOR:depth={}:congruence_depth={}:index={}:verdict={:?}:left={:?}:right={:?}:left_support={:?}:right_support={:?}:left_signature={:?}:right_signature={:?}",
+                        depth,
+                        congruence_depth,
+                        index,
+                        verdict,
+                        l,
+                        r,
+                        left_support,
+                        right_support,
+                        left_signature,
+                        right_signature
                     );
                 }
                 #[cfg(not(feature = "diagnostics"))]
