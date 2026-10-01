@@ -1183,20 +1183,31 @@ fn positive_projection_congruence(
         }
         _ => compare_neutral_heads(checker, left, right, budget).is_proven(),
     };
-    heads
-        && left.spine.iter().zip(&right.spine).all(|(l, r)| {
-            convert_in_context_with_congruence(
-                checker,
-                &TypeValue::Term(l.clone()),
-                &TypeValue::Term(r.clone()),
-                budget.min(1024),
-                delta_policy,
-                depth,
-                context,
-                congruence_depth + 1,
-                attempts,
-                allow_proof_type_conversion,
-            )
-            .is_proven()
-        })
+    if !heads {
+        return false;
+    }
+    for (index, (l, r)) in left.spine.iter().zip(&right.spine).enumerate() {
+        let verdict = convert_in_context_with_congruence(
+            checker,
+            &TypeValue::Term(l.clone()),
+            &TypeValue::Term(r.clone()),
+            budget.min(1024),
+            delta_policy,
+            depth,
+            context,
+            congruence_depth + 1,
+            attempts,
+            allow_proof_type_conversion,
+        );
+        if !verdict.is_proven() {
+            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONGRUENCE").is_some() {
+                eprintln!(
+                    "NUCLEUS_PROJECTION_CONGRUENCE_SEPARATOR:depth={}:congruence_depth={}:index={}:verdict={:?}:left={:?}:right={:?}",
+                    depth, congruence_depth, index, verdict, l, r
+                );
+            }
+            return false;
+        }
+    }
+    true
 }
