@@ -27,7 +27,7 @@ jobs:
           import Collatz.GuardedExitObligation
           open CollatzFinal CollatzFinal.SourceProduct
           example : ExitObligation 4 5 := by
-            exact (ExitCertificate.macro 5 2 3 (by decide)
+            exact (ExitCertificate.viaMacro 5 2 3 (by decide)
               (ExitCertificate.hit 2 (Or.inl (Or.inr rfl)))).sound
           #check collatz_of_universal_exit_certificates
           LEAN
