@@ -1,0 +1,72 @@
+name: Collatz protected future quotient V64
+on:
+  push:
+    branches: [collatz-protected-future-quotient-v64]
+    paths:
+      - formal/Collatz/ProtectedFutureQuotient.lean
+      - .github/workflows/collatz-protected-future-quotient-v64.yml
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check protected-future contraction
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence/collatz-protected-future-quotient-v64
+          lake build Collatz.GuardedExitObligation Collatz.SourceProductZeroTail
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ProtectedFutureQuotient.olean formal/Collatz/ProtectedFutureQuotient.lean | tee evidence/collatz-protected-future-quotient-v64/proof.log
+          cat > /tmp/consumer.lean <<'LEAN'
+          import Collatz.ProtectedFutureQuotient
+          open CollatzFinal CollatzFinal.SourceProduct
+          #check same_projection_same_protected_futures
+          #check collatz_of_universal_exit_obligation
+          example : protectedObservation (4, 3) := source_coordinate_separator.1
+          example : ¬ protectedObservation (1, 3) := source_coordinate_separator.2
+          example : protectedObservation (1, 1) := current_coordinate_separator.1
+          LEAN
+          lake env lean /tmp/consumer.lean | tee evidence/collatz-protected-future-quotient-v64/consumer.log
+      - name: Scope and proof-boundary audit
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/collatz-protected-future-quotient-v64/result.json
+          import hashlib,json,re
+          from pathlib import Path
+          src=Path('formal/Collatz/ProtectedFutureQuotient.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',src)
+          proof=Path('evidence/collatz-protected-future-quotient-v64/proof.log').read_text()
+          assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
+          for n in [
+              'protected_step_projection',
+              'projection_iter_step',
+              'protected_future_factors',
+              'same_projection_same_protected_futures',
+              'source_coordinate_separator',
+              'current_coordinate_separator']:
+              assert n in proof
+          result={
+            'schema':'COLLATZ_PROTECTED_FUTURE_QUOTIENT_V64',
+            'status':'WARRANTED_CONTRACTION_IF_GATE_GREEN',
+            'protected_present':['original_source','current_endpoint'],
+            'erased_from_protected_semantics':['depth','odds','tail','sourceResidue','endpointResidue','centre_labels','local_rank_coordinates'],
+            'observation_family':'OrdinaryExit after every lawful shortcut continuation',
+            'source_coordinate_separator':[4,3,1,3],
+            'current_coordinate_separator':[1,1,1,3],
+            'global_quotient_minimality':'NOT_CLAIMED',
+            'universal_eventual_exit':'UNKNOWN',
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+            'next_residual':'prove universal source-indexed eventual OrdinaryExit / complete ExitCertificate generation; do not refine representation without a new future separator'
+          }
+          result['certificate_sha256']=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-protected-future-quotient-v64
+          path: evidence/collatz-protected-future-quotient-v64
