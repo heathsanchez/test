@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::environment::Environment;
 use crate::id::{ExprId, IdTable, LevelId, NameId};
@@ -287,30 +287,38 @@ impl<'a> TypeChecker<'a> {
                 match verdict {
                     Judgment::Proven { .. } => Some(true),
                     Judgment::Refuted { obstruction } => {
-                        eprintln!(
-                            "NUCLEUS_RESULT_SUPPORT_COLLISION:expression={expression:?}:frame={}:prior_frames={:?}:obstruction={}:prior_support={:?}:current_support={:?}:prior={:?}:current={:?}",
-                            frame.id(),
-                            prior_frames,
-                            obstruction.0,
-                            self.type_value_capture_support(&prior_result),
-                            self.type_value_capture_support(value),
-                            prior_result,
-                            value
-                        );
-                        Some(false)
+                        let prior_fingerprint = self.type_value_hereditary_fingerprint(&prior_result, 16384);
+                        let current_fingerprint = self.type_value_hereditary_fingerprint(value, 16384);
+                        if prior_fingerprint.is_some() && prior_fingerprint == current_fingerprint {
+                            eprintln!(
+                                "NUCLEUS_HEREDITARY_SUPPORT_REUSE:expression={expression:?}:frame={}:prior_frames={:?}:conversion_obstruction={}",
+                                frame.id(), prior_frames, obstruction.0
+                            );
+                            Some(true)
+                        } else {
+                            eprintln!(
+                                "NUCLEUS_HEREDITARY_SUPPORT_COLLISION:expression={expression:?}:frame={}:prior_frames={:?}:obstruction={}:prior_fingerprint={:?}:current_fingerprint={:?}",
+                                frame.id(), prior_frames, obstruction.0, prior_fingerprint, current_fingerprint
+                            );
+                            Some(false)
+                        }
                     }
                     Judgment::Unknown { residual } => {
-                        eprintln!(
-                            "NUCLEUS_RESULT_SUPPORT_UNRESOLVED:expression={expression:?}:frame={}:prior_frames={:?}:residual={}:prior_support={:?}:current_support={:?}:prior={:?}:current={:?}",
-                            frame.id(),
-                            prior_frames,
-                            residual.0,
-                            self.type_value_capture_support(&prior_result),
-                            self.type_value_capture_support(value),
-                            prior_result,
-                            value
-                        );
-                        None
+                        let prior_fingerprint = self.type_value_hereditary_fingerprint(&prior_result, 16384);
+                        let current_fingerprint = self.type_value_hereditary_fingerprint(value, 16384);
+                        if prior_fingerprint.is_some() && prior_fingerprint == current_fingerprint {
+                            eprintln!(
+                                "NUCLEUS_HEREDITARY_SUPPORT_REUSE:expression={expression:?}:frame={}:prior_frames={:?}:conversion_residual={}",
+                                frame.id(), prior_frames, residual.0
+                            );
+                            Some(true)
+                        } else {
+                            eprintln!(
+                                "NUCLEUS_HEREDITARY_SUPPORT_UNRESOLVED:expression={expression:?}:frame={}:prior_frames={:?}:residual={}:prior_fingerprint={:?}:current_fingerprint={:?}",
+                                frame.id(), prior_frames, residual.0, prior_fingerprint, current_fingerprint
+                            );
+                            None
+                        }
                     }
                 }
             };
@@ -349,6 +357,115 @@ impl<'a> TypeChecker<'a> {
                     frames: vec![frame.id()],
                 });
         });
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn type_value_hereditary_fingerprint(
+        &self,
+        value: &TypeValue,
+        budget: usize,
+    ) -> Option<String> {
+        let mut remaining = budget;
+        let mut seen = HashSet::new();
+        self.type_value_fingerprint_inner(value, &mut remaining, &mut seen)
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn type_value_fingerprint_inner(
+        &self,
+        value: &TypeValue,
+        remaining: &mut usize,
+        seen: &mut HashSet<(ExprId, u64)>,
+    ) -> Option<String> {
+        if *remaining == 0 { return None; }
+        *remaining -= 1;
+        match value {
+            TypeValue::Sort(level) => Some(format!("S{level:?}")),
+            TypeValue::Term(closure) => self.closure_fingerprint_inner(closure, remaining, seen),
+            TypeValue::Pi { domain, body } => Some(format!(
+                "P({})({})",
+                self.type_value_fingerprint_inner(domain, remaining, seen)?,
+                self.type_value_fingerprint_inner(body, remaining, seen)?
+            )),
+        }
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn closure_fingerprint_inner(
+        &self,
+        closure: &Closure,
+        remaining: &mut usize,
+        seen: &mut HashSet<(ExprId, u64)>,
+    ) -> Option<String> {
+        if *remaining == 0 { return None; }
+        *remaining -= 1;
+        if let Some(literal) = closure.literal() {
+            return Some(format!("N{literal:?}"));
+        }
+        let expression = closure.expression()?;
+        let cycle_key = (expression, closure.env.id());
+        if !seen.insert(cycle_key) {
+            return Some(format!("CYCLE{}", expression.0));
+        }
+        let mut level_entries: Vec<_> = closure.levels.to_map().into_iter().collect();
+        level_entries.sort_by_key(|(name, _)| name.0);
+        let mut offsets = Vec::new();
+        self.collect_outer_bvars(expression, 0, (*remaining).min(4096), &mut offsets)?;
+        offsets.sort_unstable();
+        offsets.dedup();
+        let mut parts = Vec::with_capacity(offsets.len());
+        for offset in offsets {
+            let index = u64::try_from(offset).ok()?;
+            let binding = closure.env.lookup(index)?;
+            parts.push(format!(
+                "{offset}={}",
+                self.binding_fingerprint_inner(&binding, remaining, seen)?
+            ));
+        }
+        seen.remove(&cycle_key);
+        Some(format!("E{}L{:?}[{}]", expression.0, level_entries, parts.join(",")))
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn binding_fingerprint_inner(
+        &self,
+        binding: &EnvBinding,
+        remaining: &mut usize,
+        seen: &mut HashSet<(ExprId, u64)>,
+    ) -> Option<String> {
+        if *remaining == 0 { return None; }
+        *remaining -= 1;
+        match binding {
+            EnvBinding::Free(free) => Some(format!("F{}", free.0)),
+            EnvBinding::Closure(closure) => self.closure_fingerprint_inner(closure, remaining, seen),
+            EnvBinding::Neutral(neutral) => self.neutral_fingerprint_inner(neutral, remaining, seen),
+        }
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn neutral_fingerprint_inner(
+        &self,
+        neutral: &Neutral,
+        remaining: &mut usize,
+        seen: &mut HashSet<(ExprId, u64)>,
+    ) -> Option<String> {
+        if *remaining == 0 { return None; }
+        *remaining -= 1;
+        let head = match &neutral.head {
+            NeutralHead::Free(free) => format!("F{}", free.0),
+            NeutralHead::Const { name, levels } => format!("K{}{:?}", name.0, levels),
+            NeutralHead::Projection { type_name, index, structure } => format!(
+                "R{}:{}:{}",
+                type_name.0,
+                index,
+                self.neutral_fingerprint_inner(structure, remaining, seen)?
+            ),
+        };
+        let mut spine = Vec::with_capacity(neutral.spine.len());
+        for argument in &neutral.spine {
+            spine.push(self.closure_fingerprint_inner(argument, remaining, seen)?);
+        }
+        Some(format!("H{head}({})", spine.join(",")))
     }
 
     #[cfg(feature = "diagnostics")]
