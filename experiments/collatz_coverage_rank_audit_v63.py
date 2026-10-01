@@ -50,6 +50,8 @@ def main():
         affine_law=dict(A=A,B=B,P=P,original_floor=L,budget=W),
         reference=dict(A=3,B=1,P=2),defects=defects,dyadic_orders=valuations,
         injection=injection,injection_order=order(injection),
+        own_centre_defects=[(P-A)*x-B,(P-A)*y-B],
+        own_centre_orders=[order((P-A)*x-B),order((P-A)*y-B)],
         coverage='universal exact source-product zero-tail admission proved; protected-return grammar admission remains UNKNOWN',
         progress='zero-injection strict rank proved; fixed-reference strict rank on arbitrary nonpositive-budget natural macros REFUTED',
         well_foundedness='natural rank chain exhaustion proved; globally decreasing rank not supplied',
