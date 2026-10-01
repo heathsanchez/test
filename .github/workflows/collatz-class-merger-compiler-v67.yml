@@ -1,0 +1,81 @@
+name: Collatz class merger compiler V67
+on:
+  push:
+    branches: [collatz-class-merger-compiler-v67]
+    paths:
+      - formal/Collatz/ClassMergerCompiler.lean
+      - .github/workflows/collatz-class-merger-compiler-v67.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - formal/Collatz/ClassMergerCompiler.lean
+      - .github/workflows/collatz-class-merger-compiler-v67.yml
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check canonical class-merger compilation
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence/collatz-class-merger-compiler-v67
+          lake build Collatz.SourceProductAffine Collatz.OrdinaryExitReduction Collatz.EventualMacroProgress
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ConsequentialSpliceReuse.olean formal/Collatz/ConsequentialSpliceReuse.lean
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/LiveSpliceGuard.olean formal/Collatz/LiveSpliceGuard.lean
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ComposedSeamGuard.olean formal/Collatz/ComposedSeamGuard.lean
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean formal/Collatz/GuardedExitObligation.lean
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EarlierSourceCollision.olean formal/Collatz/EarlierSourceCollision.lean
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/FutureCoalescenceQuotient.olean formal/Collatz/FutureCoalescenceQuotient.lean
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ClassMergerCompiler.olean formal/Collatz/ClassMergerCompiler.lean | tee evidence/collatz-class-merger-compiler-v67/proof.log
+          cat > /tmp/consumer.lean <<'LEAN'
+          import Collatz.ClassMergerCompiler
+          open CollatzFinal CollatzFinal.SourceProduct
+          #check LowerClassMerge
+          #check compile_ordinaryExit_on_source_orbit
+          #check v57_collision_splice_compiled
+          #check v58_live_splice_compiled
+          #check v60_composed_seam_compiled
+          #check collatz_of_universal_compiled_mergers
+          LEAN
+          lake env lean /tmp/consumer.lean | tee evidence/collatz-class-merger-compiler-v67/consumer.log
+      - name: Scope and proof-boundary audit
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/collatz-class-merger-compiler-v67/result.json
+          import hashlib,json,re
+          from pathlib import Path
+          src=Path('formal/Collatz/ClassMergerCompiler.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',src)
+          proof=Path('evidence/collatz-class-merger-compiler-v67/proof.log').read_text()
+          assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
+          names=[
+            'compile_ordinaryExit_on_source_orbit',
+            'v57_collision_splice_compiled',
+            'v58_live_splice_compiled',
+            'v60_composed_seam_compiled',
+            'collatz_of_universal_compiled_mergers'
+          ]
+          for n in names: assert n in proof
+          result={
+            'schema':'COLLATZ_CLASS_MERGER_COMPILER_V67',
+            'status':'WARRANTED_COMPILATION_IF_GATE_GREEN',
+            'canonical_capability':'LowerClassMerge(n): exists p<n and actual future equality T^a(n)=T^b(p)',
+            'compiled_historical_mechanisms':['V57 consequential splice','V58 live splice guard','V60 composed seam guard'],
+            'mechanism_labels_required_by_qed_interface':False,
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+            'next_residual':'coverage: every n>1 must admit at least one LowerClassMerge; uncovered families must emit first exact failed applicability condition'
+          }
+          result['certificate_sha256']=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-class-merger-compiler-v67
+          path: evidence/collatz-class-merger-compiler-v67
