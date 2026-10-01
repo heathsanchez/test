@@ -36,9 +36,9 @@ jobs:
           needle="        let mut eligibility_remaining=*remaining;"
           assert needle in s
           cap=os.environ["CAP"]
-          repl=f"""        let mut bounded_remaining = (*remaining).min({cap});
-        let remaining = &mut bounded_remaining;
-        let mut eligibility_remaining=*remaining;"""
+          repl=("        let mut bounded_remaining = (*remaining).min("+cap+");\\n"
+                "        let remaining = &mut bounded_remaining;\\n"
+                "        let mut eligibility_remaining=*remaining;")
           p.write_text(s.replace(needle,repl,1))
           PY
             cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
