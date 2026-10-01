@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cap: [256, 512, 1024, 2048, 4096, 8192, 16384]
+        cap: [24576, 32768, 40960, 49152, 57344, 61440]
     name: cap-${{ matrix.cap }}
     runs-on: ubuntu-24.04
     timeout-minutes: 12
