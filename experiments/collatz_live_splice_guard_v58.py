@@ -12,6 +12,15 @@ BASE = 3403982007377265835376667
 LOWER = 1516043288339062768749913
 MODULUS = 2**83
 
+def compiled_exit(d,r,u,enabled=True):
+    """Execute the qualified cylinder rule without a trajectory search."""
+    n=bank.N0+bank.NC*(r+2**d*u)
+    if not enabled or n<BASE or (n-BASE)%MODULUS:
+        return None
+    w=(n-BASE)//MODULUS
+    return dict(theorem='live_splice_guard_exit',source=str(n),
+        lower=str(LOWER+2*3**51*w),common_step=83)
+
 def main():
     assert BASE == bank.N0 + bank.NC*900
     original = bank.classify_cell(10,900)
@@ -42,6 +51,19 @@ def main():
         assert 0<p<n and orbit(n,83)[0]==orbit(p,1)[0]
         replays.append(dict(u=u,n=str(n),p=str(p)))
 
+    # Actual capability application and removal ablation on the live cell.
+    # The old cell-level bank returns UNKNOWN; this executable guard earns
+    # exits for its admitted subfamily with zero future trajectory search.
+    executed=[]
+    for u in (0,1,16384,32768):
+        hit=compiled_exit(10,900,u)
+        assert bool(hit)==(u%16384==0)
+        assert compiled_exit(10,900,u,enabled=False) is None
+        if hit:
+            n=int(hit['source']);p=int(hit['lower'])
+            assert 0<p<n and orbit(n,83)[0]==orbit(p,1)[0]
+        executed.append(dict(u=u,enabled='EXIT' if hit else 'UNKNOWN',disabled='UNKNOWN'))
+
     # Reclose the frozen 128 cells without pretending partial removal
     # eliminates a whole cell. Symbolic congruence compatibility is exact.
     closed=live=whole_new=partial=0
@@ -70,6 +92,7 @@ def main():
         reclosure=dict(input=128,previously_closed=closed,live_cells=live,
             newly_closed_whole_cells=whole_new,live_cells_with_new_certified_subcylinder=partial),
         replays=replays,
+        executed_capability_ablation=executed,
         evidence_boundary='universal dyadic cylinder is Lean checked separately; prospective eventual availability unproved',
         global_collatz='UNKNOWN')
     result['certificate_sha256']=hashlib.sha256(json.dumps(result,sort_keys=True).encode()).hexdigest()
