@@ -106,11 +106,11 @@ jobs:
           out=pathlib.Path("metatron-kernel/evidence-out/record-telescopes-v1")
           out.mkdir(parents=True,exist_ok=True)
           rows=[]
-          obligations=[(n,t,"good") for n,t in [("perf/magma-list-deep-n21","GetElem?"),("perf/magma-list-deep-n36","GetElem?"),("perf/fueled-chain","Functor")]]
+          obligations=[(n,t,"good") for n,t in [("perf/magma-list-deep-n21","GetElem?"),("perf/magma-list-deep-n36","GetElem?"),("perf/fueled-chain","Functor"),("perf/fueled-chain","Applicative"),("perf/fueled-chain","Monad")]]
           for name,target,bucket in obligations:
               p=pathlib.Path("/tmp/current")/bucket/(name+".ndjson")
               data=slice_prefix(p,target).encode()
-              sliced=out/(name.replace("/","__")+"--"+target+".ndjson")
+              sliced=out/(name.replace("/","__")+"--"+target.replace("?","Q")+".ndjson")
               sliced.write_bytes(data)
               b=subprocess.run(["/tmp/nucleus-base-bin"],input=data,capture_output=True,timeout=30)
               c=subprocess.run(["/tmp/nucleus-candidate"],input=data,capture_output=True,timeout=30)
@@ -150,7 +150,7 @@ jobs:
           from test_record_telescopes import RecordTelescopes, OBLIGATIONS
           case=RecordTelescopes();out=pathlib.Path("metatron-kernel/evidence-out/record-telescopes-v1")
           fixtures=[]
-          for name,target in OBLIGATIONS[::2]:
+          for name,target in OBLIGATIONS[::2]+[("perf/fueled-chain","Applicative")]:
               f=[x['inductive']for x in case.rows(name,target)if 'inductive'in x][-1]['ctors'][0]['numFields']
               for projection in [None]+list(range(f)):
                   data="".join(json.dumps(r)+"\n"for r in case.witness_rows(name,target,projection)).encode()
@@ -159,7 +159,7 @@ jobs:
           fixtures.append(("renamed-PProd",data))
           rows=[]
           for label,data in fixtures:
-              p=out/(label+".ndjson");p.write_bytes(data)
+              p=out/(label.replace("?","Q")+".ndjson");p.write_bytes(data)
               values={}
               for label2,command in [
                   ("candidate",["/tmp/nucleus-candidate"]),
@@ -297,6 +297,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-sum-${{ github.sha }}
+          name: nucleus-records-${{ github.sha }}
           path: metatron-kernel/evidence-out/record-telescopes-v1
           if-no-files-found: warn

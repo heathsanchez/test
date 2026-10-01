@@ -5,7 +5,7 @@ use super::*;
 pub(super) fn candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
     let ([i],[c],[r])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else { return false; };
     let Some((_,result))=pi_spine(export,i.ty,i.num_params as usize) else { return false; };
-    (1..=4).contains(&i.num_params) && c.num_fields<=3 && i.level_params.len()<=3
+    (1..=4).contains(&i.num_params) && c.num_fields<=5 && i.level_params.len()<=3
         && i.num_indices==0 && i.num_nested==0 && !i.is_recursive && !i.is_reflexive
         && !i.is_unsafe && !c.is_unsafe && !r.is_unsafe
         && c.num_params==i.num_params && c.level_params==i.level_params

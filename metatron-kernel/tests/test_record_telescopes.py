@@ -85,7 +85,7 @@ class RecordTelescopes(unittest.TestCase):
         r.append({'def':{'name':nn,'levelParams':i['levelParams'],'all':[nn],'type':ty,'value':value,'hints':'opaque','safety':'safe'}})
         return r
     def test_runtime_iota_and_projections(self):
-        for n,t in OBLIGATIONS[::2]:
+        for n,t in OBLIGATIONS[::2]+[('perf/fueled-chain','Applicative')]:
             f=[x['inductive']for x in self.rows(n,t)if 'inductive'in x][-1]['ctors'][0]['numFields']
             for projection in [None]+list(range(f)):
                 with self.subTest(target=t,projection=projection):self.assertEqual(self.run_rows(self.witness_rows(n,t,projection)),0)
