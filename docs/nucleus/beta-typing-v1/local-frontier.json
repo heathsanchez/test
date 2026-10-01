@@ -1,0 +1,170 @@
+[
+  {
+    "test": "init-prelude",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 1.591146402999584,
+    "next": "NUCLEUS_DOWNSTREAM:name=Lean.Name:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "perf/args-before-unfold",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 0.07425832099761465,
+    "next": "NUCLEUS_DOWNSTREAM:name=kernel_args_before_unfold:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  },
+  {
+    "test": "perf/folded-constant-first",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 0.03693128300074022,
+    "next": "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  },
+  {
+    "test": "perf/folded-constant-last",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 0.016858987997693475,
+    "next": "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_last:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  },
+  {
+    "test": "perf/fueled-chain",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 0.1504394500007038,
+    "next": "NUCLEUS_DOWNSTREAM:name=Except.instMonad:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+  },
+  {
+    "test": "perf/grind-ring-5",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 2.012608242999704,
+    "next": "NUCLEUS_DOWNSTREAM:name=Lean.Name:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "perf/magma-list-deep-n21",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 0.9100091920008708,
+    "next": "NUCLEUS_DOWNSTREAM:name=dite_eq_right:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  },
+  {
+    "test": "perf/magma-list-deep-n36",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 0.8573276280003483,
+    "next": "NUCLEUS_DOWNSTREAM:name=dite_eq_right:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  },
+  {
+    "test": "perf/magma-list-pair-n21",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 1.3936415329990268,
+    "next": "NUCLEUS_DOWNSTREAM:name=NeZero:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "perf/magma-list-pair-n7",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 1.281243209999957,
+    "next": "NUCLEUS_DOWNSTREAM:name=NeZero:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "perf/shared-subterm",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 0.0384505239999271,
+    "next": "NUCLEUS_DOWNSTREAM:name=kernel_shared_subterm:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  },
+  {
+    "test": "tutorial/082_RBTree.id_spec",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 0.004950105001626071,
+    "next": "NUCLEUS_DOWNSTREAM:name=RBTree.id_spec:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+  },
+  {
+    "test": "tutorial/112_structEta",
+    "expected": 0,
+    "candidate": 2,
+    "seconds": 0.003304939000372542,
+    "next": "NUCLEUS_DOWNSTREAM:name=structEta:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+  },
+  {
+    "test": "bugs/nested-unused-param",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 0.004890360996796517,
+    "next": "NUCLEUS_DOWNSTREAM:name=T:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "bugs/proj-of-stuck-prop",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 0.027999650003039278,
+    "next": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "bugs/proj-of-subst-prop",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 0.02689496700259042,
+    "next": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "bugs/rec-missing-ih",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 0.035120377000566805,
+    "next": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "bugs/rec-of-subst-prop",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 0.02215603500008001,
+    "next": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "perf/refute-cheap-first",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 1.4280202830013877,
+    "next": "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  },
+  {
+    "test": "tutorial/100_ruleKbad",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 0.0024040280004555825,
+    "next": "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  },
+  {
+    "test": "tutorial/101_ruleKAcc",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 0.0026548860005277675,
+    "next": "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  },
+  {
+    "test": "tutorial/111_indexedUnitEta",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 0.0016469330003019422,
+    "next": "NUCLEUS_DOWNSTREAM:name=IndexedUnit:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "tutorial/113_indexedStructEta",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 0.002045201999862911,
+    "next": "NUCLEUS_DOWNSTREAM:name=IndexedSingleton:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "test": "tutorial/125_accRecNoEta",
+    "expected": 1,
+    "candidate": 2,
+    "seconds": 0.0025389319998794235,
+    "next": "NUCLEUS_DOWNSTREAM:name=accRecNoEta:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  }
+]
