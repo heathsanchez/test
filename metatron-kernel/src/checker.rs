@@ -1051,6 +1051,52 @@ fn generic_nonrecursive_recursor_shape(
     true
 }
 
+// A bounded extension of singleton-Prop admission: two proposition
+// parameters and two function-valued proof fields. Shape only selects the
+// obligation; each field must still be inferred to inhabit Prop below.
+fn generic_prop_function_pair_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(), block.constructors.as_slice(), block.recursors.as_slice(),
+    ) else { return false; };
+    if inductive.num_params != 2 || inductive.num_indices != 0
+        || inductive.num_nested != 0 || inductive.is_recursive
+        || inductive.is_reflexive || inductive.is_unsafe
+        || !inductive.level_params.is_empty() || constructor.is_unsafe
+        || recursor.is_unsafe || constructor.num_params != 2
+        || constructor.num_fields != 2
+    { return false; }
+    let Some((parameters, result)) = pi_spine(export, inductive.ty, 2) else {
+        return false;
+    };
+    let Some((domains, _)) = pi_spine(export, constructor.ty, 4) else {
+        return false;
+    };
+    is_prop_sort(export, result)
+        && parameters.iter().all(|p| is_prop_sort(export, *p))
+        && domains[..2] == parameters[..]
+        && domains[2..].iter().all(|field|
+            matches!(export.exprs.get(*field), Some(Expr::Pi { .. }))
+                && !expression_contains_constant(export, *field, inductive.name))
+}
+
+fn prop_function_pair_rule_annotations(
+    export: &ResolvedExport,
+    constructor: &Constructor,
+    recursor: &Recursor,
+) -> bool {
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 4) else { return false; };
+    let Some((rec_domains, _)) = pi_spine(export, recursor.ty, 5) else { return false; };
+    let [rule] = recursor.rules.as_slice() else { return false; };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, 6) else { return false; };
+    rec_domains[..4].iter().zip(&rule_domains[..4]).all(|(a, b)|
+        expr_eq_with_bvar_shift(export, *a, *b, 0, 0))
+        && fields[2..].iter().zip(&rule_domains[4..]).enumerate().all(|(i, (a, b))|
+            expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
+}
+
 fn generic_prop_singleton_large_elim_candidate(
     export: &ResolvedExport,
     block: &InductiveBlock,
@@ -1063,10 +1109,11 @@ fn generic_prop_singleton_large_elim_candidate(
         return false;
     };
 
-    generic_nonrecursive_prop_small_candidate(export, block)
+    ((generic_nonrecursive_prop_small_candidate(export, block)
         && inductive.num_params <= 1
+        && constructor.num_fields == 1)
+        || generic_prop_function_pair_candidate(export, block))
         && constructor.num_params == inductive.num_params
-        && constructor.num_fields == 1
         && recursor.level_params.len() == inductive.level_params.len().saturating_add(1)
         && recursor.level_params.get(1..) == Some(inductive.level_params.as_slice())
 }
@@ -1083,14 +1130,15 @@ fn generic_prop_singleton_field_is_proposition(
     let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
         return false;
     };
-    if parameter_count > 1 || constructor.num_fields != 1 {
+    let Ok(field_count) = usize::try_from(constructor.num_fields) else { return false; };
+    if !((parameter_count <= 1 && field_count == 1) || (parameter_count == 2 && field_count == 2)) {
         return false;
     }
     let Some((inductive_parameters, _)) = pi_spine(export, inductive.ty, parameter_count) else {
         return false;
     };
     let Some((constructor_domains, _)) =
-        pi_spine(export, constructor.ty, parameter_count.saturating_add(1))
+        pi_spine(export, constructor.ty, parameter_count.saturating_add(field_count))
     else {
         return false;
     };
@@ -1113,15 +1161,16 @@ fn generic_prop_singleton_field_is_proposition(
         frame = frame.extend_free(FreeId(75_000 + index));
     }
 
-    matches!(
-        checker.is_proposition_in_context(
-            constructor_domains[parameter_count],
-            &context,
-            &frame,
-            limits.judgment_steps,
-        ),
-        Judgment::Proven { .. }
-    )
+    for (field_index, field) in constructor_domains[parameter_count..].iter().enumerate() {
+        if !matches!(checker.is_proposition_in_context(
+            *field, &context, &frame, limits.judgment_steps,
+        ), Judgment::Proven { .. }) {
+            return false;
+        }
+        context.push(TypeValue::Term(checker.closure(*field, frame.clone())));
+        frame = frame.extend_free(FreeId(75_000 + (parameter_count + field_index) as u64));
+    }
+    true
 }
 
 fn check_generic_prop_singleton_large_elim(
@@ -1139,6 +1188,12 @@ fn check_generic_prop_singleton_large_elim(
         return Err(Verdict::Unknown);
     };
     if !generic_prop_singleton_large_elim_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    if generic_prop_function_pair_candidate(export, block)
+        && !prop_function_pair_rule_annotations(export, constructor, recursor)
+    {
         return Err(Verdict::Unknown);
     }
 
@@ -1224,8 +1279,9 @@ fn check_generic_prop_singleton_large_elim(
 
     let parameter_count =
         usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
+    let field_count = usize::try_from(constructor.num_fields).map_err(|_| Verdict::Unknown)?;
     let Some((constructor_domains, _)) =
-        pi_spine(export, constructor.ty, parameter_count.saturating_add(1))
+        pi_spine(export, constructor.ty, parameter_count.saturating_add(field_count))
     else {
         return Err(Verdict::Unknown);
     };
@@ -1235,9 +1291,8 @@ fn check_generic_prop_singleton_large_elim(
             ProjectionSpec {
                 constructor: constructor.name,
                 num_params: parameter_count,
-                field_types: vec![ProjectionFieldType::Derived(
-                    constructor_domains[parameter_count],
-                )],
+                field_types: constructor_domains[parameter_count..].iter().copied()
+                    .map(ProjectionFieldType::Derived).collect(),
             },
         )
         .map_err(|_| Verdict::Reject)?;
