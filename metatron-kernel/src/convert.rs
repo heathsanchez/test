@@ -856,7 +856,15 @@ fn compare_values(
                 )
             }));
         }
-        _ => return Judgment::refuted("rigid-value-constructor-mismatch"),
+        _ => {
+            if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
+                eprintln!(
+                    "NUCLEUS_VALUE_MISMATCH:left={:?}:right={:?}:budget={}:depth={}",
+                    left, right, budget, depth
+                );
+            }
+            return Judgment::refuted("rigid-value-constructor-mismatch");
+        }
     }
     Judgment::proven((), "rigid-value-comparison")
 }
