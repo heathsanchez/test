@@ -8,6 +8,8 @@ import hashlib
 import json
 from pathlib import Path
 from fractions import Fraction
+import collatz_crystal_parameter_quotient_v25 as bank
+from collatz_consequential_splice_reuse_v57 import FRONTIER
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--bank-dir',required=True)
@@ -27,6 +29,23 @@ def main():
     residual=set(result['unresolved_cells'])
     assert {r for r,v in enumerate(slots) if not v}==residual
     assert sum(slots)==239659 and len(residual)==22485
+    # Join the kernel bank with the independently qualified frozen V25 bank.
+    # Keeping 22485 as the whole current residual would discard these laws.
+    frozen_live=[]
+    for r in FRONTIER:
+        for bit in (0,1):
+            child=r+512*bit
+            hit=bank.classify_cell(10,child)
+            if not hit['terminal']:
+                frozen_live.append(child)
+            else:
+                e=hit['exit'];n=bank.N0+bank.NC*child;s=bank.NC*1024
+                if e['kind']=='D':assert e['endpoint0']<n and e['endpointSlope']<=s
+                elif e['kind']=='M':assert 0<e['reverse']['p0']<n and e['reverse']['pSlope']<=s
+                else:assert e['kind']=='S' and e['endpoint0']%8==5 and e['endpoint0']<=4*n
+    assert len(frozen_live)==115
+    joined=sorted(r for r in residual if r%1024 in frozen_live)
+    assert set(joined)<=residual
     prior=[(i,c) for i,c in enumerate(certs) if c['h']<=12 and 3972%2**c['h']==c['r']]
     assert len(prior)==1
     i,c=prior[0]
@@ -46,6 +65,10 @@ def main():
             commit='e547e2ae0eee71be4647a8282d6b8fa870d00458',run=36663027013,
             artifact=11074639536,result_sha256=claimed),
         saturation=dict(certified_laws=3294,depth=18,closed_slots=239659,residual_slots=22485),
+        joined_reclosure=dict(frozen_v25_depth=10,frozen_v25_live_cells=115,
+            depth18_residual_after_both_banks=len(joined),
+            residual_residues=joined,
+            boundary='join of these two qualified banks; other ROS warrants are not asserted exhausted'),
         v60_lineage=dict(prior_certificate_index=i,prior_certificate=c,
             incremental_original_family_closure=0,
             retained_gain='dyadic generalization and zero-search execution; original-family guard already qualified'),
