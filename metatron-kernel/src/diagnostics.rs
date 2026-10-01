@@ -95,15 +95,15 @@ impl std::fmt::Write for BoundedDebug {
     }
 }
 
-pub(crate) fn inference_frame(expression: ExprId, frame: u64) {
+pub(crate) fn inference_frame(expression: ExprId, frame: u64) -> Option<usize> {
     if std::env::var_os("NUCLEUS_TRACE_INFERENCE_FRAMES").is_none() {
-        return;
+        return None;
     }
     INFERENCE_FRAMES.with(|all| {
         let mut all = all.borrow_mut();
         let frames = all.entry(expression).or_default();
         if !frames.insert(frame) {
-            return;
+            return None;
         }
         let count = frames.len();
         if matches!(count, 16 | 64 | 256 | 1024 | 4096 | 16384) {
@@ -113,8 +113,11 @@ pub(crate) fn inference_frame(expression: ExprId, frame: u64) {
                 "distinct_frames": count,
                 "latest_frame": frame
             }));
+            Some(count)
+        } else {
+            None
         }
-    });
+    })
 }
 
 pub(crate) fn causal(kind: &str, detail: std::fmt::Arguments<'_>) {
