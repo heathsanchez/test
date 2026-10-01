@@ -26,6 +26,7 @@ jobs:
           set -euo pipefail
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           mkdir -p evidence
           lake env lean --version | tee evidence/toolchain.txt
           lake build CollatzFinal | tee evidence/spine.log
