@@ -21,6 +21,7 @@ pub enum TypeValue {
 #[cfg(feature = "diagnostics")]
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct ProjectedInferenceKey {
+    depth: usize,
     levels: Vec<(NameId, LevelTerm)>,
     binders: Vec<(usize, EnvBinding, TypeValue)>,
 }
@@ -37,6 +38,7 @@ struct ProjectedInferenceRecord {
 thread_local! {
     static PROJECTED_INFERENCE: std::cell::RefCell<HashMap<ExprId, Vec<ProjectedInferenceRecord>>> =
         std::cell::RefCell::new(HashMap::new());
+    static PROJECTED_VALIDATING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
 pub struct TypeChecker<'a> {
@@ -231,6 +233,9 @@ impl<'a> TypeChecker<'a> {
         frame: &EnvFrame,
         value: &TypeValue,
     ) {
+        if PROJECTED_VALIDATING.with(std::cell::Cell::get) {
+            return;
+        }
         let mut offsets = Vec::new();
         if self.collect_outer_bvars(expression, 0, 4096, &mut offsets).is_none() {
             return;
@@ -251,36 +256,86 @@ impl<'a> TypeChecker<'a> {
             .map(|(name, level)| (*name, level.clone()))
             .collect();
         levels.sort_by_key(|(name, _)| name.0);
-        let projected = ProjectedInferenceKey { levels, binders };
+        let projected = ProjectedInferenceKey { depth: context.len(), levels, binders };
 
-        PROJECTED_INFERENCE.with(|state| {
-            let mut state = state.borrow_mut();
-            let records = state.entry(expression).or_default();
-            if let Some(existing) = records.iter_mut().find(|record| record.key == projected) {
-                if existing.result != *value {
-                    eprintln!(
-                        "NUCLEUS_FRAME_PROJECTION_COLLISION:expression={expression:?}:frame={}:prior_frames={:?}:key={:?}:prior={:?}:current={:?}",
-                        frame.id(), existing.frames, projected, existing.result, value
+        let prior = PROJECTED_INFERENCE.with(|state| {
+            let state = state.borrow();
+            state
+                .get(&expression)
+                .and_then(|records| records.iter().find(|record| record.key == projected))
+                .map(|record| (record.result.clone(), record.frames.clone()))
+        });
+
+        if let Some((prior_result, prior_frames)) = prior {
+            let semantically_same = if prior_result == *value {
+                Some(true)
+            } else {
+                let verdict = PROJECTED_VALIDATING.with(|flag| {
+                    let previous = flag.replace(true);
+                    let verdict = crate::convert::convert_with_policy_in_context(
+                        self,
+                        &prior_result,
+                        value,
+                        512,
+                        self.delta_policy,
+                        context.len(),
+                        context,
                     );
-                    return;
-                }
-                if !existing.frames.contains(&frame.id()) {
-                    existing.frames.push(frame.id());
-                    let count = existing.frames.len();
-                    if count.is_power_of_two() {
+                    flag.set(previous);
+                    verdict
+                });
+                match verdict {
+                    Judgment::Proven { .. } => Some(true),
+                    Judgment::Refuted { obstruction } => {
                         eprintln!(
-                            "NUCLEUS_FRAME_PROJECTION_REUSE:expression={expression:?}:projected_bindings={}:distinct_frames={count}",
-                            projected.binders.len()
+                            "NUCLEUS_FRAME_PROJECTION_COLLISION:expression={expression:?}:frame={}:prior_frames={:?}:key={:?}:obstruction={}:prior={:?}:current={:?}",
+                            frame.id(), prior_frames, projected, obstruction.0, prior_result, value
                         );
+                        Some(false)
+                    }
+                    Judgment::Unknown { residual } => {
+                        eprintln!(
+                            "NUCLEUS_FRAME_PROJECTION_UNRESOLVED:expression={expression:?}:frame={}:prior_frames={:?}:key={:?}:residual={}:prior={:?}:current={:?}",
+                            frame.id(), prior_frames, projected, residual.0, prior_result, value
+                        );
+                        None
                     }
                 }
-            } else {
-                records.push(ProjectedInferenceRecord {
+            };
+
+            if semantically_same == Some(true) {
+                PROJECTED_INFERENCE.with(|state| {
+                    let mut state = state.borrow_mut();
+                    let records = state.entry(expression).or_default();
+                    let existing = records
+                        .iter_mut()
+                        .find(|record| record.key == projected)
+                        .expect("projected record retained");
+                    if !existing.frames.contains(&frame.id()) {
+                        existing.frames.push(frame.id());
+                        let count = existing.frames.len();
+                        if count.is_power_of_two() {
+                            eprintln!(
+                                "NUCLEUS_FRAME_PROJECTION_REUSE:expression={expression:?}:projected_bindings={}:distinct_frames={count}",
+                                projected.binders.len()
+                            );
+                        }
+                    }
+                });
+            }
+            return;
+        }
+
+        PROJECTED_INFERENCE.with(|state| {
+            state
+                .borrow_mut()
+                .entry(expression)
+                .or_default()
+                .push(ProjectedInferenceRecord {
                     key: projected,
                     result: value.clone(),
                     frames: vec![frame.id()],
                 });
-            }
         });
     }
 
