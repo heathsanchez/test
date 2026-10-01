@@ -857,7 +857,7 @@ fn compare_values(
             }));
         }
         (Value::Neutral(neutral), Value::Lam { body, .. }) => {
-            return compare_neutral_lambda_eta(
+            if !compare_neutral_lambda_eta(
                 checker,
                 neutral,
                 body,
@@ -866,10 +866,14 @@ fn compare_values(
                 work,
                 proof_function_frees,
                 context,
-            );
+            )
+            .is_proven()
+            {
+                return Judgment::refuted("rigid-value-constructor-mismatch");
+            }
         }
         (Value::Lam { body, .. }, Value::Neutral(neutral)) => {
-            return compare_neutral_lambda_eta(
+            if !compare_neutral_lambda_eta(
                 checker,
                 neutral,
                 body,
@@ -878,7 +882,11 @@ fn compare_values(
                 work,
                 proof_function_frees,
                 context,
-            );
+            )
+            .is_proven()
+            {
+                return Judgment::refuted("rigid-value-constructor-mismatch");
+            }
         }
         _ => return Judgment::refuted("rigid-value-constructor-mismatch"),
     }
