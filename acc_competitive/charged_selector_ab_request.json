@@ -1,0 +1,11 @@
+{
+  "schema": "acc-charged-selector-ab-request-v1",
+  "status": "CANDIDATE_BOUNDED_DIAGNOSTIC",
+  "cases": {
+    "0": "ac-04396",
+    "1": "ac-04895"
+  },
+  "topk": 8,
+  "score_weight": 0.5,
+  "note": "Only shards 0 and 1 run the selector A/B; all other shards exit without search."
+}
