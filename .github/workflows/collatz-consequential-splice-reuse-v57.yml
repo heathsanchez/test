@@ -19,7 +19,8 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           export PATH="$HOME/.elan/bin:$PATH"
           mkdir -p evidence/collatz-consequential-splice-reuse-v57
-          lake build Collatz.SourceCylinderExit
+          lake build Collatz.SourceProductAffine Collatz.OrdinaryExitReduction
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean > evidence/collatz-consequential-splice-reuse-v57/parent.log
           lake env lean -DautoImplicit=false formal/Collatz/ConsequentialSpliceReuse.lean | tee evidence/collatz-consequential-splice-reuse-v57/proof.log
       - name: Exact collision and full frozen reclosure
         run: |
