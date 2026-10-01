@@ -856,6 +856,30 @@ fn compare_values(
                 )
             }));
         }
+        (Value::Neutral(neutral), Value::Lam { body, .. }) => {
+            return compare_neutral_lambda_eta(
+                checker,
+                neutral,
+                body,
+                budget,
+                depth,
+                work,
+                proof_function_frees,
+                context,
+            );
+        }
+        (Value::Lam { body, .. }, Value::Neutral(neutral)) => {
+            return compare_neutral_lambda_eta(
+                checker,
+                neutral,
+                body,
+                budget,
+                depth,
+                work,
+                proof_function_frees,
+                context,
+            );
+        }
         _ => {
             if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
                 eprintln!(
@@ -867,6 +891,64 @@ fn compare_values(
         }
     }
     Judgment::proven((), "rigid-value-comparison")
+}
+
+fn compare_neutral_lambda_eta(
+    checker: &TypeChecker<'_>,
+    neutral: &Neutral,
+    body: &Closure,
+    budget: usize,
+    depth: usize,
+    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
+    _proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    context: &[TypeValue],
+) -> Judgment<()> {
+    let Some(free) = fresh_local(depth) else {
+        return Judgment::unknown("eta-binder-depth-overflow");
+    };
+    let exposed = checker
+        .machine()
+        .expose(body.under_free(free), Transparency::Reducible, budget);
+    let Some(Value::Neutral(expanded)) = exposed.proven_value() else {
+        return Judgment::refuted("eta-body-not-neutral");
+    };
+
+    match compare_neutral_heads(checker, neutral, expanded, budget) {
+        Judgment::Proven { .. } => {}
+        other => return other,
+    }
+    if expanded.spine.len() != neutral.spine.len().saturating_add(1) {
+        return Judgment::refuted("eta-spine-shape");
+    }
+
+    let Some(argument) = expanded.spine.last() else {
+        return Judgment::refuted("eta-missing-argument");
+    };
+    let argument = checker
+        .machine()
+        .expose(argument.clone(), Transparency::Reducible, budget);
+    let Some(Value::Neutral(argument)) = argument.proven_value() else {
+        return Judgment::refuted("eta-argument-not-neutral");
+    };
+    if !argument.spine.is_empty() || argument.head != NeutralHead::Free(free) {
+        return Judgment::refuted("eta-argument-not-fresh-local");
+    }
+
+    work.extend(
+        neutral
+            .spine
+            .iter()
+            .zip(expanded.spine.iter())
+            .map(|(left, right)| {
+                (
+                    TypeValue::Term(left.clone()),
+                    TypeValue::Term(right.clone()),
+                    depth,
+                    context.to_vec(),
+                )
+            }),
+    );
+    Judgment::proven((), "semantic-function-eta")
 }
 
 fn compare_nat_literal_neutral(
