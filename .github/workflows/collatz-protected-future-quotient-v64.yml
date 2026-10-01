@@ -5,6 +5,11 @@ on:
     paths:
       - formal/Collatz/ProtectedFutureQuotient.lean
       - .github/workflows/collatz-protected-future-quotient-v64.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - formal/Collatz/ProtectedFutureQuotient.lean
+      - .github/workflows/collatz-protected-future-quotient-v64.yml
 permissions: {contents: read}
 jobs:
   qualify:
