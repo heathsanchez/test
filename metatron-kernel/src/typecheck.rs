@@ -32,6 +32,12 @@ enum InferenceCacheKey {
     Projected(ProjectedInferenceKey),
 }
 
+#[derive(Default)]
+struct InferenceMemo {
+    values: HashMap<InferenceCacheKey, TypeValue>,
+    supports: HashMap<ExprId, Option<Vec<usize>>>,
+}
+
 pub struct TypeChecker<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
@@ -82,7 +88,7 @@ impl<'a> TypeChecker<'a> {
             &[],
             &EnvFrame::empty(),
             &mut remaining,
-            &mut HashMap::new(),
+            &mut InferenceMemo::default(),
         )
     }
 
@@ -95,7 +101,7 @@ impl<'a> TypeChecker<'a> {
             &EnvFrame::empty(),
             &mut remaining,
             self.delta_policy == crate::convert::DeltaPolicy::GuardedSemanticFallback,
-            &mut HashMap::new(),
+            &mut InferenceMemo::default(),
         )
     }
 
@@ -144,7 +150,7 @@ impl<'a> TypeChecker<'a> {
             &EnvFrame::empty(),
             &mut remaining,
             false,
-            &mut HashMap::new(),
+            &mut InferenceMemo::default(),
         )
     }
 
@@ -163,7 +169,7 @@ impl<'a> TypeChecker<'a> {
             frame,
             &mut remaining,
             false,
-            &mut HashMap::new(),
+            &mut InferenceMemo::default(),
         )
     }
 
@@ -194,7 +200,7 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
-        cache: &mut HashMap<InferenceCacheKey, TypeValue>,
+        cache: &mut InferenceMemo,
     ) -> Judgment<TypeValue> {
         // The cache remains local to one public judgment.  Instead of treating
         // every fresh frame identity as semantically distinct, quotient a frame
@@ -202,8 +208,8 @@ impl<'a> TypeChecker<'a> {
         // with their validated types and the active universe substitution.
         // If that projection cannot be established structurally, retain the
         // original exact-frame key.
-        let key = self.inference_cache_key(expression, context, frame);
-        if let Some(value) = cache.get(&key) {
+        let key = self.inference_cache_key(expression, context, frame, cache);
+        if let Some(value) = cache.values.get(&key) {
             if std::env::var_os("NUCLEUS_TRACE_PROJECTED_CACHE").is_some()
                 && matches!(key, InferenceCacheKey::Projected(_))
             {
@@ -217,7 +223,7 @@ impl<'a> TypeChecker<'a> {
         }
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
         if let Judgment::Proven { value, .. } = &result {
-            cache.insert(key, value.clone());
+            cache.values.insert(key, value.clone());
         }
         result
     }
@@ -227,14 +233,24 @@ impl<'a> TypeChecker<'a> {
         expression: ExprId,
         context: &[TypeValue],
         frame: &EnvFrame,
+        memo: &mut InferenceMemo,
     ) -> InferenceCacheKey {
         let exact = || InferenceCacheKey::Exact { expression, frame: frame.id() };
-        let mut offsets = Vec::new();
-        if self.collect_cache_outer_bvars(expression, 0, 4096, &mut offsets).is_none() {
-            return exact();
-        }
-        offsets.sort_unstable();
-        offsets.dedup();
+        let offsets = if let Some(cached) = memo.supports.get(&expression) {
+            cached.clone()
+        } else {
+            let mut offsets = Vec::new();
+            let support = if self.collect_cache_outer_bvars(expression, 0, 4096, &mut offsets).is_some() {
+                offsets.sort_unstable();
+                offsets.dedup();
+                Some(offsets)
+            } else {
+                None
+            };
+            memo.supports.insert(expression, support.clone());
+            support
+        };
+        let Some(offsets) = offsets else { return exact(); };
 
         let mut binders = Vec::with_capacity(offsets.len());
         for offset in offsets {
@@ -303,7 +319,7 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
-        cache: &mut HashMap<InferenceCacheKey, TypeValue>,
+        cache: &mut InferenceMemo,
     ) -> Judgment<TypeValue> {
         if !take_step(remaining) {
             return Judgment::unknown("type-inference-budget");
@@ -622,7 +638,7 @@ impl<'a> TypeChecker<'a> {
         frame: &EnvFrame,
         remaining: &mut usize,
         conversion_refutation_is_unknown: bool,
-        cache: &mut HashMap<InferenceCacheKey, TypeValue>,
+        cache: &mut InferenceMemo,
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
@@ -661,7 +677,7 @@ impl<'a> TypeChecker<'a> {
     // context while retaining each actual argument in the lexical environment.
     fn infer_literal_beta_spine(&self, expression: ExprId, context: &[TypeValue],
         frame: &EnvFrame, remaining: &mut usize,
-        cache: &mut HashMap<InferenceCacheKey,TypeValue>) -> Option<Judgment<TypeValue>> {
+        cache: &mut InferenceMemo) -> Option<Judgment<TypeValue>> {
         let mut eligibility_remaining=*remaining;
         let mut head=expression;
         let mut arguments=Vec::new();
@@ -770,7 +786,7 @@ impl<'a> TypeChecker<'a> {
     pub(crate) fn infer_sort_in_context(&self, expression: ExprId,
         context: &[TypeValue], frame: &EnvFrame, budget: usize) -> Judgment<LevelTerm> {
         let mut remaining=budget;
-        let inferred=self.infer_in(expression,context,frame,&mut remaining,&mut HashMap::new());
+        let inferred=self.infer_in(expression,context,frame,&mut remaining,&mut InferenceMemo::default());
         self.sort_level(inferred,remaining)
     }
 
