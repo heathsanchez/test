@@ -22,7 +22,7 @@ enum EnvNode {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum EnvBinding {
     Closure(Closure),
     Free(FreeId),
