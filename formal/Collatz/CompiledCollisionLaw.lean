@@ -11,16 +11,20 @@ earlier source (16*y-23)/27 without storing the discovery trace. -/
 theorem oeoo_exact (q : Nat) :
     iter shortcut 4 (16 * q + 11) = 27 * q + 20 := by
   have h1 : shortcut (16 * q + 11) = 24 * q + 17 := by
-    simp [shortcut]
+    have hp : (16 * q + 11) % 2 ≠ 0 := by omega
+    rw [shortcut, if_neg hp]
     omega
   have h2 : shortcut (24 * q + 17) = 36 * q + 26 := by
-    simp [shortcut]
+    have hp : (24 * q + 17) % 2 ≠ 0 := by omega
+    rw [shortcut, if_neg hp]
     omega
   have h3 : shortcut (36 * q + 26) = 18 * q + 13 := by
-    simp [shortcut]
+    have hp : (36 * q + 26) % 2 = 0 := by omega
+    rw [shortcut, if_pos hp]
     omega
   have h4 : shortcut (18 * q + 13) = 27 * q + 20 := by
-    simp [shortcut]
+    have hp : (18 * q + 13) % 2 ≠ 0 := by omega
+    rw [shortcut, if_neg hp]
     omega
   simp [iter, h1, h2, h3, h4]
 
