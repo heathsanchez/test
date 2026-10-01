@@ -23,7 +23,57 @@ struct ProjectedInferenceKey {
     expression: ExprId,
     depth: usize,
     levels: Vec<(NameId, LevelTerm)>,
-    binders: Vec<(usize, Vec<String>, Vec<String>)>,
+    binders: Vec<(usize, SupportBindingKey, SupportTypeKey)>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum SupportClosureRoot {
+    Expression(ExprId),
+    NatLiteral(crate::nat::BigNat),
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct SupportClosureKey {
+    root: SupportClosureRoot,
+    levels: LevelSubstitution,
+    bindings: Vec<(usize, SupportBindingKey)>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum SupportBindingKey {
+    Free(FreeId),
+    Closure(Box<SupportClosureKey>),
+    Neutral(Box<SupportNeutralKey>),
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct SupportNeutralKey {
+    head: SupportNeutralHeadKey,
+    spine: Vec<SupportClosureKey>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum SupportNeutralHeadKey {
+    Free(FreeId),
+    Const {
+        name: NameId,
+        levels: Vec<LevelTerm>,
+    },
+    Projection {
+        type_name: NameId,
+        index: usize,
+        structure: Box<SupportNeutralKey>,
+    },
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum SupportTypeKey {
+    Sort(LevelTerm),
+    Term(SupportClosureKey),
+    Pi {
+        domain: Box<SupportTypeKey>,
+        body: Box<SupportTypeKey>,
+    },
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -228,137 +278,111 @@ impl<'a> TypeChecker<'a> {
         result
     }
 
-    fn cache_type_support_signature(
+    fn cache_type_support_key(
         &self,
         value: &TypeValue,
         budget: &mut usize,
-    ) -> Option<Vec<String>> {
+    ) -> Option<SupportTypeKey> {
         if *budget == 0 {
             return None;
         }
         *budget -= 1;
         match value {
-            TypeValue::Sort(level) => Some(vec![format!("sort={level:?}")]),
-            TypeValue::Term(closure) => self.cache_closure_support_signature(closure, "root", budget),
-            TypeValue::Pi { domain, body } => {
-                let mut out = vec!["pi-domain".to_owned()];
-                out.extend(
-                    self.cache_type_support_signature(domain, budget)?
-                        .into_iter()
-                        .map(|item| format!("domain/{item}")),
-                );
-                out.push("pi-body".to_owned());
-                out.extend(
-                    self.cache_type_support_signature(body, budget)?
-                        .into_iter()
-                        .map(|item| format!("body/{item}")),
-                );
-                Some(out)
+            TypeValue::Sort(level) => Some(SupportTypeKey::Sort(level.clone())),
+            TypeValue::Term(closure) => {
+                Some(SupportTypeKey::Term(self.cache_closure_support_key(closure, budget)?))
             }
+            TypeValue::Pi { domain, body } => Some(SupportTypeKey::Pi {
+                domain: Box::new(self.cache_type_support_key(domain, budget)?),
+                body: Box::new(self.cache_type_support_key(body, budget)?),
+            }),
         }
     }
 
-    fn cache_binding_support_signature(
+    fn cache_binding_support_key(
         &self,
         binding: EnvBinding,
         budget: &mut usize,
-    ) -> Option<Vec<String>> {
+    ) -> Option<SupportBindingKey> {
         if *budget == 0 {
             return None;
         }
         *budget -= 1;
         match binding {
-            EnvBinding::Free(free) => Some(vec![format!("free={}", free.0)]),
-            EnvBinding::Closure(closure) => {
-                let mut out = vec![format!(
-                    "closure-expr={:?}:levels={:?}",
-                    closure.expression(),
-                    closure.levels
-                )];
-                out.extend(self.cache_closure_support_signature(&closure, "closure", budget)?);
-                Some(out)
-            }
-            EnvBinding::Neutral(neutral) => {
-                self.cache_neutral_support_signature(&neutral, "neutral", budget)
-            }
+            EnvBinding::Free(free) => Some(SupportBindingKey::Free(free)),
+            EnvBinding::Closure(closure) => Some(SupportBindingKey::Closure(Box::new(
+                self.cache_closure_support_key(&closure, budget)?,
+            ))),
+            EnvBinding::Neutral(neutral) => Some(SupportBindingKey::Neutral(Box::new(
+                self.cache_neutral_support_key(&neutral, budget)?,
+            ))),
         }
     }
 
-    fn cache_neutral_support_signature(
+    fn cache_neutral_support_key(
         &self,
         neutral: &Neutral,
-        path: &str,
         budget: &mut usize,
-    ) -> Option<Vec<String>> {
+    ) -> Option<SupportNeutralKey> {
         if *budget == 0 {
             return None;
         }
         *budget -= 1;
-        let mut out = Vec::new();
-        match &neutral.head {
-            NeutralHead::Free(free) => out.push(format!("{path}:free={}", free.0)),
-            NeutralHead::Const { name, levels } => {
-                out.push(format!("{path}:const={name:?}:levels={levels:?}"))
-            }
+        let head = match &neutral.head {
+            NeutralHead::Free(free) => SupportNeutralHeadKey::Free(*free),
+            NeutralHead::Const { name, levels } => SupportNeutralHeadKey::Const {
+                name: *name,
+                levels: levels.clone(),
+            },
             NeutralHead::Projection {
                 type_name,
                 index,
                 structure,
-            } => {
-                out.push(format!("{path}:projection={type_name:?}:{index}"));
-                out.extend(self.cache_neutral_support_signature(
-                    structure,
-                    &format!("{path}/structure"),
-                    budget,
-                )?);
-            }
+            } => SupportNeutralHeadKey::Projection {
+                type_name: *type_name,
+                index: *index,
+                structure: Box::new(self.cache_neutral_support_key(structure, budget)?),
+            },
+        };
+        let mut spine = Vec::with_capacity(neutral.spine.len());
+        for closure in &neutral.spine {
+            spine.push(self.cache_closure_support_key(closure, budget)?);
         }
-        for (index, spine) in neutral.spine.iter().enumerate() {
-            out.extend(self.cache_closure_support_signature(
-                spine,
-                &format!("{path}/spine{index}"),
-                budget,
-            )?);
-        }
-        Some(out)
+        Some(SupportNeutralKey { head, spine })
     }
 
-    fn cache_closure_support_signature(
+    fn cache_closure_support_key(
         &self,
         closure: &Closure,
-        path: &str,
         budget: &mut usize,
-    ) -> Option<Vec<String>> {
+    ) -> Option<SupportClosureKey> {
         if *budget == 0 {
             return None;
         }
         *budget -= 1;
-        let Some(expression) = closure.expression() else {
-            return Some(vec![format!("{path}:literal={:?}", closure.literal())]);
+        let root = if let Some(expression) = closure.expression() {
+            SupportClosureRoot::Expression(expression)
+        } else {
+            SupportClosureRoot::NatLiteral(closure.literal()?.clone())
         };
-        let mut offsets = Vec::new();
-        self.collect_cache_outer_bvars(expression, 0, 4096, &mut offsets)?;
-        offsets.sort_unstable();
-        offsets.dedup();
-        if offsets.is_empty() {
-            return Some(vec![format!(
-                "{path}:closed-expr={expression:?}:levels={:?}",
-                closure.levels
-            )]);
+        let mut bindings = Vec::new();
+        if let SupportClosureRoot::Expression(expression) = root {
+            let mut offsets = Vec::new();
+            self.collect_cache_outer_bvars(expression, 0, 4096, &mut offsets)?;
+            offsets.sort_unstable();
+            offsets.dedup();
+            bindings.reserve(offsets.len());
+            for offset in offsets {
+                let index = u64::try_from(offset).ok()?;
+                let binding = closure.env.lookup(index)?;
+                bindings.push((offset, self.cache_binding_support_key(binding, budget)?));
+            }
         }
-        let mut out = Vec::new();
-        for offset in offsets {
-            let index = u64::try_from(offset).ok()?;
-            let binding = closure.env.lookup(index)?;
-            let prefix = format!("{path}/expr{}@{}", expression.0, offset);
-            out.push(format!("{prefix}:levels={:?}", closure.levels));
-            out.extend(
-                self.cache_binding_support_signature(binding, budget)?
-                    .into_iter()
-                    .map(|item| format!("{prefix}/{item}")),
-            );
-        }
-        Some(out)
+        Some(SupportClosureKey {
+            root,
+            levels: closure.levels.clone(),
+            bindings,
+        })
     }
 
     fn inference_cache_key(
@@ -391,18 +415,18 @@ impl<'a> TypeChecker<'a> {
             let Some(binding) = frame.lookup(index) else { return exact(); };
             let Some(ty) = context.iter().rev().nth(offset) else { return exact(); };
             let mut binding_budget = 256;
-            let Some(binding_signature) =
-                self.cache_binding_support_signature(binding, &mut binding_budget)
+            let Some(binding_key) =
+                self.cache_binding_support_key(binding, &mut binding_budget)
             else {
                 return exact();
             };
             let mut type_budget = 256;
-            let Some(type_signature) =
-                self.cache_type_support_signature(ty, &mut type_budget)
+            let Some(type_key) =
+                self.cache_type_support_key(ty, &mut type_budget)
             else {
                 return exact();
             };
-            binders.push((offset, binding_signature, type_signature));
+            binders.push((offset, binding_key, type_key));
         }
         let mut levels: Vec<_> = self
             .level_substitution
