@@ -1,0 +1,1988 @@
+{
+  "schema": "nucleus-causal-contracts-v1",
+  "base_sha": "0659bc671a4ef536ed4a096deacd0c61b1ca927e",
+  "boundary": "Diagnostic paths only; no semantic authority or full-file gains",
+  "counts": {
+    "NO_REGISTERED_PATH": 21,
+    "CANDIDATE_PATH": 3
+  },
+  "candidate_paths": {
+    "admitted|existing-recursor-shape@0659>sum-telescope-derivation@candidate": 3
+  },
+  "rows": [
+    {
+      "test": "init-prelude",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5:Lean.SourceInfo",
+      "input_sha256": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Lean.SourceInfo:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 1691,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 1692,
+              "numFields": 4,
+              "numParams": 0,
+              "type": 8057
+            },
+            {
+              "cidx": 1,
+              "induct": 1691,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 1693,
+              "numFields": 3,
+              "numParams": 0,
+              "type": 8063
+            },
+            {
+              "cidx": 2,
+              "induct": 1691,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 1694,
+              "numFields": 0,
+              "numParams": 0,
+              "type": 8053
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                1691
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                6
+              ],
+              "name": 1700,
+              "numIndices": 0,
+              "numMinors": 3,
+              "numMotives": 1,
+              "numParams": 0,
+              "rules": [
+                {
+                  "ctor": 1692,
+                  "nfields": 4,
+                  "rhs": 8101
+                },
+                {
+                  "ctor": 1693,
+                  "nfields": 3,
+                  "rhs": 8108
+                },
+                {
+                  "ctor": 1694,
+                  "nfields": 0,
+                  "rhs": 8112
+                }
+              ],
+              "type": 8089
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                1691
+              ],
+              "ctors": [
+                1692,
+                1693,
+                1694
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 1691,
+              "numIndices": 0,
+              "numNested": 0,
+              "numParams": 0,
+              "type": 0
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(1691)], constructors: [NameId(1692), NameId(1693), NameId(1694)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [], name: NameId(1691), num_indices: 0, num_nested: 0, num_params: 0, ty: ExprId(0) }], constructors: [Constructor { index: 0, inductive: NameId(1691), is_unsafe: false, level_params: [], name: NameId(1692), num_fields: 4, num_params: 0, ty: ExprId(8057) }, Constructor { index: 1, inductive: NameId(1691), is_unsafe: false, level_params: [], name: NameId(1693), num_fields: 3, num_params: 0, ty: ExprId(8063) }, Constructor { index: 2, inductive: NameId(1691), is_unsafe: false, level_params: [], name: NameId(1694), num_fields: 0, num_params: 0, ty: ExprId(8053) }], recursors: [Recursor { all: [NameId(1691)], is_unsafe: false, k: false, level_params: [NameId(6)], name: NameId(1700), num_indices: 0, num_minors: 3, num_motives: 1, num_params: 0, rules: [RecursorRule { constructor: NameId(1692), num_fields: 4, rhs: ExprId(8101) }, RecursorRule { constructor: NameId(1693), num_fields: 3, rhs: ExprId(8108) }, RecursorRule { constructor: NameId(1694), num_fields: 0, rhs: ExprId(8112) }], ty: ExprId(8089) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 274,
+          "truncated": false
+        },
+        {
+          "detail": "stage=14",
+          "event": 1,
+          "kind": "recursor-shape-miss",
+          "scope": 274,
+          "truncated": false
+        },
+        {
+          "detail": "passed=false",
+          "event": 2,
+          "kind": "existing-recursor-shape",
+          "scope": 274,
+          "truncated": false
+        },
+        {
+          "detail": "route=constructor-cardinality;constructors=3;registered-dispatch=0,1,2",
+          "event": 3,
+          "kind": "admission-route-miss",
+          "scope": 274,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 4,
+          "kind": "boundary",
+          "scope": 274,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "admitted|",
+        "seeds": [
+          "observed.nonrecursive-sum",
+          "observed.route-miss"
+        ]
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/args-before-unfold",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "08e16707dc6623394c62125592462b7548dd647d0b8a93138dce433d80411d22:kernel_args_before_unfold",
+      "input_sha256": "08e16707dc6623394c62125592462b7548dd647d0b8a93138dce433d80411d22",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=kernel_args_before_unfold:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "declaration": {
+        "thm": {
+          "all": [
+            43
+          ],
+          "levelParams": [],
+          "name": 43,
+          "type": 1102,
+          "value": 1105
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(1105);inferred=Term(Closure { term: Expression(ExprId(10)), env: EnvFrame { id: 2160, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) });expected=Term(Closure { term: Expression(ExprId(1102)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) });context=[];frame=EnvFrame { id: 0, .. };policy=GuardedSemanticFallback;budget=63529;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 5,
+          "truncated": false
+        },
+        {
+          "detail": "name=kernel_args_before_unfold;stage=theorem.value;judgment=Unknown { residual: ResidualId(\"distinct-neutral-heads\") }",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 5,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/folded-constant-first",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "f11febc1959dd30a0c2b4f3491635b4d1279946d51286bd7dfec5fb19229d773:kernel_folded_constant_first",
+      "input_sha256": "f11febc1959dd30a0c2b4f3491635b4d1279946d51286bd7dfec5fb19229d773",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "declaration": {
+        "thm": {
+          "all": [
+            65
+          ],
+          "levelParams": [],
+          "name": 65,
+          "type": 1176,
+          "value": 1179
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(1179);inferred=Term(Closure { term: Expression(ExprId(10)), env: EnvFrame { id: 2280, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) });expected=Term(Closure { term: Expression(ExprId(1176)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) });context=[];frame=EnvFrame { id: 0, .. };policy=GuardedSemanticFallback;budget=63523;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 9,
+          "truncated": false
+        },
+        {
+          "detail": "name=kernel_folded_constant_first;stage=theorem.value;judgment=Unknown { residual: ResidualId(\"distinct-neutral-heads\") }",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 9,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/folded-constant-last",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "e1a9380283d3285a7242a45e79ce760056c34201089d21fdc3b25a22e4997494:kernel_folded_constant_last",
+      "input_sha256": "e1a9380283d3285a7242a45e79ce760056c34201089d21fdc3b25a22e4997494",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_last:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "declaration": {
+        "thm": {
+          "all": [
+            65
+          ],
+          "levelParams": [],
+          "name": 65,
+          "type": 1176,
+          "value": 1179
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(1179);inferred=Term(Closure { term: Expression(ExprId(10)), env: EnvFrame { id: 2280, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) });expected=Term(Closure { term: Expression(ExprId(1176)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) });context=[];frame=EnvFrame { id: 0, .. };policy=GuardedSemanticFallback;budget=63523;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 9,
+          "truncated": false
+        },
+        {
+          "detail": "name=kernel_folded_constant_last;stage=theorem.value;judgment=Unknown { residual: ResidualId(\"distinct-neutral-heads\") }",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 9,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/fueled-chain",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a:Except",
+      "input_sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Except:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 23,
+              "isUnsafe": false,
+              "levelParams": [
+                6,
+                24
+              ],
+              "name": 26,
+              "numFields": 1,
+              "numParams": 2,
+              "type": 83
+            },
+            {
+              "cidx": 1,
+              "induct": 23,
+              "isUnsafe": false,
+              "levelParams": [
+                6,
+                24
+              ],
+              "name": 27,
+              "numFields": 1,
+              "numParams": 2,
+              "type": 86
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                23
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                13,
+                6,
+                24
+              ],
+              "name": 28,
+              "numIndices": 0,
+              "numMinors": 2,
+              "numMotives": 1,
+              "numParams": 2,
+              "rules": [
+                {
+                  "ctor": 26,
+                  "nfields": 1,
+                  "rhs": 115
+                },
+                {
+                  "ctor": 27,
+                  "nfields": 1,
+                  "rhs": 121
+                }
+              ],
+              "type": 109
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                23
+              ],
+              "ctors": [
+                26,
+                27
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [
+                6,
+                24
+              ],
+              "name": 23,
+              "numIndices": 0,
+              "numNested": 0,
+              "numParams": 2,
+              "type": 77
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(23)], constructors: [NameId(26), NameId(27)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [NameId(6), NameId(24)], name: NameId(23), num_indices: 0, num_nested: 0, num_params: 2, ty: ExprId(77) }], constructors: [Constructor { index: 0, inductive: NameId(23), is_unsafe: false, level_params: [NameId(6), NameId(24)], name: NameId(26), num_fields: 1, num_params: 2, ty: ExprId(83) }, Constructor { index: 1, inductive: NameId(23), is_unsafe: false, level_params: [NameId(6), NameId(24)], name: NameId(27), num_fields: 1, num_params: 2, ty: ExprId(86) }], recursors: [Recursor { all: [NameId(23)], is_unsafe: false, k: false, level_params: [NameId(13), NameId(6), NameId(24)], name: NameId(28), num_indices: 0, num_minors: 2, num_motives: 1, num_params: 2, rules: [RecursorRule { constructor: NameId(26), num_fields: 1, rhs: ExprId(115) }, RecursorRule { constructor: NameId(27), num_fields: 1, rhs: ExprId(121) }], ty: ExprId(109) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 3,
+          "truncated": false
+        },
+        {
+          "detail": "passed=true",
+          "event": 1,
+          "kind": "existing-recursor-shape",
+          "scope": 3,
+          "truncated": false
+        },
+        {
+          "detail": "route=binary-enum;name-gate=failed;generic-type-candidate=false;generic-prop-candidate=false",
+          "event": 2,
+          "kind": "admission-route-miss",
+          "scope": 3,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 3,
+          "kind": "boundary",
+          "scope": 3,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "CANDIDATE_PATH",
+        "contracts": [
+          "existing-recursor-shape@0659",
+          "sum-telescope-derivation@candidate"
+        ],
+        "candidates": [
+          "sum-telescope-derivation@candidate"
+        ],
+        "path_id": "admitted|existing-recursor-shape@0659>sum-telescope-derivation@candidate",
+        "seeds": [
+          "observed.existing-recursor-check-passed",
+          "observed.nonrecursive-sum",
+          "observed.route-miss"
+        ]
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/grind-ring-5",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f:Lean.SourceInfo",
+      "input_sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Lean.SourceInfo:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 1657,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 1658,
+              "numFields": 4,
+              "numParams": 0,
+              "type": 7723
+            },
+            {
+              "cidx": 1,
+              "induct": 1657,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 1659,
+              "numFields": 3,
+              "numParams": 0,
+              "type": 7729
+            },
+            {
+              "cidx": 2,
+              "induct": 1657,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 1660,
+              "numFields": 0,
+              "numParams": 0,
+              "type": 7719
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                1657
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                2
+              ],
+              "name": 1666,
+              "numIndices": 0,
+              "numMinors": 3,
+              "numMotives": 1,
+              "numParams": 0,
+              "rules": [
+                {
+                  "ctor": 1658,
+                  "nfields": 4,
+                  "rhs": 7767
+                },
+                {
+                  "ctor": 1659,
+                  "nfields": 3,
+                  "rhs": 7774
+                },
+                {
+                  "ctor": 1660,
+                  "nfields": 0,
+                  "rhs": 7778
+                }
+              ],
+              "type": 7755
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                1657
+              ],
+              "ctors": [
+                1658,
+                1659,
+                1660
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 1657,
+              "numIndices": 0,
+              "numNested": 0,
+              "numParams": 0,
+              "type": 55
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(1657)], constructors: [NameId(1658), NameId(1659), NameId(1660)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [], name: NameId(1657), num_indices: 0, num_nested: 0, num_params: 0, ty: ExprId(55) }], constructors: [Constructor { index: 0, inductive: NameId(1657), is_unsafe: false, level_params: [], name: NameId(1658), num_fields: 4, num_params: 0, ty: ExprId(7723) }, Constructor { index: 1, inductive: NameId(1657), is_unsafe: false, level_params: [], name: NameId(1659), num_fields: 3, num_params: 0, ty: ExprId(7729) }, Constructor { index: 2, inductive: NameId(1657), is_unsafe: false, level_params: [], name: NameId(1660), num_fields: 0, num_params: 0, ty: ExprId(7719) }], recursors: [Recursor { all: [NameId(1657)], is_unsafe: false, k: false, level_params: [NameId(2)], name: NameId(1666), num_indices: 0, num_minors: 3, num_motives: 1, num_params: 0, rules: [RecursorRule { constructor: NameId(1658), num_fields: 4, rhs: ExprId(7767) }, RecursorRule { constructor: NameId(1659), num_fields: 3, rhs: ExprId(7774) }, RecursorRule { constructor: NameId(1660), num_fields: 0, rhs: ExprId(7778) }], ty: ExprId(7755) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 267,
+          "truncated": false
+        },
+        {
+          "detail": "stage=14",
+          "event": 1,
+          "kind": "recursor-shape-miss",
+          "scope": 267,
+          "truncated": false
+        },
+        {
+          "detail": "passed=false",
+          "event": 2,
+          "kind": "existing-recursor-shape",
+          "scope": 267,
+          "truncated": false
+        },
+        {
+          "detail": "route=constructor-cardinality;constructors=3;registered-dispatch=0,1,2",
+          "event": 3,
+          "kind": "admission-route-miss",
+          "scope": 267,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 4,
+          "kind": "boundary",
+          "scope": 267,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "admitted|",
+        "seeds": [
+          "observed.nonrecursive-sum",
+          "observed.route-miss"
+        ]
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/magma-list-deep-n21",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526:Option",
+      "input_sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Option:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 1060,
+              "isUnsafe": false,
+              "levelParams": [
+                2
+              ],
+              "name": 1061,
+              "numFields": 0,
+              "numParams": 1,
+              "type": 4970
+            },
+            {
+              "cidx": 1,
+              "induct": 1060,
+              "isUnsafe": false,
+              "levelParams": [
+                2
+              ],
+              "name": 1062,
+              "numFields": 1,
+              "numParams": 1,
+              "type": 4973
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                1060
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                18,
+                2
+              ],
+              "name": 1063,
+              "numIndices": 0,
+              "numMinors": 2,
+              "numMotives": 1,
+              "numParams": 1,
+              "rules": [
+                {
+                  "ctor": 1061,
+                  "nfields": 0,
+                  "rhs": 4992
+                },
+                {
+                  "ctor": 1062,
+                  "nfields": 1,
+                  "rhs": 4996
+                }
+              ],
+              "type": 4988
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                1060
+              ],
+              "ctors": [
+                1061,
+                1062
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [
+                2
+              ],
+              "name": 1060,
+              "numIndices": 0,
+              "numNested": 0,
+              "numParams": 1,
+              "type": 229
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(1060)], constructors: [NameId(1061), NameId(1062)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [NameId(2)], name: NameId(1060), num_indices: 0, num_nested: 0, num_params: 1, ty: ExprId(229) }], constructors: [Constructor { index: 0, inductive: NameId(1060), is_unsafe: false, level_params: [NameId(2)], name: NameId(1061), num_fields: 0, num_params: 1, ty: ExprId(4970) }, Constructor { index: 1, inductive: NameId(1060), is_unsafe: false, level_params: [NameId(2)], name: NameId(1062), num_fields: 1, num_params: 1, ty: ExprId(4973) }], recursors: [Recursor { all: [NameId(1060)], is_unsafe: false, k: false, level_params: [NameId(18), NameId(2)], name: NameId(1063), num_indices: 0, num_minors: 2, num_motives: 1, num_params: 1, rules: [RecursorRule { constructor: NameId(1061), num_fields: 0, rhs: ExprId(4992) }, RecursorRule { constructor: NameId(1062), num_fields: 1, rhs: ExprId(4996) }], ty: ExprId(4988) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 164,
+          "truncated": false
+        },
+        {
+          "detail": "passed=true",
+          "event": 1,
+          "kind": "existing-recursor-shape",
+          "scope": 164,
+          "truncated": false
+        },
+        {
+          "detail": "route=binary-enum;name-gate=failed;generic-type-candidate=false;generic-prop-candidate=false",
+          "event": 2,
+          "kind": "admission-route-miss",
+          "scope": 164,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 3,
+          "kind": "boundary",
+          "scope": 164,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "CANDIDATE_PATH",
+        "contracts": [
+          "existing-recursor-shape@0659",
+          "sum-telescope-derivation@candidate"
+        ],
+        "candidates": [
+          "sum-telescope-derivation@candidate"
+        ],
+        "path_id": "admitted|existing-recursor-shape@0659>sum-telescope-derivation@candidate",
+        "seeds": [
+          "observed.existing-recursor-check-passed",
+          "observed.nonrecursive-sum",
+          "observed.route-miss"
+        ]
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/magma-list-deep-n36",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac:Option",
+      "input_sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Option:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 1060,
+              "isUnsafe": false,
+              "levelParams": [
+                2
+              ],
+              "name": 1061,
+              "numFields": 0,
+              "numParams": 1,
+              "type": 4969
+            },
+            {
+              "cidx": 1,
+              "induct": 1060,
+              "isUnsafe": false,
+              "levelParams": [
+                2
+              ],
+              "name": 1062,
+              "numFields": 1,
+              "numParams": 1,
+              "type": 4972
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                1060
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                18,
+                2
+              ],
+              "name": 1063,
+              "numIndices": 0,
+              "numMinors": 2,
+              "numMotives": 1,
+              "numParams": 1,
+              "rules": [
+                {
+                  "ctor": 1061,
+                  "nfields": 0,
+                  "rhs": 4991
+                },
+                {
+                  "ctor": 1062,
+                  "nfields": 1,
+                  "rhs": 4995
+                }
+              ],
+              "type": 4987
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                1060
+              ],
+              "ctors": [
+                1061,
+                1062
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [
+                2
+              ],
+              "name": 1060,
+              "numIndices": 0,
+              "numNested": 0,
+              "numParams": 1,
+              "type": 228
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(1060)], constructors: [NameId(1061), NameId(1062)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [NameId(2)], name: NameId(1060), num_indices: 0, num_nested: 0, num_params: 1, ty: ExprId(228) }], constructors: [Constructor { index: 0, inductive: NameId(1060), is_unsafe: false, level_params: [NameId(2)], name: NameId(1061), num_fields: 0, num_params: 1, ty: ExprId(4969) }, Constructor { index: 1, inductive: NameId(1060), is_unsafe: false, level_params: [NameId(2)], name: NameId(1062), num_fields: 1, num_params: 1, ty: ExprId(4972) }], recursors: [Recursor { all: [NameId(1060)], is_unsafe: false, k: false, level_params: [NameId(18), NameId(2)], name: NameId(1063), num_indices: 0, num_minors: 2, num_motives: 1, num_params: 1, rules: [RecursorRule { constructor: NameId(1061), num_fields: 0, rhs: ExprId(4991) }, RecursorRule { constructor: NameId(1062), num_fields: 1, rhs: ExprId(4995) }], ty: ExprId(4987) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 164,
+          "truncated": false
+        },
+        {
+          "detail": "passed=true",
+          "event": 1,
+          "kind": "existing-recursor-shape",
+          "scope": 164,
+          "truncated": false
+        },
+        {
+          "detail": "route=binary-enum;name-gate=failed;generic-type-candidate=false;generic-prop-candidate=false",
+          "event": 2,
+          "kind": "admission-route-miss",
+          "scope": 164,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 3,
+          "kind": "boundary",
+          "scope": 164,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "CANDIDATE_PATH",
+        "contracts": [
+          "existing-recursor-shape@0659",
+          "sum-telescope-derivation@candidate"
+        ],
+        "candidates": [
+          "sum-telescope-derivation@candidate"
+        ],
+        "path_id": "admitted|existing-recursor-shape@0659>sum-telescope-derivation@candidate",
+        "seeds": [
+          "observed.existing-recursor-check-passed",
+          "observed.nonrecursive-sum",
+          "observed.route-miss"
+        ]
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/magma-list-pair-n21",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84:Nat.decEq.match_1",
+      "input_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.decEq.match_1:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "declaration": {
+        "def": {
+          "all": [
+            1560
+          ],
+          "hints": "abbrev",
+          "levelParams": [
+            18
+          ],
+          "name": 1560,
+          "safety": "safe",
+          "type": 7393,
+          "value": 7409
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(7404);inferred=Term(Closure { term: Expression(ExprId(110)), env: EnvFrame { id: 472841, .. }, levels: LevelSubstitution([(NameId(18), Succ(Zero))]) });expected=Term(Closure { term: Expression(ExprId(7395)), env: EnvFrame { id: 472839, .. }, levels: LevelSubstitution([(NameId(18), Param(\"u#18\"))]) });context=[Term(Closure { term: Expression(ExprId(853)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([(NameId(18), Param(\"u#18\"))]) }), Term(Closure { term: Expression(ExprId(616)), env: EnvFrame { id: 472779, .. }, levels: LevelSubstitution([(NameId(18), Param(\"u#18\"))]) }), Term(Closure { term: Expression(ExprId(7387)), env: EnvFrame { id: 472780, .. }, levels: LevelSubstitution([(NameId(18), Param(\"u#18\"))]) }), Term(Closure { term: Expression(ExprId(7389)), env: EnvFrame { id: 472786, .. }, levels: LevelSubstitution([(NameId(18), Param(\"u#18\"))]) })];frame=EnvFrame { id: 472792, .. };policy=GuardedSemanticFallback;budget=65475;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 228,
+          "truncated": false
+        },
+        {
+          "detail": "name=Nat.decEq.match_1;stage=definition.value;judgment=Unknown { residual: ResidualId(\"distinct-neutral-heads\") }",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 228,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/magma-list-pair-n7",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35:Nat.decEq.match_1",
+      "input_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.decEq.match_1:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "declaration": {
+        "def": {
+          "all": [
+            1560
+          ],
+          "hints": "abbrev",
+          "levelParams": [
+            18
+          ],
+          "name": 1560,
+          "safety": "safe",
+          "type": 7396,
+          "value": 7412
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(7407);inferred=Term(Closure { term: Expression(ExprId(110)), env: EnvFrame { id: 472844, .. }, levels: LevelSubstitution([(NameId(18), Succ(Zero))]) });expected=Term(Closure { term: Expression(ExprId(7398)), env: EnvFrame { id: 472842, .. }, levels: LevelSubstitution([(NameId(18), Param(\"u#18\"))]) });context=[Term(Closure { term: Expression(ExprId(856)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([(NameId(18), Param(\"u#18\"))]) }), Term(Closure { term: Expression(ExprId(620)), env: EnvFrame { id: 472782, .. }, levels: LevelSubstitution([(NameId(18), Param(\"u#18\"))]) }), Term(Closure { term: Expression(ExprId(7390)), env: EnvFrame { id: 472783, .. }, levels: LevelSubstitution([(NameId(18), Param(\"u#18\"))]) }), Term(Closure { term: Expression(ExprId(7392)), env: EnvFrame { id: 472789, .. }, levels: LevelSubstitution([(NameId(18), Param(\"u#18\"))]) })];frame=EnvFrame { id: 472795, .. };policy=GuardedSemanticFallback;budget=65475;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 228,
+          "truncated": false
+        },
+        {
+          "detail": "name=Nat.decEq.match_1;stage=definition.value;judgment=Unknown { residual: ResidualId(\"distinct-neutral-heads\") }",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 228,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/shared-subterm",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "dbc065108aa98512149c3f1a5bb6279630c53bdf64256516ba10ed256322883b:kernel_shared_subterm",
+      "input_sha256": "dbc065108aa98512149c3f1a5bb6279630c53bdf64256516ba10ed256322883b",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=kernel_shared_subterm:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "declaration": {
+        "thm": {
+          "all": [
+            65
+          ],
+          "levelParams": [],
+          "name": 65,
+          "type": 1171,
+          "value": 1174
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(1174);inferred=Term(Closure { term: Expression(ExprId(10)), env: EnvFrame { id: 2302, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) });expected=Term(Closure { term: Expression(ExprId(1171)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) });context=[];frame=EnvFrame { id: 0, .. };policy=GuardedSemanticFallback;budget=63525;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 8,
+          "truncated": false
+        },
+        {
+          "detail": "name=kernel_shared_subterm;stage=theorem.value;judgment=Unknown { residual: ResidualId(\"distinct-neutral-heads\") }",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 8,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "tutorial/082_RBTree.id_spec",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "88349328dd81100fb22396180bef9b5c2b0997275b7c3c672b19a7ac87ed72f9:RBTree.id_spec",
+      "input_sha256": "88349328dd81100fb22396180bef9b5c2b0997275b7c3c672b19a7ac87ed72f9",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=RBTree.id_spec:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+      "declaration": {
+        "thm": {
+          "all": [
+            78
+          ],
+          "levelParams": [],
+          "name": 78,
+          "type": 382,
+          "value": 877
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(403);inferred=Term(Closure { term: Expression(ExprId(255)), env: EnvFrame { id: 783, .. }, levels: LevelSubstitution([(NameId(35), Succ(Zero))]) });expected=Term(Closure { term: Expression(ExprId(105)), env: EnvFrame { id: 761, .. }, levels: LevelSubstitution([(NameId(35), Zero), (NameId(5), Zero)]) });context=[Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(1)), env: EnvFrame { id: 710, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(22)), env: EnvFrame { id: 711, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(286)), env: EnvFrame { id: 712, .. }, levels: LevelSubstitution([]) })];frame=EnvFrame { id: 716, .. };policy=GuardedSemanticFallback;budget=65458;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 7,
+          "truncated": false
+        },
+        {
+          "detail": "expression=ExprId(638);function=ExprId(404);argument=ExprId(637);context=[Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(1)), env: EnvFrame { id: 710, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(22)), env: EnvFrame { id: 711, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(286)), env: EnvFrame { id: 712, .. }, levels: LevelSubstitution([]) })];frame=EnvFrame { id: 716, .. };policy=GuardedSemanticFallback;budget=65458;upstream=ResidualId(\"distinct-neutral-heads\")",
+          "event": 1,
+          "kind": "application-masked-inference",
+          "scope": 7,
+          "truncated": false
+        },
+        {
+          "detail": "expression=ExprId(870);function=ExprId(638);argument=ExprId(869);context=[Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(1)), env: EnvFrame { id: 710, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(22)), env: EnvFrame { id: 711, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(286)), env: EnvFrame { id: 712, .. }, levels: LevelSubstitution([]) })];frame=EnvFrame { id: 716, .. };policy=GuardedSemanticFallback;budget=65458;upstream=ResidualId(\"application-function-type\")",
+          "event": 2,
+          "kind": "application-masked-inference",
+          "scope": 7,
+          "truncated": false
+        },
+        {
+          "detail": "expression=ExprId(871);function=ExprId(870);argument=ExprId(27);context=[Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(1)), env: EnvFrame { id: 710, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(22)), env: EnvFrame { id: 711, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(286)), env: EnvFrame { id: 712, .. }, levels: LevelSubstitution([]) })];frame=EnvFrame { id: 716, .. };policy=GuardedSemanticFallback;budget=65458;upstream=ResidualId(\"application-function-type\")",
+          "event": 3,
+          "kind": "application-masked-inference",
+          "scope": 7,
+          "truncated": false
+        },
+        {
+          "detail": "expression=ExprId(872);function=ExprId(871);argument=ExprId(7);context=[Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(1)), env: EnvFrame { id: 710, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(22)), env: EnvFrame { id: 711, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(286)), env: EnvFrame { id: 712, .. }, levels: LevelSubstitution([]) })];frame=EnvFrame { id: 716, .. };policy=GuardedSemanticFallback;budget=65458;upstream=ResidualId(\"application-function-type\")",
+          "event": 4,
+          "kind": "application-masked-inference",
+          "scope": 7,
+          "truncated": false
+        },
+        {
+          "detail": "expression=ExprId(873);function=ExprId(872);argument=ExprId(4);context=[Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(1)), env: EnvFrame { id: 710, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(22)), env: EnvFrame { id: 711, .. }, levels: LevelSubstitution([]) }), Term(Closure { term: Expression(ExprId(286)), env: EnvFrame { id: 712, .. }, levels: LevelSubstitution([]) })];frame=EnvFrame { id: 716, .. };policy=GuardedSemanticFallback;budget=65458;upstream=ResidualId(\"application-function-type\")",
+          "event": 5,
+          "kind": "application-masked-inference",
+          "scope": 7,
+          "truncated": false
+        },
+        {
+          "detail": "name=RBTree.id_spec;stage=theorem.value;judgment=Unknown { residual: ResidualId(\"application-function-type\") }",
+          "event": 6,
+          "kind": "boundary",
+          "scope": 7,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "tutorial/112_structEta",
+      "expected": 0,
+      "verdict": 2,
+      "object_id": "a686b22362e05728ef0fce00646dd6f63996ab66e89290bf13ecd492cac17a6d:structEta",
+      "input_sha256": "a686b22362e05728ef0fce00646dd6f63996ab66e89290bf13ecd492cac17a6d",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=structEta:stage=definition.value:verdict=UNKNOWN:reason=application-function-type",
+      "declaration": {
+        "def": {
+          "all": [
+            34
+          ],
+          "hints": "opaque",
+          "levelParams": [
+            2
+          ],
+          "name": 34,
+          "safety": "safe",
+          "type": 161,
+          "value": 172
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(166);inferred=Term(Closure { term: Expression(ExprId(125)), env: EnvFrame { id: 261, .. }, levels: LevelSubstitution([(NameId(2), Succ(Param(\"u#2\")))]) });expected=Term(Closure { term: Expression(ExprId(5)), env: EnvFrame { id: 255, .. }, levels: LevelSubstitution([]) });context=[Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) }), Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 208, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) }), Term(Closure { term: Expression(ExprId(135)), env: EnvFrame { id: 209, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) })];frame=EnvFrame { id: 212, .. };policy=GuardedSemanticFallback;budget=65480;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 7,
+          "truncated": false
+        },
+        {
+          "detail": "expression=ExprId(169);function=ExprId(167);argument=ExprId(168);context=[Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) }), Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 208, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) }), Term(Closure { term: Expression(ExprId(135)), env: EnvFrame { id: 209, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) })];frame=EnvFrame { id: 212, .. };policy=GuardedSemanticFallback;budget=65480;upstream=ResidualId(\"distinct-neutral-heads\")",
+          "event": 1,
+          "kind": "application-masked-inference",
+          "scope": 7,
+          "truncated": false
+        },
+        {
+          "detail": "name=structEta;stage=definition.value;judgment=Unknown { residual: ResidualId(\"application-function-type\") }",
+          "event": 2,
+          "kind": "boundary",
+          "scope": 7,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "bugs/nested-unused-param",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "25afcc9267523cfd26edf94ca01ebe34ca0e8a24954e4b4e3d397a61688b8778:T",
+      "input_sha256": "25afcc9267523cfd26edf94ca01ebe34ca0e8a24954e4b4e3d397a61688b8778",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=T:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 12,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 18,
+              "numFields": 0,
+              "numParams": 0,
+              "type": 30
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                12
+              ],
+              "isUnsafe": false,
+              "k": true,
+              "levelParams": [
+                3
+              ],
+              "name": 19,
+              "numIndices": 1,
+              "numMinors": 1,
+              "numMotives": 1,
+              "numParams": 0,
+              "rules": [
+                {
+                  "ctor": 18,
+                  "nfields": 0,
+                  "rhs": 44
+                }
+              ],
+              "type": 42
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                12
+              ],
+              "ctors": [
+                18
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 12,
+              "numIndices": 1,
+              "numNested": 0,
+              "numParams": 0,
+              "type": 28
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(12)], constructors: [NameId(18)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [], name: NameId(12), num_indices: 1, num_nested: 0, num_params: 0, ty: ExprId(28) }], constructors: [Constructor { index: 0, inductive: NameId(12), is_unsafe: false, level_params: [], name: NameId(18), num_fields: 0, num_params: 0, ty: ExprId(30) }], recursors: [Recursor { all: [NameId(12)], is_unsafe: false, k: true, level_params: [NameId(3)], name: NameId(19), num_indices: 1, num_minors: 1, num_motives: 1, num_params: 0, rules: [RecursorRule { constructor: NameId(18), num_fields: 0, rhs: ExprId(44) }], ty: ExprId(42) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 3,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 3,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "admitted|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "bugs/proj-of-stuck-prop",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "4bdc45de8980cf9cb6e712ab6260f42a89201876f096441fb5ec49e3a0052a22:WellFounded",
+      "input_sha256": "4bdc45de8980cf9cb6e712ab6260f42a89201876f096441fb5ec49e3a0052a22",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 266,
+              "isUnsafe": false,
+              "levelParams": [
+                3
+              ],
+              "name": 267,
+              "numFields": 1,
+              "numParams": 2,
+              "type": 1185
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                266
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                13,
+                3
+              ],
+              "name": 268,
+              "numIndices": 0,
+              "numMinors": 1,
+              "numMotives": 1,
+              "numParams": 2,
+              "rules": [
+                {
+                  "ctor": 267,
+                  "nfields": 1,
+                  "rhs": 1208
+                }
+              ],
+              "type": 1202
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                266
+              ],
+              "ctors": [
+                267
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [
+                3
+              ],
+              "name": 266,
+              "numIndices": 0,
+              "numNested": 0,
+              "numParams": 2,
+              "type": 1178
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(266)], constructors: [NameId(267)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [NameId(3)], name: NameId(266), num_indices: 0, num_nested: 0, num_params: 2, ty: ExprId(1178) }], constructors: [Constructor { index: 0, inductive: NameId(266), is_unsafe: false, level_params: [NameId(3)], name: NameId(267), num_fields: 1, num_params: 2, ty: ExprId(1185) }], recursors: [Recursor { all: [NameId(266)], is_unsafe: false, k: false, level_params: [NameId(13), NameId(3)], name: NameId(268), num_indices: 0, num_minors: 1, num_motives: 1, num_params: 2, rules: [RecursorRule { constructor: NameId(267), num_fields: 1, rhs: ExprId(1208) }], ty: ExprId(1202) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 51,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 51,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "admitted|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "bugs/proj-of-subst-prop",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "c1e3e96748ade2a9806837460821ea725f460a1f8bc1601d7ce121a9b28ffed0:WellFounded",
+      "input_sha256": "c1e3e96748ade2a9806837460821ea725f460a1f8bc1601d7ce121a9b28ffed0",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 251,
+              "isUnsafe": false,
+              "levelParams": [
+                3
+              ],
+              "name": 252,
+              "numFields": 1,
+              "numParams": 2,
+              "type": 1089
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                251
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                13,
+                3
+              ],
+              "name": 253,
+              "numIndices": 0,
+              "numMinors": 1,
+              "numMotives": 1,
+              "numParams": 2,
+              "rules": [
+                {
+                  "ctor": 252,
+                  "nfields": 1,
+                  "rhs": 1113
+                }
+              ],
+              "type": 1107
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                251
+              ],
+              "ctors": [
+                252
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [
+                3
+              ],
+              "name": 251,
+              "numIndices": 0,
+              "numNested": 0,
+              "numParams": 2,
+              "type": 1082
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(251)], constructors: [NameId(252)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [NameId(3)], name: NameId(251), num_indices: 0, num_nested: 0, num_params: 2, ty: ExprId(1082) }], constructors: [Constructor { index: 0, inductive: NameId(251), is_unsafe: false, level_params: [NameId(3)], name: NameId(252), num_fields: 1, num_params: 2, ty: ExprId(1089) }], recursors: [Recursor { all: [NameId(251)], is_unsafe: false, k: false, level_params: [NameId(13), NameId(3)], name: NameId(253), num_indices: 0, num_minors: 1, num_motives: 1, num_params: 2, rules: [RecursorRule { constructor: NameId(252), num_fields: 1, rhs: ExprId(1113) }], ty: ExprId(1107) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 49,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 49,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "admitted|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "bugs/rec-missing-ih",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "8a240552317ba17d44d175c10531e5f988f55569db5eff734701735ce598fa73:WellFounded",
+      "input_sha256": "8a240552317ba17d44d175c10531e5f988f55569db5eff734701735ce598fa73",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 271,
+              "isUnsafe": false,
+              "levelParams": [
+                3
+              ],
+              "name": 272,
+              "numFields": 1,
+              "numParams": 2,
+              "type": 1244
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                271
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                13,
+                3
+              ],
+              "name": 273,
+              "numIndices": 0,
+              "numMinors": 1,
+              "numMotives": 1,
+              "numParams": 2,
+              "rules": [
+                {
+                  "ctor": 272,
+                  "nfields": 1,
+                  "rhs": 1267
+                }
+              ],
+              "type": 1261
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                271
+              ],
+              "ctors": [
+                272
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [
+                3
+              ],
+              "name": 271,
+              "numIndices": 0,
+              "numNested": 0,
+              "numParams": 2,
+              "type": 1237
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(271)], constructors: [NameId(272)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [NameId(3)], name: NameId(271), num_indices: 0, num_nested: 0, num_params: 2, ty: ExprId(1237) }], constructors: [Constructor { index: 0, inductive: NameId(271), is_unsafe: false, level_params: [NameId(3)], name: NameId(272), num_fields: 1, num_params: 2, ty: ExprId(1244) }], recursors: [Recursor { all: [NameId(271)], is_unsafe: false, k: false, level_params: [NameId(13), NameId(3)], name: NameId(273), num_indices: 0, num_minors: 1, num_motives: 1, num_params: 2, rules: [RecursorRule { constructor: NameId(272), num_fields: 1, rhs: ExprId(1267) }], ty: ExprId(1261) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 54,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 54,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "admitted|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "bugs/rec-of-subst-prop",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "572d2eb54a4e7d98d2e1a7bad01c5574f85ed5dacfd5bd1734f88ac37d515759:WellFounded",
+      "input_sha256": "572d2eb54a4e7d98d2e1a7bad01c5574f85ed5dacfd5bd1734f88ac37d515759",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 209,
+              "isUnsafe": false,
+              "levelParams": [
+                3
+              ],
+              "name": 210,
+              "numFields": 1,
+              "numParams": 2,
+              "type": 846
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                209
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                19,
+                3
+              ],
+              "name": 211,
+              "numIndices": 0,
+              "numMinors": 1,
+              "numMotives": 1,
+              "numParams": 2,
+              "rules": [
+                {
+                  "ctor": 210,
+                  "nfields": 1,
+                  "rhs": 870
+                }
+              ],
+              "type": 864
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                209
+              ],
+              "ctors": [
+                210
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [
+                3
+              ],
+              "name": 209,
+              "numIndices": 0,
+              "numNested": 0,
+              "numParams": 2,
+              "type": 839
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(209)], constructors: [NameId(210)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [NameId(3)], name: NameId(209), num_indices: 0, num_nested: 0, num_params: 2, ty: ExprId(839) }], constructors: [Constructor { index: 0, inductive: NameId(209), is_unsafe: false, level_params: [NameId(3)], name: NameId(210), num_fields: 1, num_params: 2, ty: ExprId(846) }], recursors: [Recursor { all: [NameId(209)], is_unsafe: false, k: false, level_params: [NameId(19), NameId(3)], name: NameId(211), num_indices: 0, num_minors: 1, num_motives: 1, num_params: 2, rules: [RecursorRule { constructor: NameId(210), num_fields: 1, rhs: ExprId(870) }], ty: ExprId(864) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 47,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 47,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "admitted|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "perf/refute-cheap-first",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "5484b765b659b0d4a77aa75d82ae3d81f04d9731de30ee08dd5e4c58d0076fba:kernel_refute_cheap_first",
+      "input_sha256": "5484b765b659b0d4a77aa75d82ae3d81f04d9731de30ee08dd5e4c58d0076fba",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "declaration": {
+        "thm": {
+          "all": [
+            57
+          ],
+          "levelParams": [],
+          "name": 57,
+          "type": 363,
+          "value": 366
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(366);inferred=Term(Closure { term: Expression(ExprId(10)), env: EnvFrame { id: 627, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) });expected=Term(Closure { term: Expression(ExprId(363)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) });context=[];frame=EnvFrame { id: 0, .. };policy=GuardedSemanticFallback;budget=65117;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 7,
+          "truncated": false
+        },
+        {
+          "detail": "name=kernel_refute_cheap_first;stage=theorem.value;judgment=Unknown { residual: ResidualId(\"distinct-neutral-heads\") }",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 7,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "tutorial/100_ruleKbad",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "2147c3416825e1c7f78382501f4c3e2f8165d23d464c998a077e69a12e51697a:ruleKbad",
+      "input_sha256": "2147c3416825e1c7f78382501f4c3e2f8165d23d464c998a077e69a12e51697a",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "declaration": {
+        "thm": {
+          "all": [
+            21
+          ],
+          "levelParams": [],
+          "name": 21,
+          "type": 77,
+          "value": 82
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(82);inferred=Pi { domain: Term(Closure { term: Expression(ExprId(63)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }), body: Pi { domain: Term(Closure { term: Expression(ExprId(43)), env: EnvFrame { id: 113, .. }, levels: LevelSubstitution([]) }), body: Term(Closure { term: Expression(ExprId(10)), env: EnvFrame { id: 116, .. }, levels: LevelSubstitution([(NameId(2), Succ(Zero))]) }) } };expected=Term(Closure { term: Expression(ExprId(77)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) });context=[];frame=EnvFrame { id: 0, .. };policy=GuardedSemanticFallback;budget=65521;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 3,
+          "truncated": false
+        },
+        {
+          "detail": "name=ruleKbad;stage=theorem.value;judgment=Unknown { residual: ResidualId(\"distinct-neutral-heads\") }",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 3,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "tutorial/101_ruleKAcc",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "59a4dc34b1175f59d9efd17c4c5b9d9f07bdb54c882dc66a65737d29be6d4356:ruleKAcc",
+      "input_sha256": "59a4dc34b1175f59d9efd17c4c5b9d9f07bdb54c882dc66a65737d29be6d4356",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "declaration": {
+        "thm": {
+          "all": [
+            30
+          ],
+          "levelParams": [
+            2
+          ],
+          "name": 30,
+          "type": 171,
+          "value": 179
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(179);inferred=Pi { domain: Term(Closure { term: Expression(ExprId(0)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) }), body: Pi { domain: Term(Closure { term: Expression(ExprId(5)), env: EnvFrame { id: 311, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) }), body: Pi { domain: Term(Closure { term: Expression(ExprId(2)), env: EnvFrame { id: 314, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) }), body: Pi { domain: Term(Closure { term: Expression(ExprId(28)), env: EnvFrame { id: 315, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) }), body: Pi { domain: Term(Closure { term: Expression(ExprId(94)), env: EnvFrame { id: 323, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) }), body: Term(Closure { term: Expression(ExprId(114)), env: EnvFrame { id: 326, .. }, levels: LevelSubstitution([(NameId(15), Succ(Zero))]) }) } } } } };expected=Term(Closure { term: Expression(ExprId(171)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([(NameId(2), Param(\"u#2\"))]) });context=[];frame=EnvFrame { id: 0, .. };policy=GuardedSemanticFallback;budget=65511;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 4,
+          "truncated": false
+        },
+        {
+          "detail": "name=ruleKAcc;stage=theorem.value;judgment=Unknown { residual: ResidualId(\"distinct-neutral-heads\") }",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 4,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "tutorial/111_indexedUnitEta",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "cbb7373c1ca899628177c7d6eb97dc6cf2f1faa3d14cdd1b1d90a5103e15f5d4:IndexedUnit",
+      "input_sha256": "cbb7373c1ca899628177c7d6eb97dc6cf2f1faa3d14cdd1b1d90a5103e15f5d4",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=IndexedUnit:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 10,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 16,
+              "numFields": 0,
+              "numParams": 0,
+              "type": 24
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                10
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                5
+              ],
+              "name": 17,
+              "numIndices": 1,
+              "numMinors": 1,
+              "numMotives": 1,
+              "numParams": 0,
+              "rules": [
+                {
+                  "ctor": 16,
+                  "nfields": 0,
+                  "rhs": 38
+                }
+              ],
+              "type": 36
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                10
+              ],
+              "ctors": [
+                16
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 10,
+              "numIndices": 1,
+              "numNested": 0,
+              "numParams": 0,
+              "type": 22
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(10)], constructors: [NameId(16)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [], name: NameId(10), num_indices: 1, num_nested: 0, num_params: 0, ty: ExprId(22) }], constructors: [Constructor { index: 0, inductive: NameId(10), is_unsafe: false, level_params: [], name: NameId(16), num_fields: 0, num_params: 0, ty: ExprId(24) }], recursors: [Recursor { all: [NameId(10)], is_unsafe: false, k: false, level_params: [NameId(5)], name: NameId(17), num_indices: 1, num_minors: 1, num_motives: 1, num_params: 0, rules: [RecursorRule { constructor: NameId(16), num_fields: 0, rhs: ExprId(38) }], ty: ExprId(36) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 2,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 2,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "admitted|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "tutorial/113_indexedStructEta",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "68793088cc096a96a4b7ed07f7417d88a4dafcc7ca4e8b53f6a756aed91e1b2d:IndexedSingleton",
+      "input_sha256": "68793088cc096a96a4b7ed07f7417d88a4dafcc7ca4e8b53f6a756aed91e1b2d",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=IndexedSingleton:stage=inductive:verdict=Unknown",
+      "declaration": {
+        "inductive": {
+          "ctors": [
+            {
+              "cidx": 0,
+              "induct": 14,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 20,
+              "numFields": 1,
+              "numParams": 0,
+              "type": 37
+            }
+          ],
+          "recs": [
+            {
+              "all": [
+                14
+              ],
+              "isUnsafe": false,
+              "k": false,
+              "levelParams": [
+                5
+              ],
+              "name": 21,
+              "numIndices": 1,
+              "numMinors": 1,
+              "numMotives": 1,
+              "numParams": 0,
+              "rules": [
+                {
+                  "ctor": 20,
+                  "nfields": 1,
+                  "rhs": 54
+                }
+              ],
+              "type": 50
+            }
+          ],
+          "types": [
+            {
+              "all": [
+                14
+              ],
+              "ctors": [
+                20
+              ],
+              "isRec": false,
+              "isReflexive": false,
+              "isUnsafe": false,
+              "levelParams": [],
+              "name": 14,
+              "numIndices": 1,
+              "numNested": 0,
+              "numParams": 0,
+              "type": 34
+            }
+          ]
+        }
+      },
+      "events": [
+        {
+          "detail": "block=InductiveBlock { types: [InductiveType { all: [NameId(14)], constructors: [NameId(20)], is_recursive: false, is_reflexive: false, is_unsafe: false, level_params: [], name: NameId(14), num_indices: 1, num_nested: 0, num_params: 0, ty: ExprId(34) }], constructors: [Constructor { index: 0, inductive: NameId(14), is_unsafe: false, level_params: [], name: NameId(20), num_fields: 1, num_params: 0, ty: ExprId(37) }], recursors: [Recursor { all: [NameId(14)], is_unsafe: false, k: false, level_params: [NameId(5)], name: NameId(21), num_indices: 1, num_minors: 1, num_motives: 1, num_params: 0, rules: [RecursorRule { constructor: NameId(20), num_fields: 1, rhs: ExprId(54) }], ty: ExprId(50) }] };policy=GuardedSemanticFallback;budget=65536",
+          "event": 0,
+          "kind": "inductive-attempt",
+          "scope": 3,
+          "truncated": false
+        },
+        {
+          "detail": "stage=inductive;verdict=Unknown",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 3,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "admitted|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    },
+    {
+      "test": "tutorial/125_accRecNoEta",
+      "expected": 1,
+      "verdict": 2,
+      "object_id": "7868dfaa2a5574fa383e4fbf42f84d3eab78c43614f0034d2f78f2069ca00f64:accRecNoEta",
+      "input_sha256": "7868dfaa2a5574fa383e4fbf42f84d3eab78c43614f0034d2f78f2069ca00f64",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=accRecNoEta:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "declaration": {
+        "thm": {
+          "all": [
+            30
+          ],
+          "levelParams": [],
+          "name": 30,
+          "type": 177,
+          "value": 185
+        }
+      },
+      "events": [
+        {
+          "detail": "expression=ExprId(185);inferred=Pi { domain: Term(Closure { term: Expression(ExprId(93)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }), body: Pi { domain: Term(Closure { term: Expression(ExprId(5)), env: EnvFrame { id: 311, .. }, levels: LevelSubstitution([]) }), body: Pi { domain: Term(Closure { term: Expression(ExprId(2)), env: EnvFrame { id: 314, .. }, levels: LevelSubstitution([]) }), body: Pi { domain: Term(Closure { term: Expression(ExprId(143)), env: EnvFrame { id: 315, .. }, levels: LevelSubstitution([]) }), body: Pi { domain: Term(Closure { term: Expression(ExprId(94)), env: EnvFrame { id: 323, .. }, levels: LevelSubstitution([]) }), body: Term(Closure { term: Expression(ExprId(114)), env: EnvFrame { id: 326, .. }, levels: LevelSubstitution([(NameId(15), Succ(Zero))]) }) } } } } };expected=Term(Closure { term: Expression(ExprId(177)), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) });context=[];frame=EnvFrame { id: 0, .. };policy=GuardedSemanticFallback;budget=65511;refutation_to_unknown=true;result=Refuted { obstruction: ObstructionId(\"distinct-neutral-heads\") }",
+          "event": 0,
+          "kind": "typed-comparison",
+          "scope": 4,
+          "truncated": false
+        },
+        {
+          "detail": "name=accRecNoEta;stage=theorem.value;judgment=Unknown { residual: ResidualId(\"distinct-neutral-heads\") }",
+          "event": 1,
+          "kind": "boundary",
+          "scope": 4,
+          "truncated": false
+        }
+      ],
+      "unscoped_events": [],
+      "plan": {
+        "status": "NO_REGISTERED_PATH",
+        "contracts": [],
+        "candidates": [],
+        "path_id": "conversion|",
+        "seeds": []
+      },
+      "causal_limit": "Failed comparisons in the terminal declaration are observed, not a proven minimal causal chain. No observed shape is a validated premise."
+    }
+  ]
+}
