@@ -380,6 +380,29 @@ impl<'a> TypeChecker<'a> {
         Some(())
     }
 
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_closure_outer_support(
+        &self,
+        closure: &Closure,
+    ) -> Vec<(usize, EnvBinding)> {
+        let Some(expression) = closure.expression() else {
+            return Vec::new();
+        };
+        let mut offsets = Vec::new();
+        if self.collect_outer_bvars(expression, 0, 4096, &mut offsets).is_none() {
+            return Vec::new();
+        }
+        offsets.sort_unstable();
+        offsets.dedup();
+        offsets
+            .into_iter()
+            .filter_map(|offset| {
+                let index = u64::try_from(offset).ok()?;
+                closure.env.lookup(index).map(|binding| (offset, binding))
+            })
+            .collect()
+    }
+
     fn infer_uncached(
         &self,
         expression: ExprId,
