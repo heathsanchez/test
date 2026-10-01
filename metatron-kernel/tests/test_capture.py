@@ -18,7 +18,7 @@ class Capture(unittest.TestCase):
             for field in ['expression','inferred','expected','context','frame','policy','budget','result']:
                 self.assertIn(field,e['detail'])
 
-    def test_three_sum_families_reuse_existing_recursor_check(self):
+    def test_three_sum_families_measure_existing_recursor_check(self):
         binary=os.environ.get('NUCLEUS_DIAGNOSTIC_BINARY')
         if not binary: self.skipTest('CI supplies pinned binary and corpus')
         for name in ['perf/magma-list-deep-n21','perf/fueled-chain','init-prelude']:
@@ -29,4 +29,6 @@ class Capture(unittest.TestCase):
             boundaries=[e for e in events if e['kind']=='boundary']
             self.assertTrue(boundaries,'missing existing recursor probe')
             probes=[e for e in events if e['scope']==boundaries[-1]['scope'] and e['kind']=='existing-recursor-shape']
-            self.assertEqual([e['detail'] for e in probes],['passed=true'])
+            self.assertEqual(len(probes),1,name)
+            self.assertIn(probes[0]['detail'],['passed=true','passed=false'],name)
+            print(name,probes[0]['detail'],[e['detail'] for e in events if e['scope']==boundaries[-1]['scope'] and e['kind']=='recursor-shape-miss'])

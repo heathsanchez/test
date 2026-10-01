@@ -8,7 +8,7 @@ REGISTRY=[
  Contract('proof-type-conversion@13d5',{'validated.both-prop','validated.bounded-type-conversion'},{'conversion'},True),
 ]
 def classify(block,events):
- if any(e.get('truncated') for e in events):
+ if any(e.get('truncated') or e.get('kind')=='probe-incomplete' for e in events):
   return {'status':'UNRESOLVED_INCOMPLETE_TRACE','contracts':[],'candidates':[]}
  seeds=set()
  if any(e.get('kind')=='existing-recursor-shape' and e.get('detail')=='passed=true' for e in events):

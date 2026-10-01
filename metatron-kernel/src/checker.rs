@@ -214,8 +214,21 @@ fn check_export_with_policy(
                     && !recursor.is_unsafe
                     && block.constructors.iter().all(|c| !c.is_unsafe && c.num_fields <= 4)
                 {
-                    let passed = generic_nonrecursive_recursor_shape(&export, inductive, &block.constructors, recursor);
-                    crate::diagnostics::causal("existing-recursor-shape", format_args!("passed={passed}"));
+                    let mut roots = vec![inductive.ty, recursor.ty];
+                    roots.extend(block.constructors.iter().map(|c| c.ty));
+                    let metadata_bounded = recursor.rules.len() <= 3
+                        && inductive.level_params.len() <= 2
+                        && recursor.level_params.len() <= 3
+                        && block.constructors.iter().all(|c| c.level_params.len() <= 2);
+                    if metadata_bounded {
+                        roots.extend(recursor.rules.iter().map(|r| r.rhs));
+                    }
+                    if metadata_bounded && crate::diagnostics::probe_expression_budget(&export.exprs, &roots, 4096, 64) {
+                        let passed = generic_nonrecursive_recursor_shape(&export, inductive, &block.constructors, recursor);
+                        crate::diagnostics::causal("existing-recursor-shape", format_args!("passed={passed}"));
+                    } else {
+                        crate::diagnostics::causal("probe-incomplete", format_args!("existing-recursor-shape: bounded preflight declined"));
+                    }
                 }
                 match check_inductive(&export, &environment, &block, limits, delta_policy) {
                     Ok(extended) => {
@@ -1022,44 +1035,52 @@ fn generic_nonrecursive_recursor_shape(
     constructors: &[Constructor],
     recursor: &Recursor,
 ) -> bool {
-    let Ok(p) = usize::try_from(inductive.num_params) else { return false; };
+    macro_rules! shape_miss {
+        ($stage:expr) => {{
+            #[cfg(feature = "diagnostics")]
+            crate::diagnostics::causal("recursor-shape-miss", format_args!("stage={}", $stage));
+            false
+        }};
+    }
+
+    let Ok(p) = usize::try_from(inductive.num_params) else { return shape_miss!(1); };
     let c = constructors.len();
-    let Some((ind_params,_)) = pi_spine(export,inductive.ty,p) else { return false; };
-    let Some((domains,result)) = pi_spine(export,recursor.ty,p+c+2) else { return false; };
-    if domains[..p] != ind_params[..] { return false; }
+    let Some((ind_params,_)) = pi_spine(export,inductive.ty,p) else { return shape_miss!(2); };
+    let Some((domains,result)) = pi_spine(export,recursor.ty,p+c+2) else { return shape_miss!(3); };
+    if domains[..p] != ind_params[..] { return shape_miss!(4); }
 
     let motive=domains[p];
-    let Some((motive_domains,motive_sort))=pi_spine(export,motive,1) else{return false;};
-    let [motive_target]=motive_domains.as_slice() else{return false;};
+    let Some((motive_domains,motive_sort))=pi_spine(export,motive,1) else{return shape_miss!(5);};
+    let [motive_target]=motive_domains.as_slice() else{return shape_miss!(6);};
     let (mh,ma)=application_spine(export,*motive_target);
     if ma.len()!=p || !is_declared_level_constant(export,mh,inductive.name,&inductive.level_params)
-       || !ma.iter().enumerate().all(|(i,a)|is_bvar(export,*a,(p-1-i) as u64)){return false;}
+       || !ma.iter().enumerate().all(|(i,a)|is_bvar(export,*a,(p-1-i) as u64)){return shape_miss!(7);}
     let motive_level=match export.exprs.get(motive_sort){
-        Some(Expr::Sort(l))=>match export.levels.get(*l){Some(Level::Param(n))=>*n,_=>return false},
-        _=>return false
+        Some(Expr::Sort(l))=>match export.levels.get(*l){Some(Level::Param(n))=>*n,_=>return shape_miss!(8)},
+        _=>return shape_miss!(9)
     };
     if recursor.level_params.first().copied()!=Some(motive_level)
-       || recursor.level_params.get(1..)!=Some(inductive.level_params.as_slice()){return false;}
+       || recursor.level_params.get(1..)!=Some(inductive.level_params.as_slice()){return shape_miss!(10);}
 
     for (j,ctor) in constructors.iter().enumerate(){
-        let Ok(f)=usize::try_from(ctor.num_fields) else{return false;};
-        let Some((ctor_domains,_))=pi_spine(export,ctor.ty,p+f) else{return false;};
-        let Some((minor_fields,minor_result))=pi_spine(export,domains[p+1+j],f) else{return false;};
+        let Ok(f)=usize::try_from(ctor.num_fields) else{return shape_miss!(11);};
+        let Some((ctor_domains,_))=pi_spine(export,ctor.ty,p+f) else{return shape_miss!(12);};
+        let Some((minor_fields,minor_result))=pi_spine(export,domains[p+1+j],f) else{return shape_miss!(13);};
         for (k,(cd,md)) in ctor_domains[p..].iter().zip(&minor_fields).enumerate(){
-            if !expr_eq_with_bvar_shift(export,*cd,*md,k as u64,(1+j) as u64){return false;}
+            if !expr_eq_with_bvar_shift(export,*cd,*md,k as u64,(1+j) as u64){return shape_miss!(14);}
         }
-        let Some(Expr::App{fun:mm,arg:constructed})=export.exprs.get(minor_result) else{return false;};
-        if !is_bvar(export,*mm,(f+j) as u64){return false;}
+        let Some(Expr::App{fun:mm,arg:constructed})=export.exprs.get(minor_result) else{return shape_miss!(15);};
+        if !is_bvar(export,*mm,(f+j) as u64){return shape_miss!(16);}
         let (ch,ca)=application_spine(export,*constructed);
-        if ca.len()!=p+f || !is_declared_level_constant(export,ch,ctor.name,&ctor.level_params){return false;}
+        if ca.len()!=p+f || !is_declared_level_constant(export,ch,ctor.name,&ctor.level_params){return shape_miss!(17);}
         for (i, argument) in ca.iter().take(p).enumerate() {
             if !is_bvar(export, *argument, (f + j + 1 + (p - 1 - i)) as u64) {
-                return false;
+                return shape_miss!(18);
             }
         }
         for (k, argument) in ca.iter().skip(p).take(f).enumerate() {
             if !is_bvar(export, *argument, (f - 1 - k) as u64) {
-                return false;
+                return shape_miss!(19);
             }
         }
     }
@@ -1068,15 +1089,15 @@ fn generic_nonrecursive_recursor_shape(
     let (th,ta)=application_spine(export,target);
     if ta.len()!=p || !is_declared_level_constant(export,th,inductive.name,&inductive.level_params)
        || !ta.iter().enumerate().all(|(i,a)|is_bvar(export,*a,(c+1+(p-1-i)) as u64))
-       || !is_bvar_application(export,result,(c+1) as u64,0){return false;}
+       || !is_bvar_application(export,result,(c+1) as u64,0){return shape_miss!(20);}
 
-    if recursor.rules.len()!=c{return false;}
+    if recursor.rules.len()!=c{return shape_miss!(21);}
     for (j,(ctor,rule)) in constructors.iter().zip(&recursor.rules).enumerate(){
-        let Ok(f)=usize::try_from(ctor.num_fields) else{return false;};
-        let Some((_,rr))=lam_spine(export,rule.rhs,p+1+c+f) else{return false;};
+        let Ok(f)=usize::try_from(ctor.num_fields) else{return shape_miss!(22);};
+        let Some((_,rr))=lam_spine(export,rule.rhs,p+1+c+f) else{return shape_miss!(23);};
         let (h,args)=application_spine(export,rr);
         if !is_bvar(export,h,(f+(c-1-j)) as u64) || args.len()!=f
-           || !args.iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f-1-k) as u64)){return false;}
+           || !args.iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f-1-k) as u64)){return shape_miss!(24);}
     }
     true
 }

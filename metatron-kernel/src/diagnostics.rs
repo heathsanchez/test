@@ -108,3 +108,47 @@ pub(crate) fn causal(kind: &str, detail: std::fmt::Arguments<'_>) {
         "detail": output.text, "truncated": output.truncated || event == 32
     }));
 }
+
+/// Conservative preflight for a diagnostic call into the existing recursive
+/// shape checker. Count occurrences (not unique nodes) to bound shared trees.
+pub(crate) fn probe_expression_budget(
+    expressions: &crate::id::IdTable<crate::id::ExprId, crate::syntax::Expr>,
+    roots: &[crate::id::ExprId],
+    max_work: usize,
+    max_depth: usize,
+) -> bool {
+    use crate::syntax::Expr;
+    let mut pending: Vec<_> = roots.iter().map(|id| (*id, 0usize)).collect();
+    let mut work = 0usize;
+    while let Some((id, depth)) = pending.pop() {
+        if work >= max_work || depth > max_depth { return false; }
+        work += 1;
+        let Some(node) = expressions.get(id) else { return false; };
+        match node {
+            Expr::App { fun, arg } => { pending.push((*fun,depth+1)); pending.push((*arg,depth+1)); }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => { pending.push((*domain,depth+1)); pending.push((*body,depth+1)); }
+            Expr::Let { ty, value, body } => { pending.push((*ty,depth+1)); pending.push((*value,depth+1)); pending.push((*body,depth+1)); }
+            Expr::Proj { structure, .. } => pending.push((*structure,depth+1)),
+            Expr::Const { levels, .. } if levels.len() > 4 => return false,
+            Expr::NatLit(_) | Expr::StrLit(_) => return false,
+            Expr::Const { .. } | Expr::Sort(_) | Expr::BVar(_) => {}
+        }
+    }
+    true
+}
+
+#[cfg(test)]
+mod probe_tests {
+    use super::probe_expression_budget;
+    use crate::{id::{ExprId, IdTable}, syntax::Expr};
+    #[test]
+    fn probe_work_counts_shared_occurrences_and_depth_separately() {
+        let mut e=IdTable::default();
+        e.insert(ExprId(0),Expr::BVar(0)).unwrap();
+        e.insert(ExprId(1),Expr::App { fun:ExprId(0), arg:ExprId(0) }).unwrap();
+        assert!(probe_expression_budget(&e,&[ExprId(1)],3,1));
+        assert!(!probe_expression_budget(&e,&[ExprId(1)],2,1));
+        assert!(!probe_expression_budget(&e,&[ExprId(1)],3,0));
+        assert!(!probe_expression_budget(&e,&[ExprId(99)],3,1));
+    }
+}
