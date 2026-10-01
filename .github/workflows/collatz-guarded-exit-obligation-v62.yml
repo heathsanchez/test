@@ -1,0 +1,67 @@
+name: Collatz guarded exit obligation V62
+on:
+  push:
+    branches: [collatz-guarded-exit-obligation-v62]
+permissions: {contents: read, actions: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-guard-bank-reconciliation-v61
+          run-id: 36830138059
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qualified-state
+      - name: Check fixed-origin obligation and finite certificate soundness
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence/collatz-guarded-exit-obligation-v62
+          lake build Collatz.OrdinaryExitReduction
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean formal/Collatz/GuardedExitObligation.lean | tee evidence/collatz-guarded-exit-obligation-v62/proof.log
+          cat > /tmp/positive.lean <<'LEAN'
+          import Collatz.GuardedExitObligation
+          open CollatzFinal CollatzFinal.SourceProduct
+          example : ExitObligation 4 5 := by
+            exact (ExitCertificate.macro 5 2 3 (by decide)
+              (ExitCertificate.hit 2 (Or.inl (Or.inr rfl)))).sound
+          #check collatz_of_universal_exit_certificates
+          LEAN
+          lake env lean /tmp/positive.lean | tee evidence/collatz-guarded-exit-obligation-v62/consumer.log
+          cat > /tmp/negative.lean <<'LEAN'
+          import Collatz.GuardedExitObligation
+          open CollatzFinal.SourceProduct
+          example (h : ExitCertificate 4 3) : ExitCertificate 1 3 := h
+          LEAN
+          if lake env lean /tmp/negative.lean > evidence/collatz-guarded-exit-obligation-v62/source-erasure-rejected.log 2>&1; then
+            echo 'ERROR source-erasure consumer accepted'; exit 1
+          fi
+          grep -q 'type mismatch' evidence/collatz-guarded-exit-obligation-v62/source-erasure-rejected.log
+      - name: Exact scoped preimage test and promotion boundary
+        run: |
+          set -euo pipefail
+          python3 experiments/collatz_obligation_preimage_v62.py --state qualified-state/state.json > evidence/collatz-guarded-exit-obligation-v62/result.json
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          p=Path('evidence/collatz-guarded-exit-obligation-v62')
+          d=json.loads((p/'result.json').read_text())
+          assert d['input_cells']==14934 and d['counts']['guarded_rays']==6193
+          assert d['cheapest']['known_subsumed']
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+          proof=(p/'proof.log').read_text()
+          assert 'ExitCertificate.sound' in proof
+          assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
+          source=Path('formal/Collatz/GuardedExitObligation.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',source)
+          print('PASS_FIXED_ORIGIN_REUSE; NO_UNIVERSAL_CERTIFICATE_SUPPLIED; GLOBAL_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-guarded-exit-obligation-v62
+          path: evidence/collatz-guarded-exit-obligation-v62
