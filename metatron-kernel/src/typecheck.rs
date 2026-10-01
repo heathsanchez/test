@@ -336,15 +336,14 @@ impl<'a> TypeChecker<'a> {
                         // the argument was checked against its domain. Re-infer a
                         // literal lambda body in the substituted environment:
                         // its inferred Pi body is open, not a constant codomain.
-                        if let Some(Expr::Lam { body: expression_body, .. }) = self.expressions.get(*fun)
-                            && let PiBody::Fixed(inferred_body) = &body
-                            && self.type_depends_on_free(inferred_body, FreeId(context.len() as u64),
-                                (*remaining).min(4096)) != Some(false)
+                        if let PiBody::Fixed(inferred_body) = &body
+                            && (!matches!(self.expressions.get(*fun),Some(Expr::Lam { .. }))
+                                || self.type_depends_on_free(inferred_body, FreeId(context.len() as u64),
+                                    (*remaining).min(4096)) != Some(false))
+                            && let Some(instantiated) = self.infer_literal_beta_spine(
+                                expression, context, frame, remaining, cache)
                         {
-                            let mut extended = context.to_vec();
-                            extended.push(domain);
-                            let instantiated = frame.extend(self.closure(*arg, frame.clone()));
-                            return self.infer_in(*expression_body, &extended, &instantiated, remaining, cache);
+                            return instantiated;
                         }
                         Judgment::proven(
                             match body {
@@ -558,6 +557,49 @@ impl<'a> TypeChecker<'a> {
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
             Judgment::Unknown { residual } => Judgment::Unknown { residual },
         }
+    }
+
+    // Whole-function inference has already succeeded. Reconstruct the
+    // literal lambda telescope, checking each supplied argument in the caller
+    // context while retaining each actual argument in the lexical environment.
+    fn infer_literal_beta_spine(&self, expression: ExprId, context: &[TypeValue],
+        frame: &EnvFrame, remaining: &mut usize,
+        cache: &mut HashMap<(ExprId,u64),TypeValue>) -> Option<Judgment<TypeValue>> {
+        let mut head=expression;
+        let mut arguments=Vec::new();
+        while let Some(Expr::App { fun,arg })=self.expressions.get(head) {
+            if !take_step(remaining) { return Some(Judgment::unknown("beta-spine-budget")); }
+            arguments.push(*arg);head=*fun;
+        }
+        if !matches!(self.expressions.get(head),Some(Expr::Lam { .. })) { return None; }
+        // This bounded rule consumes only directly nested literal binders.
+        // General returned-function representation remains a separate obligation.
+        let mut probe=head;
+        for _ in &arguments {
+            let Some(Expr::Lam { body,.. })=self.expressions.get(probe) else { return None; };
+            probe=*body;
+        }
+        let mut lexical_context=context.to_vec();
+        let mut lexical_frame=frame.clone();
+        for arg in arguments.into_iter().rev() {
+            let Some(Expr::Lam { domain,body })=self.expressions.get(head) else { return None; };
+            let domain_type=self.infer_in(*domain,&lexical_context,&lexical_frame,remaining,cache);
+            match self.sort_level(domain_type,*remaining) {
+                Judgment::Proven { .. } => {},
+                Judgment::Refuted { obstruction } => return Some(Judgment::Refuted { obstruction }),
+                Judgment::Unknown { residual } => return Some(Judgment::Unknown { residual }),
+            }
+            let domain=TypeValue::Term(self.closure(*domain,lexical_frame.clone()));
+            match self.check_in(arg,&domain,context,frame,remaining,true,cache) {
+                Judgment::Proven { .. } => {},
+                Judgment::Refuted { obstruction } => return Some(Judgment::Refuted { obstruction }),
+                Judgment::Unknown { residual } => return Some(Judgment::Unknown { residual }),
+            }
+            lexical_context.push(domain);
+            lexical_frame=lexical_frame.extend(self.closure(arg,frame.clone()));
+            head=*body;
+        }
+        Some(self.infer_in(head,&lexical_context,&lexical_frame,remaining,cache))
     }
 
     // Syntactic support of an inferred type, through its actual closures.
