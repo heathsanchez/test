@@ -5,12 +5,14 @@ on:
     paths:
       - formal/Collatz/EarlierSourceCollision.lean
       - experiments/collatz_earlier_source_collision_v65.py
+      - experiments/collatz_compiled_collision_reclosure_v66.py
       - .github/workflows/collatz-earlier-source-collision-v65.yml
   pull_request:
     branches: [main]
     paths:
       - formal/Collatz/EarlierSourceCollision.lean
       - experiments/collatz_earlier_source_collision_v65.py
+      - experiments/collatz_compiled_collision_reclosure_v66.py
       - .github/workflows/collatz-earlier-source-collision-v65.yml
 permissions: {contents: read, actions: read}
 jobs:
@@ -108,3 +110,47 @@ jobs:
         with:
           name: collatz-earlier-source-collision-v65-pilot
           path: evidence/collatz-earlier-source-collision-v65-pilot
+
+  reclose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-guard-bank-reconciliation-v61
+          run-id: 36830138059
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qualified-state
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-earlier-source-collision-v65-pilot
+          run-id: 36840748839
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: discovery-pilot
+      - name: Compile V65 discoveries and reclose held-out V61 residual
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-compiled-collision-reclosure-v66
+          python3 experiments/collatz_compiled_collision_reclosure_v66.py \
+            --state qualified-state/state.json \
+            --pilot discovery-pilot/result.json \
+            > evidence/collatz-compiled-collision-reclosure-v66/result.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-compiled-collision-reclosure-v66/result.json'))
+          assert d['input_residual_cells']==14934
+          assert d['heldout_cells']==14806
+          assert d['global_collatz']=='UNKNOWN' and not d['qed']
+          print('V66_RECLOSURE',
+                'calibration=',d['calibration_closures'],
+                'heldout=',d['heldout_closures'],
+                'total=',d['total_closures'],
+                'remaining=',d['remaining_cells'],
+                'word_tests=',d['word_tests'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-compiled-collision-reclosure-v66
+          path: evidence/collatz-compiled-collision-reclosure-v66
