@@ -1,0 +1,152 @@
+name: Nucleus chain6 cost profile v1
+
+on:
+  push:
+    branches: [nucleus-chain6-cost-profile-v1]
+    paths:
+      - ".github/workflows/nucleus-chain6-cost-profile-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+
+jobs:
+  profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Inject diagnostic-only cost counters and build
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path("metatron-kernel/src/machine.rs")
+          s=p.read_text()
+          s=s.replace(
+              "use std::rc::Rc;\n",
+              "use std::rc::Rc;\nuse std::sync::atomic::{AtomicU64, Ordering};\n\nstatic TRACE_EXPOSE_CALLS: AtomicU64 = AtomicU64::new(0);\n",
+              1
+          )
+          old='''    pub fn expose(
+              &self,
+              closure: Closure,
+              transparency: Transparency,
+              budget: usize,
+          ) -> Judgment<Value> {
+              self.expose_internal(closure, transparency, budget, false)
+                  .map(|exposure| exposure.value)
+          }
+          '''
+          new='''    pub fn expose(
+              &self,
+              closure: Closure,
+              transparency: Transparency,
+              budget: usize,
+          ) -> Judgment<Value> {
+              if std::env::var_os("NUCLEUS_TRACE_COST").is_some() {
+                  let n=TRACE_EXPOSE_CALLS.fetch_add(1,Ordering::Relaxed)+1;
+                  if n.is_power_of_two() {
+                      eprintln!(
+                          "NUCLEUS_EXPOSE_CALL:n={}:expr={:?}:env={}:budget={}:transparency={:?}",
+                          n, closure.expression(), closure.env.id(), budget, transparency
+                      );
+                  }
+              }
+              self.expose_internal(closure, transparency, budget, false)
+                  .map(|exposure| exposure.value)
+          }
+          '''
+          assert old in s
+          p.write_text(s.replace(old,new,1))
+
+          p=Path("metatron-kernel/src/convert.rs")
+          s=p.read_text()
+          s=s.replace(
+              "use std::collections::{HashMap, HashSet};\n",
+              "use std::collections::{HashMap, HashSet};\nuse std::sync::atomic::{AtomicU64, Ordering};\n\nstatic TRACE_CONVERSION_ITEMS: AtomicU64 = AtomicU64::new(0);\n",
+              1
+          )
+          old='''    while let Some((left, right, depth, local_context)) = work.pop() {
+              let context = local_context.as_slice();
+          '''
+          new='''    while let Some((left, right, depth, local_context)) = work.pop() {
+              if std::env::var_os("NUCLEUS_TRACE_COST").is_some() {
+                  let n=TRACE_CONVERSION_ITEMS.fetch_add(1,Ordering::Relaxed)+1;
+                  if n.is_power_of_two() {
+                      eprintln!(
+                          "NUCLEUS_CONVERSION_ITEM:n={}:depth={}:remaining={}:pending={}",
+                          n, depth, remaining, work.len()
+                      );
+                  }
+              }
+              let context = local_context.as_slice();
+          '''
+          assert old in s
+          p.write_text(s.replace(old,new,1))
+          PY
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch frozen Round 1 corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/a
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/r1
+
+      - name: Profile through chain6_datF
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python3 - <<'PY'
+          import json,pathlib,subprocess,time,os
+          src=pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson")
+          names={0:""}; rows=[]; found=False
+          for line in src.read_text().splitlines():
+              r=json.loads(line); rows.append(line)
+              if "in" in r:
+                  v=r.get("str",r.get("num"))
+                  if isinstance(v,dict):
+                      pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                      names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+              decls=[]
+              if "inductive" in r:
+                  for k in ("types","ctors","recs"): decls.extend(r["inductive"].get(k,[]))
+              for k in ("def","thm","axiom","opaque","quot"):
+                  if k in r: decls.append(r[k])
+              if any(names.get(d.get("name"))=="chain6_datF" for d in decls if isinstance(d,dict)):
+                  found=True; break
+          assert found
+          data=("\n".join(rows)+"\n").encode()
+          env=os.environ|{"NUCLEUS_TRACE_COST":"1","NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          t=time.monotonic()
+          try:
+              q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=8,env=env)
+              rec={"exit":q.returncode,"seconds":time.monotonic()-t,"stderr":q.stderr.decode(errors="replace")}
+          except subprocess.TimeoutExpired as e:
+              err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
+              rec={"exit":124,"seconds":time.monotonic()-t,"stderr":err}
+          lines=rec["stderr"].splitlines()
+          rec["cost_lines"]=[x for x in lines if x.startswith("NUCLEUS_EXPOSE_CALL:") or x.startswith("NUCLEUS_CONVERSION_ITEM:")]
+          rec["tail"]=lines[-80:]
+          pathlib.Path("out/result.json").write_text(json.dumps(rec,indent=2)+"\n")
+          print(json.dumps({"exit":rec["exit"],"seconds":rec["seconds"],"cost_lines":rec["cost_lines"],"tail":rec["tail"]}),flush=True)
+          assert rec["cost_lines"],rec
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-chain6-cost-profile-${{ github.sha }}
+          path: out/result.json
+          if-no-files-found: error
