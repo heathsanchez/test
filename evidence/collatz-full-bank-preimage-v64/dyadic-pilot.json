@@ -1,0 +1,199 @@
+{
+  "adaptation": "REQUALIFY source-cylinder guards; no coordinate expansion warranted",
+  "bank_laws": 3294,
+  "bank_run": 36663027013,
+  "certificate_sha256": "42d57151cc02a24ba4887548f96c083b83434c712702017e957a4cb378549cbd",
+  "counts": {
+    "cells_with_uncovered_zero": 128,
+    "guarded_rays": 80417,
+    "law_tests": 915732,
+    "prefixes": 9984,
+    "ternary_eligible_prefixes": 9984
+  },
+  "examples": [
+    {
+      "guard": {
+        "first": "2005407616240884273",
+        "origin_margin0": "758597279054009068783256639060833865690987232",
+        "origin_margin_slope": "872244733962906499999591226869237355924808846",
+        "parameter0": "1365477170415781026196489127",
+        "parameter_slope": "1570042899082081611640534563",
+        "period": "2305843009213693952"
+      },
+      "j": 77,
+      "law": "3/2",
+      "lower_depth": 1,
+      "r": 46
+    },
+    {
+      "guard": {
+        "first": "3734789873151154737",
+        "origin_margin0": "267704649065055501732220509679373204676049250",
+        "origin_margin_slope": "330559369895603587004776062063244882762902954",
+        "parameter0": "1271504672363671117463447485",
+        "parameter_slope": "1570042899082081611640534563",
+        "period": "4611686018427387904"
+      },
+      "j": 77,
+      "law": "0/3",
+      "lower_depth": 1,
+      "r": 46
+    },
+    {
+      "guard": {
+        "first": "6040632882364848689",
+        "origin_margin0": "1822015256120035906645558099739248340433927216",
+        "origin_margin_slope": "5564027773673042587002323423278669018311756030",
+        "parameter0": "514131530476177980820924591",
+        "parameter_slope": "1570042899082081611640534563",
+        "period": "18446744073709551616"
+      },
+      "j": 77,
+      "law": "20/5",
+      "lower_depth": 1,
+      "r": 46
+    },
+    {
+      "guard": {
+        "first": "5464172130061425201",
+        "origin_margin0": "1648139388192753325801735492761789933611684840",
+        "origin_margin_slope": "5564027773673042587002323423278669018311756030",
+        "parameter0": "465067689879862930457158501",
+        "parameter_slope": "1570042899082081611640534563",
+        "period": "18446744073709551616"
+      },
+      "j": 77,
+      "law": "17/5",
+      "lower_depth": 1,
+      "r": 46
+    },
+    {
+      "guard": {
+        "first": "107497725287767382577",
+        "origin_margin0": "23154588933969657412976341294645848613283378006",
+        "origin_margin_slope": "31786851307112455979068929861152283684713615598",
+        "parameter0": "1143670934428453355605483496",
+        "parameter_slope": "1570042899082081611640534563",
+        "period": "147573952589676412928"
+      },
+      "j": 77,
+      "law": "4/8",
+      "lower_depth": 1,
+      "r": 46
+    },
+    {
+      "guard": {
+        "first": "75215923158775667249",
+        "origin_margin0": "16201215210538807667555012887518786557252274594",
+        "origin_margin_slope": "31786851307112455979068929861152283684713615598",
+        "parameter0": "800224050254248003059114305",
+        "parameter_slope": "1570042899082081611640534563",
+        "period": "147573952589676412928"
+      },
+      "j": 77,
+      "law": "92/8",
+      "lower_depth": 1,
+      "r": 46
+    },
+    {
+      "guard": {
+        "first": "108650646792374229553",
+        "origin_margin0": "23402923709806473475312817309186100829570203128",
+        "origin_margin_slope": "31786851307112455979068929861152283684713615598",
+        "parameter0": "1155936894577532118196421738",
+        "parameter_slope": "1570042899082081611640534563",
+        "period": "147573952589676412928"
+      },
+      "j": 77,
+      "law": "138/8",
+      "lower_depth": 1,
+      "r": 46
+    },
+    {
+      "guard": {
+        "first": "124791547856870087217",
+        "origin_margin0": "26879610571521898348023481512749631857585754834",
+        "origin_margin_slope": "31786851307112455979068929861152283684713615598",
+        "parameter0": "1327660336664634794469603053",
+        "parameter_slope": "1570042899082081611640534563",
+        "period": "147573952589676412928"
+      },
+      "j": 77,
+      "law": "222/8",
+      "lower_depth": 1,
+      "r": 46
+    }
+  ],
+  "global_collatz": "UNKNOWN",
+  "guard_bits": {
+    "54": 2,
+    "55": 1,
+    "56": 5,
+    "58": 4,
+    "59": 27,
+    "60": 4,
+    "61": 43,
+    "62": 112,
+    "63": 20,
+    "64": 124,
+    "66": 137,
+    "67": 718,
+    "68": 48,
+    "69": 1174,
+    "70": 5213,
+    "71": 1301,
+    "72": 8220,
+    "73": 13718,
+    "74": 3826,
+    "75": 18812,
+    "76": 3844,
+    "77": 23064
+  },
+  "input_cells": 128,
+  "parent_state_sha256": "a4dcc7bd5d51e6eb5f375140fd29ed722c9337bb11fde9c14ce6e6e9d51353b6",
+  "positive_control": {
+    "first": "0",
+    "origin_margin0": "1887938719038203066626754",
+    "origin_margin_slope": "35193326236455187112448143754",
+    "parameter0": "0",
+    "parameter_slope": "6561",
+    "period": "64"
+  },
+  "qed": false,
+  "residue_transition_certificate": [
+    {
+      "coefficient": 3,
+      "constant": 0,
+      "residue": 0
+    },
+    {
+      "coefficient": 9,
+      "constant": 2,
+      "residue": 1
+    },
+    {
+      "coefficient": 3,
+      "constant": 1,
+      "residue": 2
+    },
+    {
+      "coefficient": 9,
+      "constant": 5,
+      "residue": 3
+    },
+    {
+      "coefficient": 3,
+      "constant": 2,
+      "residue": 4
+    },
+    {
+      "coefficient": 9,
+      "constant": 8,
+      "residue": 5
+    }
+  ],
+  "schema": "COLLATZ_DYADIC_BANK_REQUALIFICATION_PROBE",
+  "scope": "Direct exact preimages of all 3294 frozen source-cylinder laws along maximal fixed affine prefixes; preserves original source. No arbitrary macro composition or universal saturation claim.",
+  "u0_hits": [],
+  "whole_cell_closures": []
+}
