@@ -1,0 +1,70 @@
+name: Collatz coverage rank audit V63
+on:
+  push:
+    branches: [collatz-coverage-rank-audit-v63]
+    paths:
+      - formal/Collatz/CoverageRankAudit.lean
+      - experiments/collatz_coverage_rank_audit_v63.py
+      - .github/workflows/collatz-coverage-rank-audit-v63.yml
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check coverage, conditional rank and natural-source falsifier
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence/collatz-coverage-rank-audit-v63
+          lake build Collatz.OrdinaryExitReduction Collatz.EventualMacroProgress Collatz.ReturnDefectTransport
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean formal/Collatz/GuardedExitObligation.lean > evidence/collatz-coverage-rank-audit-v63/obligation-parent.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/collatz-coverage-rank-audit-v63/dyadic-parent.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CoverageRankAudit.olean formal/Collatz/CoverageRankAudit.lean | tee evidence/collatz-coverage-rank-audit-v63/proof.log
+          cat > /tmp/consumer.lean <<'LEAN'
+          import Collatz.CoverageRankAudit
+          open CollatzFinal CollatzFinal.SourceProduct
+          example : ZeroTailLive (stateAt 27 12) := source_27_recharge_segment_live.1
+          example : affineBudget 9 7 8 27 < 0 := by decide
+          example : DyadicOrder (returnDefect 3 1 2 155) 2 := source_27_macro_recharges.2.1
+          #check no_exit_source_eventually_zero_tail
+          #check zero_injection_strict_rank
+          #check no_infinite_nat_rank_decrease
+          #check collatz_of_zero_tail_eventual_progress_or_exit
+          LEAN
+          lake env lean /tmp/consumer.lean | tee evidence/collatz-coverage-rank-audit-v63/consumer.log
+          cat > /tmp/negative.lean <<'LEAN'
+          import Collatz.CoverageRankAudit
+          example : (8 : Int) * (-156) = 9 * (-138) := by decide
+          LEAN
+          if lake env lean /tmp/negative.lean > evidence/collatz-coverage-rank-audit-v63/zero-injection-rejected.log 2>&1; then
+            echo 'ERROR: false zero injection accepted'; exit 1
+          fi
+          grep -qi 'error:' evidence/collatz-coverage-rank-audit-v63/zero-injection-rejected.log
+      - name: Exact independent arithmetic and scope audit
+        run: |
+          set -euo pipefail
+          python3 experiments/collatz_coverage_rank_audit_v63.py > evidence/collatz-coverage-rank-audit-v63/result.json
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          root=Path('evidence/collatz-coverage-rank-audit-v63')
+          d=json.loads((root/'result.json').read_text())
+          assert d['actual_macro']==[137,206,103,155]
+          assert d['affine_law']['budget']==-34 and d['dyadic_orders']==[1,2]
+          assert d['protected_return_grammar_membership']=='NOT_ESTABLISHED'
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+          proof=(root/'proof.log').read_text()
+          assert 'fixed_reference_rank_not_universal' in proof
+          assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
+          source=Path('formal/Collatz/CoverageRankAudit.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',source)
+          print('PASS_UNIVERSAL_EXACT_STATE_COVERAGE; PASS_NAT_WELLFOUNDEDNESS; FIXED_REFERENCE_MACRO_RANK_REFUTED; GLOBAL_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-coverage-rank-audit-v63
+          path: evidence/collatz-coverage-rank-audit-v63
