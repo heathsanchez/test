@@ -18,6 +18,20 @@ pub enum TypeValue {
     },
 }
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct ProjectedInferenceKey {
+    expression: ExprId,
+    depth: usize,
+    levels: Vec<(NameId, LevelTerm)>,
+    binders: Vec<(usize, EnvBinding, TypeValue)>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum InferenceCacheKey {
+    Exact { expression: ExprId, frame: u64 },
+    Projected(ProjectedInferenceKey),
+}
+
 pub struct TypeChecker<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
@@ -180,15 +194,23 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
-        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        cache: &mut HashMap<InferenceCacheKey, TypeValue>,
     ) -> Judgment<TypeValue> {
-        // This cache is local to one public judgment. A frame has one fixed
-        // typing context in that judgment, and every binder allocates a fresh
-        // frame identity. Never reuse UNKNOWN, refutations, or another scope.
-        let key = (expression, frame.id());
+        // The cache remains local to one public judgment.  Instead of treating
+        // every fresh frame identity as semantically distinct, quotient a frame
+        // by exactly the outer binders the expression can observe, together
+        // with their validated types and the active universe substitution.
+        // If that projection cannot be established structurally, retain the
+        // original exact-frame key.
+        let key = self.inference_cache_key(expression, context, frame);
         if let Some(value) = cache.get(&key) {
+            if std::env::var_os("NUCLEUS_TRACE_PROJECTED_CACHE").is_some()
+                && matches!(key, InferenceCacheKey::Projected(_))
+            {
+                eprintln!("NUCLEUS_PROJECTED_CACHE_HIT:expression={expression:?}:frame={}", frame.id());
+            }
             return if take_step(remaining) {
-                Judgment::proven(value.clone(), "shared-expression-inference")
+                Judgment::proven(value.clone(), "projected-expression-inference")
             } else {
                 Judgment::unknown("type-inference-budget")
             };
@@ -200,13 +222,88 @@ impl<'a> TypeChecker<'a> {
         result
     }
 
+    fn inference_cache_key(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+    ) -> InferenceCacheKey {
+        let exact = || InferenceCacheKey::Exact { expression, frame: frame.id() };
+        let mut offsets = Vec::new();
+        if self.collect_cache_outer_bvars(expression, 0, 4096, &mut offsets).is_none() {
+            return exact();
+        }
+        offsets.sort_unstable();
+        offsets.dedup();
+
+        let mut binders = Vec::with_capacity(offsets.len());
+        for offset in offsets {
+            let Ok(index) = u64::try_from(offset) else { return exact(); };
+            let Some(binding) = frame.lookup(index) else { return exact(); };
+            let Some(ty) = context.iter().rev().nth(offset).cloned() else { return exact(); };
+            binders.push((offset, binding, ty));
+        }
+        let mut levels: Vec<_> = self
+            .level_substitution
+            .iter()
+            .map(|(name, level)| (*name, level.clone()))
+            .collect();
+        levels.sort_by_key(|(name, _)| name.0);
+        InferenceCacheKey::Projected(ProjectedInferenceKey {
+            expression,
+            depth: context.len(),
+            levels,
+            binders,
+        })
+    }
+
+    fn collect_cache_outer_bvars(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        budget: usize,
+        out: &mut Vec<usize>,
+    ) -> Option<()> {
+        if budget == 0 {
+            return None;
+        }
+        let node = self.expressions.get(expression)?;
+        let next = budget - 1;
+        match node {
+            Expr::BVar(index) => {
+                let index = usize::try_from(*index).ok()?;
+                if index >= depth {
+                    out.push(index - depth);
+                }
+            }
+            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => {}
+            Expr::App { fun, arg } => {
+                self.collect_cache_outer_bvars(*fun, depth, next, out)?;
+                self.collect_cache_outer_bvars(*arg, depth, next, out)?;
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                self.collect_cache_outer_bvars(*domain, depth, next, out)?;
+                self.collect_cache_outer_bvars(*body, depth.checked_add(1)?, next, out)?;
+            }
+            Expr::Let { ty, value, body } => {
+                self.collect_cache_outer_bvars(*ty, depth, next, out)?;
+                self.collect_cache_outer_bvars(*value, depth, next, out)?;
+                self.collect_cache_outer_bvars(*body, depth.checked_add(1)?, next, out)?;
+            }
+            Expr::Proj { structure, .. } => {
+                self.collect_cache_outer_bvars(*structure, depth, next, out)?;
+            }
+        }
+        Some(())
+    }
+
     fn infer_uncached(
         &self,
         expression: ExprId,
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
-        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        cache: &mut HashMap<InferenceCacheKey, TypeValue>,
     ) -> Judgment<TypeValue> {
         if !take_step(remaining) {
             return Judgment::unknown("type-inference-budget");
@@ -525,7 +622,7 @@ impl<'a> TypeChecker<'a> {
         frame: &EnvFrame,
         remaining: &mut usize,
         conversion_refutation_is_unknown: bool,
-        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        cache: &mut HashMap<InferenceCacheKey, TypeValue>,
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
@@ -564,7 +661,7 @@ impl<'a> TypeChecker<'a> {
     // context while retaining each actual argument in the lexical environment.
     fn infer_literal_beta_spine(&self, expression: ExprId, context: &[TypeValue],
         frame: &EnvFrame, remaining: &mut usize,
-        cache: &mut HashMap<(ExprId,u64),TypeValue>) -> Option<Judgment<TypeValue>> {
+        cache: &mut HashMap<InferenceCacheKey,TypeValue>) -> Option<Judgment<TypeValue>> {
         let mut eligibility_remaining=*remaining;
         let mut head=expression;
         let mut arguments=Vec::new();
