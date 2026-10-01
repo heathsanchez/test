@@ -4,8 +4,9 @@ This enables a new portion of the same live residual, not a universal bar.
 """
 import hashlib
 import json
+from math import gcd
 import collatz_crystal_parameter_quotient_v25 as bank
-from collatz_consequential_splice_reuse_v57 import orbit
+from collatz_consequential_splice_reuse_v57 import orbit, FRONTIER
 from collatz_live_splice_guard_v58 import compiled_exit as old_exit
 from collatz_protected_query_adapter_v59 import ProtectedQuery
 import collatz_owner_renewal_affine_v0 as owner
@@ -67,6 +68,16 @@ def main():
     assert all(not (u%16384==0 and u%4==3) for u in range(16384))
     covered=sum(u%16384==0 or u%4==3 for u in range(16384))
     assert covered==4097
+    # Propagate the newly compiled consequence to every frozen child key.
+    # No repeated bank search is needed to decide cylinder intersection.
+    matched=[];whole=[]
+    for r in FRONTIER:
+        for bit in (0,1):
+            child=r+512*bit
+            compatible=(bank.N0+bank.NC*child-BASE)%gcd(s,MODULUS)==0
+            if compatible:matched.append(child)
+            if compatible and s%MODULUS==0:whole.append(child)
+    assert matched==[900] and whole==[]
     result=dict(schema='COLLATZ_COMPOSED_SEAM_GUARD_V60',
         lineage=['V58 scoped guard','V59 original-source adapter and retained seam','V60 composed seam applicability'],
         universal_class=dict(base=str(BASE),modulus=str(MODULUS),lower=str(LOWER),lower_slope=str(2*3**44)),
@@ -78,7 +89,8 @@ def main():
         combined_cell_coverage=dict(numerator=4097,denominator=16384),
         remaining='u != 3 modulo 4 AND u != 0 modulo 16384',
         queries_and_ablation=queries,
-        new_whole_live_cell_closures=0,
+        frozen_guard_propagation=dict(input_children=128,matched_children=matched,whole_children=whole),
+        new_whole_live_cell_closures=len(whole),
         evidence_boundary='universal source cylinder Lean checked separately; exact guard coverage on one live cell; no eventual guard availability theorem',
         global_collatz='UNKNOWN')
     result['certificate_sha256']=hashlib.sha256(json.dumps(result,sort_keys=True).encode()).hexdigest()
