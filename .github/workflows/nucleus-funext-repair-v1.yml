@@ -1,0 +1,62 @@
+name: Nucleus funext repair v1
+
+on:
+  push:
+    branches: [nucleus-funext-repair-v1]
+    paths:
+      - ".github/workflows/nucleus-funext-repair-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Nucleus
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+      - name: Fetch current Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/current /tmp/a
+          mkdir -p /tmp/current /tmp/a
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a
+          tar -xzf "$(find /tmp/a -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+      - name: Trace reachable funext mismatch
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/funext-repair-v1
+          python3 - <<'PY'
+          import pathlib,subprocess,os,json,hashlib
+          src=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
+          data=src.read_bytes()
+          out=pathlib.Path("metatron-kernel/evidence-out/funext-repair-v1")
+          env=os.environ|{"NUCLEUS_TRACE_VALUE_MISMATCH":"1","NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          r=subprocess.run(["/tmp/nucleus"],input=data,capture_output=True,env=env,timeout=90)
+          rec={"candidate_sha":os.environ["GITHUB_SHA"],"input_sha256":hashlib.sha256(data).hexdigest(),"exit":r.returncode,"stderr":r.stderr.decode(errors="replace")}
+          (out/"diagnostic.json").write_text(json.dumps(rec,indent=2)+"\n")
+          print(json.dumps(rec),flush=True)
+          assert r.returncode==1,rec
+          assert "NUCLEUS_VALUE_MISMATCH:" in rec["stderr"],rec
+          assert "name=funext:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch" in rec["stderr"],rec
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-funext-repair-${{ github.sha }}
+          path: metatron-kernel/evidence-out/funext-repair-v1
+          if-no-files-found: error
