@@ -331,15 +331,27 @@ impl<'a> TypeChecker<'a> {
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true, cache) {
-                    Judgment::Proven { .. } => Judgment::proven(
-                        match body {
-                            PiBody::Fixed(body) => body,
-                            PiBody::Closure(body) => TypeValue::Term(
-                                body.with_env(body.env.extend(self.closure(*arg, frame.clone()))),
-                            ),
-                        },
-                        "application-type-instantiation",
-                    ),
+                    Judgment::Proven { .. } => {
+                        // The function was checked under a fresh local above, and
+                        // the argument was checked against its domain. Re-infer a
+                        // literal lambda body in the substituted environment:
+                        // its inferred Pi body is open, not a constant codomain.
+                        if let Some(Expr::Lam { body: expression_body, .. }) = self.expressions.get(*fun) {
+                            let mut extended = context.to_vec();
+                            extended.push(domain);
+                            let instantiated = frame.extend(self.closure(*arg, frame.clone()));
+                            return self.infer_in(*expression_body, &extended, &instantiated, remaining, cache);
+                        }
+                        Judgment::proven(
+                            match body {
+                                PiBody::Fixed(body) => body,
+                                PiBody::Closure(body) => TypeValue::Term(
+                                    body.with_env(body.env.extend(self.closure(*arg, frame.clone()))),
+                                ),
+                            },
+                            "application-type-instantiation",
+                        )
+                    },
                     Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
                     Judgment::Unknown { residual } => Judgment::Unknown { residual },
                 }
