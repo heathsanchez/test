@@ -1201,6 +1201,16 @@ fn positive_projection_congruence(
         );
         if !verdict.is_proven() {
             if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONGRUENCE").is_some() {
+                #[cfg(feature = "diagnostics")]
+                {
+                    let left_support = checker.diagnostic_closure_outer_support(l);
+                    let right_support = checker.diagnostic_closure_outer_support(r);
+                    eprintln!(
+                        "NUCLEUS_PROJECTION_CONGRUENCE_SEPARATOR:depth={}:congruence_depth={}:index={}:verdict={:?}:left={:?}:right={:?}:left_support={:?}:right_support={:?}",
+                        depth, congruence_depth, index, verdict, l, r, left_support, right_support
+                    );
+                }
+                #[cfg(not(feature = "diagnostics"))]
                 eprintln!(
                     "NUCLEUS_PROJECTION_CONGRUENCE_SEPARATOR:depth={}:congruence_depth={}:index={}:verdict={:?}:left={:?}:right={:?}",
                     depth, congruence_depth, index, verdict, l, r
