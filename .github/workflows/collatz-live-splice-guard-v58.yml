@@ -1,0 +1,47 @@
+name: Collatz live splice guard V58
+on:
+  push:
+    branches: [collatz-live-splice-guard-v58]
+    paths:
+      - formal/Collatz/LiveSpliceGuard.lean
+      - experiments/collatz_live_splice_guard_v58.py
+      - .github/workflows/collatz-live-splice-guard-v58.yml
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check guarded live exit
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence/collatz-live-splice-guard-v58
+          lake build Collatz.SourceProductAffine Collatz.OrdinaryExitReduction
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean > evidence/collatz-live-splice-guard-v58/parent.log
+          lake env lean -DautoImplicit=false formal/Collatz/LiveSpliceGuard.lean | tee evidence/collatz-live-splice-guard-v58/proof.log
+      - name: Exact applicability and residual-preserving reclosure
+        run: |
+          set -euo pipefail
+          python3 experiments/collatz_live_splice_guard_v58.py > evidence/collatz-live-splice-guard-v58/result.json
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          root=Path('evidence/collatz-live-splice-guard-v58')
+          d=json.loads((root/'result.json').read_text())
+          assert d['reclosure']==dict(input=128,previously_closed=13,live_cells=115,newly_closed_whole_cells=0,live_cells_with_new_certified_subcylinder=1)
+          assert d['global_collatz']=='UNKNOWN'
+          proof=(root/'proof.log').read_text()
+          assert 'live_splice_guard_exit' in proof and 'live_splice_guard_not_minimal_bad' in proof
+          assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
+          source=Path('formal/Collatz/LiveSpliceGuard.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',source)
+          print('PASS_GUARDED_LIVE_SUBCYLINDER; WHOLE_CELL_CLOSURES=0; GLOBAL_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-live-splice-guard-v58
+          path: evidence/collatz-live-splice-guard-v58
