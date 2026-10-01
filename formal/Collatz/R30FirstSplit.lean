@@ -1,7 +1,10 @@
 import Collatz.SourceCylinderExit
 import Collatz.EarlierSourceCollision
 
-set_option maxRecDepth 100000\nset_option maxHeartbeats 0\n\nnamespace CollatzFinal.SourceProduct
+set_option maxRecDepth 100000
+set_option maxHeartbeats 0
+
+namespace CollatzFinal.SourceProduct
 
 /-- First protected-future separator inside the V67 first residual r=30.
 No direct/M1/quarter-splice cylinder is available at refinement depths 18..21.
@@ -38,7 +41,10 @@ theorem r30_depth22_first_split_merger (u : Nat) :
           (13880697533041245190008864795 +
             15863524604983164030494441472 * u)) := by
     simpa only [heq] using hx
-  have hsource :\n      1 < 13880697533041245190008864795 +\n        15863524604983164030494441472 * u := by omega\n  exact (ordinaryExit_iff_earlierSourceCollision hsource).mp ho
+  have hsource :
+      1 < 13880697533041245190008864795 +
+        15863524604983164030494441472 * u := by omega
+  exact (ordinaryExit_iff_earlierSourceCollision hsource).mp ho
 
 #print axioms r30_depth22_first_split_merger
 
