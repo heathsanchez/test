@@ -1,0 +1,102 @@
+name: Nucleus funext distinction v1
+
+on:
+  push:
+    branches: [nucleus-funext-distinction-v1]
+    paths:
+      - ".github/workflows/nucleus-funext-distinction-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BASE_SHA: 61d06c70f1ac266663189d07e59a2d7b87e02f80
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic candidate and exact authority
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-diag
+          git worktree add --detach /tmp/nucleus-base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-base-bin
+
+      - name: Fetch current Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/current /tmp/a
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a
+          tar -xzf "$(find /tmp/a -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Build pinned independent reference
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/corun1024/lazylean.git /tmp/lazylean
+          cd /tmp/lazylean
+          git checkout -q 68c66fa18c1afe029512b90ecfe0b162c0dcd8fb
+          sudo apt-get update -qq
+          sudo apt-get install -y libgmp-dev >/dev/null
+          g++ -std=c++20 -O2 -Isrc src/name.cpp src/level.cpp src/expr.cpp src/loader.cpp src/tc.cpp src/inductive.cpp src/kam.cpp src/fuse.cpp src/fix.cpp src/main.cpp -lgmpxx -lgmp -lpthread -o lazylean
+
+      - name: Isolate exact funext separator
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          mkdir -p metatron-kernel/evidence-out/funext-distinction-v1
+          python3 - <<'PY'
+          import sys,pathlib,subprocess,json,os,hashlib
+          sys.path.insert(0,"metatron-kernel/tests")
+          from slice_no_confusion import slice_prefix
+          p=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
+          data=slice_prefix(p,"funext").encode()
+          q=pathlib.Path("metatron-kernel/evidence-out/funext-distinction-v1/funext.ndjson")
+          q.write_bytes(data)
+          base=subprocess.run(["/tmp/nucleus-base-bin"],input=data,capture_output=True,timeout=60,
+                              env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+          diag=subprocess.run(["/tmp/nucleus-diag"],input=data,capture_output=True,timeout=60,
+                              env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1","NUCLEUS_TRACE_VALUE_MISMATCH":"1"})
+          refs={}
+          for engine in ["kam","subst"]:
+              r=subprocess.run(["/tmp/lazylean/lazylean","--engine",engine,"-j","1",str(q)],capture_output=True,timeout=60)
+              refs[engine]={"exit":r.returncode,"stderr":r.stderr.decode(errors="replace")}
+          out={
+            "sha":os.environ["GITHUB_SHA"],
+            "input_sha256":hashlib.sha256(data).hexdigest(),
+            "bytes":len(data),
+            "base_exit":base.returncode,
+            "diagnostic_exit":diag.returncode,
+            "base_stderr":base.stderr.decode(errors="replace"),
+            "diagnostic_stderr":diag.stderr.decode(errors="replace"),
+            "references":refs
+          }
+          pathlib.Path("metatron-kernel/evidence-out/funext-distinction-v1/result.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out),flush=True)
+          assert base.returncode==1,out
+          assert diag.returncode==1,out
+          assert all(v["exit"]==0 for v in refs.values()),out
+          assert "NUCLEUS_VALUE_MISMATCH:" in out["diagnostic_stderr"],out
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-funext-distinction-${{ github.sha }}
+          path: metatron-kernel/evidence-out/funext-distinction-v1
+          if-no-files-found: error
