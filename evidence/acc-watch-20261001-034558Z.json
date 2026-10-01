@@ -1,0 +1,92 @@
+{
+  "authority": {
+    "current_artifact_id": 11140505358,
+    "current_artifact_zip_sha256": "3ddd62abfb1672702966bf25aaaab2384b0375297c62dffaf8ee8e053fbdf293",
+    "current_live_state_sha256": "cadf46dcc8519a19d76397c1c2c8f8d49b3d34676c1b213350a35c9e8cc9799a",
+    "current_run_attempt": 11,
+    "current_run_id": 36723490865,
+    "current_utc": "2026-10-01T03:45:58.120004+00:00",
+    "previous_artifact_id": 11136417428,
+    "previous_artifact_zip_sha256": "6bcdf68cc9935d1f48178052dc6b6cd25d3f5dae38ba24ce6cba3fbbe48ca304",
+    "previous_live_state_sha256": "8e50303ec1a656cdd0f0471f5d3887958cf0e271f26efd98f1733a4d124fc74a",
+    "previous_utc": "2026-10-01T01:40:49.375615+00:00",
+    "public_source_map_artifact_id": 10847946381,
+    "public_source_map_matches_sha256": "e514f741f923e29eb6cfe23b97886fd3625bdcb37cca0090ec9e82b74597d0b8",
+    "public_source_map_run_id": 34727788755,
+    "public_source_map_zip_sha256": "a9409fa545084f6bdaf9d379874c5622974fbf6a5238d3e140546c2e15be5068"
+  },
+  "current": {
+    "ac_singletons": 2991,
+    "ac_unsolved": 2672,
+    "quota": {"limit": 40, "remaining": 40, "used": 0},
+    "stable_singletons": 3024,
+    "stable_unsolved": 2672,
+    "standing": {"lost": 106, "tied": 6, "unique": 0}
+  },
+  "delta_from_previous": {
+    "elapsed_utc_seconds": 7509,
+    "ac_rows_changed": 331,
+    "ac_records_shortened": 75,
+    "ac_tie_only_changes": 256,
+    "ac_tie_only_all_kTeams_increased": true,
+    "ac_singletons_lost_to_ties": 43,
+    "ac_shortened_old_tied_to_new_singleton": 46,
+    "ac_shortened_singleton_replaced_singleton": 29,
+    "stable_rows_changed": 70,
+    "stable_records_shortened": 33,
+    "stable_tie_only_changes": 37,
+    "stable_tie_only_all_kTeams_increased": true,
+    "stable_singletons_lost_to_ties": 10,
+    "stable_shortened_old_tied_to_new_singleton": 21,
+    "stable_shortened_singleton_replaced_singleton": 12
+  },
+  "fresh_ac_shortening_shadow_relation": {
+    "count": 75,
+    "paired_stable_shortened": 17,
+    "new_gap_counts": {"-1": 1, "0": 2, "1": 5, "2": 67},
+    "rows_with_stable_gap_gt_2": 0,
+    "interpretation": "Every fresh AC shortening already has Stable <= AC+2; no new exact +2 shadow opportunity opened."
+  },
+  "public_source_acquisition_obstruction": {
+    "map_scope": "qualified AC19/AC1M exact canonical source map",
+    "fresh_ac_shortening_rows_checked": 75,
+    "fresh_rows_with_exact_ac19_or_ac1m_match": 0,
+    "current_shadow_rows_checked": 34,
+    "shadow_rows_with_exact_ac19_or_ac1m_match": 0
+  },
+  "current_exact_plus2_shadow_frontier": {
+    "rows": 34,
+    "aggregate_record_moves": 56,
+    "top": [
+      {"challenge_id":"ac-04396","ac_best":68,"stable_best":76,"compiled_plus2":70,"improvement":6},
+      {"challenge_id":"ac-01322","ac_best":127,"stable_best":132,"compiled_plus2":129,"improvement":3},
+      {"challenge_id":"ac-05303","ac_best":44,"stable_best":49,"compiled_plus2":46,"improvement":3},
+      {"challenge_id":"ac-05899","ac_best":176,"stable_best":181,"compiled_plus2":178,"improvement":3},
+      {"challenge_id":"ac-09400","ac_best":35,"stable_best":40,"compiled_plus2":37,"improvement":3},
+      {"challenge_id":"ac-00917","ac_best":66,"stable_best":70,"compiled_plus2":68,"improvement":2},
+      {"challenge_id":"ac-01403","ac_best":57,"stable_best":61,"compiled_plus2":59,"improvement":2},
+      {"challenge_id":"ac-01539","ac_best":56,"stable_best":60,"compiled_plus2":58,"improvement":2},
+      {"challenge_id":"ac-04006","ac_best":48,"stable_best":52,"compiled_plus2":50,"improvement":2},
+      {"challenge_id":"ac-05134","ac_best":45,"stable_best":49,"compiled_plus2":47,"improvement":2},
+      {"challenge_id":"ac-05196","ac_best":110,"stable_best":114,"compiled_plus2":112,"improvement":2},
+      {"challenge_id":"ac-08451","ac_best":48,"stable_best":52,"compiled_plus2":50,"improvement":2},
+      {"challenge_id":"ac-09390","ac_best":33,"stable_best":37,"compiled_plus2":35,"improvement":2},
+      {"challenge_id":"ac-09418","ac_best":82,"stable_best":86,"compiled_plus2":84,"improvement":2}
+    ]
+  },
+  "fresh_ac_top_improvements": [
+    {"challenge_id":"ac-07378","old_best":79,"new_best":74,"gain":5},
+    {"challenge_id":"ac-02906","old_best":66,"new_best":61,"gain":5},
+    {"challenge_id":"ac-04147","old_best":64,"new_best":60,"gain":4},
+    {"challenge_id":"ac-02361","old_best":74,"new_best":70,"gain":4},
+    {"challenge_id":"ac-08994","old_best":69,"new_best":66,"gain":3},
+    {"challenge_id":"ac-07321","old_best":64,"new_best":61,"gain":3},
+    {"challenge_id":"ac-04053","old_best":53,"new_best":50,"gain":3},
+    {"challenge_id":"ac-03488","old_best":78,"new_best":75,"gain":3},
+    {"challenge_id":"ac-02592","old_best":51,"new_best":48,"gain":3},
+    {"challenge_id":"ac-01438","old_best":69,"new_best":66,"gain":3}
+  ],
+  "qualification_boundary": "Board deltas are exact between the two authenticated watchdog snapshots. Public-source obstruction is only for the qualified AC19/AC1M exact-source map; it is not a claim that no public witness exists elsewhere. No solution candidate or submission is asserted.",
+  "schema": "acc-competitive-phase-20261001T034558Z-v1",
+  "status": "WARRANTED_BOUNDED_LIVE_AUTHORITY"
+}
