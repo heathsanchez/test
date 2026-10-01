@@ -1,0 +1,240 @@
+{
+  "boundary": "194 pinned downloadable tests; former 24 UNKNOWNs",
+  "whole_file_gains": [],
+  "advanced_boundaries": [
+    {
+      "test": "init-prelude",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Lean.SourceInfo:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=Lean.Name:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "perf/fueled-chain",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Except:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=Functor:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "perf/grind-ring-5",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Lean.SourceInfo:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=Lean.Name:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "perf/magma-list-deep-n21",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Option:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=GetElem?:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "perf/magma-list-deep-n36",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Option:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=GetElem?:stage=inductive:verdict=Unknown"
+    }
+  ],
+  "rows": [
+    {
+      "test": "init-prelude",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Lean.SourceInfo:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=Lean.Name:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "perf/args-before-unfold",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=kernel_args_before_unfold:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=kernel_args_before_unfold:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    },
+    {
+      "test": "perf/folded-constant-first",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    },
+    {
+      "test": "perf/folded-constant-last",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_last:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_last:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    },
+    {
+      "test": "perf/fueled-chain",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Except:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=Functor:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "perf/grind-ring-5",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Lean.SourceInfo:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=Lean.Name:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "perf/magma-list-deep-n21",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Option:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=GetElem?:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "perf/magma-list-deep-n36",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Option:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=GetElem?:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "perf/magma-list-pair-n21",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Nat.decEq.match_1:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=Nat.decEq.match_1:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    },
+    {
+      "test": "perf/magma-list-pair-n7",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=Nat.decEq.match_1:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=Nat.decEq.match_1:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    },
+    {
+      "test": "perf/shared-subterm",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=kernel_shared_subterm:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=kernel_shared_subterm:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    },
+    {
+      "test": "tutorial/082_RBTree.id_spec",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=RBTree.id_spec:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=RBTree.id_spec:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+    },
+    {
+      "test": "tutorial/112_structEta",
+      "expected": 0,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=structEta:stage=definition.value:verdict=UNKNOWN:reason=application-function-type",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=structEta:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    },
+    {
+      "test": "bugs/nested-unused-param",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=T:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=T:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "bugs/proj-of-stuck-prop",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "bugs/proj-of-subst-prop",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "bugs/rec-missing-ih",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "bugs/rec-of-subst-prop",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "perf/refute-cheap-first",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    },
+    {
+      "test": "tutorial/100_ruleKbad",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    },
+    {
+      "test": "tutorial/101_ruleKAcc",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    },
+    {
+      "test": "tutorial/111_indexedUnitEta",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=IndexedUnit:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=IndexedUnit:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "tutorial/113_indexedStructEta",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=IndexedSingleton:stage=inductive:verdict=Unknown",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=IndexedSingleton:stage=inductive:verdict=Unknown"
+    },
+    {
+      "test": "tutorial/125_accRecNoEta",
+      "expected": 1,
+      "before": 2,
+      "after": 2,
+      "before_boundary": "NUCLEUS_DOWNSTREAM:name=accRecNoEta:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "after_boundary": "NUCLEUS_DOWNSTREAM:name=accRecNoEta:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    }
+  ]
+}
