@@ -26,7 +26,7 @@ def slice_prefix(source, target="_private.Init.Prelude.0.noConfusion_of_Nat.aux.
                     declarations[declaration["name"]] = record
                     if names[declaration["name"]] == target:
                         root = declaration["name"]
-        for kind in ("def", "thm", "axiom", "opaque"):
+        for kind in ("def", "thm", "axiom", "opaque", "quot"):
             if kind in record:
                 name = record[kind]["name"]
                 declarations[name] = record
