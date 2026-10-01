@@ -18,6 +18,20 @@ pub enum TypeValue {
     },
 }
 
+#[cfg(feature = "diagnostics")]
+#[derive(Clone)]
+struct ProjectedInferenceRecord {
+    key: Vec<(usize, EnvBinding)>,
+    result: TypeValue,
+    frames: Vec<u64>,
+}
+
+#[cfg(feature = "diagnostics")]
+thread_local! {
+    static PROJECTED_INFERENCE: std::cell::RefCell<HashMap<ExprId, Vec<ProjectedInferenceRecord>>> =
+        std::cell::RefCell::new(HashMap::new());
+}
+
 pub struct TypeChecker<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
@@ -195,9 +209,99 @@ impl<'a> TypeChecker<'a> {
         }
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
         if let Judgment::Proven { value, .. } = &result {
+            #[cfg(feature = "diagnostics")]
+            self.record_projected_inference(expression, frame, value);
             cache.insert(key, value.clone());
         }
         result
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn record_projected_inference(&self, expression: ExprId, frame: &EnvFrame, value: &TypeValue) {
+        let mut offsets = Vec::new();
+        if self.collect_outer_bvars(expression, 0, 4096, &mut offsets).is_none() {
+            return;
+        }
+        offsets.sort_unstable();
+        offsets.dedup();
+
+        let mut projected = Vec::with_capacity(offsets.len());
+        for offset in offsets {
+            let Ok(index) = u64::try_from(offset) else { return; };
+            let Some(binding) = frame.lookup(index) else { return; };
+            projected.push((offset, binding));
+        }
+
+        PROJECTED_INFERENCE.with(|state| {
+            let mut state = state.borrow_mut();
+            let records = state.entry(expression).or_default();
+            if let Some(existing) = records.iter_mut().find(|record| record.key == projected) {
+                if existing.result != *value {
+                    eprintln!(
+                        "NUCLEUS_FRAME_PROJECTION_COLLISION:expression={expression:?}:frame={}:prior_frames={:?}:key={:?}:prior={:?}:current={:?}",
+                        frame.id(), existing.frames, projected, existing.result, value
+                    );
+                    return;
+                }
+                if !existing.frames.contains(&frame.id()) {
+                    existing.frames.push(frame.id());
+                    let count = existing.frames.len();
+                    if count.is_power_of_two() {
+                        eprintln!(
+                            "NUCLEUS_FRAME_PROJECTION_REUSE:expression={expression:?}:projected_bindings={}:distinct_frames={count}",
+                            projected.len()
+                        );
+                    }
+                }
+            } else {
+                records.push(ProjectedInferenceRecord {
+                    key: projected,
+                    result: value.clone(),
+                    frames: vec![frame.id()],
+                });
+            }
+        });
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn collect_outer_bvars(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        budget: usize,
+        out: &mut Vec<usize>,
+    ) -> Option<()> {
+        if budget == 0 {
+            return None;
+        }
+        let node = self.expressions.get(expression)?;
+        let next = budget - 1;
+        match node {
+            Expr::BVar(index) => {
+                let index = usize::try_from(*index).ok()?;
+                if index >= depth {
+                    out.push(index - depth);
+                }
+            }
+            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => {}
+            Expr::App { fun, arg } => {
+                self.collect_outer_bvars(*fun, depth, next, out)?;
+                self.collect_outer_bvars(*arg, depth, next, out)?;
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                self.collect_outer_bvars(*domain, depth, next, out)?;
+                self.collect_outer_bvars(*body, depth.checked_add(1)?, next, out)?;
+            }
+            Expr::Let { ty, value, body } => {
+                self.collect_outer_bvars(*ty, depth, next, out)?;
+                self.collect_outer_bvars(*value, depth, next, out)?;
+                self.collect_outer_bvars(*body, depth.checked_add(1)?, next, out)?;
+            }
+            Expr::Proj { structure, .. } => {
+                self.collect_outer_bvars(*structure, depth, next, out)?;
+            }
+        }
+        Some(())
     }
 
     fn infer_uncached(
