@@ -23,6 +23,14 @@ from contextlib import redirect_stdout
 import hashlib
 import io
 import json
+import os
+import sys
+
+# Qualification may bind this analysis to the exact V60 source commit rather
+# than whatever Collatz modules happen to exist on the current branch.
+frozen = os.environ.get("V60_EXPERIMENTS_DIR")
+if frozen:
+    sys.path.insert(0, frozen)
 
 with redirect_stdout(io.StringIO()):
     import collatz_crystal_pulled_centre_height_v60 as v60
