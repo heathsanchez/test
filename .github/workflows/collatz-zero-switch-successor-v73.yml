@@ -1,0 +1,76 @@
+name: Collatz zero switch successor V73
+on:
+  push:
+    branches: [collatz-zero-switch-successor-v73]
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 8d03454ac42dc476dc23b57fad8a280b31c3b71b
+          path: frozen-v60
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify frozen parents
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C frozen-v60 rev-parse HEAD)" = "8d03454ac42dc476dc23b57fad8a280b31c3b71b"
+          mkdir -p evidence
+
+      - name: Contract zero-only switches to algebraic signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          V60_EXPERIMENTS_DIR="$GITHUB_WORKSPACE/frozen-v60/experiments" \
+            python3 -u experiments/collatz_zero_switch_successor_v73.py > evidence/result.json
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib, json
+          d=json.load(open('evidence/result.json'))
+          assert d['schema']=='COLLATZ_ZERO_SWITCH_SUCCESSOR_V73'
+          assert d['parent_v60_certificate_sha256']=='0983c58430f54935a9af9d5f115e44653831c6770aec57eb1593df4a93816ac0'
+          assert d['parent_v72_qualification_sha256']=='fe3149242a1499e40efcab04c0c9da908984304de974613d924361b9d8ee9946'
+          assert d['switches_replayed']==613
+          assert d['zero_only_switches']==48
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+
+          if d['zero_signature_status']=='ALL_ZERO_ONLY_ARE_BASIC_ANCHOR_LAW':
+              status='WARRANTED_BOUNDED_SIGNATURE'
+          else:
+              status='WARRANTED_BOUNDED_SIGNATURE_REJECTED'
+
+          result={
+              'schema':'COLLATZ_ZERO_SWITCH_SUCCESSOR_V73_QUALIFICATION',
+              'status':status,
+              'switches_replayed':613,
+              'zero_only_switches':48,
+              'zero_only_with_observed_next_switch':d['zero_only_with_observed_next_switch'],
+              'zero_only_terminal_in_observed_streak':d['zero_only_terminal_in_observed_streak'],
+              'zero_signature_status':d['zero_signature_status'],
+              'zero_only_basic_anchor_law_count':d['zero_only_basic_anchor_law_count'],
+              'all_observed_successors_have_new_interval_lsb_one':d['all_observed_successors_have_new_interval_lsb_one'],
+              'global_collatz':'UNKNOWN',
+              'qed':False,
+          }
+          result['certificate_sha256']=hashlib.sha256(
+              json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+          git -C frozen-v60 rev-parse HEAD > evidence/frozen-v60-commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-zero-switch-successor-v73
+          path: evidence
+          if-no-files-found: error
