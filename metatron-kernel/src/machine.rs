@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -13,7 +14,7 @@ use crate::value::{
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct AuthorityId(pub u64);
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Transparency {
     Opaque,
     Reducible,
@@ -78,6 +79,34 @@ pub struct Exposure {
     pub transitions: Vec<TransitionWitness>,
 }
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub(crate) enum ExposureCacheKey {
+    Exact {
+        authority: AuthorityId,
+        closure: Closure,
+        transparency: Transparency,
+    },
+    OuterClosed {
+        authority: AuthorityId,
+        expression: ExprId,
+        levels: LevelSubstitution,
+        transparency: Transparency,
+    },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct CachedExposure {
+    pub value: Value,
+}
+
+#[derive(Default)]
+pub(crate) struct ExposureCacheData {
+    exposures: HashMap<ExposureCacheKey, CachedExposure>,
+    outer_bvar: HashMap<(ExprId, usize), bool>,
+}
+
+pub(crate) type ExposureCache = Rc<RefCell<ExposureCacheData>>;
+
 type VisitKey = (AuthorityId, ExprId, u64);
 const INLINE_VISIT_CAPACITY: usize = 8;
 
@@ -139,6 +168,7 @@ pub struct Machine<'a> {
     nat_primitives: Option<NatPrimitives>,
     bool_primitives: Option<BoolPrimitives>,
     quot_primitives: Option<QuotPrimitives>,
+    exposure_cache: ExposureCache,
 }
 
 impl<'a> Machine<'a> {
@@ -159,6 +189,7 @@ impl<'a> Machine<'a> {
             nat_primitives: None,
             bool_primitives: None,
             quot_primitives: None,
+            exposure_cache: Rc::new(RefCell::new(ExposureCacheData::default())),
         }
     }
 
@@ -195,14 +226,117 @@ impl<'a> Machine<'a> {
         self
     }
 
+    pub(crate) fn with_exposure_cache(mut self, cache: ExposureCache) -> Self {
+        self.exposure_cache = cache;
+        self
+    }
+
+    fn expression_uses_outer_bvar_cached(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        budget: usize,
+    ) -> Option<bool> {
+        if let Some(answer) = self
+            .exposure_cache
+            .borrow()
+            .outer_bvar
+            .get(&(expression, depth))
+            .copied()
+        {
+            return Some(answer);
+        }
+        if budget == 0 {
+            return None;
+        }
+        let node = self.expressions.get(expression)?;
+        let next = budget - 1;
+        let answer = match node {
+            Expr::BVar(index) => usize::try_from(*index).ok()? >= depth,
+            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => false,
+            Expr::App { fun, arg } => {
+                self.expression_uses_outer_bvar_cached(*fun, depth, next)?
+                    || self.expression_uses_outer_bvar_cached(*arg, depth, next)?
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                self.expression_uses_outer_bvar_cached(*domain, depth, next)?
+                    || self.expression_uses_outer_bvar_cached(
+                        *body,
+                        depth.checked_add(1)?,
+                        next,
+                    )?
+            }
+            Expr::Let { ty, value, body } => {
+                self.expression_uses_outer_bvar_cached(*ty, depth, next)?
+                    || self.expression_uses_outer_bvar_cached(*value, depth, next)?
+                    || self.expression_uses_outer_bvar_cached(
+                        *body,
+                        depth.checked_add(1)?,
+                        next,
+                    )?
+            }
+            Expr::Proj { structure, .. } => {
+                self.expression_uses_outer_bvar_cached(*structure, depth, next)?
+            }
+        };
+        self.exposure_cache
+            .borrow_mut()
+            .outer_bvar
+            .insert((expression, depth), answer);
+        Some(answer)
+    }
+
+    fn exposure_key_and_closure(
+        &self,
+        closure: Closure,
+        transparency: Transparency,
+    ) -> (ExposureCacheKey, Closure) {
+        if let Some(expression) = closure.expression()
+            && self.expression_uses_outer_bvar_cached(expression, 0, 4096) == Some(false)
+        {
+            let canonical = closure.with_env(EnvFrame::empty());
+            return (
+                ExposureCacheKey::OuterClosed {
+                    authority: self.authority,
+                    expression,
+                    levels: closure.levels.clone(),
+                    transparency,
+                },
+                canonical,
+            );
+        }
+        (
+            ExposureCacheKey::Exact {
+                authority: self.authority,
+                closure: closure.clone(),
+                transparency,
+            },
+            closure,
+        )
+    }
+
     pub fn expose(
         &self,
         closure: Closure,
         transparency: Transparency,
         budget: usize,
     ) -> Judgment<Value> {
-        self.expose_internal(closure, transparency, budget, false)
-            .map(|exposure| exposure.value)
+        let (key, closure) = self.exposure_key_and_closure(closure, transparency);
+        if let Some(cached) = self.exposure_cache.borrow().exposures.get(&key) {
+            return Judgment::proven(cached.value.clone(), "cached-certified-exposure");
+        }
+
+        let result = self
+            .expose_internal(closure, transparency, budget, false)
+            .map(|exposure| exposure.value);
+
+        if let Judgment::Proven { value, .. } = &result {
+            self.exposure_cache.borrow_mut().exposures.insert(
+                key,
+                CachedExposure { value: value.clone() },
+            );
+        }
+        result
     }
 
     pub fn expose_with_witnesses(
