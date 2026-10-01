@@ -1,0 +1,49 @@
+name: Collatz composed seam guard V60
+on:
+  push:
+    branches: [collatz-composed-seam-guard-v60]
+    paths:
+      - formal/Collatz/ComposedSeamGuard.lean
+      - experiments/collatz_composed_seam_guard_v60.py
+      - .github/workflows/collatz-composed-seam-guard-v60.yml
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check composed source-relative guard
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence/collatz-composed-seam-guard-v60
+          lake build Collatz.SourceProductAffine Collatz.OrdinaryExitReduction
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean > evidence/collatz-composed-seam-guard-v60/parent.log
+          lake env lean -DautoImplicit=false formal/Collatz/ComposedSeamGuard.lean | tee evidence/collatz-composed-seam-guard-v60/proof.log
+      - name: Execute retained query, guard transfer, and ablation
+        run: |
+          set -euo pipefail
+          python3 experiments/collatz_protected_query_adapter_v59.py > evidence/collatz-composed-seam-guard-v60/state-v59.json
+          python3 experiments/collatz_composed_seam_guard_v60.py > evidence/collatz-composed-seam-guard-v60/result.json
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          root=Path('evidence/collatz-composed-seam-guard-v60')
+          d=json.loads((root/'result.json').read_text())
+          assert d['combined_cell_coverage']==dict(numerator=4097,denominator=16384)
+          assert d['new_guard_parameter_bits']==2 and d['old_guard_parameter_bits']==14
+          assert d['new_whole_live_cell_closures']==0 and d['global_collatz']=='UNKNOWN'
+          proof=(root/'proof.log').read_text()
+          assert 'composed_seam_guard_exit' in proof and 'composed_seam_guard_not_minimal_bad' in proof
+          assert 'sorryAx' not in proof and 'Lean.ofReduceBool' not in proof
+          source=Path('formal/Collatz/ComposedSeamGuard.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',source)
+          print('PASS_COMPOSED_SEAM_GUARD; PARAMETER_BITS_14_TO_2; GLOBAL_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-composed-seam-guard-v60
+          path: evidence/collatz-composed-seam-guard-v60
