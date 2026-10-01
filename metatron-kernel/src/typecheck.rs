@@ -322,6 +322,11 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
+                #[cfg(feature = "diagnostics")]
+                if let Judgment::Unknown { residual } = &function_type {
+                    crate::diagnostics::causal("application-masked-inference", format_args!(
+                        "expression={expression:?};function={fun:?};argument={arg:?};context={context:?};frame={frame:?};policy={:?};budget={remaining};upstream={residual:?}", self.delta_policy));
+                }
                 let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
                     return Judgment::unknown("application-function-type");
                 };
@@ -519,6 +524,11 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature = "diagnostics")]
+                if !matches!(&conversion, Judgment::Proven { .. }) {
+                    crate::diagnostics::causal("typed-comparison", format_args!(
+                        "expression={expression:?};inferred={value:?};expected={expected:?};context={context:?};frame={frame:?};policy={:?};budget={remaining};refutation_to_unknown={conversion_refutation_is_unknown};result={conversion:?}", self.delta_policy));
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown

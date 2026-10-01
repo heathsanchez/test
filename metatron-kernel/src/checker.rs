@@ -198,12 +198,16 @@ fn check_export_with_policy(
                 }
             }
             Declaration::Inductive(block) => {
+                #[cfg(feature = "diagnostics")]
+                crate::diagnostics::causal("inductive-attempt", format_args!("block={block:?};policy={delta_policy:?};budget={}", limits.judgment_steps));
                 match check_inductive(&export, &environment, &block, limits, delta_policy) {
                     Ok(extended) => {
                         environment = extended;
                         continue;
                     }
                     Err(verdict) => {
+                        #[cfg(feature = "diagnostics")]
+                        crate::diagnostics::causal("boundary", format_args!("stage=inductive;verdict={verdict:?}"));
                         if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
                             let name = block
                                 .types
@@ -824,7 +828,11 @@ fn check_inductive(
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
         2 => check_binary_enum(export, environment, block, limits, delta_policy),
-        _ => Err(Verdict::Unknown),
+        _ => {
+            #[cfg(feature = "diagnostics")]
+            crate::diagnostics::causal("admission-route-miss", format_args!("route=constructor-cardinality;constructors={};registered-dispatch=0,1,2", block.constructors.len()));
+            Err(Verdict::Unknown)
+        },
     }
 }
 
@@ -8314,6 +8322,8 @@ fn check_binary_enum(
             delta_policy,
         );
     } else {
+        #[cfg(feature = "diagnostics")]
+        crate::diagnostics::causal("admission-route-miss", format_args!("route=binary-enum;name-gate=failed;generic-type-candidate=false;generic-prop-candidate=false"));
         return Err(Verdict::Unknown);
     };
 
@@ -9776,6 +9786,10 @@ fn trace_verdict_boundary(
     stage: &'static str,
     judgment: Judgment<()>,
 ) -> Result<(), Verdict> {
+    #[cfg(feature = "diagnostics")]
+    if !matches!(&judgment, Judgment::Proven { .. }) {
+        crate::diagnostics::causal("boundary", format_args!("name={};stage={stage};judgment={judgment:?}", trace_name(export, name)));
+    }
     let trace = std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some();
     match judgment {
         Judgment::Proven { .. } => Ok(()),
