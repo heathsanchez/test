@@ -6,7 +6,7 @@ use crate::judgment::Judgment;
 use crate::level::{LevelTerm, imax, instantiate_level, succ};
 use crate::machine::{Machine, ProjectionFieldType, Transparency};
 use crate::syntax::{Expr, Level};
-use crate::value::{Closure, EnvFrame, FreeId, LevelSubstitution, Neutral, NeutralHead, Value};
+use crate::value::{Closure, EnvBinding, EnvFrame, FreeId, LevelSubstitution, Neutral, NeutralHead, Value};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum TypeValue {
@@ -336,7 +336,11 @@ impl<'a> TypeChecker<'a> {
                         // the argument was checked against its domain. Re-infer a
                         // literal lambda body in the substituted environment:
                         // its inferred Pi body is open, not a constant codomain.
-                        if let Some(Expr::Lam { body: expression_body, .. }) = self.expressions.get(*fun) {
+                        if let Some(Expr::Lam { body: expression_body, .. }) = self.expressions.get(*fun)
+                            && let PiBody::Fixed(inferred_body) = &body
+                            && self.type_depends_on_free(inferred_body, FreeId(context.len() as u64),
+                                (*remaining).min(4096)) != Some(false)
+                        {
                             let mut extended = context.to_vec();
                             extended.push(domain);
                             let instantiated = frame.extend(self.closure(*arg, frame.clone()));
@@ -554,6 +558,69 @@ impl<'a> TypeChecker<'a> {
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
             Judgment::Unknown { residual } => Judgment::Unknown { residual },
         }
+    }
+
+    // Syntactic support of an inferred type, through its actual closures.
+    // Only a proved absence skips substitution. Exhaustion remains conservative.
+    fn type_depends_on_free(&self, ty: &TypeValue, free: FreeId, budget: usize) -> Option<bool> {
+        struct Support<'a, 'b> {
+            checker: &'a TypeChecker<'b>, free: FreeId, remaining: usize,
+            cache: HashMap<(ExprId,u64,usize),bool>,
+        }
+        impl Support<'_, '_> {
+            fn tick(&mut self) -> Option<()> {
+                if self.remaining == 0 { return None; }
+                self.remaining -= 1; Some(())
+            }
+            fn ty(&mut self, ty: &TypeValue) -> Option<bool> {
+                self.tick()?;
+                match ty {
+                    TypeValue::Sort(_) => Some(false),
+                    TypeValue::Term(c) => self.closure(c),
+                    TypeValue::Pi { domain, body } => Some(self.ty(domain)? || self.ty(body)?),
+                }
+            }
+            fn closure(&mut self, c: &Closure) -> Option<bool> {
+                match c.expression() { Some(e) => self.expr(e,&c.env,0), None => Some(false) }
+            }
+            fn neutral(&mut self, n: &Neutral) -> Option<bool> {
+                self.tick()?;
+                let head=match &n.head {
+                    NeutralHead::Free(f) => *f==self.free,
+                    NeutralHead::Const { .. } => false,
+                    NeutralHead::Projection { structure, .. } => self.neutral(structure)?,
+                };
+                if head { return Some(true); }
+                for a in &n.spine { if self.closure(a)? { return Some(true); } }
+                Some(false)
+            }
+            fn expr(&mut self,e: ExprId,frame: &EnvFrame,depth: usize) -> Option<bool> {
+                self.tick()?;
+                let key=(e,frame.id(),depth);
+                if let Some(answer)=self.cache.get(&key) { return Some(*answer); }
+                let found=match self.checker.expressions.get(e)? {
+                    Expr::Sort(_) | Expr::Const { .. } | Expr::NatLit(_) | Expr::StrLit(_) => false,
+                    Expr::BVar(k) => {
+                        let k=usize::try_from(*k).ok()?;
+                        if k<depth { false } else {
+                            match frame.lookup(u64::try_from(k-depth).ok()?)? {
+                                EnvBinding::Free(f) => f==self.free,
+                                EnvBinding::Closure(c) => self.closure(&c)?,
+                                EnvBinding::Neutral(n) => self.neutral(&n)?,
+                            }
+                        }
+                    }
+                    Expr::App { fun,arg } => self.expr(*fun,frame,depth)? || self.expr(*arg,frame,depth)?,
+                    Expr::Lam { domain,body } | Expr::Pi { domain,body } =>
+                        self.expr(*domain,frame,depth)? || self.expr(*body,frame,depth.checked_add(1)?)?,
+                    Expr::Let { ty,value,body } => self.expr(*ty,frame,depth)?
+                        || self.expr(*value,frame,depth)? || self.expr(*body,frame,depth.checked_add(1)?)?,
+                    Expr::Proj { structure,.. } => self.expr(*structure,frame,depth)?,
+                };
+                self.cache.insert(key,found);Some(found)
+            }
+        }
+        Support { checker:self,free,remaining:budget,cache:HashMap::new() }.ty(ty)
     }
 
     /// Infer the universe of a type in an already validated telescope.

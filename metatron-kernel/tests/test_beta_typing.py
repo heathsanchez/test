@@ -9,6 +9,9 @@ class BetaTyping(unittest.TestCase):
     def test_dependent_identity_application(self):
         p=pathlib.Path(__file__).parent/'fixtures/dependent-application.ndjson'
         self.assertEqual(self.run_data(p.read_text()),0)
+    def test_beta_ladder_preserved(self):
+        p=pathlib.Path(os.environ.get('NUCLEUS_CORPUS','/tmp/current'))/'good/perf/beta-ladder.ndjson'
+        self.assertEqual(self.run_data(p.read_text()),0)
     def test_shared_matcher_prefix(self):
         for name in OBLIGATIONS:
             with self.subTest(name=name):
