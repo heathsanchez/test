@@ -540,6 +540,33 @@ impl<'a> TypeChecker<'a> {
         out
     }
 
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_type_support_signature(
+        &self,
+        value: &TypeValue,
+    ) -> Vec<String> {
+        match value {
+            TypeValue::Sort(level) => vec![format!("sort={level:?}")],
+            TypeValue::Term(closure) => self.diagnostic_closure_support_signature(closure),
+            TypeValue::Pi { domain, body } => {
+                let mut out = Vec::new();
+                out.push("pi-domain".to_owned());
+                out.extend(
+                    self.diagnostic_type_support_signature(domain)
+                        .into_iter()
+                        .map(|item| format!("domain/{item}")),
+                );
+                out.push("pi-body".to_owned());
+                out.extend(
+                    self.diagnostic_type_support_signature(body)
+                        .into_iter()
+                        .map(|item| format!("body/{item}")),
+                );
+                out
+            }
+        }
+    }
+
     fn infer_uncached(
         &self,
         expression: ExprId,
