@@ -34,34 +34,24 @@ jobs:
               "use std::rc::Rc;\nuse std::sync::atomic::{AtomicU64, Ordering};\n\nstatic TRACE_EXPOSE_CALLS: AtomicU64 = AtomicU64::new(0);\n",
               1
           )
-          old='''    pub fn expose(
-              &self,
-              closure: Closure,
-              transparency: Transparency,
-              budget: usize,
-          ) -> Judgment<Value> {
-              self.expose_internal(closure, transparency, budget, false)
-                  .map(|exposure| exposure.value)
-          }
+          old='''    ) -> Judgment<Value> {
+        self.expose_internal(closure, transparency, budget, false)
+            .map(|exposure| exposure.value)
+    }
           '''
-          new='''    pub fn expose(
-              &self,
-              closure: Closure,
-              transparency: Transparency,
-              budget: usize,
-          ) -> Judgment<Value> {
-              if std::env::var_os("NUCLEUS_TRACE_COST").is_some() {
-                  let n=TRACE_EXPOSE_CALLS.fetch_add(1,Ordering::Relaxed)+1;
-                  if n.is_power_of_two() {
-                      eprintln!(
-                          "NUCLEUS_EXPOSE_CALL:n={}:expr={:?}:env={}:budget={}:transparency={:?}",
-                          n, closure.expression(), closure.env.id(), budget, transparency
-                      );
-                  }
-              }
-              self.expose_internal(closure, transparency, budget, false)
-                  .map(|exposure| exposure.value)
-          }
+          new='''    ) -> Judgment<Value> {
+        if std::env::var_os("NUCLEUS_TRACE_COST").is_some() {
+            let n=TRACE_EXPOSE_CALLS.fetch_add(1,Ordering::Relaxed)+1;
+            if n.is_power_of_two() {
+                eprintln!(
+                    "NUCLEUS_EXPOSE_CALL:n={}:expr={:?}:env={}:budget={}:transparency={:?}",
+                    n, closure.expression(), closure.env.id(), budget, transparency
+                );
+            }
+        }
+        self.expose_internal(closure, transparency, budget, false)
+            .map(|exposure| exposure.value)
+    }
           '''
           assert old in s
           p.write_text(s.replace(old,new,1))
@@ -73,22 +63,19 @@ jobs:
               "use std::collections::{HashMap, HashSet};\nuse std::sync::atomic::{AtomicU64, Ordering};\n\nstatic TRACE_CONVERSION_ITEMS: AtomicU64 = AtomicU64::new(0);\n",
               1
           )
-          old='''    while let Some((left, right, depth, local_context)) = work.pop() {
-              let context = local_context.as_slice();
-          '''
+          old="    while let Some((left, right, depth, local_context)) = work.pop() {\n"
           new='''    while let Some((left, right, depth, local_context)) = work.pop() {
-              if std::env::var_os("NUCLEUS_TRACE_COST").is_some() {
-                  let n=TRACE_CONVERSION_ITEMS.fetch_add(1,Ordering::Relaxed)+1;
-                  if n.is_power_of_two() {
-                      eprintln!(
-                          "NUCLEUS_CONVERSION_ITEM:n={}:depth={}:remaining={}:pending={}",
-                          n, depth, remaining, work.len()
-                      );
-                  }
-              }
-              let context = local_context.as_slice();
-          '''
-          assert old in s
+        if std::env::var_os("NUCLEUS_TRACE_COST").is_some() {
+            let n=TRACE_CONVERSION_ITEMS.fetch_add(1,Ordering::Relaxed)+1;
+            if n.is_power_of_two() {
+                eprintln!(
+                    "NUCLEUS_CONVERSION_ITEM:n={}:depth={}:remaining={}:pending={}",
+                    n, depth, remaining, work.len()
+                );
+            }
+        }
+'''
+          assert s.count(old)==1
           p.write_text(s.replace(old,new,1))
           PY
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
