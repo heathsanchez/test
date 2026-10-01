@@ -1,0 +1,74 @@
+name: Nucleus beta eta cost probe v1
+
+on:
+  push:
+    branches: [nucleus-beta-eta-cost-probe-v1]
+    paths:
+      - ".github/workflows/nucleus-beta-eta-cost-probe-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build candidate
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch frozen Round 1 corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/a
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/r1
+
+      - name: Probe frozen fueled-chain
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/beta-eta-cost-probe-v1
+          python3 - <<'PY'
+          import pathlib,subprocess,time,os,json
+          p=pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson")
+          t=time.monotonic()
+          try:
+              with p.open("rb") as f:
+                  r=subprocess.run(
+                      ["/tmp/nucleus"],
+                      stdin=f,
+                      stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE,
+                      timeout=60,
+                      env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"}
+                  )
+              rec={"exit":r.returncode,"seconds":time.monotonic()-t,
+                   "stderr":r.stderr.decode(errors="replace")}
+          except subprocess.TimeoutExpired as e:
+              err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
+              rec={"exit":124,"seconds":time.monotonic()-t,"stderr":err}
+          pathlib.Path("metatron-kernel/evidence-out/beta-eta-cost-probe-v1/result.json").write_text(json.dumps(rec,indent=2)+"\n")
+          print(json.dumps(rec),flush=True)
+          assert rec["exit"] in (0,1,2),rec
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-beta-eta-cost-probe-${{ github.sha }}
+          path: metatron-kernel/evidence-out/beta-eta-cost-probe-v1
+          if-no-files-found: warn
