@@ -6,9 +6,9 @@ namespace Collatz
 # Source-relative affine accounting for coalescent owner returns
 
 `P * p = A * x + C` records an exact source-changing return from a protected
-source `x` to a coalescent owner `p`. These lemmas are deliberately generic:
-the executable qualifier supplies the Collatz-specific renewal words, while
-Lean checks the composition and descent margins at every depth.
+source `x` to a coalescent owner `p`. The executable qualifier supplies the
+Collatz-specific renewal words; these generic lemmas prove their composition
+and descent margins at every depth.
 -/
 
 theorem coalescentAffine_compose
@@ -17,49 +17,63 @@ theorem coalescentAffine_compose
     (h₂ : P₂ * q = A₂ * p + C₂) :
     (P₁ * P₂) * q = (A₂ * A₁) * x + (A₂ * C₁ + P₁ * C₂) := by
   calc
-    (P₁ * P₂) * q = P₁ * (P₂ * q) := by ring
+    (P₁ * P₂) * q = P₁ * (P₂ * q) := by rw [Int.mul_assoc]
     _ = P₁ * (A₂ * p + C₂) := by rw [h₂]
-    _ = A₂ * (P₁ * p) + P₁ * C₂ := by ring
+    _ = A₂ * (P₁ * p) + P₁ * C₂ := by
+      simp only [Int.mul_add, Int.mul_assoc]
+      rw [Int.mul_comm P₁ A₂]
     _ = A₂ * (A₁ * x + C₁) + P₁ * C₂ := by rw [h₁]
-    _ = (A₂ * A₁) * x + (A₂ * C₁ + P₁ * C₂) := by ring
+    _ = (A₂ * A₁) * x + (A₂ * C₁ + P₁ * C₂) := by
+      simp only [Int.mul_add, Int.mul_assoc]
 
 theorem coalescentAffine_lower_margin
     (P A C x p : Int)
     (h : P * p = A * x + C) :
     (P - A) * x - C = P * (x - p) := by
-  calc
-    (P - A) * x - C = P * x - (A * x + C) := by ring
-    _ = P * x - P * p := by rw [← h]
-    _ = P * (x - p) := by ring
+  simp only [Int.sub_mul, Int.mul_sub]
+  omega
 
 theorem coalescentAffine_threeQuarter_margin
     (P A C x p : Int)
     (h : P * p = A * x + C) :
     (3 * P - 4 * A) * x - 4 * C = P * (3 * x - 4 * p) := by
-  calc
-    (3 * P - 4 * A) * x - 4 * C = 3 * P * x - 4 * (A * x + C) := by ring
-    _ = 3 * P * x - 4 * (P * p) := by rw [← h]
-    _ = P * (3 * x - 4 * p) := by ring
+  simp only [Int.sub_mul, Int.mul_sub, Int.mul_add, Int.add_mul, Int.mul_assoc]
+  omega
 
 theorem coalescentAffine_lower_iff
     (P A C x p : Int)
     (hP : 0 < P)
     (h : P * p = A * x + C) :
     p < x ↔ C < (P - A) * x := by
-  rw [show C < (P - A) * x ↔ 0 < (P - A) * x - C by omega]
-  rw [coalescentAffine_lower_margin P A C x p h]
-  exact (Int.mul_pos_iff_of_pos_left hP).symm
+  have hid := coalescentAffine_lower_margin P A C x p h
+  constructor
+  · intro hp
+    have hprod : 0 < P * (x - p) := Int.mul_pos hP (by omega)
+    omega
+  · intro hmargin
+    by_cases hp : p < x
+    · exact hp
+    · have hprod : P * (x - p) ≤ 0 :=
+        Int.mul_nonpos_of_nonneg_of_nonpos (by omega) (by omega)
+      omega
 
 theorem coalescentAffine_threeQuarter_iff
     (P A C x p : Int)
     (hP : 0 < P)
     (h : P * p = A * x + C) :
     4 * p ≤ 3 * x ↔ 4 * C ≤ (3 * P - 4 * A) * x := by
-  rw [show 4 * p ≤ 3 * x ↔ 0 ≤ 3 * x - 4 * p by omega]
-  rw [show 4 * C ≤ (3 * P - 4 * A) * x ↔
-      0 ≤ (3 * P - 4 * A) * x - 4 * C by omega]
-  rw [coalescentAffine_threeQuarter_margin P A C x p h]
-  exact (Int.mul_nonneg_iff_of_pos_left hP).symm
+  have hid := coalescentAffine_threeQuarter_margin P A C x p h
+  constructor
+  · intro hp
+    have hprod : 0 ≤ P * (3 * x - 4 * p) :=
+      Int.mul_nonneg (by omega) (by omega)
+    omega
+  · intro hmargin
+    by_cases hp : 4 * p ≤ 3 * x
+    · exact hp
+    · have hprod : P * (3 * x - 4 * p) < 0 :=
+        Int.mul_neg_of_pos_of_neg hP (by omega)
+      omega
 
 #print axioms coalescentAffine_compose
 #print axioms coalescentAffine_lower_iff
