@@ -1,0 +1,32 @@
+name: Collatz protected query adapter V59
+on:
+  push:
+    branches: [collatz-protected-query-adapter-v59]
+    paths:
+      - experiments/collatz_protected_query_adapter_v59.py
+      - .github/workflows/collatz-protected-query-adapter-v59.yml
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute protected query and adaptive rejection fixtures
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-protected-query-adapter-v59
+          python3 experiments/collatz_protected_query_adapter_v59.py > evidence/collatz-protected-query-adapter-v59/state.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-protected-query-adapter-v59/state.json'))
+          assert d['execution'][3]['local_descent']
+          assert d['execution'][3]['protected_decision']=='UNKNOWN'
+          assert d['execution'][4]['protected_decision']=='LOWER_SOURCE_EXIT'
+          assert d['surviving_obligation']['status']=='UNKNOWN'
+          assert d['new_whole_live_closures']==0 and d['global_collatz']=='UNKNOWN'
+          print('PASS_PROTECTED_QUERY_ADAPTER; LOCAL_CONTRACTION_DOES_NOT_DISCHARGE_ORIGIN_QUERY')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-protected-query-adapter-v59
+          path: evidence/collatz-protected-query-adapter-v59
