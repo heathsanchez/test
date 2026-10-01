@@ -1,235 +1,27 @@
 name: Nucleus Iff v1
-
 on:
   push:
     branches: [nucleus-iff-v1]
-    paths:
-      - ".github/workflows/nucleus-iff-v1.yml"
-      - "metatron-kernel/**"
+    paths: [".github/workflows/nucleus-iff-v1.yml", "metatron-kernel/**"]
   workflow_dispatch:
-
 permissions:
   contents: read
-
-env:
-  BASE_SHA: 13d5c777b9837eaff5d8007f17241682404bff37
-  ROUND1_ARTIFACT: "10712869614"
-  CURRENT_TEST_ARTIFACT: "11090525747"
-
 jobs:
-  qualify:
+  red:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-
-      - name: Build candidate and exact base
+      - name: Establish intended baseline failures
         run: |
           set -euo pipefail
           ulimit -s 65536
-          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
-          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
-          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
-          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
-          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-candidate
-
-          git worktree add --detach /tmp/nucleus-base "$BASE_SHA"
-          cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
-          cp /tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-base-bin
-
-      - name: Fetch frozen Round 1 and current v4.34 public corpora
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          ulimit -s 65536
-          rm -rf /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
-          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
-          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
-          unzip -q /tmp/r1.zip -d /tmp/a1
-          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
-
-          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
-          unzip -q /tmp/current.zip -d /tmp/a2
-          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
-
-
-      - name: Check out pinned independent reference
-        uses: actions/checkout@v4
-        with:
-          repository: corun1024/lazylean
-          ref: 68c66fa18c1afe029512b90ecfe0b162c0dcd8fb
-          path: reference-lazylean
-
-      - name: Build independent reference
-        run: |
-          set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y libgmp-dev
-          cd reference-lazylean
-          test "$(git rev-parse HEAD)" = 68c66fa18c1afe029512b90ecfe0b162c0dcd8fb
-          g++ -std=c++20 -O2 -Isrc src/name.cpp src/level.cpp src/expr.cpp src/loader.cpp src/tc.cpp src/inductive.cpp src/kam.cpp src/fuse.cpp src/fix.cpp src/main.cpp -lgmpxx -lgmp -lpthread -o lazylean
-
-      - name: Qualify dependency slices against both reference engines
-        run: |
-          set -euo pipefail
-          ulimit -s 65536
-          python3 - <<'PY'
-          import sys,pathlib,subprocess,json,hashlib,os
-          sys.path.insert(0,"metatron-kernel/tests")
-          from slice_no_confusion import slice_prefix
-          out=pathlib.Path("metatron-kernel/evidence-out/iff-v1")
-          out.mkdir(parents=True,exist_ok=True)
-          rows=[]
-          obligations=[(name,"Iff","good") for name in ["perf/magma-list-pair-n7","perf/magma-list-pair-n21"]]
-          for name,target,bucket in obligations:
-              p=pathlib.Path("/tmp/current")/bucket/(name+".ndjson")
-              data=slice_prefix(p,target).encode()
-              sliced=out/(name.replace("/","__")+"--"+target+".ndjson")
-              sliced.write_bytes(data)
-              b=subprocess.run(["/tmp/nucleus-base-bin"],input=data,capture_output=True,timeout=30)
-              c=subprocess.run(["/tmp/nucleus-candidate"],input=data,capture_output=True,timeout=30)
-              refs={}
-              for engine in ["kam","subst"]:
-                  r=subprocess.run(["reference-lazylean/lazylean","--engine",engine,"-j","1",str(sliced)],capture_output=True,timeout=60)
-                  refs[engine]={"exit":r.returncode,"stderr":r.stderr.decode(errors="replace")}
-              with p.open("rb") as f:
-                  full=subprocess.run(["/tmp/nucleus-candidate"],stdin=f,capture_output=True,timeout=60,env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
-              rows.append({"test":name,"target":target,"input_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"slice_sha256":hashlib.sha256(data).hexdigest(),"slice_bytes":len(data),"base":b.returncode,"candidate":c.returncode,"references":refs,"full_exit":full.returncode,"next":full.stderr.decode(errors="replace")})
-          result={"candidate_sha":os.environ["GITHUB_SHA"],"reference_sha":"68c66fa18c1afe029512b90ecfe0b162c0dcd8fb","rows":rows,"boundary":"Dependency-sliced valid prefixes; no final Arena gain claimed"}
-          (out/"prefixes.json").write_text(json.dumps(result,indent=2)+"\n")
-          print(json.dumps(result),flush=True)
-          for r in rows:
-              assert (r["base"],r["candidate"])==(2,0),r
-              assert r["full_exit"] in (0,2),r
-              assert all(x["exit"]==0 for x in r["references"].values()),r
-          PY
-
-      - name: Verify CLI under an 8 MiB launcher stack
-        run: |
-          set -euo pipefail
-          ulimit -s 8192
-          mkdir -p metatron-kernel/evidence-out/iff-v1
-          python3 - <<'PY'
-          import json,pathlib,resource,subprocess,time
-          rows=[]
-          for corpus in ["current","r1"]:
-              p=pathlib.Path("/tmp")/corpus/"good/perf/app-lam.ndjson"
-              with p.open("rb") as f:
-                  t=time.monotonic()
-                  cp=subprocess.run(["/tmp/nucleus-candidate"],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=60)
-              rows.append({"corpus":corpus,"exit":cp.returncode,"seconds":time.monotonic()-t,"launcher_stack_bytes":resource.getrlimit(resource.RLIMIT_STACK)[0],"max_rss_kib":resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss})
-              assert cp.returncode==0,cp.stderr.decode()
-          pathlib.Path("metatron-kernel/evidence-out/iff-v1/cli-stack.json").write_text(json.dumps(rows,indent=2)+"\n")
-          print(json.dumps(rows))
-          PY
-
-      - name: Differential reclosure on both round boundaries
-        run: |
-          set -euo pipefail
-          ulimit -s 65536
-          mkdir -p metatron-kernel/evidence-out/iff-v1
-          python3 - <<'PY'
-          import json, pathlib, subprocess, time, os, hashlib
-
-          base=pathlib.Path("/tmp/nucleus-base-bin")
-          cand=pathlib.Path("/tmp/nucleus-candidate")
-
-          def rc(binary,p):
-              with p.open("rb") as f:
-                  t0=time.perf_counter_ns()
-                  try:
-                      q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
-                                       stderr=subprocess.PIPE,timeout=240)
-                      return q.returncode,time.perf_counter_ns()-t0,q.stderr.decode(errors="replace").splitlines()[-20:]
-                  except subprocess.TimeoutExpired as e:
-                      return 124,time.perf_counter_ns()-t0,["TIMEOUT"]
-
-          def corpus(root):
-              rows=[]
-              root=pathlib.Path(root)
-              for bucket,expected in [("good",0),("bad",1)]:
-                  for p in sorted((root/bucket).rglob("*.ndjson")):
-                      name=str(p.relative_to(root/bucket)).removesuffix(".ndjson")
-                      br,bt,be=rc(base,p)
-                      cr,ct,ce=rc(cand,p)
-                      rows.append({
-                        "test":name,"expected":expected,"input_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
-                        "base":br,"candidate":cr,
-                        "base_ns":bt,"candidate_ns":ct,
-                        "base_stderr":be,"candidate_stderr":ce,
-                      })
-              return rows
-
-          r1=corpus("/tmp/r1")
-          cur=corpus("/tmp/current")
-
-          def analyze(rows):
-              wrong=[r for r in rows if r["candidate"] in (0,1) and r["candidate"]!=r["expected"]]
-              regressions=[r for r in rows if r["base"] in (0,1) and r["candidate"]!=r["base"]]
-              errors=[r for r in rows if r["candidate"] not in (0,1,2)]
-              earned=[r for r in rows if r["base"] ==2 and r["candidate"]==r["expected"]]
-              return {
-                "tests":len(rows),
-                "base_accept":sum(r["expected"]==0 and r["base"]==0 for r in rows),
-                "base_reject":sum(r["expected"]==1 and r["base"]==1 for r in rows),
-                "base_residual":sum(r["base"] ==2 for r in rows),
-                "candidate_accept":sum(r["expected"]==0 and r["candidate"]==0 for r in rows),
-                "candidate_reject":sum(r["expected"]==1 and r["candidate"]==1 for r in rows),
-                "candidate_residual":sum(r["candidate"] ==2 for r in rows),
-                "wrong":wrong,"regressions":regressions,"errors":errors,
-                "earned":[r["test"] for r in earned],
-                "changes":[r for r in rows if r["base"]!=r["candidate"]],
-              }
-
-          frontier=[]
-          for row in cur:
-              if row["base"] != 2: continue
-              p=pathlib.Path("/tmp/current")/("good" if row["expected"]==0 else "bad")/(row["test"]+".ndjson")
-              with p.open("rb") as f:
-                  q=subprocess.run([str(cand)],stdin=f,capture_output=True,timeout=240,env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
-              frontier.append({"test":row["test"],"expected":row["expected"],"candidate":q.returncode,"trace":q.stderr.decode(errors="replace")})
-          pathlib.Path("metatron-kernel/evidence-out/iff-v1/frontier.json").write_text(json.dumps(frontier,indent=2)+"\n")
-
-          r1a=analyze(r1); cura=analyze(cur)
-          current_by={r["test"]:r for r in cur}
-          target=current_by["perf/proj-stuck-struct"]
-          out={
-            "schema":"nucleus-iff-v1",
-            "base_sha":os.environ["BASE_SHA"],
-            "stack_kib":65536,"checker_worker_stack_bytes":67108864,"judgment_steps":65536,
-            "candidate_sha":os.environ["GITHUB_SHA"],
-            "round1":r1a,"current":cura,
-            "target":target,
-            "protected_negatives":[current_by[n] for n in
-              ["bugs/proj-of-stuck-prop","bugs/proj-of-subst-prop","bugs/rec-of-subst-prop","tutorial/100_ruleKbad","tutorial/101_ruleKAcc","tutorial/125_accRecNoEta"]],
-          }
-          pathlib.Path("metatron-kernel/evidence-out/iff-v1/result.json").write_text(
-            json.dumps(out,indent=2,sort_keys=True)+"\n")
-          pathlib.Path("metatron-kernel/evidence-out/iff-v1/rows.json").write_text(json.dumps({"round1":r1,"current":cur},indent=2)+"\n")
-          print(json.dumps(out,sort_keys=True),flush=True)
-          assert (r1a["tests"],r1a["base_accept"],r1a["base_reject"],r1a["base_residual"])==(193,108,61,24),r1a
-          assert (cura["tests"],cura["base_accept"],cura["base_reject"],cura["base_residual"])==(194,110,60,24),cura
-          for a in (r1a,cura):
-              assert not a["wrong"],a["wrong"]
-              assert not a["regressions"],a["regressions"]
-              assert not a["errors"],a["errors"]
-
-          assert target["base"]==0,target
-          assert target["candidate"]==0,target
-          for name in ["bugs/proj-of-stuck-prop","bugs/proj-of-subst-prop","bugs/rec-of-subst-prop"]:
-              assert current_by[name]["candidate"]!=0,current_by[name]
-          PY
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: nucleus-iff-${{ github.sha }}
-          path: metatron-kernel/evidence-out/iff-v1
-          if-no-files-found: warn
+          set +e
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test closed_record3 > /tmp/red.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/red.log
+          test "$status" = 101
+          grep -q '4 passed; 2 failed' /tmp/red.log
+          grep -q 'closed_three_data_fields_accept ... FAILED' /tmp/red.log
+          grep -q 'renamed_closed_three_data_fields_accept ... FAILED' /tmp/red.log
