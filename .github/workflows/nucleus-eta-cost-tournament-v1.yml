@@ -1,0 +1,119 @@
+name: Nucleus eta cost tournament v1
+
+on:
+  push:
+    branches: [nucleus-eta-cost-tournament-v1]
+    paths:
+      - ".github/workflows/nucleus-eta-cost-tournament-v1.yml"
+      - "metatron-kernel/src/convert.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build candidate
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch pinned corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Tournament eta attempt caps
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          mkdir -p metatron-kernel/evidence-out/eta-cost-tournament-v1
+          python3 - <<'PY'
+          import json, pathlib, subprocess, os, time, hashlib
+
+          src=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
+          names={0:""}
+          rows=[]
+          found=False
+          for line in src.read_text().splitlines():
+              record=json.loads(line); rows.append(line)
+              if "in" in record:
+                  value=record.get("str",record.get("num"))
+                  names[record["in"]]=names[value["pre"]]+("." if value["pre"] else "")+str(value.get("str",value.get("i")))
+              decls=[]
+              if "inductive" in record:
+                  for kind in ("types","ctors","recs"): decls.extend(record["inductive"][kind])
+              for kind in ("def","thm","axiom","opaque"):
+                  if kind in record: decls.append(record[kind])
+              if any(names.get(d["name"])=="funext" for d in decls):
+                  found=True; break
+          assert found
+          funext=("\n".join(rows)+"\n").encode()
+          out=pathlib.Path("metatron-kernel/evidence-out/eta-cost-tournament-v1")
+          (out/"fueled-chain--through-funext.ndjson").write_bytes(funext)
+
+          tests={
+            "funext": (None, funext, 15),
+            "r1_fueled_chain": (pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson"), None, 30),
+            "k_rec_conv": (pathlib.Path("/tmp/current/bad/bugs/k-rec-conv.ndjson"), None, 10),
+            "fun_eta_bad": (pathlib.Path("/tmp/current/bad/tutorial/116_funEtaBad.ndjson"), None, 10),
+          }
+
+          def run(cap,path,data,timeout):
+              env=os.environ.copy(); env["NUCLEUS_ETA_ATTEMPT_CAP"]=str(cap)
+              t=time.monotonic()
+              try:
+                  if data is not None:
+                      q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=timeout)
+                  else:
+                      with path.open("rb") as f:
+                          q=subprocess.run(["/tmp/nucleus"],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=timeout)
+                  return {"exit":q.returncode,"seconds":time.monotonic()-t,"stderr":q.stderr.decode(errors="replace")[-2000:]}
+              except subprocess.TimeoutExpired as e:
+                  return {"exit":124,"seconds":time.monotonic()-t,"stderr":"TIMEOUT"}
+
+          result=[]
+          for cap in [0,1,2,4,8,16]:
+              row={"cap":cap}
+              for name,(path,data,to) in tests.items():
+                  row[name]=run(cap,path,data,to)
+              result.append(row)
+              print(json.dumps(row),flush=True)
+
+          payload={
+            "schema":"nucleus-eta-cost-tournament-v1",
+            "candidate_sha":os.environ["GITHUB_SHA"],
+            "funext_sha256":hashlib.sha256(funext).hexdigest(),
+            "rows":result,
+            "interpretation":"A cap is viable only if funext=0, both bad controls=1, and r1_fueled_chain avoids timeout; cap exhaustion declines eta and falls back to existing conversion.",
+          }
+          (out/"result.json").write_text(json.dumps(payload,indent=2)+"\n")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-eta-cost-tournament-${{ github.sha }}
+          path: metatron-kernel/evidence-out/eta-cost-tournament-v1
+          if-no-files-found: error
