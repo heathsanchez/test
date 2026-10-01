@@ -5,10 +5,14 @@ use crate::judgment::Judgment;
 use crate::level::level_equal;
 use crate::machine::Transparency;
 use crate::syntax::Expr;
-use crate::typecheck::{TypeChecker, TypeValue};
+use crate::typecheck::{SupportTypeKey, TypeChecker, TypeValue};
 use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
 
-type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum ConversionVisitKey {
+    Exact(crate::machine::AuthorityId, TypeValue, TypeValue),
+    Support(crate::machine::AuthorityId, SupportTypeKey, SupportTypeKey),
+}
 const INLINE_CONVERSION_VISIT_CAPACITY: usize = 8;
 
 struct ConversionVisitSet {
@@ -185,7 +189,24 @@ fn convert_in_context_with_congruence(
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
-        if !visited.insert((checker.authority(), left.clone(), right.clone())) {
+        let visit_key = {
+            let mut left_budget = 64usize;
+            let mut right_budget = 64usize;
+            match (
+                checker.cache_type_support_key(&left, &mut left_budget),
+                checker.cache_type_support_key(&right, &mut right_budget),
+            ) {
+                (Some(left_key), Some(right_key)) => {
+                    ConversionVisitKey::Support(checker.authority(), left_key, right_key)
+                }
+                _ => ConversionVisitKey::Exact(
+                    checker.authority(),
+                    left.clone(),
+                    right.clone(),
+                ),
+            }
+        };
+        if !visited.insert(visit_key) {
             continue;
         }
 
