@@ -54,16 +54,16 @@ jobs:
           data=slice_prefix(src,"funext").encode()
           out=pathlib.Path("metatron-kernel/evidence-out/funext-separator-v1")
           sl=out/"funext-prefix.ndjson"; sl.write_bytes(data)
-          env=os.environ|{"NUCLEUS_TRACE_VALUE_MISMATCH":"1","NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          env=os.environ|{"NUCLEUS_TRACE_VALUE_MISMATCH":"1","NUCLEUS_TRACE_NEUTRAL_HEADS":"1","NUCLEUS_TRACE_DOWNSTREAM":"1"}
           r=subprocess.run(["/tmp/nucleus"],input=data,capture_output=True,env=env,timeout=60)
           rec={"candidate_sha":os.environ["GITHUB_SHA"],"slice_sha256":hashlib.sha256(data).hexdigest(),
                "slice_bytes":len(data),"slice_exit":r.returncode,
                "slice_stderr":r.stderr.decode(errors="replace")}
           (out/"diagnostic.json").write_text(json.dumps(rec,indent=2)+"\n")
           print(json.dumps(rec),flush=True)
-          assert r.returncode==1,rec
-          assert "NUCLEUS_VALUE_MISMATCH:" in rec["slice_stderr"],rec
-          assert "name=funext:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch" in rec["slice_stderr"],rec
+          assert r.returncode==2,rec
+          assert "NUCLEUS_NEUTRAL_HEAD_MISMATCH:" in rec["slice_stderr"],rec
+          assert "name=funext:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads" in rec["slice_stderr"],rec
           PY
 
       - name: Check out pinned independent reference
