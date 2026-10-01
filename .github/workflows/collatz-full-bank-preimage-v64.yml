@@ -1,0 +1,45 @@
+name: Collatz full bank preimage V64
+on:
+  push:
+    branches: [collatz-full-bank-preimage-v64]
+permissions: {contents: read, actions: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-backward-symbolic-cover-20260930
+          run-id: 36663027013
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qualified-bank
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-guard-bank-reconciliation-v61
+          run-id: 36830138059
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qualified-state
+      - name: Exact original-source full-bank applicability audit
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 experiments/collatz_full_bank_preimage_v64.py --bank qualified-bank/backward-cover-certificates.json --state qualified-state/state.json > evidence/result.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('evidence/result.json'))
+          assert d['bank_laws']==3294 and d['input_cells']==14934
+          assert d['counts']['law_tests']==49192596
+          assert d['counts']['prefixes']==1164852
+          assert d['counts']['ternary_eligible_prefixes']==14934
+          assert d['counts']['cells_with_uncovered_zero']==14934
+          assert not d['whole_cell_closures'] and not d['guard_bits']
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+          print('PASS_SCOPED_APPLICABILITY_OBSTRUCTION; REQUALIFY_GUARDS; GLOBAL_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-full-bank-preimage-v64
+          path: evidence
