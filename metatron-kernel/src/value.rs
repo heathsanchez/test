@@ -1,6 +1,8 @@
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::id::{ExprId, NameId};
@@ -50,11 +52,29 @@ impl EnvFrame {
     }
 
     fn extend_binding(&self, value: EnvBinding) -> Self {
-        Self(Rc::new(EnvNode::Extend {
+        // Exact environment hash-consing: the same parent plus the same
+        // represented binding is the same environment. This does not merge
+        // observationally different frames; it only avoids allocating a new
+        // identity for an already-constructed immutable extension.
+        let key = (self.id(), EnvBindingKey::from(&value));
+        if let Some(existing) = ENV_FRAME_INTERNER.with(|interner| {
+            interner
+                .borrow()
+                .get(&key)
+                .and_then(Weak::upgrade)
+        }) {
+            return Self(existing);
+        }
+
+        let node = Rc::new(EnvNode::Extend {
             id: NEXT_ENV_FRAME_ID.fetch_add(1, Ordering::Relaxed),
             parent: self.clone(),
             value,
-        }))
+        });
+        ENV_FRAME_INTERNER.with(|interner| {
+            interner.borrow_mut().insert(key, Rc::downgrade(&node));
+        });
+        Self(node)
     }
 
     pub fn lookup(&self, index: u64) -> Option<EnvBinding> {
@@ -232,4 +252,90 @@ pub enum NeutralHead {
         index: usize,
         structure: Box<Neutral>,
     },
+}
+
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct ClosureInternKey {
+    term: ClosureTerm,
+    env_id: u64,
+    levels: LevelSubstitution,
+}
+
+impl From<&Closure> for ClosureInternKey {
+    fn from(closure: &Closure) -> Self {
+        Self {
+            term: closure.term.clone(),
+            env_id: closure.env.id(),
+            levels: closure.levels.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum NeutralHeadInternKey {
+    Free(FreeId),
+    Const {
+        name: NameId,
+        levels: Vec<LevelTerm>,
+    },
+    Projection {
+        type_name: NameId,
+        index: usize,
+        structure: Box<NeutralInternKey>,
+    },
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct NeutralInternKey {
+    head: NeutralHeadInternKey,
+    spine: Vec<ClosureInternKey>,
+}
+
+impl From<&Neutral> for NeutralInternKey {
+    fn from(neutral: &Neutral) -> Self {
+        let head = match &neutral.head {
+            NeutralHead::Free(free) => NeutralHeadInternKey::Free(*free),
+            NeutralHead::Const { name, levels } => NeutralHeadInternKey::Const {
+                name: *name,
+                levels: levels.clone(),
+            },
+            NeutralHead::Projection {
+                type_name,
+                index,
+                structure,
+            } => NeutralHeadInternKey::Projection {
+                type_name: *type_name,
+                index: *index,
+                structure: Box::new(NeutralInternKey::from(structure.as_ref())),
+            },
+        };
+        Self {
+            head,
+            spine: neutral.spine.iter().map(ClosureInternKey::from).collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum EnvBindingKey {
+    Closure(ClosureInternKey),
+    Free(FreeId),
+    Neutral(NeutralInternKey),
+}
+
+impl From<&EnvBinding> for EnvBindingKey {
+    fn from(binding: &EnvBinding) -> Self {
+        match binding {
+            EnvBinding::Closure(closure) => Self::Closure(ClosureInternKey::from(closure)),
+            EnvBinding::Free(free) => Self::Free(*free),
+            EnvBinding::Neutral(neutral) => Self::Neutral(NeutralInternKey::from(neutral)),
+        }
+    }
+}
+
+thread_local! {
+    static ENV_FRAME_INTERNER:
+        RefCell<HashMap<(u64, EnvBindingKey), Weak<EnvNode>>> =
+        RefCell::new(HashMap::new());
 }
