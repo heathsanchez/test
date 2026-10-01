@@ -130,7 +130,7 @@ jobs:
           assert not cs["candidate_changes"] and not fs["candidate_changes"], (cs,fs)
           assert not cs["diagnostic_changes"] and not fs["diagnostic_changes"], (cs,fs)
 
-          rx=re.compile(r"NUCLEUS_DOWNSTREAM:name=(.*?):stage=(.*?):verdict=UNKNOWN(?:\n|:reason=(.*?)(?:\n|$))")
+          rx=re.compile(r"NUCLEUS_DOWNSTREAM:name=(.*?):stage=(.*?):verdict=(?:UNKNOWN|Unknown)(?:\n|:reason=(.*?)(?:\n|$))")
           frontier=[]
           for row in current:
               if row["base"] != 2:
