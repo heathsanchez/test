@@ -1,0 +1,121 @@
+name: Nucleus binder-free cache v1
+
+on:
+  push:
+    branches: [nucleus-binderfree-cache-v1]
+    paths:
+      - ".github/workflows/nucleus-binderfree-cache-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BASE_SHA: "cb5d9edbbd5a9136c852094b3941e20e6fe9844e"
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  micro:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build and run semantic tests
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-candidate
+          git worktree add --detach /tmp/nucleus-base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-base-bin
+
+      - name: Fetch pinned corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Protected semantic and cost micro-gate
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/binderfree-cache-v1
+          python3 - <<'PY'
+          import json,pathlib,subprocess,time,os
+
+          def prefix(path,target):
+              names={0:""}; rows=[]
+              for line in pathlib.Path(path).read_text().splitlines():
+                  r=json.loads(line); rows.append(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      if isinstance(v,dict):
+                          pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  decls=[]
+                  if "inductive" in r:
+                      for k in ("types","ctors","recs"): decls.extend(r["inductive"].get(k,[]))
+                  for k in ("def","thm","axiom","opaque","quot"):
+                      if k in r and isinstance(r[k],dict): decls.append(r[k])
+                  if any(names.get(d.get("name"))==target for d in decls if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError(target)
+
+          current=pathlib.Path("/tmp/current/good/perf/fueled-chain.ndjson")
+          frozen=pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson")
+          cases={
+            "funext":("data",prefix(current,"funext"),15),
+            "r1_before_chain6":("data",prefix(frozen,"Fueled.atF_ite"),15),
+            "r1_chain6":("data",prefix(frozen,"chain6_datF"),20),
+            "current_full":("path",current,20),
+            "frozen_full":("path",frozen,20),
+            "k_rec_conv":("path",pathlib.Path("/tmp/current/bad/bugs/k-rec-conv.ndjson"),5),
+            "fun_eta_bad":("path",pathlib.Path("/tmp/current/bad/tutorial/116_funEtaBad.ndjson"),5),
+          }
+          env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          def run(binary,kind,obj,timeout):
+              t=time.monotonic()
+              try:
+                  if kind=="data":
+                      q=subprocess.run([binary],input=obj,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout,env=env)
+                  else:
+                      with obj.open("rb") as f:
+                          q=subprocess.run([binary],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout,env=env)
+                  return {"exit":q.returncode,"seconds":time.monotonic()-t,"stderr":q.stderr.decode(errors="replace")[-2400:]}
+              except subprocess.TimeoutExpired:
+                  return {"exit":124,"seconds":time.monotonic()-t,"stderr":"TIMEOUT"}
+
+          result={"candidate_sha":os.environ["GITHUB_SHA"],"base_sha":os.environ["BASE_SHA"]}
+          for name,spec in cases.items():
+              result[name]=run("/tmp/nucleus-candidate",*spec)
+          result["base_r1_chain6"]=run("/tmp/nucleus-base-bin",*cases["r1_chain6"])
+          pathlib.Path("metatron-kernel/evidence-out/binderfree-cache-v1/result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result),flush=True)
+
+          assert result["funext"]["exit"]==0,result
+          assert result["r1_before_chain6"]["exit"]==0,result
+          assert result["r1_chain6"]["exit"] in (0,1,2),result
+          assert result["k_rec_conv"]["exit"]==1,result
+          assert result["fun_eta_bad"]["exit"]==1,result
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-binderfree-cache-${{ github.sha }}
+          path: metatron-kernel/evidence-out/binderfree-cache-v1
+          if-no-files-found: warn
