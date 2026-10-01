@@ -19,9 +19,16 @@ pub enum TypeValue {
 }
 
 #[cfg(feature = "diagnostics")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct ProjectedInferenceKey {
+    levels: Vec<(NameId, LevelTerm)>,
+    binders: Vec<(usize, EnvBinding, TypeValue)>,
+}
+
+#[cfg(feature = "diagnostics")]
 #[derive(Clone)]
 struct ProjectedInferenceRecord {
-    key: Vec<(usize, EnvBinding)>,
+    key: ProjectedInferenceKey,
     result: TypeValue,
     frames: Vec<u64>,
 }
@@ -210,14 +217,20 @@ impl<'a> TypeChecker<'a> {
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
         if let Judgment::Proven { value, .. } = &result {
             #[cfg(feature = "diagnostics")]
-            self.record_projected_inference(expression, frame, value);
+            self.record_projected_inference(expression, context, frame, value);
             cache.insert(key, value.clone());
         }
         result
     }
 
     #[cfg(feature = "diagnostics")]
-    fn record_projected_inference(&self, expression: ExprId, frame: &EnvFrame, value: &TypeValue) {
+    fn record_projected_inference(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        value: &TypeValue,
+    ) {
         let mut offsets = Vec::new();
         if self.collect_outer_bvars(expression, 0, 4096, &mut offsets).is_none() {
             return;
@@ -225,12 +238,20 @@ impl<'a> TypeChecker<'a> {
         offsets.sort_unstable();
         offsets.dedup();
 
-        let mut projected = Vec::with_capacity(offsets.len());
+        let mut binders = Vec::with_capacity(offsets.len());
         for offset in offsets {
             let Ok(index) = u64::try_from(offset) else { return; };
             let Some(binding) = frame.lookup(index) else { return; };
-            projected.push((offset, binding));
+            let Some(ty) = context.iter().rev().nth(offset).cloned() else { return; };
+            binders.push((offset, binding, ty));
         }
+        let mut levels: Vec<_> = self
+            .level_substitution
+            .iter()
+            .map(|(name, level)| (*name, level.clone()))
+            .collect();
+        levels.sort_by_key(|(name, _)| name.0);
+        let projected = ProjectedInferenceKey { levels, binders };
 
         PROJECTED_INFERENCE.with(|state| {
             let mut state = state.borrow_mut();
@@ -249,7 +270,7 @@ impl<'a> TypeChecker<'a> {
                     if count.is_power_of_two() {
                         eprintln!(
                             "NUCLEUS_FRAME_PROJECTION_REUSE:expression={expression:?}:projected_bindings={}:distinct_frames={count}",
-                            projected.len()
+                            projected.binders.len()
                         );
                     }
                 }
