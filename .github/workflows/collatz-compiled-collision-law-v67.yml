@@ -1,0 +1,33 @@
+name: Collatz compiled collision law V67
+on:
+  push:
+    branches: [collatz-compiled-collision-law-v67]
+    paths:
+      - formal/Collatz/CompiledCollisionLaw.lean
+      - .github/workflows/collatz-compiled-collision-law-v67.yml
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check compiled OEOO law
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence/collatz-compiled-collision-law-v67
+          lake build Collatz.EarlierSourceCollision
+          lake env lean -DautoImplicit=false \
+            -o .lake/build/lib/lean/Collatz/CompiledCollisionLaw.olean \
+            formal/Collatz/CompiledCollisionLaw.lean \
+            | tee evidence/collatz-compiled-collision-law-v67/proof.log
+          grep -q 'oeoo_exact' evidence/collatz-compiled-collision-law-v67/proof.log
+          ! grep -q 'sorryAx' evidence/collatz-compiled-collision-law-v67/proof.log
+          ! grep -q 'Lean.ofReduceBool' evidence/collatz-compiled-collision-law-v67/proof.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-compiled-collision-law-v67
+          path: evidence/collatz-compiled-collision-law-v67
