@@ -175,6 +175,12 @@ fn convert_in_context_with_congruence(
     let mut proposition_frees = HashSet::new();
     let mut proof_frees = HashMap::new();
     let mut proof_function_frees = HashMap::new();
+    // Diagnostic-only tournament knob. Exhaustion declines this sufficient
+    // eta shortcut and leaves the established conversion path in control.
+    let mut eta_attempts = std::env::var("NUCLEUS_ETA_ATTEMPT_CAP")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(usize::MAX);
 
     while let Some((left, right, depth, local_context)) = work.pop() {
         let context = local_context.as_slice();
@@ -405,6 +411,7 @@ fn convert_in_context_with_congruence(
                     &mut work,
                     &mut proof_function_frees,
                     context,
+                    &mut eta_attempts,
                 ) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { .. }
@@ -449,6 +456,7 @@ fn convert_in_context_with_congruence(
                             &mut work,
                             &mut proof_function_frees,
                             context,
+                            &mut eta_attempts,
                         ) {
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
@@ -830,6 +838,7 @@ fn compare_values(
     work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
     context: &[TypeValue],
+    eta_attempts: &mut usize,
 ) -> Judgment<()> {
     match (left, right) {
         (Value::NatLit(left), Value::NatLit(right)) => {
@@ -847,6 +856,7 @@ fn compare_values(
                 work,
                 proof_function_frees,
                 context,
+                eta_attempts,
             );
         }
         (Value::Neutral(neutral), Value::NatLit(literal)) => {
@@ -859,6 +869,7 @@ fn compare_values(
                 work,
                 proof_function_frees,
                 context,
+                eta_attempts,
             );
         }
         (Value::Sort(left), Value::Sort(right)) => {
@@ -942,16 +953,19 @@ fn compare_values(
         | (
             Value::Lam { domain, body },
             Value::Neutral(neutral),
-        ) if evaluated_free_eta(
-            checker,
-            neutral,
-            domain,
-            body,
-            budget,
-            depth,
-            work,
-            context,
-        ) => {}
+        ) if *eta_attempts > 0 && {
+            *eta_attempts -= 1;
+            evaluated_free_eta(
+                checker,
+                neutral,
+                domain,
+                body,
+                budget,
+                depth,
+                work,
+                context,
+            )
+        } => {}
         _ => {
             if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
                 eprintln!(
@@ -974,6 +988,7 @@ fn compare_nat_literal_neutral(
     work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
     context: &[TypeValue],
+    eta_attempts: &mut usize,
 ) -> Judgment<()> {
     let Some(primitives) = checker.nat_primitives() else {
         return Judgment::unknown("Nat-literal-conversion-without-authority");
@@ -1014,6 +1029,7 @@ fn compare_nat_literal_neutral(
             work,
             proof_function_frees,
             context,
+            eta_attempts,
         );
     }
     Judgment::refuted("Nat-literal-non-Nat-head")
