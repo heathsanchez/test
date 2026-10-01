@@ -4,13 +4,15 @@ on:
     branches: [collatz-earlier-source-collision-v65]
     paths:
       - formal/Collatz/EarlierSourceCollision.lean
+      - experiments/collatz_earlier_source_collision_v65.py
       - .github/workflows/collatz-earlier-source-collision-v65.yml
   pull_request:
     branches: [main]
     paths:
       - formal/Collatz/EarlierSourceCollision.lean
+      - experiments/collatz_earlier_source_collision_v65.py
       - .github/workflows/collatz-earlier-source-collision-v65.yml
-permissions: {contents: read}
+permissions: {contents: read, actions: read}
 jobs:
   qualify:
     runs-on: ubuntu-24.04
@@ -70,5 +72,39 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: collatz-earlier-source-collision-v65
+          name: collatz-earlier-source-collision-v65-formal
           path: evidence/collatz-earlier-source-collision-v65
+
+  pilot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-guard-bank-reconciliation-v61
+          run-id: 36830138059
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: qualified-state
+      - name: Exact protected-quotient collision pilot
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-earlier-source-collision-v65-pilot
+          python3 experiments/collatz_earlier_source_collision_v65.py \
+            --state qualified-state/state.json \
+            > evidence/collatz-earlier-source-collision-v65-pilot/result.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-earlier-source-collision-v65-pilot/result.json'))
+          assert d['input_cells']==128
+          assert d['global_collatz']=='UNKNOWN' and not d['qed']
+          assert d['protected_present']==['original_source','current_endpoint']
+          print('V65_PILOT', 'closures=',d['closures'],
+                'reverse_states=',d['reverse_states'],
+                'max_reverse_word=',d['max_reverse_word'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-earlier-source-collision-v65-pilot
+          path: evidence/collatz-earlier-source-collision-v65-pilot
