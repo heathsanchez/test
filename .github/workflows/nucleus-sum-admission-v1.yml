@@ -1,0 +1,67 @@
+name: Nucleus sum admission v1
+
+on:
+  push:
+    branches: [nucleus-sum-admission-v1]
+    paths:
+      - ".github/workflows/nucleus-sum-admission-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BASE_SHA: 0659bc671a4ef536ed4a096deacd0c61b1ca927e
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Build candidate and exact base
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
+          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-candidate
+
+          git worktree add --detach /tmp/nucleus-base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-base-bin
+
+      - name: Fetch frozen Round 1 and current v4.34 public corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          rm -rf /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+
+      - name: Required semantic closure and malformed neighbors
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          NUCLEUS_SUM_BINARY=/tmp/nucleus-candidate python3 -m unittest discover -s metatron-kernel/tests -p 'test_sum_admission.py' -v
