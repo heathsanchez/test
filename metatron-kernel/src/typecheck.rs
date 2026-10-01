@@ -67,7 +67,7 @@ enum SupportNeutralHeadKey {
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-enum SupportTypeKey {
+pub(crate) enum SupportTypeKey {
     Sort(LevelTerm),
     Term(SupportClosureKey),
     Pi {
@@ -278,7 +278,7 @@ impl<'a> TypeChecker<'a> {
         result
     }
 
-    fn cache_type_support_key(
+    pub(crate) fn cache_type_support_key(
         &self,
         value: &TypeValue,
         budget: &mut usize,
