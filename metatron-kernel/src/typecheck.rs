@@ -270,6 +270,12 @@ impl<'a> TypeChecker<'a> {
             let semantically_same = if prior_result == *value {
                 Some(true)
             } else {
+                let prior_support_signature =
+                    self.diagnostic_type_support_signature(&prior_result);
+                let current_support_signature =
+                    self.diagnostic_type_support_signature(value);
+                let support_equivalent =
+                    prior_support_signature == current_support_signature;
                 let verdict = PROJECTED_VALIDATING.with(|flag| {
                     let previous = flag.replace(true);
                     let verdict = crate::convert::convert_with_policy_in_context(
@@ -288,12 +294,32 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Proven { .. } => Some(true),
                     Judgment::Refuted { obstruction } => {
                         eprintln!(
+                            "NUCLEUS_FRAME_TYPE_SUPPORT:expression={expression:?}:conversion=refuted:detail={}:support_equivalent={support_equivalent}",
+                            obstruction.0
+                        );
+                        if !support_equivalent {
+                            eprintln!(
+                                "NUCLEUS_FRAME_TYPE_SUPPORT_DIFFERENCE:expression={expression:?}:prior_signature={:?}:current_signature={:?}",
+                                prior_support_signature, current_support_signature
+                            );
+                        }
+                        eprintln!(
                             "NUCLEUS_FRAME_PROJECTION_COLLISION:expression={expression:?}:frame={}:prior_frames={:?}:key={:?}:obstruction={}:prior={:?}:current={:?}",
                             frame.id(), prior_frames, projected, obstruction.0, prior_result, value
                         );
                         Some(false)
                     }
                     Judgment::Unknown { residual } => {
+                        eprintln!(
+                            "NUCLEUS_FRAME_TYPE_SUPPORT:expression={expression:?}:conversion=unknown:detail={}:support_equivalent={support_equivalent}",
+                            residual.0
+                        );
+                        if !support_equivalent {
+                            eprintln!(
+                                "NUCLEUS_FRAME_TYPE_SUPPORT_DIFFERENCE:expression={expression:?}:prior_signature={:?}:current_signature={:?}",
+                                prior_support_signature, current_support_signature
+                            );
+                        }
                         eprintln!(
                             "NUCLEUS_FRAME_PROJECTION_UNRESOLVED:expression={expression:?}:frame={}:prior_frames={:?}:key={:?}:residual={}:prior={:?}:current={:?}",
                             frame.id(), prior_frames, projected, residual.0, prior_result, value
