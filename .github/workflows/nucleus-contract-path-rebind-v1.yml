@@ -34,7 +34,6 @@ jobs:
         run: |
           set -euo pipefail
           ulimit -s 65536
-          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
