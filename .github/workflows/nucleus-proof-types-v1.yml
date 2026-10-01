@@ -1,0 +1,32 @@
+name: Nucleus Proof Types v1
+on:
+  push:
+    branches: [nucleus-proof-types-v1]
+    paths: [".github/workflows/nucleus-proof-types-v1.yml", "metatron-kernel/**"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Confirm discriminating tests fail on qualified baseline
+        run: |
+          set -euo pipefail
+          mkdir -p proof-evidence
+          set +e
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test proof_type_conversion > proof-evidence/red.log 2>&1
+          rc=$?
+          set -e
+          cat proof-evidence/red.log
+          test "$rc" -eq 101
+          grep -q 'convertible_proposition_types_allow_proof_irrelevance ... FAILED' proof-evidence/red.log
+          grep -q 'convertible_data_types_do_not_erase_data ... ok' proof-evidence/red.log
+          grep -q 'different_propositions_do_not_erase_proofs ... ok' proof-evidence/red.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-proof-types-red
+          path: proof-evidence
