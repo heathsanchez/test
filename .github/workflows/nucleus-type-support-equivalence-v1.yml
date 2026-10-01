@@ -1,0 +1,129 @@
+name: Nucleus type support equivalence v1
+
+on:
+  push:
+    branches: [nucleus-type-support-equivalence-v1]
+    paths:
+      - ".github/workflows/nucleus-type-support-equivalence-v1.yml"
+      - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/convert.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+
+jobs:
+  equivalence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic Nucleus
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/a1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+
+      - name: Test full inferred-type support equivalence
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/type-support-equivalence-v1
+          python3 - <<'PY'
+          import json, pathlib, subprocess, time, os, re
+
+          def prefix(path,target):
+              names={0:""}; rows=[]
+              for line in pathlib.Path(path).read_text().splitlines():
+                  r=json.loads(line); rows.append(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      if isinstance(v,dict):
+                          pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  decls=[]
+                  if "inductive" in r:
+                      for k in ("types","ctors","recs"): decls.extend(r["inductive"].get(k,[]))
+                  for k in ("def","thm","axiom","opaque","quot"):
+                      if k in r and isinstance(r[k],dict): decls.append(r[k])
+                  if any(names.get(d.get("name"))==target for d in decls if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError(target)
+
+          data=prefix("/tmp/r1/good/perf/fueled-chain.ndjson","chain6_datF")
+          env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          t=time.monotonic()
+          try:
+              q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=20,env=env)
+              exit_code=q.returncode
+              err=q.stderr.decode(errors="replace")
+          except subprocess.TimeoutExpired as e:
+              exit_code=124
+              err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
+          seconds=time.monotonic()-t
+
+          lines=err.splitlines()
+          support=[x for x in lines if x.startswith("NUCLEUS_FRAME_TYPE_SUPPORT:")]
+          collisions=[x for x in lines if x.startswith("NUCLEUS_FRAME_PROJECTION_COLLISION:")]
+          unresolved=[x for x in lines if x.startswith("NUCLEUS_FRAME_PROJECTION_UNRESOLVED:")]
+          differences=[x for x in lines if x.startswith("NUCLEUS_FRAME_TYPE_SUPPORT_DIFFERENCE:")]
+          reuse=[x for x in lines if x.startswith("NUCLEUS_FRAME_PROJECTION_REUSE:")]
+
+          parsed=[]
+          for line in support:
+              m_expr=re.search(r"expression=ExprId\((\d+)\)",line)
+              m_conversion=re.search(r"conversion=([^:]+)",line)
+              m_detail=re.search(r"detail=([^:]+)",line)
+              m_equiv=re.search(r"support_equivalent=(true|false)",line)
+              parsed.append({
+                  "expression":int(m_expr.group(1)) if m_expr else None,
+                  "conversion":m_conversion.group(1) if m_conversion else None,
+                  "detail":m_detail.group(1) if m_detail else None,
+                  "support_equivalent":m_equiv.group(1)=="true" if m_equiv else None,
+              })
+
+          result={
+              "candidate_sha":os.environ["GITHUB_SHA"],
+              "chain6_exit":exit_code,
+              "seconds":seconds,
+              "reuse_events":len(reuse),
+              "collision_count":len(collisions),
+              "unresolved_count":len(unresolved),
+              "support_marker_count":len(parsed),
+              "support_equivalent_count":sum(x["support_equivalent"] is True for x in parsed),
+              "support_difference_count":len(differences),
+              "all_nonproven_support_equivalent":bool(parsed) and all(x["support_equivalent"] is True for x in parsed),
+              "support":parsed,
+              "differences":differences,
+          }
+          out=pathlib.Path("metatron-kernel/evidence-out/type-support-equivalence-v1")
+          (out/"result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result),flush=True)
+
+          assert len(collisions)==9, result
+          assert len(unresolved)==2, result
+          assert len(parsed)==11, result
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-type-support-equivalence-${{ github.sha }}
+          path: metatron-kernel/evidence-out/type-support-equivalence-v1
+          if-no-files-found: warn
