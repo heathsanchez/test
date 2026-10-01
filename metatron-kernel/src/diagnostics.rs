@@ -4,7 +4,10 @@
 //! thread-local so parallel tests and independent checker calls do not share
 //! observation state.  Normal Arena builds omit this module and every update.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::collections::{HashMap, HashSet};
+
+use crate::id::ExprId;
 
 use crate::verdict::Verdict;
 
@@ -67,11 +70,14 @@ pub(crate) fn snapshot() -> OperationCounts {
 thread_local! {
     static CAUSAL_SCOPE: Cell<u64> = const { Cell::new(0) };
     static CAUSAL_EVENTS: Cell<u64> = const { Cell::new(0) };
+    static INFERENCE_FRAMES: RefCell<HashMap<ExprId, HashSet<u64>>> =
+        RefCell::new(HashMap::new());
 }
 
 pub(crate) fn causal_scope() {
     CAUSAL_SCOPE.set(CAUSAL_SCOPE.get().saturating_add(1));
     CAUSAL_EVENTS.set(0);
+    INFERENCE_FRAMES.with(|frames| frames.borrow_mut().clear());
 }
 
 struct BoundedDebug {
@@ -87,6 +93,28 @@ impl std::fmt::Write for BoundedDebug {
         self.text.push_str(value);
         Ok(())
     }
+}
+
+pub(crate) fn inference_frame(expression: ExprId, frame: u64) {
+    if std::env::var_os("NUCLEUS_TRACE_INFERENCE_FRAMES").is_none() {
+        return;
+    }
+    INFERENCE_FRAMES.with(|all| {
+        let mut all = all.borrow_mut();
+        let frames = all.entry(expression).or_default();
+        if !frames.insert(frame) {
+            return;
+        }
+        let count = frames.len();
+        if matches!(count, 16 | 64 | 256 | 1024 | 4096 | 16384) {
+            eprintln!("NUCLEUS_INFERENCE_FRAME_MULTIPLICITY:{}", serde_json::json!({
+                "scope": CAUSAL_SCOPE.get(),
+                "expression": format!("{expression:?}"),
+                "distinct_frames": count,
+                "latest_frame": frame
+            }));
+        }
+    });
 }
 
 pub(crate) fn causal(kind: &str, detail: std::fmt::Arguments<'_>) {
