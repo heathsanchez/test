@@ -879,7 +879,12 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         && constructor.num_params == 0
         && constructor.num_fields == 2;
 
-    if !dependent_pair && !scalar_structure && !closed_data_proof_record {
+    let closed_three_data_fields = inductive.num_params == 0
+        && inductive.level_params.is_empty()
+        && constructor.num_params == 0
+        && constructor.num_fields == 3;
+
+    if !dependent_pair && !scalar_structure && !closed_data_proof_record && !closed_three_data_fields {
         return false;
     }
 
@@ -1710,6 +1715,37 @@ fn closed_data_proof_record_obligations(
             expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
 }
 
+// Closed three-field records are a distinct bounded schema: every field
+// type is checked in the prior environment at the record's universe. No
+// dependent, recursive, or larger-universe field is admitted by this law.
+fn closed_three_data_field_obligations(
+    export: &ResolvedExport,
+    environment: &Environment,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> bool {
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 3) else { return false; };
+    let checker = TypeChecker::new(&export.exprs, &export.levels, environment)
+        .with_delta_policy(delta_policy);
+    let universe = TypeValue::Term(checker.closure(inductive.ty, EnvFrame::empty()));
+    if !fields.iter().all(|field|
+        !expression_contains_constant(export, *field, inductive.name)
+            && matches!(checker.check(*field, &universe, limits.judgment_steps),
+                Judgment::Proven { .. })) {
+        return false;
+    }
+    let Some((rec_domains, _)) = pi_spine(export, recursor.ty, 3) else { return false; };
+    let [rule] = recursor.rules.as_slice() else { return false; };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, 5) else { return false; };
+    rec_domains[..2].iter().zip(&rule_domains[..2]).all(|(a, b)|
+        expr_eq_with_bvar_shift(export, *a, *b, 0, 0))
+        && fields.iter().zip(&rule_domains[2..]).enumerate().all(|(i, (a, b))|
+            expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
+}
+
 fn check_generic_nonrecursive_type(
     export:&ResolvedExport, environment:&Environment, block:&InductiveBlock,
     limits:Limits, delta_policy:DeltaPolicy,
@@ -1719,6 +1755,12 @@ fn check_generic_nonrecursive_type(
     if !generic_nonrecursive_type_candidate(export,block){return Err(Verdict::Unknown);}
     if inductive.num_params == 0 && block.constructors[0].num_fields == 2
         && !closed_data_proof_record_obligations(export, environment, inductive,
+            &block.constructors[0], recursor, limits, delta_policy)
+    {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.num_params == 0 && block.constructors[0].num_fields == 3
+        && !closed_three_data_field_obligations(export, environment, inductive,
             &block.constructors[0], recursor, limits, delta_policy)
     {
         return Err(Verdict::Unknown);
