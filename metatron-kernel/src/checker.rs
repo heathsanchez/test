@@ -200,6 +200,23 @@ fn check_export_with_policy(
             Declaration::Inductive(block) => {
                 #[cfg(feature = "diagnostics")]
                 crate::diagnostics::causal("inductive-attempt", format_args!("block={block:?};policy={delta_policy:?};budget={}", limits.judgment_steps));
+                // Probe a pure existing validator; its result is diagnostic evidence only.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_CAUSAL").is_some()
+                    && let ([inductive], [recursor]) = (block.types.as_slice(), block.recursors.as_slice())
+                    && (2..=3).contains(&block.constructors.len())
+                    && inductive.num_params <= 2
+                    && inductive.num_indices == 0
+                    && inductive.num_nested == 0
+                    && !inductive.is_recursive
+                    && !inductive.is_reflexive
+                    && !inductive.is_unsafe
+                    && !recursor.is_unsafe
+                    && block.constructors.iter().all(|c| !c.is_unsafe && c.num_fields <= 4)
+                {
+                    let passed = generic_nonrecursive_recursor_shape(&export, inductive, &block.constructors, recursor);
+                    crate::diagnostics::causal("existing-recursor-shape", format_args!("passed={passed}"));
+                }
                 match check_inductive(&export, &environment, &block, limits, delta_policy) {
                     Ok(extended) => {
                         environment = extended;

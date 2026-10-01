@@ -6,7 +6,7 @@ class Report(unittest.TestCase):
         self.assertEqual(classify(block,[])['status'],'NO_REGISTERED_PATH')
     def test_shape_plus_measured_route_is_candidate_only(self):
         block={'types':[{'isRec':False,'numIndices':0,'numNested':0,'isUnsafe':False,'isReflexive':False}], 'ctors':[{},{}], 'recs':[]}
-        events=[dict(kind='admission-route-miss',truncated=False)]
+        events=[dict(kind='admission-route-miss',truncated=False),dict(kind='existing-recursor-shape',truncated=False,detail='passed=true')]
         self.assertEqual(classify(block,events)['status'],'CANDIDATE_PATH')
     def test_truncation_blocks_claim(self):
         self.assertEqual(classify({},[dict(truncated=True)])['status'],'UNRESOLVED_INCOMPLETE_TRACE')
@@ -25,3 +25,11 @@ class Scope(unittest.TestCase):
             self.assertEqual(r['events'],[])
             self.assertEqual(r['plan']['status'],'UNRESOLVED_INCOMPLETE_TRACE')
             self.assertEqual(len(r['unscoped_events']),2)
+
+class ExistingCheck(unittest.TestCase):
+    def test_shape_route_without_existing_check_is_not_composed(self):
+        block={'types':[{'isRec':False,'numIndices':0,'numNested':0,'isUnsafe':False,'isReflexive':False}], 'ctors':[{},{}], 'recs':[]}
+        self.assertEqual(classify(block,[dict(kind='admission-route-miss',truncated=False)])['status'],'NO_REGISTERED_PATH')
+    def test_failed_existing_check_is_not_composed(self):
+        block={'types':[{'isRec':False,'numIndices':0,'numNested':0,'isUnsafe':False,'isReflexive':False}], 'ctors':[{},{}], 'recs':[]}
+        self.assertEqual(classify(block,[dict(kind='admission-route-miss',truncated=False),dict(kind='existing-recursor-shape',truncated=False,detail='passed=false')])['status'],'NO_REGISTERED_PATH')

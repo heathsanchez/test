@@ -1,6 +1,7 @@
 from contract_paths import Contract,plan
 REGISTRY=[
- Contract('sum-telescope-derivation@candidate',{'observed.nonrecursive-sum','observed.route-miss'},{'admitted'},False),
+ Contract('existing-recursor-shape@0659',{'observed.existing-recursor-check-passed'},{'checked.recursor-syntax'},True),
+ Contract('sum-telescope-derivation@candidate',{'observed.nonrecursive-sum','observed.route-miss','checked.recursor-syntax'},{'admitted'},False),
  # Current qualified code contracts: premises are deliberately stronger than shape.
  Contract('iff-singleton@0659',{'validated.iff-function-fields','validated.singleton-recursor'},{'admitted'},True),
  Contract('closed-record3@0659',{'validated.closed-three-data-fields','validated.record-recursor'},{'admitted'},True),
@@ -10,6 +11,8 @@ def classify(block,events):
  if any(e.get('truncated') for e in events):
   return {'status':'UNRESOLVED_INCOMPLETE_TRACE','contracts':[],'candidates':[]}
  seeds=set()
+ if any(e.get('kind')=='existing-recursor-shape' and e.get('detail')=='passed=true' for e in events):
+  seeds.add('observed.existing-recursor-check-passed')
  ts=block.get('types',[])
  if len(ts)==1 and len(block.get('ctors',[]))>1:
   t=ts[0]
