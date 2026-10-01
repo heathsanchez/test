@@ -59,7 +59,7 @@ def main():
     assert checksum=='a4dcc7bd5d51e6eb5f375140fd29ed722c9337bb11fde9c14ce6e6e9d51353b6'
     live=state['joined_reclosure']['residual_residues'];assert len(live)==14934
     S=bank.NC*2**18
-    counts=Counter();sizes=Counter();best=None;best_new=None
+    counts=Counter(whole_cell_closures=0);sizes=Counter();best=None;best_new=None
     for r in live:
         N=bank.N0+bank.NC*r
         for j,X,R,q in bank.fixed_prefix(N,S):
@@ -104,7 +104,7 @@ def main():
         counts=dict(counts),guard_parameter_bits=dict(sorted(sizes.items())),
         cheapest=best[1],cheapest_non_subsumed=best_new[1] if best_new else None,
         exact_replays=replay,
-        adaptation='reject these two frozen laws alone as a whole-cell exhaustion mechanism; do not promote conditional rays into universal progress',
+        adaptation='reject direct preimages of these two frozen laws along maximal fixed prefixes as whole-cell exhaustion in this compiler scope; do not promote conditional rays into universal progress',
         proof_obligations=dict(universal_source_admission='UNKNOWN',
             universal_certificate_production='UNKNOWN',termination='UNKNOWN'),
         qed=False,global_collatz='UNKNOWN',
