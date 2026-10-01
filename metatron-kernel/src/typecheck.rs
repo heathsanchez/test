@@ -18,6 +18,18 @@ pub enum TypeValue {
     },
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+enum InferenceCacheKey {
+    Framed(ExprId, u64),
+    OuterClosed(ExprId, usize),
+}
+
+#[derive(Default)]
+struct InferenceCache {
+    values: HashMap<InferenceCacheKey, TypeValue>,
+    outer_bvar: HashMap<(ExprId, usize), bool>,
+}
+
 pub struct TypeChecker<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
@@ -68,7 +80,7 @@ impl<'a> TypeChecker<'a> {
             &[],
             &EnvFrame::empty(),
             &mut remaining,
-            &mut HashMap::new(),
+            &mut InferenceCache::default(),
         )
     }
 
@@ -81,7 +93,7 @@ impl<'a> TypeChecker<'a> {
             &EnvFrame::empty(),
             &mut remaining,
             self.delta_policy == crate::convert::DeltaPolicy::GuardedSemanticFallback,
-            &mut HashMap::new(),
+            &mut InferenceCache::default(),
         )
     }
 
@@ -130,7 +142,7 @@ impl<'a> TypeChecker<'a> {
             &EnvFrame::empty(),
             &mut remaining,
             false,
-            &mut HashMap::new(),
+            &mut InferenceCache::default(),
         )
     }
 
@@ -149,7 +161,7 @@ impl<'a> TypeChecker<'a> {
             frame,
             &mut remaining,
             false,
-            &mut HashMap::new(),
+            &mut InferenceCache::default(),
         )
     }
 
@@ -174,19 +186,69 @@ impl<'a> TypeChecker<'a> {
         crate::convert::convert_with_policy(self, left, right, budget, policy)
     }
 
+    // Whether this expression can observe any binding from the caller's
+    // environment. The answer is intrinsic to the expression at a lexical
+    // depth, so it is memoized independently of runtime frame identity.
+    fn expression_uses_outer_bvar_cached(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        cache: &mut InferenceCache,
+    ) -> bool {
+        let key = (expression, depth);
+        if let Some(answer) = cache.outer_bvar.get(&key) {
+            return *answer;
+        }
+        let answer = match self.expressions.get(expression) {
+            None => true,
+            Some(Expr::BVar(index)) => usize::try_from(*index)
+                .map_or(true, |index| index >= depth),
+            Some(Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. }) => false,
+            Some(Expr::App { fun, arg }) => {
+                self.expression_uses_outer_bvar_cached(*fun, depth, cache)
+                    || self.expression_uses_outer_bvar_cached(*arg, depth, cache)
+            }
+            Some(Expr::Lam { domain, body } | Expr::Pi { domain, body }) => {
+                self.expression_uses_outer_bvar_cached(*domain, depth, cache)
+                    || depth.checked_add(1).map_or(true, |body_depth| {
+                        self.expression_uses_outer_bvar_cached(*body, body_depth, cache)
+                    })
+            }
+            Some(Expr::Let { ty, value, body }) => {
+                self.expression_uses_outer_bvar_cached(*ty, depth, cache)
+                    || self.expression_uses_outer_bvar_cached(*value, depth, cache)
+                    || depth.checked_add(1).map_or(true, |body_depth| {
+                        self.expression_uses_outer_bvar_cached(*body, body_depth, cache)
+                    })
+            }
+            Some(Expr::Proj { structure, .. }) => {
+                self.expression_uses_outer_bvar_cached(*structure, depth, cache)
+            }
+        };
+        cache.outer_bvar.insert(key, answer);
+        answer
+    }
+
     fn infer_in(
         &self,
         expression: ExprId,
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
-        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        cache: &mut InferenceCache,
     ) -> Judgment<TypeValue> {
         // This cache is local to one public judgment. A frame has one fixed
         // typing context in that judgment, and every binder allocates a fresh
         // frame identity. Never reuse UNKNOWN, refutations, or another scope.
-        let key = (expression, frame.id());
-        if let Some(value) = cache.get(&key) {
+        let key = if self.expression_uses_outer_bvar_cached(expression, 0, cache) {
+            InferenceCacheKey::Framed(expression, frame.id())
+        } else {
+            // A caller frame cannot affect an expression with no free outer
+            // BVars. Lexical depth is retained because fresh locals are named
+            // from context length during Pi/Lambda inference.
+            InferenceCacheKey::OuterClosed(expression, context.len())
+        };
+        if let Some(value) = cache.values.get(&key) {
             return if take_step(remaining) {
                 Judgment::proven(value.clone(), "shared-expression-inference")
             } else {
@@ -195,7 +257,7 @@ impl<'a> TypeChecker<'a> {
         }
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
         if let Judgment::Proven { value, .. } = &result {
-            cache.insert(key, value.clone());
+            cache.values.insert(key, value.clone());
         }
         result
     }
@@ -206,7 +268,7 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
-        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        cache: &mut InferenceCache,
     ) -> Judgment<TypeValue> {
         if !take_step(remaining) {
             return Judgment::unknown("type-inference-budget");
@@ -525,7 +587,7 @@ impl<'a> TypeChecker<'a> {
         frame: &EnvFrame,
         remaining: &mut usize,
         conversion_refutation_is_unknown: bool,
-        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        cache: &mut InferenceCache,
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
@@ -564,7 +626,7 @@ impl<'a> TypeChecker<'a> {
     // context while retaining each actual argument in the lexical environment.
     fn infer_literal_beta_spine(&self, expression: ExprId, context: &[TypeValue],
         frame: &EnvFrame, remaining: &mut usize,
-        cache: &mut HashMap<(ExprId,u64),TypeValue>) -> Option<Judgment<TypeValue>> {
+        cache: &mut InferenceCache) -> Option<Judgment<TypeValue>> {
         let mut eligibility_remaining=*remaining;
         let mut head=expression;
         let mut arguments=Vec::new();
@@ -673,7 +735,7 @@ impl<'a> TypeChecker<'a> {
     pub(crate) fn infer_sort_in_context(&self, expression: ExprId,
         context: &[TypeValue], frame: &EnvFrame, budget: usize) -> Judgment<LevelTerm> {
         let mut remaining=budget;
-        let inferred=self.infer_in(expression,context,frame,&mut remaining,&mut HashMap::new());
+        let inferred=self.infer_in(expression,context,frame,&mut remaining,&mut InferenceCache::default());
         self.sort_level(inferred,remaining)
     }
 
