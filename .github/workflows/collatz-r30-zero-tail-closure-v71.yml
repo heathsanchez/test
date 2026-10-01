@@ -1,0 +1,103 @@
+name: Collatz r30 zero-tail closure V71
+on:
+  push:
+    branches: [collatz-r30-zero-tail-closure-v71]
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-r30-recursive-refinement-v70
+          run-id: 36927944566
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v70
+
+      - name: Verify warranted V70 parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 - <<'PY' | tee evidence/parent-check.txt
+          import hashlib, json
+          d=json.load(open('parent-v70/qualification.json'))
+          claimed=d.pop('certificate_sha256')
+          got=hashlib.sha256(json.dumps(d,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          assert claimed==got=='8918fab6df6cf8f965d3d9df2a549952e7744aa44f7f3dbc7d5f33a09929ac2f'
+          assert d['status']=='WARRANTED_BOUNDED'
+          assert d['controller_cover_invariant']=='PASS'
+          assert d['kernel_checked_split_depths']==[25,29,33,38]
+          assert d['split_suffixes']==[6,6,1,21]
+          assert d['global_collatz']=='UNKNOWN'
+          print('V70_PARENT_VERIFIED')
+          PY
+
+      - name: Install pinned Lean and kernel-check zero-tail merger
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal | tee evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean >/dev/null
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean formal/Collatz/GuardedExitObligation.lean >/dev/null
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EarlierSourceCollision.olean formal/Collatz/EarlierSourceCollision.lean >/dev/null
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/R30ZeroTailClosure.olean formal/Collatz/R30ZeroTailClosure.lean | tee evidence/zero-tail.log
+          grep -q 'r30_depth42_zero_tail_merger' evidence/zero-tail.log
+          ! grep -q 'sorryAx' evidence/zero-tail.log
+          ! grep -q 'Lean.ofReduceBool' evidence/zero-tail.log
+
+      - name: Verify first zero-tail merger under existing capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/collatz_r30_zero_tail_closure_v71.py > evidence/result.json
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib, json
+          d=json.load(open('evidence/result.json'))
+          assert d['first_zero_tail_merger_depth']==42
+          assert d['silent_depths']==[38,39,40,41]
+          assert d['merger_kind']=='S_AND_Q7_OVERLAP'
+          assert d['source']==113503680976663326228507
+          assert d['source_slope']==16634111176194826206439739460943872
+          assert d['orbit_steps']==101
+          assert d['endpoint']==153723649420054465951604
+          assert d['odd_count']==64
+          assert d['lower_source']==102482432946702977301069
+          assert d['new_merger_constructors']==0
+          assert d['new_state_coordinates']==0
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+          result={
+              'schema':'COLLATZ_R30_ZERO_TAIL_CLOSURE_V71_QUALIFICATION',
+              'status':'WARRANTED_BOUNDED',
+              'silent_depths':[38,39,40,41],
+              'first_merger_depth':42,
+              'merger_kind':'S_AND_Q7_OVERLAP',
+              'kernel_checked_theorem':'r30_depth42_zero_tail_merger',
+              'new_merger_constructors':0,
+              'new_state_coordinates':0,
+              'global_collatz':'UNKNOWN',
+              'qed':False,
+          }
+          result['certificate_sha256']=hashlib.sha256(
+              json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-r30-zero-tail-closure-v71
+          path: evidence
+          if-no-files-found: error
