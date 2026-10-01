@@ -1,4 +1,5 @@
 mod nat_le_below;
+mod closed_sum;
 use std::collections::HashMap;
 
 use crate::convert::DeltaPolicy;
@@ -854,6 +855,10 @@ fn check_inductive(
         return check_exact_closed_reflexive_tree(export, environment, block, limits, delta_policy);
     }
 
+    if closed_sum::candidate(export, block) {
+        return closed_sum::check(export, environment, block, limits, delta_policy);
+    }
+
     match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
@@ -1035,6 +1040,17 @@ fn generic_nonrecursive_recursor_shape(
     constructors: &[Constructor],
     recursor: &Recursor,
 ) -> bool {
+    generic_nonrecursive_recursor_shape_with_fields(export, inductive, constructors, recursor,
+        |j, k, cd, md| expr_eq_with_bvar_shift(export, cd, md, k as u64, (1+j) as u64))
+}
+
+fn generic_nonrecursive_recursor_shape_with_fields(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructors: &[Constructor],
+    recursor: &Recursor,
+    mut field_equal: impl FnMut(usize, usize, ExprId, ExprId) -> bool,
+) -> bool {
     macro_rules! shape_miss {
         ($stage:expr) => {{
             #[cfg(feature = "diagnostics")]
@@ -1067,7 +1083,7 @@ fn generic_nonrecursive_recursor_shape(
         let Some((ctor_domains,_))=pi_spine(export,ctor.ty,p+f) else{return shape_miss!(12);};
         let Some((minor_fields,minor_result))=pi_spine(export,domains[p+1+j],f) else{return shape_miss!(13);};
         for (k,(cd,md)) in ctor_domains[p..].iter().zip(&minor_fields).enumerate(){
-            if !expr_eq_with_bvar_shift(export,*cd,*md,k as u64,(1+j) as u64){return shape_miss!(14);}
+            if !field_equal(j,k,*cd,*md){return shape_miss!(14);}
         }
         let Some(Expr::App{fun:mm,arg:constructed})=export.exprs.get(minor_result) else{return shape_miss!(15);};
         if !is_bvar(export,*mm,(f+j) as u64){return shape_miss!(16);}
