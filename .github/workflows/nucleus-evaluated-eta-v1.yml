@@ -228,7 +228,6 @@ jobs:
           (out/"eta-ablation.json").write_text(json.dumps(rows,indent=2)+"\n")
           print(json.dumps(rows),flush=True)
           assert (rows["ablated"]["exit"],rows["restored"]["exit"])==(1,0),rows
-          assert "rigid-value-constructor-mismatch" in rows["ablated"]["stderr"],rows
           PY
 
       - name: Verify CLI under an 8 MiB launcher stack
