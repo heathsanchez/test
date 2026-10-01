@@ -33,15 +33,12 @@ jobs:
           from pathlib import Path
           p=Path("metatron-kernel/src/typecheck.rs")
           s=Path("/tmp/typecheck.rs.orig").read_text()
-          needle='''    fn infer_literal_beta_spine(&self, expression: ExprId, context: &[TypeValue],
-              frame: &EnvFrame, remaining: &mut usize,
-              cache: &mut HashMap<(ExprId,u64),TypeValue>) -> Option<Judgment<TypeValue>> {
-          '''
+          needle="        let mut eligibility_remaining=*remaining;"
           assert needle in s
           cap=os.environ["CAP"]
-          repl=needle+f'''        let mut bounded_remaining = (*remaining).min({cap});
-              let remaining = &mut bounded_remaining;
-          '''
+          repl=f"""        let mut bounded_remaining = (*remaining).min({cap});
+        let remaining = &mut bounded_remaining;
+        let mut eligibility_remaining=*remaining;"""
           p.write_text(s.replace(needle,repl,1))
           PY
             cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
