@@ -36,8 +36,8 @@ jobs:
           needle="        let mut eligibility_remaining=*remaining;"
           assert needle in s
           cap=os.environ["CAP"]
-          repl=("        let mut bounded_remaining = (*remaining).min("+cap+");\\n"
-                "        let remaining = &mut bounded_remaining;\\n"
+          repl=("        let mut bounded_remaining = (*remaining).min("+cap+");\n"
+                "        let remaining = &mut bounded_remaining;\n"
                 "        let mut eligibility_remaining=*remaining;")
           p.write_text(s.replace(needle,repl,1))
           PY
