@@ -678,6 +678,12 @@ fn eta_contract(checker: &TypeChecker<'_>, closure: &Closure, depth: usize) -> O
     let Expr::Lam { body, .. } = checker.expression(closure.expression()?)? else {
         return None;
     };
+    if std::env::var_os("NUCLEUS_TRACE_ETA").is_some() {
+        eprintln!(
+            "NUCLEUS_ETA_BODY:closure={:?}:body={:?}:body_expr={:?}",
+            closure, body, checker.expression(*body)
+        );
+    }
     let Expr::App { fun, arg } = checker.expression(*body)? else {
         return None;
     };
