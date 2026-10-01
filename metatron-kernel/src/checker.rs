@@ -1,5 +1,6 @@
 mod nat_le_below;
 mod closed_sum;
+mod parameter_sum;
 use std::collections::HashMap;
 
 use crate::convert::DeltaPolicy;
@@ -868,6 +869,8 @@ fn check_inductive(
     match established {
         Err(Verdict::Unknown) if closed_sum::candidate(export, block) =>
             closed_sum::check(export, environment, block, limits, delta_policy),
+        Err(Verdict::Unknown) if parameter_sum::candidate(block) =>
+            parameter_sum::check(export, environment, block, limits, delta_policy),
         other => other,
     }
 }
