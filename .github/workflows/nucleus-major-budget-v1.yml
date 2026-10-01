@@ -1,0 +1,59 @@
+name: Nucleus computed-major budget tournament
+on:
+  push:
+    branches: [nucleus-major-budget-v1]
+    paths: [".github/workflows/nucleus-major-budget-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Fetch pinned current corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/artifact /tmp/current
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11090525747/zip > /tmp/corpus.zip
+          unzip -q /tmp/corpus.zip -d /tmp/artifact
+          tar -xzf "$(find /tmp/artifact -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+      - name: Compile bounded candidates and measure current cases
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          python3 - <<'PY'
+          import pathlib,subprocess,json,time,os,hashlib
+          p=pathlib.Path("metatron-kernel/src/machine.rs");original=p.read_text()
+          old="target,\n                                        budget.min(256),"
+          assert original.count(old)==1
+          out=pathlib.Path("metatron-kernel/evidence-out/major-budget-v1");out.mkdir(parents=True,exist_ok=True)
+          tests=[("perf/args-before-unfold",0),("perf/folded-constant-first",0),("perf/folded-constant-last",0),("perf/shared-subterm",0),("perf/refute-cheap-first",1),("perf/beta-ladder",0)]
+          rows=[]
+          for cap in [256,1024,4096,16384]:
+              p.write_text(original.replace(old,"target,\n                                        budget.min("+str(cap)+"),"))
+              subprocess.run(["cargo","build","--release","--locked","--manifest-path","metatron-kernel/Cargo.toml"],check=True)
+              binary=pathlib.Path("metatron-kernel/target/release/metatron-kernel")
+              for name,expected in tests:
+                  source=pathlib.Path("/tmp/current")/("good"if expected==0 else"bad")/(name+".ndjson")
+                  t=time.monotonic()
+                  try:
+                      with source.open("rb")as f:q=subprocess.run([str(binary)],stdin=f,capture_output=True,timeout=30,env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+                      rc=q.returncode;stderr=q.stderr.decode(errors="replace")
+                  except subprocess.TimeoutExpired:
+                      rc=124;stderr="bounded tournament timeout"
+                  row={"cap":cap,"test":name,"expected":expected,"exit":rc,"seconds":time.monotonic()-t,"input_sha256":hashlib.sha256(source.read_bytes()).hexdigest(),"stderr":stderr}
+                  rows.append(row);print(json.dumps(row),flush=True)
+                  (out/"results.json").write_text(json.dumps({"source_sha":os.environ["GITHUB_SHA"],"semantic_base":"f08aea2a99d1955a825d53d4dc21a542367978d3","rows":rows},indent=2)+"\n")
+          assert not [r for r in rows if r["exit"]in(0,1)and r["exit"]!=r["expected"]],rows
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-major-budget-${{ github.sha }}
+          path: metatron-kernel/evidence-out/major-budget-v1
+          if-no-files-found: error
