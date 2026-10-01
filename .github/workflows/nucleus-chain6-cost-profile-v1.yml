@@ -32,51 +32,40 @@ jobs:
           s=s.replace(
               "use std::rc::Rc;\n",
               "use std::rc::Rc;\nuse std::sync::atomic::{AtomicU64, Ordering};\n\nstatic TRACE_EXPOSE_CALLS: AtomicU64 = AtomicU64::new(0);\n",
-              1
+              1,
           )
-          old='''    ) -> Judgment<Value> {
-        self.expose_internal(closure, transparency, budget, false)
-            .map(|exposure| exposure.value)
-    }
-          '''
-          new='''    ) -> Judgment<Value> {
-        if std::env::var_os("NUCLEUS_TRACE_COST").is_some() {
-            let n=TRACE_EXPOSE_CALLS.fetch_add(1,Ordering::Relaxed)+1;
-            if n.is_power_of_two() {
-                eprintln!(
-                    "NUCLEUS_EXPOSE_CALL:n={}:expr={:?}:env={}:budget={}:transparency={:?}",
-                    n, closure.expression(), closure.env.id(), budget, transparency
-                );
-            }
-        }
-        self.expose_internal(closure, transparency, budget, false)
-            .map(|exposure| exposure.value)
-    }
-          '''
-          assert old in s
-          p.write_text(s.replace(old,new,1))
+          needle="        self.expose_internal(closure, transparency, budget, false)\n"
+          insert=(
+              "        if std::env::var_os(\"NUCLEUS_TRACE_COST\").is_some() {\n"
+              "            let n=TRACE_EXPOSE_CALLS.fetch_add(1,Ordering::Relaxed)+1;\n"
+              "            if n.is_power_of_two() {\n"
+              "                eprintln!(\"NUCLEUS_EXPOSE_CALL:n={}:expr={:?}:env={}:budget={}:transparency={:?}\", n, closure.expression(), closure.env.id(), budget, transparency);\n"
+              "            }\n"
+              "        }\n"
+              "        self.expose_internal(closure, transparency, budget, false)\n"
+          )
+          assert s.count(needle)==1
+          p.write_text(s.replace(needle,insert,1))
 
           p=Path("metatron-kernel/src/convert.rs")
           s=p.read_text()
           s=s.replace(
               "use std::collections::{HashMap, HashSet};\n",
               "use std::collections::{HashMap, HashSet};\nuse std::sync::atomic::{AtomicU64, Ordering};\n\nstatic TRACE_CONVERSION_ITEMS: AtomicU64 = AtomicU64::new(0);\n",
-              1
+              1,
           )
-          old="    while let Some((left, right, depth, local_context)) = work.pop() {\n"
-          new='''    while let Some((left, right, depth, local_context)) = work.pop() {
-        if std::env::var_os("NUCLEUS_TRACE_COST").is_some() {
-            let n=TRACE_CONVERSION_ITEMS.fetch_add(1,Ordering::Relaxed)+1;
-            if n.is_power_of_two() {
-                eprintln!(
-                    "NUCLEUS_CONVERSION_ITEM:n={}:depth={}:remaining={}:pending={}",
-                    n, depth, remaining, work.len()
-                );
-            }
-        }
-'''
-          assert s.count(old)==1
-          p.write_text(s.replace(old,new,1))
+          needle="    while let Some((left, right, depth, local_context)) = work.pop() {\n"
+          insert=(
+              "    while let Some((left, right, depth, local_context)) = work.pop() {\n"
+              "        if std::env::var_os(\"NUCLEUS_TRACE_COST\").is_some() {\n"
+              "            let n=TRACE_CONVERSION_ITEMS.fetch_add(1,Ordering::Relaxed)+1;\n"
+              "            if n.is_power_of_two() {\n"
+              "                eprintln!(\"NUCLEUS_CONVERSION_ITEM:n={}:depth={}:remaining={}:pending={}\", n, depth, remaining, work.len());\n"
+              "            }\n"
+              "        }\n"
+          )
+          assert s.count(needle)==1
+          p.write_text(s.replace(needle,insert,1))
           PY
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
