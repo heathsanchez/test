@@ -174,6 +174,58 @@ impl<'a> TypeChecker<'a> {
         crate::convert::convert_with_policy(self, left, right, budget, policy)
     }
 
+    #[cfg(feature = "diagnostics")]
+    fn experimental_expression_uses_outer_bvar(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        budget: usize,
+    ) -> Option<bool> {
+        if budget == 0 {
+            return None;
+        }
+        let node = self.expressions.get(expression)?;
+        let next = budget - 1;
+        Some(match node {
+            Expr::BVar(index) => usize::try_from(*index).ok()? >= depth,
+            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => false,
+            Expr::App { fun, arg } => {
+                self.experimental_expression_uses_outer_bvar(*fun, depth, next)?
+                    || self.experimental_expression_uses_outer_bvar(*arg, depth, next)?
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                self.experimental_expression_uses_outer_bvar(*domain, depth, next)?
+                    || self.experimental_expression_uses_outer_bvar(
+                        *body,
+                        depth.checked_add(1)?,
+                        next,
+                    )?
+            }
+            Expr::Let { ty, value, body } => {
+                self.experimental_expression_uses_outer_bvar(*ty, depth, next)?
+                    || self.experimental_expression_uses_outer_bvar(*value, depth, next)?
+                    || self.experimental_expression_uses_outer_bvar(
+                        *body,
+                        depth.checked_add(1)?,
+                        next,
+                    )?
+            }
+            Expr::Proj { structure, .. } => {
+                self.experimental_expression_uses_outer_bvar(*structure, depth, next)?
+            }
+        })
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn zero_binder_depth_cache_key(
+        &self,
+        expression: ExprId,
+        depth: usize,
+    ) -> Option<(ExprId, u64)> {
+        let depth = u64::try_from(depth).ok()?;
+        Some((expression, u64::MAX.checked_sub(depth)?))
+    }
+
     fn infer_in(
         &self,
         expression: ExprId,
@@ -205,6 +257,33 @@ impl<'a> TypeChecker<'a> {
             };
         }
         #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_ZERO_BINDER_DEPTH_INFERENCE_REUSE").is_some()
+            && self.experimental_expression_uses_outer_bvar(expression, 0, 4096) == Some(false)
+        {
+            if let Some(projected_key) =
+                self.zero_binder_depth_cache_key(expression, context.len())
+            {
+                if let Some(value) = cache.get(&projected_key) {
+                    if std::env::var_os(
+                        "NUCLEUS_TRACE_ZERO_BINDER_DEPTH_INFERENCE_REUSE",
+                    )
+                    .is_some()
+                    {
+                        eprintln!(
+                            "NUCLEUS_ZERO_BINDER_DEPTH_INFERENCE_REUSE:expression={expression:?}:frame={}:depth={}:remaining={}",
+                            frame.id(),
+                            context.len(),
+                            *remaining,
+                        );
+                    }
+                    return Judgment::proven(
+                        value.clone(),
+                        "zero-binder-depth-cross-frame-inference",
+                    );
+                }
+            }
+        }
+        #[cfg(feature = "diagnostics")]
         if *remaining == 0
             && std::env::var_os("NUCLEUS_TRACE_ZERO_BUDGET_INFERENCE_CACHE").is_some()
         {
@@ -218,6 +297,17 @@ impl<'a> TypeChecker<'a> {
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
         if let Judgment::Proven { value, .. } = &result {
             cache.insert(key, value.clone());
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_ZERO_BINDER_DEPTH_INFERENCE_REUSE").is_some()
+                && self.experimental_expression_uses_outer_bvar(expression, 0, 4096)
+                    == Some(false)
+            {
+                if let Some(projected_key) =
+                    self.zero_binder_depth_cache_key(expression, context.len())
+                {
+                    cache.entry(projected_key).or_insert_with(|| value.clone());
+                }
+            }
         }
         result
     }
