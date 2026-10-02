@@ -263,6 +263,22 @@ fn convert_in_context_with_congruence(
                             }
                             continue;
                         }
+                        if bypass
+                            && std::env::var_os("NUCLEUS_TRACE_ZERO_BUDGET_BLOCKER").is_some()
+                        {
+                            eprintln!(
+                                "NUCLEUS_ZERO_BUDGET_BLOCKER:depth={}:left_expr={:?}:right_expr={:?}:reducible_equal={:?}:full_equal={:?}:reducible_left={:?}:reducible_right={:?}:full_left={:?}:full_right={:?}",
+                                depth,
+                                left_closure.expression(),
+                                right_closure.expression(),
+                                reducible_equal,
+                                full_equal,
+                                reducible_left,
+                                reducible_right,
+                                full_left,
+                                full_right,
+                            );
+                        }
                     }
                 }
             }
