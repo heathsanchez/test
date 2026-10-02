@@ -190,6 +190,26 @@ fn convert_in_context_with_congruence(
             continue;
         }
         if remaining == 0 {
+            if std::env::var_os("NUCLEUS_TRACE_CHAIN6_LAMBDA_EXPOSE").is_some()
+                && let (TypeValue::Term(left_closure), TypeValue::Term(right_closure)) = (&left, &right)
+                && left_closure.expression() == Some(ExprId(2420))
+                && right_closure.expression() == Some(ExprId(2420))
+                && let (Some(EnvBinding::Closure(left0)), Some(EnvBinding::Closure(right0))) =
+                    (left_closure.env.lookup(0), right_closure.env.lookup(0))
+            {
+                let machine = checker.machine();
+                let left_exposed = machine.expose(left0.clone(), Transparency::Full, 256);
+                let right_exposed = machine.expose(right0.clone(), Transparency::Full, 256);
+                eprintln!(
+                    "NUCLEUS_CHAIN6_LAMBDA_EXPOSE:initial_budget={}:depth={}:left0={:?}:right0={:?}:left_exposed={:?}:right_exposed={:?}",
+                    budget,
+                    depth,
+                    left0,
+                    right0,
+                    left_exposed,
+                    right_exposed,
+                );
+            }
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
