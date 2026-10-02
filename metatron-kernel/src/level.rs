@@ -71,11 +71,19 @@ pub fn imax(left: LevelTerm, right: LevelTerm) -> LevelTerm {
 }
 
 pub fn level_equal(left: LevelTerm, right: LevelTerm, budget: usize) -> Judgment<()> {
+    let trace = std::env::var_os("NUCLEUS_TRACE_UNIVERSE_BUDGET").is_some();
+    let originals = trace.then(|| (left.clone(), right.clone(), budget));
     let mut budget = Budget::new(budget);
     let Ok(left) = simplify(left, &mut budget) else {
+        if let Some((left, right, initial)) = originals.as_ref() {
+            trace_universe_budget("simplify-left", left, right, *initial);
+        }
         return Judgment::unknown("universe-equality-budget");
     };
     let Ok(right) = simplify(right, &mut budget) else {
+        if let Some((left, right, initial)) = originals.as_ref() {
+            trace_universe_budget("simplify-right", left, right, *initial);
+        }
         return Judgment::unknown("universe-equality-budget");
     };
 
@@ -98,6 +106,9 @@ pub fn level_equal(left: LevelTerm, right: LevelTerm, budget: usize) -> Judgment
     let left = left_canonical;
     let right = right_canonical;
     if budget.exhausted {
+        if let Some((left, right, initial)) = originals.as_ref() {
+            trace_universe_budget("canonical", left, right, *initial);
+        }
         return Judgment::unknown("universe-equality-budget");
     }
 
@@ -106,6 +117,66 @@ pub fn level_equal(left: LevelTerm, right: LevelTerm, budget: usize) -> Judgment
     } else {
         Judgment::refuted("distinct-canonical-universes")
     }
+}
+
+fn diagnostic_level_equal_outcome(
+    left: LevelTerm,
+    right: LevelTerm,
+    allowance: usize,
+) -> &'static str {
+    let mut budget = Budget::new(allowance);
+    let Ok(left) = simplify(left, &mut budget) else {
+        return "budget-simplify-left";
+    };
+    let Ok(right) = simplify(right, &mut budget) else {
+        return "budget-simplify-right";
+    };
+    if left == right {
+        return "proven-after-simplify";
+    }
+    let Some(left_canonical) = canonical(&left, &mut budget) else {
+        return if budget.exhausted {
+            "budget-canonical-left"
+        } else {
+            "unresolved-imax-left"
+        };
+    };
+    let Some(right_canonical) = canonical(&right, &mut budget) else {
+        return if budget.exhausted {
+            "budget-canonical-right"
+        } else {
+            "unresolved-imax-right"
+        };
+    };
+    if budget.exhausted {
+        return "budget-after-canonical";
+    }
+    if left_canonical == right_canonical {
+        "proven-canonical"
+    } else {
+        "refuted-canonical"
+    }
+}
+
+fn trace_universe_budget(
+    stage: &'static str,
+    left: &LevelTerm,
+    right: &LevelTerm,
+    initial: usize,
+) {
+    let trials = [6usize, 8, 12, 16, 24, 32, 48, 64, 96, 128];
+    let outcomes: Vec<_> = trials
+        .into_iter()
+        .map(|allowance| {
+            (
+                allowance,
+                diagnostic_level_equal_outcome(left.clone(), right.clone(), allowance),
+            )
+        })
+        .collect();
+    eprintln!(
+        "NUCLEUS_UNIVERSE_BUDGET:stage={stage}:initial={initial}:left={left:?}:right={right:?}:trials={outcomes:?}"
+    );
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
