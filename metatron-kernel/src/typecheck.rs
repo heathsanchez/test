@@ -327,7 +327,45 @@ impl<'a> TypeChecker<'a> {
                     crate::diagnostics::causal("application-masked-inference", format_args!(
                         "expression={expression:?};function={fun:?};argument={arg:?};context={context:?};frame={frame:?};policy={:?};budget={remaining};upstream={residual:?}", self.delta_policy));
                 }
+                #[cfg(feature = "diagnostics")]
+                let function_type_for_separator = function_type.clone();
                 let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_APP_FUNCTION_SEPARATOR").is_some() {
+                        match &function_type_for_separator {
+                            Judgment::Proven { value: TypeValue::Term(closure), .. } => {
+                                let machine = self.machine();
+                                let reducible = machine.expose(
+                                    closure.clone(),
+                                    Transparency::Reducible,
+                                    *remaining,
+                                );
+                                let full = machine.expose(
+                                    closure.clone(),
+                                    Transparency::Full,
+                                    *remaining,
+                                );
+                                eprintln!(
+                                    "NUCLEUS_APP_FUNCTION_SEPARATOR:expression={expression:?}:function={fun:?}:argument={arg:?}:context_len={}:frame={}:budget={}:function_type={:?}:reducible={:?}:full={:?}",
+                                    context.len(),
+                                    frame.id(),
+                                    remaining,
+                                    function_type_for_separator,
+                                    reducible,
+                                    full,
+                                );
+                            }
+                            other => {
+                                eprintln!(
+                                    "NUCLEUS_APP_FUNCTION_SEPARATOR:expression={expression:?}:function={fun:?}:argument={arg:?}:context_len={}:frame={}:budget={}:function_type={:?}:reducible=NA:full=NA",
+                                    context.len(),
+                                    frame.id(),
+                                    remaining,
+                                    other,
+                                );
+                            }
+                        }
+                    }
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true, cache) {
