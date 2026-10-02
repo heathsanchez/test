@@ -153,6 +153,7 @@ struct ExposureSupportDiagnostic {
     exact_value: u64,
     support_value: u64,
     support_difference: u64,
+    by_expression: HashMap<(u8, ExprId), [u64; 4]>,
 }
 
 #[cfg(feature = "diagnostics")]
@@ -483,8 +484,9 @@ impl<'a> Machine<'a> {
                 if let Some((prior_closure, prior_value)) = state.seen.get(&key).cloned() {
                     if prior_closure != raw_closure {
                         state.collisions += 1;
-                        if prior_value == *value {
+                        let category = if prior_value == *value {
                             state.exact_value += 1;
+                            1usize
                         } else {
                             let mut prior_budget = 256usize;
                             let mut current_budget = 256usize;
@@ -494,8 +496,43 @@ impl<'a> Machine<'a> {
                                 self.diagnostic_support_value_key(value, &mut current_budget);
                             if prior_key.is_some() && prior_key == current_key {
                                 state.support_value += 1;
+                                2usize
                             } else {
                                 state.support_difference += 1;
+                                3usize
+                            }
+                        };
+                        if let Some(expression) = raw_closure.expression() {
+                            let counts = state
+                                .by_expression
+                                .entry((transparency_key, expression))
+                                .or_insert([0, 0, 0, 0]);
+                            counts[0] += 1;
+                            counts[category] += 1;
+                            if counts[0] >= 256 && counts[0].is_power_of_two() {
+                                let kind = match self.expressions.get(expression) {
+                                    Some(Expr::BVar(_)) => "bvar",
+                                    Some(Expr::NatLit(_)) => "natlit",
+                                    Some(Expr::StrLit(_)) => "strlit",
+                                    Some(Expr::Sort(_)) => "sort",
+                                    Some(Expr::Const { .. }) => "const",
+                                    Some(Expr::App { .. }) => "app",
+                                    Some(Expr::Lam { .. }) => "lam",
+                                    Some(Expr::Pi { .. }) => "pi",
+                                    Some(Expr::Let { .. }) => "let",
+                                    Some(Expr::Proj { .. }) => "proj",
+                                    None => "missing",
+                                };
+                                eprintln!(
+                                    "NUCLEUS_EXPOSURE_EXPR:transparency={}:expr={}:kind={}:collisions={}:exact_value={}:support_value={}:support_difference={}",
+                                    transparency_key,
+                                    expression.0,
+                                    kind,
+                                    counts[0],
+                                    counts[1],
+                                    counts[2],
+                                    counts[3],
+                                );
                             }
                         }
                         if state.collisions.is_power_of_two() || state.support_difference <= 4 && state.support_difference > 0 {
