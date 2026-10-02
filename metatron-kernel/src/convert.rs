@@ -181,6 +181,16 @@ fn convert_in_context_with_congruence(
         if left == right {
             continue;
         }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_CONVERSION_SUPPORT_EQUIV").is_some()
+            && let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && checker
+                .machine()
+                .diagnostic_support_equivalent_closures(left_term, right_term)
+                == Some(true)
+        {
+            continue;
+        }
         if remaining == 0 {
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_CONVERSION_BUDGET").is_some() {
