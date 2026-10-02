@@ -1,0 +1,345 @@
+{
+  "schema": "acc-fresh-shorteners-atlas-admission-20261002-v1",
+  "epistemic_state": "CANDIDATE_BOUNDED_LOCAL_CALIBRATED",
+  "claim_boundary": [
+    "No publication candidate was produced.",
+    "Negative claim is limited to exact Proof-Atlas contact through ordinary-AC radius 3 from every cyclic-rotation/inverse-rotation/relator-order representative consistent with the qualified public-source canonical key.",
+    "The unknown official orientation is handled conservatively by enumerating the full canonical preimage at depth 0; symmetries are not treated as free after depth 0.",
+    "No claim is made about global AC distance, paths beyond radius 3, or selector-corrected charged search."
+  ],
+  "fresh_authority": {
+    "run_id": 36954702989,
+    "rerun_job_id": 110771530991,
+    "utc": "2026-10-02T08:48:39.321263+00:00",
+    "artifact_id": 11216889618,
+    "artifact_digest": "sha256:7aebc7d1281a2cf9d14ff41103eac6012fc048b07662aa295cd22a5930a187d8",
+    "live_state_sha256": "4c4bbe17050aaa9efe942a95c117670ab3ebd73af0e26bc20e65a996fdfb04a5",
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    },
+    "quota": {
+      "used": 0,
+      "remaining": 40,
+      "limit": 40
+    },
+    "unsolved": {
+      "ac": 2672,
+      "stable_ac": 2672
+    },
+    "profitable_lift_frontier": {
+      "rows": 102,
+      "aggregate_moves": 231,
+      "unchanged_from_0641": true,
+      "top": [
+        {
+          "id": "ac-09151",
+          "ac_best": 194,
+          "stable_best": 215,
+          "lift_gain": 19
+        },
+        {
+          "id": "ac-06697",
+          "ac_best": 153,
+          "stable_best": 163,
+          "lift_gain": 8
+        },
+        {
+          "id": "ac-00360",
+          "ac_best": 111,
+          "stable_best": 121,
+          "lift_gain": 8
+        },
+        {
+          "id": "ac-07787",
+          "ac_best": 184,
+          "stable_best": 193,
+          "lift_gain": 7
+        },
+        {
+          "id": "ac-05164",
+          "ac_best": 121,
+          "stable_best": 129,
+          "lift_gain": 6
+        },
+        {
+          "id": "ac-04396",
+          "ac_best": 68,
+          "stable_best": 76,
+          "lift_gain": 6
+        }
+      ]
+    }
+  },
+  "fresh_record_shortenings": {
+    "ac": [
+      {
+        "id": "ac-02525",
+        "old_best": 102,
+        "new_best": 100,
+        "old_kTeams": 2,
+        "new_kTeams": 1
+      },
+      {
+        "id": "ac-03191",
+        "old_best": 68,
+        "new_best": 67,
+        "old_kTeams": 2,
+        "new_kTeams": 1
+      },
+      {
+        "id": "ac-05382",
+        "old_best": 63,
+        "new_best": 62,
+        "old_kTeams": 5,
+        "new_kTeams": 1
+      },
+      {
+        "id": "ac-08332",
+        "old_best": 62,
+        "new_best": 60,
+        "old_kTeams": 1,
+        "new_kTeams": 1
+      }
+    ],
+    "stable": [
+      {
+        "id": "sac-02068",
+        "old_best": 76,
+        "new_best": 75,
+        "old_kTeams": 2,
+        "new_kTeams": 1
+      },
+      {
+        "id": "sac-02525",
+        "old_best": 104,
+        "new_best": 102,
+        "old_kTeams": 3,
+        "new_kTeams": 1
+      },
+      {
+        "id": "sac-03191",
+        "old_best": 70,
+        "new_best": 69,
+        "old_kTeams": 2,
+        "new_kTeams": 1
+      },
+      {
+        "id": "sac-05382",
+        "old_best": 64,
+        "new_best": 63,
+        "old_kTeams": 2,
+        "new_kTeams": 1
+      },
+      {
+        "id": "sac-06780",
+        "old_best": 96,
+        "new_best": 95,
+        "old_kTeams": 1,
+        "new_kTeams": 1
+      },
+      {
+        "id": "sac-08332",
+        "old_best": 64,
+        "new_best": 62,
+        "old_kTeams": 1,
+        "new_kTeams": 1
+      }
+    ],
+    "frontier_effect": "No profitable AC→Stable lift row opened, closed, or changed aggregate value."
+  },
+  "qualified_source_map": {
+    "run_id": 34727788755,
+    "artifact_id": 10847946381,
+    "artifact_digest": "sha256:a9409fa545084f6bdaf9d379874c5622974fbf6a5238d3e140546c2e15be5068",
+    "result": "All four fresh AC record shortenings have no exact AC19 or AC1M match.",
+    "rows": {
+      "ac-02525": {
+        "canonical": [
+          "YXyXXXXyx",
+          "YXyXXyxxxYxyXYxYxxxxyXYx"
+        ],
+        "total_len": 33,
+        "ac19_index": null,
+        "ac1m_index": null
+      },
+      "ac-03191": {
+        "canonical": [
+          "YXYxyX",
+          "YYYxxyXYXYXyXYXyXyxYXYx"
+        ],
+        "total_len": 29,
+        "ac19_index": null,
+        "ac1m_index": null
+      },
+      "ac-05382": {
+        "canonical": [
+          "YXyxYx",
+          "YXyXyxxxyXXYXXYxYxxYx"
+        ],
+        "total_len": 27,
+        "ac19_index": null,
+        "ac1m_index": null
+      },
+      "ac-08332": {
+        "canonical": [
+          "YXYXXYXyX",
+          "YYYXYXYYXXyxxyxyXyxyxxyxyx"
+        ],
+        "total_len": 35,
+        "ac19_index": null,
+        "ac1m_index": null
+      }
+    }
+  },
+  "proof_atlas": {
+    "authority_run_id": 36070189102,
+    "artifact_id": 10589688184,
+    "official_pin": "SAIRcompetition/Andrews-Curtis@99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "states": 433272,
+    "sqlite_sha256": "0cd6ef6ba53da0a0dcc8e63b30e658bff5d109bdfd06f79753958c757da03879"
+  },
+  "admission_gate": {
+    "ac-02525": {
+      "orientations": [
+        18,
+        48
+      ],
+      "canonical_preimages": 1728,
+      "depths": [
+        {
+          "depth": 0,
+          "new": 1728,
+          "cumulative": 1728,
+          "hits": 0
+        },
+        {
+          "depth": 1,
+          "new": 13824,
+          "cumulative": 15552,
+          "hits": 0
+        },
+        {
+          "depth": 2,
+          "new": 127248,
+          "cumulative": 142800,
+          "hits": 0
+        },
+        {
+          "depth": 3,
+          "new": 1136600,
+          "cumulative": 1279400,
+          "hits": 0
+        }
+      ]
+    },
+    "ac-03191": {
+      "orientations": [
+        12,
+        46
+      ],
+      "canonical_preimages": 1104,
+      "depths": [
+        {
+          "depth": 0,
+          "new": 1104,
+          "cumulative": 1104,
+          "hits": 0
+        },
+        {
+          "depth": 1,
+          "new": 8832,
+          "cumulative": 9936,
+          "hits": 0
+        },
+        {
+          "depth": 2,
+          "new": 81648,
+          "cumulative": 91584,
+          "hits": 0
+        },
+        {
+          "depth": 3,
+          "new": 729608,
+          "cumulative": 821192,
+          "hits": 0
+        }
+      ]
+    },
+    "ac-05382": {
+      "orientations": [
+        12,
+        42
+      ],
+      "canonical_preimages": 1008,
+      "depths": [
+        {
+          "depth": 0,
+          "new": 1008,
+          "cumulative": 1008,
+          "hits": 0
+        },
+        {
+          "depth": 1,
+          "new": 8064,
+          "cumulative": 9072,
+          "hits": 0
+        },
+        {
+          "depth": 2,
+          "new": 74544,
+          "cumulative": 83616,
+          "hits": 0
+        },
+        {
+          "depth": 3,
+          "new": 666344,
+          "cumulative": 749960,
+          "hits": 0
+        }
+      ]
+    },
+    "ac-08332": {
+      "orientations": [
+        18,
+        52
+      ],
+      "canonical_preimages": 1872,
+      "depths": [
+        {
+          "depth": 0,
+          "new": 1872,
+          "cumulative": 1872,
+          "hits": 0
+        },
+        {
+          "depth": 1,
+          "new": 14976,
+          "cumulative": 16848,
+          "hits": 0
+        },
+        {
+          "depth": 2,
+          "new": 138480,
+          "cumulative": 155328,
+          "hits": 0
+        },
+        {
+          "depth": 3,
+          "new": 1238552,
+          "cumulative": 1393880,
+          "hits": 0
+        }
+      ]
+    }
+  },
+  "result": "NO_EXACT_PROOF_ATLAS_CONTACT_THROUGH_RADIUS_3_FOR_ANY_OF_THE_FOUR_FRESH_AC_SHORTENERS",
+  "decision": {
+    "fresh_shorteners": "Retire unchanged AC19/AC1M recovery and shallow exact-Atlas admission through radius 3 for this cycle.",
+    "global_priority": "Do not divert compute from ac-09151 +19 global-lift routing; it remains the highest-value residual.",
+    "next_experiment": "Run the already-earned compile-before-admission charged selector on ac-09151 without widening search. Executable workflow creation was blocked by the connected write-safety layer in this run.",
+    "submission": "none",
+    "quota_consumed": 0
+  }
+}
