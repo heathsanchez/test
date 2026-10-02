@@ -1,0 +1,111 @@
+name: Nucleus chain6 neutral head separator v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [nucleus-chain6-app-function-separator-v1]
+    paths:
+      - ".github/workflows/nucleus-chain6-neutral-head-v1.yml"
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Patch cap and build diagnostics
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("metatron-kernel/src/checker.rs")
+          s=p.read_text()
+          old="judgment_steps: 65_536,"
+          assert s.count(old)==1
+          p.write_text(s.replace(old,"judgment_steps: 66_560,",1))
+          PY
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/a1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+
+      - name: Trace first neutral-head separator
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python3 - <<'PY'
+          import json,pathlib,subprocess,time,os
+
+          def prefix(path,target):
+              names={0:""}; rows=[]
+              for line in pathlib.Path(path).read_text().splitlines():
+                  r=json.loads(line); rows.append(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      if isinstance(v,dict):
+                          pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  ds=[]
+                  if "inductive" in r:
+                      for k in ("types","ctors","recs"): ds.extend(r["inductive"].get(k,[]))
+                  for k in ("def","thm","axiom","opaque","quot"):
+                      if k in r and isinstance(r[k],dict): ds.append(r[k])
+                  if any(names.get(d.get("name"))==target for d in ds if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError(target)
+
+          data=prefix("/tmp/r1/good/perf/fueled-chain.ndjson","chain6_datF")
+          env=os.environ|{
+              "NUCLEUS_EXPOSURE_SUPPORT_CACHE":"1",
+              "NUCLEUS_CONVERSION_EXPOSURE_FLOOR":"128",
+              "NUCLEUS_UNIVERSE_EQUALITY_FLOOR":"128",
+              "NUCLEUS_CONVERSION_BUDGET_FLOOR":"512",
+              "NUCLEUS_TRACE_NEUTRAL_HEADS":"1",
+              "NUCLEUS_TRACE_APP_FUNCTION_SEPARATOR":"1",
+              "NUCLEUS_TRACE_DOWNSTREAM":"1",
+          }
+          t=time.monotonic()
+          q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,
+                           stderr=subprocess.PIPE,timeout=30,env=env)
+          err=q.stderr.decode(errors="replace")
+          neutral=[x for x in err.splitlines() if x.startswith("NUCLEUS_NEUTRAL_HEAD_MISMATCH:")]
+          app=[x for x in err.splitlines() if x.startswith("NUCLEUS_APP_FUNCTION_SEPARATOR:")]
+          down=[x for x in err.splitlines() if x.startswith("NUCLEUS_DOWNSTREAM:")]
+          result={
+              "sha":os.environ["GITHUB_SHA"],
+              "exit":q.returncode,
+              "seconds":time.monotonic()-t,
+              "neutral_count":len(neutral),
+              "first_neutral":neutral[0] if neutral else None,
+              "neutral_sample":neutral[:20],
+              "first_app":app[0] if app else None,
+              "downstream_tail":down[-5:],
+          }
+          pathlib.Path("out/result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result),flush=True)
+          assert q.returncode==2,result
+          assert neutral,result
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-chain6-neutral-head-${{ github.sha }}
+          path: out/result.json
+          if-no-files-found: error
