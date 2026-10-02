@@ -82,6 +82,7 @@ jobs:
             "exit":q.returncode,
             "seconds":time.monotonic()-t,
             "conversion_exhaustion_count":len(conv),
+            "conversion_exhaustion_first":conv[:40],
             "conversion_exhaustion":conv[-30:],
             "application_function_type":app[-30:],
             "downstream":down[-10:],
