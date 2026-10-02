@@ -1,0 +1,129 @@
+name: Nucleus zero-binder inference reuse v1
+
+on:
+  push:
+    branches: [nucleus-zero-binder-inference-reuse-v1]
+    paths:
+      - ".github/workflows/nucleus-zero-binder-inference-reuse-v1.yml"
+      - "metatron-kernel/src/typecheck.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  causal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic binary
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch pinned corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip >/tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip >/tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Causal zero-binder inference reuse gate
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/zero-binder-inference-reuse-v1
+          python3 - <<'PY'
+          import json,pathlib,subprocess,os,time,hashlib
+
+          def prefix(path,target):
+              names={0:""}; rows=[]
+              for line in pathlib.Path(path).read_text().splitlines():
+                  r=json.loads(line); rows.append(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      if isinstance(v,dict):
+                          pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  ds=[]
+                  if "inductive" in r:
+                      for k in ("types","ctors","recs"): ds.extend(r["inductive"].get(k,[]))
+                  for k in ("def","thm","axiom","opaque","quot"):
+                      if k in r and isinstance(r[k],dict): ds.append(r[k])
+                  if any(names.get(d.get("name"))==target for d in ds if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError(target)
+
+          def run(data=None,path=None,on=False,timeout=30):
+              env=os.environ|{
+                  "NUCLEUS_ZERO_BUDGET_OBSERVABLE_BYPASS":"1",
+                  "NUCLEUS_ZERO_BUDGET_NEUTRAL_SUPPORT_CONGRUENCE":"1",
+                  "NUCLEUS_TRACE_DOWNSTREAM":"1",
+                  "NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE":"1",
+              }
+              if on:
+                  env["NUCLEUS_ZERO_BINDER_INFERENCE_REUSE"]="1"
+                  env["NUCLEUS_TRACE_ZERO_BINDER_INFERENCE_REUSE"]="1"
+              t=time.monotonic()
+              if data is not None:
+                  q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout,env=env)
+              else:
+                  with pathlib.Path(path).open("rb") as f:
+                      q=subprocess.run(["/tmp/nucleus"],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout,env=env)
+              lines=q.stderr.decode(errors="replace").splitlines()
+              return {
+                  "exit":q.returncode,"seconds":time.monotonic()-t,
+                  "reuse_count":sum(x.startswith("NUCLEUS_ZERO_BINDER_INFERENCE_REUSE:") for x in lines),
+                  "reuse_4938":[x for x in lines if x.startswith("NUCLEUS_ZERO_BINDER_INFERENCE_REUSE:expression=ExprId(4938)")],
+                  "reuse_tail":[x for x in lines if x.startswith("NUCLEUS_ZERO_BINDER_INFERENCE_REUSE:")][-20:],
+                  "application_tail":[x for x in lines if x.startswith("NUCLEUS_APPLICATION_FUNCTION_TYPE:")][-20:],
+                  "downstream_tail":[x for x in lines if x.startswith("NUCLEUS_DOWNSTREAM:")][-10:],
+              }
+
+          chain6=prefix("/tmp/r1/good/perf/fueled-chain.ndjson","chain6_datF")
+          funext=prefix("/tmp/current/good/perf/fueled-chain.ndjson","funext")
+          result={
+              "sha":os.environ["GITHUB_SHA"],
+              "chain6_sha256":hashlib.sha256(chain6).hexdigest(),
+              "off_chain6":run(data=chain6,on=False),
+              "on_chain6":run(data=chain6,on=True),
+              "on_funext":run(data=funext,on=True,timeout=15),
+              "on_k_rec_conv":run(path="/tmp/current/bad/bugs/k-rec-conv.ndjson",on=True,timeout=10),
+              "on_fun_eta_bad":run(path="/tmp/current/bad/tutorial/116_funEtaBad.ndjson",on=True,timeout=10),
+              "on_proj_stuck":run(path="/tmp/current/bad/bugs/proj-of-stuck-prop.ndjson",on=True,timeout=10),
+              "on_proj_subst":run(path="/tmp/current/bad/bugs/proj-of-subst-prop.ndjson",on=True,timeout=10),
+              "on_rec_subst":run(path="/tmp/current/bad/bugs/rec-of-subst-prop.ndjson",on=True,timeout=10),
+          }
+          print(json.dumps(result),flush=True)
+          pathlib.Path("metatron-kernel/evidence-out/zero-binder-inference-reuse-v1/result.json").write_text(json.dumps(result,indent=2)+"\n")
+          assert result["off_chain6"]["exit"]==2,result
+          assert result["on_chain6"]["exit"] in (0,1,2),result
+          assert result["on_chain6"]["reuse_4938"],result
+          assert result["on_funext"]["exit"]==0,result
+          assert result["on_k_rec_conv"]["exit"]==1,result
+          assert result["on_fun_eta_bad"]["exit"]==1,result
+          for k in ("on_proj_stuck","on_proj_subst","on_rec_subst"):
+              assert result[k]["exit"]!=0,result
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-zero-binder-inference-reuse-${{ github.sha }}
+          path: metatron-kernel/evidence-out/zero-binder-inference-reuse-v1
+          if-no-files-found: error
