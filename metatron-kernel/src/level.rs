@@ -71,6 +71,11 @@ pub fn imax(left: LevelTerm, right: LevelTerm) -> LevelTerm {
 }
 
 pub fn level_equal(left: LevelTerm, right: LevelTerm, budget: usize) -> Judgment<()> {
+    // Reflexivity needs no normalization. Preserve scarce judgment fuel for
+    // genuinely non-identical universe expressions.
+    if left == right {
+        return Judgment::proven((), "universe-reflexivity");
+    }
     let mut budget = Budget::new(budget);
     let Ok(left) = simplify(left, &mut budget) else {
         return Judgment::unknown("universe-equality-budget");
