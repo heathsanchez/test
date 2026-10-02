@@ -568,11 +568,18 @@ impl<'a> TypeChecker<'a> {
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
             Judgment::Proven { value, .. } => {
+                #[cfg(feature = "diagnostics")]
+                let conversion_budget = std::env::var("NUCLEUS_CONVERSION_BUDGET_FLOOR")
+                    .ok()
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .map_or(*remaining, |floor| (*remaining).max(floor));
+                #[cfg(not(feature = "diagnostics"))]
+                let conversion_budget = *remaining;
                 let conversion = crate::convert::convert_with_policy_in_context(
                     self,
                     &value,
                     expected,
-                    *remaining,
+                    conversion_budget,
                     self.delta_policy,
                     context.len(),
                     context,
