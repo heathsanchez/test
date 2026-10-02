@@ -1,0 +1,121 @@
+name: Nucleus chain6 conversion work floor v1
+
+on:
+  push:
+    branches: [nucleus-chain6-app-function-separator-v1]
+    paths:
+      - ".github/workflows/nucleus-chain6-conversion-budget-v1.yml"
+      - "metatron-kernel/src/typecheck.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROUND1_ARTIFACT: "10712869614"
+
+jobs:
+  floor:
+    strategy:
+      fail-fast: false
+      matrix:
+        floor: [128, 192, 256, 384, 512, 1024, 2048]
+    name: floor-${{ matrix.floor }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Patch cap and build diagnostics
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("metatron-kernel/src/checker.rs")
+          s=p.read_text()
+          old="judgment_steps: 65_536,"
+          assert s.count(old)==1
+          p.write_text(s.replace(old,"judgment_steps: 66_560,",1))
+          PY
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/a1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+
+      - name: Measure conversion work floor
+        env:
+          FLOOR: ${{ matrix.floor }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python3 - <<'PY'
+          import json,pathlib,subprocess,time,os
+
+          def prefix(path,target):
+              names={0:""}; rows=[]
+              for line in pathlib.Path(path).read_text().splitlines():
+                  r=json.loads(line); rows.append(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      if isinstance(v,dict):
+                          pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  ds=[]
+                  if "inductive" in r:
+                      for k in ("types","ctors","recs"): ds.extend(r["inductive"].get(k,[]))
+                  for k in ("def","thm","axiom","opaque","quot"):
+                      if k in r and isinstance(r[k],dict): ds.append(r[k])
+                  if any(names.get(d.get("name"))==target for d in ds if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError(target)
+
+          data=prefix("/tmp/r1/good/perf/fueled-chain.ndjson","chain6_datF")
+          env=os.environ|{
+              "NUCLEUS_EXPOSURE_SUPPORT_CACHE":"1",
+              "NUCLEUS_CONVERSION_EXPOSURE_FLOOR":"128",
+              "NUCLEUS_UNIVERSE_EQUALITY_FLOOR":"128",
+              "NUCLEUS_CONVERSION_BUDGET_FLOOR":os.environ["FLOOR"],
+              "NUCLEUS_TRACE_CONVERSION_EXPOSURE":"1",
+              "NUCLEUS_TRACE_APP_FUNCTION_SEPARATOR":"1",
+              "NUCLEUS_TRACE_DOWNSTREAM":"1",
+          }
+          t=time.monotonic()
+          try:
+              q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45,env=env)
+              rc=q.returncode; err=q.stderr.decode(errors="replace")
+          except subprocess.TimeoutExpired as e:
+              rc=124
+              err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
+          conv=[x for x in err.splitlines() if x.startswith("NUCLEUS_CONVERSION_EXPOSURE:")]
+          app=[x for x in err.splitlines() if x.startswith("NUCLEUS_APP_FUNCTION_SEPARATOR:")]
+          down=[x for x in err.splitlines() if x.startswith("NUCLEUS_DOWNSTREAM:")]
+          result={
+              "conversion_floor":int(os.environ["FLOOR"]),
+              "sha":os.environ["GITHUB_SHA"],
+              "exit":rc,
+              "seconds":time.monotonic()-t,
+              "conversion_count":len(conv),
+              "app_count":len(app),
+              "first_app":app[0] if app else None,
+              "last_app":app[-1] if app else None,
+              "downstream_tail":down[-5:],
+          }
+          pathlib.Path("out/result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result),flush=True)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-chain6-conversion-budget-${{ matrix.floor }}-${{ github.sha }}
+          path: out/result.json
+          if-no-files-found: error
