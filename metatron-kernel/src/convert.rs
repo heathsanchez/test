@@ -183,18 +183,34 @@ fn convert_in_context_with_congruence(
         }
         if let (TypeValue::Term(left_closure), TypeValue::Term(right_closure)) = (&left, &right) {
             let machine = checker.machine();
-            if machine.support_equivalent_closures(left_closure, right_closure, 256)
-                == Some(true)
-                || machine.normalized_support_equivalent_closures(
+            let support_equal =
+                machine.support_equivalent_closures(left_closure, right_closure, 256)
+                    == Some(true);
+            let normalized_equal = !support_equal
+                && machine.normalized_support_equivalent_closures(
                     left_closure,
                     right_closure,
                     256,
-                ) == Some(true)
-            {
+                ) == Some(true);
+            if support_equal || normalized_equal {
+                if normalized_equal
+                    && std::env::var_os("NUCLEUS_TRACE_NORMALIZED_SUPPORT").is_some()
+                {
+                    eprintln!(
+                        "NUCLEUS_NORMALIZED_SUPPORT:depth={}:left={:?}:right={:?}",
+                        depth, left_closure, right_closure
+                    );
+                }
                 continue;
             }
         }
         if remaining == 0 {
+            if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXHAUSTION").is_some() {
+                eprintln!(
+                    "NUCLEUS_CONVERSION_EXHAUSTION:initial_budget={}:depth={}:left={:?}:right={:?}:pending={}",
+                    budget, depth, left, right, work.len()
+                );
+            }
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
