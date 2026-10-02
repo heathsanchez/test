@@ -290,7 +290,7 @@ impl<'a> Machine<'a> {
         match binding {
             EnvBinding::Free(free) => Some(DiagnosticSupportBindingKey::Free(free)),
             EnvBinding::Closure(closure) => Some(DiagnosticSupportBindingKey::Closure(Box::new(
-                self.diagnostic_support_closure_key(&closure, budget)?,
+                self.diagnostic_support_closure_key_at_depth(&closure, 0, budget)?,
             ))),
             EnvBinding::Neutral(neutral) => Some(DiagnosticSupportBindingKey::Neutral(Box::new(
                 self.diagnostic_support_neutral_key(&neutral, budget)?,
@@ -326,15 +326,16 @@ impl<'a> Machine<'a> {
         };
         let mut spine = Vec::with_capacity(neutral.spine.len());
         for closure in &neutral.spine {
-            spine.push(self.diagnostic_support_closure_key(closure, budget)?);
+            spine.push(self.diagnostic_support_closure_key_at_depth(closure, 0, budget)?);
         }
         Some(DiagnosticSupportNeutralKey { head, spine })
     }
 
     #[cfg(feature = "diagnostics")]
-    fn diagnostic_support_closure_key(
+    fn diagnostic_support_closure_key_at_depth(
         &self,
         closure: &Closure,
+        syntactic_depth: usize,
         budget: &mut usize,
     ) -> Option<DiagnosticSupportClosureKey> {
         if *budget == 0 {
@@ -349,7 +350,12 @@ impl<'a> Machine<'a> {
         let mut bindings = Vec::new();
         if let DiagnosticSupportClosureRoot::Expression(expression) = root {
             let mut offsets = Vec::new();
-            self.diagnostic_collect_outer_bvars(expression, 0, 4096, &mut offsets)?;
+            self.diagnostic_collect_outer_bvars(
+                expression,
+                syntactic_depth,
+                4096,
+                &mut offsets,
+            )?;
             offsets.sort_unstable();
             offsets.dedup();
             bindings.reserve(offsets.len());
@@ -370,6 +376,15 @@ impl<'a> Machine<'a> {
     }
 
     #[cfg(feature = "diagnostics")]
+    fn diagnostic_support_closure_key(
+        &self,
+        closure: &Closure,
+        budget: &mut usize,
+    ) -> Option<DiagnosticSupportClosureKey> {
+        self.diagnostic_support_closure_key_at_depth(closure, 0, budget)
+    }
+
+    #[cfg(feature = "diagnostics")]
     fn diagnostic_support_value_key(
         &self,
         value: &Value,
@@ -383,12 +398,12 @@ impl<'a> Machine<'a> {
             Value::NatLit(value) => Some(DiagnosticSupportValueKey::NatLit(value.clone())),
             Value::Sort(level) => Some(DiagnosticSupportValueKey::Sort(level.clone())),
             Value::Pi { domain, body } => Some(DiagnosticSupportValueKey::Pi {
-                domain: self.diagnostic_support_closure_key(domain, budget)?,
-                body: self.diagnostic_support_closure_key(body, budget)?,
+                domain: self.diagnostic_support_closure_key_at_depth(domain, 0, budget)?,
+                body: self.diagnostic_support_closure_key_at_depth(body, 1, budget)?,
             }),
             Value::Lam { domain, body } => Some(DiagnosticSupportValueKey::Lam {
-                domain: self.diagnostic_support_closure_key(domain, budget)?,
-                body: self.diagnostic_support_closure_key(body, budget)?,
+                domain: self.diagnostic_support_closure_key_at_depth(domain, 0, budget)?,
+                body: self.diagnostic_support_closure_key_at_depth(body, 1, budget)?,
             }),
             Value::Neutral(neutral) => Some(DiagnosticSupportValueKey::Neutral(
                 self.diagnostic_support_neutral_key(neutral, budget)?,
