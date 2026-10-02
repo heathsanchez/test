@@ -187,11 +187,33 @@ impl<'a> TypeChecker<'a> {
         // frame identity. Never reuse UNKNOWN, refutations, or another scope.
         let key = (expression, frame.id());
         if let Some(value) = cache.get(&key) {
+            #[cfg(feature = "diagnostics")]
+            if *remaining == 0
+                && std::env::var_os("NUCLEUS_TRACE_ZERO_BUDGET_INFERENCE_CACHE").is_some()
+            {
+                eprintln!(
+                    "NUCLEUS_ZERO_BUDGET_INFERENCE_CACHE:hit=true:expression={expression:?}:frame={}:depth={}:cache_size={}",
+                    frame.id(),
+                    context.len(),
+                    cache.len(),
+                );
+            }
             return if take_step(remaining) {
                 Judgment::proven(value.clone(), "shared-expression-inference")
             } else {
                 Judgment::unknown("type-inference-budget")
             };
+        }
+        #[cfg(feature = "diagnostics")]
+        if *remaining == 0
+            && std::env::var_os("NUCLEUS_TRACE_ZERO_BUDGET_INFERENCE_CACHE").is_some()
+        {
+            eprintln!(
+                "NUCLEUS_ZERO_BUDGET_INFERENCE_CACHE:hit=false:expression={expression:?}:frame={}:depth={}:cache_size={}",
+                frame.id(),
+                context.len(),
+                cache.len(),
+            );
         }
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
         if let Judgment::Proven { value, .. } = &result {
