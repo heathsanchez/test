@@ -18,6 +18,22 @@ pub enum TypeValue {
     },
 }
 
+#[cfg(feature = "diagnostics")]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct OneBinderProjectedInferenceKey {
+    expression: ExprId,
+    depth: usize,
+    levels: Vec<(NameId, LevelTerm)>,
+    binder: (usize, EnvBinding, TypeValue),
+}
+
+#[derive(Default)]
+struct InferenceMemo {
+    exact: HashMap<(ExprId, u64), TypeValue>,
+    #[cfg(feature = "diagnostics")]
+    one_binder: HashMap<OneBinderProjectedInferenceKey, TypeValue>,
+}
+
 pub struct TypeChecker<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
@@ -68,7 +84,7 @@ impl<'a> TypeChecker<'a> {
             &[],
             &EnvFrame::empty(),
             &mut remaining,
-            &mut HashMap::new(),
+            &mut InferenceMemo::default(),
         )
     }
 
@@ -81,7 +97,7 @@ impl<'a> TypeChecker<'a> {
             &EnvFrame::empty(),
             &mut remaining,
             self.delta_policy == crate::convert::DeltaPolicy::GuardedSemanticFallback,
-            &mut HashMap::new(),
+            &mut InferenceMemo::default(),
         )
     }
 
@@ -130,7 +146,7 @@ impl<'a> TypeChecker<'a> {
             &EnvFrame::empty(),
             &mut remaining,
             false,
-            &mut HashMap::new(),
+            &mut InferenceMemo::default(),
         )
     }
 
@@ -149,7 +165,7 @@ impl<'a> TypeChecker<'a> {
             frame,
             &mut remaining,
             false,
-            &mut HashMap::new(),
+            &mut InferenceMemo::default(),
         )
     }
 
@@ -277,19 +293,51 @@ impl<'a> TypeChecker<'a> {
         Some((expression, u64::MAX.checked_sub(depth)?))
     }
 
+    #[cfg(feature = "diagnostics")]
+    fn one_binder_projected_inference_key(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+    ) -> Option<OneBinderProjectedInferenceKey> {
+        let mut offsets = Vec::new();
+        self.experimental_collect_outer_bvars(expression, 0, 4096, &mut offsets)?;
+        offsets.sort_unstable();
+        offsets.dedup();
+        if offsets.len() != 1 {
+            return None;
+        }
+        let offset = offsets[0];
+        let index = u64::try_from(offset).ok()?;
+        let binding = frame.lookup(index)?;
+        let ty = context.iter().rev().nth(offset)?.clone();
+        let mut levels = self
+            .level_substitution
+            .iter()
+            .map(|(name, level)| (*name, level.clone()))
+            .collect::<Vec<_>>();
+        levels.sort_by_key(|(name, _)| name.0);
+        Some(OneBinderProjectedInferenceKey {
+            expression,
+            depth: context.len(),
+            levels,
+            binder: (offset, binding, ty),
+        })
+    }
+
     fn infer_in(
         &self,
         expression: ExprId,
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
-        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        cache: &mut InferenceMemo,
     ) -> Judgment<TypeValue> {
         // This cache is local to one public judgment. A frame has one fixed
         // typing context in that judgment, and every binder allocates a fresh
         // frame identity. Never reuse UNKNOWN, refutations, or another scope.
         let key = (expression, frame.id());
-        if let Some(value) = cache.get(&key) {
+        if let Some(value) = cache.exact.get(&key) {
             #[cfg(feature = "diagnostics")]
             if *remaining == 0
                 && std::env::var_os("NUCLEUS_TRACE_ZERO_BUDGET_INFERENCE_CACHE").is_some()
@@ -298,7 +346,7 @@ impl<'a> TypeChecker<'a> {
                     "NUCLEUS_ZERO_BUDGET_INFERENCE_CACHE:hit=true:expression={expression:?}:frame={}:depth={}:cache_size={}",
                     frame.id(),
                     context.len(),
-                    cache.len(),
+                    cache.exact.len() + cache.one_binder.len(),
                 );
             }
             return if take_step(remaining) {
@@ -335,6 +383,33 @@ impl<'a> TypeChecker<'a> {
             }
         }
         #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_ONE_BINDER_PROJECTED_INFERENCE_REUSE").is_some() {
+            if let Some(projected_key) =
+                self.one_binder_projected_inference_key(expression, context, frame)
+            {
+                if let Some(value) = cache.one_binder.get(&projected_key) {
+                    if std::env::var_os(
+                        "NUCLEUS_TRACE_ONE_BINDER_PROJECTED_INFERENCE_REUSE",
+                    )
+                    .is_some()
+                    {
+                        eprintln!(
+                            "NUCLEUS_ONE_BINDER_PROJECTED_INFERENCE_REUSE:expression={expression:?}:frame={}:depth={}:offset={}:remaining={}",
+                            frame.id(),
+                            context.len(),
+                            projected_key.binder.0,
+                            *remaining,
+                        );
+                    }
+                    return Judgment::proven(
+                        value.clone(),
+                        "one-binder-projected-inference",
+                    );
+                }
+            }
+        }
+
+        #[cfg(feature = "diagnostics")]
         if *remaining == 0
             && std::env::var_os("NUCLEUS_TRACE_ZERO_BUDGET_INFERENCE_CACHE").is_some()
         {
@@ -342,7 +417,7 @@ impl<'a> TypeChecker<'a> {
                 "NUCLEUS_ZERO_BUDGET_INFERENCE_CACHE:hit=false:expression={expression:?}:frame={}:depth={}:cache_size={}",
                 frame.id(),
                 context.len(),
-                cache.len(),
+                cache.exact.len() + cache.one_binder.len(),
             );
         }
         #[cfg(feature = "diagnostics")]
@@ -354,7 +429,7 @@ impl<'a> TypeChecker<'a> {
                 self.experimental_collect_outer_bvars(expression, 0, 4096, &mut offsets).is_some();
             offsets.sort_unstable();
             offsets.dedup();
-            let mut projected_depths = cache
+            let mut projected_depths = cache.exact
                 .keys()
                 .filter_map(|(cached_expression, cached_frame)| {
                     if *cached_expression != expression {
@@ -366,7 +441,7 @@ impl<'a> TypeChecker<'a> {
                 .collect::<Vec<_>>();
             projected_depths.sort_unstable();
             projected_depths.dedup();
-            let raw_same_expression = cache
+            let raw_same_expression = cache.exact
                 .keys()
                 .filter(|(cached_expression, cached_frame)| {
                     *cached_expression == expression
@@ -381,12 +456,12 @@ impl<'a> TypeChecker<'a> {
                 offsets,
                 projected_depths,
                 raw_same_expression,
-                cache.len(),
+                cache.exact.len() + cache.one_binder.len(),
             );
         }
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
         if let Judgment::Proven { value, .. } = &result {
-            cache.insert(key, value.clone());
+            cache.exact.insert(key, value.clone());
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_ZERO_BINDER_DEPTH_INFERENCE_REUSE").is_some()
                 && self.experimental_expression_uses_outer_bvar(expression, 0, 4096)
@@ -395,7 +470,18 @@ impl<'a> TypeChecker<'a> {
                 if let Some(projected_key) =
                     self.zero_binder_depth_cache_key(expression, context.len())
                 {
-                    cache.entry(projected_key).or_insert_with(|| value.clone());
+                    cache.exact.entry(projected_key).or_insert_with(|| value.clone());
+                }
+            }
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_ONE_BINDER_PROJECTED_INFERENCE_REUSE").is_some() {
+                if let Some(projected_key) =
+                    self.one_binder_projected_inference_key(expression, context, frame)
+                {
+                    cache
+                        .one_binder
+                        .entry(projected_key)
+                        .or_insert_with(|| value.clone());
                 }
             }
         }
@@ -408,7 +494,7 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
-        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        cache: &mut InferenceMemo,
     ) -> Judgment<TypeValue> {
         if !take_step(remaining) {
             return Judgment::unknown("type-inference-budget");
@@ -739,7 +825,7 @@ impl<'a> TypeChecker<'a> {
         frame: &EnvFrame,
         remaining: &mut usize,
         conversion_refutation_is_unknown: bool,
-        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        cache: &mut InferenceMemo,
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
@@ -778,7 +864,7 @@ impl<'a> TypeChecker<'a> {
     // context while retaining each actual argument in the lexical environment.
     fn infer_literal_beta_spine(&self, expression: ExprId, context: &[TypeValue],
         frame: &EnvFrame, remaining: &mut usize,
-        cache: &mut HashMap<(ExprId,u64),TypeValue>) -> Option<Judgment<TypeValue>> {
+        cache: &mut InferenceMemo) -> Option<Judgment<TypeValue>> {
         let mut eligibility_remaining=*remaining;
         let mut head=expression;
         let mut arguments=Vec::new();
@@ -887,7 +973,7 @@ impl<'a> TypeChecker<'a> {
     pub(crate) fn infer_sort_in_context(&self, expression: ExprId,
         context: &[TypeValue], frame: &EnvFrame, budget: usize) -> Judgment<LevelTerm> {
         let mut remaining=budget;
-        let inferred=self.infer_in(expression,context,frame,&mut remaining,&mut HashMap::new());
+        let inferred=self.infer_in(expression,context,frame,&mut remaining,&mut InferenceMemo::default());
         self.sort_level(inferred,remaining)
     }
 
