@@ -1,0 +1,172 @@
+name: Nucleus support exposure qualification v1
+
+on:
+  push:
+    branches: [nucleus-support-exposure-cache-v1]
+    paths:
+      - ".github/workflows/nucleus-support-exposure-qualification-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AUTHORITY_SHA: "61d06c70f1ac266663189d07e59a2d7b87e02f80"
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build candidate and qualified authority
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-candidate
+
+          git worktree add --detach /tmp/nucleus-authority "$AUTHORITY_SHA"
+          cargo build --release --locked --manifest-path /tmp/nucleus-authority/metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-authority/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-authority-bin
+
+      - name: Fetch pinned corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Verify CLI under 8 MiB launcher stack
+        run: |
+          set -euo pipefail
+          ulimit -s 8192
+          python3 - <<'PY'
+          import pathlib,subprocess
+          for root in ("/tmp/current","/tmp/r1"):
+              p=pathlib.Path(root)/"good/perf/app-lam.ndjson"
+              with p.open("rb") as f:
+                  q=subprocess.run(["/tmp/nucleus-candidate"],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=60)
+              assert q.returncode==0,q.stderr.decode(errors="replace")
+          PY
+
+      - name: Differential full reclosure
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          mkdir -p metatron-kernel/evidence-out/support-exposure-qualification-v1
+          python3 - <<'PY'
+          import json,pathlib,subprocess,time,os,hashlib
+
+          authority=pathlib.Path("/tmp/nucleus-authority-bin")
+          candidate=pathlib.Path("/tmp/nucleus-candidate")
+
+          def run(binary,p,timeout):
+              env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"}
+              t=time.monotonic()
+              try:
+                  with p.open("rb") as f:
+                      q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.PIPE,timeout=timeout,env=env)
+                  return q.returncode,time.monotonic()-t,q.stderr.decode(errors="replace").splitlines()[-20:]
+              except subprocess.TimeoutExpired:
+                  return 124,time.monotonic()-t,["TIMEOUT"]
+
+          def corpus(root):
+              root=pathlib.Path(root)
+              rows=[]
+              for bucket,expected in [("good",0),("bad",1)]:
+                  for p in sorted((root/bucket).rglob("*.ndjson")):
+                      name=str(p.relative_to(root/bucket)).removesuffix(".ndjson")
+                      br,bt,be=run(authority,p,120)
+                      cr,ct,ce=run(candidate,p,120)
+                      rows.append({
+                        "test":name,"expected":expected,
+                        "input_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+                        "base":br,"candidate":cr,
+                        "base_seconds":bt,"candidate_seconds":ct,
+                        "base_tail":be,"candidate_tail":ce,
+                      })
+              return rows
+
+          r1=corpus("/tmp/r1")
+          current=corpus("/tmp/current")
+
+          def analyze(rows):
+              wrong=[r for r in rows if r["candidate"] in (0,1) and r["candidate"]!=r["expected"]]
+              regressions=[r for r in rows if r["base"] in (0,1) and r["candidate"]!=r["base"]]
+              errors=[r for r in rows if r["candidate"] not in (0,1,2)]
+              earned=[r for r in rows if r["base"]==2 and r["candidate"]==r["expected"]]
+              return {
+                "tests":len(rows),
+                "base_accept":sum(r["expected"]==0 and r["base"]==0 for r in rows),
+                "base_reject":sum(r["expected"]==1 and r["base"]==1 for r in rows),
+                "base_unknown":sum(r["base"]==2 for r in rows),
+                "candidate_accept":sum(r["expected"]==0 and r["candidate"]==0 for r in rows),
+                "candidate_reject":sum(r["expected"]==1 and r["candidate"]==1 for r in rows),
+                "candidate_unknown":sum(r["candidate"]==2 for r in rows),
+                "wrong":wrong,
+                "regressions":regressions,
+                "errors":errors,
+                "earned":[r["test"] for r in earned],
+                "changes":[r for r in rows if r["base"]!=r["candidate"]],
+              }
+
+          r1a=analyze(r1)
+          cura=analyze(current)
+          r1_by={r["test"]:r for r in r1}
+          cur_by={r["test"]:r for r in current}
+
+          out={
+            "schema":"nucleus-support-exposure-qualification-v1",
+            "authority_sha":os.environ["AUTHORITY_SHA"],
+            "candidate_sha":os.environ["GITHUB_SHA"],
+            "round1":r1a,
+            "current":cura,
+            "round1_fueled_chain":r1_by["perf/fueled-chain"],
+            "current_fueled_chain":cur_by["perf/fueled-chain"],
+            "protected_negatives":[cur_by[n] for n in [
+              "bugs/k-rec-conv",
+              "tutorial/116_funEtaBad",
+              "bugs/proj-of-stuck-prop",
+              "bugs/proj-of-subst-prop",
+              "bugs/rec-of-subst-prop",
+            ]],
+          }
+          path=pathlib.Path("metatron-kernel/evidence-out/support-exposure-qualification-v1/result.json")
+          path.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          pathlib.Path("metatron-kernel/evidence-out/support-exposure-qualification-v1/rows.json").write_text(
+              json.dumps({"round1":r1,"current":current},indent=2)+"\n")
+          print(json.dumps(out,sort_keys=True),flush=True)
+
+          assert (r1a["tests"],r1a["base_accept"],r1a["base_reject"],r1a["base_unknown"])==(193,109,61,23),r1a
+          assert (cura["tests"],cura["base_accept"],cura["base_reject"],cura["base_unknown"])==(194,110,60,24),cura
+          for a in (r1a,cura):
+              assert not a["wrong"],a["wrong"]
+              assert not a["regressions"],a["regressions"]
+              assert not a["errors"],a["errors"]
+          assert r1_by["perf/fueled-chain"]["candidate"] in (0,1,2),r1_by["perf/fueled-chain"]
+          assert cur_by["perf/fueled-chain"]["candidate"] in (0,1,2),cur_by["perf/fueled-chain"]
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-support-exposure-qualification-${{ github.sha }}
+          path: metatron-kernel/evidence-out/support-exposure-qualification-v1
+          if-no-files-found: warn
