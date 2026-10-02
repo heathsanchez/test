@@ -362,7 +362,7 @@ impl<'a> TypeChecker<'a> {
             if let Some(projected_key) =
                 self.zero_binder_depth_cache_key(expression, context.len())
             {
-                if let Some(value) = cache.get(&projected_key) {
+                if let Some(value) = cache.exact.get(&projected_key) {
                     if std::env::var_os(
                         "NUCLEUS_TRACE_ZERO_BINDER_DEPTH_INFERENCE_REUSE",
                     )
