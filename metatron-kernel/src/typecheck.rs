@@ -217,6 +217,57 @@ impl<'a> TypeChecker<'a> {
     }
 
     #[cfg(feature = "diagnostics")]
+    fn experimental_collect_outer_bvars(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        budget: usize,
+        out: &mut Vec<usize>,
+    ) -> Option<()> {
+        if budget == 0 {
+            return None;
+        }
+        let node = self.expressions.get(expression)?;
+        let next = budget - 1;
+        match node {
+            Expr::BVar(index) => {
+                let index = usize::try_from(*index).ok()?;
+                if index >= depth {
+                    out.push(index - depth);
+                }
+            }
+            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => {}
+            Expr::App { fun, arg } => {
+                self.experimental_collect_outer_bvars(*fun, depth, next, out)?;
+                self.experimental_collect_outer_bvars(*arg, depth, next, out)?;
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                self.experimental_collect_outer_bvars(*domain, depth, next, out)?;
+                self.experimental_collect_outer_bvars(
+                    *body,
+                    depth.checked_add(1)?,
+                    next,
+                    out,
+                )?;
+            }
+            Expr::Let { ty, value, body } => {
+                self.experimental_collect_outer_bvars(*ty, depth, next, out)?;
+                self.experimental_collect_outer_bvars(*value, depth, next, out)?;
+                self.experimental_collect_outer_bvars(
+                    *body,
+                    depth.checked_add(1)?,
+                    next,
+                    out,
+                )?;
+            }
+            Expr::Proj { structure, .. } => {
+                self.experimental_collect_outer_bvars(*structure, depth, next, out)?;
+            }
+        }
+        Some(())
+    }
+
+    #[cfg(feature = "diagnostics")]
     fn zero_binder_depth_cache_key(
         &self,
         expression: ExprId,
@@ -291,6 +342,45 @@ impl<'a> TypeChecker<'a> {
                 "NUCLEUS_ZERO_BUDGET_INFERENCE_CACHE:hit=false:expression={expression:?}:frame={}:depth={}:cache_size={}",
                 frame.id(),
                 context.len(),
+                cache.len(),
+            );
+        }
+        #[cfg(feature = "diagnostics")]
+        if *remaining == 0
+            && std::env::var_os("NUCLEUS_TRACE_INFERENCE_SUPPORT_MISS").is_some()
+        {
+            let mut offsets = Vec::new();
+            let support_known =
+                self.experimental_collect_outer_bvars(expression, 0, 4096, &mut offsets).is_some();
+            offsets.sort_unstable();
+            offsets.dedup();
+            let mut projected_depths = cache
+                .keys()
+                .filter_map(|(cached_expression, cached_frame)| {
+                    if *cached_expression != expression {
+                        return None;
+                    }
+                    (u64::MAX.saturating_sub(*cached_frame) <= 1024)
+                        .then(|| u64::MAX.saturating_sub(*cached_frame))
+                })
+                .collect::<Vec<_>>();
+            projected_depths.sort_unstable();
+            projected_depths.dedup();
+            let raw_same_expression = cache
+                .keys()
+                .filter(|(cached_expression, cached_frame)| {
+                    *cached_expression == expression
+                        && u64::MAX.saturating_sub(*cached_frame) > 1024
+                })
+                .count();
+            eprintln!(
+                "NUCLEUS_INFERENCE_SUPPORT_MISS:expression={expression:?}:frame={}:depth={}:support_known={}:offsets={:?}:projected_depths={:?}:raw_same_expression={}:cache_size={}",
+                frame.id(),
+                context.len(),
+                support_known,
+                offsets,
+                projected_depths,
+                raw_same_expression,
                 cache.len(),
             );
         }
