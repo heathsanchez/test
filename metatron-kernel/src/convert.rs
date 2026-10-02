@@ -1220,11 +1220,18 @@ fn positive_projection_congruence(
         return false;
     }
     for (index, (l, r)) in left.spine.iter().zip(&right.spine).enumerate() {
+        #[cfg(feature = "diagnostics")]
+        let argument_budget = std::env::var("NUCLEUS_PROJECTION_CONGRUENCE_BUDGET_FLOOR")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .map_or(budget.min(1024), |floor| budget.min(1024).max(floor));
+        #[cfg(not(feature = "diagnostics"))]
+        let argument_budget = budget.min(1024);
         let result = convert_in_context_with_congruence(
             checker,
             &TypeValue::Term(l.clone()),
             &TypeValue::Term(r.clone()),
-            budget.min(1024),
+            argument_budget,
             delta_policy,
             depth,
             context,
