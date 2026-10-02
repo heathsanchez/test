@@ -1,0 +1,78 @@
+name: Collatz zero-zero symbolic V75
+on:
+  push:
+    branches: [collatz-zerozero-symbolic-v75]
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 8d03454ac42dc476dc23b57fad8a280b31c3b71b
+          path: frozen-v60
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Bind frozen source-free authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C frozen-v60 rev-parse HEAD)" = "8d03454ac42dc476dc23b57fad8a280b31c3b71b"
+          mkdir -p evidence
+
+      - name: Exhaust source-free three-switch grammar
+        shell: bash
+        run: |
+          set -euo pipefail
+          V60_EXPERIMENTS_DIR="$GITHUB_WORKSPACE/frozen-v60/experiments" \
+            python3 -u experiments/collatz_zerozero_symbolic_v75.py > evidence/result.json
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib, json
+          d=json.load(open('evidence/result.json'))
+          assert d['schema']=='COLLATZ_ZEROZERO_SYMBOLIC_V75'
+          assert d['parent_v58_certificate_sha256']=='94e3df2bb438baaf203b70c5367bf79fa8dcfa24dcf29242fde4bb46ab966e53'
+          assert d['parent_v72_qualification_sha256']=='fe3149242a1499e40efcab04c0c9da908984304de974613d924361b9d8ee9946'
+          assert d['parent_v74_qualification_sha256']=='b8a0ed3637f3598a026fee9ce35be4d54e7f7a6fab415ec6586c0d6bd89a7bda'
+          assert d['deduplicated_genuine_switch_edges'] > 0
+          assert d['raw_three_switch_paths'] > 0
+          assert d['strict_precision_three_switch_paths'] > 0
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+
+          if d['zero_zero_paths']:
+              status='WARRANTED_BOUNDED_SOURCE_COHERENCE_RESIDUAL'
+          else:
+              status='WARRANTED_BOUNDED_NO_ZEROZERO_IN_FROZEN_GRAMMAR'
+
+          result={
+              'schema':'COLLATZ_ZEROZERO_SYMBOLIC_V75_QUALIFICATION',
+              'status':status,
+              'deduplicated_genuine_switch_edges':d['deduplicated_genuine_switch_edges'],
+              'raw_three_switch_paths':d['raw_three_switch_paths'],
+              'strict_precision_three_switch_paths':d['strict_precision_three_switch_paths'],
+              'paths_with_first_zero_interval':d['paths_with_first_zero_interval'],
+              'paths_with_second_zero_interval':d['paths_with_second_zero_interval'],
+              'zero_zero_paths':d['zero_zero_paths'],
+              'zero_zero_status':d['zero_zero_status'],
+              'global_collatz':'UNKNOWN',
+              'qed':False,
+          }
+          result['certificate_sha256']=hashlib.sha256(
+              json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+          git -C frozen-v60 rev-parse HEAD > evidence/frozen-v60-commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-zerozero-symbolic-v75
+          path: evidence
+          if-no-files-found: error
