@@ -184,8 +184,14 @@ fn convert_in_context_with_congruence(
         if remaining == 0 {
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_CONVERSION_BUDGET").is_some() {
+                let support_equivalent = match (&left, &right) {
+                    (TypeValue::Term(left), TypeValue::Term(right)) => checker
+                        .machine()
+                        .diagnostic_support_equivalent_closures(left, right),
+                    _ => None,
+                };
                 eprintln!(
-                    "NUCLEUS_CONVERSION_BUDGET_EXHAUSTED:initial_budget={budget}:depth={depth}:pending_work={}:left={left:?}:right={right:?}",
+                    "NUCLEUS_CONVERSION_BUDGET_EXHAUSTED:initial_budget={budget}:depth={depth}:pending_work={}:support_equivalent={support_equivalent:?}:left={left:?}:right={right:?}",
                     work.len(),
                 );
             }
