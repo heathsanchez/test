@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -13,7 +14,7 @@ use crate::value::{
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct AuthorityId(pub u64);
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Transparency {
     Opaque,
     Reducible,
@@ -78,6 +79,70 @@ pub struct Exposure {
     pub transitions: Vec<TransitionWitness>,
 }
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum SupportClosureRoot {
+    Expression(ExprId),
+    NatLiteral(crate::nat::BigNat),
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct SupportClosureKey {
+    root: SupportClosureRoot,
+    levels: LevelSubstitution,
+    bindings: Vec<(usize, SupportBindingKey)>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum SupportBindingKey {
+    Free(FreeId),
+    Closure(Box<SupportClosureKey>),
+    Neutral(Box<SupportNeutralKey>),
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct SupportNeutralKey {
+    head: SupportNeutralHeadKey,
+    spine: Vec<SupportClosureKey>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum SupportNeutralHeadKey {
+    Free(FreeId),
+    Const {
+        name: NameId,
+        levels: Vec<crate::level::LevelTerm>,
+    },
+    Projection {
+        type_name: NameId,
+        index: usize,
+        structure: Box<SupportNeutralKey>,
+    },
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct ExposureCacheKey {
+    authority: AuthorityId,
+    transparency: Transparency,
+    closure: SupportClosureKey,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct CachedExposure {
+    value: Value,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct ExposureCacheData {
+    exposures: HashMap<ExposureCacheKey, CachedExposure>,
+    hits: u64,
+}
+
+pub(crate) type ExposureCache = Rc<RefCell<ExposureCacheData>>;
+
+pub(crate) fn new_exposure_cache() -> ExposureCache {
+    Rc::new(RefCell::new(ExposureCacheData::default()))
+}
+
 type VisitKey = (AuthorityId, ExprId, u64);
 const INLINE_VISIT_CAPACITY: usize = 8;
 
@@ -139,9 +204,146 @@ pub struct Machine<'a> {
     nat_primitives: Option<NatPrimitives>,
     bool_primitives: Option<BoolPrimitives>,
     quot_primitives: Option<QuotPrimitives>,
+    exposure_cache: ExposureCache,
 }
 
 impl<'a> Machine<'a> {
+    fn collect_support_outer_bvars(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        budget: usize,
+        out: &mut Vec<usize>,
+    ) -> Option<()> {
+        if budget == 0 {
+            return None;
+        }
+        let node = self.expressions.get(expression)?;
+        let next = budget - 1;
+        match node {
+            Expr::BVar(index) => {
+                let index = usize::try_from(*index).ok()?;
+                if index >= depth {
+                    out.push(index - depth);
+                }
+            }
+            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => {}
+            Expr::App { fun, arg } => {
+                self.collect_support_outer_bvars(*fun, depth, next, out)?;
+                self.collect_support_outer_bvars(*arg, depth, next, out)?;
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                self.collect_support_outer_bvars(*domain, depth, next, out)?;
+                self.collect_support_outer_bvars(
+                    *body,
+                    depth.checked_add(1)?,
+                    next,
+                    out,
+                )?;
+            }
+            Expr::Let { ty, value, body } => {
+                self.collect_support_outer_bvars(*ty, depth, next, out)?;
+                self.collect_support_outer_bvars(*value, depth, next, out)?;
+                self.collect_support_outer_bvars(
+                    *body,
+                    depth.checked_add(1)?,
+                    next,
+                    out,
+                )?;
+            }
+            Expr::Proj { structure, .. } => {
+                self.collect_support_outer_bvars(*structure, depth, next, out)?;
+            }
+        }
+        Some(())
+    }
+
+    fn support_binding_key(
+        &self,
+        binding: EnvBinding,
+        budget: &mut usize,
+    ) -> Option<SupportBindingKey> {
+        if *budget == 0 {
+            return None;
+        }
+        *budget -= 1;
+        match binding {
+            EnvBinding::Free(free) => Some(SupportBindingKey::Free(free)),
+            EnvBinding::Closure(closure) => Some(SupportBindingKey::Closure(Box::new(
+                self.support_closure_key(&closure, budget)?,
+            ))),
+            EnvBinding::Neutral(neutral) => Some(SupportBindingKey::Neutral(Box::new(
+                self.support_neutral_key(&neutral, budget)?,
+            ))),
+        }
+    }
+
+    fn support_neutral_key(
+        &self,
+        neutral: &Neutral,
+        budget: &mut usize,
+    ) -> Option<SupportNeutralKey> {
+        if *budget == 0 {
+            return None;
+        }
+        *budget -= 1;
+        let head = match &neutral.head {
+            NeutralHead::Free(free) => SupportNeutralHeadKey::Free(*free),
+            NeutralHead::Const { name, levels } => SupportNeutralHeadKey::Const {
+                name: *name,
+                levels: levels.clone(),
+            },
+            NeutralHead::Projection {
+                type_name,
+                index,
+                structure,
+            } => SupportNeutralHeadKey::Projection {
+                type_name: *type_name,
+                index: *index,
+                structure: Box::new(self.support_neutral_key(structure, budget)?),
+            },
+        };
+        let mut spine = Vec::with_capacity(neutral.spine.len());
+        for closure in &neutral.spine {
+            spine.push(self.support_closure_key(closure, budget)?);
+        }
+        Some(SupportNeutralKey { head, spine })
+    }
+
+    fn support_closure_key(
+        &self,
+        closure: &Closure,
+        budget: &mut usize,
+    ) -> Option<SupportClosureKey> {
+        if *budget == 0 {
+            return None;
+        }
+        *budget -= 1;
+        let root = if let Some(expression) = closure.expression() {
+            SupportClosureRoot::Expression(expression)
+        } else {
+            SupportClosureRoot::NatLiteral(closure.literal()?.clone())
+        };
+        let mut bindings = Vec::new();
+        if let SupportClosureRoot::Expression(expression) = root {
+            let mut offsets = Vec::new();
+            self.collect_support_outer_bvars(expression, 0, 4096, &mut offsets)?;
+            offsets.sort_unstable();
+            offsets.dedup();
+            bindings.reserve(offsets.len());
+            for offset in offsets {
+                let index = u64::try_from(offset).ok()?;
+                let binding = closure.env.lookup(index)?;
+                bindings.push((offset, self.support_binding_key(binding, budget)?));
+            }
+        }
+        Some(SupportClosureKey {
+            root,
+            levels: closure.levels.clone(),
+            bindings,
+        })
+    }
+
     pub fn new(
         authority: AuthorityId,
         expressions: &'a IdTable<ExprId, Expr>,
@@ -159,6 +361,7 @@ impl<'a> Machine<'a> {
             nat_primitives: None,
             bool_primitives: None,
             quot_primitives: None,
+            exposure_cache: new_exposure_cache(),
         }
     }
 
@@ -195,14 +398,60 @@ impl<'a> Machine<'a> {
         self
     }
 
+    pub(crate) fn with_exposure_cache(mut self, cache: ExposureCache) -> Self {
+        self.exposure_cache = cache;
+        self
+    }
+
     pub fn expose(
         &self,
         closure: Closure,
         transparency: Transparency,
         budget: usize,
     ) -> Judgment<Value> {
-        self.expose_internal(closure, transparency, budget, false)
-            .map(|exposure| exposure.value)
+        let cache_enabled =
+            std::env::var_os("NUCLEUS_DISABLE_SUPPORT_EXPOSURE_CACHE").is_none();
+        let cache_key = if cache_enabled {
+            let mut support_budget = 256usize;
+            self.support_closure_key(&closure, &mut support_budget)
+                .map(|closure| ExposureCacheKey {
+                    authority: self.authority,
+                    transparency,
+                    closure,
+                })
+        } else {
+            None
+        };
+
+        if let Some(key) = cache_key.as_ref() {
+            let mut cache = self.exposure_cache.borrow_mut();
+            if let Some(value) = cache.exposures.get(key).map(|entry| entry.value.clone()) {
+                cache.hits += 1;
+                if std::env::var_os("NUCLEUS_TRACE_SUPPORT_EXPOSURE_CACHE").is_some()
+                    && cache.hits.is_power_of_two()
+                {
+                    eprintln!(
+                        "NUCLEUS_SUPPORT_EXPOSURE_CACHE:hits={}:entries={}",
+                        cache.hits,
+                        cache.exposures.len()
+                    );
+                }
+                return Judgment::proven(value, "cached-support-exposure");
+            }
+        }
+
+        let result = self
+            .expose_internal(closure, transparency, budget, false)
+            .map(|exposure| exposure.value);
+
+        if let (Some(key), Judgment::Proven { value, .. }) = (cache_key, &result) {
+            self.exposure_cache.borrow_mut().exposures.entry(key).or_insert_with(|| {
+                CachedExposure {
+                    value: value.clone(),
+                }
+            });
+        }
+        result
     }
 
     pub fn expose_with_witnesses(
