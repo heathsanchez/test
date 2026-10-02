@@ -344,6 +344,69 @@ impl<'a> Machine<'a> {
         })
     }
 
+    fn normalized_support_binding_equal(
+        &self,
+        left: EnvBinding,
+        right: EnvBinding,
+        budget: usize,
+    ) -> Option<bool> {
+        match (left, right) {
+            (EnvBinding::Free(left), EnvBinding::Free(right)) => Some(left == right),
+            (EnvBinding::Neutral(left), EnvBinding::Neutral(right)) => Some(left == right),
+            (EnvBinding::Closure(left), EnvBinding::Closure(right)) => {
+                let left = self.expose(left, Transparency::Full, budget).proven_value()?.clone();
+                let right = self.expose(right, Transparency::Full, budget).proven_value()?.clone();
+                Some(left == right)
+            }
+            (EnvBinding::Closure(left), EnvBinding::Neutral(right)) => {
+                let left = self.expose(left, Transparency::Full, budget).proven_value()?.clone();
+                Some(left == Value::Neutral(right))
+            }
+            (EnvBinding::Neutral(left), EnvBinding::Closure(right)) => {
+                let right = self.expose(right, Transparency::Full, budget).proven_value()?.clone();
+                Some(Value::Neutral(left) == right)
+            }
+            _ => Some(false),
+        }
+    }
+
+    pub(crate) fn normalized_support_equivalent_closures(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        budget: usize,
+    ) -> Option<bool> {
+        if left.levels != right.levels {
+            return Some(false);
+        }
+        match (left.expression(), right.expression()) {
+            (None, None) => return Some(left.literal()? == right.literal()?),
+            (Some(left_expression), Some(right_expression))
+                if left_expression == right_expression =>
+            {
+                let mut offsets = Vec::new();
+                self.collect_support_outer_bvars(left_expression, 0, 4096, &mut offsets)?;
+                offsets.sort_unstable();
+                offsets.dedup();
+                for offset in offsets {
+                    let index = u64::try_from(offset).ok()?;
+                    let left_binding = left.env.lookup(index)?;
+                    let right_binding = right.env.lookup(index)?;
+                    if self.normalized_support_binding_equal(
+                        left_binding,
+                        right_binding,
+                        budget.min(256),
+                    ) != Some(true)
+                    {
+                        return Some(false);
+                    }
+                }
+                Some(true)
+            }
+            _ => Some(false),
+        }
+    }
+
     pub(crate) fn support_equivalent_closures(
         &self,
         left: &Closure,
