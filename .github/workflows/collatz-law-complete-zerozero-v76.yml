@@ -1,0 +1,80 @@
+name: Collatz law-complete zero-zero V76
+on:
+  push:
+    branches: [collatz-law-complete-zerozero-v76]
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 8d03454ac42dc476dc23b57fad8a280b31c3b71b
+          path: frozen-v60
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Bind frozen V53/V60 authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C frozen-v60 rev-parse HEAD)" = "8d03454ac42dc476dc23b57fad8a280b31c3b71b"
+          mkdir -p evidence
+
+      - name: Close all same-anchor law adjacencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          V60_EXPERIMENTS_DIR="$GITHUB_WORKSPACE/frozen-v60/experiments" \
+            python3 -u experiments/collatz_law_complete_zerozero_v76.py > evidence/result.json
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib, json
+          d=json.load(open('evidence/result.json'))
+          assert d['schema']=='COLLATZ_LAW_COMPLETE_ZEROZERO_V76'
+          assert d['parent_v75_qualification_sha256']=='678569748525ba669343247a900f2b27276d1977ae4e0a6c4fa1374f87479796'
+          assert d['source_keys_retained'] is False
+          assert d['observed_adjacency_retained'] is False
+          assert d['anchors'] > 0
+          assert d['unique_residual_laws'] > 0
+          assert d['law_complete_distinct_centre_edges'] > 0
+          assert d['pair_prefixes_tested'] == d['law_complete_distinct_centre_edges']
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+
+          if d['zero_zero_paths']:
+              status='WARRANTED_BOUNDED_LAW_ONLY_INSUFFICIENT'
+          else:
+              status='WARRANTED_BOUNDED_ADJACENCY_AND_KEYS_FORGETTABLE'
+
+          result={
+              'schema':'COLLATZ_LAW_COMPLETE_ZEROZERO_V76_QUALIFICATION',
+              'status':status,
+              'anchors':d['anchors'],
+              'unique_residual_laws':d['unique_residual_laws'],
+              'law_complete_distinct_centre_edges':d['law_complete_distinct_centre_edges'],
+              'strict_precision_triples':d['strict_precision_triples'],
+              'first_zero_triples':d['first_zero_triples'],
+              'strict_quads_after_first_zero':d['strict_quads_after_first_zero'],
+              'zero_zero_paths':d['zero_zero_paths'],
+              'zero_zero_status':d['zero_zero_status'],
+              'global_collatz':'UNKNOWN',
+              'qed':False,
+          }
+          result['certificate_sha256']=hashlib.sha256(
+              json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+          git -C frozen-v60 rev-parse HEAD > evidence/frozen-v60-commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-law-complete-zerozero-v76
+          path: evidence
+          if-no-files-found: error
