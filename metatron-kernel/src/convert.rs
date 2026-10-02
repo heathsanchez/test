@@ -181,6 +181,14 @@ fn convert_in_context_with_congruence(
         if left == right {
             continue;
         }
+        if let (TypeValue::Term(left_closure), TypeValue::Term(right_closure)) = (&left, &right)
+            && checker
+                .machine()
+                .support_equivalent_closures(left_closure, right_closure, 256)
+                == Some(true)
+        {
+            continue;
+        }
         if remaining == 0 {
             return Judgment::unknown("conversion-budget-exhausted");
         }
