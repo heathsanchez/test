@@ -84,17 +84,42 @@ jobs:
           q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,
                            stderr=subprocess.PIPE,timeout=30,env=env)
           err=q.stderr.decode(errors="replace")
-          neutral=[x for x in err.splitlines() if x.startswith("NUCLEUS_NEUTRAL_HEAD_MISMATCH:")]
-          app=[x for x in err.splitlines() if x.startswith("NUCLEUS_APP_FUNCTION_SEPARATOR:")]
-          down=[x for x in err.splitlines() if x.startswith("NUCLEUS_DOWNSTREAM:")]
+          all_lines=err.splitlines()
+          neutral=[x for x in all_lines if x.startswith("NUCLEUS_NEUTRAL_HEAD_MISMATCH:")]
+          app=[x for x in all_lines if x.startswith("NUCLEUS_APP_FUNCTION_SEPARATOR:")]
+          down=[x for x in all_lines if x.startswith("NUCLEUS_DOWNSTREAM:")]
+          target_i=next((i for i,x in enumerate(all_lines)
+                         if x.startswith("NUCLEUS_APP_FUNCTION_SEPARATOR:expression=ExprId(5164)")),None)
+          prior_neutral=[]
+          if target_i is not None:
+              prior_neutral=[x for x in all_lines[:target_i]
+                             if x.startswith("NUCLEUS_NEUTRAL_HEAD_MISMATCH:")][-20:]
+          ids=set()
+          import re
+          for line in prior_neutral:
+              ids.update(int(x) for x in re.findall(r"NameId\((\d+)\)",line))
+          name_rows={}
+          raw=pathlib.Path("/tmp/r1/good/perf/fueled-chain.ndjson").read_text().splitlines()
+          names={0:""}
+          for line in raw:
+              row=json.loads(line)
+              if "in" in row:
+                  v=row.get("str",row.get("num"))
+                  if isinstance(v,dict):
+                      pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                      names[row["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+          for ident in sorted(ids):
+              name_rows[str(ident)]=names.get(ident,f"#{ident}")
           result={
               "sha":os.environ["GITHUB_SHA"],
               "exit":q.returncode,
               "seconds":time.monotonic()-t,
               "neutral_count":len(neutral),
               "first_neutral":neutral[0] if neutral else None,
-              "neutral_sample":neutral[:20],
-              "first_app":app[0] if app else None,
+              "last_neutral":neutral[-1] if neutral else None,
+              "prior_to_target":prior_neutral,
+              "resolved_names":name_rows,
+              "target_app":all_lines[target_i] if target_i is not None else None,
               "downstream_tail":down[-5:],
           }
           pathlib.Path("out/result.json").write_text(json.dumps(result,indent=2)+"\n")
