@@ -263,6 +263,58 @@ fn convert_in_context_with_congruence(
                             }
                             continue;
                         }
+                        if std::env::var_os("NUCLEUS_ZERO_BUDGET_NEUTRAL_SUPPORT_CONGRUENCE").is_some()
+                        {
+                            if let (
+                                Some(Value::Neutral(left_neutral)),
+                                Some(Value::Neutral(right_neutral)),
+                            ) = (
+                                reducible_left.proven_value(),
+                                reducible_right.proven_value(),
+                            ) {
+                                let head_equal = compare_neutral_heads(
+                                    checker,
+                                    left_neutral,
+                                    right_neutral,
+                                    64,
+                                )
+                                .is_proven();
+                                let spine_equal = left_neutral.spine.len()
+                                    == right_neutral.spine.len()
+                                    && left_neutral
+                                        .spine
+                                        .iter()
+                                        .zip(&right_neutral.spine)
+                                        .all(|(left_arg, right_arg)| {
+                                            machine.support_equivalent_closures(
+                                                left_arg,
+                                                right_arg,
+                                                256,
+                                            ) == Some(true)
+                                                || machine.normalized_support_equivalent_closures(
+                                                    left_arg,
+                                                    right_arg,
+                                                    256,
+                                                ) == Some(true)
+                                        });
+                                if head_equal && spine_equal {
+                                    if std::env::var_os(
+                                        "NUCLEUS_TRACE_ZERO_BUDGET_NEUTRAL_SUPPORT_CONGRUENCE",
+                                    )
+                                    .is_some()
+                                    {
+                                        eprintln!(
+                                            "NUCLEUS_ZERO_BUDGET_NEUTRAL_SUPPORT_CONGRUENCE:depth={}:left_expr={:?}:right_expr={:?}:spine_len={}",
+                                            depth,
+                                            left_closure.expression(),
+                                            right_closure.expression(),
+                                            left_neutral.spine.len(),
+                                        );
+                                    }
+                                    continue;
+                                }
+                            }
+                        }
                         if bypass
                             && std::env::var_os("NUCLEUS_TRACE_ZERO_BUDGET_BLOCKER").is_some()
                         {
