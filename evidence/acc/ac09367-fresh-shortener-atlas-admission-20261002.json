@@ -1,0 +1,121 @@
+{
+  "schema": "acc-ac09367-fresh-shortener-atlas-admission-v1",
+  "epistemic_state": "CANDIDATE_BOUNDED_LOCAL_CALIBRATED",
+  "fresh_authority": {
+    "run_id": 36954702989,
+    "rerun_job_id": 110824009954,
+    "utc": "2026-10-02T11:45:38.188163+00:00",
+    "artifact_id": 11224203895,
+    "artifact_digest": "sha256:dfb1016a60802318da4ecd7ca4683b019fe7a1e7180edc42d8061632ba9072b3",
+    "live_state_sha256": "6839b7513fbc42c6acc1fc7c1e1abf7960e8ee5770a77fa05a27ddc6091120e9",
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    },
+    "quota": {
+      "used": 0,
+      "remaining": 40,
+      "limit": 40
+    },
+    "unsolved": {
+      "ac": 2672,
+      "stable_ac": 2672
+    },
+    "profitable_lift_frontier": {
+      "rows": 102,
+      "aggregate_moves": 231,
+      "top": [
+        {
+          "id": "ac-09151",
+          "ac_best": 194,
+          "stable_best": 215,
+          "lift_gain": 19
+        },
+        {
+          "id": "ac-06697",
+          "ac_best": 153,
+          "stable_best": 163,
+          "lift_gain": 8
+        },
+        {
+          "id": "ac-00360",
+          "ac_best": 111,
+          "stable_best": 121,
+          "lift_gain": 8
+        }
+      ]
+    }
+  },
+  "fresh_record_change": {
+    "ac": {
+      "id": "ac-09367",
+      "old_best": 113,
+      "new_best": 112,
+      "old_kTeams": 1,
+      "new_kTeams": 1
+    },
+    "stable_ac": {
+      "id": "sac-09367",
+      "old_best": 115,
+      "new_best": 114,
+      "old_kTeams": 2,
+      "new_kTeams": 1
+    },
+    "frontier_effect": "none; Stable moved in lockstep with AC, so +2 transport slack remains zero"
+  },
+  "qualified_source_map": {
+    "artifact_id": 10847946381,
+    "challenge_id": "ac-09367",
+    "canonical": [
+      "YYxxyXyXXYX",
+      "YYxyXyXXYXYxyxyxxYxYXXyyX"
+    ],
+    "total_len": 36,
+    "ac19_index": null,
+    "ac1m_index": null
+  },
+  "proof_atlas": {
+    "artifact_id": 10589688184,
+    "states": 433272,
+    "official_pin": "SAIRcompetition/Andrews-Curtis@99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "orientations": [
+      22,
+      50
+    ],
+    "canonical_preimages": 2200,
+    "depths": [
+      {
+        "depth": 0,
+        "new_states": 2200,
+        "cumulative": 2200,
+        "hits": 0
+      },
+      {
+        "depth": 1,
+        "new_states": 17600,
+        "cumulative": 19800,
+        "hits": 0
+      },
+      {
+        "depth": 2,
+        "new_states": 162696,
+        "cumulative": 182496,
+        "hits": 0
+      },
+      {
+        "depth": 3,
+        "new_states": 1454952,
+        "cumulative": 1637448,
+        "hits": 0
+      }
+    ]
+  },
+  "result": "NO_AC19_AC1M_MATCH_AND_NO_EXACT_PROOF_ATLAS_CONTACT_THROUGH_RADIUS_3",
+  "decision": {
+    "ac09367": "Retire unchanged public-source recovery and shallow exact-Atlas admission for this fresh mover this cycle.",
+    "global_priority": "Keep compute on ac-09151 +19 compile-before-admission qualification.",
+    "submission": "none",
+    "quota_consumed": 0
+  }
+}
