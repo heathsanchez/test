@@ -182,6 +182,13 @@ fn convert_in_context_with_congruence(
             continue;
         }
         if remaining == 0 {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_CONVERSION_BUDGET").is_some() {
+                eprintln!(
+                    "NUCLEUS_CONVERSION_BUDGET_EXHAUSTED:initial_budget={budget}:depth={depth}:pending_work={}:left={left:?}:right={right:?}",
+                    work.len(),
+                );
+            }
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
