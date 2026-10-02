@@ -192,7 +192,8 @@ fn convert_in_context_with_congruence(
         if remaining == 0 {
             if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXHAUSTION").is_some() {
                 eprintln!(
-                    "NUCLEUS_CONVERSION_EXHAUSTION:depth={}:context_len={}:left={:?}:right={:?}:pending={}",
+                    "NUCLEUS_CONVERSION_EXHAUSTION:initial_budget={}:depth={}:context_len={}:left={:?}:right={:?}:pending={}",
+                    budget,
                     depth,
                     context.len(),
                     left,
