@@ -79,6 +79,7 @@ jobs:
               "NUCLEUS_CONVERSION_BUDGET_FLOOR":"512",
               "NUCLEUS_TRACE_NEUTRAL_HEADS":"1",
               "NUCLEUS_TRACE_PROJECTION_CONGRUENCE":"1",
+              "NUCLEUS_TRACE_CONVERSION_BUDGET":"1",
               "NUCLEUS_TRACE_APP_FUNCTION_SEPARATOR":"1",
               "NUCLEUS_TRACE_DOWNSTREAM":"1",
           }
@@ -89,17 +90,21 @@ jobs:
           all_lines=err.splitlines()
           neutral=[x for x in all_lines if x.startswith("NUCLEUS_NEUTRAL_HEAD_MISMATCH:")]
           projection=[x for x in all_lines if x.startswith("NUCLEUS_PROJECTION_CONGRUENCE_FAIL:")]
+          exhausted=[x for x in all_lines if x.startswith("NUCLEUS_CONVERSION_BUDGET_EXHAUSTED:")]
           app=[x for x in all_lines if x.startswith("NUCLEUS_APP_FUNCTION_SEPARATOR:")]
           down=[x for x in all_lines if x.startswith("NUCLEUS_DOWNSTREAM:")]
           target_i=next((i for i,x in enumerate(all_lines)
                          if x.startswith("NUCLEUS_APP_FUNCTION_SEPARATOR:expression=ExprId(5164)")),None)
           prior_neutral=[]
           prior_projection=[]
+          prior_exhausted=[]
           if target_i is not None:
               prior_neutral=[x for x in all_lines[:target_i]
                              if x.startswith("NUCLEUS_NEUTRAL_HEAD_MISMATCH:")][-20:]
               prior_projection=[x for x in all_lines[:target_i]
                                 if x.startswith("NUCLEUS_PROJECTION_CONGRUENCE_FAIL:")][-20:]
+              prior_exhausted=[x for x in all_lines[:target_i]
+                               if x.startswith("NUCLEUS_CONVERSION_BUDGET_EXHAUSTED:")][-20:]
           ids=set()
           import re
           for line in prior_neutral:
@@ -126,6 +131,8 @@ jobs:
               "prior_to_target":prior_neutral,
               "projection_count":len(projection),
               "projection_prior_to_target":prior_projection,
+              "conversion_exhausted_count":len(exhausted),
+              "conversion_exhausted_prior_to_target":prior_exhausted,
               "resolved_names":name_rows,
               "target_app":all_lines[target_i] if target_i is not None else None,
               "downstream_tail":down[-5:],
