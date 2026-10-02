@@ -254,7 +254,14 @@ fn convert_in_context_with_congruence(
 
         match (left, right) {
             (TypeValue::Sort(left), TypeValue::Sort(right)) => {
-                match level_equal(left, right, remaining) {
+                #[cfg(feature = "diagnostics")]
+                let universe_budget = std::env::var("NUCLEUS_UNIVERSE_EQUALITY_FLOOR")
+                    .ok()
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .map_or(remaining, |floor| remaining.max(floor));
+                #[cfg(not(feature = "diagnostics"))]
+                let universe_budget = remaining;
+                match level_equal(left, right, universe_budget) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
