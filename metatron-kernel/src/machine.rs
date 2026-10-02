@@ -1,6 +1,9 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+#[cfg(feature = "diagnostics")]
+use std::cell::RefCell;
+
 use crate::environment::{BoolPrimitives, NatPrimitives, QuotPrimitives};
 use crate::id::{ExprId, IdTable, LevelId, NameId};
 use crate::judgment::Judgment;
@@ -78,6 +81,86 @@ pub struct Exposure {
     pub transitions: Vec<TransitionWitness>,
 }
 
+#[cfg(feature = "diagnostics")]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum DiagnosticSupportClosureRoot {
+    Expression(ExprId),
+    NatLiteral(crate::nat::BigNat),
+}
+
+#[cfg(feature = "diagnostics")]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct DiagnosticSupportClosureKey {
+    root: DiagnosticSupportClosureRoot,
+    levels: LevelSubstitution,
+    bindings: Vec<(usize, DiagnosticSupportBindingKey)>,
+}
+
+#[cfg(feature = "diagnostics")]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum DiagnosticSupportBindingKey {
+    Free(FreeId),
+    Closure(Box<DiagnosticSupportClosureKey>),
+    Neutral(Box<DiagnosticSupportNeutralKey>),
+}
+
+#[cfg(feature = "diagnostics")]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct DiagnosticSupportNeutralKey {
+    head: DiagnosticSupportNeutralHeadKey,
+    spine: Vec<DiagnosticSupportClosureKey>,
+}
+
+#[cfg(feature = "diagnostics")]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum DiagnosticSupportNeutralHeadKey {
+    Free(FreeId),
+    Const {
+        name: NameId,
+        levels: Vec<crate::level::LevelTerm>,
+    },
+    Projection {
+        type_name: NameId,
+        index: usize,
+        structure: Box<DiagnosticSupportNeutralKey>,
+    },
+}
+
+#[cfg(feature = "diagnostics")]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum DiagnosticSupportValueKey {
+    NatLit(crate::nat::BigNat),
+    Sort(crate::level::LevelTerm),
+    Pi {
+        domain: DiagnosticSupportClosureKey,
+        body: DiagnosticSupportClosureKey,
+    },
+    Lam {
+        domain: DiagnosticSupportClosureKey,
+        body: DiagnosticSupportClosureKey,
+    },
+    Neutral(DiagnosticSupportNeutralKey),
+}
+
+#[cfg(feature = "diagnostics")]
+#[derive(Default)]
+struct ExposureSupportDiagnostic {
+    seen: HashMap<
+        (AuthorityId, u8, DiagnosticSupportClosureKey),
+        (Closure, Value),
+    >,
+    collisions: u64,
+    exact_value: u64,
+    support_value: u64,
+    support_difference: u64,
+}
+
+#[cfg(feature = "diagnostics")]
+thread_local! {
+    static EXPOSURE_SUPPORT_DIAGNOSTIC: RefCell<ExposureSupportDiagnostic> =
+        RefCell::new(ExposureSupportDiagnostic::default());
+}
+
 type VisitKey = (AuthorityId, ExprId, u64);
 const INLINE_VISIT_CAPACITY: usize = 8;
 
@@ -142,6 +225,176 @@ pub struct Machine<'a> {
 }
 
 impl<'a> Machine<'a> {
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_collect_outer_bvars(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        budget: usize,
+        out: &mut Vec<usize>,
+    ) -> Option<()> {
+        if budget == 0 {
+            return None;
+        }
+        let node = self.expressions.get(expression)?;
+        let next = budget - 1;
+        match node {
+            Expr::BVar(index) => {
+                let index = usize::try_from(*index).ok()?;
+                if index >= depth {
+                    out.push(index - depth);
+                }
+            }
+            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => {}
+            Expr::App { fun, arg } => {
+                self.diagnostic_collect_outer_bvars(*fun, depth, next, out)?;
+                self.diagnostic_collect_outer_bvars(*arg, depth, next, out)?;
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                self.diagnostic_collect_outer_bvars(*domain, depth, next, out)?;
+                self.diagnostic_collect_outer_bvars(
+                    *body,
+                    depth.checked_add(1)?,
+                    next,
+                    out,
+                )?;
+            }
+            Expr::Let { ty, value, body } => {
+                self.diagnostic_collect_outer_bvars(*ty, depth, next, out)?;
+                self.diagnostic_collect_outer_bvars(*value, depth, next, out)?;
+                self.diagnostic_collect_outer_bvars(
+                    *body,
+                    depth.checked_add(1)?,
+                    next,
+                    out,
+                )?;
+            }
+            Expr::Proj { structure, .. } => {
+                self.diagnostic_collect_outer_bvars(*structure, depth, next, out)?;
+            }
+        }
+        Some(())
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_support_binding_key(
+        &self,
+        binding: EnvBinding,
+        budget: &mut usize,
+    ) -> Option<DiagnosticSupportBindingKey> {
+        if *budget == 0 {
+            return None;
+        }
+        *budget -= 1;
+        match binding {
+            EnvBinding::Free(free) => Some(DiagnosticSupportBindingKey::Free(free)),
+            EnvBinding::Closure(closure) => Some(DiagnosticSupportBindingKey::Closure(Box::new(
+                self.diagnostic_support_closure_key(&closure, budget)?,
+            ))),
+            EnvBinding::Neutral(neutral) => Some(DiagnosticSupportBindingKey::Neutral(Box::new(
+                self.diagnostic_support_neutral_key(&neutral, budget)?,
+            ))),
+        }
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_support_neutral_key(
+        &self,
+        neutral: &Neutral,
+        budget: &mut usize,
+    ) -> Option<DiagnosticSupportNeutralKey> {
+        if *budget == 0 {
+            return None;
+        }
+        *budget -= 1;
+        let head = match &neutral.head {
+            NeutralHead::Free(free) => DiagnosticSupportNeutralHeadKey::Free(*free),
+            NeutralHead::Const { name, levels } => DiagnosticSupportNeutralHeadKey::Const {
+                name: *name,
+                levels: levels.clone(),
+            },
+            NeutralHead::Projection {
+                type_name,
+                index,
+                structure,
+            } => DiagnosticSupportNeutralHeadKey::Projection {
+                type_name: *type_name,
+                index: *index,
+                structure: Box::new(self.diagnostic_support_neutral_key(structure, budget)?),
+            },
+        };
+        let mut spine = Vec::with_capacity(neutral.spine.len());
+        for closure in &neutral.spine {
+            spine.push(self.diagnostic_support_closure_key(closure, budget)?);
+        }
+        Some(DiagnosticSupportNeutralKey { head, spine })
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_support_closure_key(
+        &self,
+        closure: &Closure,
+        budget: &mut usize,
+    ) -> Option<DiagnosticSupportClosureKey> {
+        if *budget == 0 {
+            return None;
+        }
+        *budget -= 1;
+        let root = if let Some(expression) = closure.expression() {
+            DiagnosticSupportClosureRoot::Expression(expression)
+        } else {
+            DiagnosticSupportClosureRoot::NatLiteral(closure.literal()?.clone())
+        };
+        let mut bindings = Vec::new();
+        if let DiagnosticSupportClosureRoot::Expression(expression) = root {
+            let mut offsets = Vec::new();
+            self.diagnostic_collect_outer_bvars(expression, 0, 4096, &mut offsets)?;
+            offsets.sort_unstable();
+            offsets.dedup();
+            bindings.reserve(offsets.len());
+            for offset in offsets {
+                let index = u64::try_from(offset).ok()?;
+                let binding = closure.env.lookup(index)?;
+                bindings.push((
+                    offset,
+                    self.diagnostic_support_binding_key(binding, budget)?,
+                ));
+            }
+        }
+        Some(DiagnosticSupportClosureKey {
+            root,
+            levels: closure.levels.clone(),
+            bindings,
+        })
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_support_value_key(
+        &self,
+        value: &Value,
+        budget: &mut usize,
+    ) -> Option<DiagnosticSupportValueKey> {
+        if *budget == 0 {
+            return None;
+        }
+        *budget -= 1;
+        match value {
+            Value::NatLit(value) => Some(DiagnosticSupportValueKey::NatLit(value.clone())),
+            Value::Sort(level) => Some(DiagnosticSupportValueKey::Sort(level.clone())),
+            Value::Pi { domain, body } => Some(DiagnosticSupportValueKey::Pi {
+                domain: self.diagnostic_support_closure_key(domain, budget)?,
+                body: self.diagnostic_support_closure_key(body, budget)?,
+            }),
+            Value::Lam { domain, body } => Some(DiagnosticSupportValueKey::Lam {
+                domain: self.diagnostic_support_closure_key(domain, budget)?,
+                body: self.diagnostic_support_closure_key(body, budget)?,
+            }),
+            Value::Neutral(neutral) => Some(DiagnosticSupportValueKey::Neutral(
+                self.diagnostic_support_neutral_key(neutral, budget)?,
+            )),
+        }
+    }
+
     pub fn new(
         authority: AuthorityId,
         expressions: &'a IdTable<ExprId, Expr>,
@@ -201,8 +454,72 @@ impl<'a> Machine<'a> {
         transparency: Transparency,
         budget: usize,
     ) -> Judgment<Value> {
-        self.expose_internal(closure, transparency, budget, false)
-            .map(|exposure| exposure.value)
+        #[cfg(feature = "diagnostics")]
+        let diagnostic_input =
+            if std::env::var_os("NUCLEUS_TRACE_EXPOSURE_SUPPORT").is_some() {
+                let mut support_budget = 256usize;
+                self.diagnostic_support_closure_key(&closure, &mut support_budget)
+                    .map(|key| (key, closure.clone()))
+            } else {
+                None
+            };
+
+        let result = self
+            .expose_internal(closure, transparency, budget, false)
+            .map(|exposure| exposure.value);
+
+        #[cfg(feature = "diagnostics")]
+        if let (Some((support_key, raw_closure)), Judgment::Proven { value, .. }) =
+            (diagnostic_input, &result)
+        {
+            let transparency_key = match transparency {
+                Transparency::Opaque => 0u8,
+                Transparency::Reducible => 1u8,
+                Transparency::Full => 2u8,
+            };
+            EXPOSURE_SUPPORT_DIAGNOSTIC.with(|state| {
+                let mut state = state.borrow_mut();
+                let key = (self.authority, transparency_key, support_key);
+                if let Some((prior_closure, prior_value)) = state.seen.get(&key).cloned() {
+                    if prior_closure != raw_closure {
+                        state.collisions += 1;
+                        if prior_value == *value {
+                            state.exact_value += 1;
+                        } else {
+                            let mut prior_budget = 256usize;
+                            let mut current_budget = 256usize;
+                            let prior_key =
+                                self.diagnostic_support_value_key(&prior_value, &mut prior_budget);
+                            let current_key =
+                                self.diagnostic_support_value_key(value, &mut current_budget);
+                            if prior_key.is_some() && prior_key == current_key {
+                                state.support_value += 1;
+                            } else {
+                                state.support_difference += 1;
+                            }
+                        }
+                        if state.collisions.is_power_of_two() || state.support_difference <= 4 && state.support_difference > 0 {
+                            eprintln!(
+                                "NUCLEUS_EXPOSURE_SUPPORT:collisions={}:exact_value={}:support_value={}:support_difference={}:seen={}:prior_expr={:?}:prior_env={}:current_expr={:?}:current_env={}",
+                                state.collisions,
+                                state.exact_value,
+                                state.support_value,
+                                state.support_difference,
+                                state.seen.len(),
+                                prior_closure.expression(),
+                                prior_closure.env.id(),
+                                raw_closure.expression(),
+                                raw_closure.env.id(),
+                            );
+                        }
+                    }
+                } else {
+                    state.seen.insert(key, (raw_closure, value.clone()));
+                }
+            });
+        }
+
+        result
     }
 
     pub fn expose_with_witnesses(
