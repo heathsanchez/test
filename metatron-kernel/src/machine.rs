@@ -344,6 +344,20 @@ impl<'a> Machine<'a> {
         })
     }
 
+    pub(crate) fn support_equivalent_closures(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        budget: usize,
+    ) -> Option<bool> {
+        let mut left_budget = budget;
+        let mut right_budget = budget;
+        Some(
+            self.support_closure_key(left, &mut left_budget)?
+                == self.support_closure_key(right, &mut right_budget)?,
+        )
+    }
+
     pub fn new(
         authority: AuthorityId,
         expressions: &'a IdTable<ExprId, Expr>,
