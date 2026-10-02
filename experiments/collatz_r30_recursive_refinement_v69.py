@@ -72,7 +72,10 @@ def audit_root(h):
     return out
 
 def first_split(root_h, target_h):
-    live = [R]
+    # A residue r modulo 2^root_h has two children modulo 2^(root_h+1):
+    # r and r + 2^root_h.  Start from those children; otherwise the first
+    # source-parameter bit is skipped and the declared separator is unreachable.
+    live = [R, R + 2**root_h]
     levels = []
     first = None
     for h in range(root_h + 1, target_h + 1):
