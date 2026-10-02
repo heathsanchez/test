@@ -1216,20 +1216,31 @@ fn positive_projection_congruence(
         }
         _ => compare_neutral_heads(checker, left, right, budget).is_proven(),
     };
-    heads
-        && left.spine.iter().zip(&right.spine).all(|(l, r)| {
-            convert_in_context_with_congruence(
-                checker,
-                &TypeValue::Term(l.clone()),
-                &TypeValue::Term(r.clone()),
-                budget.min(1024),
-                delta_policy,
-                depth,
-                context,
-                congruence_depth + 1,
-                attempts,
-                allow_proof_type_conversion,
-            )
-            .is_proven()
-        })
+    if !heads {
+        return false;
+    }
+    for (index, (l, r)) in left.spine.iter().zip(&right.spine).enumerate() {
+        let result = convert_in_context_with_congruence(
+            checker,
+            &TypeValue::Term(l.clone()),
+            &TypeValue::Term(r.clone()),
+            budget.min(1024),
+            delta_policy,
+            depth,
+            context,
+            congruence_depth + 1,
+            attempts,
+            allow_proof_type_conversion,
+        );
+        if !result.is_proven() {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONGRUENCE").is_some() {
+                eprintln!(
+                    "NUCLEUS_PROJECTION_CONGRUENCE_FAIL:index={index}:depth={depth}:congruence_depth={congruence_depth}:budget={budget}:left={l:?}:right={r:?}:result={result:?}"
+                );
+            }
+            return false;
+        }
+    }
+    true
 }
