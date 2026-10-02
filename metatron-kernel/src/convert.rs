@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 
 use crate::id::ExprId;
@@ -61,8 +62,10 @@ pub enum DeltaPolicy {
     GuardedSemanticFallback,
 }
 
-#[cfg(test)]
-use std::cell::Cell;
+thread_local! {
+    static CONVERSION_SHADOW_ACTIVE: Cell<bool> = const { Cell::new(false) };
+    static CONVERSION_SHADOW_DONE: Cell<bool> = const { Cell::new(false) };
+}
 
 #[cfg(test)]
 thread_local! {
@@ -182,6 +185,62 @@ fn convert_in_context_with_congruence(
             continue;
         }
         if remaining == 0 {
+            if std::env::var_os("NUCLEUS_TRACE_CONVERSION_SHADOW").is_some()
+                && congruence_depth == 0
+            {
+                let target = match (&left, &right) {
+                    (TypeValue::Term(left), TypeValue::Term(right)) => {
+                        left.expression() == Some(ExprId(2420))
+                            && right.expression() == Some(ExprId(2420))
+                    }
+                    _ => false,
+                };
+                if target {
+                    let should_probe = CONVERSION_SHADOW_ACTIVE.with(|active| {
+                        if active.get() {
+                            return false;
+                        }
+                        CONVERSION_SHADOW_DONE.with(|done| {
+                            if done.get() {
+                                false
+                            } else {
+                                done.set(true);
+                                active.set(true);
+                                true
+                            }
+                        })
+                    });
+                    if should_probe {
+                        let allowances = [8usize, 16, 32, 64, 128, 256];
+                        let mut outcomes = Vec::new();
+                        for allowance in allowances {
+                            let mut attempts = 32usize;
+                            let result = convert_in_context_with_congruence(
+                                checker,
+                                &left,
+                                &right,
+                                allowance,
+                                delta_policy,
+                                depth,
+                                context,
+                                0,
+                                &mut attempts,
+                                allow_proof_type_conversion,
+                            );
+                            outcomes.push((allowance, format!("{result:?}")));
+                        }
+                        CONVERSION_SHADOW_ACTIVE.with(|active| active.set(false));
+                        eprintln!(
+                            "NUCLEUS_CONVERSION_SHADOW:depth={}:context_len={}:left={:?}:right={:?}:outcomes={:?}",
+                            depth,
+                            context.len(),
+                            left,
+                            right,
+                            outcomes,
+                        );
+                    }
+                }
+            }
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
