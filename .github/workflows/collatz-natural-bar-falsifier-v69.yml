@@ -48,7 +48,10 @@ jobs:
           export PATH="$HOME/.elan/bin:$PATH"
           mkdir -p evidence
           lake build CollatzFinal > evidence/spine.log
-          lake env lean -DautoImplicit=false formal/Collatz/R30FirstSplit.lean | tee evidence/r30-first-split.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean >/dev/null
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean formal/Collatz/GuardedExitObligation.lean >/dev/null
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EarlierSourceCollision.olean formal/Collatz/EarlierSourceCollision.lean >/dev/null
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/R30FirstSplit.olean formal/Collatz/R30FirstSplit.lean | tee evidence/r30-first-split.log
           ! grep -q 'sorryAx' evidence/r30-first-split.log
           ! grep -q 'Lean.ofReduceBool' evidence/r30-first-split.log
           grep -q 'r30_depth22_first_split_merger' evidence/r30-first-split.log
