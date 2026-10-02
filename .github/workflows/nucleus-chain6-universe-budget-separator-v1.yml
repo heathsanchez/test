@@ -67,8 +67,30 @@ jobs:
           err=q.stderr.decode(errors="replace")
           budget=[x for x in err.splitlines() if x.startswith("NUCLEUS_UNIVERSE_BUDGET:")]
           downstream=[x for x in err.splitlines() if x.startswith("NUCLEUS_DOWNSTREAM:")]
+          parsed=[]
+          for line in budget:
+              try:
+                  before_left,left_rest=line.split(":left=",1)
+                  left,right_rest=left_rest.split(":right=",1)
+                  right,trials=right_rest.split(":trials=",1)
+                  initial=int(before_left.rsplit("initial=",1)[1])
+                  stage=before_left.split("stage=",1)[1].split(":",1)[0]
+                  parsed.append({"stage":stage,"initial":initial,"left":left,"right":right,"trials":trials})
+              except Exception:
+                  pass
+          nonref=[x for x in parsed if x["left"]!=x["right"]]
+          uniq={}
+          for x in nonref:
+              k=(x["stage"],x["initial"],x["left"],x["right"],x["trials"])
+              uniq[k]=uniq.get(k,0)+1
+          unique_nonref=[
+              {"stage":k[0],"initial":k[1],"left":k[2],"right":k[3],"trials":k[4],"count":v}
+              for k,v in sorted(uniq.items(), key=lambda kv:-kv[1])
+          ]
           result={"sha":os.environ["GITHUB_SHA"],"exit":q.returncode,"seconds":time.monotonic()-t,
-                  "universe_budget":budget[-20:],"downstream":downstream[-10:]}
+                  "budget_marker_count":len(parsed),"nonreflexive_count":len(nonref),
+                  "unique_nonreflexive":unique_nonref[:40],
+                  "last_budget":parsed[-20:],"downstream":downstream[-10:]}
           pathlib.Path("metatron-kernel/evidence-out/chain6-universe-budget-separator-v1/result.json").write_text(json.dumps(result,indent=2)+"\n")
           print(json.dumps(result),flush=True)
           assert q.returncode==2,result
