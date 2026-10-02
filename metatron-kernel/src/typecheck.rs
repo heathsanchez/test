@@ -327,7 +327,19 @@ impl<'a> TypeChecker<'a> {
                     crate::diagnostics::causal("application-masked-inference", format_args!(
                         "expression={expression:?};function={fun:?};argument={arg:?};context={context:?};frame={frame:?};policy={:?};budget={remaining};upstream={residual:?}", self.delta_policy));
                 }
+                let function_type_for_trace =
+                    std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE")
+                        .is_some()
+                        .then(|| function_type.clone());
                 let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                    if let Some(function_type) = function_type_for_trace {
+                        eprintln!(
+                            "NUCLEUS_APPLICATION_FUNCTION_TYPE:application={expression:?}:function={fun:?}:argument={arg:?}:depth={}:frame={}:remaining={}:judgment={function_type:?}",
+                            context.len(),
+                            frame.id(),
+                            *remaining,
+                        );
+                    }
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true, cache) {
