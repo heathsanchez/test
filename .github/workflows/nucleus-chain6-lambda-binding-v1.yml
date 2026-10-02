@@ -1,0 +1,75 @@
+name: Nucleus chain6 lambda binding v1
+on:
+  push:
+    branches: [nucleus-chain6-lambda-binding-v1]
+    paths:
+      - ".github/workflows/nucleus-chain6-lambda-binding-v1.yml"
+      - "metatron-kernel/src/convert.rs"
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  ROUND1_ARTIFACT: "10712869614"
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/r1 /tmp/a
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip >/tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/r1
+      - name: Trace sole captured binding
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess,os,time
+          def prefix(path,target):
+              names={0:""}; rows=[]
+              for line in pathlib.Path(path).read_text().splitlines():
+                  r=json.loads(line); rows.append(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      if isinstance(v,dict):
+                          pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  ds=[]
+                  if "inductive" in r:
+                      for k in ("types","ctors","recs"): ds.extend(r["inductive"].get(k,[]))
+                  for k in ("def","thm","axiom","opaque","quot"):
+                      if k in r and isinstance(r[k],dict): ds.append(r[k])
+                  if any(names.get(d.get("name"))==target for d in ds if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError(target)
+          data=prefix("/tmp/r1/good/perf/fueled-chain.ndjson","chain6_datF")
+          env=os.environ|{"NUCLEUS_TRACE_CHAIN6_LAMBDA_BINDING":"1","NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          t=time.monotonic()
+          q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=30,env=env)
+          lines=q.stderr.decode(errors="replace").splitlines()
+          markers=[x for x in lines if x.startswith("NUCLEUS_CHAIN6_LAMBDA_BINDING:")]
+          result={"sha":os.environ["GITHUB_SHA"],"exit":q.returncode,"seconds":time.monotonic()-t,"markers":markers,"tail":lines[-20:]}
+          print(json.dumps(result),flush=True)
+          pathlib.Path("result.json").write_text(json.dumps(result,indent=2)+"\n")
+          assert q.returncode==2,result
+          assert markers,result
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-chain6-lambda-binding-${{ github.sha }}
+          path: result.json
+          if-no-files-found: error
