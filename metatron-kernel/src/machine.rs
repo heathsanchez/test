@@ -395,6 +395,19 @@ impl<'a> Machine<'a> {
     }
 
     #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_support_equivalent_closures(
+        &self,
+        left: &Closure,
+        right: &Closure,
+    ) -> Option<bool> {
+        let mut left_budget = 256usize;
+        let mut right_budget = 256usize;
+        let left_key = self.diagnostic_support_closure_key(left, &mut left_budget)?;
+        let right_key = self.diagnostic_support_closure_key(right, &mut right_budget)?;
+        Some(left_key == right_key)
+    }
+
+    #[cfg(feature = "diagnostics")]
     fn diagnostic_support_value_key(
         &self,
         value: &Value,
