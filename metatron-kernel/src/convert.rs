@@ -211,6 +211,44 @@ fn convert_in_context_with_congruence(
                     budget, depth, left, right, work.len()
                 );
             }
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_ZERO_BUDGET_OBSERVABLE").is_some() {
+                if let (TypeValue::Term(left_closure), TypeValue::Term(right_closure)) = (&left, &right) {
+                    let machine = checker.machine();
+                    let reducible_left =
+                        machine.expose(left_closure.clone(), Transparency::Reducible, 64);
+                    let reducible_right =
+                        machine.expose(right_closure.clone(), Transparency::Reducible, 64);
+                    let reducible_equal = match (
+                        reducible_left.proven_value(),
+                        reducible_right.proven_value(),
+                    ) {
+                        (Some(left_value), Some(right_value)) => Some(left_value == right_value),
+                        _ => None,
+                    };
+                    let full_left = machine.expose(left_closure.clone(), Transparency::Full, 64);
+                    let full_right = machine.expose(right_closure.clone(), Transparency::Full, 64);
+                    let full_equal = match (
+                        full_left.proven_value(),
+                        full_right.proven_value(),
+                    ) {
+                        (Some(left_value), Some(right_value)) => Some(left_value == right_value),
+                        _ => None,
+                    };
+                    eprintln!(
+                        "NUCLEUS_ZERO_BUDGET_OBSERVABLE:depth={}:left_expr={:?}:right_expr={:?}:reducible_equal={:?}:full_equal={:?}:reducible_left={:?}:reducible_right={:?}:full_left={:?}:full_right={:?}",
+                        depth,
+                        left_closure.expression(),
+                        right_closure.expression(),
+                        reducible_equal,
+                        full_equal,
+                        reducible_left,
+                        reducible_right,
+                        full_left,
+                        full_right,
+                    );
+                }
+            }
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
