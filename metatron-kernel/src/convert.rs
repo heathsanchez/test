@@ -1118,8 +1118,15 @@ fn compare_neutral_heads(
                 levels: right_levels,
             },
         ) if left_name == right_name && left_levels.len() == right_levels.len() => {
+            #[cfg(feature = "diagnostics")]
+            let universe_budget = std::env::var("NUCLEUS_UNIVERSE_EQUALITY_FLOOR")
+                .ok()
+                .and_then(|value| value.parse::<usize>().ok())
+                .map_or(budget, |floor| budget.max(floor));
+            #[cfg(not(feature = "diagnostics"))]
+            let universe_budget = budget;
             for (left, right) in left_levels.iter().zip(right_levels) {
-                match level_equal(left.clone(), right.clone(), budget) {
+                match level_equal(left.clone(), right.clone(), universe_budget) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
