@@ -1,0 +1,82 @@
+name: Collatz V78 source-bit separator V79
+on:
+  push:
+    branches: [collatz-v78-source-bit-separator-v79]
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          ref: 8d03454ac42dc476dc23b57fad8a280b31c3b71b
+          path: frozen-v60
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v76-key-quotient-v78
+          run-id: 36993907533
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v78
+
+      - name: Verify V78 authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json
+          q=json.load(open('parent-v78/qualification.json'))
+          claimed=q.pop('certificate_sha256')
+          got=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          assert claimed==got=='97261bd68f006b6d61deabf9356126fd6861dcf9043b3ce082f8b603d7a0a854'
+          assert q['status']=='WARRANTED_BOUNDED_FULL_KEY_INSUFFICIENT'
+          assert q['full_key_collision_states']==38
+          print('V78_AUTHORITY_VERIFIED')
+          PY
+
+      - name: Find minimum source/provenance refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          V60_EXPERIMENTS_DIR="$GITHUB_WORKSPACE/frozen-v60/experiments" \
+            python3 experiments/collatz_v78_source_bit_separator_v79.py > evidence/result.json
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          d=json.load(open('evidence/result.json'))
+          assert d['schema']=='COLLATZ_V78_SOURCE_BIT_SEPARATOR_V79'
+          assert d['parent_v78_qualification_sha256']=='97261bd68f006b6d61deabf9356126fd6861dcf9043b3ce082f8b603d7a0a854'
+          assert d['bit_audits'][0]['collision_states']==38
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+          result={
+            'schema':'COLLATZ_V78_SOURCE_BIT_SEPARATOR_V79_QUALIFICATION',
+            'status':'WARRANTED_BOUNDED',
+            'transition_rows':d['transition_rows'],
+            'max_t_bit_length':d['max_t_bit_length'],
+            'minimum_low_source_bits':d['minimum_low_source_bits'],
+            'exact_t_collision_states':d['exact_t_audit']['collision_states'],
+            'exact_t_plus_k0_collision_states':d['exact_t_plus_k0_audit']['collision_states'],
+            'separator_status':d['status'],
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+          }
+          result['certificate_sha256']=hashlib.sha256(
+            json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+          git -C frozen-v60 rev-parse HEAD > evidence/frozen-v60-commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v78-source-bit-separator-v79
+          path: evidence
+          if-no-files-found: error
