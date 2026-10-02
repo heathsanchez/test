@@ -1,0 +1,54 @@
+name: Collatz law alphabet stats V76
+on:
+  push:
+    branches: [collatz-law-alphabet-stats-v76]
+permissions:
+  contents: read
+
+jobs:
+  count:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 8d03454ac42dc476dc23b57fad8a280b31c3b71b
+          path: frozen-v60
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Count exact residual law alphabet
+        shell: bash
+        run: |
+          set -euo pipefail
+          V60_EXPERIMENTS_DIR="$GITHUB_WORKSPACE/frozen-v60/experiments" python3 - <<'PY'
+          from collections import defaultdict
+          from contextlib import redirect_stdout
+          from fractions import Fraction
+          import io, json, os, sys
+          sys.path.insert(0, os.environ['V60_EXPERIMENTS_DIR'])
+          with redirect_stdout(io.StringIO()):
+              import collatz_crystal_nonpositive_budget_kernel_v53 as v53
+          def law(z): return (z['A'],z['B'],z['P'],z['D'])
+          by=defaultdict(set)
+          rows=0
+          for tr in v53.transitions:
+              s=tr['src']
+              if s['residual']:
+                  by[s['anchor']].add(law(s)); rows+=1
+              if tr['kind']=='RESIDUAL':
+                  d=tr['dst']; by[d['anchor']].add(law(d))
+          out={}
+          total=0
+          total_pairs=0
+          total_cubes=0
+          for a,ls0 in sorted(by.items()):
+              ls=tuple(ls0); total+=len(ls)
+              centres={L:Fraction(L[1],L[2]-L[0]) for L in ls}
+              pairs=sum(1 for x in ls for y in ls if centres[x]!=centres[y])
+              out[str(a)]={'laws':len(ls),'centres':len(set(centres.values())),'complete_edges':pairs}
+              total_pairs+=pairs
+              total_cubes+=len(ls)**3
+          print(json.dumps({'residual_rows':rows,'anchors':len(by),'unique_laws':total,'complete_edges':total_pairs,'naive_cube_upper':total_cubes,'by_anchor':out},indent=2,sort_keys=True))
+          PY
