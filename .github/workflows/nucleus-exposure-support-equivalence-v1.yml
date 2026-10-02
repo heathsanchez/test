@@ -77,7 +77,9 @@ jobs:
               exit_code=124
               err=e.stderr.decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else (e.stderr or "")
           seconds=time.monotonic()-t
-          markers=[x for x in err.splitlines() if x.startswith("NUCLEUS_EXPOSURE_SUPPORT:")]
+          all_lines=err.splitlines()
+          markers=[x for x in all_lines if x.startswith("NUCLEUS_EXPOSURE_SUPPORT:")]
+          expression_markers=[x for x in all_lines if x.startswith("NUCLEUS_EXPOSURE_EXPR:")]
           parsed=[]
           for line in markers:
               row={}
@@ -86,12 +88,33 @@ jobs:
                   row[key]=int(m.group(1)) if m else None
               parsed.append(row)
           last=parsed[-1] if parsed else None
+          per_expr={}
+          for line in expression_markers:
+              def field(name):
+                  m=re.search(rf"{name}=([^:]+)",line)
+                  return m.group(1) if m else None
+              expr=int(field("expr"))
+              row={
+                  "transparency":int(field("transparency")),
+                  "expr":expr,
+                  "kind":field("kind"),
+                  "collisions":int(field("collisions")),
+                  "exact_value":int(field("exact_value")),
+                  "support_value":int(field("support_value")),
+                  "support_difference":int(field("support_difference")),
+              }
+              per_expr[(row["transparency"],expr)]=row
+          ranked=sorted(per_expr.values(),key=lambda x:x["collisions"],reverse=True)
+          zero_difference=[x for x in ranked if x["support_difference"]==0]
           result={
               "candidate_sha":os.environ["GITHUB_SHA"],
               "chain6_exit":exit_code,
               "seconds":seconds,
               "marker_count":len(markers),
+              "expression_marker_count":len(expression_markers),
               "last":last,
+              "top_zero_difference":zero_difference[:30],
+              "top_all":ranked[:30],
               "tail":markers[-20:],
           }
           out=pathlib.Path("metatron-kernel/evidence-out/exposure-support-equivalence-v1/result.json")
