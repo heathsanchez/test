@@ -542,11 +542,16 @@ impl<'a> TypeChecker<'a> {
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
             Judgment::Proven { value, .. } => {
+                let conversion_floor = std::env::var("NUCLEUS_CONVERSION_FLOOR")
+                    .ok()
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .unwrap_or(0);
+                let conversion_budget = (*remaining).max(conversion_floor);
                 let conversion = crate::convert::convert_with_policy_in_context(
                     self,
                     &value,
                     expected,
-                    *remaining,
+                    conversion_budget,
                     self.delta_policy,
                     context.len(),
                     context,
