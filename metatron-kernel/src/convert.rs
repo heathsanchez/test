@@ -278,6 +278,44 @@ fn convert_in_context_with_congruence(
                                 full_left,
                                 full_right,
                             );
+                            if let (
+                                Some(Value::Neutral(left_neutral)),
+                                Some(Value::Neutral(right_neutral)),
+                            ) = (
+                                reducible_left.proven_value(),
+                                reducible_right.proven_value(),
+                            ) {
+                                let head_equal = compare_neutral_heads(
+                                    checker,
+                                    left_neutral,
+                                    right_neutral,
+                                    64,
+                                )
+                                .is_proven();
+                                let mut spine = Vec::new();
+                                for (left_arg, right_arg) in
+                                    left_neutral.spine.iter().zip(&right_neutral.spine)
+                                {
+                                    spine.push((
+                                        left_arg.expression(),
+                                        right_arg.expression(),
+                                        machine.support_equivalent_closures(left_arg, right_arg, 256),
+                                        machine.normalized_support_equivalent_closures(
+                                            left_arg,
+                                            right_arg,
+                                            256,
+                                        ),
+                                    ));
+                                }
+                                eprintln!(
+                                    "NUCLEUS_ZERO_BUDGET_NEUTRAL_QUOTIENT:depth={}:head_equal={}:left_spine={}:right_spine={}:spine={:?}",
+                                    depth,
+                                    head_equal,
+                                    left_neutral.spine.len(),
+                                    right_neutral.spine.len(),
+                                    spine,
+                                );
+                            }
                         }
                     }
                 }
