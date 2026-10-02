@@ -157,9 +157,19 @@ struct ExposureSupportDiagnostic {
 }
 
 #[cfg(feature = "diagnostics")]
+#[derive(Default)]
+struct ExposureSupportCacheDiagnostic {
+    seen: HashMap<(AuthorityId, u8, DiagnosticSupportClosureKey), Value>,
+    hits: u64,
+    misses: u64,
+}
+
+#[cfg(feature = "diagnostics")]
 thread_local! {
     static EXPOSURE_SUPPORT_DIAGNOSTIC: RefCell<ExposureSupportDiagnostic> =
         RefCell::new(ExposureSupportDiagnostic::default());
+    static EXPOSURE_SUPPORT_CACHE_DIAGNOSTIC: RefCell<ExposureSupportCacheDiagnostic> =
+        RefCell::new(ExposureSupportCacheDiagnostic::default());
 }
 
 type VisitKey = (AuthorityId, ExprId, u64);
@@ -472,7 +482,9 @@ impl<'a> Machine<'a> {
     ) -> Judgment<Value> {
         #[cfg(feature = "diagnostics")]
         let diagnostic_input =
-            if std::env::var_os("NUCLEUS_TRACE_EXPOSURE_SUPPORT").is_some() {
+            if std::env::var_os("NUCLEUS_TRACE_EXPOSURE_SUPPORT").is_some()
+                || std::env::var_os("NUCLEUS_EXPOSURE_SUPPORT_CACHE").is_some()
+            {
                 let mut support_budget = 256usize;
                 self.diagnostic_support_closure_key(&closure, &mut support_budget)
                     .map(|key| (key, closure.clone()))
@@ -480,9 +492,62 @@ impl<'a> Machine<'a> {
                 None
             };
 
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_EXPOSURE_SUPPORT_CACHE").is_some() {
+            if let Some((support_key, _)) = &diagnostic_input {
+                let transparency_key = match transparency {
+                    Transparency::Opaque => 0u8,
+                    Transparency::Reducible => 1u8,
+                    Transparency::Full => 2u8,
+                };
+                let cached = EXPOSURE_SUPPORT_CACHE_DIAGNOSTIC.with(|state| {
+                    let mut state = state.borrow_mut();
+                    let key = (self.authority, transparency_key, support_key.clone());
+                    if let Some(value) = state.seen.get(&key).cloned() {
+                        state.hits += 1;
+                        if state.hits.is_power_of_two() {
+                            eprintln!(
+                                "NUCLEUS_EXPOSURE_CACHE:hits={}:misses={}:entries={}",
+                                state.hits,
+                                state.misses,
+                                state.seen.len(),
+                            );
+                        }
+                        Some(value)
+                    } else {
+                        state.misses += 1;
+                        None
+                    }
+                });
+                if let Some(value) = cached {
+                    return Judgment::proven(value, "cached-hereditary-support-exposure");
+                }
+            }
+        }
+
         let result = self
             .expose_internal(closure, transparency, budget, false)
             .map(|exposure| exposure.value);
+
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_EXPOSURE_SUPPORT_CACHE").is_some() {
+            if let (Some((support_key, _)), Judgment::Proven { value, .. }) =
+                (&diagnostic_input, &result)
+            {
+                let transparency_key = match transparency {
+                    Transparency::Opaque => 0u8,
+                    Transparency::Reducible => 1u8,
+                    Transparency::Full => 2u8,
+                };
+                EXPOSURE_SUPPORT_CACHE_DIAGNOSTIC.with(|state| {
+                    state.borrow_mut().seen.entry((
+                        self.authority,
+                        transparency_key,
+                        support_key.clone(),
+                    )).or_insert_with(|| value.clone());
+                });
+            }
+        }
 
         #[cfg(feature = "diagnostics")]
         if let (Some((support_key, raw_closure)), Judgment::Proven { value, .. }) =
