@@ -190,6 +190,21 @@ fn convert_in_context_with_congruence(
             continue;
         }
         if remaining == 0 {
+            if std::env::var_os("NUCLEUS_TRACE_CHAIN6_LAMBDA_BINDING").is_some()
+                && let (TypeValue::Term(left_closure), TypeValue::Term(right_closure)) = (&left, &right)
+                && left_closure.expression() == Some(ExprId(2420))
+                && right_closure.expression() == Some(ExprId(2420))
+            {
+                eprintln!(
+                    "NUCLEUS_CHAIN6_LAMBDA_BINDING:initial_budget={}:depth={}:left_env={}:right_env={}:left0={:?}:right0={:?}",
+                    budget,
+                    depth,
+                    left_closure.env.id(),
+                    right_closure.env.id(),
+                    left_closure.env.lookup(0),
+                    right_closure.env.lookup(0),
+                );
+            }
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
