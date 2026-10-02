@@ -1,0 +1,93 @@
+name: Collatz V76 key quotient V78
+on:
+  push:
+    branches: [collatz-v76-key-quotient-v78]
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          ref: 8d03454ac42dc476dc23b57fad8a280b31c3b71b
+          path: frozen-v60
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v76-admission-separator-v77
+          run-id: 36993346584
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v77
+
+      - name: Verify V77 authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json
+          q=json.load(open('parent-v77/qualification.json'))
+          claimed=q.pop('certificate_sha256')
+          got=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          assert claimed==got=='05edc33ae3bc6f1d186b8e0c0f015d8585f72693b1853fe2d7c39f10cc6fef82'
+          assert q['status']=='WARRANTED_BOUNDED'
+          assert q['minimum_admission_separator']=='OBSERVED_EDGE_ADMISSION'
+          assert q['witness_edge_row_counts']==[0,0,0]
+          print('V77_AUTHORITY_VERIFIED')
+          PY
+
+      - name: Tournament all source-free key quotients
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          V60_EXPERIMENTS_DIR="$GITHUB_WORKSPACE/frozen-v60/experiments" \
+            python3 experiments/collatz_v76_key_quotient_v78.py > evidence/result.json
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          d=json.load(open('evidence/result.json'))
+          assert d['schema']=='COLLATZ_V76_KEY_QUOTIENT_V78'
+          assert d['parent_v77_qualification_sha256']=='05edc33ae3bc6f1d186b8e0c0f015d8585f72693b1853fe2d7c39f10cc6fef82'
+          assert d['law_only']['collision_states'] > 0
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+          if d['minimum_key_coordinates'] is None:
+              status='WARRANTED_BOUNDED_FULL_KEY_INSUFFICIENT'
+          else:
+              assert d['minimal_zero_collision_subsets']
+              assert all(not x['admits_v76_first_fake_edge'] for x in d['minimal_witness_checks'])
+              status='WARRANTED_BOUNDED_MINIMUM_KEY_QUOTIENT'
+          result={
+            'schema':'COLLATZ_V76_KEY_QUOTIENT_V78_QUALIFICATION',
+            'status':status,
+            'transition_rows':d['transition_rows'],
+            'law_only_collision_states':d['law_only']['collision_states'],
+            'full_key_collision_states':d['full_key']['collision_states'],
+            'minimum_key_coordinates':d['minimum_key_coordinates'],
+            'minimal_key_field_sets':[x['fields'] for x in d['minimal_zero_collision_subsets']],
+            'zero_collision_subsets':d['zero_collision_subsets'],
+            'v76_first_fake_edge_excluded_by_all_minimal':(
+                bool(d['minimal_witness_checks']) and
+                all(not x['admits_v76_first_fake_edge'] for x in d['minimal_witness_checks'])
+            ),
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+          }
+          result['certificate_sha256']=hashlib.sha256(
+            json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+          git -C frozen-v60 rev-parse HEAD > evidence/frozen-v60-commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v76-key-quotient-v78
+          path: evidence
+          if-no-files-found: error
