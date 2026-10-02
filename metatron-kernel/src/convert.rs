@@ -366,8 +366,17 @@ fn convert_in_context_with_congruence(
                         continue;
                     }
                 }
-                let cheap_left = machine.expose(left.clone(), Transparency::Reducible, remaining);
-                let cheap_right = machine.expose(right.clone(), Transparency::Reducible, remaining);
+                #[cfg(feature = "diagnostics")]
+                let exposure_budget = std::env::var("NUCLEUS_CONVERSION_EXPOSURE_FLOOR")
+                    .ok()
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .map_or(remaining, |floor| remaining.max(floor));
+                #[cfg(not(feature = "diagnostics"))]
+                let exposure_budget = remaining;
+                let cheap_left =
+                    machine.expose(left.clone(), Transparency::Reducible, exposure_budget);
+                let cheap_right =
+                    machine.expose(right.clone(), Transparency::Reducible, exposure_budget);
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
@@ -418,8 +427,10 @@ fn convert_in_context_with_congruence(
                     Judgment::Refuted { .. }
                         if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
                     {
-                        let full_left = machine.expose(left, Transparency::Full, remaining);
-                        let full_right = machine.expose(right, Transparency::Full, remaining);
+                        let full_left =
+                            machine.expose(left, Transparency::Full, exposure_budget);
+                        let full_right =
+                            machine.expose(right, Transparency::Full, exposure_budget);
                         let (Some(full_left), Some(full_right)) =
                             (full_left.proven_value(), full_right.proven_value())
                         else {
