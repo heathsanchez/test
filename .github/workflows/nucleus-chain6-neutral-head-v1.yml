@@ -6,6 +6,7 @@ on:
     branches: [nucleus-chain6-app-function-separator-v1]
     paths:
       - ".github/workflows/nucleus-chain6-neutral-head-v1.yml"
+      - "metatron-kernel/src/convert.rs"
 
 permissions:
   contents: read
@@ -77,6 +78,7 @@ jobs:
               "NUCLEUS_UNIVERSE_EQUALITY_FLOOR":"128",
               "NUCLEUS_CONVERSION_BUDGET_FLOOR":"512",
               "NUCLEUS_TRACE_NEUTRAL_HEADS":"1",
+              "NUCLEUS_TRACE_PROJECTION_CONGRUENCE":"1",
               "NUCLEUS_TRACE_APP_FUNCTION_SEPARATOR":"1",
               "NUCLEUS_TRACE_DOWNSTREAM":"1",
           }
@@ -86,14 +88,18 @@ jobs:
           err=q.stderr.decode(errors="replace")
           all_lines=err.splitlines()
           neutral=[x for x in all_lines if x.startswith("NUCLEUS_NEUTRAL_HEAD_MISMATCH:")]
+          projection=[x for x in all_lines if x.startswith("NUCLEUS_PROJECTION_CONGRUENCE_FAIL:")]
           app=[x for x in all_lines if x.startswith("NUCLEUS_APP_FUNCTION_SEPARATOR:")]
           down=[x for x in all_lines if x.startswith("NUCLEUS_DOWNSTREAM:")]
           target_i=next((i for i,x in enumerate(all_lines)
                          if x.startswith("NUCLEUS_APP_FUNCTION_SEPARATOR:expression=ExprId(5164)")),None)
           prior_neutral=[]
+          prior_projection=[]
           if target_i is not None:
               prior_neutral=[x for x in all_lines[:target_i]
                              if x.startswith("NUCLEUS_NEUTRAL_HEAD_MISMATCH:")][-20:]
+              prior_projection=[x for x in all_lines[:target_i]
+                                if x.startswith("NUCLEUS_PROJECTION_CONGRUENCE_FAIL:")][-20:]
           ids=set()
           import re
           for line in prior_neutral:
@@ -118,6 +124,8 @@ jobs:
               "first_neutral":neutral[0] if neutral else None,
               "last_neutral":neutral[-1] if neutral else None,
               "prior_to_target":prior_neutral,
+              "projection_count":len(projection),
+              "projection_prior_to_target":prior_projection,
               "resolved_names":name_rows,
               "target_app":all_lines[target_i] if target_i is not None else None,
               "downstream_tail":down[-5:],
