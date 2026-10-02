@@ -174,6 +174,48 @@ impl<'a> TypeChecker<'a> {
         crate::convert::convert_with_policy(self, left, right, budget, policy)
     }
 
+    #[cfg(feature = "diagnostics")]
+    fn experimental_expression_uses_outer_bvar(
+        &self,
+        expression: ExprId,
+        depth: usize,
+        budget: usize,
+    ) -> Option<bool> {
+        if budget == 0 {
+            return None;
+        }
+        let node = self.expressions.get(expression)?;
+        let next = budget - 1;
+        Some(match node {
+            Expr::BVar(index) => usize::try_from(*index).ok()? >= depth,
+            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => false,
+            Expr::App { fun, arg } => {
+                self.experimental_expression_uses_outer_bvar(*fun, depth, next)?
+                    || self.experimental_expression_uses_outer_bvar(*arg, depth, next)?
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                self.experimental_expression_uses_outer_bvar(*domain, depth, next)?
+                    || self.experimental_expression_uses_outer_bvar(
+                        *body,
+                        depth.checked_add(1)?,
+                        next,
+                    )?
+            }
+            Expr::Let { ty, value, body } => {
+                self.experimental_expression_uses_outer_bvar(*ty, depth, next)?
+                    || self.experimental_expression_uses_outer_bvar(*value, depth, next)?
+                    || self.experimental_expression_uses_outer_bvar(
+                        *body,
+                        depth.checked_add(1)?,
+                        next,
+                    )?
+            }
+            Expr::Proj { structure, .. } => {
+                self.experimental_expression_uses_outer_bvar(*structure, depth, next)?
+            }
+        })
+    }
+
     fn infer_in(
         &self,
         expression: ExprId,
@@ -203,6 +245,28 @@ impl<'a> TypeChecker<'a> {
             } else {
                 Judgment::unknown("type-inference-budget")
             };
+        }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_ZERO_BINDER_INFERENCE_REUSE").is_some()
+            && self.experimental_expression_uses_outer_bvar(expression, 0, 4096) == Some(false)
+        {
+            if let Some((prior_frame, value)) = cache.iter().find_map(
+                |((cached_expression, cached_frame), value)| {
+                    (*cached_expression == expression)
+                        .then(|| (*cached_frame, value.clone()))
+                },
+            ) {
+                if std::env::var_os("NUCLEUS_TRACE_ZERO_BINDER_INFERENCE_REUSE").is_some() {
+                    eprintln!(
+                        "NUCLEUS_ZERO_BINDER_INFERENCE_REUSE:expression={expression:?}:frame={}:prior_frame={}:remaining={}:depth={}",
+                        frame.id(),
+                        prior_frame,
+                        *remaining,
+                        context.len(),
+                    );
+                }
+                return Judgment::proven(value, "zero-binder-cross-frame-inference");
+            }
         }
         #[cfg(feature = "diagnostics")]
         if *remaining == 0
