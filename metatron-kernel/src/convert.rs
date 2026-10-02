@@ -371,6 +371,14 @@ fn convert_in_context_with_congruence(
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXPOSURE").is_some() {
+                        eprintln!(
+                            "NUCLEUS_CONVERSION_EXPOSURE:depth={depth}:remaining={remaining}:left={left:?}:right={right:?}:left_exposed={:?}:right_exposed={:?}",
+                            machine.expose(left.clone(), Transparency::Reducible, remaining),
+                            machine.expose(right.clone(), Transparency::Reducible, remaining),
+                        );
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
                 if let (Value::Neutral(l), Value::Neutral(r)) = (cheap_left, cheap_right)
