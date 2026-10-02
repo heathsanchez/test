@@ -182,6 +182,16 @@ fn convert_in_context_with_congruence(
             continue;
         }
         if remaining == 0 {
+            if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXHAUSTION").is_some() {
+                eprintln!(
+                    "NUCLEUS_CONVERSION_EXHAUSTION:depth={}:context_len={}:left={:?}:right={:?}:pending={}",
+                    depth,
+                    context.len(),
+                    left,
+                    right,
+                    work.len(),
+                );
+            }
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
