@@ -220,15 +220,93 @@ impl<'a> Machine<'a> {
         self.expose_internal(closure, transparency, budget, true, false)
     }
 
+    pub(crate) fn projection_field_for_conversion(
+        &self,
+        structure: Closure,
+        type_name: NameId,
+        index: usize,
+        budget: usize,
+    ) -> Judgment<Closure> {
+        let Some(spec) = self.projection_specs.get(&type_name) else {
+            return Judgment::unknown("unsupported-projection");
+        };
+        if index >= spec.field_types.len() {
+            return Judgment::unknown("projection-index-out-of-range");
+        }
+        let exposed = self.expose_internal(
+            structure,
+            Transparency::Full,
+            budget,
+            false,
+            false,
+        );
+        let Some(Value::Neutral(neutral)) = exposed.proven_value().map(|value| &value.value) else {
+            return Judgment::unknown("projection-structure-stuck");
+        };
+        let NeutralHead::Const { name, .. } = neutral.head else {
+            return Judgment::unknown("projection-structure-neutral");
+        };
+        if name != spec.constructor {
+            return Judgment::unknown("projection-constructor-mismatch");
+        }
+        let field_offset = spec.num_params + index;
+        let Some(field) = neutral.spine.get(field_offset).cloned() else {
+            return Judgment::unknown("projection-constructor-arity");
+        };
+        Judgment::proven(field, "projection-selected-field")
+    }
+
+    pub(crate) fn projection_value_for_conversion(
+        &self,
+        structure: Closure,
+        type_name: NameId,
+        index: usize,
+        spine: &[Closure],
+        budget: usize,
+    ) -> Judgment<Value> {
+        let field = self.projection_field_for_conversion(structure, type_name, index, budget);
+        let Some(field) = field.proven_value() else {
+            return Judgment::unknown("lazy-projection-field-exposure");
+        };
+        let pending = spine.iter().rev().cloned().collect();
+        self.expose_internal_with_pending(
+            field.clone(),
+            Transparency::Full,
+            budget.saturating_sub(1),
+            false,
+            true,
+            pending,
+        )
+        .map(|exposure| exposure.value)
+    }
+
     fn expose_internal(
+        &self,
+        closure: Closure,
+        transparency: Transparency,
+        budget: usize,
+        record_witnesses: bool,
+        preserve_stuck_projection: bool,
+    ) -> Judgment<Exposure> {
+        self.expose_internal_with_pending(
+            closure,
+            transparency,
+            budget,
+            record_witnesses,
+            preserve_stuck_projection,
+            Vec::new(),
+        )
+    }
+
+    fn expose_internal_with_pending(
         &self,
         mut closure: Closure,
         transparency: Transparency,
         mut budget: usize,
         record_witnesses: bool,
         preserve_stuck_projection: bool,
+        mut pending: Vec<Closure>,
     ) -> Judgment<Exposure> {
-        let mut pending = Vec::new();
         let mut visited = VisitSet::new();
         let mut transitions = Vec::new();
 
@@ -512,20 +590,28 @@ impl<'a> Machine<'a> {
                         return Judgment::unknown("projection-index-out-of-range");
                     }
                     let structure = closure.sibling(*structure, closure.env.clone());
+                    let structure_transparency = if preserve_stuck_projection {
+                        Transparency::Opaque
+                    } else {
+                        transparency
+                    };
                     let exposed_structure = self.expose_internal(
                         structure.clone(),
-                        transparency,
+                        structure_transparency,
                         budget,
                         false,
                         preserve_stuck_projection,
                     );
                     let Some(exposure) = exposed_structure.proven_value() else {
                         if preserve_stuck_projection {
+                            let mut spine = Vec::new();
+                            append_pending(&mut spine, &mut pending);
                             return exposed(
                                 Value::StuckProjection {
                                     type_name: *type_name,
                                     index,
                                     structure,
+                                    spine,
                                 },
                                 transitions,
                             );
@@ -534,11 +620,14 @@ impl<'a> Machine<'a> {
                     };
                     let Value::Neutral(neutral) = &exposure.value else {
                         if preserve_stuck_projection {
+                            let mut spine = Vec::new();
+                            append_pending(&mut spine, &mut pending);
                             return exposed(
                                 Value::StuckProjection {
                                     type_name: *type_name,
                                     index,
                                     structure,
+                                    spine,
                                 },
                                 transitions,
                             );
@@ -557,11 +646,14 @@ impl<'a> Machine<'a> {
                         }
                         NeutralHead::Const { .. } => {
                             if preserve_stuck_projection {
+                                let mut spine = Vec::new();
+                                append_pending(&mut spine, &mut pending);
                                 return exposed(
                                     Value::StuckProjection {
                                         type_name: *type_name,
                                         index,
                                         structure,
+                                        spine,
                                     },
                                     transitions,
                                 );

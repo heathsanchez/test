@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use metatron_kernel::environment::{ConstantDecl, Environment};
 use metatron_kernel::id::{ExprId, IdTable, LevelId, NameId};
 use metatron_kernel::level::LevelTerm;
+use metatron_kernel::machine::{ProjectionFieldType, ProjectionSpec};
 use metatron_kernel::syntax::{Expr, Level};
 use metatron_kernel::typecheck::{TypeChecker, TypeValue};
 use metatron_kernel::value::{Closure, EnvFrame};
@@ -202,4 +203,219 @@ fn conversion_budget_exhaustion_preserves_unknown() {
             .convert(&Fixture::term(5), &Fixture::term(6), 0)
             .is_unknown()
     );
+}
+
+#[test]
+fn matching_projections_compare_only_the_selected_fields() {
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(0), Level::Zero).unwrap();
+
+    let mut expressions = IdTable::default();
+    expressions.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
+    for (id, name) in [(1, 2), (5, 3), (6, 4), (9, 5), (10, 6)] {
+        expressions
+            .insert(
+                ExprId(id),
+                Expr::Const {
+                    name: NameId(name),
+                    levels: Vec::new(),
+                },
+            )
+            .unwrap();
+    }
+    expressions
+        .insert(ExprId(2), Expr::App { fun: ExprId(1), arg: ExprId(0) })
+        .unwrap();
+    expressions
+        .insert(ExprId(3), Expr::App { fun: ExprId(2), arg: ExprId(9) })
+        .unwrap();
+    expressions
+        .insert(ExprId(4), Expr::App { fun: ExprId(2), arg: ExprId(10) })
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(7),
+            Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(5) },
+        )
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(8),
+            Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(6) },
+        )
+        .unwrap();
+
+    let mut environment = Environment::empty();
+    for name in [NameId(1), NameId(2)] {
+        environment = environment
+            .extend(name, ConstantDecl::axiom(Vec::new(), ExprId(0)))
+            .unwrap();
+    }
+    environment = environment
+        .extend(NameId(3), ConstantDecl::definition(Vec::new(), ExprId(0), ExprId(3), false))
+        .unwrap()
+        .extend(NameId(4), ConstantDecl::definition(Vec::new(), ExprId(0), ExprId(4), false))
+        .unwrap()
+        .extend(NameId(5), ConstantDecl::definition(Vec::new(), ExprId(0), ExprId(9), true))
+        .unwrap()
+        .extend(NameId(6), ConstantDecl::definition(Vec::new(), ExprId(0), ExprId(10), true))
+        .unwrap()
+        .install_projection_spec(
+            NameId(1),
+            ProjectionSpec {
+                constructor: NameId(2),
+                num_params: 0,
+                field_types: vec![
+                    ProjectionFieldType::Derived(ExprId(0)),
+                    ProjectionFieldType::Derived(ExprId(0)),
+                ],
+            },
+        )
+        .unwrap();
+
+    let checker = TypeChecker::new(&expressions, &levels, &environment);
+    assert!(checker.convert(&Fixture::term(7), &Fixture::term(8), 64).is_proven());
+}
+
+#[test]
+fn projection_congruence_failure_does_not_force_unused_structure_arguments() {
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(0), Level::Zero).unwrap();
+
+    let mut expressions = IdTable::default();
+    expressions.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
+    expressions
+        .insert(ExprId(1), Expr::Const { name: NameId(2), levels: Vec::new() })
+        .unwrap();
+    expressions
+        .insert(ExprId(2), Expr::App { fun: ExprId(1), arg: ExprId(0) })
+        .unwrap();
+    expressions.insert(ExprId(3), Expr::BVar(0)).unwrap();
+    expressions
+        .insert(ExprId(4), Expr::App { fun: ExprId(2), arg: ExprId(3) })
+        .unwrap();
+    expressions
+        .insert(ExprId(5), Expr::Lam { domain: ExprId(0), body: ExprId(4) })
+        .unwrap();
+    for (id, name) in [(6, 3), (7, 4), (8, 5)] {
+        expressions
+            .insert(ExprId(id), Expr::Const { name: NameId(name), levels: Vec::new() })
+            .unwrap();
+    }
+    expressions
+        .insert(ExprId(9), Expr::App { fun: ExprId(6), arg: ExprId(7) })
+        .unwrap();
+    expressions
+        .insert(ExprId(10), Expr::App { fun: ExprId(6), arg: ExprId(8) })
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(11),
+            Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(9) },
+        )
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(12),
+            Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(10) },
+        )
+        .unwrap();
+
+    let environment = Environment::empty()
+        .extend(NameId(1), ConstantDecl::axiom(Vec::new(), ExprId(0)))
+        .unwrap()
+        .extend(NameId(2), ConstantDecl::axiom(Vec::new(), ExprId(0)))
+        .unwrap()
+        .extend(NameId(3), ConstantDecl::definition(Vec::new(), ExprId(0), ExprId(5), true))
+        .unwrap()
+        .extend(NameId(4), ConstantDecl::definition(Vec::new(), ExprId(0), ExprId(7), true))
+        .unwrap()
+        .extend(NameId(5), ConstantDecl::definition(Vec::new(), ExprId(0), ExprId(8), true))
+        .unwrap()
+        .install_projection_spec(
+            NameId(1),
+            ProjectionSpec {
+                constructor: NameId(2),
+                num_params: 0,
+                field_types: vec![
+                    ProjectionFieldType::Derived(ExprId(0)),
+                    ProjectionFieldType::Derived(ExprId(0)),
+                ],
+            },
+        )
+        .unwrap();
+    let checker = TypeChecker::new(&expressions, &levels, &environment);
+
+    assert!(checker.convert(&Fixture::term(11), &Fixture::term(12), 256).is_proven());
+}
+
+#[test]
+fn stuck_projection_preserves_its_application_spine() {
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(0), Level::Zero).unwrap();
+    levels.insert(LevelId(1), Level::Succ(LevelId(0))).unwrap();
+
+    let mut expressions = IdTable::default();
+    expressions.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
+    expressions.insert(ExprId(1), Expr::Sort(LevelId(1))).unwrap();
+    expressions
+        .insert(ExprId(2), Expr::Const { name: NameId(2), levels: Vec::new() })
+        .unwrap();
+    expressions.insert(ExprId(3), Expr::BVar(0)).unwrap();
+    expressions
+        .insert(ExprId(4), Expr::Lam { domain: ExprId(1), body: ExprId(3) })
+        .unwrap();
+    expressions
+        .insert(ExprId(5), Expr::App { fun: ExprId(2), arg: ExprId(4) })
+        .unwrap();
+    expressions
+        .insert(ExprId(6), Expr::Const { name: NameId(3), levels: Vec::new() })
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(7),
+            Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(6) },
+        )
+        .unwrap();
+    expressions
+        .insert(ExprId(8), Expr::App { fun: ExprId(7), arg: ExprId(0) })
+        .unwrap();
+    expressions
+        .insert(ExprId(9), Expr::App { fun: ExprId(7), arg: ExprId(1) })
+        .unwrap();
+    expressions
+        .insert(ExprId(10), Expr::App { fun: ExprId(2), arg: ExprId(0) })
+        .unwrap();
+    expressions
+        .insert(ExprId(11), Expr::Const { name: NameId(4), levels: Vec::new() })
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(12),
+            Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(11) },
+        )
+        .unwrap();
+
+    let environment = Environment::empty()
+        .extend(NameId(1), ConstantDecl::axiom(Vec::new(), ExprId(0)))
+        .unwrap()
+        .extend(NameId(2), ConstantDecl::axiom(Vec::new(), ExprId(0)))
+        .unwrap()
+        .extend(NameId(3), ConstantDecl::definition(Vec::new(), ExprId(0), ExprId(5), false))
+        .unwrap()
+        .extend(NameId(4), ConstantDecl::definition(Vec::new(), ExprId(0), ExprId(10), false))
+        .unwrap()
+        .install_projection_spec(
+            NameId(1),
+            ProjectionSpec {
+                constructor: NameId(2),
+                num_params: 0,
+                field_types: vec![ProjectionFieldType::Derived(ExprId(0))],
+            },
+        )
+        .unwrap();
+    let checker = TypeChecker::new(&expressions, &levels, &environment);
+
+    assert!(checker.convert(&Fixture::term(8), &Fixture::term(9), 64).is_refuted());
+    assert!(checker.convert(&Fixture::term(8), &Fixture::term(12), 64).is_proven());
 }
