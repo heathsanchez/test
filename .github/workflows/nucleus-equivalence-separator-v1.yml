@@ -1,0 +1,143 @@
+name: Nucleus Equivalence exact separator v1
+
+on:
+  push:
+    branches: [nucleus-f682-iff-port-v1]
+    paths:
+      - ".github/workflows/nucleus-equivalence-separator-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CURRENT_TEST_ARTIFACT: "11090525747"
+  NUCLEUS_SHA: "5bc7193e750c0c61567ea99e1d6088ee6d2875c3"
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build exact rewritten authority
+        run: |
+          set -euo pipefail
+          test -z "$(git diff --name-only "$NUCLEUS_SHA"..HEAD -- metatron-kernel)"
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch pinned current corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/current /tmp/a
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a
+          tar -xzf "$(find /tmp/a -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+
+      - name: Extract exact Equivalence dependency slice and block
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/equivalence-separator-v1
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib,os
+
+          target="Equivalence"
+          candidates=[]
+          for p in sorted(pathlib.Path("/tmp/current").rglob("*.ndjson")):
+              names={0:""}
+              found=False
+              for line in p.read_text().splitlines():
+                  r=json.loads(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      names[r["in"]]=names[v["pre"]]+("." if v["pre"] else "")+str(v.get("str",v.get("i")))
+                  if "inductive" in r:
+                      for d in r["inductive"].get("types",[]):
+                          if names.get(d["name"])==target:
+                              found=True; break
+                  if found: break
+              if found: candidates.append(p)
+          assert candidates, "Equivalence absent from pinned current corpus"
+          source=candidates[0]
+
+          records=[]; names={0:""}; expressions={}; declarations={}; root=None; root_record=None
+          for line in source.read_text().splitlines():
+              record=json.loads(line); records.append(record)
+              if "in" in record:
+                  value=record.get("str",record.get("num"))
+                  names[record["in"]]=names[value["pre"]]+("." if value["pre"] else "")+str(value.get("str",value.get("i")))
+              if "ie" in record: expressions[record["ie"]]=record
+              if "inductive" in record:
+                  for kind in ("types","ctors","recs"):
+                      for decl in record["inductive"][kind]:
+                          declarations[decl["name"]]=record
+                          if names[decl["name"]]==target:
+                              root=decl["name"]; root_record=record
+              for kind in ("def","thm","axiom","opaque"):
+                  if kind in record:
+                      name=record[kind]["name"]; declarations[name]=record
+                      if names[name]==target: root=name
+              if root is not None: break
+          assert root is not None and root_record is not None
+
+          needed_expr=set(); needed_decl=set()
+          def expression(index):
+              if index in needed_expr:return
+              needed_expr.add(index); record=expressions[index]
+              if "const" in record: declaration(record["const"]["name"])
+              for kind,fields in (("app",("fn","arg")),("lam",("type","body")),("forallE",("type","body")),("letE",("type","value","body")),("proj",("struct",))):
+                  if kind in record:
+                      for field in fields: expression(record[kind][field])
+              if "proj" in record: declaration(record["proj"]["typeName"])
+          def declaration(name):
+              record=declarations[name]
+              if id(record) in needed_decl:return
+              needed_decl.add(id(record))
+              def visit(value):
+                  if isinstance(value,dict):
+                      for key,child in value.items():
+                          if key in ("type","value","rhs") and isinstance(child,int): expression(child)
+                          elif isinstance(child,(list,dict)): visit(child)
+                  elif isinstance(value,list):
+                      for child in value: visit(child)
+              visit(record)
+          declaration(root)
+          output=[record for record in records if "meta" in record or "in" in record or "il" in record or ("ie" in record and record["ie"] in needed_expr) or id(record) in needed_decl]
+          data=("\n".join(json.dumps(x,separators=(",",":")) for x in output)+"\n").encode()
+          out=pathlib.Path("metatron-kernel/evidence-out/equivalence-separator-v1")
+          (out/"Equivalence.ndjson").write_bytes(data)
+
+          block=root_record["inductive"]
+          def named(d):
+              z=dict(d); z["resolved_name"]=names.get(d.get("name")); return z
+          summary={
+              "schema":"nucleus-equivalence-separator-v1",
+              "authority_sha":os.environ["NUCLEUS_SHA"],
+              "source_file":str(source.relative_to("/tmp/current")),
+              "slice_bytes":len(data),
+              "slice_sha256":hashlib.sha256(data).hexdigest(),
+              "types":[named(x) for x in block.get("types",[])],
+              "ctors":[named(x) for x in block.get("ctors",[])],
+              "recs":[named(x) for x in block.get("recs",[])],
+          }
+          q=subprocess.run(["/tmp/nucleus"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=60,env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+          summary["nucleus_exit"]=q.returncode
+          summary["stderr_tail"]=q.stderr.decode(errors="replace").splitlines()[-60:]
+          (out/"summary.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(summary,sort_keys=True))
+          assert q.returncode==2,summary
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-equivalence-separator-${{ github.sha }}
+          path: metatron-kernel/evidence-out/equivalence-separator-v1
+          if-no-files-found: error
