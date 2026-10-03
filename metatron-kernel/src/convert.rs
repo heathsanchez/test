@@ -619,9 +619,7 @@ fn compare_values(
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_RULE_K_ABORT_PROBE").is_some() {
                 let probe = checker.rule_k_reduce_neutral(left, context, 1);
-                eprintln!(
-                    "NUCLEUS_RULE_K_ABORT_PROBE:side=left:budget=1:result={probe:?}"
-                );
+                eprintln!("NUCLEUS_RULE_K_ABORT_PROBE:side=left:budget=1:result={probe:?}");
             }
             match checker.rule_k_reduce_neutral(left, context, budget) {
                 RuleKAttempt::Reduced(closure) => {
@@ -652,9 +650,7 @@ fn compare_values(
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_RULE_K_ABORT_PROBE").is_some() {
                 let probe = checker.rule_k_reduce_neutral(right, context, 1);
-                eprintln!(
-                    "NUCLEUS_RULE_K_ABORT_PROBE:side=right:budget=1:result={probe:?}"
-                );
+                eprintln!("NUCLEUS_RULE_K_ABORT_PROBE:side=right:budget=1:result={probe:?}");
             }
             match checker.rule_k_reduce_neutral(right, context, budget) {
                 RuleKAttempt::Reduced(closure) => {
