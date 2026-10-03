@@ -1,0 +1,53 @@
+name: Nucleus List.Perm Obligation v1
+on:
+  push:
+    branches: [nucleus-list-perm-obligation-v1]
+    paths: [".github/workflows/nucleus-list-perm-obligation-v1.yml", "metatron-kernel/**"]
+permissions:
+  contents: read
+jobs:
+  witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build independent candidate
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          mkdir -p /tmp/list-perm
+      - name: Export exact List.Perm witness
+        run: |
+          set -euo pipefail
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          source "$HOME/.elan/env"
+          elan toolchain install leanprover/lean4:v4.34.1
+          elan default leanprover/lean4:v4.34.1
+          git init -q /tmp/lean4export
+          cd /tmp/lean4export
+          git remote add origin https://github.com/leanprover/lean4export
+          git fetch --depth 1 origin 66f1fb4bc256072069767fce52d39480e4524869
+          git checkout -q FETCH_HEAD
+          printf '%s\n' leanprover/lean4:v4.34.1 > lean-toolchain
+          lake build
+          lake env .lake/build/bin/lean4export Init.Data.List.Basic -- List.Perm > /tmp/list-perm/List.Perm.ndjson
+          sha256sum /tmp/list-perm/List.Perm.ndjson
+      - name: Exact List.Perm acceptance obligation
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,subprocess,pathlib,os,hashlib
+          p=pathlib.Path("/tmp/list-perm/List.Perm.ndjson")
+          q=subprocess.run(["metatron-kernel/target/release/metatron-kernel"],input=p.read_bytes(),capture_output=True,timeout=60,env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1","NUCLEUS_TRACE_GENERIC_NONREC":"1"})
+          r={"schema":"nucleus-list-perm-obligation-v1","candidate_sha":os.environ["GITHUB_SHA"],"lean":"v4.34.1","lean4export":"66f1fb4bc256072069767fce52d39480e4524869","witness_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"bytes":p.stat().st_size,"exit":q.returncode,"stderr":q.stderr.decode(errors="replace").splitlines()}
+          pathlib.Path("/tmp/list-perm/result.json").write_text(json.dumps(r,indent=2)+"\n")
+          print(json.dumps(r,sort_keys=True))
+          assert q.returncode==0,r
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-list-perm-obligation
+          path: /tmp/list-perm
