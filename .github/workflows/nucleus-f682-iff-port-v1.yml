@@ -1,0 +1,173 @@
+name: Nucleus f682 Iff port v1
+
+on:
+  push:
+    branches: [nucleus-f682-iff-port-v1]
+    paths:
+      - ".github/workflows/nucleus-f682-iff-port-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BASE_SHA: "f682fd87cacd3e03f304b249194a8857ac133544"
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Build candidate and exact f682 base
+        run: |
+          set -euo pipefail
+          ulimit -s 65536
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-candidate
+          git worktree add --detach /tmp/nucleus-base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-base-bin
+
+      - name: Fetch pinned corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          mkdir -p /tmp/r1 /tmp/current /tmp/a1 /tmp/a2
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/a1
+          tar -xzf /tmp/a1/lean-arena-tests.tar.gz -C /tmp/r1
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/a2
+          tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
+          test "$(find /tmp/r1 -type f -name '*.ndjson' | wc -l)" -eq 193
+          test "$(find /tmp/current -type f -name '*.ndjson' | wc -l)" -eq 194
+
+      - name: Transport Iff on exact dependency slices
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/f682-iff-port-v1
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib,os
+
+          def prefix(path,target):
+              names={0:""}; rows=[]
+              for line in pathlib.Path(path).read_text().splitlines():
+                  r=json.loads(line); rows.append(line)
+                  if "in" in r:
+                      v=r.get("str",r.get("num"))
+                      if isinstance(v,dict):
+                          pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
+                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
+                  ds=[]
+                  if "inductive" in r:
+                      for k in ("types","ctors","recs"): ds.extend(r["inductive"].get(k,[]))
+                  for k in ("def","thm","axiom","opaque","quot"):
+                      if k in r and isinstance(r[k],dict): ds.append(r[k])
+                  if any(names.get(d.get("name"))==target for d in ds if isinstance(d,dict)):
+                      return ("\n".join(rows)+"\n").encode()
+              raise RuntimeError((path,target))
+
+          rows=[]
+          for name in ["perf/magma-list-pair-n7","perf/magma-list-pair-n21"]:
+              p=pathlib.Path("/tmp/current/good")/(name+".ndjson")
+              data=prefix(p,"Iff")
+              b=subprocess.run(["/tmp/nucleus-base-bin"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=30)
+              c=subprocess.run(["/tmp/nucleus-candidate"],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=30)
+              full=subprocess.run(["/tmp/nucleus-candidate"],input=p.read_bytes(),stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=120,env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+              row={
+                "test":name,
+                "target":"Iff",
+                "slice_sha256":hashlib.sha256(data).hexdigest(),
+                "slice_bytes":len(data),
+                "base":b.returncode,
+                "candidate":c.returncode,
+                "full_exit":full.returncode,
+                "next":full.stderr.decode(errors="replace").splitlines()[-20:],
+              }
+              rows.append(row)
+              assert (b.returncode,c.returncode)==(2,0),row
+              assert full.returncode in (0,2),row
+          out={"schema":"nucleus-f682-iff-port-v1","base_sha":os.environ["BASE_SHA"],"candidate_sha":os.environ["GITHUB_SHA"],"source_capability":"nucleus-iff-v1@4766009f9fb4eae7e89c0fd898c1b80145ceb069","rows":rows}
+          pathlib.Path("metatron-kernel/evidence-out/f682-iff-port-v1/iff-slices.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Differential 194 and 193 zero-wrong reclosure
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib,os,time
+
+          base=pathlib.Path("/tmp/nucleus-base-bin")
+          cand=pathlib.Path("/tmp/nucleus-candidate")
+
+          def one(binary,p):
+              try:
+                  with p.open("rb") as f:
+                      q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=240)
+                  return q.returncode
+              except subprocess.TimeoutExpired:
+                  return 124
+
+          def corpus(root):
+              root=pathlib.Path(root); rows=[]
+              for bucket,expected in [("good",0),("bad",1)]:
+                  for p in sorted((root/bucket).rglob("*.ndjson")):
+                      rows.append({
+                          "test":str(p.relative_to(root/bucket)).removesuffix(".ndjson"),
+                          "expected":expected,
+                          "base":one(base,p),
+                          "candidate":one(cand,p),
+                          "sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+                      })
+              return rows
+
+          def analyze(rows):
+              wrong=[r for r in rows if r["candidate"] in (0,1) and r["candidate"]!=r["expected"]]
+              regress=[r for r in rows if r["base"] in (0,1) and r["candidate"]!=r["base"]]
+              errors=[r for r in rows if r["candidate"] not in (0,1,2,3)]
+              changes=[r for r in rows if r["base"]!=r["candidate"]]
+              return {
+                  "tests":len(rows),
+                  "base_accept":sum(r["expected"]==0 and r["base"]==0 for r in rows),
+                  "base_reject":sum(r["expected"]==1 and r["base"]==1 for r in rows),
+                  "base_residual":sum(r["base"] in (2,3) for r in rows),
+                  "candidate_accept":sum(r["expected"]==0 and r["candidate"]==0 for r in rows),
+                  "candidate_reject":sum(r["expected"]==1 and r["candidate"]==1 for r in rows),
+                  "candidate_residual":sum(r["candidate"] in (2,3) for r in rows),
+                  "wrong":wrong,"regressions":regress,"errors":errors,"changes":changes,
+              }
+
+          r1=corpus("/tmp/r1"); cur=corpus("/tmp/current")
+          a1=analyze(r1); ac=analyze(cur)
+          out={"schema":"nucleus-f682-iff-port-v1","base_sha":os.environ["BASE_SHA"],"candidate_sha":os.environ["GITHUB_SHA"],"round1":a1,"current":ac}
+          pathlib.Path("metatron-kernel/evidence-out/f682-iff-port-v1/reclosure.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          assert (a1["tests"],a1["base_accept"],a1["base_reject"],a1["base_residual"])==(193,103,60,30),a1
+          assert (ac["tests"],ac["base_accept"],ac["base_reject"],ac["base_residual"])==(194,105,59,30),ac
+          for a in (a1,ac):
+              assert not a["wrong"],a["wrong"]
+              assert not a["regressions"],a["regressions"]
+              assert not a["errors"],a["errors"]
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-f682-iff-port-${{ github.sha }}
+          path: metatron-kernel/evidence-out/f682-iff-port-v1
+          if-no-files-found: error
