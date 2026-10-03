@@ -1,0 +1,211 @@
+name: Nucleus Rule-K probe cache hazard v1
+
+on:
+  push:
+    branches: [nucleus-rule-k-probe-cache-hazard-v1]
+    paths:
+      - ".github/workflows/nucleus-rule-k-probe-cache-hazard-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ARENA_ARTIFACT: "10712869614"
+  MATHLIB_SHA: "d13f23b723b8a846827a245b89c10fc7d3f11612"
+  LEAN4EXPORT_SHA: "66f1fb4bc256072069767fce52d39480e4524869"
+  TARGET_DECL: "AlgebraicGeometry.Scheme.Modules.pseudofunctor._proof_7"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Build diagnostic Rule-K candidate
+        run: |
+          set -euo pipefail
+          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch frozen 193-case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/art /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Speculative-abort Rule-K regression
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/rule-k-probe-cache-hazard-v1
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+
+          root=pathlib.Path('/tmp/tests')
+          binary='/tmp/nucleus'
+          env=os.environ.copy()
+          env['NUCLEUS_RULE_K_ABORT_PROBE']='1'
+          env['NUCLEUS_TRACE_RULE_K']='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+
+          def run(path):
+              with path.open('rb') as f:
+                  q=subprocess.run([binary],stdin=f,stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.PIPE,timeout=120,env=env)
+              return q.returncode,q.stderr.decode(errors='replace')
+
+          rows={}
+          for bucket,name in [
+              ('good','tutorial/099_ruleK'),
+              ('bad','tutorial/100_ruleKbad'),
+              ('bad','tutorial/101_ruleKAcc'),
+          ]:
+              rc,err=run(root/bucket/(name+'.ndjson'))
+              marks=[x for x in err.splitlines() if
+                     x.startswith('NUCLEUS_RULE_K_ABORT_PROBE:') or
+                     x.startswith('NUCLEUS_RULE_K:') or
+                     x.startswith('NUCLEUS_DOWNSTREAM:')]
+              rows[name]={'rc':rc,'marks':marks[-240:]}
+              print(json.dumps({'target':name,'rc':rc,'marks':marks[-80:]},sort_keys=True))
+
+          pos=rows['tutorial/099_ruleK']
+          assert pos['rc']==0,pos
+          assert any('budget=1:result=NotApplicable' in x for x in pos['marks']),pos
+          assert any('stage=reduced' in x for x in pos['marks']),pos
+          assert rows['tutorial/100_ruleKbad']['rc']==1,rows['tutorial/100_ruleKbad']
+          assert rows['tutorial/101_ruleKAcc']['rc']==2,rows['tutorial/101_ruleKAcc']
+
+          out={
+              'schema':'nucleus-rule-k-probe-cache-hazard-v1',
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'law':'speculative resource exhaustion is not semantic false',
+              'targets':rows,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/rule-k-probe-cache-hazard-v1/synthetic.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          PY
+
+      - name: Protected 193-case reclosure with abort probe enabled
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+
+          root=pathlib.Path('/tmp/tests')
+          env=os.environ.copy()
+          env['NUCLEUS_RULE_K_ABORT_PROBE']='1'
+          rows=[]
+          for bucket,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/bucket).rglob('*.ndjson')):
+                  with p.open('rb') as f:
+                      q=subprocess.run(['/tmp/nucleus'],stdin=f,stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.DEVNULL,timeout=120,env=env)
+                  rows.append({
+                      'test':str(p.relative_to(root/bucket)).removesuffix('.ndjson'),
+                      'expected':expected,
+                      'candidate':q.returncode,
+                  })
+          wrong=[r for r in rows if r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          errors=[r for r in rows if r['candidate'] not in (0,1,2,3)]
+          out={
+              'tests':len(rows),
+              'accept':sum(r['expected']==0 and r['candidate']==0 for r in rows),
+              'reject':sum(r['expected']==1 and r['candidate']==1 for r in rows),
+              'residual':sum(r['candidate'] in (2,3) for r in rows),
+              'wrong':wrong,
+              'errors':errors,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/rule-k-probe-cache-hazard-v1/reclosure.json').write_text(
+              json.dumps({'summary':out,'rows':rows},indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps(out,sort_keys=True))
+          assert len(rows)==193,out
+          assert not wrong,wrong
+          assert not errors,errors
+          PY
+
+      - name: Build exact Mathlib v4.34.1 external witness
+        run: |
+          set -euo pipefail
+          git init -q /tmp/mathlib
+          cd /tmp/mathlib
+          git remote add origin https://github.com/leanprover-community/mathlib4
+          git fetch --depth 1 origin "$MATHLIB_SHA"
+          git checkout -q FETCH_HEAD
+          lake exe cache get
+          lake build Mathlib
+
+          TOOLCHAIN="$(cat lean-toolchain)"
+          git init -q /tmp/lean4export
+          cd /tmp/lean4export
+          git remote add origin https://github.com/leanprover/lean4export
+          git fetch --depth 1 origin "$LEAN4EXPORT_SHA"
+          git checkout -q FETCH_HEAD
+          printf '%s\n' "$TOOLCHAIN" > lean-toolchain
+          lake build
+
+          cd /tmp/mathlib
+          lake env /tmp/lean4export/.lake/build/bin/lean4export Mathlib -- "$TARGET_DECL" \
+            > /tmp/mathlib-proof7.ndjson
+          test -s /tmp/mathlib-proof7.ndjson
+          cp /tmp/mathlib-proof7.ndjson "$GITHUB_WORKSPACE/metatron-kernel/evidence-out/rule-k-probe-cache-hazard-v1/mathlib-proof7.ndjson"
+
+      - name: Run Nucleus on Mathlib external witness
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess,hashlib
+          p=pathlib.Path('metatron-kernel/evidence-out/rule-k-probe-cache-hazard-v1/mathlib-proof7.ndjson')
+          env=os.environ.copy()
+          env['NUCLEUS_RULE_K_ABORT_PROBE']='1'
+          env['NUCLEUS_TRACE_RULE_K']='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          with p.open('rb') as f:
+              q=subprocess.run(['/tmp/nucleus'],stdin=f,stdout=subprocess.DEVNULL,
+                               stderr=subprocess.PIPE,timeout=900,env=env)
+          err=q.stderr.decode(errors='replace')
+          marks=[x for x in err.splitlines() if
+                 x.startswith('NUCLEUS_RULE_K_ABORT_PROBE:') or
+                 x.startswith('NUCLEUS_RULE_K:') or
+                 x.startswith('NUCLEUS_DOWNSTREAM:')]
+          out={
+              'source':'mathlib-v4.34.1',
+              'mathlib_sha':os.environ['MATHLIB_SHA'],
+              'lean4export_sha':os.environ['LEAN4EXPORT_SHA'],
+              'target_decl':os.environ['TARGET_DECL'],
+              'input_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+              'bytes':p.stat().st_size,
+              'exit':q.returncode,
+              'marks':marks[-500:],
+              'stderr_tail':err.splitlines()[-120:],
+          }
+          pathlib.Path('metatron-kernel/evidence-out/rule-k-probe-cache-hazard-v1/mathlib.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps({k:v for k,v in out.items() if k not in ('marks','stderr_tail')},sort_keys=True))
+          # External witness is informative even if an older unrelated Nucleus
+          # residual prevents reaching the target. Promotion requires ACCEPT.
+          assert q.returncode in (0,2),out
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-rule-k-probe-cache-hazard-${{ github.sha }}
+          path: metatron-kernel/evidence-out/rule-k-probe-cache-hazard-v1
+          if-no-files-found: warn
