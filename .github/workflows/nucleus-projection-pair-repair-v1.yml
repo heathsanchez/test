@@ -1,0 +1,102 @@
+name: Nucleus Projection Pair Protected Reclosure v1
+on:
+  push:
+    branches: [nucleus-projection-pair-repair-v1]
+    paths: ["metatron-kernel/**", ".github/workflows/nucleus-projection-pair-repair-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reclosure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build candidate and qualified base
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          mkdir -p /tmp/evidence
+          cp metatron-kernel/target/release/metatron-kernel /tmp/evidence/nucleus
+          git worktree add --detach /tmp/base 4d0de4b7770443ef974b8913a70591c525834d2f
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+          cp /tmp/base/metatron-kernel/target/release/metatron-kernel /tmp/base-nucleus
+      - name: Fetch both immutable protected corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for pair in current:11090525747 frozen:10712869614; do
+            name=${pair%:*}
+            artifact=${pair#*:}
+            mkdir -p "/tmp/$name" "/tmp/$name-art"
+            gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$artifact/zip" > "/tmp/$name.zip"
+            unzip -q "/tmp/$name.zip" -d "/tmp/$name-art"
+            tar -xzf "/tmp/$name-art/lean-arena-tests.tar.gz" -C "/tmp/$name"
+          done
+      - name: Reclose protected verdicts and exact Projection Pair obligation
+        run: |
+          set -euo pipefail
+          ulimit -s unlimited
+          /tmp/evidence/nucleus < metatron-kernel/tests/fixtures/good-setoid-v434.ndjson
+          python3 - <<'PY'
+          import pathlib,subprocess,json,os,time
+          result={"candidate_sha":os.environ["GITHUB_SHA"],"base_sha":"4d0de4b7770443ef974b8913a70591c525834d2f","corpora":{}}
+          for corpus,total,counts in [("current",194,{"0":105,"1":59,"2":30}),("frozen",193,{"0":103,"1":60,"2":30})]:
+              rows=[]
+              for bucket,expected in [("good",0),("bad",1)]:
+                  root=pathlib.Path("/tmp")/corpus/bucket
+                  for p in sorted(root.rglob("*.ndjson")):
+                      row={"test":str(p.relative_to(root)),"expected":expected}
+                      for name,binary in [("base","/tmp/base-nucleus"),("candidate","/tmp/evidence/nucleus")]:
+                          with p.open("rb") as f:
+                              start=time.monotonic()
+                              q=subprocess.run([binary],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=240,env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+                          row[name]=q.returncode
+                          row[name+"_seconds"]=time.monotonic()-start
+                          row[name+"_trace"]=q.stderr.decode(errors="replace").splitlines()[-8:]
+                      rows.append(row)
+              report={"tests":len(rows),"counts":{str(rc):sum(r["candidate"]==rc for r in rows) for rc in (0,1,2)},"wrong":[r for r in rows if r["candidate"] in (0,1) and r["candidate"]!=r["expected"]],"regressions":[r for r in rows if r["base"] in (0,1) and r["candidate"]!=r["base"]],"errors":[r for r in rows if r["candidate"] not in (0,1,2)],"rows":rows}
+              result["corpora"][corpus]=report
+              pathlib.Path("/tmp/evidence/reclosure.json").write_text(json.dumps(result,indent=2)+"\n")
+              print(json.dumps({k:v for k,v in report.items() if k!="rows"},sort_keys=True))
+              assert len(rows)==total and report["counts"]==counts
+              assert not report["wrong"] and not report["regressions"] and not report["errors"]
+          PY
+      - uses: cachix/install-nix-action@v31
+      - name: Qualify exact new projection pair through pinned Arena runner
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+          cd /tmp/arena
+          nix develop -c ./lka.py build-test perf/proj-cheap-struct
+          nix develop -c ./lka.py build-test perf/proj-lazy-struct
+          cat > checkers/nucleus-repair.yaml <<'YAML'
+          version: "projection-pair-repair-v1"
+          description: Independent Nucleus with a derived closed-pair record contract.
+          run: /tmp/evidence/nucleus < "$IN"
+          YAML
+          nix develop -c ./lka.py -v run --checker nucleus-repair --test perf/proj-cheap-struct
+          nix develop -c ./lka.py -v run --checker nucleus-repair --test perf/proj-lazy-struct
+          cp _results/nucleus-repair_perf_proj-*.json /tmp/evidence/
+          cp _build/tests/perf/proj-*.ndjson /tmp/evidence/
+          sha256sum _build/tests/perf/proj-*.ndjson > /tmp/evidence/projection-fixture-sha256.txt
+          python3 - <<'PY'
+          import json,pathlib,os
+          rows=[json.loads(p.read_text()) for p in sorted(pathlib.Path("_results").glob("nucleus-repair_perf_proj-*.json"))]
+          summary={"candidate_sha":os.environ["GITHUB_SHA"],"arena_sha":"b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42","rows":rows}
+          pathlib.Path("/tmp/evidence/projection-pair.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(json.dumps(summary,sort_keys=True))
+          assert {r["test"] for r in rows}=={"perf/proj-cheap-struct","perf/proj-lazy-struct"}
+          assert all(r["exit_code"]==0 and r["status"]=="accepted" and r["correctness"]=="correct" for r in rows)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-projection-pair-repair-${{ github.sha }}
+          path: /tmp/evidence
