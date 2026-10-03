@@ -559,7 +559,7 @@ impl<'a> TypeChecker<'a> {
     ) -> bool {
         let Some(left_value) = self
             .machine()
-            .expose(left.clone(), Transparency::Reducible, budget)
+            .expose_for_conversion(left.clone(), Transparency::Reducible, budget)
             .proven_value()
             .cloned()
         else {
@@ -567,7 +567,7 @@ impl<'a> TypeChecker<'a> {
         };
         let Some(right_value) = self
             .machine()
-            .expose(right.clone(), Transparency::Reducible, budget)
+            .expose_for_conversion(right.clone(), Transparency::Reducible, budget)
             .proven_value()
             .cloned()
         else {

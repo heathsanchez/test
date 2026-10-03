@@ -173,6 +173,7 @@ pub enum Value {
         type_name: NameId,
         index: usize,
         structure: Closure,
+        spine: Vec<Closure>,
     },
 }
 

@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use metatron_kernel::id::{ExprId, IdTable, LevelId, NameId};
 use metatron_kernel::level::LevelTerm;
 use metatron_kernel::machine::{
-    AuthorityId, DefinitionBody, Machine, TransitionWitness, Transparency,
+    AuthorityId, DefinitionBody, Machine, ProjectionFieldType, ProjectionSpec,
+    TransitionWitness, Transparency,
 };
 use metatron_kernel::syntax::{Expr, Level};
 use metatron_kernel::value::{Closure, EnvFrame, FreeId, NeutralHead, Value};
@@ -12,6 +13,83 @@ fn zero_levels() -> IdTable<LevelId, Level> {
     let mut levels = IdTable::default();
     levels.insert(LevelId(0), Level::Zero).unwrap();
     levels
+}
+
+#[test]
+fn conversion_projection_probe_does_not_delta_reduce_its_structure() {
+    let mut exprs = IdTable::default();
+    exprs.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
+    exprs
+        .insert(
+            ExprId(1),
+            Expr::Const {
+                name: NameId(2),
+                levels: Vec::new(),
+            },
+        )
+        .unwrap();
+    exprs
+        .insert(
+            ExprId(2),
+            Expr::App {
+                fun: ExprId(1),
+                arg: ExprId(0),
+            },
+        )
+        .unwrap();
+    exprs
+        .insert(
+            ExprId(3),
+            Expr::Const {
+                name: NameId(3),
+                levels: Vec::new(),
+            },
+        )
+        .unwrap();
+    exprs
+        .insert(
+            ExprId(4),
+            Expr::Proj {
+                type_name: NameId(1),
+                index: 0,
+                structure: ExprId(3),
+            },
+        )
+        .unwrap();
+
+    let definitions = HashMap::from([(
+        NameId(3),
+        DefinitionBody {
+            value: ExprId(2),
+            preferred_for_reduction: true,
+            level_params: Vec::new(),
+        },
+    )]);
+    let specs = HashMap::from([(
+        NameId(1),
+        ProjectionSpec {
+            constructor: NameId(2),
+            num_params: 0,
+            field_types: vec![ProjectionFieldType::Derived(ExprId(0))],
+        },
+    )]);
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(1), &exprs, &levels, definitions)
+        .with_projection_specs(specs);
+    let projection = Closure::new(ExprId(4), EnvFrame::empty());
+
+    assert!(matches!(
+        machine
+            .expose_for_conversion(projection.clone(), Transparency::Reducible, 32)
+            .proven_value(),
+        Some(Value::StuckProjection { structure, .. }) if structure.expr == ExprId(3)
+    ));
+    assert_eq!(
+        machine
+            .expose(projection, Transparency::Reducible, 32)
+            .proven_value(),
+        Some(&Value::Sort(LevelTerm::Zero))
+    );
 }
 
 #[test]

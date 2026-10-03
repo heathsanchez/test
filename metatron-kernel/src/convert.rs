@@ -10,6 +10,7 @@ use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
 
 type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
 const INLINE_CONVERSION_VISIT_CAPACITY: usize = 8;
+const CHEAP_PROJECTION_CONGRUENCE_BUDGET: usize = 64;
 
 struct ConversionVisitSet {
     inline: [Option<ConversionVisitKey>; INLINE_CONVERSION_VISIT_CAPACITY],
@@ -379,9 +380,12 @@ fn fixed_proof_function_application_pair(
     proof_functions: &HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
     budget: usize,
 ) -> bool {
+    if proof_functions.is_empty() {
+        return false;
+    }
     let machine = checker.machine();
-    let left = machine.expose(left.clone(), Transparency::Reducible, budget);
-    let right = machine.expose(right.clone(), Transparency::Reducible, budget);
+    let left = machine.expose_for_conversion(left.clone(), Transparency::Reducible, budget);
+    let right = machine.expose_for_conversion(right.clone(), Transparency::Reducible, budget);
     let (Some(Value::Neutral(left)), Some(Value::Neutral(right))) =
         (left.proven_value(), right.proven_value())
     else {
@@ -404,9 +408,12 @@ fn proof_free_pair(
     proof_frees: &HashMap<FreeId, FreeId>,
     budget: usize,
 ) -> bool {
+    if proof_frees.is_empty() {
+        return false;
+    }
     let machine = checker.machine();
-    let left = machine.expose(left.clone(), Transparency::Reducible, budget);
-    let right = machine.expose(right.clone(), Transparency::Reducible, budget);
+    let left = machine.expose_for_conversion(left.clone(), Transparency::Reducible, budget);
+    let right = machine.expose_for_conversion(right.clone(), Transparency::Reducible, budget);
     let (Some(Value::Neutral(left)), Some(Value::Neutral(right))) =
         (left.proven_value(), right.proven_value())
     else {
@@ -434,9 +441,12 @@ fn unit_like_free_pair(
     unit_like_frees: &HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
     budget: usize,
 ) -> bool {
+    if unit_like_frees.is_empty() {
+        return false;
+    }
     let machine = checker.machine();
-    let left = machine.expose(left.clone(), Transparency::Reducible, budget);
-    let right = machine.expose(right.clone(), Transparency::Reducible, budget);
+    let left = machine.expose_for_conversion(left.clone(), Transparency::Reducible, budget);
+    let right = machine.expose_for_conversion(right.clone(), Transparency::Reducible, budget);
     let (Some(Value::Neutral(left)), Some(Value::Neutral(right))) =
         (left.proven_value(), right.proven_value())
     else {
@@ -536,7 +546,11 @@ fn compare_values(
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
-    match (left, right) {
+    let mut current_left = left.clone();
+    let mut current_right = right.clone();
+    let mut current_budget = budget;
+    loop {
+    match (&current_left, &current_right) {
         (Value::NatLit(left), Value::NatLit(right)) => {
             if left != right {
                 return Judgment::refuted("distinct-Nat-literals");
@@ -547,7 +561,7 @@ fn compare_values(
                 checker,
                 literal,
                 neutral,
-                budget,
+                current_budget,
                 depth,
                 work,
                 proof_function_frees,
@@ -558,7 +572,7 @@ fn compare_values(
                 checker,
                 literal,
                 neutral,
-                budget,
+                current_budget,
                 depth,
                 work,
                 proof_function_frees,
@@ -597,8 +611,8 @@ fn compare_values(
             let left_domain_type = TypeValue::Term(left_domain.clone());
             let right_domain_type = TypeValue::Term(right_domain.clone());
             if let (Some(left_key), Some(right_key)) = (
-                checker.fixed_proof_function_type_key(&left_domain_type, budget),
-                checker.fixed_proof_function_type_key(&right_domain_type, budget),
+                checker.fixed_proof_function_type_key(&left_domain_type, current_budget),
+                checker.fixed_proof_function_type_key(&right_domain_type, current_budget),
             ) && left_key == right_key
             {
                 proof_function_frees.insert(free, left_key);
@@ -619,32 +633,110 @@ fn compare_values(
                 type_name: left_type,
                 index: left_index,
                 structure: left_structure,
+                spine: left_spine,
             },
             Value::StuckProjection {
                 type_name: right_type,
                 index: right_index,
                 structure: right_structure,
+                spine: right_spine,
             },
         ) if left_type == right_type && left_index == right_index => {
             if same_rigid_application_congruence(
                 checker,
                 left_structure,
                 right_structure,
-                budget,
+                current_budget,
+            ) && same_closure_spine_congruence(
+                checker,
+                left_spine,
+                right_spine,
+                current_budget,
             ) {
                 return Judgment::proven((), "stuck-projection-rigid-application-congruence");
             }
-            work.push((
-                TypeValue::Term(left_structure.clone()),
-                TypeValue::Term(right_structure.clone()),
-                depth,
-            ));
+            let machine = checker.machine();
+            let left_value = machine.projection_value_for_conversion(
+                left_structure.clone(),
+                *left_type,
+                *left_index,
+                left_spine,
+                current_budget,
+            );
+            let right_value = machine.projection_value_for_conversion(
+                right_structure.clone(),
+                *right_type,
+                *right_index,
+                right_spine,
+                current_budget,
+            );
+            let (Some(left_value), Some(right_value)) =
+                (left_value.proven_value(), right_value.proven_value())
+            else {
+                return Judgment::unknown("lazy-projection-value-exposure");
+            };
+            if current_budget == 0 {
+                return Judgment::unknown("lazy-projection-budget-exhausted");
+            }
+            current_left = left_value.clone();
+            current_right = right_value.clone();
+            current_budget -= 1;
+            continue;
         }
-        (Value::StuckProjection { .. }, _) | (_, Value::StuckProjection { .. }) => {
-            return Judgment::unknown("stuck-projection-comparison");
+        (
+            Value::StuckProjection {
+                type_name,
+                index,
+                structure,
+                spine,
+            },
+            _,
+        ) => {
+            let exposed = checker.machine().projection_value_for_conversion(
+                structure.clone(),
+                *type_name,
+                *index,
+                spine,
+                current_budget,
+            );
+            let Some(exposed) = exposed.proven_value() else {
+                return Judgment::unknown("lazy-projection-value-exposure");
+            };
+            if current_budget == 0 {
+                return Judgment::unknown("lazy-projection-budget-exhausted");
+            }
+            current_left = exposed.clone();
+            current_budget -= 1;
+            continue;
+        }
+        (
+            _,
+            Value::StuckProjection {
+                type_name,
+                index,
+                structure,
+                spine,
+            },
+        ) => {
+            let exposed = checker.machine().projection_value_for_conversion(
+                structure.clone(),
+                *type_name,
+                *index,
+                spine,
+                current_budget,
+            );
+            let Some(exposed) = exposed.proven_value() else {
+                return Judgment::unknown("lazy-projection-value-exposure");
+            };
+            if current_budget == 0 {
+                return Judgment::unknown("lazy-projection-budget-exhausted");
+            }
+            current_right = exposed.clone();
+            current_budget -= 1;
+            continue;
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
-            match compare_neutral_heads(checker, left, right, budget) {
+            match compare_neutral_heads(checker, left, right, current_budget) {
                 Judgment::Proven { .. } => {}
                 other => return other,
             }
@@ -661,7 +753,31 @@ fn compare_values(
         }
         _ => return Judgment::refuted("rigid-value-constructor-mismatch"),
     }
+    break;
+    }
     Judgment::proven((), "rigid-value-comparison")
+}
+
+fn same_closure_spine_congruence(
+    checker: &TypeChecker<'_>,
+    left: &[Closure],
+    right: &[Closure],
+    budget: usize,
+) -> bool {
+    let budget = budget.min(CHEAP_PROJECTION_CONGRUENCE_BUDGET);
+    left.len() == right.len()
+        && left.iter().zip(right).all(|(left, right)| {
+            matches!(
+                convert_with_policy(
+                    checker,
+                    &TypeValue::Term(left.clone()),
+                    &TypeValue::Term(right.clone()),
+                    budget.saturating_sub(1),
+                    DeltaPolicy::PreferredOnly,
+                ),
+                Judgment::Proven { .. }
+            )
+        })
 }
 
 fn same_rigid_application_congruence(
@@ -670,6 +786,7 @@ fn same_rigid_application_congruence(
     right: &Closure,
     budget: usize,
 ) -> bool {
+    let budget = budget.min(CHEAP_PROJECTION_CONGRUENCE_BUDGET);
     if budget == 0 {
         return false;
     }
@@ -712,11 +829,12 @@ fn same_rigid_application_congruence(
 
     left_args.iter().zip(&right_args).all(|(left, right)| {
         matches!(
-            convert(
+            convert_with_policy(
                 checker,
                 &TypeValue::Term(left.clone()),
                 &TypeValue::Term(right.clone()),
                 budget.saturating_sub(1),
+                DeltaPolicy::PreferredOnly,
             ),
             Judgment::Proven { .. }
         )
