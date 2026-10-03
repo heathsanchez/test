@@ -147,10 +147,15 @@ jobs:
           git remote add origin https://github.com/leanprover-community/mathlib4
           git fetch --depth 1 origin "$MATHLIB_SHA"
           git checkout -q FETCH_HEAD
+          TOOLCHAIN="$(cat lean-toolchain)"
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          source "$HOME/.elan/env"
+          elan toolchain install "$TOOLCHAIN"
+          elan default "$TOOLCHAIN"
           lake exe cache get
           lake build Mathlib
 
-          TOOLCHAIN="$(cat lean-toolchain)"
           git init -q /tmp/lean4export
           cd /tmp/lean4export
           git remote add origin https://github.com/leanprover/lean4export
