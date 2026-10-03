@@ -1,0 +1,201 @@
+{
+  "schema": "acc-competitive-watchdog-v1",
+  "captured_utc": "2026-10-03T10:39:47.515688+00:00",
+  "epistemic_state": "WARRANTED_BOUNDED",
+  "authority": {
+    "repository": "heathsanchez/test",
+    "run_id": 37103326863,
+    "job_id": 111186030367,
+    "artifact_id": 11272231031,
+    "artifact_zip_sha256": "72abd3667ba6321f7ecb95d4ebd964e754e74f3f34ff3a11fc154511b13648f5",
+    "live_state_sha256": "8dc7400337a9c7d0b644c2e1625bafc4d90c670dea48b39a13eba6d8e6dee433",
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    },
+    "quota": {
+      "used": 0,
+      "remaining": 40,
+      "limit": 40
+    },
+    "ac": {
+      "unsolved": 2672,
+      "singleton_records": 2852
+    },
+    "stable_ac": {
+      "unsolved": 2672,
+      "singleton_records": 3119
+    }
+  },
+  "previous_authority": {
+    "captured_utc": "2026-10-03T10:06:29.085985+00:00",
+    "run_id": 37103326863,
+    "job_id": 111180833786,
+    "artifact_id": 11271243942,
+    "artifact_zip_sha256": "4193112e8b6778417e5c84d6eb19f286812bc3dd595cb2d4eb9d83eac9ade8b1",
+    "live_state_sha256": "be07b434bd96f7e8f295fb172e8757db0eb0205576470334dc6e136ecdda2e74"
+  },
+  "transport_rule": "An AC certificate of length L transports to Stable-AC at L+2 via official moves [16,15]; profitable iff AC_best+2 < Stable_best.",
+  "transport_frontier": {
+    "previous": {
+      "rows": 1148,
+      "aggregate_strict_slack": 3897
+    },
+    "current": {
+      "rows": 788,
+      "aggregate_strict_slack": 2016
+    },
+    "opened": 0,
+    "closed": 360,
+    "closed_terminal_gap_histogram": {
+      "stable_minus_ac_2": 267,
+      "stable_minus_ac_1": 73,
+      "stable_minus_ac_0": 17,
+      "stable_minus_ac_-1": 3
+    },
+    "interpretation": "Stable records were repriced rapidly toward the AC+2 transport floor; the broad transport window is being actively arbitraged."
+  },
+  "superseded_targets": [
+    {
+      "challenge_id": "ac-02421",
+      "previous_ac": 121,
+      "previous_stable": 159,
+      "current_ac": 121,
+      "current_stable": 123,
+      "reason": "transport slack closed"
+    },
+    {
+      "challenge_id": "ac-04046",
+      "previous_ac": 584,
+      "previous_stable": 666,
+      "current_ac": 584,
+      "current_stable": 586,
+      "reason": "transport slack closed"
+    },
+    {
+      "challenge_id": "ac-08884",
+      "previous_ac": 444,
+      "previous_stable": 505,
+      "current_ac": 444,
+      "current_stable": 446,
+      "reason": "transport slack closed"
+    },
+    {
+      "challenge_id": "ac-08331",
+      "previous_ac": 694,
+      "previous_stable": 742,
+      "current_ac": 694,
+      "current_stable": 696,
+      "reason": "transport slack closed"
+    }
+  ],
+  "current_compiler_only_priority": [
+    {
+      "challenge_id": "ac-07475",
+      "ac_best": 244,
+      "stable_best": 264,
+      "strict_slack": 18,
+      "mixed_steps": 80,
+      "mixed_units": 168,
+      "old_official_length": 20708,
+      "old_official_replay_ok": true,
+      "old_certificate_hash": "sha256:8df6c68efa3cf3d2f4b50c91d99c82a880f54f5ee1f48057edd532b9f574408c",
+      "persistent_basis_tested": false,
+      "strict_source_ceiling": 261
+    },
+    {
+      "challenge_id": "ac-07256",
+      "ac_best": 239,
+      "stable_best": 257,
+      "strict_slack": 16,
+      "mixed_steps": 83,
+      "mixed_units": 222,
+      "old_official_length": 21525,
+      "persistent_basis_tested": false,
+      "strict_source_ceiling": 254
+    },
+    {
+      "challenge_id": "ac-04793",
+      "ac_best": 292,
+      "stable_best": 305,
+      "strict_slack": 11,
+      "mixed_steps": 132,
+      "mixed_units": 198,
+      "old_official_length": 46800,
+      "persistent_basis_tested": false,
+      "strict_source_ceiling": 302
+    },
+    {
+      "challenge_id": "ac-07593",
+      "ac_best": 113,
+      "stable_best": 126,
+      "strict_slack": 11,
+      "mixed_steps": 48,
+      "mixed_units": 78,
+      "old_official_length": 6212,
+      "persistent_basis_tested": false,
+      "strict_source_ceiling": 123
+    },
+    {
+      "challenge_id": "ac-03049",
+      "ac_best": 118,
+      "stable_best": 130,
+      "strict_slack": 10,
+      "mixed_steps": 40,
+      "mixed_units": 59,
+      "old_official_length": 7358,
+      "persistent_basis_tested": false,
+      "strict_source_ceiling": 127
+    }
+  ],
+  "exhausted_fixed_route_examples": [
+    {
+      "challenge_id": "ac-09547",
+      "ac_best": 307,
+      "stable_best": 346,
+      "strict_slack": 37,
+      "persistent_basis_tested": true,
+      "historical_source_bound": 346,
+      "best_prefix_cost": 214,
+      "atlas_contacts": 0
+    },
+    {
+      "challenge_id": "ac-01080",
+      "ac_best": 551,
+      "stable_best": 582,
+      "strict_slack": 29,
+      "persistent_basis_tested": true,
+      "historical_source_bound": 580,
+      "best_prefix_cost": 276,
+      "atlas_contacts": 0
+    },
+    {
+      "challenge_id": "ac-05256",
+      "ac_best": 487,
+      "stable_best": 504,
+      "strict_slack": 15,
+      "persistent_basis_tested": true,
+      "historical_source_bound": 505,
+      "best_prefix_cost": 296,
+      "atlas_contacts": 0
+    }
+  ],
+  "reusable_capability": {
+    "nielsen_harvest_run": 36649127665,
+    "nielsen_pool_artifact": 11186320515,
+    "persistent_basis_run": 36650728157,
+    "persistent_basis_pool_artifact": 11070785082,
+    "current_frontier_with_verified_mixed_solution": 397,
+    "current_frontier_with_verified_mixed_solution_and_not_persistent_basis_tested": 377
+  },
+  "active_residual": {
+    "challenge_id": "ac-07475",
+    "state": "UNKNOWN",
+    "rationale": "Highest current positive transport row with a verified mixed Nielsen proof that has not been tested by the persistent-basis compiler. Search discovery is already solved; only cost-preserving lowering should be tested.",
+    "branch": "acc-ac07475-persistent-basis-gate-20261003-v1",
+    "branch_created": true,
+    "harness_write_status": "BLOCKED_BY_CONNECTED_WRITE_SAFETY",
+    "no_submission": true
+  }
+}
