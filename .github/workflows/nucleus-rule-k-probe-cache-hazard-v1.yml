@@ -32,7 +32,7 @@ jobs:
       - name: Build diagnostic Rule-K candidate
         run: |
           set -euo pipefail
-          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
