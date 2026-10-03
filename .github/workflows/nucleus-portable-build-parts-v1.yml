@@ -1,0 +1,66 @@
+name: Nucleus Portable Build Parts v1
+on:
+  push:
+    branches: [nucleus-portable-build-parts-v1]
+    paths: [".github/workflows/nucleus-portable-build-parts-v1.yml"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  split:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: nucleus-portable-build-dependencies
+          run-id: 37149115191
+          github-token: ${{ github.token }}
+          path: /tmp/deps
+      - name: Split compiler into bounded download parts
+        run: |
+          set -euo pipefail
+          split -b 24M -d /tmp/deps/rust-toolchain.tar.xz /tmp/deps/rust-part-
+          sha256sum /tmp/deps/rust-toolchain.tar.xz > /tmp/deps/toolchain-sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-rust-part-00
+          path: /tmp/deps/rust-part-00
+          compression-level: 0
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-rust-part-01
+          path: /tmp/deps/rust-part-01
+          compression-level: 0
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-rust-part-02
+          path: /tmp/deps/rust-part-02
+          compression-level: 0
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-rust-part-03
+          path: /tmp/deps/rust-part-03
+          compression-level: 0
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-rust-part-04
+          path: /tmp/deps/rust-part-04
+          compression-level: 0
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-rust-part-05
+          path: /tmp/deps/rust-part-05
+          compression-level: 0
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-vendor
+          path: |
+            /tmp/deps/vendor
+            /tmp/deps/vendor-config.toml
+            /tmp/deps/toolchain-sha256.txt
