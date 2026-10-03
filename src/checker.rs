@@ -1108,6 +1108,90 @@ fn prop_function_pair_rule_annotations(
             .all(|(i, (a, b))| expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
 }
 
+// A binary-relation witness record: one carrier universe, one relation
+// parameter, and exactly three proof-valued fields. This covers the semantic
+// shape of an equivalence witness without matching its declaration name.
+fn generic_prop_relation_witness_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || inductive.level_params.len() != 1
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+        || recursor.k
+        || constructor.num_params != 2
+        || constructor.num_fields != 3
+    {
+        return false;
+    }
+    let Some((parameters, result)) = pi_spine(export, inductive.ty, 2) else {
+        return false;
+    };
+    let Some(Expr::Sort(_)) = export.exprs.get(parameters[0]) else {
+        return false;
+    };
+    let Some((relation_domains, relation_result)) = pi_spine(export, parameters[1], 2) else {
+        return false;
+    };
+    if relation_domains.len() != 2
+        || !is_bvar(export, relation_domains[0], 0)
+        || !is_bvar(export, relation_domains[1], 1)
+        || !is_prop_sort(export, relation_result)
+    {
+        return false;
+    }
+    let Some((domains, _)) = pi_spine(export, constructor.ty, 5) else {
+        return false;
+    };
+    is_prop_sort(export, result)
+        && domains[..2] == parameters[..]
+        && domains[2..].iter().all(|field| {
+            matches!(export.exprs.get(*field), Some(Expr::Pi { .. }))
+                && !expression_contains_constant(export, *field, inductive.name)
+        })
+}
+
+fn prop_relation_witness_rule_annotations(
+    export: &ResolvedExport,
+    constructor: &Constructor,
+    recursor: &Recursor,
+) -> bool {
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 5) else {
+        return false;
+    };
+    let Some((rec_domains, _)) = pi_spine(export, recursor.ty, 5) else {
+        return false;
+    };
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, 7) else {
+        return false;
+    };
+    rec_domains[..4]
+        .iter()
+        .zip(&rule_domains[..4])
+        .all(|(a, b)| expr_eq_with_bvar_shift(export, *a, *b, 0, 0))
+        && fields[2..]
+            .iter()
+            .zip(&rule_domains[4..])
+            .enumerate()
+            .all(|(i, (a, b))| expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
+}
+
 fn generic_prop_singleton_large_elim_candidate(
     export: &ResolvedExport,
     block: &InductiveBlock,
@@ -1123,7 +1207,8 @@ fn generic_prop_singleton_large_elim_candidate(
     ((generic_nonrecursive_prop_small_candidate(export, block)
         && inductive.num_params <= 1
         && constructor.num_fields == 1)
-        || generic_prop_function_pair_candidate(export, block))
+        || generic_prop_function_pair_candidate(export, block)
+        || generic_prop_relation_witness_candidate(export, block))
         && constructor.num_params == inductive.num_params
         && recursor.level_params.len() == inductive.level_params.len().saturating_add(1)
         && recursor.level_params.get(1..) == Some(inductive.level_params.as_slice())
@@ -1145,7 +1230,8 @@ fn generic_prop_singleton_field_is_proposition(
         return false;
     };
     if !((parameter_count <= 1 && field_count == 1)
-        || (parameter_count == 2 && field_count == 2))
+        || (parameter_count == 2 && field_count == 2)
+        || (parameter_count == 2 && field_count == 3))
     {
         return false;
     }
@@ -1220,6 +1306,11 @@ fn check_generic_prop_singleton_large_elim(
 
     if generic_prop_function_pair_candidate(export, block)
         && !prop_function_pair_rule_annotations(export, constructor, recursor)
+    {
+        return Err(Verdict::Unknown);
+    }
+    if generic_prop_relation_witness_candidate(export, block)
+        && !prop_relation_witness_rule_annotations(export, constructor, recursor)
     {
         return Err(Verdict::Unknown);
     }
