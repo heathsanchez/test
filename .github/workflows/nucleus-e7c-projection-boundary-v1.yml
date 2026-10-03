@@ -33,7 +33,8 @@ jobs:
           git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
           git -C /tmp/arena checkout -q "$ARENA_SHA"
           cd /tmp/arena
-          nix develop -c ./lka.py build-test 'perf/proj-*-struct'
+          nix develop -c ./lka.py build-test perf/proj-cheap-struct
+          nix develop -c ./lka.py build-test perf/proj-lazy-struct
           cp _build/tests/perf/proj-*-struct.ndjson /tmp/projection-evidence/
           cp _build/tests/perf/proj-*-struct.stats.json /tmp/projection-evidence/
           sha256sum _build/tests/perf/proj-*-struct.ndjson > /tmp/projection-evidence/fixture-sha256.txt
@@ -46,7 +47,8 @@ jobs:
           description: Exact independent Nucleus projection compatibility diagnostic.
           run: /tmp/nucleus-e7c < "$IN"
           YAML
-          nix develop -c ./lka.py -v run --checker nucleus-e7c --test 'perf/proj-*-struct'
+          nix develop -c ./lka.py -v run --checker nucleus-e7c --test perf/proj-cheap-struct
+          nix develop -c ./lka.py -v run --checker nucleus-e7c --test perf/proj-lazy-struct
           cp _results/nucleus-e7c_perf_proj-*-struct.json /tmp/projection-evidence/
           python3 - <<'PY'
           import pathlib,json,os
