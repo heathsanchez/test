@@ -1,0 +1,74 @@
+name: Nucleus Setoid Protected Reclosure v1
+on:
+  push:
+    branches: [nucleus-setoid-obligation-v1]
+    paths: ["metatron-kernel/**", ".github/workflows/nucleus-setoid-reclosure-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reclosure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build candidate and qualified base
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          mkdir -p /tmp/evidence
+          cp metatron-kernel/target/release/metatron-kernel /tmp/evidence/nucleus
+          git worktree add --detach /tmp/base 85c62cdae2368f78e58db362703cd66b4be6709f
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+          cp /tmp/base/metatron-kernel/target/release/metatron-kernel /tmp/base-nucleus
+      - name: Fetch both immutable protected corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for pair in current:11090525747 frozen:10712869614; do
+            name=${pair%:*}
+            artifact=${pair#*:}
+            mkdir -p "/tmp/$name" "/tmp/$name-art"
+            gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$artifact/zip" > "/tmp/$name.zip"
+            unzip -q "/tmp/$name.zip" -d "/tmp/$name-art"
+            tar -xzf "/tmp/$name-art/lean-arena-tests.tar.gz" -C "/tmp/$name"
+          done
+      - name: Reclose protected verdicts and exact Setoid obligation
+        run: |
+          set -euo pipefail
+          ulimit -s unlimited
+          /tmp/evidence/nucleus < metatron-kernel/tests/fixtures/good-setoid-v434.ndjson
+          python3 - <<'PY'
+          import pathlib,subprocess,json,os,time
+          result={"candidate_sha":os.environ["GITHUB_SHA"],"base_sha":"85c62cdae2368f78e58db362703cd66b4be6709f","corpora":{}}
+          for corpus,total,counts in [("current",194,{"0":105,"1":59,"2":30}),("frozen",193,{"0":103,"1":60,"2":30})]:
+              rows=[]
+              for bucket,expected in [("good",0),("bad",1)]:
+                  root=pathlib.Path("/tmp")/corpus/bucket
+                  for p in sorted(root.rglob("*.ndjson")):
+                      row={"test":str(p.relative_to(root)),"expected":expected}
+                      for name,binary in [("base","/tmp/base-nucleus"),("candidate","/tmp/evidence/nucleus")]:
+                          with p.open("rb") as f:
+                              start=time.monotonic()
+                              q=subprocess.run([binary],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=240,env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+                          row[name]=q.returncode
+                          row[name+"_seconds"]=time.monotonic()-start
+                          row[name+"_trace"]=q.stderr.decode(errors="replace").splitlines()[-8:]
+                      rows.append(row)
+              report={"tests":len(rows),"counts":{str(rc):sum(r["candidate"]==rc for r in rows) for rc in (0,1,2)},"wrong":[r for r in rows if r["candidate"] in (0,1) and r["candidate"]!=r["expected"]],"regressions":[r for r in rows if r["base"] in (0,1) and r["candidate"]!=r["base"]],"errors":[r for r in rows if r["candidate"] not in (0,1,2)],"rows":rows}
+              result["corpora"][corpus]=report
+              pathlib.Path("/tmp/evidence/reclosure.json").write_text(json.dumps(result,indent=2)+"\n")
+              print(json.dumps({k:v for k,v in report.items() if k!="rows"},sort_keys=True))
+              assert len(rows)==total and report["counts"]==counts
+              assert not report["wrong"] and not report["regressions"] and not report["errors"]
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-setoid-reclosure-${{ github.sha }}
+          path: /tmp/evidence

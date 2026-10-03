@@ -865,7 +865,9 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         && constructor.num_params == 0
         && constructor.num_fields == 1;
 
-    if !dependent_pair && !scalar_structure {
+    let relation_proof_structure = generic_relation_proof_record_candidate(export, block);
+
+    if !dependent_pair && !scalar_structure && !relation_proof_structure {
         return false;
     }
 
@@ -880,6 +882,62 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         Some(Expr::Sort(level))
             if exported_level_is_definitely_nonzero(export, *level, 128)
     )
+}
+
+// The new obligation is a relation over one sort parameter together with a
+// proof about that relation. The carrier sort is max(1, u): the relation
+// field lives there, while the second field must independently inhabit Prop.
+fn generic_relation_proof_record_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [_recursor]) = (
+        block.types.as_slice(), block.constructors.as_slice(), block.recursors.as_slice(),
+    ) else { return false; };
+    if inductive.num_params != 1 || constructor.num_params != 1 || constructor.num_fields != 2 {
+        return false;
+    }
+    let Some((parameters, result)) = pi_spine(export, inductive.ty, 1) else { return false; };
+    let Some(Expr::Sort(parameter_level)) = export.exprs.get(parameters[0]) else { return false; };
+    let Some(Expr::Sort(result_level)) = export.exprs.get(result) else { return false; };
+    let Some(Level::Max(left, right)) = export.levels.get(*result_level) else { return false; };
+    let is_one = |level: LevelId| matches!(export.levels.get(level), Some(Level::Succ(LevelId(0))));
+    if !((*left == *parameter_level && is_one(*right)) || (*right == *parameter_level && is_one(*left))) {
+        return false;
+    }
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 3) else { return false; };
+    if fields[0] != parameters[0] { return false; }
+    let Some((relation_domains, relation_result)) = pi_spine(export, fields[1], 2) else { return false; };
+    is_bvar(export, relation_domains[0], 0)
+        && is_bvar(export, relation_domains[1], 1)
+        && is_prop_sort(export, relation_result)
+        && !expression_contains_constant(export, fields[2], inductive.name)
+}
+
+fn relation_proof_record_obligations(
+    export: &ResolvedExport, environment: &Environment, block: &InductiveBlock,
+    limits: Limits, delta_policy: DeltaPolicy,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(), block.constructors.as_slice(), block.recursors.as_slice(),
+    ) else { return false; };
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 3) else { return false; };
+    let Some((rec_domains, _)) = pi_spine(export, recursor.ty, 4) else { return false; };
+    let [rule] = recursor.rules.as_slice() else { return false; };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, 5) else { return false; };
+    if !rec_domains[..3].iter().zip(&rule_domains[..3])
+        .all(|(a, b)| expr_eq_with_bvar_shift(export, *a, *b, 0, 0))
+        || !fields[1..].iter().zip(&rule_domains[3..]).enumerate()
+            .all(|(i, (a, b))| expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
+    { return false; }
+
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs, &export.levels, environment, parameter_substitution(&inductive.level_params),
+    ).with_delta_policy(delta_policy);
+    let parameter_frame = EnvFrame::empty().extend_free(FreeId(75_000));
+    let context = vec![
+        TypeValue::Term(checker.closure(fields[0], EnvFrame::empty())),
+        TypeValue::Term(checker.closure(fields[1], parameter_frame.clone())),
+    ];
+    let frame = parameter_frame.extend_free(FreeId(75_001));
+    matches!(checker.is_proposition_in_context(fields[2], &context, &frame, limits.judgment_steps), Judgment::Proven { .. })
 }
 
 fn generic_nonrecursive_constructor_result_is_definitely_malformed(
@@ -1799,6 +1857,11 @@ fn check_generic_nonrecursive_type(
     let [inductive]=block.types.as_slice() else{return Err(Verdict::Unknown);};
     let [recursor]=block.recursors.as_slice() else{return Err(Verdict::Unknown);};
     if !generic_nonrecursive_type_candidate(export,block){return Err(Verdict::Unknown);}
+    if generic_relation_proof_record_candidate(export, block)
+        && !relation_proof_record_obligations(export, environment, block, limits, delta_policy)
+    {
+        return Err(Verdict::Unknown);
+    }
     let arity_ok = inductive_arity_metadata_is_well_formed(export, inductive);
     let all_ok = inductive.all == [inductive.name];
     let constructors_ok = inductive.constructors
