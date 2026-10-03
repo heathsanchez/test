@@ -1,0 +1,111 @@
+name: Nucleus Setoid Mathlib Gate v1
+
+on:
+  push:
+    branches: [nucleus-setoid-mathlib-v1]
+    paths:
+      - ".github/workflows/nucleus-setoid-mathlib-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mathlib:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      ARENA_SHA: 4c30c4ac4f14a3a899116beb3ea6131880e79a98
+      NUCLEUS_SHA: 4d0de4b7770443ef974b8913a70591c525834d2f
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: cachix/install-nix-action@v31
+
+      - name: Build exact qualified rewritten Nucleus
+        run: |
+          set -euo pipefail
+          test -z "$(git diff --name-only "$NUCLEUS_SHA"..HEAD -- metatron-kernel)" || {
+            echo "metatron-kernel differs from qualified Setoid candidate $NUCLEUS_SHA"
+            git diff --name-only "$NUCLEUS_SHA"..HEAD -- metatron-kernel
+            exit 1
+          }
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+          sha256sum /tmp/nucleus
+
+      - uses: actions/cache@v4
+        id: export-cache
+        with:
+          path: /tmp/arena/_build/tests/mathlib.ndjson
+          key: nucleus-mathlib-export-arena4c30c4ac-mathlibd13f23b7-exporter66f1fb4b
+      - name: Build exact Arena Mathlib 4.34.1 export
+        if: steps.export-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 150
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_SHA"
+          cd /tmp/arena
+          nix develop -c ./lka.py build-test mathlib
+          test -f _build/tests/mathlib.ndjson
+          stat -c 'mathlib_bytes=%s' _build/tests/mathlib.ndjson
+          wc -l _build/tests/mathlib.ndjson
+          sha256sum _build/tests/mathlib.ndjson
+
+      - name: Verify immutable export identity
+        run: |
+          echo '22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6  /tmp/arena/_build/tests/mathlib.ndjson' | sha256sum -c -
+      - name: Replay rewritten Nucleus after Setoid transport
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          out=metatron-kernel/evidence-out/setoid-mathlib-v1
+          mkdir -p "$out"
+          stat -c '%s' /tmp/arena/_build/tests/mathlib.ndjson > "$out/mathlib-bytes.txt"
+          wc -l < /tmp/arena/_build/tests/mathlib.ndjson > "$out/mathlib-lines.txt"
+          sha256sum /tmp/arena/_build/tests/mathlib.ndjson > "$out/mathlib-sha256.txt"
+
+          ulimit -s unlimited
+          set +e
+          NUCLEUS_TRACE_DOWNSTREAM=1 \
+          /usr/bin/time -f 'real_seconds=%e\nuser_seconds=%U\nsys_seconds=%S\nmax_rss_kb=%M' \
+            -o "$out/time.txt" \
+            /tmp/nucleus \
+            < /tmp/arena/_build/tests/mathlib.ndjson \
+            > "$out/stdout.txt" \
+            2> "$out/stderr.txt"
+          rc=$?
+          set -e
+
+          echo "$rc" > "$out/exit.txt"
+          python3 - <<'PY'
+          import json,os,pathlib
+          out=pathlib.Path("metatron-kernel/evidence-out/setoid-mathlib-v1")
+          rc=int((out/"exit.txt").read_text().strip())
+          stderr=(out/"stderr.txt").read_text(errors="replace").splitlines()
+          downstream=[x for x in stderr if "NUCLEUS_DOWNSTREAM:" in x]
+          summary={
+            "schema":"nucleus-setoid-mathlib-v1",
+            "candidate_sha":os.environ["NUCLEUS_SHA"],
+            "arena_sha":os.environ["ARENA_SHA"],
+            "mathlib_ref":"v4.34.1",
+            "mathlib_rev":"d13f23b723b8a846827a245b89c10fc7d3f11612",
+            "rc":rc,
+            "verdict":{0:"ACCEPT",1:"REJECT",2:"UNKNOWN",3:"UNKNOWN"}.get(rc,"ERROR"),
+            "downstream_tail":downstream[-30:],
+          }
+          (out/"summary.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(summary,sort_keys=True))
+          assert rc in (0,2,3),summary
+          PY
+          cat "$out/time.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-equivalence-mathlib-${{ github.sha }}
+          path: metatron-kernel/evidence-out/setoid-mathlib-v1
+          if-no-files-found: warn
