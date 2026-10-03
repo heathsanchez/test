@@ -1,0 +1,67 @@
+name: Nucleus Completion Frontier v1
+on:
+  push:
+    branches: [nucleus-completion-frontier-v1]
+    paths: [".github/workflows/nucleus-completion-frontier-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frontier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build independent candidate
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          mkdir -p /tmp/nucleus-completion
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-completion/nucleus
+      - name: Fetch protected current corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/current /tmp/art
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11090525747/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/current
+      - name: Trace complete residual frontier
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess,os,time
+          rows=[]
+          for bucket,expected in [("good",0),("bad",1)]:
+              root=pathlib.Path("/tmp/current")/bucket
+              for p in sorted(root.rglob("*.ndjson")):
+                  with p.open("rb") as f:
+                      start=time.monotonic()
+                      q=subprocess.run(["/tmp/nucleus-completion/nucleus"],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=240,env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+                  rows.append({"test":str(p.relative_to(root)).removesuffix(".ndjson"),"expected":expected,"actual":q.returncode,"seconds":time.monotonic()-start,"trace":q.stderr.decode(errors="replace").splitlines()[-12:]})
+          summary={"schema":"nucleus-completion-frontier-v1","semantic_base":"85c62cdae2368f78e58db362703cd66b4be6709f","workflow_sha":os.environ["GITHUB_SHA"],"counts":{str(rc):sum(r["actual"]==rc for r in rows) for rc in (0,1,2,3)},"wrong":[r for r in rows if r["actual"] in (0,1) and r["actual"]!=r["expected"]],"rows":rows}
+          pathlib.Path("/tmp/nucleus-completion/frontier.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(json.dumps({k:v for k,v in summary.items() if k!="rows"},sort_keys=True))
+          print(json.dumps([r for r in rows if r["actual"] in (2,3)],sort_keys=True))
+          assert len(rows)==194
+          assert not summary["wrong"]
+          assert summary["counts"]=={"0":105,"1":59,"2":30,"3":0}
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-completion-frontier
+          path: /tmp/nucleus-completion
+      - name: Prepare portable local build dependencies
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-build-dependencies
+          cargo vendor --locked --manifest-path metatron-kernel/Cargo.toml /tmp/nucleus-build-dependencies/vendor > /tmp/nucleus-build-dependencies/vendor-config.toml
+          tar -cJf /tmp/nucleus-build-dependencies/rust-toolchain.tar.xz -C "$(rustc --print sysroot)" bin/cargo bin/rustc lib
+          sha256sum /tmp/nucleus-build-dependencies/rust-toolchain.tar.xz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-portable-build-dependencies
+          path: /tmp/nucleus-build-dependencies
