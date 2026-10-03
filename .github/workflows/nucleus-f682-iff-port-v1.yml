@@ -64,22 +64,61 @@ jobs:
           import json,pathlib,subprocess,hashlib,os
 
           def prefix(path,target):
-              names={0:""}; rows=[]
+              records=[]; names={0:""}; expressions={}; declarations={}; root=None
               for line in pathlib.Path(path).read_text().splitlines():
-                  r=json.loads(line); rows.append(line)
-                  if "in" in r:
-                      v=r.get("str",r.get("num"))
-                      if isinstance(v,dict):
-                          pre=v.get("pre",0); atom=v.get("str",v.get("i",v.get("num","?")))
-                          names[r["in"]]=names.get(pre,f"#{pre}")+("." if pre else "")+str(atom)
-                  ds=[]
-                  if "inductive" in r:
-                      for k in ("types","ctors","recs"): ds.extend(r["inductive"].get(k,[]))
-                  for k in ("def","thm","axiom","opaque","quot"):
-                      if k in r and isinstance(r[k],dict): ds.append(r[k])
-                  if any(names.get(d.get("name"))==target for d in ds if isinstance(d,dict)):
-                      return ("\n".join(rows)+"\n").encode()
-              raise RuntimeError((path,target))
+                  record=json.loads(line); records.append(record)
+                  if "in" in record:
+                      value=record.get("str",record.get("num"))
+                      names[record["in"]]=names[value["pre"]]+("." if value["pre"] else "")+str(value.get("str",value.get("i")))
+                  if "ie" in record:
+                      expressions[record["ie"]]=record
+                  if "inductive" in record:
+                      for kind in ("types","ctors","recs"):
+                          for decl in record["inductive"][kind]:
+                              declarations[decl["name"]]=record
+                              if names[decl["name"]]==target:
+                                  root=decl["name"]
+                  for kind in ("def","thm","axiom","opaque"):
+                      if kind in record:
+                          name=record[kind]["name"]; declarations[name]=record
+                          if names[name]==target:
+                              root=name
+                  if root is not None:
+                      break
+              assert root is not None,(path,target)
+              needed_expr=set(); needed_decl=set()
+
+              def expression(index):
+                  if index in needed_expr: return
+                  needed_expr.add(index)
+                  record=expressions[index]
+                  if "const" in record:
+                      declaration(record["const"]["name"])
+                  for kind,fields in (("app",("fn","arg")),("lam",("type","body")),("forallE",("type","body")),("letE",("type","value","body")),("proj",("struct",))):
+                      if kind in record:
+                          for field in fields:
+                              expression(record[kind][field])
+                  if "proj" in record:
+                      declaration(record["proj"]["typeName"])
+
+              def declaration(name):
+                  record=declarations[name]
+                  if id(record) in needed_decl: return
+                  needed_decl.add(id(record))
+                  def visit(value):
+                      if isinstance(value,dict):
+                          for key,child in value.items():
+                              if key in ("type","value","rhs") and isinstance(child,int):
+                                  expression(child)
+                              elif isinstance(child,(list,dict)):
+                                  visit(child)
+                      elif isinstance(value,list):
+                          for child in value: visit(child)
+                  visit(record)
+
+              declaration(root)
+              output=[record for record in records if "meta" in record or "in" in record or "il" in record or ("ie" in record and record["ie"] in needed_expr) or id(record) in needed_decl]
+              return ("\n".join(json.dumps(record,separators=(",",":")) for record in output)+"\n").encode()
 
           rows=[]
           for name in ["perf/magma-list-pair-n7","perf/magma-list-pair-n21"]:
