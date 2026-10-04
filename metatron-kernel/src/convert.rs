@@ -5,7 +5,7 @@ use crate::judgment::Judgment;
 use crate::level::level_equal;
 use crate::machine::Transparency;
 use crate::syntax::Expr;
-use crate::typecheck::{TypeChecker, TypeValue};
+use crate::typecheck::{RuleKAttempt, TypeChecker, TypeValue};
 use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
 
 type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
@@ -129,14 +129,21 @@ pub(crate) fn convert_with_policy_in_context(
     crate::diagnostics::conversion();
 
     let mut remaining = budget;
-    let mut work = vec![(left.clone(), right.clone(), initial_depth)];
+    let mut work = vec![(
+        left.clone(),
+        right.clone(),
+        initial_depth,
+        context.to_vec(),
+    )];
     let mut visited = ConversionVisitSet::new();
     let mut unit_like_frees = HashMap::new();
     let mut proposition_frees = HashSet::new();
     let mut proof_frees = HashMap::new();
     let mut proof_function_frees = HashMap::new();
+    let mut lazy_head_delta_used = false;
 
-    while let Some((left, right, depth)) = work.pop() {
+    while let Some((left, right, depth, local_context)) = work.pop() {
+        let context = local_context.as_slice();
         if left == right {
             continue;
         }
@@ -159,6 +166,7 @@ pub(crate) fn convert_with_policy_in_context(
                     TypeValue::Term(contracted),
                     TypeValue::Term(right_term.clone()),
                     depth,
+                    local_context.clone(),
                 ));
                 continue;
             }
@@ -167,6 +175,7 @@ pub(crate) fn convert_with_policy_in_context(
                     TypeValue::Term(left_term.clone()),
                     TypeValue::Term(contracted),
                     depth,
+                    local_context.clone(),
                 ));
                 continue;
             }
@@ -200,6 +209,12 @@ pub(crate) fn convert_with_policy_in_context(
             )
         {
             continue;
+        }
+
+        if depth == context.len()
+            && distinct_rigid_local_terms(checker, &left, &right, context, remaining)
+        {
+            return Judgment::refuted("distinct-rigid-local-terms");
         }
 
         match (left, right) {
@@ -252,11 +267,72 @@ pub(crate) fn convert_with_policy_in_context(
                         proof_function_frees.insert(free, left_key);
                     }
                 }
-                work.push((*left_body, *right_body, depth.saturating_add(1)));
-                work.push((*left_domain, *right_domain, depth));
+                let mut body_context = local_context.clone();
+                if body_context.len() == depth {
+                    body_context.push((*left_domain).clone());
+                }
+                work.push((
+                    *left_body,
+                    *right_body,
+                    depth.saturating_add(1),
+                    body_context,
+                ));
+                work.push((*left_domain, *right_domain, depth, local_context));
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
                 let machine = checker.machine();
+                if delta_policy == DeltaPolicy::GuardedSemanticFallback
+                    && let Some((rigid_head, congruence)) =
+                        rigid_application_head_congruence(checker, &left, &right, remaining)
+                {
+                    if congruence.is_proven() {
+                        continue;
+                    }
+                    if congruence.is_refuted() && checker.is_certified_constructor(rigid_head) {
+                        return Judgment::refuted("certified-constructor-argument-mismatch");
+                    }
+                    if !congruence.is_refuted()
+                        && !lazy_head_delta_used
+                        && remaining > INLINE_CONVERSION_VISIT_CAPACITY
+                        && let (Some(left_delta), Some(right_delta)) = (
+                            machine
+                                .expose_head_delta_for_conversion(left.clone(), remaining.min(64)),
+                            machine
+                                .expose_head_delta_for_conversion(right.clone(), remaining.min(64)),
+                        )
+                    {
+                        lazy_head_delta_used = true;
+                        if std::env::var_os("NUCLEUS_TRACE_LAZY_DELTA").is_some() {
+                            eprintln!(
+                                "NUCLEUS_LAZY_HEAD_DELTA:left={:?}:right={:?}:budget={remaining}",
+                                left.expr, right.expr
+                            );
+                        }
+                        let (Some(left_delta), Some(right_delta)) =
+                            (left_delta.proven_value(), right_delta.proven_value())
+                        else {
+                            return Judgment::unknown("lazy-head-delta-exposure");
+                        };
+                        match compare_values(
+                            checker,
+                            left_delta,
+                            right_delta,
+                            remaining.saturating_sub(1),
+                            depth,
+                            context,
+                            &mut work,
+                            &mut proof_function_frees,
+                        ) {
+                            Judgment::Proven { .. } => continue,
+                            Judgment::Refuted { obstruction } => {
+                                return Judgment::Refuted { obstruction };
+                            }
+                            Judgment::Unknown { residual } => {
+                                return Judgment::Unknown { residual };
+                            }
+                        }
+                    }
+                }
                 let cheap_left =
                     machine.expose_for_conversion(left.clone(), Transparency::Reducible, remaining);
                 let cheap_right =
@@ -272,6 +348,7 @@ pub(crate) fn convert_with_policy_in_context(
                     cheap_right,
                     remaining,
                     depth,
+                    context,
                     &mut work,
                     &mut proof_function_frees,
                 ) {
@@ -294,6 +371,7 @@ pub(crate) fn convert_with_policy_in_context(
                             full_right,
                             remaining,
                             depth,
+                            context,
                             &mut work,
                             &mut proof_function_frees,
                         ) {
@@ -332,7 +410,7 @@ pub(crate) fn convert_with_policy_in_context(
                 } else {
                     return Judgment::refuted("rigid-type-constructor-mismatch");
                 };
-                work.push((exposed, other, depth));
+                work.push((exposed, other, depth, local_context));
             }
             (TypeValue::Sort(_), TypeValue::Pi { .. })
             | (TypeValue::Pi { .. }, TypeValue::Sort(_)) => {
@@ -352,6 +430,69 @@ pub(crate) fn reset_test_conversion_calls() {
 #[cfg(test)]
 pub(crate) fn test_conversion_calls() -> u64 {
     TRUSTED_CONVERSION_CALLS.with(Cell::get)
+}
+
+fn distinct_rigid_local_terms(
+    checker: &TypeChecker<'_>,
+    left: &TypeValue,
+    right: &TypeValue,
+    context: &[TypeValue],
+    budget: usize,
+) -> bool {
+    let (Some(left_free), Some(right_free)) = (
+        opaque_free(checker, left, budget),
+        opaque_free(checker, right, budget),
+    ) else {
+        return false;
+    };
+    if left_free == right_free {
+        return false;
+    }
+    let (Some(left_type), Some(right_type)) = (
+        context.get(left_free.0 as usize),
+        context.get(right_free.0 as usize),
+    ) else {
+        return false;
+    };
+    let (Some(left_type_free), Some(right_type_free)) = (
+        opaque_free(checker, left_type, budget),
+        opaque_free(checker, right_type, budget),
+    ) else {
+        return false;
+    };
+    if left_type_free != right_type_free {
+        return false;
+    }
+    match context.get(left_type_free.0 as usize) {
+        Some(TypeValue::Sort(crate::level::LevelTerm::Succ(_))) => true,
+        Some(TypeValue::Term(term)) => matches!(
+            checker
+                .machine()
+                .expose(term.clone(), Transparency::Opaque, budget.min(32))
+                .proven_value(),
+            Some(Value::Sort(crate::level::LevelTerm::Succ(_)))
+        ),
+        _ => false,
+    }
+}
+
+fn opaque_free(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> Option<FreeId> {
+    let TypeValue::Term(closure) = ty else {
+        return None;
+    };
+    let exposed = checker
+        .machine()
+        .expose(closure.clone(), Transparency::Opaque, budget.min(32));
+    let Value::Neutral(neutral) = exposed.proven_value()? else {
+        return None;
+    };
+    if !neutral.spine.is_empty() {
+        return None;
+    }
+    let NeutralHead::Free(free) = neutral.head else {
+        return None;
+    };
+    Some(free)
 }
 
 fn bare_free_type(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> Option<FreeId> {
@@ -537,13 +678,183 @@ fn expression_uses_bvar(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+fn certified_structure_eta(
+    checker: &TypeChecker<'_>,
+    target: &Neutral,
+    constructed: &Neutral,
+    budget: usize,
+    depth: usize,
+    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
+    context: &[TypeValue],
+) -> bool {
+    if !target.spine.is_empty() {
+        return false;
+    }
+    let NeutralHead::Free(free) = &target.head else {
+        return false;
+    };
+    let NeutralHead::Const {
+        name: constructor, ..
+    } = &constructed.head
+    else {
+        return false;
+    };
+    let Some((type_name, num_params, num_fields)) =
+        checker.eta_projection_spec_for_constructor(*constructor)
+    else {
+        return false;
+    };
+    if constructed.spine.len() != num_params + num_fields {
+        return false;
+    }
+
+    let Ok(free_index) = usize::try_from(free.0) else {
+        return false;
+    };
+    let Some(TypeValue::Term(target_type)) = context.get(free_index) else {
+        return false;
+    };
+    let target_type =
+        checker
+            .machine()
+            .expose(target_type.clone(), Transparency::Reducible, budget);
+    let Some(Value::Neutral(target_type)) = target_type.proven_value() else {
+        return false;
+    };
+    let NeutralHead::Const {
+        name: actual_type, ..
+    } = &target_type.head
+    else {
+        return false;
+    };
+    if *actual_type != type_name || target_type.spine.len() != num_params {
+        return false;
+    }
+
+    for (index, field) in constructed.spine[num_params..].iter().enumerate() {
+        if !checker
+            .certified_eta_projection_field(field, type_name, index, target, num_params, budget)
+        {
+            return false;
+        }
+    }
+
+    for (actual, rebuilt) in target_type
+        .spine
+        .iter()
+        .zip(constructed.spine.iter().take(num_params))
+    {
+        work.push((
+            TypeValue::Term(actual.clone()),
+            TypeValue::Term(rebuilt.clone()),
+            depth,
+            context.to_vec(),
+        ));
+    }
+    true
+}
+
+fn rigid_local_non_eta_constructor_mismatch(
+    checker: &TypeChecker<'_>,
+    target: &Neutral,
+    constructed: &Neutral,
+    context: &[TypeValue],
+    budget: usize,
+) -> bool {
+    if !target.spine.is_empty() {
+        return false;
+    }
+    let NeutralHead::Free(free) = target.head else {
+        return false;
+    };
+    let NeutralHead::Const {
+        name: constructor, ..
+    } = constructed.head
+    else {
+        return false;
+    };
+    let Some((type_name, constructor_arity)) =
+        checker.non_eta_structure_for_constructor(constructor)
+    else {
+        return false;
+    };
+    if constructed.spine.len() != constructor_arity {
+        return false;
+    }
+    let Ok(index) = usize::try_from(free.0) else {
+        return false;
+    };
+    let Some(TypeValue::Term(target_type)) = context.get(index) else {
+        return false;
+    };
+    let exposed = checker
+        .machine()
+        .expose(target_type.clone(), Transparency::Reducible, budget.min(64));
+    matches!(
+        exposed.proven_value(),
+        Some(Value::Neutral(Neutral {
+            head: NeutralHead::Const { name, .. },
+            ..
+        })) if *name == type_name
+    )
+}
+
+fn distinct_non_eta_structure_locals(
+    checker: &TypeChecker<'_>,
+    left: &Neutral,
+    right: &Neutral,
+    context: &[TypeValue],
+    budget: usize,
+) -> bool {
+    if !left.spine.is_empty() || !right.spine.is_empty() {
+        return false;
+    }
+    let (NeutralHead::Free(left), NeutralHead::Free(right)) = (&left.head, &right.head) else {
+        return false;
+    };
+    if left == right {
+        return false;
+    }
+    let (Ok(left_index), Ok(right_index)) =
+        (usize::try_from(left.0), usize::try_from(right.0))
+    else {
+        return false;
+    };
+    let (
+        Some(TypeValue::Term(left_type)),
+        Some(TypeValue::Term(right_type)),
+    ) = (context.get(left_index), context.get(right_index))
+    else {
+        return false;
+    };
+    let expose_type = |ty: &Closure| {
+        let exposed = checker
+            .machine()
+            .expose(ty.clone(), Transparency::Reducible, budget.min(64));
+        let Value::Neutral(neutral) = exposed.proven_value()? else {
+            return None;
+        };
+        let NeutralHead::Const { name, .. } = neutral.head else {
+            return None;
+        };
+        Some(name)
+    };
+    expose_type(left_type)
+        .zip(expose_type(right_type))
+        .is_some_and(|(left, right)| {
+            left == right && checker.is_non_eta_structure_type(left)
+        })
+}
+
 fn compare_values(
     checker: &TypeChecker<'_>,
     left: &Value,
     right: &Value,
     budget: usize,
     depth: usize,
-    work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    context: &[TypeValue],
+    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
     let mut current_left = left.clone();
@@ -563,6 +874,7 @@ fn compare_values(
                 neutral,
                 current_budget,
                 depth,
+                context,
                 work,
                 proof_function_frees,
             );
@@ -574,6 +886,7 @@ fn compare_values(
                 neutral,
                 current_budget,
                 depth,
+                context,
                 work,
                 proof_function_frees,
             );
@@ -583,6 +896,7 @@ fn compare_values(
                 TypeValue::Sort(left.clone()),
                 TypeValue::Sort(right.clone()),
                 depth,
+                context.to_vec(),
             ));
         }
         (
@@ -617,15 +931,21 @@ fn compare_values(
             {
                 proof_function_frees.insert(free, left_key);
             }
+            let mut body_context = context.to_vec();
+            if body_context.len() == depth {
+                body_context.push(left_domain_type);
+            }
             work.push((
                 TypeValue::Term(left_body.under_free(free)),
                 TypeValue::Term(right_body.under_free(free)),
                 depth.saturating_add(1),
+                body_context,
             ));
             work.push((
                 TypeValue::Term(left_domain.clone()),
                 TypeValue::Term(right_domain.clone()),
                 depth,
+                context.to_vec(),
             ));
         }
         (
@@ -736,6 +1056,104 @@ fn compare_values(
             continue;
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
+            if certified_structure_eta(
+                checker, left, right, current_budget, depth, work, context,
+            ) || certified_structure_eta(
+                checker, right, left, current_budget, depth, work, context,
+            ) {
+                return Judgment::proven((), "certified-structure-eta");
+            }
+            if rigid_local_non_eta_constructor_mismatch(
+                checker,
+                left,
+                right,
+                context,
+                current_budget,
+            ) || rigid_local_non_eta_constructor_mismatch(
+                checker,
+                right,
+                left,
+                context,
+                current_budget,
+            ) {
+                return Judgment::refuted("non-eta-structure-mismatch");
+            }
+            if distinct_non_eta_structure_locals(
+                checker,
+                left,
+                right,
+                context,
+                current_budget,
+            ) {
+                return Judgment::refuted("non-eta-structure-mismatch");
+            }
+            match checker.rule_k_reduce_neutral(left, context, current_budget) {
+                RuleKAttempt::Reduced(closure) => {
+                    let exposed = checker.machine().expose(
+                        closure,
+                        Transparency::Reducible,
+                        current_budget.saturating_sub(1),
+                    );
+                    let Some(reduced) = exposed.proven_value() else {
+                        return Judgment::unknown("rule-k-reduction-exposure");
+                    };
+                    let other = Value::Neutral(right.clone());
+                    return compare_values(
+                        checker,
+                        reduced,
+                        &other,
+                        current_budget.saturating_sub(1),
+                        depth,
+                        context,
+                        work,
+                        proof_function_frees,
+                    );
+                }
+                RuleKAttempt::DefiniteMismatch => {
+                    return Judgment::refuted("rule-k-target-mismatch");
+                }
+                RuleKAttempt::NotApplicable => {}
+            }
+            match checker.rule_k_reduce_neutral(right, context, current_budget) {
+                RuleKAttempt::Reduced(closure) => {
+                    let exposed = checker.machine().expose(
+                        closure,
+                        Transparency::Reducible,
+                        current_budget.saturating_sub(1),
+                    );
+                    let Some(reduced) = exposed.proven_value() else {
+                        return Judgment::unknown("rule-k-reduction-exposure");
+                    };
+                    let other = Value::Neutral(left.clone());
+                    return compare_values(
+                        checker,
+                        &other,
+                        reduced,
+                        current_budget.saturating_sub(1),
+                        depth,
+                        context,
+                        work,
+                        proof_function_frees,
+                    );
+                }
+                RuleKAttempt::DefiniteMismatch => {
+                    return Judgment::refuted("rule-k-target-mismatch");
+                }
+                RuleKAttempt::NotApplicable => {}
+            }
+            if one_neutral_head_is_free(left, right)
+                && (checker.certified_stuck_nonproof_recursor_on_local(
+                    left,
+                    context,
+                    current_budget,
+                ) || checker.certified_stuck_nonproof_recursor_on_local(
+                    right,
+                    context,
+                    current_budget,
+                ))
+            {
+                return Judgment::refuted("certified-stuck-recursor-mismatch");
+            }
             match compare_neutral_heads(checker, left, right, current_budget) {
                 Judgment::Proven { .. } => {}
                 other => return other,
@@ -748,6 +1166,7 @@ fn compare_values(
                     TypeValue::Term(left.clone()),
                     TypeValue::Term(right.clone()),
                     depth,
+                    context.to_vec(),
                 )
             }));
         }
@@ -786,9 +1205,19 @@ fn same_rigid_application_congruence(
     right: &Closure,
     budget: usize,
 ) -> bool {
+    rigid_application_head_congruence(checker, left, right, budget)
+        .is_some_and(|(_, judgment)| judgment.is_proven())
+}
+
+fn rigid_application_head_congruence(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    budget: usize,
+) -> Option<(crate::id::NameId, Judgment<()>)> {
     let budget = budget.min(CHEAP_PROJECTION_CONGRUENCE_BUDGET);
     if budget == 0 {
-        return false;
+        return None;
     }
 
     fn rigid_application_spine(
@@ -814,31 +1243,46 @@ fn same_rigid_application_congruence(
     }
 
     let Some((left_head, left_args)) = rigid_application_spine(checker, left) else {
-        return false;
+        return None;
     };
     let Some((right_head, right_args)) = rigid_application_spine(checker, right) else {
-        return false;
+        return None;
     };
     if left_args.is_empty()
         || left_args.len() != right_args.len()
         || left_head.expr != right_head.expr
         || left_head.levels != right_head.levels
     {
-        return false;
+        return None;
     }
+    let Expr::Const {
+        name: rigid_head, ..
+    } = checker.expression(left_head.expr)?
+    else {
+        return None;
+    };
 
-    left_args.iter().zip(&right_args).all(|(left, right)| {
-        matches!(
-            convert_with_policy(
-                checker,
-                &TypeValue::Term(left.clone()),
-                &TypeValue::Term(right.clone()),
-                budget.saturating_sub(1),
-                DeltaPolicy::PreferredOnly,
-            ),
-            Judgment::Proven { .. }
-        )
-    })
+    for (left, right) in left_args.iter().zip(&right_args) {
+        match convert_with_policy(
+            checker,
+            &TypeValue::Term(left.clone()),
+            &TypeValue::Term(right.clone()),
+            budget.saturating_sub(1),
+            DeltaPolicy::PreferredOnly,
+        ) {
+            Judgment::Proven { .. } => {}
+            Judgment::Refuted { obstruction } => {
+                return Some((*rigid_head, Judgment::Refuted { obstruction }));
+            }
+            Judgment::Unknown { residual } => {
+                return Some((*rigid_head, Judgment::Unknown { residual }));
+            }
+        }
+    }
+    Some((
+        *rigid_head,
+        Judgment::proven((), "same-rigid-application-congruence"),
+    ))
 }
 
 fn compare_nat_literal_neutral(
@@ -847,7 +1291,8 @@ fn compare_nat_literal_neutral(
     neutral: &Neutral,
     budget: usize,
     depth: usize,
-    work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    context: &[TypeValue],
+    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
     let Some(primitives) = checker.nat_primitives() else {
@@ -886,6 +1331,7 @@ fn compare_nat_literal_neutral(
             argument,
             budget.saturating_sub(1),
             depth,
+            context,
             work,
             proof_function_frees,
         );
@@ -987,6 +1433,10 @@ fn compare_neutral_heads(
             Judgment::refuted("distinct-neutral-heads")
         }
     }
+}
+
+fn one_neutral_head_is_free(left: &Neutral, right: &Neutral) -> bool {
+    matches!(left.head, NeutralHead::Free(_)) ^ matches!(right.head, NeutralHead::Free(_))
 }
 
 fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {

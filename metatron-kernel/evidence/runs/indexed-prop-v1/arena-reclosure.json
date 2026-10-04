@@ -1,0 +1,1391 @@
+{
+  "base_sha": "0a9b45753846b7c75497b12af834d0680b48b49c",
+  "arena_sha": "b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42",
+  "artifact_id": 11272848230,
+  "stack_limit": "unlimited (matches qualified CI)",
+  "timeout_seconds": 240,
+  "binary_sha256": "a621ed7fcb9ffdcb9aaeff89b93824d9a172fc972c199ebe11bc8c4e9cba51a5",
+  "counts": {
+    "0": 107,
+    "2": 30,
+    "1": 59
+  },
+  "wrong": [],
+  "regressions": [],
+  "errors": [],
+  "rows": [
+    {
+      "test": "corner-cases/proof-param-ok.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001697009000054095
+    },
+    {
+      "test": "init-prelude.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.06169558799956576
+    },
+    {
+      "test": "other/level-index-out-of-order.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0012583219995576655
+    },
+    {
+      "test": "other/nat-lit-add.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.003304345000287867
+    },
+    {
+      "test": "other/nat-lit-ble.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0037272879999363795
+    },
+    {
+      "test": "other/nat-lit-sub.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.003571377999833203
+    },
+    {
+      "test": "other/sparse-name-index.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001023656999677769
+    },
+    {
+      "test": "perf/app-lam.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.17372059099943726
+    },
+    {
+      "test": "perf/args-before-unfold.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.013990168999953312
+    },
+    {
+      "test": "perf/beta-ladder.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.12564422899959027
+    },
+    {
+      "test": "perf/church-numerals.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.023818289000701043
+    },
+    {
+      "test": "perf/discarded-argument-match.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.005079078000562731
+    },
+    {
+      "test": "perf/discarded-argument.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.003040416000658297
+    },
+    {
+      "test": "perf/folded-constant-first.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 2.093764863000615
+    },
+    {
+      "test": "perf/folded-constant-last.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.01028198399944813
+    },
+    {
+      "test": "perf/fueled-chain.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.016584873999818228
+    },
+    {
+      "test": "perf/grind-ring-5.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.20056763899992802
+    },
+    {
+      "test": "perf/identical-nesting.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.00255334899884474
+    },
+    {
+      "test": "perf/irrelevance-before-evaluation.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0029711050010519102
+    },
+    {
+      "test": "perf/let-ladder.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.052021855999555555
+    },
+    {
+      "test": "perf/magma-list-deep-n21.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.03879627700007404
+    },
+    {
+      "test": "perf/magma-list-deep-n36.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.04016935899926466
+    },
+    {
+      "test": "perf/magma-list-pair-n21.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.02096493800127064
+    },
+    {
+      "test": "perf/magma-list-pair-n7.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.02012406900030328
+    },
+    {
+      "test": "perf/proj-cheap-struct.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.012186734000351862
+    },
+    {
+      "test": "perf/proj-lazy-struct.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.005379039999752422
+    },
+    {
+      "test": "perf/proj-stuck-struct.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.007177068000601139
+    },
+    {
+      "test": "perf/repeated-subproblem.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.002173550001316471
+    },
+    {
+      "test": "perf/shared-subterm.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.011569594998945831
+    },
+    {
+      "test": "perf/shift-cascade.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.04041256299933593
+    },
+    {
+      "test": "perf/unroll-versus-evaluate.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 2.474903466998512
+    },
+    {
+      "test": "tutorial/001_basicDef.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001483154001107323
+    },
+    {
+      "test": "tutorial/003_arrowType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0013936619998276
+    },
+    {
+      "test": "tutorial/004_dependentType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011938879997615004
+    },
+    {
+      "test": "tutorial/005_constType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0009563780004100408
+    },
+    {
+      "test": "tutorial/006_betaReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010303369999746792
+    },
+    {
+      "test": "tutorial/007_betaReduction2.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0015441539999301312
+    },
+    {
+      "test": "tutorial/008_forallSortWhnf.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011785449987655738
+    },
+    {
+      "test": "tutorial/013_thmProof.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011197080002602888
+    },
+    {
+      "test": "tutorial/015_levelComp1.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011926360002689762
+    },
+    {
+      "test": "tutorial/016_levelComp2.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011238050010433653
+    },
+    {
+      "test": "tutorial/017_levelComp3.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.000986782999461866
+    },
+    {
+      "test": "tutorial/018_levelParams.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001000714000838343
+    },
+    {
+      "test": "tutorial/020_levelComp4.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010800799991557142
+    },
+    {
+      "test": "tutorial/021_levelComp5.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001134740999987116
+    },
+    {
+      "test": "tutorial/022_imax1.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0012453629988158355
+    },
+    {
+      "test": "tutorial/023_imax2.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010953830005746568
+    },
+    {
+      "test": "tutorial/024_levelMaxComm.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0020967370001017116
+    },
+    {
+      "test": "tutorial/025_levelMaxAssoc.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.000945562000197242
+    },
+    {
+      "test": "tutorial/026_levelMaxIdem.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0009588819993950892
+    },
+    {
+      "test": "tutorial/027_levelMaxAbsorb.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010224849993392127
+    },
+    {
+      "test": "tutorial/028_inferVar.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0009039100004883949
+    },
+    {
+      "test": "tutorial/029_defEqLambda.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010165169987885747
+    },
+    {
+      "test": "tutorial/030_peano1.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0014531190008710837
+    },
+    {
+      "test": "tutorial/031_peano2.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0014798989996052114
+    },
+    {
+      "test": "tutorial/032_peano3.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0013177000000723638
+    },
+    {
+      "test": "tutorial/033_letType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010648780007613823
+    },
+    {
+      "test": "tutorial/034_letTypeDep.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010765249990072334
+    },
+    {
+      "test": "tutorial/035_letRed.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0015159930007939693
+    },
+    {
+      "test": "tutorial/036_empty.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011964019995502895
+    },
+    {
+      "test": "tutorial/037_boolType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011814089994004462
+    },
+    {
+      "test": "tutorial/038_twoBool.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0012662539993471
+    },
+    {
+      "test": "tutorial/039_andType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011075510010414291
+    },
+    {
+      "test": "tutorial/040_prodType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0013382100005401298
+    },
+    {
+      "test": "tutorial/041_pprodType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010401009985798737
+    },
+    {
+      "test": "tutorial/042_pUnitType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011465179995866492
+    },
+    {
+      "test": "tutorial/043_eqType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001120449000154622
+    },
+    {
+      "test": "tutorial/044_natDef.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010147339999093674
+    },
+    {
+      "test": "tutorial/045_rbTreeDef.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0014875109991407953
+    },
+    {
+      "test": "tutorial/055_reduceCtorParam.mk.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011457569999038242
+    },
+    {
+      "test": "tutorial/058_predWithTypeField.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001056215000062366
+    },
+    {
+      "test": "tutorial/059_typeWithTypeField.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010164969990000827
+    },
+    {
+      "test": "tutorial/060_typeWithTypeFieldPoly.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010171979993174318
+    },
+    {
+      "test": "tutorial/062_emptyRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010554640011832817
+    },
+    {
+      "test": "tutorial/063_boolRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001101210998967872
+    },
+    {
+      "test": "tutorial/064_twoBoolRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010886130003200378
+    },
+    {
+      "test": "tutorial/065_andRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001033660999382846
+    },
+    {
+      "test": "tutorial/066_prodRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.00115005400039081
+    },
+    {
+      "test": "tutorial/067_pprodRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0010695950004446786
+    },
+    {
+      "test": "tutorial/068_punitRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0009687969995866297
+    },
+    {
+      "test": "tutorial/069_eqRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.00123630000052799
+    },
+    {
+      "test": "tutorial/070_nRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0013886249998904532
+    },
+    {
+      "test": "tutorial/071_rbTreeRef.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0021134910002729157
+    },
+    {
+      "test": "tutorial/072_boolPropRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0013342340007511666
+    },
+    {
+      "test": "tutorial/074_existsRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0014016240002092673
+    },
+    {
+      "test": "tutorial/075_typeSingletonRecReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0012152099989179987
+    },
+    {
+      "test": "tutorial/076_sortElimPropRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011941679986193776
+    },
+    {
+      "test": "tutorial/077_sortElimProp2Rec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0013566880006692372
+    },
+    {
+      "test": "tutorial/078_boolRecEqns.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0017472430008638185
+    },
+    {
+      "test": "tutorial/079_prodRecEqns.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0018642839986569015
+    },
+    {
+      "test": "tutorial/080_nRecReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.00225116399997205
+    },
+    {
+      "test": "tutorial/081_listRecReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0031267129998013843
+    },
+    {
+      "test": "tutorial/082_RBTree.id_spec.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.0038349570004356792
+    },
+    {
+      "test": "tutorial/083_And.right.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0012889879999420373
+    },
+    {
+      "test": "tutorial/084_Prod.snd.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0012281489998713369
+    },
+    {
+      "test": "tutorial/085_PProd.snd.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0012764289986080257
+    },
+    {
+      "test": "tutorial/086_PSigma.snd.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001226086000315263
+    },
+    {
+      "test": "tutorial/089_projProp1.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0013803620004182449
+    },
+    {
+      "test": "tutorial/091_projProp3.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0015481789996556472
+    },
+    {
+      "test": "tutorial/095_projDataIndexRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0013701169991691131
+    },
+    {
+      "test": "tutorial/098_projRed.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0018626319997565588
+    },
+    {
+      "test": "tutorial/099_ruleK.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.001354333999188384
+    },
+    {
+      "test": "tutorial/102_aNatLit.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011588070010475349
+    },
+    {
+      "test": "tutorial/103_natLitEq.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001609979999557254
+    },
+    {
+      "test": "tutorial/104_proofIrrelevance.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.00176730199927988
+    },
+    {
+      "test": "tutorial/106_proofIrrelevanceWhnf.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0016475760003231699
+    },
+    {
+      "test": "tutorial/107_proofIrrelevanceUnderBinder.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001337478999630548
+    },
+    {
+      "test": "tutorial/108_unitEta1.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001501380998888635
+    },
+    {
+      "test": "tutorial/109_unitEta2.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0013563470001827227
+    },
+    {
+      "test": "tutorial/110_unitEta3.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0012793040004908107
+    },
+    {
+      "test": "tutorial/112_structEta.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.0019196369994460838
+    },
+    {
+      "test": "tutorial/114_funEta.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0012439809997886186
+    },
+    {
+      "test": "tutorial/115_funEtaDep.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001281295999433496
+    },
+    {
+      "test": "tutorial/119_reduceCtorParamRefl.mk.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001886456999272923
+    },
+    {
+      "test": "tutorial/120_reduceCtorParamRefl2.mk.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011445950003690086
+    },
+    {
+      "test": "tutorial/121_rTreeRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0011991449991910486
+    },
+    {
+      "test": "tutorial/122_rtreeRecReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0015094929985934868
+    },
+    {
+      "test": "tutorial/123_accRecType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001507639999545063
+    },
+    {
+      "test": "tutorial/124_accRecReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0020323619992268505
+    },
+    {
+      "test": "tutorial/126_quotMkType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001244142000359716
+    },
+    {
+      "test": "tutorial/127_quotIndType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0012492700006987434
+    },
+    {
+      "test": "tutorial/128_quotLiftType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0013074050002614968
+    },
+    {
+      "test": "tutorial/129_quotSoundType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0020513199997367337
+    },
+    {
+      "test": "tutorial/130_quotLiftReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.001458308001019759
+    },
+    {
+      "test": "tutorial/131_quotIndReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "base": 0,
+      "seconds": 0.0015894799998932285
+    },
+    {
+      "test": "bugs/constlevels.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0017289959996560356
+    },
+    {
+      "test": "bugs/ctor-num-fields.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.002051441000730847
+    },
+    {
+      "test": "bugs/k-rec-conv.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0015803969999979017
+    },
+    {
+      "test": "bugs/large-elim-param.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.001586925998708466
+    },
+    {
+      "test": "bugs/large-elim-prop-bool.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0021607609996863175
+    },
+    {
+      "test": "bugs/level-imax-leq.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0011087120001320727
+    },
+    {
+      "test": "bugs/level-imax-normalization.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0011771530007536057
+    },
+    {
+      "test": "bugs/nat-rec-k-lie.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.001149902998804464
+    },
+    {
+      "test": "bugs/nat-rec-rules.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.001101471001675236
+    },
+    {
+      "test": "bugs/nested-unused-param.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.0018824620001396397
+    },
+    {
+      "test": "bugs/orphan-rec.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009727619999466697
+    },
+    {
+      "test": "bugs/proj-non-structure.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009864220010058489
+    },
+    {
+      "test": "bugs/proj-of-imax-prop.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0014918060005584266
+    },
+    {
+      "test": "bugs/proj-of-stuck-prop.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.011028598999473616
+    },
+    {
+      "test": "bugs/proj-of-subst-prop.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.009883782999168034
+    },
+    {
+      "test": "bugs/rec-k-lie.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0010489039996173233
+    },
+    {
+      "test": "bugs/rec-missing-ih.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.011688779999531107
+    },
+    {
+      "test": "bugs/rec-of-subst-prop.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.011050740999053232
+    },
+    {
+      "test": "other/extra-rec.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.00102973599859979
+    },
+    {
+      "test": "other/nat-lit-add-bad.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0032777260003058473
+    },
+    {
+      "test": "other/orphan-ctor.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.00130946800163656
+    },
+    {
+      "test": "other/proj-of-prop.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.001990020000448567
+    },
+    {
+      "test": "perf/refute-cheap-first.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.47200114900078916
+    },
+    {
+      "test": "perf/refute-cheap-last.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.003671987000416266
+    },
+    {
+      "test": "tutorial/002_badDef.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0010794589998113224
+    },
+    {
+      "test": "tutorial/009_forallSortBad.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0012393149991112296
+    },
+    {
+      "test": "tutorial/010_nonTypeType.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0010281640006724047
+    },
+    {
+      "test": "tutorial/011_nonTypeAxiom.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009665029992902419
+    },
+    {
+      "test": "tutorial/012_nonPropThm.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0010480330001882976
+    },
+    {
+      "test": "tutorial/014_selfProof.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009613849997549551
+    },
+    {
+      "test": "tutorial/019_tut06_bad01.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009320419994764961
+    },
+    {
+      "test": "tutorial/046_inductBadNonSort.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009873430008155992
+    },
+    {
+      "test": "tutorial/047_inductBadNonSort2.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009884659993986133
+    },
+    {
+      "test": "tutorial/048_inductLevelParam.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009650900010456098
+    },
+    {
+      "test": "tutorial/049_inductTooFewParams.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0011004810003214516
+    },
+    {
+      "test": "tutorial/050_inductWrongCtorParams.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0010032169993792195
+    },
+    {
+      "test": "tutorial/051_inductWrongCtorResParams.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.000978851001491421
+    },
+    {
+      "test": "tutorial/052_inductWrongCtorResLevel.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009261630002583843
+    },
+    {
+      "test": "tutorial/053_inductInIndex.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009479149994149338
+    },
+    {
+      "test": "tutorial/054_indNeg.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009720409998408286
+    },
+    {
+      "test": "tutorial/056_reduceCtorType.mk.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0010142739993170835
+    },
+    {
+      "test": "tutorial/057_indNegReducible.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0011663669993140502
+    },
+    {
+      "test": "tutorial/061_typeWithTooHighTypeField.mk.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009186930001305882
+    },
+    {
+      "test": "tutorial/073_BogusRecursor.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0012078780000592815
+    },
+    {
+      "test": "tutorial/087_projOutOfRange.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009589420005795546
+    },
+    {
+      "test": "tutorial/088_projNotStruct.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009761769997567171
+    },
+    {
+      "test": "tutorial/090_projProp2.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0010515680005482864
+    },
+    {
+      "test": "tutorial/092_projProp4.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.001322647000051802
+    },
+    {
+      "test": "tutorial/093_projProp5.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0011978740003542043
+    },
+    {
+      "test": "tutorial/094_projProp6.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0010110489984072046
+    },
+    {
+      "test": "tutorial/096_projIndexData.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.001419780999640352
+    },
+    {
+      "test": "tutorial/097_projIndexData2.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0014411720003408846
+    },
+    {
+      "test": "tutorial/100_ruleKbad.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.0011626519990386441
+    },
+    {
+      "test": "tutorial/101_ruleKAcc.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.0020963169990864117
+    },
+    {
+      "test": "tutorial/105_proofIrrelevanceBad.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.0014409220002562506
+    },
+    {
+      "test": "tutorial/111_indexedUnitEta.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.0011979739992966643
+    },
+    {
+      "test": "tutorial/113_indexedStructEta.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.0011860859995067585
+    },
+    {
+      "test": "tutorial/116_funEtaBad.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0011638039995887084
+    },
+    {
+      "test": "tutorial/117_reflOccLeft.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.001022374999593012
+    },
+    {
+      "test": "tutorial/118_reflOccInIndex.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0010568260004220065
+    },
+    {
+      "test": "tutorial/125_accRecNoEta.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "base": 2,
+      "seconds": 0.0016010669987736037
+    },
+    {
+      "test": "tutorial/132_dup_defs.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0010292959996149875
+    },
+    {
+      "test": "tutorial/133_dup_ind_def.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009186219995171996
+    },
+    {
+      "test": "tutorial/134_dup_ctor_def.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009186130009766202
+    },
+    {
+      "test": "tutorial/135_dup_rec_def.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0008691889997862745
+    },
+    {
+      "test": "tutorial/136_misnamed_rec_user.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0008445139992545592
+    },
+    {
+      "test": "tutorial/137_dup_rec_def2.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0008808259990473744
+    },
+    {
+      "test": "tutorial/138_dup_ctor_rec.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0008965300003183074
+    },
+    {
+      "test": "tutorial/139_DupConCon.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009572100007062545
+    },
+    {
+      "test": "tutorial/140_falseFromUnsafe.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009858619996521156
+    },
+    {
+      "test": "tutorial/141_falseFromPartial.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "base": 1,
+      "seconds": 0.0009622159996069968
+    }
+  ],
+  "candidate_sha": "64da7b439b53d251e12a475aa700a72d20a3cc93"
+}

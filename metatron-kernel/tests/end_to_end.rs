@@ -14,6 +14,53 @@ fn run_fixture(name: &str) -> Verdict {
     metatron_kernel::run(BufReader::new(File::open(path).unwrap()))
 }
 
+#[test]
+fn indexed_recursive_proposition_checks_exact_list_perm_contract() {
+    assert_eq!(run_fixture("good-list-perm-v434.ndjson"), Verdict::Accept);
+}
+
+#[test]
+fn typed_rule_k_accepts_the_certified_eq_recursor_case() {
+    assert_eq!(run_fixture("good-rule-k.ndjson"), Verdict::Accept);
+}
+
+#[test]
+fn typed_rule_k_rejects_an_invalid_target() {
+    assert_eq!(run_fixture("bad-rule-k-target.ndjson"), Verdict::Reject);
+}
+
+#[test]
+fn certified_stuck_recursors_are_not_equal_to_rigid_locals_or_constructors() {
+    assert_eq!(run_fixture("bad-rule-k-acc.ndjson"), Verdict::Reject);
+    assert_eq!(run_fixture("bad-acc-rec-no-eta.ndjson"), Verdict::Reject);
+    assert_eq!(
+        run_fixture("bad-refute-cheap-first.ndjson"),
+        Verdict::Reject
+    );
+}
+
+#[test]
+fn certified_product_structure_eta_is_accepted() {
+    assert_eq!(run_fixture("good-structure-eta.ndjson"), Verdict::Accept);
+}
+
+#[test]
+fn indexed_singletons_without_eta_are_rejected() {
+    assert_eq!(run_fixture("bad-indexed-unit-eta.ndjson"), Verdict::Reject);
+    assert_eq!(
+        run_fixture("bad-indexed-structure-eta.ndjson"),
+        Verdict::Reject
+    );
+}
+
+#[test]
+fn nested_block_cannot_claim_an_external_constructor_rule() {
+    assert_eq!(
+        run_fixture("bad-nested-unused-param.ndjson"),
+        Verdict::Reject
+    );
+}
+
 fn run_residual(name: &str) -> Verdict {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("evidence")

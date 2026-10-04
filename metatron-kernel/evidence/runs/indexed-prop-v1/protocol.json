@@ -1,0 +1,42 @@
+{
+  "state": "WARRANTED_BOUNDED_LOCAL",
+  "candidate_sha": "64da7b439b53d251e12a475aa700a72d20a3cc93",
+  "base_sha": "0a9b45753846b7c75497b12af834d0680b48b49c",
+  "witness": {
+    "source_run": 37152590095,
+    "artifact_id": 11284890903,
+    "lean": "v4.34.1",
+    "lean4export": "66f1fb4bc256072069767fce52d39480e4524869",
+    "sha256": "1bc8221865db21203bfcb6f32779eb99d9d94c7a85a3852163029c3a1b4ef595",
+    "bytes": 17465,
+    "before": "UNKNOWN",
+    "after": "ACCEPT"
+  },
+  "tests_passed": {
+    "debug": 146,
+    "release": 146
+  },
+  "review": {
+    "important_defect": "extreme variable offset overflow",
+    "fix": "checked_add plus red-green debug regression",
+    "remaining_soundness_defects_identified": 0,
+    "iota_execution": "cons and both trans recursive hypotheses verified"
+  },
+  "arena": {
+    "counts": {
+      "0": 107,
+      "2": 30,
+      "1": 59
+    },
+    "wrong": 0,
+    "regressions": 0,
+    "errors": 0,
+    "stack_limit": "unlimited (matches qualified CI)"
+  },
+  "limits": [
+    "30 Arena UNKNOWN remain",
+    "full pinned Mathlib replay pending",
+    "default-stack app-lam crash remains on prior baseline",
+    "no global soundness theorem or number-one qualification"
+  ]
+}

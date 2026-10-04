@@ -71,6 +71,7 @@ fn conversion_projection_probe_does_not_delta_reduce_its_structure() {
             constructor: NameId(2),
             num_params: 0,
             field_types: vec![ProjectionFieldType::Derived(ExprId(0))],
+            eta_expandable: false,
         },
     )]);
     let levels = zero_levels();

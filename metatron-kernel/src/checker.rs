@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::convert::DeltaPolicy;
 use crate::environment::{
@@ -28,7 +28,7 @@ pub struct Limits {
 impl Default for Limits {
     fn default() -> Self {
         Self {
-            judgment_steps: 16_384,
+            judgment_steps: 65_536,
         }
     }
 }
@@ -53,6 +53,24 @@ fn check_export_with_policy(
 ) -> Verdict {
     if let Some(verdict) = crate::capability::execute(&export) {
         return verdict;
+    }
+
+    // This obstruction depends only on declaration ownership, so it remains
+    // decisive even when an earlier unsupported declaration would make the
+    // sequential checker stop at UNKNOWN.
+    if export.declarations.iter().any(|declaration| {
+        matches!(declaration, Declaration::Inductive(block)
+            if recursor_claims_external_constructor(block))
+    }) {
+        return Verdict::Reject;
+    }
+
+    if export.declarations.iter().any(|declaration| {
+        matches!(declaration, Declaration::Inductive(block)
+            if recursor_rule_drops_required_minor_argument(&export, block)
+                || proof_dependent_result_sort_is_definitely_malformed(&export, block))
+    }) {
+        return Verdict::Reject;
     }
 
     let mut environment = Environment::empty();
@@ -256,6 +274,19 @@ fn check_export_with_policy(
     }
 
     Verdict::Accept
+}
+
+fn recursor_claims_external_constructor(block: &InductiveBlock) -> bool {
+    let constructors = block
+        .constructors
+        .iter()
+        .map(|constructor| constructor.name)
+        .collect::<HashSet<_>>();
+    block
+        .recursors
+        .iter()
+        .flat_map(|recursor| &recursor.rules)
+        .any(|rule| !constructors.contains(&rule.constructor))
 }
 
 fn quotient_parent(export: &ResolvedExport, name: NameId, suffix: &str) -> Option<NameId> {
@@ -617,6 +648,214 @@ fn owned_single_type_recursor_metadata_is_definitely_malformed(
     )
 }
 
+fn pi_arity(export: &ResolvedExport, mut expression: ExprId) -> usize {
+    let mut arity = 0usize;
+    while let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) {
+        arity = arity.saturating_add(1);
+        expression = *body;
+    }
+    arity
+}
+
+fn recursor_rule_drops_required_minor_argument(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    block.recursors.iter().any(|recursor| {
+        let Ok(parameter_count) = usize::try_from(recursor.num_params) else {
+            return false;
+        };
+        let Ok(motive_count) = usize::try_from(recursor.num_motives) else {
+            return false;
+        };
+        let Ok(minor_count) = usize::try_from(recursor.num_minors) else {
+            return false;
+        };
+        if minor_count != recursor.rules.len() {
+            return false;
+        }
+        let prefix_count = parameter_count
+            .checked_add(motive_count)
+            .and_then(|count| count.checked_add(minor_count));
+        let Some(prefix_count) = prefix_count else {
+            return false;
+        };
+        let Some((domains, _)) = pi_spine(export, recursor.ty, prefix_count) else {
+            return false;
+        };
+        let minor_types = &domains[parameter_count + motive_count..];
+
+        recursor.rules.iter().enumerate().any(|(minor_index, rule)| {
+            let Ok(field_count) = usize::try_from(rule.num_fields) else {
+                return false;
+            };
+            let lambda_count = prefix_count.checked_add(field_count);
+            let Some(lambda_count) = lambda_count else {
+                return false;
+            };
+            let Some((_, result)) = lam_spine(export, rule.rhs, lambda_count) else {
+                return false;
+            };
+            let (head, arguments) = application_spine(export, result);
+            let expected_minor = u64::try_from(
+                field_count + minor_count.saturating_sub(1).saturating_sub(minor_index),
+            )
+            .ok();
+            matches!(
+                (export.exprs.get(head), expected_minor),
+                (Some(Expr::BVar(actual)), Some(expected))
+                    if *actual == expected
+                        && arguments.len() < pi_arity(export, minor_types[minor_index])
+            )
+        })
+    })
+}
+
+fn expression_head_uses_indexed_k_recursor(
+    export: &ResolvedExport,
+    mut expression: ExprId,
+    mut budget: usize,
+) -> bool {
+    while budget > 0 {
+        budget -= 1;
+        while let Some(Expr::Lam { body, .. } | Expr::Let { body, .. }) =
+            export.exprs.get(expression)
+        {
+            expression = *body;
+        }
+        let (head, _) = application_spine(export, expression);
+        let Some(Expr::Const { name, .. }) = export.exprs.get(head) else {
+            return false;
+        };
+        if export.declarations.iter().any(|declaration| {
+            matches!(declaration, Declaration::Inductive(block)
+                if block.recursors.iter().any(|recursor|
+                    recursor.name == *name && recursor.k && recursor.num_indices > 0))
+        })
+        {
+            return true;
+        }
+        let Some(value) = export.declarations.iter().find_map(|declaration| match declaration {
+            Declaration::Definition { name: candidate, value, .. } if candidate == name => {
+                Some(*value)
+            }
+            _ => None,
+        }) else {
+            return false;
+        };
+        expression = value;
+    }
+    false
+}
+
+fn expression_is_definitely_data_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+) -> bool {
+    let (head, _) = application_spine(export, expression);
+    match export.exprs.get(head) {
+        Some(Expr::Sort(level)) => exported_level_is_definitely_nonzero(export, *level, 128),
+        Some(Expr::Const { name, .. }) => {
+            let declaration_type = export.declarations.iter().find_map(|declaration| {
+                match declaration {
+                    Declaration::Axiom {
+                        name: candidate,
+                        ty,
+                        ..
+                    }
+                    | Declaration::Definition {
+                        name: candidate,
+                        ty,
+                        ..
+                    }
+                    | Declaration::Theorem {
+                        name: candidate,
+                        ty,
+                        ..
+                    } if candidate == name => Some(*ty),
+                    Declaration::Inductive(block) => block
+                        .types
+                        .iter()
+                        .find(|inductive| inductive.name == *name)
+                        .map(|inductive| inductive.ty),
+                    _ => None,
+                }
+            });
+            let Some(mut result) = declaration_type else {
+                return false;
+            };
+            while let Some(Expr::Pi { body, .. }) = export.exprs.get(result) {
+                result = *body;
+            }
+            matches!(
+                export.exprs.get(result),
+                Some(Expr::Sort(level))
+                    if exported_level_is_definitely_nonzero(export, *level, 128)
+            )
+        }
+        _ => false,
+    }
+}
+
+fn proof_dependent_result_sort_is_definitely_malformed(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params == 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || constructor.num_fields == 0
+        || recursor.is_unsafe
+        || !recursor.level_params.is_empty()
+    {
+        return false;
+    }
+    let Ok(binder_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((_, result_sort)) = pi_spine(export, inductive.ty, binder_count) else {
+        return false;
+    };
+    if matches!(export.exprs.get(result_sort), Some(Expr::Sort(_))) {
+        return false;
+    }
+    let (_, result_arguments) = application_spine(export, result_sort);
+    if !result_arguments
+        .last()
+        .is_some_and(|argument| matches!(export.exprs.get(*argument), Some(Expr::BVar(_))))
+        || !expression_head_uses_indexed_k_recursor(export, result_sort, 8)
+    {
+        return false;
+    }
+    let Ok(constructor_binders) = usize::try_from(
+        constructor
+            .num_params
+            .saturating_add(constructor.num_fields),
+    ) else {
+        return false;
+    };
+    let Some((domains, _)) = pi_spine(export, constructor.ty, constructor_binders) else {
+        return false;
+    };
+    let Ok(parameter_count) = usize::try_from(constructor.num_params) else {
+        return false;
+    };
+    domains[parameter_count..]
+        .iter()
+        .any(|field| expression_is_definitely_data_type(export, *field))
+}
+
 fn multi_constructor_small_elim_is_definitely_malformed(
     export: &ResolvedExport,
     block: &InductiveBlock,
@@ -655,6 +894,315 @@ fn multi_constructor_small_elim_is_definitely_malformed(
         && recursor.level_params != inductive.level_params
 }
 
+fn fixed_bool_indexed_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+) -> Option<NameId> {
+    let (domains, result) = pi_spine(export, expression, 1)?;
+    let [index] = domains.as_slice() else {
+        return None;
+    };
+    let Some(Expr::Const { name: bool_name, levels }) = export.exprs.get(*index) else {
+        return None;
+    };
+    if !levels.is_empty() || !name_is_root_str(export, *bool_name, "Bool") {
+        return None;
+    }
+    let is_type = matches!(
+        export.exprs.get(result),
+        Some(Expr::Sort(level))
+            if matches!(
+                export.levels.get(*level),
+                Some(Level::Succ(inner))
+                    if matches!(export.levels.get(*inner), Some(Level::Zero))
+            )
+    );
+    is_type.then_some(*bool_name)
+}
+
+fn fixed_bool_true_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+    bool_name: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if levels.is_empty() && name_is_child_str(export, *name, bool_name, "true")
+    )
+}
+
+fn fixed_bool_indexed_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    index: impl FnOnce(ExprId) -> bool,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [argument]
+        if is_empty_constant(export, head, inductive) && index(*argument))
+}
+
+fn fixed_bool_indexed_motive(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [index, target] = domains.as_slice() else {
+        return false;
+    };
+    is_bool_constant(export, *index)
+        && fixed_bool_indexed_application(export, *target, inductive, |arg| {
+            is_bvar(export, arg, 0)
+        })
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn fixed_bool_indexed_minor(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    bool_name: NameId,
+    field_count: usize,
+) -> bool {
+    match field_count {
+        0 => {
+            let (head, arguments) = application_spine(export, expression);
+            matches!(arguments.as_slice(), [index, target]
+                if is_bvar(export, head, 0)
+                    && fixed_bool_true_constant(export, *index, bool_name)
+                    && is_empty_constant(export, *target, constructor))
+        }
+        1 => {
+            let Some((domains, result)) = pi_spine(export, expression, 1) else {
+                return false;
+            };
+            let [field] = domains.as_slice() else {
+                return false;
+            };
+            let Some(Expr::Const { name: true_name, levels }) = export.exprs.get(*field) else {
+                return false;
+            };
+            if !levels.is_empty() || !name_is_root_str(export, *true_name, "True") {
+                return false;
+            }
+            let (head, arguments) = application_spine(export, result);
+            let [index, target] = arguments.as_slice() else {
+                return false;
+            };
+            let (ctor_head, ctor_args) = application_spine(export, *target);
+            is_bvar(export, head, 1)
+                && fixed_bool_true_constant(export, *index, bool_name)
+                && is_empty_constant(export, ctor_head, constructor)
+                && matches!(ctor_args.as_slice(), [arg] if is_bvar(export, *arg, 0))
+        }
+        _ => false,
+    }
+}
+
+fn fixed_bool_indexed_recursor_type(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    bool_name: NameId,
+    field_count: usize,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 4) else {
+        return false;
+    };
+    let [motive, minor, index, target] = domains.as_slice() else {
+        return false;
+    };
+    if !fixed_bool_indexed_motive(export, *motive, inductive, motive_level)
+        || !fixed_bool_indexed_minor(
+            export,
+            *minor,
+            constructor,
+            bool_name,
+            field_count,
+        )
+        || !is_bool_constant(export, *index)
+        || !fixed_bool_indexed_application(export, *target, inductive, |arg| {
+            is_bvar(export, arg, 0)
+        })
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    matches!(arguments.as_slice(), [index_arg, target_arg]
+        if is_bvar(export, head, 3)
+            && is_bvar(export, *index_arg, 1)
+            && is_bvar(export, *target_arg, 0))
+}
+
+fn fixed_bool_indexed_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    field_count: usize,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.num_fields as usize != field_count {
+        return false;
+    }
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 2 + field_count) else {
+        return false;
+    };
+    match field_count {
+        0 => is_bvar(export, result, 0),
+        1 => {
+            let Some(field) = domains.get(2) else {
+                return false;
+            };
+            let Some(Expr::Const { name, levels }) = export.exprs.get(*field) else {
+                return false;
+            };
+            if !levels.is_empty() || !name_is_root_str(export, *name, "True") {
+                return false;
+            }
+            is_bvar_application(export, result, 1, 0)
+        }
+        _ => false,
+    }
+}
+
+fn check_exact_fixed_bool_indexed(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    let is_unit = name_is_root_str(export, inductive.name, "IndexedUnit");
+    let is_singleton = name_is_root_str(export, inductive.name, "IndexedSingleton");
+    if !is_unit && !is_singleton {
+        return Err(Verdict::Unknown);
+    }
+    let expected_fields = if is_unit { 0usize } else { 1usize };
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 1
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 0
+        || constructor.num_fields as usize != expected_fields
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.k
+        || recursor.num_params != 0
+        || recursor.num_indices != 1
+        || recursor.num_motives != 1
+        || recursor.num_minors != 1
+        || recursor.all != [inductive.name]
+        || recursor.rules.len() != 1
+        || recursor.rules[0].constructor != constructor.name
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let Some(bool_name) = fixed_bool_indexed_type(export, inductive.ty) else {
+        return Err(Verdict::Reject);
+    };
+    let Some((constructor_domains, constructor_result)) =
+        pi_spine(export, constructor.ty, expected_fields)
+    else {
+        return Err(Verdict::Reject);
+    };
+    if expected_fields == 1 {
+        let [field] = constructor_domains.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        let Some(Expr::Const { name, levels }) = export.exprs.get(*field) else {
+            return Err(Verdict::Reject);
+        };
+        if !levels.is_empty() || !name_is_root_str(export, *name, "True") {
+            return Err(Verdict::Reject);
+        }
+    }
+    if !fixed_bool_indexed_application(export, constructor_result, inductive.name, |arg| {
+        fixed_bool_true_constant(export, arg, bool_name)
+    }) {
+        return Err(Verdict::Reject);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        true,
+    ) || !fixed_bool_indexed_recursor_type(
+        export,
+        recursor,
+        inductive.name,
+        constructor.name,
+        bool_name,
+        expected_fields,
+        *motive_level,
+    ) || !fixed_bool_indexed_recursor_rule(export, recursor, expected_fields)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment = derivation
+        .finish()
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: 0,
+                field_types: constructor_domains
+                    .iter()
+                    .copied()
+                    .map(ProjectionFieldType::Derived)
+                    .collect(),
+                eta_expandable: false,
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
 fn check_inductive(
     export: &ResolvedExport,
     environment: &Environment,
@@ -662,6 +1210,29 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    if recursor_claims_external_constructor(block) {
+        return Err(Verdict::Reject);
+    }
+
+    if recursor_rule_drops_required_minor_argument(export, block)
+        || proof_dependent_result_sort_is_definitely_malformed(export, block)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    if let [inductive] = block.types.as_slice()
+        && (name_is_root_str(export, inductive.name, "IndexedUnit")
+            || name_is_root_str(export, inductive.name, "IndexedSingleton"))
+    {
+        return check_exact_fixed_bool_indexed(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
     // Crystal negative reuse: reject only a declaration-level universe
     // contradiction. This grants no new positive inductive authority.
     if multi_constructor_small_elim_is_definitely_malformed(export, block) {
@@ -809,6 +1380,38 @@ fn check_inductive(
 
     if exact_closed_reflexive_tree_candidate(export, block) {
         return check_exact_closed_reflexive_tree(export, environment, block, limits, delta_policy);
+    }
+
+    if crate::indexed_prop::contracts(export, block).is_some() {
+        let [inductive] = block.types.as_slice() else {
+            return Err(Verdict::Unknown);
+        };
+        let [recursor] = block.recursors.as_slice() else {
+            return Err(Verdict::Unknown);
+        };
+        if has_duplicate_parameter(&inductive.level_params)
+            || !recursor_metadata_admissible(
+                export, inductive, &block.constructors, recursor, false, true,
+            )
+        {
+            return Err(Verdict::Unknown);
+        }
+        let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+        derivation.promote(
+            export,
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+        for constructor in &block.constructors {
+            derivation.promote(
+                export, derived_constructor(constructor), limits.judgment_steps, delta_policy,
+            )?;
+        }
+        derivation.promote(
+            export, derived_recursor(recursor), limits.judgment_steps, delta_policy,
+        )?;
+        return install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor);
     }
 
     match block.constructors.len() {
@@ -1517,6 +2120,7 @@ fn check_generic_prop_singleton_large_elim(
                     .copied()
                     .map(ProjectionFieldType::Derived)
                     .collect(),
+                eta_expandable: false,
             },
         )
         .map_err(|_| Verdict::Reject)?;
@@ -1885,6 +2489,7 @@ fn check_generic_nonrecursive_prop_small(
                     constructor: constructor.name,
                     num_params: parameter_count,
                     field_types,
+                    eta_expandable: false,
                 },
             )
             .map_err(|_| Verdict::Reject)?;
@@ -2013,6 +2618,7 @@ fn check_generic_nonrecursive_type(
                 constructor: constructor.name,
                 num_params: p,
                 field_types,
+                eta_expandable: false,
             },
         )
         .map_err(|_| Verdict::Reject)?;
@@ -2224,6 +2830,7 @@ fn check_exact_ofnat(
                 constructor: constructor.name,
                 num_params: 2,
                 field_types: vec![ProjectionFieldType::Parameter(0)],
+                eta_expandable: false,
             },
         )
         .map_err(|_| Verdict::Reject)
@@ -3067,6 +3674,7 @@ fn check_fin_like_structure(
                     ProjectionFieldType::Derived(constructor_domains[1]),
                     ProjectionFieldType::Derived(constructor_domains[2]),
                 ],
+                eta_expandable: false,
             },
         )
         .map_err(|_| Verdict::Reject)?;
@@ -3425,6 +4033,7 @@ fn check_single_derived_field_structure(
             constructor: constructor.name,
             num_params: p,
             field_types: vec![ProjectionFieldType::Derived(field_type)],
+            eta_expandable: false,
         },
     ) {
         Ok(environment) => environment,
@@ -7000,6 +7609,7 @@ fn install_certified_recursor_reduction(
         .map(|(constructor, rule)| {
             Ok(RecursorRule {
                 constructor: constructor.name,
+                constructor_level_params: constructor.level_params.clone(),
                 num_params: usize::try_from(constructor.num_params).map_err(|_| Verdict::Reject)?,
                 num_fields: usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?,
                 rhs: rule.rhs,
@@ -7007,6 +7617,7 @@ fn install_certified_recursor_reduction(
         })
         .collect::<Result<Vec<_>, Verdict>>()?;
     let reduction = RecursorReduction {
+        k: recursor.k,
         num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
         num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
         level_params: recursor.level_params.clone(),
@@ -8547,6 +9158,7 @@ fn check_binary_enum(
             .map(|(constructor, rule)| {
                 Ok(RecursorRule {
                     constructor: constructor.name,
+                    constructor_level_params: constructor.level_params.clone(),
                     num_params: usize::try_from(constructor.num_params)
                         .map_err(|_| Verdict::Reject)?,
                     num_fields: usize::try_from(constructor.num_fields)
@@ -8556,6 +9168,7 @@ fn check_binary_enum(
             })
             .collect::<Result<Vec<_>, Verdict>>()?;
         let reduction = RecursorReduction {
+            k: recursor.k,
             num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
             num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
             level_params: recursor.level_params.clone(),
@@ -9107,6 +9720,10 @@ impl ExactBinaryProductDerivation<'_> {
                             ProjectionFieldType::Parameter(0),
                             ProjectionFieldType::Parameter(1),
                         ],
+                        eta_expandable: matches!(
+                            self.law,
+                            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::PProd { .. }
+                        ),
                     },
                 )
                 .map_err(|_| Verdict::Reject)?
@@ -9122,13 +9739,18 @@ impl ExactBinaryProductDerivation<'_> {
             environment
         };
 
-        // G32 reuses G31's already-qualified constructor-iota machine. Only
-        // exact Prod opts in here; And/PProd/PUnit/Eq remain opaque.
-        if matches!(self.law, BinaryProductSortLaw::Prod { .. }) {
+        // Reuse constructor-iota authority for exact Prod and the separately
+        // checked exact Eq recursor. The exported K bit remains guarded by
+        // typed compatibility at the conversion boundary.
+        if matches!(
+            self.law,
+            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::Eq { .. }
+        ) {
             let [rule] = self.recursor.rules.as_slice() else {
                 return Err(Verdict::Reject);
             };
             let reduction = RecursorReduction {
+                k: self.recursor.k,
                 num_params: usize::try_from(self.recursor.num_params)
                     .map_err(|_| Verdict::Reject)?,
                 num_indices: usize::try_from(self.recursor.num_indices)
@@ -9136,6 +9758,7 @@ impl ExactBinaryProductDerivation<'_> {
                 level_params: self.recursor.level_params.clone(),
                 rules: vec![RecursorRule {
                     constructor: self.constructor.name,
+                    constructor_level_params: self.constructor.level_params.clone(),
                     num_params: usize::try_from(self.constructor.num_params)
                         .map_err(|_| Verdict::Reject)?,
                     num_fields: usize::try_from(self.constructor.num_fields)

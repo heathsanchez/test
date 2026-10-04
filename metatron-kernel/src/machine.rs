@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::environment::{BoolPrimitives, NatPrimitives, QuotPrimitives};
 use crate::id::{ExprId, IdTable, LevelId, NameId};
@@ -42,6 +43,7 @@ pub struct DefinitionBody {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RecursorRule {
     pub constructor: NameId,
+    pub constructor_level_params: Vec<NameId>,
     pub num_params: usize,
     pub num_fields: usize,
     pub rhs: ExprId,
@@ -49,6 +51,7 @@ pub struct RecursorRule {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RecursorReduction {
+    pub k: bool,
     pub num_params: usize,
     pub num_indices: usize,
     pub level_params: Vec<NameId>,
@@ -66,6 +69,7 @@ pub struct ProjectionSpec {
     pub constructor: NameId,
     pub num_params: usize,
     pub field_types: Vec<ProjectionFieldType>,
+    pub eta_expandable: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -76,6 +80,7 @@ pub struct Exposure {
 
 type VisitKey = (AuthorityId, ExprId, u64);
 const INLINE_VISIT_CAPACITY: usize = 8;
+static NEXT_OPAQUE_MAJOR_FREE: AtomicU64 = AtomicU64::new(1 << 62);
 
 struct VisitSet {
     inline: [Option<VisitKey>; INLINE_VISIT_CAPACITY],
@@ -209,6 +214,67 @@ impl<'a> Machine<'a> {
     ) -> Judgment<Value> {
         self.expose_internal(closure, transparency, budget, false, true)
             .map(|exposure| exposure.value)
+    }
+
+    /// Unfold exactly the definition at an application's head, then resume
+    /// cheap conversion exposure with the original application spine.
+    pub(crate) fn expose_head_delta_for_conversion(
+        &self,
+        mut closure: Closure,
+        mut budget: usize,
+    ) -> Option<Judgment<Value>> {
+        let mut pending = Vec::new();
+        let mut visited = VisitSet::new();
+        loop {
+            if budget == 0 || !visited.insert((self.authority, closure.expr, closure.env.id())) {
+                return Some(Judgment::unknown("head-delta-exposure"));
+            }
+            budget -= 1;
+            match self.expressions.get(closure.expr)? {
+                Expr::BVar(index) => match closure.env.lookup(*index)? {
+                    EnvBinding::Closure(bound) => closure = bound,
+                    EnvBinding::Free(_) | EnvBinding::Neutral(_) => return None,
+                },
+                Expr::Let { value, body, .. } => {
+                    let value = closure.sibling(*value, closure.env.clone());
+                    closure = closure.sibling(*body, closure.env.extend(value));
+                }
+                Expr::App { fun, arg } => {
+                    pending.push(closure.sibling(*arg, closure.env.clone()));
+                    closure = closure.sibling(*fun, closure.env.clone());
+                }
+                Expr::Const { name, levels } => {
+                    let definition = self.definitions.get(name)?;
+                    if definition.level_params.len() != levels.len() {
+                        return Some(Judgment::unknown("head-delta-level-arity"));
+                    }
+                    let mut substitution = Vec::with_capacity(levels.len());
+                    for (parameter, level) in definition.level_params.iter().zip(levels) {
+                        let Some(level) = self.resolve_level(*level, &closure, budget) else {
+                            return Some(Judgment::unknown("head-delta-level-instantiation"));
+                        };
+                        substitution.push((*parameter, level));
+                    }
+                    let body = Closure::with_levels(
+                        definition.value,
+                        EnvFrame::empty(),
+                        LevelSubstitution::new(substitution),
+                    );
+                    return Some(
+                        self.expose_internal_with_pending(
+                            body,
+                            Transparency::Reducible,
+                            budget,
+                            false,
+                            true,
+                            pending,
+                        )
+                        .map(|exposure| exposure.value),
+                    );
+                }
+                _ => return None,
+            }
+        }
     }
 
     pub fn expose_with_witnesses(
@@ -481,15 +547,21 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
+                            let prefix_len = reduction.num_params + 1 + reduction.rules.len();
                             if let Some((constructor, constructor_arguments)) =
-                                self.constructor_application(target)
+                                self.rule_constructor_application(
+                                    target,
+                                    reduction,
+                                    &arguments[..prefix_len],
+                                    transparency,
+                                    budget,
+                                )
                                 && let Some(rule) = reduction
                                     .rules
                                     .iter()
                                     .find(|rule| rule.constructor == constructor)
                                 && constructor_arguments.len() == rule.num_params + rule.num_fields
                             {
-                                let prefix_len = reduction.num_params + 1 + reduction.rules.len();
                                 let mut rule_arguments = arguments[..prefix_len].to_vec();
                                 rule_arguments
                                     .extend_from_slice(&constructor_arguments[rule.num_params..]);
@@ -816,6 +888,120 @@ impl<'a> Machine<'a> {
         }
     }
 
+    fn rule_constructor_application(
+        &self,
+        target: &Closure,
+        reduction: &RecursorReduction,
+        prefix: &[Closure],
+        transparency: Transparency,
+        budget: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        let matches_rule = |constructor: NameId, arity: usize| {
+            reduction.rules.iter().any(|rule| {
+                rule.constructor == constructor
+                    && arity == rule.num_params + rule.num_fields
+            })
+        };
+        if let Some((constructor, arguments)) = self.constructor_application(target)
+            && matches_rule(constructor, arguments.len())
+        {
+            return Some((constructor, arguments));
+        }
+        if transparency != Transparency::Full {
+            return None;
+        }
+        // If every possible iota branch has the same certified outer
+        // constructor, that constructor is observable without forcing the
+        // major. Its fields remain opaque, so no payload equality is assumed.
+        if let Some(common) =
+            self.common_recursor_result_constructor(reduction, prefix, budget.min(512))
+        {
+            return Some(common);
+        }
+        let exposed = self
+            .expose_internal(
+                target.clone(),
+                Transparency::Full,
+                budget.saturating_sub(1),
+                false,
+                false,
+            )
+            .proven_value()?
+            .value
+            .clone();
+        match exposed {
+            Value::Neutral(Neutral {
+                head: NeutralHead::Const { name, .. },
+                spine,
+            }) if matches_rule(name, spine.len()) => Some((name, spine)),
+            _ => None,
+        }
+    }
+
+    fn common_recursor_result_constructor(
+        &self,
+        reduction: &RecursorReduction,
+        prefix: &[Closure],
+        budget: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        let bvar_zero = self.expressions.iter_raw().find_map(|(id, expression)| {
+            matches!(expression, Expr::BVar(0)).then_some(ExprId(id))
+        })?;
+        let mut common = None;
+        for (rule_index, rule) in reduction.rules.iter().enumerate() {
+            let mut arguments = prefix.to_vec();
+            for field_index in 0..rule.num_fields {
+                let discriminator = u64::try_from(rule_index)
+                    .ok()?
+                    .checked_mul(1_024)?
+                    .checked_add(u64::try_from(field_index).ok()?)?;
+                arguments.push(Closure::new(
+                    bvar_zero,
+                    EnvFrame::empty().extend_free(FreeId(u64::MAX - 1 - discriminator)),
+                ));
+            }
+            let exposed = self.expose_internal_with_pending(
+                Closure::with_levels(
+                    rule.rhs,
+                    EnvFrame::empty(),
+                    LevelSubstitution::default(),
+                ),
+                Transparency::Full,
+                budget,
+                false,
+                false,
+                arguments.iter().rev().cloned().collect(),
+            );
+            let Value::Neutral(Neutral {
+                head: NeutralHead::Const { name, .. },
+                spine,
+            }) = &exposed.proven_value()?.value
+            else {
+                return None;
+            };
+            let constructor_rule = self
+                .recursor_reductions
+                .values()
+                .flat_map(|candidate| candidate.rules.iter())
+                .find(|candidate| candidate.constructor == *name)?;
+            let arity = constructor_rule.num_params + constructor_rule.num_fields;
+            if spine.len() != arity {
+                return None;
+            }
+            match common {
+                None => common = Some((*name, arity)),
+                Some((common_name, common_arity))
+                    if common_name == *name && common_arity == arity => {}
+                Some(_) => return None,
+            }
+        }
+        let (constructor, arity) = common?;
+        let arguments = (0..arity)
+            .map(|_| opaque_major_closure(bvar_zero))
+            .collect::<Option<Vec<_>>>()?;
+        Some((constructor, arguments))
+    }
+
     fn resolve_level(
         &self,
         level: LevelId,
@@ -838,6 +1024,18 @@ fn append_pending(spine: &mut Vec<Closure>, pending: &mut Vec<Closure>) {
     while let Some(argument) = pending.pop() {
         spine.push(argument);
     }
+}
+
+fn opaque_major_closure(bvar_zero: ExprId) -> Option<Closure> {
+    let free = NEXT_OPAQUE_MAJOR_FREE
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+            current.checked_add(1)
+        })
+        .ok()?;
+    Some(Closure::new(
+        bvar_zero,
+        EnvFrame::empty().extend_free(FreeId(free)),
+    ))
 }
 
 #[inline]

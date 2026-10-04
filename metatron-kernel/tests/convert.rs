@@ -14,6 +14,149 @@ struct Fixture {
     environment: Environment,
 }
 
+#[test]
+fn matching_definition_applications_preserve_unforced_arguments() {
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(0), Level::Zero).unwrap();
+    let mut expressions = IdTable::default();
+    expressions
+        .insert(ExprId(0), Expr::Sort(LevelId(0)))
+        .unwrap();
+    expressions.insert(ExprId(1), Expr::BVar(0)).unwrap();
+    expressions
+        .insert(
+            ExprId(2),
+            Expr::Lam {
+                domain: ExprId(0),
+                body: ExprId(1),
+            },
+        )
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(3),
+            Expr::Const {
+                name: NameId(1),
+                levels: vec![],
+            },
+        )
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(4),
+            Expr::Const {
+                name: NameId(2),
+                levels: vec![],
+            },
+        )
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(5),
+            Expr::App {
+                fun: ExprId(3),
+                arg: ExprId(4),
+            },
+        )
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(6),
+            Expr::App {
+                fun: ExprId(3),
+                arg: ExprId(4),
+            },
+        )
+        .unwrap();
+    let environment = Environment::empty()
+        .extend(
+            NameId(1),
+            ConstantDecl::definition(vec![], ExprId(0), ExprId(2), true),
+        )
+        .unwrap()
+        .extend(
+            NameId(2),
+            ConstantDecl::definition(vec![], ExprId(0), ExprId(4), true),
+        )
+        .unwrap();
+    let checker = TypeChecker::new(&expressions, &levels, &environment);
+    assert!(
+        checker
+            .convert(&Fixture::term(5), &Fixture::term(6), 64)
+            .is_proven()
+    );
+}
+
+#[test]
+fn failed_definition_argument_congruence_falls_back_to_its_body() {
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(0), Level::Zero).unwrap();
+    let mut expressions = IdTable::default();
+    expressions
+        .insert(ExprId(0), Expr::Sort(LevelId(0)))
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(1),
+            Expr::Lam {
+                domain: ExprId(0),
+                body: ExprId(0),
+            },
+        )
+        .unwrap();
+    for (id, name) in [(2, 1), (3, 2), (4, 3)] {
+        expressions
+            .insert(
+                ExprId(id),
+                Expr::Const {
+                    name: NameId(name),
+                    levels: vec![],
+                },
+            )
+            .unwrap();
+    }
+    expressions
+        .insert(
+            ExprId(5),
+            Expr::App {
+                fun: ExprId(2),
+                arg: ExprId(3),
+            },
+        )
+        .unwrap();
+    expressions
+        .insert(
+            ExprId(6),
+            Expr::App {
+                fun: ExprId(2),
+                arg: ExprId(4),
+            },
+        )
+        .unwrap();
+    let environment = Environment::empty()
+        .extend(
+            NameId(1),
+            ConstantDecl::definition(vec![], ExprId(0), ExprId(1), false),
+        )
+        .unwrap()
+        .extend(
+            NameId(2),
+            ConstantDecl::definition(vec![], ExprId(0), ExprId(3), true),
+        )
+        .unwrap()
+        .extend(
+            NameId(3),
+            ConstantDecl::definition(vec![], ExprId(0), ExprId(4), true),
+        )
+        .unwrap();
+    let checker = TypeChecker::new(&expressions, &levels, &environment);
+    assert!(
+        checker
+            .convert(&Fixture::term(5), &Fixture::term(6), 64)
+            .is_proven()
+    );
+}
+
 impl Fixture {
     fn conversion() -> Self {
         let mut levels = IdTable::default();
@@ -269,6 +412,7 @@ fn matching_projections_compare_only_the_selected_fields() {
                     ProjectionFieldType::Derived(ExprId(0)),
                     ProjectionFieldType::Derived(ExprId(0)),
                 ],
+                eta_expandable: false,
             },
         )
         .unwrap();
@@ -341,6 +485,7 @@ fn projection_congruence_failure_does_not_force_unused_structure_arguments() {
                     ProjectionFieldType::Derived(ExprId(0)),
                     ProjectionFieldType::Derived(ExprId(0)),
                 ],
+                eta_expandable: false,
             },
         )
         .unwrap();
@@ -411,6 +556,7 @@ fn stuck_projection_preserves_its_application_spine() {
                 constructor: NameId(2),
                 num_params: 0,
                 field_types: vec![ProjectionFieldType::Derived(ExprId(0))],
+                eta_expandable: false,
             },
         )
         .unwrap();
