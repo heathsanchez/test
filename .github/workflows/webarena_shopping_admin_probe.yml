@@ -1,0 +1,35 @@
+name: WebArena Shopping Admin live probe
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - "scripts/webarena_shopping_admin_probe.py"
+      - ".github/workflows/webarena_shopping_admin_probe.yml"
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pull and start pinned-surface Shopping Admin
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}'
+          docker run -d --name webarena-verified-shopping_admin -p 7780:80 -p 7781:8877 am1n3e/webarena-verified-shopping_admin
+      - name: Wait for environment
+        run: |
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:7781/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs webarena-verified-shopping_admin
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install browser
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+      - name: Probe monthly completed-order report
+        run: python scripts/webarena_shopping_admin_probe.py
