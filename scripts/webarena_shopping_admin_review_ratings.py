@@ -55,7 +55,7 @@ async def next_page(page):
     raise RuntimeError("review pager next did not advance")
 
 async def apply_product_filter(page,product):
-    expand=page.locator('button[data-action="grid-filter-expand"]')
+    expand=page.get_by_role("button",name="Filters")
     await expand.first.click()
     wrap=page.locator('.admin__data-grid-filters-wrap:visible')
     fields=wrap.locator('.admin__form-field')
@@ -69,7 +69,7 @@ async def apply_product_filter(page,product):
     inp=target.locator("input")
     if await inp.count()==0: raise RuntimeError("Product review filter input missing")
     await inp.first.fill(product)
-    apply=wrap.locator('button[data-action="grid-filter-apply"]')
+    apply=wrap.get_by_role("button",name="Apply Filters")
     try:
         async with page.expect_response(lambda r: "/mui/index/render" in r.url, timeout=15000):
             await apply.click()
