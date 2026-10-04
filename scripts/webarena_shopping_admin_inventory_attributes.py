@@ -63,21 +63,23 @@ async def rewind_first(page):
     raise RuntimeError("product pager failed to set current page to 1")
 
 async def advance(page,table,headers):
-    wraps=page.locator(".admin__data-grid-pager-wrap:visible")
-    nxt=None
-    for i in range(await wraps.count()):
-        cand=wraps.nth(i).locator("button.action-next")
-        if await cand.count() and await cand.is_enabled():
-            nxt=cand; break
-    if nxt is None: return False
-    before=await first_sku(table,headers)
+    pager=page.locator('.admin__data-grid-pager:visible').first
+    current=pager.locator('input[data-ui-id="current-page-input"]')
+    nxt=pager.locator("button.action-next")
+    if await nxt.count()==0 or not await nxt.is_enabled():
+        return False
+    before_page=int((await current.input_value()).strip()) if await current.count() else None
     await nxt.click(force=True)
-    for _ in range(100):
+    for _ in range(120):
         await page.wait_for_timeout(100)
-        t,h=await live_table(page)
-        cur=await first_sku(t,h)
-        if before and cur and cur!=before: return True
-    raise RuntimeError("product pager next did not change grid")
+        await live_table(page)
+        if await current.count():
+            now=(await current.input_value()).strip()
+            if now.isdigit() and before_page is not None and int(now)==before_page+1:
+                return True
+    if not await nxt.is_enabled():
+        return False
+    raise RuntimeError("product pager next did not advance current page")
 
 async def scan_products(page):
     await rewind_first(page)
