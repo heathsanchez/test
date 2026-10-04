@@ -1,0 +1,118 @@
+name: WebArena compiled hard reclosure
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_compiled_hard_reclosure.yml"
+
+jobs:
+  reclose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start Shopping Admin once
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          mkdir -p artifacts/webarena_compiled_hard
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_compiled_hard/environment_image_digest.txt
+          docker run -d --name webarena-verified-shopping_admin -p 7780:80 -p 7781:8877 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install evaluator and browser once
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Prepare authority
+        run: |
+          cp upstream/assets/dataset/webarna-verfied-hard.json artifacts/webarena_compiled_hard/hard.json
+          cat > artifacts/webarena_compiled_hard/config.json <<'JSON'
+          {
+            "environments": {
+              "__SHOPPING_ADMIN__": {
+                "urls": ["http://localhost:7780/admin"],
+                "active_url_idx": 0
+              }
+            }
+          }
+          JSON
+      - name: Execute all compiled hard capabilities
+        run: |
+          ROOT=artifacts/webarena_compiled_hard
+          TASKS=$ROOT/hard.json
+          OUT=$ROOT/output
+          for id in 108 110 111; do
+            python scripts/webarena_shopping_admin_monthly_complete.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          for id in 707 709; do
+            python scripts/webarena_shopping_admin_orders_report_nav.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          for id in 193 196 197; do
+            python scripts/webarena_shopping_admin_payment_fold_v2.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          python scripts/webarena_shopping_admin_visible_order_selector.py --task-id 200 --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          for id in 63 64 65; do
+            python scripts/webarena_shopping_admin_customer_order_counts.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          for id in 42 127; do
+            python scripts/webarena_shopping_admin_search_terms.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+      - name: Officially score 14-task compiled closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_compiled_hard")
+          out=root/"output"
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
+          ids=(108,110,111,707,709,193,196,197,200,63,64,65,42,127)
+          results={}
+          for task_id in ids:
+              task=wa.get_task(task_id)
+              has_network=any(e.evaluator=="NetworkEventEvaluator" for e in task.eval)
+              trace=(out/str(task_id)/"network.har") if has_network else empty
+              result=wa.evaluate_task(
+                  task_id=task_id,
+                  agent_response=out/str(task_id)/"agent_response.json",
+                  network_trace=trace,
+              )
+              dumped=result.model_dump(mode="json",exclude_none=True)
+              (out/str(task_id)/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+              results[str(task_id)]={"score":float(result.score),"status":result.status.value}
+              print(task_id,results[str(task_id)])
+              if float(result.score)!=1.0 or result.status.value!="success":
+                  raise SystemExit(f"compiled reclosure failed at {task_id}: {dumped}")
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED",
+              "boundary":"14 currently compiled WebArena-Verified hard tasks in one reset Shopping Admin environment",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "task_ids":list(ids),
+              "success_count":len(ids),
+              "results":results,
+          }
+          (root/"compiled_reclosure.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-compiled-hard-reclosure
+          path: artifacts/webarena_compiled_hard
