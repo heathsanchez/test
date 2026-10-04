@@ -9,7 +9,7 @@ async def main():
         browser=await p.chromium.launch(headless=True)
         ctx=await browser.new_context(extra_http_headers={"X-Postmill-Auto-Login":"MarvelsGrantMan136:test1234"})
         page=await ctx.new_page()
-        for path in ["/f/worcester","/f/worcester/new","/f/Worcester","/f/Worcester/new"]:
+        for path in ["/search?q=Worcester","/search?q=DIY","/search?q=photoshopbattles","/forums/by_name/1","/f/books/hot","/f/books/new"]:
             try:
                 r=await page.goto(BASE+path,wait_until="networkidle",timeout=60000)
                 body=(await page.locator("body").inner_text())[:16000]
