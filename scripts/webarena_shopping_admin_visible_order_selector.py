@@ -38,7 +38,13 @@ def parse_selector(intent):
     return {"direction":direction,"status":status,"attribute":attr}
 
 def iso_date(text):
-    return datetime.strptime(clean(text),"%B %d, %Y %I:%M:%S %p").date().isoformat()
+    value=clean(text)
+    for fmt in ("%B %d, %Y %I:%M:%S %p","%b %d, %Y %I:%M:%S %p"):
+        try:
+            return datetime.strptime(value,fmt).date().isoformat()
+        except ValueError:
+            pass
+    raise ValueError(f"unsupported Magento date format: {value!r}")
 
 async def live_table(page):
     tables=page.locator("table:visible")
@@ -57,6 +63,35 @@ async def first_id(table,headers):
     if not await row.count(): return None
     td=row.locator("td")
     return clean(await td.nth(idx).inner_text()) if await td.count()>idx else None
+
+async def rewind_first(page):
+    # Magento persists grid paging state across visits. Rewind to page 1 so
+    # "newest"/"most recent" means global recency, independent of prior tasks.
+    for _ in range(20):
+        table,headers=await live_table(page)
+        wraps=page.locator(".admin__data-grid-pager-wrap:visible")
+        prev=None
+        for i in range(await wraps.count()):
+            cand=wraps.nth(i).locator("button.action-previous")
+            if await cand.count():
+                prev=cand
+                break
+        if prev is None or not await prev.is_enabled():
+            return
+        before=await first_id(table,headers)
+        await prev.click(force=True)
+        moved=False
+        for _ in range(80):
+            await page.wait_for_timeout(100)
+            table2,headers2=await live_table(page)
+            current=await first_id(table2,headers2)
+            if before and current and current!=before:
+                moved=True
+                break
+        if not moved:
+            raise RuntimeError("Magento pager failed to rewind to previous page")
+    raise RuntimeError("Magento pager did not reach page 1 within bound")
+
 
 async def advance(page,table,headers):
     wraps=page.locator(".admin__data-grid-pager-wrap:visible")
@@ -129,6 +164,7 @@ async def main():
         page=await ctx.new_page()
         resp=await page.goto(a.base_url.rstrip("/")+ORDER_GRID,wait_until="networkidle",timeout=120000)
         if resp is None or resp.status!=200: raise RuntimeError("order grid navigation failed")
+        await rewind_first(page)
         rows=await scan(page)
         response,selected=make_response(rows,selector)
         await browser.close()
