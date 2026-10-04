@@ -55,7 +55,7 @@ jobs:
           {
             "environments": {
               "__SHOPPING_ADMIN__": {
-                "urls": ["http://127.0.0.1:7780/admin"],
+                "urls": ["http://localhost:7780/admin"],
                 "active_url_idx": 0
               }
             }
@@ -65,7 +65,7 @@ jobs:
       - name: Execute requalified report capability
         run: |
           for id in 707 709; do
-            python scripts/webarena_shopping_admin_orders_report_nav.py               --task-id "$id"               --task-file artifacts/webarena_orders_report_navigation/tasks.json               --base-url http://127.0.0.1:7780/admin               --output-dir artifacts/webarena_orders_report_navigation/output
+            python scripts/webarena_shopping_admin_orders_report_nav.py               --task-id "$id"               --task-file artifacts/webarena_orders_report_navigation/tasks.json               --base-url http://localhost:7780/admin               --output-dir artifacts/webarena_orders_report_navigation/output
           done
 
       - name: Score response and network consequences
