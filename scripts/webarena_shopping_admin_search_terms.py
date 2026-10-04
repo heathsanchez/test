@@ -41,43 +41,80 @@ async def first_query(table,headers):
     cells=row.locator("td")
     return clean(await cells.nth(idx).inner_text()) if await cells.count()>idx else None
 
-async def goto_first(page):
-    table,headers=await live_table(page)
-    wraps=page.locator(".admin__data-grid-pager-wrap:visible")
-    if await wraps.count()==0: return
-    pager=wraps.first
-    inp=pager.locator('input[data-ui-id="current-page-input"]')
-    if await inp.count():
-        if (await inp.input_value()).strip()!="1":
-            before=await first_query(table,headers)
-            await inp.fill("1"); await inp.press("Enter")
-            for _ in range(100):
+async def configure_pager(page):
+    limit=page.locator("#search_term_grid_page-limit")
+    if await limit.count():
+        current=(await limit.input_value()).strip()
+        if current!="200":
+            before_table,before_headers=await live_table(page)
+            before=await first_query(before_table,before_headers)
+            await limit.select_option("200")
+            for _ in range(120):
                 await page.wait_for_timeout(100)
-                t,h=await live_table(page)
-                now=(await inp.input_value()).strip()
-                q=await first_query(t,h)
-                if now=="1" and q and q!=before: return
-            raise RuntimeError("search-term pager failed to reach page 1")
+                fresh=page.locator("#search_term_grid_page-limit")
+                if await fresh.count()==0: continue
+                try:
+                    if (await fresh.input_value(timeout=1000)).strip()!="200": continue
+                    table,headers=await live_table(page)
+                    now=await first_query(table,headers)
+                    if now:
+                        break
+                except Exception:
+                    continue
+    current=page.locator("#search_term_grid_page-current")
+    pages=1
+    if await current.count():
+        label=page.locator('label[for="search_term_grid_page-current"]')
+        if await label.count():
+            txt=clean(await label.inner_text())
+            m=re.search(r"of\s+(\d+)",txt,re.I)
+            if m: pages=int(m.group(1))
+        if (await current.input_value(timeout=5000)).strip()!="1":
+            await current.fill("1")
+            await current.press("Enter")
+            for _ in range(120):
+                await page.wait_for_timeout(100)
+                fresh=page.locator("#search_term_grid_page-current")
+                if await fresh.count()==0: continue
+                try:
+                    if (await fresh.input_value(timeout=1000)).strip()=="1":
+                        await live_table(page)
+                        break
+                except Exception:
+                    continue
+    return pages
 
-async def advance(page,table,headers):
-    wraps=page.locator(".admin__data-grid-pager-wrap:visible")
-    if await wraps.count()==0: return False
-    nxt=wraps.first.locator("button.action-next")
-    if not await nxt.count() or not await nxt.is_enabled(): return False
-    before=await first_query(table,headers)
-    await nxt.click(force=True)
-    for _ in range(100):
+async def goto_page(page,target:int,previous_first=None):
+    current=page.locator("#search_term_grid_page-current")
+    if await current.count()==0:
+        if target==1: return await live_table(page)
+        raise RuntimeError("search-term grid has no page control")
+    if (await current.input_value(timeout=5000)).strip()==str(target):
+        return await live_table(page)
+    await current.fill(str(target))
+    await current.press("Enter")
+    for _ in range(120):
         await page.wait_for_timeout(100)
-        t,h=await live_table(page)
-        q=await first_query(t,h)
-        if before and q and q!=before: return True
-    raise RuntimeError("search-term pager next did not change grid")
+        fresh=page.locator("#search_term_grid_page-current")
+        if await fresh.count()==0: continue
+        try:
+            now=(await fresh.input_value(timeout=1000)).strip()
+            table,headers=await live_table(page)
+            first=await first_query(table,headers)
+        except Exception:
+            continue
+        if now==str(target) and (previous_first is None or first!=previous_first):
+            return table,headers
+    raise RuntimeError(f"search-term pager failed to reach page {target}")
 
 async def scan_all(page):
-    await goto_first(page)
+    pages=await configure_pager(page)
     out=[]; seen=set()
-    for _ in range(50):
-        table,headers=await live_table(page)
+    table,headers=await live_table(page)
+    for pageno in range(1,pages+1):
+        if pageno>1:
+            prev=await first_query(table,headers)
+            table,headers=await goto_page(page,pageno,previous_first=prev)
         lower=[h.lower() for h in headers]
         ix={k:lower.index(k) for k in ["search query","results","uses"]}
         rows=table.locator("tbody tr")
@@ -93,7 +130,6 @@ async def scan_all(page):
                 "uses":num(await cells.nth(ix["uses"]).inner_text()),
                 "ordinal":len(out),
             })
-        if not await advance(page,table,headers): break
     if not out: raise RuntimeError("no search terms collected")
     return out
 
