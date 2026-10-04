@@ -105,17 +105,7 @@ async def scan_products(page):
     if not out: raise RuntimeError("no products collected")
     return out
 
-async def field_value(page,label):
-    labels=page.locator("label.admin__field-label")
-    target=None
-    for i in range(await labels.count()):
-        if clean(await labels.nth(i).inner_text()).lower()==label.lower():
-            target=labels.nth(i); break
-    if target is None: return None
-    fid=await target.get_attribute("for")
-    if not fid: return None
-    control=page.locator(f'[id="{fid}"]')
-    if await control.count()==0: return None
+async def read_control_value(control):
     tag=(await control.evaluate("(e)=>e.tagName.toLowerCase()"))
     if tag=="select":
         selected=control.locator("option:checked")
@@ -123,9 +113,37 @@ async def field_value(page,label):
         vals=[v for v in vals if v and v not in {"-- Please Select --","Please Select"}]
         return ", ".join(vals) if vals else None
     try:
-        return clean(await control.input_value())
+        value=clean(await control.input_value())
+        return value or None
     except Exception:
-        return clean(await control.inner_text())
+        value=clean(await control.inner_text())
+        return value or None
+
+async def field_value(page,label):
+    labels=page.locator("label.admin__field-label")
+    target=None
+    for i in range(await labels.count()):
+        if clean(await labels.nth(i).inner_text()).lower()==label.lower():
+            target=labels.nth(i); break
+    if target is not None:
+        fid=await target.get_attribute("for")
+        if fid:
+            control=page.locator(f'[id="{fid}"]')
+            if await control.count():
+                value=await read_control_value(control.first)
+                if value:
+                    return value
+
+    # Magento product EAV controls can be present without a currently visible
+    # label. Fall back to the stable attribute code in the form control name.
+    code=label.strip().lower().replace(" ","_")
+    controls=page.locator(f'[name="product[{code}]"]')
+    if await controls.count():
+        for i in range(await controls.count()):
+            value=await read_control_value(controls.nth(i))
+            if value:
+                return value
+    return None
 
 async def enrich(page,product,attributes):
     if not product["href"]:
