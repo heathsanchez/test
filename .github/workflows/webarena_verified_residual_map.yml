@@ -1,0 +1,26 @@
+name: WebArena Verified residual map
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - webarena-verified-capability-compiler-v1
+    paths:
+      - "scripts/webarena_verified_residual_map.py"
+      - ".github/workflows/webarena_verified_residual_map.yml"
+
+jobs:
+  map:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile hard-set residual map
+        run: python scripts/webarena_verified_residual_map.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webarena-verified-residual-map
+          path: artifacts/webarena_verified_residual_map.json
