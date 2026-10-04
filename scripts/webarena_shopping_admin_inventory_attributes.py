@@ -199,12 +199,13 @@ async def main():
         for product in matches:
             record={"name":product["name"],"sku":product["sku"]}
             need=[x for x in attrs if x not in {"name","sku"}]
-            if need:
-                record.update(await enrich(page,product,need))
             suffixes=variant_suffixes(product["name"])
             for key in ("size","color"):
-                if key in need and not record.get(key) and suffixes.get(key):
+                if key in need and suffixes.get(key):
                     record[key]=suffixes[key]
+            unresolved=[x for x in need if not record.get(x)]
+            if unresolved:
+                record.update(await enrich(page,product,unresolved))
             if "material" in need and not record.get("material"):
                 base=parent_name_for_variant(product["name"])
                 parent=next((p for p in products if base and clean(p["name"]).casefold()==base.casefold()),None)
