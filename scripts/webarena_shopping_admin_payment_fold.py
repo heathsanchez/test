@@ -148,21 +148,32 @@ async def collect_rows(page, need: dict, max_pages: int = 20) -> list[dict]:
         if await candidates.count() == 0:
             break
 
-        before = rows_out[-1]["id"] if rows_out else None
-        await candidates.first.click()
+        # Record the first visible order so we can verify paging actually moved.
+        before_first = None
+        first_row = table.locator("tbody tr").first
+        if id_idx is not None and await first_row.count():
+            cells = first_row.locator("td")
+            if await cells.count() > id_idx:
+                before_first = re.sub(r"\s+", " ", (await cells.nth(id_idx).inner_text()).strip())
+
+        # Magento's Knockout pager can be present yet fail Playwright's actionability
+        # checks because of overlapping pager wrappers. A native DOM click exercises
+        # the same bound click handler without inventing a navigation.
+        await candidates.first.evaluate("(el) => el.click()")
         await page.wait_for_timeout(1200)
         await page.wait_for_load_state("networkidle")
+
         # If paging did not change the visible data, stop rather than loop.
         table2, headers2 = await table_headers(page)
         lower2 = [h.lower() for h in headers2]
-        if "id" in lower2:
-            first_row = table2.locator("tbody tr").first
-            if await first_row.count():
-                cells = first_row.locator("td")
-                idx = lower2.index("id")
-                if await cells.count() > idx:
-                    current = re.sub(r"\s+", " ", (await cells.nth(idx).inner_text()).strip())
-                    if current == before:
+        if "id" in lower2 and before_first is not None:
+            first_row2 = table2.locator("tbody tr").first
+            if await first_row2.count():
+                cells2 = first_row2.locator("td")
+                idx2 = lower2.index("id")
+                if await cells2.count() > idx2:
+                    current = re.sub(r"\s+", " ", (await cells2.nth(idx2).inner_text()).strip())
+                    if current == before_first:
                         break
 
     return rows_out
