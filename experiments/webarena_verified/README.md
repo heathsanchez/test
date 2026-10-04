@@ -267,3 +267,44 @@ Current compiled Shopping Admin closure now contains:
 - Orders Report lineage: 7 official passes (template 270 family plus cross-template 268/271 reclosure);
 - Payment-fold lineage: 5 official passes (template 367 hard + held-out);
 - total official passes in these two compiled lineages: 12.
+
+
+## Third compiled family: visible order selectors
+
+**State: REUSABLE within the supported visible-grid subfamily of template 366**
+
+The third capability reuses the observable Magento order grid and compiles:
+
+```
+global recency normalization
++ status predicate
++ visible attribute projection
+```
+
+Qualification/transfer evidence:
+
+- final run: `37232747941`
+- final job: `111525717689`
+- evaluator-key refinement commit: `eb1fa5daf85048a29abf1de0d82cf8c3fed38290`
+- artifact: `11314258912`
+- artifact digest: `sha256:83a55e1729280c778f663c9c9bef79108d75eb137511f779b1bbcde5de438100`
+- hard task 200: score 1.0, success
+- held-out 199: score 1.0, success
+- held-out 202: score 1.0, success
+- held-out 203: score 1.0, success
+
+The failed lineage is preserved:
+
+1. `37227052863`: task 203 selected the correct most-recent pending order and correct date/order ID values, but emitted the field name `purchase_date`.
+2. The official task schema protects the object key `date`, so the evaluator rejected the otherwise correct value.
+3. The minimal repair changed only that consequential representation key. No order-selection logic, date value, or status logic changed.
+4. `37232747941`: 200/199/202/203 all closed.
+
+This establishes REUSABLE only for the currently supported visible-grid projection boundary. Template-366 tasks requiring hidden/detail-page fields (customer email, order items) remain outside this promotion.
+
+Current compiled official-pass ledger:
+
+- Orders Report lineage: 7 total passes, 5 hard-set.
+- Payment-fold lineage: 5 total passes, 3 hard-set.
+- Visible-order-selector lineage: 4 total passes, 1 hard-set.
+- total across compiled lineages: 16 official passes, of which 9 are hard-set tasks.
