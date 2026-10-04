@@ -128,11 +128,14 @@ async def scan_all(page):
         rid=clean(await cells.nth(ix["id"]).inner_text())
         if not rid or rid in seen: continue
         seen.add(rid)
+        links=rows.nth(ri).locator('a[href*="/review/product/edit/"]')
+        edit_href=await links.first.get_attribute("href") if await links.count() else None
         out.append({
             "review_id":rid,
             "created_raw":clean(await cells.nth(ix["created"]).inner_text()),
             "title":clean(await cells.nth(ix["title"]).inner_text()),
             "detail":clean(await cells.nth(ix["review"]).inner_text()),
+            "edit_href":edit_href,
         })
     if not out: raise RuntimeError("no reviews collected")
     return out
@@ -154,11 +157,31 @@ def task_mode(task):
             return {"kind":"all"}
     raise ValueError(f"unsupported review-count task: {task['intent']!r}")
 
+async def enrich_full_text(context,rows):
+    page=await context.new_page()
+    try:
+        for row in rows:
+            href=row.get("edit_href")
+            if not href:
+                raise RuntimeError(f"review {row['review_id']} has no edit link")
+            resp=await page.goto(href,wait_until="networkidle",timeout=120000)
+            if resp is None or resp.status!=200:
+                raise RuntimeError(f"review detail navigation failed for {row['review_id']}")
+            title=page.locator('input[name="title"]')
+            detail=page.locator('textarea[name="detail"]')
+            if await title.count()==0 or await detail.count()==0:
+                raise RuntimeError(f"full review fields missing for {row['review_id']}")
+            row["full_title"]=clean(await title.input_value())
+            row["full_detail"]=clean(await detail.input_value())
+    finally:
+        await page.close()
+    return rows
+
 def count_rows(rows,mode):
     kind=mode["kind"]
     if kind=="term":
         needle=mode["term"].casefold()
-        return sum(1 for r in rows if needle in (r["title"]+" "+r["detail"]).casefold())
+        return sum(1 for r in rows if needle in (r.get("full_title",r["title"])+" "+r.get("full_detail",r["detail"])).casefold())
     dated=[(r,parse_created(r["created_raw"])) for r in rows]
     if kind=="month":
         return sum(1 for _,d in dated if d.year==mode["year"] and d.month==mode["month"])
@@ -185,6 +208,8 @@ async def main():
         resp=await page.goto(a.base_url.rstrip("/")+REVIEW_GRID,wait_until="networkidle",timeout=120000)
         if resp is None or resp.status!=200: raise RuntimeError("review grid navigation failed")
         rows=await scan_all(page)
+        if mode["kind"]=="term":
+            rows=await enrich_full_text(ctx,rows)
         count=count_rows(rows,mode)
         await browser.close()
     response={"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":[count],"error_details":None}
