@@ -165,3 +165,42 @@ This warrants REUSABLE for the template-270 family under the pinned environment/
 ## Global reclosure after template 270
 
 The newly compiled primitive exposes an immediate dependency neighborhood: hard-set navigation tasks 707 and 709 use the same Magento Orders Report surface and date-filter semantics but protect a navigation/network consequence rather than a retrieved monthly table. These are the next cheapest separator for whether the compiled report capability can be requalified under a different protected future.
+
+
+## Cross-template global reclosure
+
+**State: WARRANTED_BOUNDED cross-template reuse**
+
+The compiled Orders Report primitive from template 270 was requalified under a different protected future:
+
+- task 707 / template 268: navigate to last year's sales order report;
+- task 709 / template 271: navigate to an explicit-date orders report.
+
+Unlike template 270, these tasks protect both the agent response and the observed network navigation.
+
+Final evidence:
+
+- run: `37196232195`
+- job: `111418580676`
+- canonical-host refinement commit: `7f01280cabf8b5f8289b3422880596e24bb20c8a`
+- artifact: `11301232164`
+- artifact digest: `sha256:a5eac01b50e7a41604230131a29de95fb05fbc2c3ec2f6cf6b0f6b032e9150f9`
+- task 707: score 1.0, success
+- task 709: score 1.0, success
+- same Shopping Admin image digest: `sha256:d0531dd27ed98d0c459ff9e88118bf2ed8b660b0ed99c38837db46c065a5be13`
+
+The first cross-template run, `37196053234`, is preserved as a separator. The report type, date range, HTTP method, and response status normalized correctly, but Magento canonicalized the host from `127.0.0.1` to `localhost`. That distinction was irrelevant for response-only tasks but consequential once the NetworkEventEvaluator became protected. The minimal repair was to preserve the canonical host in evaluator configuration. No report semantics or task answers changed.
+
+This is a concrete instance of the governing law:
+
+```
+response-only future: 127.0.0.1 ~ localhost
+network-protected future: 127.0.0.1 != localhost
+=> split exactly at the network boundary
+```
+
+Current warranted/reusable closure:
+
+- template 270: 5/5 across hard + held-out full-set instances; REUSABLE within family;
+- templates 268 and 271: 2/2 cross-template report-navigation reclosure; WARRANTED_BOUNDED;
+- total officially closed tasks in this compiled Orders Report lineage: 7.
