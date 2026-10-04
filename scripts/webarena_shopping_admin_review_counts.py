@@ -145,7 +145,7 @@ async def scan_all(page):
     return out
 
 async def filtered_term_count(page,term):
-    expand=page.locator('button[data-action="grid-filter-expand"]')
+    expand=page.get_by_role("button",name="Filters")
     if await expand.count()==0:
         raise RuntimeError("review Filters button not found")
     await expand.first.click()
@@ -166,7 +166,7 @@ async def filtered_term_count(page,term):
     if await control.count()==0:
         raise RuntimeError("Review text filter input not found")
     await control.first.fill(term)
-    apply=wrap.locator('button[data-action="grid-filter-apply"]')
+    apply=wrap.get_by_role("button",name="Apply Filters")
     try:
         async with page.expect_response(lambda r: "/mui/index/render" in r.url, timeout=15000):
             await apply.click()
