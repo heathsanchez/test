@@ -246,6 +246,16 @@ impl Environment {
         self.recursor_reductions.as_ref().clone()
     }
 
+    pub fn recursor_reduction(&self, name: NameId) -> Option<&RecursorReduction> {
+        self.recursor_reductions.get(&name)
+    }
+
+    pub(crate) fn is_certified_constructor(&self, name: NameId) -> bool {
+        self.recursor_reductions
+            .values()
+            .any(|reduction| reduction.rules.iter().any(|rule| rule.constructor == name))
+    }
+
     pub fn install_projection_spec(
         &self,
         name: NameId,

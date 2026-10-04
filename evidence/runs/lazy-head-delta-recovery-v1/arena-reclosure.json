@@ -1,0 +1,1526 @@
+{
+  "schema": "nucleus-arena-reclosure-v1",
+  "candidate_sha": "62fb6f04c6a4e9cadd8cb5383f3f92c5423fa916",
+  "base_sha": "fb354d0dc194cf7202157ff7a53528c9960fe9c7",
+  "arena_sha": "b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42",
+  "artifact_id": 11272848230,
+  "stack_limit": "unlimited",
+  "binary_sha256": "a758c5bf8a8deac5402640bc44d4e1a39975435dbc1b165898ba421000aec82c",
+  "counts": {
+    "0": 109,
+    "2": 28,
+    "1": 59
+  },
+  "wrong": [],
+  "errors": [],
+  "rows": [
+    {
+      "test": "corner-cases/proof-param-ok.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016266749989881646,
+      "trace": []
+    },
+    {
+      "test": "init-prelude.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.05728573300075368,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=eq_of_heq:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "test": "other/level-index-out-of-order.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001404167000146117,
+      "trace": []
+    },
+    {
+      "test": "other/nat-lit-add.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0031203040016407613,
+      "trace": []
+    },
+    {
+      "test": "other/nat-lit-ble.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0033164730011776555,
+      "trace": []
+    },
+    {
+      "test": "other/nat-lit-sub.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0037335369997890666,
+      "trace": []
+    },
+    {
+      "test": "other/sparse-name-index.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012975799982086755,
+      "trace": []
+    },
+    {
+      "test": "perf/app-lam.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.19917044199974043,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=dag_app_binder:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "test": "perf/args-before-unfold.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.011889716002770001,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_args_before_unfold:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "test": "perf/beta-ladder.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.11465159099680022,
+      "trace": []
+    },
+    {
+      "test": "perf/church-numerals.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.03192297300120117,
+      "trace": []
+    },
+    {
+      "test": "perf/discarded-argument-match.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.008855138999933843,
+      "trace": []
+    },
+    {
+      "test": "perf/discarded-argument.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.004307802999392152,
+      "trace": []
+    },
+    {
+      "test": "perf/folded-constant-first.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.012003734002064448,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "test": "perf/folded-constant-last.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.010671993000869406,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_last:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "test": "perf/fueled-chain.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.015991075000783894,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=Except:stage=inductive:verdict=Unknown"
+      ]
+    },
+    {
+      "test": "perf/grind-ring-5.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.1800363109978207,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=BitVec:stage=inductive:verdict=Unknown"
+      ]
+    },
+    {
+      "test": "perf/identical-nesting.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.002557976000389317,
+      "trace": []
+    },
+    {
+      "test": "perf/irrelevance-before-evaluation.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.003011914999660803,
+      "trace": []
+    },
+    {
+      "test": "perf/let-ladder.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.05164823599989177,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_quadratic_let_ladder:stage=definition.value:verdict=UNKNOWN:reason=unresolved-sort-level-during-reduction"
+      ]
+    },
+    {
+      "test": "perf/magma-list-deep-n21.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.045999909001693595,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "test": "perf/magma-list-deep-n36.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.04004516099666944,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "test": "perf/magma-list-pair-n21.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.020408950000273762,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "test": "perf/magma-list-pair-n7.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.025577879998309072,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "test": "perf/proj-cheap-struct.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.013523550998797873,
+      "trace": []
+    },
+    {
+      "test": "perf/proj-lazy-struct.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.006000454999593785,
+      "trace": []
+    },
+    {
+      "test": "perf/proj-stuck-struct.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.007635321002453566,
+      "trace": []
+    },
+    {
+      "test": "perf/repeated-subproblem.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0029865780015825294,
+      "trace": []
+    },
+    {
+      "test": "perf/shared-subterm.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.011149966998345917,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_shared_subterm:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "test": "perf/shift-cascade.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.04203251800208818,
+      "trace": []
+    },
+    {
+      "test": "perf/unroll-versus-evaluate.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.02625086099942564,
+      "trace": []
+    },
+    {
+      "test": "tutorial/001_basicDef.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016295489986077882,
+      "trace": []
+    },
+    {
+      "test": "tutorial/003_arrowType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013902059981774073,
+      "trace": []
+    },
+    {
+      "test": "tutorial/004_dependentType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011449560006440151,
+      "trace": []
+    },
+    {
+      "test": "tutorial/005_constType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011876989992742892,
+      "trace": []
+    },
+    {
+      "test": "tutorial/006_betaReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011985950004600454,
+      "trace": []
+    },
+    {
+      "test": "tutorial/007_betaReduction2.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011740890004148241,
+      "trace": []
+    },
+    {
+      "test": "tutorial/008_forallSortWhnf.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001191784998809453,
+      "trace": []
+    },
+    {
+      "test": "tutorial/013_thmProof.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001220196998474421,
+      "trace": []
+    },
+    {
+      "test": "tutorial/015_levelComp1.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011574939999263734,
+      "trace": []
+    },
+    {
+      "test": "tutorial/016_levelComp2.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001105577997805085,
+      "trace": []
+    },
+    {
+      "test": "tutorial/017_levelComp3.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0010925179994956125,
+      "trace": []
+    },
+    {
+      "test": "tutorial/018_levelParams.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015725949997431599,
+      "trace": []
+    },
+    {
+      "test": "tutorial/020_levelComp4.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001075953998224577,
+      "trace": []
+    },
+    {
+      "test": "tutorial/021_levelComp5.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012451129987312015,
+      "trace": []
+    },
+    {
+      "test": "tutorial/022_imax1.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0010117290003108792,
+      "trace": []
+    },
+    {
+      "test": "tutorial/023_imax2.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011202099994989112,
+      "trace": []
+    },
+    {
+      "test": "tutorial/024_levelMaxComm.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0010051999997813255,
+      "trace": []
+    },
+    {
+      "test": "tutorial/025_levelMaxAssoc.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0010245189987472259,
+      "trace": []
+    },
+    {
+      "test": "tutorial/026_levelMaxIdem.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011267299996688962,
+      "trace": []
+    },
+    {
+      "test": "tutorial/027_levelMaxAbsorb.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001085147996491287,
+      "trace": []
+    },
+    {
+      "test": "tutorial/028_inferVar.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011071200024161953,
+      "trace": []
+    },
+    {
+      "test": "tutorial/029_defEqLambda.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013036100026511122,
+      "trace": []
+    },
+    {
+      "test": "tutorial/030_peano1.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014263100019888952,
+      "trace": []
+    },
+    {
+      "test": "tutorial/031_peano2.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016785709995019715,
+      "trace": []
+    },
+    {
+      "test": "tutorial/032_peano3.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014441159983107354,
+      "trace": []
+    },
+    {
+      "test": "tutorial/033_letType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0010418749989185017,
+      "trace": []
+    },
+    {
+      "test": "tutorial/034_letTypeDep.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0010385189998487476,
+      "trace": []
+    },
+    {
+      "test": "tutorial/035_letRed.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001041204002831364,
+      "trace": []
+    },
+    {
+      "test": "tutorial/036_empty.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011477900006866548,
+      "trace": []
+    },
+    {
+      "test": "tutorial/037_boolType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011070100008510053,
+      "trace": []
+    },
+    {
+      "test": "tutorial/038_twoBool.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011879589983436745,
+      "trace": []
+    },
+    {
+      "test": "tutorial/039_andType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013640280012623407,
+      "trace": []
+    },
+    {
+      "test": "tutorial/040_prodType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001388764998409897,
+      "trace": []
+    },
+    {
+      "test": "tutorial/041_pprodType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011277999983576592,
+      "trace": []
+    },
+    {
+      "test": "tutorial/042_pUnitType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001056314999004826,
+      "trace": []
+    },
+    {
+      "test": "tutorial/043_eqType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001457285001379205,
+      "trace": []
+    },
+    {
+      "test": "tutorial/044_natDef.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014663799993286375,
+      "trace": []
+    },
+    {
+      "test": "tutorial/045_rbTreeDef.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0017336819983029272,
+      "trace": []
+    },
+    {
+      "test": "tutorial/055_reduceCtorParam.mk.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011688000013236888,
+      "trace": []
+    },
+    {
+      "test": "tutorial/058_predWithTypeField.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012053749996994156,
+      "trace": []
+    },
+    {
+      "test": "tutorial/059_typeWithTypeField.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011030839996237773,
+      "trace": []
+    },
+    {
+      "test": "tutorial/060_typeWithTypeFieldPoly.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014190690017130692,
+      "trace": []
+    },
+    {
+      "test": "tutorial/062_emptyRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0010519489987927955,
+      "trace": []
+    },
+    {
+      "test": "tutorial/063_boolRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011432540013629477,
+      "trace": []
+    },
+    {
+      "test": "tutorial/064_twoBoolRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012183840008219704,
+      "trace": []
+    },
+    {
+      "test": "tutorial/065_andRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001371219001157442,
+      "trace": []
+    },
+    {
+      "test": "tutorial/066_prodRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012811460001103114,
+      "trace": []
+    },
+    {
+      "test": "tutorial/067_pprodRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013811240023642313,
+      "trace": []
+    },
+    {
+      "test": "tutorial/068_punitRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0010682029969757423,
+      "trace": []
+    },
+    {
+      "test": "tutorial/069_eqRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001180839000880951,
+      "trace": []
+    },
+    {
+      "test": "tutorial/070_nRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012681470034294762,
+      "trace": []
+    },
+    {
+      "test": "tutorial/071_rbTreeRef.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.002039873001194792,
+      "trace": []
+    },
+    {
+      "test": "tutorial/072_boolPropRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0010827240002981853,
+      "trace": []
+    },
+    {
+      "test": "tutorial/074_existsRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001593827000760939,
+      "trace": []
+    },
+    {
+      "test": "tutorial/075_typeSingletonRecReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013114309986121953,
+      "trace": []
+    },
+    {
+      "test": "tutorial/076_sortElimPropRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001376676998916082,
+      "trace": []
+    },
+    {
+      "test": "tutorial/077_sortElimProp2Rec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014938700005586725,
+      "trace": []
+    },
+    {
+      "test": "tutorial/078_boolRecEqns.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0021029659983469173,
+      "trace": []
+    },
+    {
+      "test": "tutorial/079_prodRecEqns.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001959454999450827,
+      "trace": []
+    },
+    {
+      "test": "tutorial/080_nRecReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0024866210005711764,
+      "trace": []
+    },
+    {
+      "test": "tutorial/081_listRecReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0034604649990797043,
+      "trace": []
+    },
+    {
+      "test": "tutorial/082_RBTree.id_spec.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.0030446429991570767,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=RBTree.id_spec:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "test": "tutorial/083_And.right.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013065240018477198,
+      "trace": []
+    },
+    {
+      "test": "tutorial/084_Prod.snd.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001496363001933787,
+      "trace": []
+    },
+    {
+      "test": "tutorial/085_PProd.snd.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012447020017134491,
+      "trace": []
+    },
+    {
+      "test": "tutorial/086_PSigma.snd.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001296148999244906,
+      "trace": []
+    },
+    {
+      "test": "tutorial/089_projProp1.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014059399982215837,
+      "trace": []
+    },
+    {
+      "test": "tutorial/091_projProp3.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001698000000033062,
+      "trace": []
+    },
+    {
+      "test": "tutorial/095_projDataIndexRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014124900008027907,
+      "trace": []
+    },
+    {
+      "test": "tutorial/098_projRed.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0022990550023678225,
+      "trace": []
+    },
+    {
+      "test": "tutorial/099_ruleK.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.001546777999465121,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=ruleK:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "test": "tutorial/102_aNatLit.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015746279968880117,
+      "trace": []
+    },
+    {
+      "test": "tutorial/103_natLitEq.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015351799993368331,
+      "trace": []
+    },
+    {
+      "test": "tutorial/104_proofIrrelevance.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.00217595399954007,
+      "trace": []
+    },
+    {
+      "test": "tutorial/106_proofIrrelevanceWhnf.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013736020009673666,
+      "trace": []
+    },
+    {
+      "test": "tutorial/107_proofIrrelevanceUnderBinder.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011174760002177209,
+      "trace": []
+    },
+    {
+      "test": "tutorial/108_unitEta1.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015006199973868206,
+      "trace": []
+    },
+    {
+      "test": "tutorial/109_unitEta2.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012844110024161637,
+      "trace": []
+    },
+    {
+      "test": "tutorial/110_unitEta3.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001271100998565089,
+      "trace": []
+    },
+    {
+      "test": "tutorial/112_structEta.ndjson",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.001858145998994587,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=structEta:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "test": "tutorial/114_funEta.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014208619977580383,
+      "trace": []
+    },
+    {
+      "test": "tutorial/115_funEtaDep.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013097080009174533,
+      "trace": []
+    },
+    {
+      "test": "tutorial/119_reduceCtorParamRefl.mk.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016352980019291863,
+      "trace": []
+    },
+    {
+      "test": "tutorial/120_reduceCtorParamRefl2.mk.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001402835998305818,
+      "trace": []
+    },
+    {
+      "test": "tutorial/121_rTreeRec.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013212850026320666,
+      "trace": []
+    },
+    {
+      "test": "tutorial/122_rtreeRecReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015963309997459874,
+      "trace": []
+    },
+    {
+      "test": "tutorial/123_accRecType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0021635459997924045,
+      "trace": []
+    },
+    {
+      "test": "tutorial/124_accRecReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0020831769979849923,
+      "trace": []
+    },
+    {
+      "test": "tutorial/126_quotMkType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.002290231997903902,
+      "trace": []
+    },
+    {
+      "test": "tutorial/127_quotIndType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014659279986517504,
+      "trace": []
+    },
+    {
+      "test": "tutorial/128_quotLiftType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013352960013435222,
+      "trace": []
+    },
+    {
+      "test": "tutorial/129_quotSoundType.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016644210008962546,
+      "trace": []
+    },
+    {
+      "test": "tutorial/130_quotLiftReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0019343979984114412,
+      "trace": []
+    },
+    {
+      "test": "tutorial/131_quotIndReduction.ndjson",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016803139988041949,
+      "trace": []
+    },
+    {
+      "test": "bugs/constlevels.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0019088610024482477,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=_test:stage=theorem.proposition:verdict=REJECT:reason=rigid-value-constructor-mismatch"
+      ]
+    },
+    {
+      "test": "bugs/ctor-num-fields.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.002316351001354633,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Test.0.S:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "bugs/k-rec-conv.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0017738209971867036,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=bad:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch"
+      ]
+    },
+    {
+      "test": "bugs/large-elim-param.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0021060409999336116,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=MyBool:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "bugs/large-elim-prop-bool.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0022482999993371777,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=NewBool:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "bugs/level-imax-leq.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001150113999756286,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "bugs/level-imax-normalization.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013386810023803264,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=down:stage=definition.value:verdict=REJECT:reason=distinct-canonical-universes"
+      ]
+    },
+    {
+      "test": "bugs/nat-rec-k-lie.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011570040005608462,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=Nat:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "bugs/nat-rec-rules.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012066369999956805,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "bugs/nested-unused-param.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.001990300999750616,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=T:stage=inductive:verdict=Unknown"
+      ]
+    },
+    {
+      "test": "bugs/orphan-rec.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010885020019486547,
+      "trace": []
+    },
+    {
+      "test": "bugs/proj-non-structure.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013588910005637445,
+      "trace": []
+    },
+    {
+      "test": "bugs/proj-of-imax-prop.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0015031529983389191,
+      "trace": []
+    },
+    {
+      "test": "bugs/proj-of-stuck-prop.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.009476062998146517,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=RecClass.rcStep.match_1:stage=definition.type:verdict=UNKNOWN:reason=lazy-projection-value-exposure"
+      ]
+    },
+    {
+      "test": "bugs/proj-of-subst-prop.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.010680266001145355,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=PR14806Subst.step.match_1:stage=definition.type:verdict=UNKNOWN:reason=lazy-projection-value-exposure"
+      ]
+    },
+    {
+      "test": "bugs/rec-k-lie.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012335259998508263,
+      "trace": []
+    },
+    {
+      "test": "bugs/rec-missing-ih.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.011810669999249512,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=RecClass.rcStep.match_1:stage=definition.type:verdict=UNKNOWN:reason=lazy-projection-value-exposure"
+      ]
+    },
+    {
+      "test": "bugs/rec-of-subst-prop.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.008482729997922434,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=Issue.gateStep.match_1:stage=definition.type:verdict=UNKNOWN:reason=lazy-projection-value-exposure"
+      ]
+    },
+    {
+      "test": "other/extra-rec.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010837649970198981,
+      "trace": []
+    },
+    {
+      "test": "other/nat-lit-add-bad.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0031311200000345707,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=natAddLitBad:stage=theorem.value:verdict=REJECT:reason=distinct-Nat-literals"
+      ]
+    },
+    {
+      "test": "other/orphan-ctor.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010282939983881079,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "other/proj-of-prop.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011152620027132798,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=badFalse:stage=theorem.value:verdict=REJECT:reason=distinct-opaque-proposition-types"
+      ]
+    },
+    {
+      "test": "perf/refute-cheap-first.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.4962511390003783,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "test": "perf/refute-cheap-last.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.004254784998920513,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_last:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch"
+      ]
+    },
+    {
+      "test": "tutorial/002_badDef.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012644719972740859,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=badDef:stage=definition.value:verdict=REJECT:reason=distinct-canonical-universes"
+      ]
+    },
+    {
+      "test": "tutorial/009_forallSortBad.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013065129969618283,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=forallSortBad:stage=definition.value:verdict=REJECT:reason=term-type-is-rigid-nonsort"
+      ]
+    },
+    {
+      "test": "tutorial/010_nonTypeType.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011420109985920135,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=nonTypeType:stage=definition.type:verdict=REJECT:reason=term-is-not-a-type"
+      ]
+    },
+    {
+      "test": "tutorial/011_nonTypeAxiom.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011288919995422475,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=nonTypeAxiom:stage=axiom.type:verdict=REJECT:reason=term-is-not-a-type"
+      ]
+    },
+    {
+      "test": "tutorial/012_nonPropThm.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001057987999956822,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=nonPropThm:stage=theorem.proposition:verdict=REJECT:reason=distinct-canonical-universes"
+      ]
+    },
+    {
+      "test": "tutorial/014_selfProof.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001027143000101205,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=selfProof:stage=theorem.value:verdict=REJECT:reason=unknown-constant"
+      ]
+    },
+    {
+      "test": "tutorial/019_tut06_bad01.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010830649989657104,
+      "trace": []
+    },
+    {
+      "test": "tutorial/046_inductBadNonSort.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001063524996425258,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=inductBadNonSort:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/047_inductBadNonSort2.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010438270001031924,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=inductBadNonSort2:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/048_inductLevelParam.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011021530008292757,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=inductLevelParam:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/049_inductTooFewParams.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0009948350016202312,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=inductTooFewParams:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/050_inductWrongCtorParams.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010073429984913673,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=inductWrongCtorParams:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/051_inductWrongCtorResParams.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010395210010756273,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=inductWrongCtorResParams:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/052_inductWrongCtorResLevel.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010003630013670772,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=inductWrongCtorResLevel:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/053_inductInIndex.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0009976590008591302,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=inductInIndex:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/054_indNeg.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0009774089994607493,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=indNeg:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/056_reduceCtorType.mk.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011033749979105778,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=reduceCtorType:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/057_indNegReducible.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010504169986234047,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=indNegReducible:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/061_typeWithTooHighTypeField.mk.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010251089988742024,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=typeWithTooHighTypeField:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/073_BogusRecursor.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011335300005157478,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=BogusRecursor:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/087_projOutOfRange.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011247260008531157,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=projOutOfRange:stage=definition.value:verdict=REJECT:reason=projection-index-out-of-range"
+      ]
+    },
+    {
+      "test": "tutorial/088_projNotStruct.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001106989999243524,
+      "trace": []
+    },
+    {
+      "test": "tutorial/090_projProp2.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001149351999629289,
+      "trace": []
+    },
+    {
+      "test": "tutorial/092_projProp4.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011082019991590641,
+      "trace": []
+    },
+    {
+      "test": "tutorial/093_projProp5.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012421889987308532,
+      "trace": []
+    },
+    {
+      "test": "tutorial/094_projProp6.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012387839997245464,
+      "trace": []
+    },
+    {
+      "test": "tutorial/096_projIndexData.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001607056001375895,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=projIndexData:stage=definition.value:verdict=REJECT:reason=projection-type-name-mismatch"
+      ]
+    },
+    {
+      "test": "tutorial/097_projIndexData2.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0016431990006822161,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=projIndexData2:stage=definition.value:verdict=REJECT:reason=projection-type-name-mismatch"
+      ]
+    },
+    {
+      "test": "tutorial/100_ruleKbad.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.0016874840002856217,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "test": "tutorial/101_ruleKAcc.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.0017245890012418386,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "test": "tutorial/105_proofIrrelevanceBad.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.0012720730010187253,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=proofIrrelevanceBad:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "test": "tutorial/111_indexedUnitEta.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.001215079002577113,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=IndexedUnit:stage=inductive:verdict=Unknown"
+      ]
+    },
+    {
+      "test": "tutorial/113_indexedStructEta.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.0011840839979413431,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=IndexedSingleton:stage=inductive:verdict=Unknown"
+      ]
+    },
+    {
+      "test": "tutorial/116_funEtaBad.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013202539994381368,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=funEtaBad:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch"
+      ]
+    },
+    {
+      "test": "tutorial/117_reflOccLeft.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010838259986485355,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=reflOccLeft:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/118_reflOccInIndex.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010757839991129003,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=reflOccInIndex:stage=inductive:verdict=Reject"
+      ]
+    },
+    {
+      "test": "tutorial/125_accRecNoEta.ndjson",
+      "expected": 1,
+      "actual": 2,
+      "seconds": 0.0016688070027157664,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=accRecNoEta:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "test": "tutorial/132_dup_defs.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010150640009669587,
+      "trace": []
+    },
+    {
+      "test": "tutorial/133_dup_ind_def.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.000978490999841597,
+      "trace": []
+    },
+    {
+      "test": "tutorial/134_dup_ctor_def.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0009837079996941611,
+      "trace": []
+    },
+    {
+      "test": "tutorial/135_dup_rec_def.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0009961969990399666,
+      "trace": []
+    },
+    {
+      "test": "tutorial/136_misnamed_rec_user.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011783850022766273,
+      "trace": []
+    },
+    {
+      "test": "tutorial/137_dup_rec_def2.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010856180015252903,
+      "trace": []
+    },
+    {
+      "test": "tutorial/138_dup_ctor_rec.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0009769390017027035,
+      "trace": []
+    },
+    {
+      "test": "tutorial/139_DupConCon.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0009917800016410183,
+      "trace": []
+    },
+    {
+      "test": "tutorial/140_falseFromUnsafe.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010282939983881079,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=unsafeLoop:stage=definition.value:verdict=REJECT:reason=unknown-constant"
+      ]
+    },
+    {
+      "test": "tutorial/141_falseFromPartial.ndjson",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0010800500022014603,
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=partialLoop:stage=definition.value:verdict=REJECT:reason=unknown-constant"
+      ]
+    }
+  ]
+}

@@ -6,7 +6,9 @@ use crate::judgment::Judgment;
 use crate::level::{LevelTerm, imax, instantiate_level, succ};
 use crate::machine::{Machine, ProjectionFieldType, Transparency};
 use crate::syntax::{Expr, Level};
-use crate::value::{Closure, EnvFrame, FreeId, LevelSubstitution, Neutral, NeutralHead, Value};
+use crate::value::{
+    Closure, EnvBinding, EnvFrame, FreeId, LevelSubstitution, Neutral, NeutralHead, Value,
+};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum TypeValue {
@@ -16,6 +18,13 @@ pub enum TypeValue {
         domain: Box<TypeValue>,
         body: Box<TypeValue>,
     },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum RuleKAttempt {
+    NotApplicable,
+    Reduced(Closure),
+    DefiniteMismatch,
 }
 
 pub struct TypeChecker<'a> {
@@ -63,7 +72,13 @@ impl<'a> TypeChecker<'a> {
 
     pub fn infer(&self, expression: ExprId, budget: usize) -> Judgment<TypeValue> {
         let mut remaining = budget;
-        self.infer_in(expression, &[], &EnvFrame::empty(), &mut remaining)
+        self.infer_in(
+            expression,
+            &[],
+            &EnvFrame::empty(),
+            &mut remaining,
+            &mut HashMap::new(),
+        )
     }
 
     pub fn check(&self, expression: ExprId, expected: &TypeValue, budget: usize) -> Judgment<()> {
@@ -75,6 +90,7 @@ impl<'a> TypeChecker<'a> {
             &EnvFrame::empty(),
             &mut remaining,
             self.delta_policy == crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            &mut HashMap::new(),
         )
     }
 
@@ -123,6 +139,7 @@ impl<'a> TypeChecker<'a> {
             &EnvFrame::empty(),
             &mut remaining,
             false,
+            &mut HashMap::new(),
         )
     }
 
@@ -141,6 +158,7 @@ impl<'a> TypeChecker<'a> {
             frame,
             &mut remaining,
             false,
+            &mut HashMap::new(),
         )
     }
 
@@ -171,6 +189,32 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+    ) -> Judgment<TypeValue> {
+        // Share only certified results inside one public judgment. Frame
+        // identity keeps equal syntax under distinct binders separate.
+        let key = (expression, frame.id());
+        if let Some(value) = cache.get(&key) {
+            return if take_step(remaining) {
+                Judgment::proven(value.clone(), "shared-expression-inference")
+            } else {
+                Judgment::unknown("type-inference-budget")
+            };
+        }
+        let result = self.infer_uncached(expression, context, frame, remaining, cache);
+        if let Judgment::Proven { value, .. } = &result {
+            cache.insert(key, value.clone());
+        }
+        result
+    }
+
+    fn infer_uncached(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<TypeValue> {
         if !take_step(remaining) {
             return Judgment::unknown("type-inference-budget");
@@ -229,7 +273,7 @@ impl<'a> TypeChecker<'a> {
                 )
             }
             Expr::Pi { domain, body } => {
-                let domain_type = self.infer_in(*domain, context, frame, remaining);
+                let domain_type = self.infer_in(*domain, context, frame, remaining, cache);
                 let domain_sort = match self.sort_level(domain_type, *remaining) {
                     Judgment::Proven { value, .. } => value,
                     Judgment::Refuted { obstruction } => {
@@ -244,7 +288,7 @@ impl<'a> TypeChecker<'a> {
                     return Judgment::unknown("binder-depth-overflow");
                 };
                 let body_frame = frame.extend_free(free);
-                let body_type = self.infer_in(*body, &extended, &body_frame, remaining);
+                let body_type = self.infer_in(*body, &extended, &body_frame, remaining, cache);
                 let body_sort = match self.sort_level(body_type, *remaining) {
                     Judgment::Proven { value, .. } => value,
                     Judgment::Refuted { obstruction } => {
@@ -258,7 +302,7 @@ impl<'a> TypeChecker<'a> {
                 )
             }
             Expr::Lam { domain, body } => {
-                let domain_type = self.infer_in(*domain, context, frame, remaining);
+                let domain_type = self.infer_in(*domain, context, frame, remaining, cache);
                 match self.sort_level(domain_type, *remaining) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
@@ -273,14 +317,14 @@ impl<'a> TypeChecker<'a> {
                     return Judgment::unknown("binder-depth-overflow");
                 };
                 let body_frame = frame.extend_free(free);
-                self.infer_in(*body, &extended, &body_frame, remaining)
+                self.infer_in(*body, &extended, &body_frame, remaining, cache)
                     .map(|body_type| TypeValue::Pi {
                         domain: Box::new(domain_type),
                         body: Box::new(body_type),
                     })
             }
             Expr::App { fun, arg } => {
-                let function_type = self.infer_in(*fun, context, frame, remaining);
+                let function_type = self.infer_in(*fun, context, frame, remaining, cache);
                 if let Judgment::Refuted { obstruction } = &function_type {
                     return Judgment::Refuted {
                         obstruction: *obstruction,
@@ -289,7 +333,7 @@ impl<'a> TypeChecker<'a> {
                 let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
                     return Judgment::unknown("application-function-type");
                 };
-                match self.check_in(*arg, &domain, context, frame, remaining, true) {
+                match self.check_in(*arg, &domain, context, frame, remaining, true, cache) {
                     Judgment::Proven { .. } => Judgment::proven(
                         match body {
                             PiBody::Fixed(body) => body,
@@ -320,7 +364,8 @@ impl<'a> TypeChecker<'a> {
                 let Some(field_type) = spec.field_types.get(index).cloned() else {
                     return Judgment::refuted("projection-index-out-of-range");
                 };
-                let structure_type = match self.infer_in(*structure, context, frame, remaining) {
+                let structure_type =
+                    match self.infer_in(*structure, context, frame, remaining, cache) {
                     Judgment::Proven { value, .. } => value,
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
@@ -438,7 +483,7 @@ impl<'a> TypeChecker<'a> {
                 )
             }
             Expr::Let { ty, value, body } => {
-                let annotation_type = self.infer_in(*ty, context, frame, remaining);
+                let annotation_type = self.infer_in(*ty, context, frame, remaining, cache);
                 match self.sort_level(annotation_type, *remaining) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
@@ -447,7 +492,15 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
                 let established = TypeValue::Term(self.closure(*ty, frame.clone()));
-                match self.check_in(*value, &established, context, frame, remaining, true) {
+                match self.check_in(
+                    *value,
+                    &established,
+                    context,
+                    frame,
+                    remaining,
+                    true,
+                    cache,
+                ) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
@@ -457,7 +510,7 @@ impl<'a> TypeChecker<'a> {
                 let mut extended = context.to_vec();
                 extended.push(established);
                 let extended_frame = frame.extend(self.closure(*value, frame.clone()));
-                self.infer_in(*body, &extended, &extended_frame, remaining)
+                self.infer_in(*body, &extended, &extended_frame, remaining, cache)
             }
         }
     }
@@ -470,8 +523,9 @@ impl<'a> TypeChecker<'a> {
         frame: &EnvFrame,
         remaining: &mut usize,
         conversion_refutation_is_unknown: bool,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<()> {
-        let inferred = self.infer_in(expression, context, frame, remaining);
+        let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
             Judgment::Proven { value, .. } => {
                 let conversion = crate::convert::convert_with_policy_in_context(
@@ -635,6 +689,38 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    fn normalized_type_is_definitely_nonproposition(
+        &self,
+        value: &Value,
+        context: &[TypeValue],
+        budget: usize,
+        depth: usize,
+    ) -> bool {
+        if depth >= 16 || budget == 0 {
+            return false;
+        }
+        let Value::Neutral(neutral) = value else {
+            return false;
+        };
+        let Some(ty) = self.neutral_result_type(neutral, context, budget - 1) else {
+            return false;
+        };
+        let Some(normal) = self.normalize_type_value(&ty, budget - 1) else {
+            return false;
+        };
+        match normal {
+            Value::Sort(LevelTerm::Succ(_)) => true,
+            Value::Neutral(_) if normal != *value => self
+                .normalized_type_is_definitely_nonproposition(
+                    &normal,
+                    context,
+                    budget - 1,
+                    depth + 1,
+                ),
+            _ => false,
+        }
+    }
+
     fn neutral_result_type(
         &self,
         neutral: &crate::value::Neutral,
@@ -680,6 +766,404 @@ impl<'a> TypeChecker<'a> {
             };
         }
         Some(current)
+    }
+
+    pub(crate) fn rule_k_reduce_neutral(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> RuleKAttempt {
+        if budget < 8 {
+            return RuleKAttempt::NotApplicable;
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return RuleKAttempt::NotApplicable;
+        };
+        let Some(reduction) = self.environment.recursor_reduction(*name) else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=no-reduction", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=found:k={}:rules={}:spine={}:params={}:indices={}",
+                name.0,
+                reduction.k,
+                reduction.rules.len(),
+                neutral.spine.len(),
+                reduction.num_params,
+                reduction.num_indices
+            );
+        }
+        let [rule] = reduction.rules.as_slice() else {
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=rule:fields={}:rule_params={}:level_params={}:head_levels={}",
+                name.0,
+                rule.num_fields,
+                rule.num_params,
+                reduction.level_params.len(),
+                levels.len()
+            );
+        }
+        if !reduction.k
+            || rule.num_fields != 0
+            || rule.num_params != reduction.num_params
+            || reduction.level_params.len() != levels.len()
+        {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=guard-failed", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        }
+
+        let required = reduction
+            .num_params
+            .saturating_add(1)
+            .saturating_add(reduction.rules.len())
+            .saturating_add(reduction.num_indices)
+            .saturating_add(1);
+        if neutral.spine.len() != required {
+            return RuleKAttempt::NotApplicable;
+        }
+
+        // Rule K is licensed by the certified recursor interface itself:
+        // after applying every recursor argument except the final major, the
+        // remaining Pi domain is the exact type that a replacement constructor
+        // must inhabit. This avoids reconstructing a local variable's type from
+        // incidental FreeId numbering.
+        let declaration = match self.environment.get(*name) {
+            Some(declaration) if declaration.level_params.len() == levels.len() => declaration,
+            _ => return RuleKAttempt::NotApplicable,
+        };
+        let substitutions = declaration
+            .level_params
+            .iter()
+            .copied()
+            .zip(levels.iter().cloned())
+            .collect::<Vec<_>>();
+        let mut current = TypeValue::Term(Closure::with_levels(
+            declaration.ty,
+            EnvFrame::empty(),
+            LevelSubstitution::new(substitutions),
+        ));
+        for argument in &neutral.spine[..neutral.spine.len().saturating_sub(1)] {
+            let Some((_domain, body)) =
+                self.pi_view(Judgment::proven(current, "rule-k-recursor-spine"), budget / 4)
+            else {
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!("NUCLEUS_RULE_K:head={}:stage=recursor-spine-type-missing", name.0);
+                }
+                return RuleKAttempt::NotApplicable;
+            };
+            current = match body {
+                PiBody::Fixed(body) => body,
+                PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
+                    body.expr,
+                    body.env.extend(argument.clone()),
+                    body.levels,
+                )),
+            };
+        }
+        let Some((target_domain, _body)) =
+            self.pi_view(Judgment::proven(current, "rule-k-final-domain"), budget / 4)
+        else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=target-domain-missing", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!("NUCLEUS_RULE_K:head={}:stage=target-domain-ok", name.0);
+        }
+
+        let mut constructor_levels = Vec::with_capacity(rule.constructor_level_params.len());
+        for parameter in &rule.constructor_level_params {
+            let Some(index) = reduction
+                .level_params
+                .iter()
+                .position(|candidate| candidate == parameter)
+            else {
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!(
+                        "NUCLEUS_RULE_K:head={}:stage=constructor-level-map-missing:param={}",
+                        name.0,
+                        parameter.0
+                    );
+                }
+                return RuleKAttempt::NotApplicable;
+            };
+            constructor_levels.push(levels[index].clone());
+        }
+        let constructor = Neutral {
+            head: NeutralHead::Const {
+                name: rule.constructor,
+                levels: constructor_levels,
+            },
+            spine: neutral.spine[..rule.num_params].to_vec(),
+        };
+        let Some(constructor_type) = self.neutral_result_type(&constructor, context, budget / 4)
+        else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=constructor-type-missing", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!("NUCLEUS_RULE_K:head={}:stage=constructor-type-ok", name.0);
+        }
+
+        let compatibility = crate::convert::convert_with_policy_in_context(
+            self,
+            &target_domain,
+            &constructor_type,
+            budget / 2,
+            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context.len(),
+            context,
+        );
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=compatibility:result={compatibility:?}",
+                name.0
+            );
+        }
+        match compatibility {
+            Judgment::Proven { .. } => {
+                let substitutions = reduction
+                    .level_params
+                    .iter()
+                    .copied()
+                    .zip(levels.iter().cloned())
+                    .collect::<Vec<_>>();
+                let mut result = Closure::with_levels(
+                    rule.rhs,
+                    EnvFrame::empty(),
+                    LevelSubstitution::new(substitutions),
+                );
+                let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+                for argument in &neutral.spine[..prefix_len] {
+                    loop {
+                        match self.expression(result.expr) {
+                            Some(Expr::Lam { body, .. }) => {
+                                result = result.sibling(*body, result.env.extend(argument.clone()));
+                                break;
+                            }
+                            Some(Expr::Let { value, body, .. }) => {
+                                let value = result.sibling(*value, result.env.clone());
+                                result = result.sibling(*body, result.env.extend(value));
+                            }
+                            _ => return RuleKAttempt::NotApplicable,
+                        }
+                    }
+                }
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!("NUCLEUS_RULE_K:head={}:stage=reduced", name.0);
+                }
+                RuleKAttempt::Reduced(result)
+            }
+            Judgment::Refuted { obstruction }
+                if matches!(
+                    obstruction.0,
+                    "distinct-canonical-universes"
+                        | "distinct-Nat-literals"
+                        | "rigid-value-constructor-mismatch"
+                ) =>
+            {
+                RuleKAttempt::DefiniteMismatch
+            }
+            Judgment::Refuted { .. } | Judgment::Unknown { .. } => RuleKAttempt::NotApplicable,
+        }
+    }
+
+    pub(crate) fn certified_stuck_nonproof_recursor_on_local(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return false;
+        };
+        let Some(reduction) = self.environment.recursor_reduction(*name) else {
+            return false;
+        };
+        if reduction.k || reduction.level_params.len() != levels.len() {
+            return false;
+        }
+        let required = reduction
+            .num_params
+            .saturating_add(1)
+            .saturating_add(reduction.rules.len())
+            .saturating_add(reduction.num_indices)
+            .saturating_add(1);
+        if neutral.spine.len() != required {
+            return false;
+        }
+        if !neutral
+            .spine
+            .last()
+            .is_some_and(|target| self.closure_resolves_to_free(target, budget.min(4096)))
+        {
+            return false;
+        }
+        let Some(result_type) = self.neutral_result_type(neutral, context, budget) else {
+            return false;
+        };
+        self.normalize_type_value(&result_type, budget)
+            .is_some_and(|normalized| {
+                self.normalized_type_is_definitely_nonproposition(
+                    &normalized,
+                    context,
+                    budget,
+                    0,
+                )
+            })
+    }
+
+    fn closure_resolves_to_free(&self, closure: &Closure, budget: usize) -> bool {
+        let mut current = closure.clone();
+        for _ in 0..budget {
+            match self.expression(current.expr) {
+                Some(Expr::BVar(index)) => match current.env.lookup(*index) {
+                    Some(EnvBinding::Closure(bound)) => current = bound,
+                    Some(EnvBinding::Free(_)) => return true,
+                    Some(EnvBinding::Neutral(Neutral {
+                        head: NeutralHead::Free(_),
+                        spine,
+                    })) => return spine.is_empty(),
+                    Some(EnvBinding::Neutral(_)) | None => return false,
+                },
+                Some(Expr::Let { value, body, .. }) => {
+                    let value = current.sibling(*value, current.env.clone());
+                    current = current.sibling(*body, current.env.extend(value));
+                }
+                _ => return false,
+            }
+        }
+        false
+    }
+
+    pub(crate) fn is_certified_constructor(&self, name: NameId) -> bool {
+        self.environment.is_certified_constructor(name)
+    }
+
+    pub(crate) fn eta_projection_spec_for_constructor(
+        &self,
+        constructor: NameId,
+    ) -> Option<(NameId, usize, usize)> {
+        let specs = self.environment.projection_specs();
+        let mut matches = specs
+            .into_iter()
+            .filter(|(_, spec)| spec.eta_expandable && spec.constructor == constructor);
+        let (type_name, spec) = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        Some((type_name, spec.num_params, spec.field_types.len()))
+    }
+
+    pub(crate) fn non_eta_structure_for_constructor(
+        &self,
+        constructor: NameId,
+    ) -> Option<(NameId, usize)> {
+        let specs = self.environment.projection_specs();
+        let mut matches = specs.into_iter().filter(|(_, spec)| {
+            !spec.eta_expandable && spec.constructor == constructor
+        });
+        let (type_name, spec) = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        Some((type_name, spec.num_params + spec.field_types.len()))
+    }
+
+    pub(crate) fn is_non_eta_structure_type(&self, type_name: NameId) -> bool {
+        self.environment
+            .projection_specs()
+            .get(&type_name)
+            .is_some_and(|spec| !spec.eta_expandable)
+    }
+
+    pub(crate) fn certified_eta_projection_field(
+        &self,
+        field: &Closure,
+        type_name: NameId,
+        index: usize,
+        target: &crate::value::Neutral,
+        num_params: usize,
+        budget: usize,
+    ) -> bool {
+        let mut closure = field.clone();
+        let mut arguments = Vec::new();
+        let (projection, levels) = loop {
+            let Some(expression) = self.expressions.get(closure.expr) else {
+                return false;
+            };
+            match expression {
+                Expr::App { fun, arg } => {
+                    arguments.push(closure.sibling(*arg, closure.env.clone()));
+                    closure = closure.sibling(*fun, closure.env.clone());
+                }
+                Expr::BVar(bvar) => {
+                    let Some(binding) = closure.env.lookup(*bvar) else {
+                        return false;
+                    };
+                    match binding {
+                        crate::value::EnvBinding::Closure(bound) => closure = bound,
+                        crate::value::EnvBinding::Free(_) | crate::value::EnvBinding::Neutral(_) => return false,
+                    }
+                }
+                Expr::Const { name, levels } => break (*name, levels.clone()),
+                _ => return false,
+            }
+        };
+        arguments.reverse();
+        if arguments.len() != num_params + 1 {
+            return false;
+        }
+
+        let Some(declaration) = self.environment.get(projection) else {
+            return false;
+        };
+        let Some(mut body) = declaration.value else {
+            return false;
+        };
+        if !declaration.preferred_for_reduction || declaration.level_params.len() != levels.len() {
+            return false;
+        }
+        for _ in 0..=num_params {
+            let Some(Expr::Lam { body: next, .. }) = self.expressions.get(body) else {
+                return false;
+            };
+            body = *next;
+        }
+        let Some(Expr::Proj {
+            type_name: projected_type,
+            index: projected_index,
+            structure,
+        }) = self.expressions.get(body)
+        else {
+            return false;
+        };
+        if *projected_type != type_name || usize::try_from(*projected_index).ok() != Some(index) {
+            return false;
+        }
+        if !matches!(self.expressions.get(*structure), Some(Expr::BVar(0))) {
+            return false;
+        }
+
+        let Some(target_argument) = arguments.last().cloned() else {
+            return false;
+        };
+        let exposed = self
+            .machine()
+            .expose(target_argument, Transparency::Reducible, budget);
+        matches!(exposed.proven_value(), Some(Value::Neutral(actual)) if actual == target)
     }
 
     pub(crate) fn unit_like_type_key(
@@ -871,6 +1355,11 @@ fn definite_conversion_obstruction(obstruction: &str) -> bool {
             | "distinct-Nat-literals"
             | "rigid-value-constructor-mismatch"
             | "distinct-opaque-proposition-types"
+            | "distinct-rigid-local-terms"
+            | "non-eta-structure-mismatch"
+            | "rule-k-target-mismatch"
+            | "certified-stuck-recursor-mismatch"
+            | "certified-constructor-argument-mismatch"
     )
 }
 

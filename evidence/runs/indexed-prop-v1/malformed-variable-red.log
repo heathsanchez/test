@@ -1,0 +1,81 @@
+   Compiling zmij v1.0.23
+   Compiling serde_core v1.0.229
+   Compiling serde_json v1.0.151
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/f60aa8a3d3fa/nucleus/metatron-kernel)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.39s
+     Running unittests src/lib.rs (metatron-kernel/target/debug/deps/metatron_kernel-8f3dd54c469d2e5d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (metatron-kernel/target/debug/deps/metatron_kernel-da547c0583ca1dbc)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cli_verdict.rs (metatron-kernel/target/debug/deps/cli_verdict-b9d3035d421a894a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests/closed_pair_record.rs (metatron-kernel/target/debug/deps/closed_pair_record-3fd77d9f3e4056b4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests/convert.rs (metatron-kernel/target/debug/deps/convert-1c0d506b42526cb3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests/diagnostics.rs (metatron-kernel/target/debug/deps/diagnostics-1298dc85635eff05)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/end_to_end.rs (metatron-kernel/target/debug/deps/end_to_end-f74f416f22b2500c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 67 filtered out; finished in 0.00s
+
+     Running tests/environment.rs (metatron-kernel/target/debug/deps/environment-8e83933af57cb94c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/id_table.rs (metatron-kernel/target/debug/deps/id_table-7fa1beb1f719ce5b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests/indexed_prop.rs (metatron-kernel/target/debug/deps/indexed_prop-a83bc3a815a63ef5)
+
+running 1 test
+test recursive_prop_refuses_out_of_range_variables_without_panicking ... FAILED
+
+failures:
+
+---- recursive_prop_refuses_out_of_range_variables_without_panicking stdout ----
+
+thread 'recursive_prop_refuses_out_of_range_variables_without_panicking' (478) panicked at src/indexed_prop.rs:42:34:
+attempt to add with overflow
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    recursive_prop_refuses_out_of_range_variables_without_panicking
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--test indexed_prop`

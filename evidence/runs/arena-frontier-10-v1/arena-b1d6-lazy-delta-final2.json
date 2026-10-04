@@ -1,0 +1,1584 @@
+{
+  "arena_sha": "b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42",
+  "artifact_id": 11272848230,
+  "binary_sha256": "ff9a1e898d99ba545be405fe9d4e58f54b37cb49d6afb7b0a3eb2eaf3ede6e45",
+  "candidate_sha": "f1f77135a220e431c57754ea2b98db44c518a7f4",
+  "counts": {
+    "accept": 115,
+    "reject": 71,
+    "unknown": 10
+  },
+  "errors": [],
+  "rows": [
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "7f9b3c07a64b441f8dd0f7dd2912274241fdb17118953fb089f796fdd1590af4",
+      "seconds": 0.0018345999997109175,
+      "stderr": "",
+      "test": "corner-cases/proof-param-ok.ndjson"
+    },
+    {
+      "actual": 2,
+      "expected": 0,
+      "fixture_sha256": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5",
+      "seconds": 0.05946704400048475,
+      "stderr": "",
+      "test": "init-prelude.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "7db8148079e2e8160a1a4c71258ad11b17ce18edfa84ab1e12eae937ec9538d1",
+      "seconds": 0.001759047998348251,
+      "stderr": "",
+      "test": "other/level-index-out-of-order.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "2eec8aaa1d9c5009f69e7507b08e3f81c23adf56fb8d541a96393b721a715150",
+      "seconds": 0.004239680001774104,
+      "stderr": "",
+      "test": "other/nat-lit-add.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "f5295492eefe75bdd5714183ccbbebede81bd8d7338e2db98569246f836f1107",
+      "seconds": 0.004670092999731423,
+      "stderr": "",
+      "test": "other/nat-lit-ble.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "ce96962a24c958b86fa2a37cfc8a3477255c7e67ab69f1ba927e8a5d6cc85d12",
+      "seconds": 0.0045412430008582305,
+      "stderr": "",
+      "test": "other/nat-lit-sub.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "3279c9c8ae24d5b3a8433ddee5d4a421c4e15e3cd84117fb4873d1284112b96d",
+      "seconds": 0.0011575039970921353,
+      "stderr": "",
+      "test": "other/sparse-name-index.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "552d6e8398f579fcf59ab9abd8187fc7a8a037697da66c129aacb4cc1b9dd414",
+      "seconds": 1.2865820410006563,
+      "stderr": "",
+      "test": "perf/app-lam.ndjson"
+    },
+    {
+      "actual": 2,
+      "expected": 0,
+      "fixture_sha256": "08e16707dc6623394c62125592462b7548dd647d0b8a93138dce433d80411d22",
+      "seconds": 0.07855217099859146,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=kernel_args_before_unfold:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n",
+      "test": "perf/args-before-unfold.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "9e31c146f590cd29a464f45eb2a9ec6aec092dfd0d146a3c5f744b3fc674133a",
+      "seconds": 0.2070995750000293,
+      "stderr": "",
+      "test": "perf/beta-ladder.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "4895c59c421bb395f830aaa778db01cf166e9319b546a994e373e640298f4bb7",
+      "seconds": 0.053323313000873895,
+      "stderr": "",
+      "test": "perf/church-numerals.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "0152a64c923590cc1ef4209652d2ceac248d8668ad11c9b74e183bb3da6ca7e2",
+      "seconds": 0.0064096529968082905,
+      "stderr": "",
+      "test": "perf/discarded-argument-match.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "ee46aa31d32fe7cc04c1428bd58597c7b843d3fd98340f0fa6c9ab20a6bc7147",
+      "seconds": 0.0039380650014209095,
+      "stderr": "",
+      "test": "perf/discarded-argument.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "f11febc1959dd30a0c2b4f3491635b4d1279946d51286bd7dfec5fb19229d773",
+      "seconds": 0.022856396000861423,
+      "stderr": "",
+      "test": "perf/folded-constant-first.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "e1a9380283d3285a7242a45e79ce760056c34201089d21fdc3b25a22e4997494",
+      "seconds": 0.0223540970000613,
+      "stderr": "",
+      "test": "perf/folded-constant-last.ndjson"
+    },
+    {
+      "actual": 2,
+      "expected": 0,
+      "fixture_sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "seconds": 0.020074412001122255,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=Except:stage=inductive:verdict=Unknown\n",
+      "test": "perf/fueled-chain.ndjson"
+    },
+    {
+      "actual": 2,
+      "expected": 0,
+      "fixture_sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "seconds": 0.2187684780001291,
+      "stderr": "",
+      "test": "perf/grind-ring-5.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "4d23216f53395a334f8788b052e268587503317af5f79ca4251416ce617c9df9",
+      "seconds": 0.00301659899923834,
+      "stderr": "",
+      "test": "perf/identical-nesting.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "8cc3996fb088522e56c3670b0bd3b2397ee7b5a81c7fdc634c69a5f052e02e7f",
+      "seconds": 0.0036740159994224086,
+      "stderr": "",
+      "test": "perf/irrelevance-before-evaluation.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "d02afad06729004912e5feeaf25379240b106d98b571cfcfffd974d08853ad65",
+      "seconds": 0.4888130450017343,
+      "stderr": "",
+      "test": "perf/let-ladder.ndjson"
+    },
+    {
+      "actual": 2,
+      "expected": 0,
+      "fixture_sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "seconds": 0.06029697499980102,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n",
+      "test": "perf/magma-list-deep-n21.ndjson"
+    },
+    {
+      "actual": 2,
+      "expected": 0,
+      "fixture_sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "seconds": 0.08657974399829982,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n",
+      "test": "perf/magma-list-deep-n36.ndjson"
+    },
+    {
+      "actual": 2,
+      "expected": 0,
+      "fixture_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "seconds": 0.029428829002426937,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n",
+      "test": "perf/magma-list-pair-n21.ndjson"
+    },
+    {
+      "actual": 2,
+      "expected": 0,
+      "fixture_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "seconds": 0.03268331199797103,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n",
+      "test": "perf/magma-list-pair-n7.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "67725ab1b59ee3886c97c9120d4d2e0f2b5d193c1a68796193d544dc33f697f5",
+      "seconds": 0.01923320999776479,
+      "stderr": "",
+      "test": "perf/proj-cheap-struct.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "948fbbb87ef6368f57bcd9799afc0b4ad3d1fe040a418b3ac38045b1489f78fa",
+      "seconds": 0.008045018999837339,
+      "stderr": "",
+      "test": "perf/proj-lazy-struct.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "b2fed80e90e956f24bcbe898ce7cfef5ae4c92d0f81daf42e0a2a3c817012f6f",
+      "seconds": 0.011145172000396997,
+      "stderr": "",
+      "test": "perf/proj-stuck-struct.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "831bb058c28d82bf4c2c6146ae9f91b22b44a914ef362ee19dd66f3211104d37",
+      "seconds": 0.0026208469971606974,
+      "stderr": "",
+      "test": "perf/repeated-subproblem.ndjson"
+    },
+    {
+      "actual": 2,
+      "expected": 0,
+      "fixture_sha256": "dbc065108aa98512149c3f1a5bb6279630c53bdf64256516ba10ed256322883b",
+      "seconds": 0.020352030998765258,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=kernel_shared_subterm:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n",
+      "test": "perf/shared-subterm.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "73b80da0cfca3226068945fe617eafba6da87d8e24803ff1a987a5d10c1f1a57",
+      "seconds": 0.07847899199987296,
+      "stderr": "",
+      "test": "perf/shift-cascade.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "3839db32d95b2ded9bf2ac70960ae4a060b9a998bd67422ed41bc087b1f74179",
+      "seconds": 0.09097090100112837,
+      "stderr": "",
+      "test": "perf/unroll-versus-evaluate.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "66160bdc748c91306eddc888fe8a268dd336c385979902022c2902da0680efd5",
+      "seconds": 0.0017614680000406224,
+      "stderr": "",
+      "test": "tutorial/001_basicDef.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "aa2c0aa79d56f1ad43b41df7bd9a5e1876eafcba560a39845f5a9a5c290a72a2",
+      "seconds": 0.0014993469994806219,
+      "stderr": "",
+      "test": "tutorial/003_arrowType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "74d890dafbd178c44ef0d1b8b5ef339f628efcd5c2a84d33307330b512ee8a08",
+      "seconds": 0.0016336339976987801,
+      "stderr": "",
+      "test": "tutorial/004_dependentType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "50e86e6b9f1c07c40359497444fc8b9645fc8565550aac1875d0856129f71c46",
+      "seconds": 0.001492826999310637,
+      "stderr": "",
+      "test": "tutorial/005_constType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "e20bf2f42a95fc8edf901b00f1c99d3f8d2f4293abebe50d835269a1187283dd",
+      "seconds": 0.0014035060012247413,
+      "stderr": "",
+      "test": "tutorial/006_betaReduction.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "d5157c04725cc6c0b1940e7050d1a2d6d564675930d8c8a77a9cab1cd35ea2dd",
+      "seconds": 0.0013434770007734187,
+      "stderr": "",
+      "test": "tutorial/007_betaReduction2.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "4b8379c48d2018983f1edad8fc7437743f77ceed517a73db9d5b344042ad52aa",
+      "seconds": 0.0013606020002043806,
+      "stderr": "",
+      "test": "tutorial/008_forallSortWhnf.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "3bdd74e5e5c4b6413961de59db89ec750ac301dd86c6f8cfedf91e8f01a5ee2c",
+      "seconds": 0.0013740020003751852,
+      "stderr": "",
+      "test": "tutorial/013_thmProof.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "93618512baf81894760413b5d79aca2021f954ac4d95d8d21bd6a7e8ded87b74",
+      "seconds": 0.0012717970021185465,
+      "stderr": "",
+      "test": "tutorial/015_levelComp1.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "6caaf69b531f7e0729782aee92680d531394251e51ae96471f5934e55b0cd502",
+      "seconds": 0.00112357299803989,
+      "stderr": "",
+      "test": "tutorial/016_levelComp2.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "de86ba3543bfe36e79071304f1dd974208bf6e1bb936a2afb3e2057e6fdf61dc",
+      "seconds": 0.001694983999186661,
+      "stderr": "",
+      "test": "tutorial/017_levelComp3.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "67f5ee4d9bebc000d57f0bbf08b84481634209b78844f31409bc737c82625a20",
+      "seconds": 0.0012915959996462334,
+      "stderr": "",
+      "test": "tutorial/018_levelParams.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "6f318f55f779e71bbdd005b8cd3773ac1196188c47a86c68f8647734d4526160",
+      "seconds": 0.0014032450017111842,
+      "stderr": "",
+      "test": "tutorial/020_levelComp4.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "04d8623e060042fc0063306d129928e1b754f3e8fe73116358ae5d4b5f1e7fdb",
+      "seconds": 0.0012706599991361145,
+      "stderr": "",
+      "test": "tutorial/021_levelComp5.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "eab978e8b1707d4d570b8b9ac8317f5f3f624c90bafdfd015c7c881ec4e24d9d",
+      "seconds": 0.0012614959996426478,
+      "stderr": "",
+      "test": "tutorial/022_imax1.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "a680737e27fc6636484fbe312a401f3b3f18b64c21bb5f0beae24cbae5810a2a",
+      "seconds": 0.001286122998862993,
+      "stderr": "",
+      "test": "tutorial/023_imax2.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "8b6dd66b224c828c90e312ff9a4c17add5addd50e2a8132bf0edceb53cb5bede",
+      "seconds": 0.0012846909994550515,
+      "stderr": "",
+      "test": "tutorial/024_levelMaxComm.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "c1374bd0f3ac87765db5f0b5b0cf48263b5c1c00fabd07db25cd014e05fc845a",
+      "seconds": 0.0012819370022043586,
+      "stderr": "",
+      "test": "tutorial/025_levelMaxAssoc.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "d8dfa08ce074504e6aedf2ae8b2a2696af429d6cb8901bde4a26cca603762f52",
+      "seconds": 0.0012876350010628812,
+      "stderr": "",
+      "test": "tutorial/026_levelMaxIdem.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "e1fc01bc9246e2f9dce058722fbeeea7d0cd48ee189f0f0d00c10d34ab812d77",
+      "seconds": 0.0015006229987193365,
+      "stderr": "",
+      "test": "tutorial/027_levelMaxAbsorb.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "c7f349ea6d7d5a1fd2e9cfd1467f230e6ff8cc3b280bf6f1f38241b1487b3010",
+      "seconds": 0.0014168140005494934,
+      "stderr": "",
+      "test": "tutorial/028_inferVar.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "16e32a5cdb9b653f3ea28ca44eefd1915e18cba958a0017ad7646b3d6f7d08ca",
+      "seconds": 0.0013976370028103702,
+      "stderr": "",
+      "test": "tutorial/029_defEqLambda.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "c0bfe06648cd6fc49ca8b9488a88ab79cc4d518613e7eb5b81db4508389716fb",
+      "seconds": 0.0014771739988646004,
+      "stderr": "",
+      "test": "tutorial/030_peano1.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "107b66eff6598febc300a0dcd89c5e658bdb41f9e79e5c869ca9ea84560ef61d",
+      "seconds": 0.0015754580017528497,
+      "stderr": "",
+      "test": "tutorial/031_peano2.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "a155941886992c8340cfed582f0c73b634c347b4525b2e58ee93ff91895492da",
+      "seconds": 0.0018353759987803642,
+      "stderr": "",
+      "test": "tutorial/032_peano3.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "b9a44f49220a12951ac34ae4a4269a899fd81093949ea216e37744f519b5fbea",
+      "seconds": 0.001253284000995336,
+      "stderr": "",
+      "test": "tutorial/033_letType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "c42e3dca20c90a0e942b394ec729548dee81114f0faf2e03dec503cf3ac7a234",
+      "seconds": 0.0014303450006991625,
+      "stderr": "",
+      "test": "tutorial/034_letTypeDep.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "648dcc1d99fb02a44fcb00bccdfeb7221bff807cd1f184239c9f4aa8749677e3",
+      "seconds": 0.0012658929990720935,
+      "stderr": "",
+      "test": "tutorial/035_letRed.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "18b97de6ae61b368ae7eb7fbe34c768590ba2a9e06249edb40a1e53fd932ffdb",
+      "seconds": 0.0013318700002855621,
+      "stderr": "",
+      "test": "tutorial/036_empty.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "60f0170efef96a411a34d9fed5b53f421d04537fdb4fbf3129c2733991c4af07",
+      "seconds": 0.001902069001516793,
+      "stderr": "",
+      "test": "tutorial/037_boolType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "023dc45dfe86c392d1253bd438b9bb3b1da07a80a5e5083acd751149c652411d",
+      "seconds": 0.0014746900014870334,
+      "stderr": "",
+      "test": "tutorial/038_twoBool.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "656a1be9f3bb92fd10d459cf3e3a860dbb7213dbce10d2c788d94aed8e0e9b59",
+      "seconds": 0.001626583998586284,
+      "stderr": "",
+      "test": "tutorial/039_andType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "2f82e7d70c3c170a7fb5b9d081c328a0075c8109f4979862cf5666355b94fd7d",
+      "seconds": 0.001466017998609459,
+      "stderr": "",
+      "test": "tutorial/040_prodType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "08970427c4e28233478d7e73fdfb47fc26776805f71f36cc83e3cad434a41791",
+      "seconds": 0.0015505320006923284,
+      "stderr": "",
+      "test": "tutorial/041_pprodType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "29f904a27e80054d1667118acdfc3595d238a45376062117d5e9eee136608248",
+      "seconds": 0.0013682239987247158,
+      "stderr": "",
+      "test": "tutorial/042_pUnitType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "17e2890610e6c4f97c9f8d62919736f27928d058aa6df4f769e285418b9eba2e",
+      "seconds": 0.0015182539973466191,
+      "stderr": "",
+      "test": "tutorial/043_eqType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "e1ea8ce5e5814320ec6f9c1d10bfe7fa0955432595627a40f629e56366bf49be",
+      "seconds": 0.0014163239975459874,
+      "stderr": "",
+      "test": "tutorial/044_natDef.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "10f50558c3fafe8d13f4129fa45d6b2d3732768e50eb9989d2f2ba66c696e14c",
+      "seconds": 0.0021511959967028815,
+      "stderr": "",
+      "test": "tutorial/045_rbTreeDef.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "7927f942d5f7c496d93352e55955110fb22e0195707b73e6f3897b5cd88a8894",
+      "seconds": 0.0015682379998906981,
+      "stderr": "",
+      "test": "tutorial/055_reduceCtorParam.mk.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "4ead0880735e18eb8317edbe6608f1891b35bd321a8062cb279f75a3fd74f753",
+      "seconds": 0.0012160100013716146,
+      "stderr": "",
+      "test": "tutorial/058_predWithTypeField.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "35536ab3714f8d578c1c07776eb9be463b9cda56a05ed3113bc8658f27465814",
+      "seconds": 0.0011905920000572223,
+      "stderr": "",
+      "test": "tutorial/059_typeWithTypeField.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "ed5a51876b8dde1bd53599ba783c213a7648ac461fd85c6e5892a411c3a0b5df",
+      "seconds": 0.0013533609999285545,
+      "stderr": "",
+      "test": "tutorial/060_typeWithTypeFieldPoly.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "0f2b78a85ead0e23165febd2f3a83f251e12d2c1cadc293f528a7fa444016f36",
+      "seconds": 0.0016382809990318492,
+      "stderr": "",
+      "test": "tutorial/062_emptyRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "3da418a44a96a39dcbf70cd482c6ef8320d8cbb2593de2c21f163dd862551afd",
+      "seconds": 0.0013680129995918833,
+      "stderr": "",
+      "test": "tutorial/063_boolRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "9dfcc750a51b3e8ab9954696c40177bad30d486287b627fe06408086d468016b",
+      "seconds": 0.0013956740003777668,
+      "stderr": "",
+      "test": "tutorial/064_twoBoolRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "6d876dc6840102814fc56ba83bd2008855e0fbc41f691f4795885fc4b5da51a9",
+      "seconds": 0.0013356049967114814,
+      "stderr": "",
+      "test": "tutorial/065_andRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "a599e1935d3291f405a860c0507cfd39d2d719162ba10d797c0251c858969aec",
+      "seconds": 0.0015042539998830762,
+      "stderr": "",
+      "test": "tutorial/066_prodRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "537333591de9684245331a0ba1e051ae79b9dc5749e02b8c623b8c3725a82340",
+      "seconds": 0.00158962900241022,
+      "stderr": "",
+      "test": "tutorial/067_pprodRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "41d98f6240e8fb36c63b4baa22fbf940a28195c482dc584399a407c69cee1d39",
+      "seconds": 0.0015540370004600845,
+      "stderr": "",
+      "test": "tutorial/068_punitRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "5af40a654e735fbe4a4c5f244a36afd8b606932c054abe822b06493ccef0663b",
+      "seconds": 0.0014156940014800057,
+      "stderr": "",
+      "test": "tutorial/069_eqRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "d68c2401d23beda918b8e8017ac45965be44e60920a9bab158412d6fb65b3556",
+      "seconds": 0.0012655930004257243,
+      "stderr": "",
+      "test": "tutorial/070_nRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "2c88f371f5859df7de86e51fe52fc85d9be7fb242ad61ef0d4155b1263812ab6",
+      "seconds": 0.002669778001290979,
+      "stderr": "",
+      "test": "tutorial/071_rbTreeRef.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "a360387a4cef76fa0a83ea4e9080f65d6170289b25aaaece7ff6301ffe11b305",
+      "seconds": 0.0013379190022533294,
+      "stderr": "",
+      "test": "tutorial/072_boolPropRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "572a2975c19e88123eca7c032a4915e7641c4d2fe6d81f95ee52597ef33f057e",
+      "seconds": 0.0013804119989799801,
+      "stderr": "",
+      "test": "tutorial/074_existsRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "055d92f0c45196c33862eeca4610d988a9be97375009725ca51e3ef64a10b832",
+      "seconds": 0.0016102400004456285,
+      "stderr": "",
+      "test": "tutorial/075_typeSingletonRecReduction.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "9b443e52e98b316eb0ee92484016986db4b7a62397de64d2ed1f8b6323905d3e",
+      "seconds": 0.001760720999300247,
+      "stderr": "",
+      "test": "tutorial/076_sortElimPropRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "eaaa3909ab1527239fa0373e392464e6941097162531033d9a7ad422e7cb9945",
+      "seconds": 0.001746990001265658,
+      "stderr": "",
+      "test": "tutorial/077_sortElimProp2Rec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "4fc92c213242a1fadda56ef895988f4407df5fbb495805eb565e76c794ebe92d",
+      "seconds": 0.0024164169990399387,
+      "stderr": "",
+      "test": "tutorial/078_boolRecEqns.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "f6d9afec199974f6658dfd9609b5eb6256ef562d6ab9ee1c8899620314d233a6",
+      "seconds": 0.0022133169986773282,
+      "stderr": "",
+      "test": "tutorial/079_prodRecEqns.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "36eb71b330ee527eb6b3171b4f691c111ff229ad46ba58d4e450b95dae8a412d",
+      "seconds": 0.0029015500003879424,
+      "stderr": "",
+      "test": "tutorial/080_nRecReduction.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "09c0bde7c1899d49cad18951123ed5fe6f54d6bf2cef6c6d0ba464e4571ae370",
+      "seconds": 0.005003583002689993,
+      "stderr": "",
+      "test": "tutorial/081_listRecReduction.ndjson"
+    },
+    {
+      "actual": 2,
+      "expected": 0,
+      "fixture_sha256": "88349328dd81100fb22396180bef9b5c2b0997275b7c3c672b19a7ac87ed72f9",
+      "seconds": 0.003687186999741243,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=RBTree.id_spec:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n",
+      "test": "tutorial/082_RBTree.id_spec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "9d2b8259b2c66875bcad6be7401d02efa153c01f00a24d03bd9e908ec5e97c42",
+      "seconds": 0.0017217329987033736,
+      "stderr": "",
+      "test": "tutorial/083_And.right.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "8cdc1c4b40f2ae776fc7bc898b01d9a9c4efb9f7bf0099162dbd7d2aff705464",
+      "seconds": 0.0015389649997814558,
+      "stderr": "",
+      "test": "tutorial/084_Prod.snd.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "c1936a363731616d9a7971eac15ae781fbf8ccd5c4d545e289e4020eb02772a5",
+      "seconds": 0.001808571003493853,
+      "stderr": "",
+      "test": "tutorial/085_PProd.snd.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "9a84a3af533679eadb262be72db7a2d17798aaeba1aea38d4144c9c003c4e179",
+      "seconds": 0.0015423200020450167,
+      "stderr": "",
+      "test": "tutorial/086_PSigma.snd.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "f5619c6c975d73e06ed3b80fa20142f62f7ce0696dc7c8fdce648a9ecfcc800d",
+      "seconds": 0.0016718709994165692,
+      "stderr": "",
+      "test": "tutorial/089_projProp1.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "a9d95724c06cc3571103baff68ce75eb3dad454bf935ced5da20deb2e7993348",
+      "seconds": 0.0015580020008201245,
+      "stderr": "",
+      "test": "tutorial/091_projProp3.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "ac7867ab127119a680f62464f4cde3491cb4a5e73b496f2f13b8e3d650f99a5a",
+      "seconds": 0.0014447260000451934,
+      "stderr": "",
+      "test": "tutorial/095_projDataIndexRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "2fe756cf6d2b1e6e2c819f8858b1881d88f4f99564257911c730ca2756aa959d",
+      "seconds": 0.0019370109985175077,
+      "stderr": "",
+      "test": "tutorial/098_projRed.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "39dab799309ad05a2f30670776d74b4e6b177175271291dd078a3d3737eef338",
+      "seconds": 0.001553215999592794,
+      "stderr": "",
+      "test": "tutorial/099_ruleK.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "46963fdc4eab7dca74ccaaaa9986f28bbf15fef7f3ba2055681f7b10ee83f930",
+      "seconds": 0.0013955840004200581,
+      "stderr": "",
+      "test": "tutorial/102_aNatLit.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "1918f1c8c5454442474d1db51cf6480182f7e13e31b5b1dd1319751aa8991f90",
+      "seconds": 0.0015201870010059793,
+      "stderr": "",
+      "test": "tutorial/103_natLitEq.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "cf25561da46b200deb6aef5aa82fb3bb6051913dae7e92dca1c8b6bb8ff35ba0",
+      "seconds": 0.0014674599988211412,
+      "stderr": "",
+      "test": "tutorial/104_proofIrrelevance.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "f697489bbf650d37795af2f6f347029016e7b517bb19b03179d51a065c2fefa2",
+      "seconds": 0.0017895140008477028,
+      "stderr": "",
+      "test": "tutorial/106_proofIrrelevanceWhnf.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "f7b2b47cff6e252ac53454889406ef852a97357ccd0a03fcbfcd1f0cae3b83ee",
+      "seconds": 0.001268347001314396,
+      "stderr": "",
+      "test": "tutorial/107_proofIrrelevanceUnderBinder.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "2771b6cf7b538a8718718696b9d1bcae86f9612a0a933c15140012aa6b7cf733",
+      "seconds": 0.0016019379982026294,
+      "stderr": "",
+      "test": "tutorial/108_unitEta1.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "14b6411c82f6401fedd29cffdf8a27d8adfc41938a5f28801d5ffbf151b5da0c",
+      "seconds": 0.0017867799979285337,
+      "stderr": "",
+      "test": "tutorial/109_unitEta2.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "650b2ff08d1c246397a1605cbaa8a6f756cc68ef6304c2476ac1d13ced56087e",
+      "seconds": 0.0015867450019868556,
+      "stderr": "",
+      "test": "tutorial/110_unitEta3.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "a686b22362e05728ef0fce00646dd6f63996ab66e89290bf13ecd492cac17a6d",
+      "seconds": 0.002798738998535555,
+      "stderr": "",
+      "test": "tutorial/112_structEta.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "da363ebc05eca706a952bc9496fe76999850a12b63fe59243707e2c8a581e76d",
+      "seconds": 0.0016813450019981246,
+      "stderr": "",
+      "test": "tutorial/114_funEta.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "a7fbe049abfd96e27d3904a6aea9dd7b9d4fe9c49e5095aacf369678f7af6438",
+      "seconds": 0.0014884609990986064,
+      "stderr": "",
+      "test": "tutorial/115_funEtaDep.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "dfc7393cbdc2b2de3d98494acaef6d91d258fd7b3f5f5aa3ddc4ef8b9bfe072f",
+      "seconds": 0.001671158999670297,
+      "stderr": "",
+      "test": "tutorial/119_reduceCtorParamRefl.mk.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "755bcadfde765454067ad543e81f61cef5ee0e50a724cb0c838d4078a62fad97",
+      "seconds": 0.0016054330008046236,
+      "stderr": "",
+      "test": "tutorial/120_reduceCtorParamRefl2.mk.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "c6a0ad6e173b048457b5b768ba6f8e257d949df3b65c3c6982cdb18d69e031dd",
+      "seconds": 0.0015499709988944232,
+      "stderr": "",
+      "test": "tutorial/121_rTreeRec.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "a191e8bf9036a3bae39b6095ac535eb23ee2ecffc7d80f1560eb3625358492a6",
+      "seconds": 0.002298924002388958,
+      "stderr": "",
+      "test": "tutorial/122_rtreeRecReduction.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "7b8b4753ff45ddbd9f93f61e78bfa9cf6cb0d217e6901e9fee6d81fc8894fbee",
+      "seconds": 0.002115833998686867,
+      "stderr": "",
+      "test": "tutorial/123_accRecType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "8cfbf2d3768db33e875e6b5a00856a257146a508bc5a11c63eecdaed9a78cca9",
+      "seconds": 0.0028038560012646485,
+      "stderr": "",
+      "test": "tutorial/124_accRecReduction.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "98824b3b879da8e81d1801ced0b42430fcec33e686014f36b69ac908b1da19c8",
+      "seconds": 0.0015630300003977027,
+      "stderr": "",
+      "test": "tutorial/126_quotMkType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "312dc3ffc10c664b544a22df7c4a19a5b843bdf5f44ee56e99cb3a2faaf13da7",
+      "seconds": 0.0017393099988112226,
+      "stderr": "",
+      "test": "tutorial/127_quotIndType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "3abbf269039bfe725e22e5ae35438451f87ea200b2434e2e402deac0b9c8faf3",
+      "seconds": 0.0015489789984712843,
+      "stderr": "",
+      "test": "tutorial/128_quotLiftType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "eb746a91c6b322e9db9e6db05c23a534afd377055246e1e317a15794bdceece8",
+      "seconds": 0.0018304539989912882,
+      "stderr": "",
+      "test": "tutorial/129_quotSoundType.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "24ddef406335a38ac813223668785b6bfc456f0125aa5f54559c1d7fbacc9113",
+      "seconds": 0.002046852001512889,
+      "stderr": "",
+      "test": "tutorial/130_quotLiftReduction.ndjson"
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "fixture_sha256": "1afa34bb26783ac3305dca53b2d205efab560dbf38ca3dd84962115f5bab3198",
+      "seconds": 0.0020829060013056733,
+      "stderr": "",
+      "test": "tutorial/131_quotIndReduction.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "2fa6a967f15f76cfdcea3ef1992ff31a4cc4aa647b0f8fabf0ff61eedb3afbf1",
+      "seconds": 0.0024736199993640184,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_test:stage=theorem.proposition:verdict=REJECT:reason=rigid-value-constructor-mismatch\n",
+      "test": "bugs/constlevels.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "134ba7d444a9015a073a84b2a919738968a1742e0ba00ecb3535eaece9908278",
+      "seconds": 0.0030745850017410703,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Test.0.S:stage=inductive:verdict=Reject\n",
+      "test": "bugs/ctor-num-fields.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "04a692635fe2c6755bc973c4520a29ef3707b5dad6ba23eadcd5dd6e71c0f06e",
+      "seconds": 0.002285995000420371,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=bad:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch\n",
+      "test": "bugs/k-rec-conv.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "df7d23ff199c4956620f3b1b4d17976c6bbe99ec6c1b5a4e803a7f9f415e331f",
+      "seconds": 0.001290889998927014,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=MyBool:stage=inductive:verdict=Reject\n",
+      "test": "bugs/large-elim-param.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "f3e9ff227b49feedb76e24332ec070498e9d82e4d04d371066dffc243a8de36b",
+      "seconds": 0.002891424999688752,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=NewBool:stage=inductive:verdict=Reject\n",
+      "test": "bugs/large-elim-prop-bool.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "497eaa80a214386c679356c33a72c8beab5019c4938494b1608e3772a2756191",
+      "seconds": 0.001306062000367092,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject\n",
+      "test": "bugs/level-imax-leq.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "d368d5569321b717b7ec95bd1f4fa5bbd7d6e1f8d6ebdf1a0644dc8bc76bc2ec",
+      "seconds": 0.0014407499984372407,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=down:stage=definition.value:verdict=REJECT:reason=distinct-canonical-universes\n",
+      "test": "bugs/level-imax-normalization.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "5a49d132bb0c7dca091baa481333f5e97e390fde72c8ec18c6124a690ec47d7c",
+      "seconds": 0.0014560229974449612,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=Nat:stage=inductive:verdict=Reject\n",
+      "test": "bugs/nat-rec-k-lie.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "934e59fdc4f2a978605c4a44e90b94b57e9940f3828620c0db337b7125cdd169",
+      "seconds": 0.0015028810012154281,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject\n",
+      "test": "bugs/nat-rec-rules.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "25afcc9267523cfd26edf94ca01ebe34ca0e8a24954e4b4e3d397a61688b8778",
+      "seconds": 0.002043562002654653,
+      "stderr": "",
+      "test": "bugs/nested-unused-param.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "738f28bc1175d70faf09f4b45ae7ca92e8b8d397f6c5d0183240cd695f6d7bc4",
+      "seconds": 0.0011524459987413138,
+      "stderr": "",
+      "test": "bugs/orphan-rec.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "3ab758759629ad56f872cb43671b765d05f63ce5033ae36a7c7e237b3565bcc1",
+      "seconds": 0.0011506929986353498,
+      "stderr": "",
+      "test": "bugs/proj-non-structure.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "d7d0c58b3e62b9b73f7228c121818e9e0602b3fe8284b43a6b41f7c0b2137f65",
+      "seconds": 0.0015008590016805101,
+      "stderr": "",
+      "test": "bugs/proj-of-imax-prop.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "4bdc45de8980cf9cb6e712ab6260f42a89201876f096441fb5ec49e3a0052a22",
+      "seconds": 0.005678146000718698,
+      "stderr": "",
+      "test": "bugs/proj-of-stuck-prop.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "c1e3e96748ade2a9806837460821ea725f460a1f8bc1601d7ce121a9b28ffed0",
+      "seconds": 0.005272069000056945,
+      "stderr": "",
+      "test": "bugs/proj-of-subst-prop.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "e800053a06ad3f9af370f4377b500d52231d6b8522c3b1f35d15fbe1d75f2257",
+      "seconds": 0.001270789998670807,
+      "stderr": "",
+      "test": "bugs/rec-k-lie.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "8a240552317ba17d44d175c10531e5f988f55569db5eff734701735ce598fa73",
+      "seconds": 0.0056530389992985874,
+      "stderr": "",
+      "test": "bugs/rec-missing-ih.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "572d2eb54a4e7d98d2e1a7bad01c5574f85ed5dacfd5bd1734f88ac37d515759",
+      "seconds": 0.006116321001172764,
+      "stderr": "",
+      "test": "bugs/rec-of-subst-prop.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "eab650028a71177bd4d9fcb6a84b4e92dd91cf4e7af67023af458d18729be0e2",
+      "seconds": 0.001225608997629024,
+      "stderr": "",
+      "test": "other/extra-rec.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "9fcac9c9e16cda51f60bbd91fd14c359bf8b2272aaf02fef86ef0c2aba9333f0",
+      "seconds": 0.004970223999407608,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=natAddLitBad:stage=theorem.value:verdict=REJECT:reason=distinct-Nat-literals\n",
+      "test": "other/nat-lit-add-bad.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "2c9b12979ea3da11272d6eca4b0a39523a863d6fb501daf61c4edb8996a97daa",
+      "seconds": 0.0012038620006933343,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject\n",
+      "test": "other/orphan-ctor.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "d7c5ab71c706123991510274596d1c36026201e7ccfd15fc134664fe7dee9116",
+      "seconds": 0.0015858939987083431,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=badFalse:stage=theorem.value:verdict=REJECT:reason=distinct-opaque-proposition-types\n",
+      "test": "other/proj-of-prop.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "5484b765b659b0d4a77aa75d82ae3d81f04d9731de30ee08dd5e4c58d0076fba",
+      "seconds": 0.003878487998008495,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_first:stage=theorem.value:verdict=REJECT:reason=certified-constructor-argument-mismatch\n",
+      "test": "perf/refute-cheap-first.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "ea6fdc9ab4986b6a97e494c7af868704a3e15552506ca2014743a91a83a0e2ec",
+      "seconds": 0.00446087499949499,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_last:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch\n",
+      "test": "perf/refute-cheap-last.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "18c9ea60e02b97067822697e4c9dc716e5e7ba63cacd5688b753c8e92845f415",
+      "seconds": 0.0012749259985866956,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=badDef:stage=definition.value:verdict=REJECT:reason=distinct-canonical-universes\n",
+      "test": "tutorial/002_badDef.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "64b1823f5bc87e743ad9e61b0a5b4907d141cd7434e4a9d9316deec82148891f",
+      "seconds": 0.0012514419977378566,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=forallSortBad:stage=definition.value:verdict=REJECT:reason=term-type-is-rigid-nonsort\n",
+      "test": "tutorial/009_forallSortBad.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "3a9f600737260fecac39cce77739eba58b52e1bb79c59d5d1d583e3d33b62842",
+      "seconds": 0.0014165240027068648,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=nonTypeType:stage=definition.type:verdict=REJECT:reason=term-is-not-a-type\n",
+      "test": "tutorial/010_nonTypeType.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "b4f10c5b711b37f776c31f73fde48de4f0c040c4c7cd54483d6ff61d81ce3105",
+      "seconds": 0.0013384990015765652,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=nonTypeAxiom:stage=axiom.type:verdict=REJECT:reason=term-is-not-a-type\n",
+      "test": "tutorial/011_nonTypeAxiom.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "388e6d33ebe9e93e6bfa0ab7a35eb260461850cf3e975842beeb196205a0b990",
+      "seconds": 0.0010949210009130184,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=nonPropThm:stage=theorem.proposition:verdict=REJECT:reason=distinct-canonical-universes\n",
+      "test": "tutorial/012_nonPropThm.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "53d4c834fb25b5169a4d3847507b7dc7125552f54d81a8970d29cb57682a6f19",
+      "seconds": 0.0012533849985629786,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=selfProof:stage=theorem.value:verdict=REJECT:reason=unknown-constant\n",
+      "test": "tutorial/014_selfProof.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "d33d515d2f0d6688cff31b9c3e5c69d4ec488a4b921c3ea6df2ccf5e6234e422",
+      "seconds": 0.0012496189992816653,
+      "stderr": "",
+      "test": "tutorial/019_tut06_bad01.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "0b5743d6dca5ca51a5966d5b1b1a2883fd0ddd0548b36a9c8b66d0fedda3e9c8",
+      "seconds": 0.0012837690010201186,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductBadNonSort:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/046_inductBadNonSort.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "bc9abb544e1e918b8cadf898b7251f0b4fb6ba43a89569343b094be27ad83c56",
+      "seconds": 0.0012202360012452118,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductBadNonSort2:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/047_inductBadNonSort2.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "00e01ad9e397d9ac2f53a0a0932c15681c097fd42eb5f81d3d1779ba8706875e",
+      "seconds": 0.0012994629978493322,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductLevelParam:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/048_inductLevelParam.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "a7aa4192b8e986b2cf7c3845d208e818b27db7edda2492d3e5e180f8c379746b",
+      "seconds": 0.0010944910027319565,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductTooFewParams:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/049_inductTooFewParams.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "e00ec458cd70b88e1f8ef6938dbf38b431c5a2d09086f22b8f46216a412625b4",
+      "seconds": 0.0012271960003999993,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductWrongCtorParams:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/050_inductWrongCtorParams.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "376541e4a12f98f6c3bddd3f2137ff92347ec8cc802de17147154f14fc539af7",
+      "seconds": 0.0013732610022998415,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductWrongCtorResParams:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/051_inductWrongCtorResParams.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "37bdaecc5ee679e398f190217c451777f14f5ea82d4d45472909574cb2a875d3",
+      "seconds": 0.0015087399988260586,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductWrongCtorResLevel:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/052_inductWrongCtorResLevel.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "ae3f46380ddb3b87ec47dd94f11facfb3b095d68a7e43fea1c051a54ea7df94a",
+      "seconds": 0.0012242109987710137,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductInIndex:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/053_inductInIndex.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "891ebd478f35c1b58597f8d5b90855c05683d1945c3392a1b8a49c7036618c72",
+      "seconds": 0.0013619540004583541,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=indNeg:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/054_indNeg.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "2bd8aa0b62145bfb04c3292516dd8df438594e104efb89f5de6b653db13ed19b",
+      "seconds": 0.0012810150001314469,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=reduceCtorType:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/056_reduceCtorType.mk.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "ac00e7cb143dfa35fb91c578756027daac4518aace7b27bdbd0097c1d2eae139",
+      "seconds": 0.0012679760002356488,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=indNegReducible:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/057_indNegReducible.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "6852310d3ee1571f605ea6447f85d0e01c867fd209d1185321318078549cf45a",
+      "seconds": 0.001324598997598514,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=typeWithTooHighTypeField:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/061_typeWithTooHighTypeField.mk.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "32fa46330a24a77b132ba55d9f9c88c89b4b2730d75fae453d066678a03ef0ca",
+      "seconds": 0.0012358790008875076,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=BogusRecursor:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/073_BogusRecursor.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "c523a27118e7e081c515535d7f9e3d69e623f7a1c04a900213086510063dae79",
+      "seconds": 0.0013653690002684016,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=projOutOfRange:stage=definition.value:verdict=REJECT:reason=projection-index-out-of-range\n",
+      "test": "tutorial/087_projOutOfRange.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "ca8056aa5df3b0f96a7a5eca355cce043d91c49563ae228cd4768f0bbe1bfaf4",
+      "seconds": 0.0013360459997784346,
+      "stderr": "",
+      "test": "tutorial/088_projNotStruct.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "710944c5a71c80cae0913c31ebe13186401e2717f4e5e731128590acd591d4f9",
+      "seconds": 0.001338739999482641,
+      "stderr": "",
+      "test": "tutorial/090_projProp2.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "958d3fdb2f292912c18fbc8ed3686c60d7d2fa19504385b7062276e20f0e5589",
+      "seconds": 0.0013305080028658267,
+      "stderr": "",
+      "test": "tutorial/092_projProp4.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "c6b12e00b68eb80438a619d29a523d4af0907e56e058541b675f34e26f98164e",
+      "seconds": 0.001443103999918094,
+      "stderr": "",
+      "test": "tutorial/093_projProp5.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "b8da2aaeb0422306639a720608ff66ffa6c50a75426e18bb3bd58c5f483d13b2",
+      "seconds": 0.001328595000813948,
+      "stderr": "",
+      "test": "tutorial/094_projProp6.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "5153a2bfdb3191f67bcedeccfc2306bf2514fba530a58237660664de1f8f2b6a",
+      "seconds": 0.0020000030017399695,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=projIndexData:stage=definition.value:verdict=REJECT:reason=projection-type-name-mismatch\n",
+      "test": "tutorial/096_projIndexData.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "e044fa7d4fc048c6103e60a5c1b41e07070c54cc998403ae323b04ed5cea7793",
+      "seconds": 0.0020327210004325025,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=projIndexData2:stage=definition.value:verdict=REJECT:reason=projection-type-name-mismatch\n",
+      "test": "tutorial/097_projIndexData2.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "2147c3416825e1c7f78382501f4c3e2f8165d23d464c998a077e69a12e51697a",
+      "seconds": 0.0016943830014497507,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=REJECT:reason=rule-k-target-mismatch\n",
+      "test": "tutorial/100_ruleKbad.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "59a4dc34b1175f59d9efd17c4c5b9d9f07bdb54c882dc66a65737d29be6d4356",
+      "seconds": 0.0020915579989377875,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=REJECT:reason=certified-stuck-recursor-mismatch\n",
+      "test": "tutorial/101_ruleKAcc.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "2a1fa7289c339a899efdc2a1e4db11cc3d27064caa6cfb4b345a0bc1c247e95d",
+      "seconds": 0.0013699560004170053,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=proofIrrelevanceBad:stage=definition.value:verdict=REJECT:reason=distinct-rigid-local-terms\n",
+      "test": "tutorial/105_proofIrrelevanceBad.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "cbb7373c1ca899628177c7d6eb97dc6cf2f1faa3d14cdd1b1d90a5103e15f5d4",
+      "seconds": 0.0016440699982922524,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=indexedUnitEta:stage=definition.value:verdict=REJECT:reason=non-eta-structure-mismatch\n",
+      "test": "tutorial/111_indexedUnitEta.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "68793088cc096a96a4b7ed07f7417d88a4dafcc7ca4e8b53f6a756aed91e1b2d",
+      "seconds": 0.0016371290003007744,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=indexedStructEta:stage=definition.value:verdict=REJECT:reason=non-eta-structure-mismatch\n",
+      "test": "tutorial/113_indexedStructEta.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "54a1fa957b69925682e54479b3c152bfd131ca7f4a9713c05b195c83e9cd239a",
+      "seconds": 0.0015852030010137241,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=funEtaBad:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch\n",
+      "test": "tutorial/116_funEtaBad.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "cb1cb23af8bccc7eea0d76f643fe26948f6181a420128743f3ac7b08cd188427",
+      "seconds": 0.0014372549994732253,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=reflOccLeft:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/117_reflOccLeft.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "f7e26071a31d8a99affda951e49d5ddbe7ba2d387d4641733759a9e0e6e375bd",
+      "seconds": 0.0013334030008991249,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=reflOccInIndex:stage=inductive:verdict=Reject\n",
+      "test": "tutorial/118_reflOccInIndex.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "7868dfaa2a5574fa383e4fbf42f84d3eab78c43614f0034d2f78f2069ca00f64",
+      "seconds": 0.0022519339981954545,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=accRecNoEta:stage=theorem.value:verdict=REJECT:reason=certified-stuck-recursor-mismatch\n",
+      "test": "tutorial/125_accRecNoEta.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "3ddcdcf8426bc589d22186cbb600585763982f4cf5d6c097d1ba506add38562c",
+      "seconds": 0.001238343000295572,
+      "stderr": "",
+      "test": "tutorial/132_dup_defs.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "5215371a7c7f856b51f2da56aef208ca4ca729642dc778ad3e0ce8ab1906da0d",
+      "seconds": 0.001273384001251543,
+      "stderr": "",
+      "test": "tutorial/133_dup_ind_def.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "2ac3801ead3ade2a80fbfc1eabe5afc32191dc6fe92a327a3c04877788298788",
+      "seconds": 0.0014578350019291975,
+      "stderr": "",
+      "test": "tutorial/134_dup_ctor_def.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "c151eff211496e19088a099de9647fc09c5d8862c844f5cbac4922fd000aeb99",
+      "seconds": 0.0012117830010538455,
+      "stderr": "",
+      "test": "tutorial/135_dup_rec_def.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "084cbdbf52408c13578c9b5e603917d9cbe4f4eed72c8363a9955532c50bf9f9",
+      "seconds": 0.0012465639993024524,
+      "stderr": "",
+      "test": "tutorial/136_misnamed_rec_user.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "1491e5f6039864c0b1107e47b981951a82f704213e082400dbc09e8f42c70043",
+      "seconds": 0.0012081679997208994,
+      "stderr": "",
+      "test": "tutorial/137_dup_rec_def2.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "8298ec6977778857c4e5a6325eba54b1e81d03c09119342d8dc983b97f2ef1cc",
+      "seconds": 0.0011990150014753453,
+      "stderr": "",
+      "test": "tutorial/138_dup_ctor_rec.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "5ab46914e77307c3d93780fff5ff2c85f717ce1de2dbf3784049ccd6bab6aaa2",
+      "seconds": 0.0013042189966654405,
+      "stderr": "",
+      "test": "tutorial/139_DupConCon.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "210d79a51f88327822ee74f0dd95cc375d8ac95e634c2764f91ed6f3a9766d1d",
+      "seconds": 0.0013676130001840647,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=unsafeLoop:stage=definition.value:verdict=REJECT:reason=unknown-constant\n",
+      "test": "tutorial/140_falseFromUnsafe.ndjson"
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "fixture_sha256": "54e78ff1b3f6335f31703983abb67f840c9b13ca9c2d6bbb3aae9398f8232fe1",
+      "seconds": 0.0011367830011295155,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=partialLoop:stage=definition.value:verdict=REJECT:reason=unknown-constant\n",
+      "test": "tutorial/141_falseFromPartial.ndjson"
+    }
+  ],
+  "schema": "nucleus-arena-b1d6-lazy-delta-final2-reconstructed",
+  "wrong": []
+}

@@ -1,0 +1,60 @@
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/f60aa8a3d3fa/nucleus/metatron-kernel)
+    Finished `release` profile [optimized] target(s) in 0.59s
+     Running unittests src/lib.rs (metatron-kernel/target/release/deps/metatron_kernel-39681795687556e2)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (metatron-kernel/target/release/deps/metatron_kernel-aa6b4e615d41e944)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cli_verdict.rs (metatron-kernel/target/release/deps/cli_verdict-933214375322a46e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests/closed_pair_record.rs (metatron-kernel/target/release/deps/closed_pair_record-d010c8f87a08e6ba)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests/convert.rs (metatron-kernel/target/release/deps/convert-73ffb8be8a19345a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running tests/diagnostics.rs (metatron-kernel/target/release/deps/diagnostics-894e11992f258c75)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/end_to_end.rs (metatron-kernel/target/release/deps/end_to_end-a34b2f56fcb550ff)
+
+running 1 test
+test indexed_recursive_proposition_checks_exact_list_perm_contract ... FAILED
+
+failures:
+
+---- indexed_recursive_proposition_checks_exact_list_perm_contract stdout ----
+
+thread 'indexed_recursive_proposition_checks_exact_list_perm_contract' (53) panicked at tests/end_to_end.rs:19:5:
+assertion `left == right` failed
+  left: Unknown
+ right: Accept
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    indexed_recursive_proposition_checks_exact_list_perm_contract
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 66 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test end_to_end`

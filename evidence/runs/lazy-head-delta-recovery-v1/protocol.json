@@ -1,0 +1,30 @@
+{
+  "state": "WARRANTED_BOUNDED_LOCAL",
+  "implementation_commit": "62fb6f04",
+  "base_commit": "fb354d0d",
+  "arena": {
+    "sha": "b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42",
+    "artifact_id": 11272848230,
+    "before": {
+      "accept": 107,
+      "reject": 59,
+      "unknown": 30
+    },
+    "after": {
+      "accept": 109,
+      "reject": 59,
+      "unknown": 28
+    },
+    "earned": [
+      "perf/church-numerals",
+      "perf/unroll-versus-evaluate"
+    ],
+    "wrong": 0,
+    "errors": 0
+  },
+  "constraint": "same-head applications are compared by bounded congruence before evaluation; one head definition is exposed only after congruence remains UNKNOWN",
+  "limits": [
+    "28 Arena UNKNOWN remain",
+    "external CI qualification pending"
+  ]
+}

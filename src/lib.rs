@@ -8,6 +8,7 @@ pub mod diagnostics;
 pub mod environment;
 pub mod id;
 mod inductive;
+mod indexed_prop;
 pub mod judgment;
 pub mod level;
 pub mod machine;
