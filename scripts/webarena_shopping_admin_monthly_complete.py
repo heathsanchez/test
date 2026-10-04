@@ -41,16 +41,28 @@ def month_num(token: str) -> int:
     return MONTHS[key]
 
 def parse_period(text: str) -> Period:
-    # Covers "from January 2023 through May 2023, inclusive" and
-    # "from Jan 2022 through Nov 2022, inclusive".
+    # Explicit years on both endpoints:
+    # "from January 2023 through May 2023" / "from Jan 2022 through Nov 2022".
     m = re.search(
-        r"from\s+([A-Za-z]+)\s+(\d{4})\s+through\s+([A-Za-z]+)\s+(\d{4})",
+        r"from\s+([A-Za-z]+)\s+(\d{4})\s+(?:through|to)\s+([A-Za-z]+)\s+(\d{4})",
         text,
         flags=re.IGNORECASE,
     )
-    if not m:
-        raise ValueError(f"unsupported period wording: {text!r}")
-    sm, sy, em, ey = m.groups()
+    if m:
+        sm, sy, em, ey = m.groups()
+    else:
+        # Shared trailing year:
+        # "from Jan to December 2022".
+        m = re.search(
+            r"from\s+([A-Za-z]+)\s+(?:through|to)\s+([A-Za-z]+)\s+(\d{4})",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if not m:
+            raise ValueError(f"unsupported period wording: {text!r}")
+        sm, em, ey = m.groups()
+        sy = ey
+
     smn, emn = month_num(sm), month_num(em)
     start = date(int(sy), smn, 1)
     end = date(int(ey), emn, calendar.monthrange(int(ey), emn)[1])
