@@ -308,3 +308,36 @@ Current compiled official-pass ledger:
 - Payment-fold lineage: 5 total passes, 3 hard-set.
 - Visible-order-selector lineage: 4 total passes, 1 hard-set.
 - total across compiled lineages: 16 official passes, of which 9 are hard-set tasks.
+
+
+## Fourth compiled family: customer order counts
+
+**State: REUSABLE within template 276**
+
+This capability reuses the Magento order grid, exposes the existing hidden Customer Email column through the UI, scans the complete order history, groups by customer email, and applies exact-count or completed-order rank predicates.
+
+Evidence:
+
+- final run: `37233155555`
+- final job: `111526909967`
+- numeric-checkbox residual repair commit: `988253088112646fb93f0a6383293523bb0ea073`
+- artifact: `11314209306`
+- artifact digest: `sha256:534a26d157b4829191777766898f45059cc524704b61900c591fe4d5fd42add9`
+- hard 63: score 1.0, success
+- hard 64: score 1.0, success
+- hard 65: score 1.0, success
+- held-out 62: score 1.0, success
+- each live execution scanned 308 order rows and 36 unique customer emails.
+
+Preserved separator:
+
+- first run `37232981554` failed before evaluation because Magento generated the Customer Email checkbox with numeric DOM id `14`; CSS selector `#14` is invalid.
+- the minimal repair selected the checkbox relative to its label instead. No counting, ranking, or customer semantics changed.
+
+Current compiled official-pass ledger:
+
+- Orders Report lineage: 7 total / 5 hard.
+- Payment-fold lineage: 5 total / 3 hard.
+- Visible-order-selector lineage: 4 total / 1 hard.
+- Customer-order-count lineage: 4 total / 3 hard.
+- cumulative: **20 official passes total / 12 hard-set tasks**.
