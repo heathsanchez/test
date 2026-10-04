@@ -42,6 +42,10 @@ def parse_query(intent: str) -> dict:
     if m:
         return {"mode": "sum", "n": int(m.group(1)), "predicate": "completed"}
 
+    m = re.search(r"total payment amount of the last\s+(\d+)\s+pending orders", low)
+    if m:
+        return {"mode": "sum", "n": int(m.group(1)), "predicate": "pending"}
+
     m = re.search(r"total payment amount of the last\s+(\d+)\s+non[- ]cancelled orders", low)
     if m:
         return {"mode": "sum", "n": int(m.group(1)), "predicate": "non_cancelled"}
@@ -67,6 +71,8 @@ def status_class(text: str) -> str:
         return "cancelled"
     if s in {"complete", "completed"}:
         return "completed"
+    if s == "pending":
+        return "pending"
     return "other"
 
 
@@ -191,8 +197,8 @@ def compute(query: dict, rows: list[dict]) -> tuple[Decimal, dict]:
     if query["mode"] == "sum":
         pred = query["predicate"]
         n = query["n"]
-        if pred == "completed":
-            chosen = [r for r in rows if r["status_class"] == "completed"][:n]
+        if pred in {"completed", "pending"}:
+            chosen = [r for r in rows if r["status_class"] == pred][:n]
         elif pred == "non_cancelled":
             chosen = [r for r in rows if r["status_class"] != "cancelled"][:n]
         else:
