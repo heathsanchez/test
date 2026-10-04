@@ -5,7 +5,7 @@ on:
   push:
     branches: [webarena-verified-capability-compiler-v1]
     paths:
-      - "scripts/webarena_shopping_admin_payment_fold.py"
+      - "scripts/webarena_shopping_admin_payment_fold_v2.py"
       - ".github/workflows/webarena_shopping_admin_payment_fold.yml"
 
 jobs:
@@ -65,7 +65,7 @@ jobs:
       - name: Execute payment-fold capability
         run: |
           for id in 193 196 197; do
-            python scripts/webarena_shopping_admin_payment_fold.py               --task-id "$id"               --task-file artifacts/webarena_payment_fold/tasks.json               --base-url http://localhost:7780/admin               --output-dir artifacts/webarena_payment_fold/output
+            python scripts/webarena_shopping_admin_payment_fold_v2.py               --task-id "$id"               --task-file artifacts/webarena_payment_fold/tasks.json               --base-url http://localhost:7780/admin               --output-dir artifacts/webarena_payment_fold/output
           done
 
       - name: Score all three with pinned official evaluator API
