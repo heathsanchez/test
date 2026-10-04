@@ -20,6 +20,8 @@ def clean(s:str)->str:
 def parse_created(text:str):
     value=clean(text)
     fmts=(
+        "%B %d, %Y, %I:%M:%S %p",
+        "%b %d, %Y, %I:%M:%S %p",
         "%B %d, %Y %I:%M:%S %p",
         "%b %d, %Y %I:%M:%S %p",
         "%B %d, %Y",
