@@ -381,3 +381,33 @@ Current compiled official-pass ledger:
 - Customer-order-count lineage: 4 total / 3 hard.
 - Search-term analytics lineage: 4 total / 2 hard.
 - cumulative: **24 official passes total / 14 hard-set tasks**.
+
+
+## Sixth compiled family: selected-order detail transport
+
+**State: WARRANTED_BOUNDED cross-state reuse; held-out transfer passed**
+
+The existing order-grid selector was transported into Magento's selected-order detail page.
+
+Evidence:
+
+- run: `37242072336`
+- job: `111552629194`
+- workflow commit: `7ad6fdcf79bba882abf080c5c391514859c9d1d9`
+- artifact: `11317936723`
+- artifact digest: `sha256:23c23f079e4408177a3dd117f150a902c121d6b4a568f4ffe1398ea6d9d6259b`
+- hard 204: score 1.0, success
+- held-out 198: score 1.0, success
+
+This reuses the already-compiled recency/status selector, then follows the selected order's own View link. Hard task 204 extracts product names and final prices from the Items Ordered table and preserves the requested low-to-high price ordering. Held-out 198 extracts the customer email from the Order & Account Information table.
+
+The capability therefore demonstrates transport of the same selected-order identity across two representations:
+
+```
+order-grid row
+-> certified selected order
+-> order detail page
+-> protected detail projection
+```
+
+The compiled hard reclosure has been expanded from 14 to 15 tasks and must pass before 15 is treated as the new replayed score floor.
