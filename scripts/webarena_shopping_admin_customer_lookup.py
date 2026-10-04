@@ -10,7 +10,10 @@ def clean(s):
     return re.sub(r"\s+"," ",s).strip()
 
 def digits(s):
-    return "".join(ch for ch in s if ch.isdigit())
+    d="".join(ch for ch in s if ch.isdigit())
+    if len(d)==11 and d.startswith("1"):
+        d=d[1:]
+    return d
 
 async def live_table(page):
     for _ in range(120):
