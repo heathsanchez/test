@@ -77,10 +77,16 @@ jobs:
           from pathlib import Path
           from webarena_verified.api import WebArenaVerified
           from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
 
           root = Path("artifacts/webarena_template270_api")
           config = WebArenaVerifiedConfig.from_file(root / "config.json")
           wa = WebArenaVerified(config=config)
+          empty_trace = NetworkTrace.model_construct(
+              is_playwright=False,
+              src_file=Path("<no-network-evaluator>"),
+              events=(),
+          )
           results = {}
 
           for task_id in (108, 110, 111):
@@ -88,7 +94,7 @@ jobs:
               result = wa.evaluate_task(
                   task_id=task_id,
                   agent_response=response_path,
-                  network_trace=None,
+                  network_trace=empty_trace,
               )
               dumped = result.model_dump(mode="json", exclude_none=True)
               out = root / "output" / str(task_id) / "eval_result.json"
@@ -106,7 +112,7 @@ jobs:
               "boundary": "WebArena-Verified template 270 tasks 108,110,111",
               "upstream_commit": "6473f72db5dcefc97b5725b59e734504edc28a21",
               "environment": "observable Shopping Admin web surface only",
-              "network_trace_note": "No NetworkEventEvaluator is declared for these tasks; official API evaluated with network_trace=None.",
+              "network_trace_note": "No NetworkEventEvaluator is declared for these tasks; official API received an empty typed NetworkTrace with zero fabricated events.",
               "results": results,
           }
           (root / "qualification.json").write_text(json.dumps(qualification, indent=2) + "\n")
