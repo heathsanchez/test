@@ -430,3 +430,24 @@ Evidence:
 - task IDs: 108, 110, 111, 707, 709, 193, 196, 197, 200, 63, 64, 65, 42, 127, 204.
 
 This supersedes the prior 14-task replay seal as the current compiled hard score floor.
+
+
+## Compiled hard reclosure v3
+
+**State: WARRANTED_BOUNDED — 17/17**
+
+The compiled hard closure was replayed after adding exact-product review-rating retrieval.
+
+Evidence:
+
+- run: `37243635510`
+- job: `111557120117`
+- workflow commit: `ce878fb44c51b6359147d5e47175fab09fb4ed7b`
+- artifact: `11318062892`
+- artifact digest: `sha256:11606caf236a0c613740f31646457833da659fb5b37686915f77cbad5ecb06ed`
+- all 17 official scores = 1.0, success
+- task IDs: 108, 110, 111, 707, 709, 193, 196, 197, 200, 63, 64, 65, 42, 127, 204, 113, 214.
+
+This supersedes the 15-task seal as the current replayed hard score floor.
+
+The review-rating family is WARRANTED_BOUNDED on hard tasks 113 and 214. Its held-out transfer is not yet REUSABLE: task 115 exposed an over-merge between `Chloe tank` and the related product `Chloe Compete Tank`. That separator is preserved; no broader product-identity claim is made.
