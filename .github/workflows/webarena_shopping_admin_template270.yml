@@ -1,0 +1,103 @@
+name: WebArena Shopping Admin template 270 qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - "scripts/webarena_shopping_admin_monthly_complete.py"
+      - ".github/workflows/webarena_shopping_admin_template270.yml"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned WebArena-Verified authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Pull and start Shopping Admin
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          mkdir -p artifacts/webarena_template270
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_template270/environment_image_digest.txt
+          docker run -d --name webarena-verified-shopping_admin -p 7780:80 -p 7781:8877 am1n3e/webarena-verified-shopping_admin
+
+      - name: Wait for observable admin surface
+        run: |
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' -H 'X-M2-Admin-Auto-Login: admin:admin1234' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then
+              echo "Shopping Admin observable surface ready: HTTP $code"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs webarena-verified-shopping_admin || true
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned evaluator and Playwright
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Export official hard tasks
+        run: |
+          cp upstream/assets/dataset/webarna-verfied-hard.json artifacts/webarena_template270/hard_tasks.json
+          cat > artifacts/webarena_template270/config.json <<'JSON'
+          {
+            "environments": {
+              "__SHOPPING_ADMIN__": {
+                "urls": ["http://127.0.0.1:7780/admin"],
+                "active_url_idx": 0,
+                "use_header_login": true,
+                "credentials": {"username": "admin", "password": "admin1234"}
+              }
+            }
+          }
+          JSON
+
+      - name: Run deterministic capability on 108 110 111
+        run: |
+          for id in 108 110 111; do
+            python scripts/webarena_shopping_admin_monthly_complete.py               --task-id "$id"               --task-file artifacts/webarena_template270/hard_tasks.json               --base-url http://127.0.0.1:7780/admin               --output-dir artifacts/webarena_template270/output
+          done
+
+      - name: Score with pinned official evaluator
+        run: |
+          webarena-verified eval-tasks             --task-ids 108,110,111             --config artifacts/webarena_template270/config.json             --output-dir artifacts/webarena_template270/output
+
+      - name: Require 3 of 3 official passes
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("artifacts/webarena_template270/output")
+          result={}
+          for task_id in (108,110,111):
+              p=root/str(task_id)/"eval_result.json"
+              data=json.loads(p.read_text())
+              result[str(task_id)]={"score":data.get("score"),"status":data.get("status")}
+              if float(data.get("score",0)) != 1.0 or data.get("status") != "success":
+                  raise SystemExit(f"task {task_id} did not close: {data}")
+          Path("artifacts/webarena_template270/qualification.json").write_text(
+              json.dumps({"epistemic_state":"WARRANTED_BOUNDED","boundary":"template270 tasks 108,110,111 on pinned evaluator","results":result},indent=2)+"\n"
+          )
+          print(json.dumps(result,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-template270-qualification
+          path: artifacts/webarena_template270
