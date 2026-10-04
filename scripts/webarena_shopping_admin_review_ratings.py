@@ -54,32 +54,53 @@ async def next_page(page):
             if now.isdigit() and before is not None and int(now)==before+1: return True
     raise RuntimeError("review pager next did not advance")
 
+async def apply_product_filter(page,product):
+    expand=page.locator('button[data-action="grid-filter-expand"]')
+    await expand.first.click()
+    wrap=page.locator('.admin__data-grid-filters-wrap:visible')
+    fields=wrap.locator('.admin__form-field')
+    target=None
+    for i in range(await fields.count()):
+        field=fields.nth(i)
+        label=field.locator('.admin__form-field-label')
+        if await label.count() and clean(await label.inner_text()).lower()=="product":
+            target=field; break
+    if target is None: raise RuntimeError("Product review filter not found")
+    inp=target.locator("input")
+    if await inp.count()==0: raise RuntimeError("Product review filter input missing")
+    await inp.first.fill(product)
+    apply=wrap.locator('button[data-action="grid-filter-apply"]')
+    try:
+        async with page.expect_response(lambda r: "/mui/index/render" in r.url, timeout=15000):
+            await apply.click()
+    except Exception:
+        await apply.click()
+    await page.wait_for_timeout(500)
+    return await live_table(page)
+
 async def matching_reviews(page,product):
-    await rewind_first(page)
+    table,headers=await apply_product_filter(page,product)
     target=norm(product); out=[]; seen=set()
-    for _ in range(80):
-        table,headers=await live_table(page)
-        lower=[h.lower() for h in headers]
-        ix={k:lower.index(k) for k in ["id","title","nickname","product"]}
-        rows=table.locator("tbody tr")
-        for ri in range(await rows.count()):
-            row=rows.nth(ri); cells=row.locator("td")
-            if await cells.count()<=max(ix.values()): continue
-            rid=clean(await cells.nth(ix["id"]).inner_text())
-            if not rid or rid in seen: continue
-            seen.add(rid)
-            pname=clean(await cells.nth(ix["product"]).inner_text())
-            if norm(pname)!=target: continue
-            links=row.locator('a[href*="/review/product/edit/"]')
-            href=await links.first.get_attribute("href") if await links.count() else None
-            out.append({
-                "review_id":rid,
-                "product":pname,
-                "title":clean(await cells.nth(ix["title"]).inner_text()),
-                "nickname":clean(await cells.nth(ix["nickname"]).inner_text()),
-                "href":href,
-            })
-        if not await next_page(page): break
+    lower=[h.lower() for h in headers]
+    ix={k:lower.index(k) for k in ["id","title","nickname","product"]}
+    rows=table.locator("tbody tr")
+    for ri in range(await rows.count()):
+        row=rows.nth(ri); cells=row.locator("td")
+        if await cells.count()<=max(ix.values()): continue
+        rid=clean(await cells.nth(ix["id"]).inner_text())
+        if not rid or rid in seen: continue
+        seen.add(rid)
+        pname=clean(await cells.nth(ix["product"]).inner_text())
+        if norm(pname)!=target: continue
+        links=row.locator('a[href*="/review/product/edit/"]')
+        href=await links.first.get_attribute("href") if await links.count() else None
+        out.append({
+            "review_id":rid,
+            "product":pname,
+            "title":clean(await cells.nth(ix["title"]).inner_text()),
+            "nickname":clean(await cells.nth(ix["nickname"]).inner_text()),
+            "href":href,
+        })
     return out
 
 async def star_value(page,href):
