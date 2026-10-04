@@ -341,3 +341,43 @@ Current compiled official-pass ledger:
 - Visible-order-selector lineage: 4 total / 1 hard.
 - Customer-order-count lineage: 4 total / 3 hard.
 - cumulative: **20 official passes total / 12 hard-set tasks**.
+
+
+## Fifth compiled family: search-term analytics
+
+**State: REUSABLE across templates 285 and 1001 under the declared response-only boundary**
+
+The capability reads the observable Magento Search Terms grid and compiles:
+
+```
+Search Query + Results + Uses
+-> rank by Uses
+-> optional Results > 0 availability guard
+```
+
+Evidence:
+
+- final run: `37234527817`
+- final job: `111530890573`
+- stable legacy-pager refinement commit: `072db26b1ca56d3eb672286099733246184053a5`
+- artifact: `11314957646`
+- artifact digest: `sha256:6d5da750fc5cb870bcb68e15a622da12b8496014ebea1b1ecdfaae026e143b78`
+- hard 42: score 1.0, success
+- hard 127: score 1.0, success
+- held-out 41: score 1.0, success
+- held-out 43: score 1.0, success
+- each execution scanned 7 live search-term rows.
+
+Preserved separator:
+
+- first run `37234278585` failed before evaluation because the legacy grid's Next button did not provide the same stable row-change contract as the modern UI grids.
+- the minimal repair used Magento's own stable legacy pager controls: page size 200 and explicit current-page input. Ranking semantics were unchanged.
+
+Current compiled official-pass ledger:
+
+- Orders Report lineage: 7 total / 5 hard.
+- Payment-fold lineage: 5 total / 3 hard.
+- Visible-order-selector lineage: 4 total / 1 hard.
+- Customer-order-count lineage: 4 total / 3 hard.
+- Search-term analytics lineage: 4 total / 2 hard.
+- cumulative: **24 official passes total / 14 hard-set tasks**.
