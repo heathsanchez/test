@@ -1,0 +1,117 @@
+name: WebArena Shopping Admin payment-fold qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - "scripts/webarena_shopping_admin_payment_fold.py"
+      - ".github/workflows/webarena_shopping_admin_payment_fold.yml"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned WebArena-Verified authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Pull and start Shopping Admin
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          mkdir -p artifacts/webarena_payment_fold
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_payment_fold/environment_image_digest.txt
+          docker run -d --name webarena-verified-shopping_admin -p 7780:80 -p 7781:8877 am1n3e/webarena-verified-shopping_admin
+
+      - name: Wait for observable admin surface
+        run: |
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          docker logs webarena-verified-shopping_admin || true
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned evaluator and Playwright
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Prepare authority files
+        run: |
+          cp upstream/assets/dataset/webarna-verfied-hard.json artifacts/webarena_payment_fold/tasks.json
+          cat > artifacts/webarena_payment_fold/config.json <<'JSON'
+          {
+            "environments": {
+              "__SHOPPING_ADMIN__": {
+                "urls": ["http://localhost:7780/admin"],
+                "active_url_idx": 0
+              }
+            }
+          }
+          JSON
+
+      - name: Execute payment-fold capability
+        run: |
+          for id in 193 196 197; do
+            python scripts/webarena_shopping_admin_payment_fold.py               --task-id "$id"               --task-file artifacts/webarena_payment_fold/tasks.json               --base-url http://localhost:7780/admin               --output-dir artifacts/webarena_payment_fold/output
+          done
+
+      - name: Score all three with pinned official evaluator API
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/webarena_payment_fold")
+          config=WebArenaVerifiedConfig.from_file(root/"config.json")
+          wa=WebArenaVerified(config=config)
+          empty_trace=NetworkTrace.model_construct(
+              is_playwright=False,
+              src_file=Path("<no-network-evaluator>"),
+              events=(),
+          )
+          results={}
+          for task_id in (193,196,197):
+              response_path=root/"output"/str(task_id)/"agent_response.json"
+              result=wa.evaluate_task(
+                  task_id=task_id,
+                  agent_response=response_path,
+                  network_trace=empty_trace,
+              )
+              dumped=result.model_dump(mode="json", exclude_none=True)
+              (root/"output"/str(task_id)/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+              results[str(task_id)]={"score":float(result.score),"status":result.status.value}
+              print(task_id,json.dumps(results[str(task_id)]))
+              if float(result.score)!=1.0 or result.status.value!="success":
+                  raise SystemExit(f"task {task_id} did not close: {dumped}")
+
+          qualification={
+              "epistemic_state":"WARRANTED_BOUNDED",
+              "boundary":"Shopping Admin template 367 hard-set tasks 193,196,197",
+              "lineage":"order recency + status predicate + purchased-total fold",
+              "results":results,
+          }
+          (root/"qualification.json").write_text(json.dumps(qualification,indent=2)+"\n")
+          print(json.dumps(qualification,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-shopping-admin-payment-fold
+          path: artifacts/webarena_payment_fold
