@@ -1,0 +1,30 @@
+name: WebArena customer grid probe
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - "scripts/webarena_customer_grid_probe.py"
+      - ".github/workflows/webarena_customer_grid_probe.yml"
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start Shopping Admin
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker run -d --name wa -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: |
+          pip install playwright
+          playwright install --with-deps chromium
+      - run: python scripts/webarena_customer_grid_probe.py
