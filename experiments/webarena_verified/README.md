@@ -90,3 +90,45 @@ The experiment is not "hard-code three answers." It is:
 No result from static task definitions alone is a solved-task claim.
 
 The residual mapper is `scripts/webarena_verified_residual_map.py`.
+
+
+## First live promotion: template 270
+
+**State: WARRANTED_BOUNDED**
+
+A deterministic Shopping Admin capability for monthly counts of completed orders was qualified against the pinned official WebArena-Verified evaluator on hard-set tasks 108, 110, and 111.
+
+Evidence:
+
+- qualification run: `37195574834`
+- qualification job: `111416616532`
+- branch commit: `5961083a335619fcd71e80664745466473c3921a`
+- upstream evaluator/data authority commit: `6473f72db5dcefc97b5725b59e734504edc28a21`
+- Shopping Admin image digest: `sha256:d0531dd27ed98d0c459ff9e88118bf2ed8b660b0ed99c38837db46c065a5be13`
+- task 108: score 1.0, success
+- task 110: score 1.0, success
+- task 111: score 1.0, success
+- official evaluator version observed: 1.2.3
+- evaluator checksum observed in preceding seam run: `35c3385b1db4b3378657589f95f50defd4234bd36e5b93d44733fd561b01db4e`
+- data checksum observed in preceding seam run: `d65275660814663375028e9017e1f929e3c38321041b125795e2713b52243d30`
+
+The capability does not read benchmark expected answers or the container database/filesystem. It derives the requested period from the task, queries the observable Magento Orders Report, filters to completed orders, and extracts the rendered monthly Interval/Orders grid.
+
+### Preserved failed lineage
+
+Two failures remain part of the evidence lineage:
+
+1. Run `37194670382`: the documented env-control `/health` path returned 404 although the application stack was healthy. Readiness was refined to the observable admin surface.
+2. Run `37194943969`: the capability produced the exact live counts, but an empty placeholder HAR caused the CLI trace parser to fall through to Playwright JSON-lines parsing.
+3. Run `37195408515`: direct evaluator API with `network_trace=None` exposed a Pydantic type mismatch; an empty typed `NetworkTrace` with zero fabricated events is the minimum lawful value for these response-only tasks.
+
+No network-event claim is made for this family because tasks 108/110/111 declare no `NetworkEventEvaluator`.
+
+### Reclosure target
+
+The full 812-task pinned dataset contains two additional template-270 instances not in the hard-set promotion family:
+
+- task 107: May 2022 through December 2022;
+- task 109: Jan to December 2022.
+
+These are the next held-out transfer boundary. Passing both without task-specific answers promotes the capability toward REUSABLE; task 109 is also a separator for the date-grammar representation.
