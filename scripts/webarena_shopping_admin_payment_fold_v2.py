@@ -71,7 +71,7 @@ def status_class(text: str) -> str:
 
 
 async def table_headers(page) -> tuple[object, list[str]]:
-    tables = page.locator("table")
+    tables = page.locator("table:visible")
     for i in range(await tables.count()):
         table = tables.nth(i)
         hs = []
@@ -83,6 +83,7 @@ async def table_headers(page) -> tuple[object, list[str]]:
             "purchase date" in lower
             and "grand total (purchased)" in lower
             and "status" in lower
+            and await table.locator("tbody tr").count() > 0
         ):
             return table, hs
     raise RuntimeError("could not find Magento order grid with Purchase Date / Grand Total (Purchased) / Status")
