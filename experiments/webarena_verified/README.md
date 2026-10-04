@@ -132,3 +132,36 @@ The full 812-task pinned dataset contains two additional template-270 instances 
 - task 109: Jan to December 2022.
 
 These are the next held-out transfer boundary. Passing both without task-specific answers promotes the capability toward REUSABLE; task 109 is also a separator for the date-grammar representation.
+
+
+## Held-out transfer promotion
+
+**State: REUSABLE within template 270**
+
+After the 3/3 hard-set qualification, the same capability was tested on the two remaining template-270 instances in the full pinned 812-task dataset.
+
+Evidence:
+
+- held-out transfer run: `37195806600`
+- held-out transfer job: `111417299539`
+- transfer workflow commit: `10de2deffe166a03b8b1d70e7acffe2cfd450736`
+- capability grammar refinement commit: `526713444e1fd62de9d9a29a538cd681bb181c98`
+- task 107: score 1.0, success
+- task 109: score 1.0, success
+- same Shopping Admin image digest: `sha256:d0531dd27ed98d0c459ff9e88118bf2ed8b660b0ed99c38837db46c065a5be13`
+
+Task 109 was a useful separator: its period is phrased `from Jan to December 2022`, unlike the explicit-year grammar in the qualification set. The only refinement was to the date grammar; the report-selection, completed-status filter, monthly aggregation, UI extraction, and structured response logic were unchanged.
+
+Thus the declared result is:
+
+```
+template 270: 5 / 5 official-evaluator passes
+hard-set qualification: 108, 110, 111
+held-out transfer: 107, 109
+```
+
+This warrants REUSABLE for the template-270 family under the pinned environment/evaluator boundary. It does not warrant a broader Shopping Admin or WebArena leaderboard claim.
+
+## Global reclosure after template 270
+
+The newly compiled primitive exposes an immediate dependency neighborhood: hard-set navigation tasks 707 and 709 use the same Magento Orders Report surface and date-filter semantics but protect a navigation/network consequence rather than a retrieved monthly table. These are the next cheapest separator for whether the compiled report capability can be requalified under a different protected future.
