@@ -13,15 +13,17 @@ def digits(s):
     return "".join(ch for ch in s if ch.isdigit())
 
 async def live_table(page):
-    tables=page.locator("table:visible")
-    for i in range(await tables.count()):
-        table=tables.nth(i)
-        th=table.locator("thead th")
-        headers=[clean(await th.nth(j).inner_text()) for j in range(await th.count())]
-        lower=[h.lower() for h in headers]
-        if {"id","name","email","phone"}.issubset(set(lower)) and await table.locator("tbody tr").count()>0:
-            return table,headers
-    raise RuntimeError("live customer grid not found")
+    for _ in range(120):
+        tables=page.locator("table:visible")
+        for i in range(await tables.count()):
+            table=tables.nth(i)
+            th=table.locator("thead th")
+            headers=[clean(await th.nth(j).inner_text()) for j in range(await th.count())]
+            lower=[h.lower() for h in headers]
+            if {"id","name","email","phone"}.issubset(set(lower)) and await table.locator("tbody tr").count()>0:
+                return table,headers
+        await page.wait_for_timeout(100)
+    raise RuntimeError("live customer grid not found after render wait")
 
 async def first_id(table,headers):
     idx=[h.lower() for h in headers].index("id")
@@ -31,24 +33,25 @@ async def first_id(table,headers):
     return clean(await cells.nth(idx).inner_text()) if await cells.count()>idx else None
 
 async def rewind_first(page):
-    for _ in range(30):
-        table,headers=await live_table(page)
-        wraps=page.locator(".admin__data-grid-pager-wrap:visible")
-        prev=None
-        for i in range(await wraps.count()):
-            cand=wraps.nth(i).locator("button.action-previous")
-            if await cand.count():
-                prev=cand; break
-        if prev is None or not await prev.is_enabled(): return
-        before=await first_id(table,headers)
-        await prev.click(force=True)
-        for _ in range(80):
-            await page.wait_for_timeout(100)
-            table2,headers2=await live_table(page)
-            current=await first_id(table2,headers2)
-            if before and current and current!=before: break
-        else: raise RuntimeError("customer pager failed to rewind")
-    raise RuntimeError("customer pager did not reach first page")
+    table,headers=await live_table(page)
+    pager=page.locator('.admin__data-grid-pager:visible').first
+    current=pager.locator('input[data-ui-id="current-page-input"]')
+    if await current.count()==0:
+        return
+    value=(await current.input_value()).strip()
+    if value=="1":
+        return
+    before=await first_id(table,headers)
+    await current.fill("1")
+    await current.press("Enter")
+    for _ in range(100):
+        await page.wait_for_timeout(100)
+        table2,headers2=await live_table(page)
+        now=(await current.input_value()).strip()
+        first=await first_id(table2,headers2)
+        if now=="1" and first and first!=before:
+            return
+    raise RuntimeError("customer pager failed to set current page to 1")
 
 async def advance(page,table,headers):
     wraps=page.locator(".admin__data-grid-pager-wrap:visible")
