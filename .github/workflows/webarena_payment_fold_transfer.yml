@@ -1,0 +1,116 @@
+name: WebArena payment-fold held-out transfer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_payment_fold_transfer.yml"
+
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned WebArena-Verified authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Pull and start Shopping Admin
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          mkdir -p artifacts/webarena_payment_fold_transfer
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_payment_fold_transfer/environment_image_digest.txt
+          docker run -d --name webarena-verified-shopping_admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+
+      - name: Wait for observable admin surface
+        run: |
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          docker logs webarena-verified-shopping_admin || true
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned evaluator and Playwright
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Prepare full authority dataset
+        run: |
+          cp upstream/assets/dataset/webarena-verified.json artifacts/webarena_payment_fold_transfer/tasks.json
+          cat > artifacts/webarena_payment_fold_transfer/config.json <<'JSON'
+          {
+            "environments": {
+              "__SHOPPING_ADMIN__": {
+                "urls": ["http://localhost:7780/admin"],
+                "active_url_idx": 0
+              }
+            }
+          }
+          JSON
+
+      - name: Execute held-out payment folds
+        run: |
+          for id in 194 195; do
+            python scripts/webarena_shopping_admin_payment_fold_v2.py               --task-id "$id"               --task-file artifacts/webarena_payment_fold_transfer/tasks.json               --base-url http://localhost:7780/admin               --output-dir artifacts/webarena_payment_fold_transfer/output
+          done
+
+      - name: Score held-outs with pinned official evaluator API
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/webarena_payment_fold_transfer")
+          config=WebArenaVerifiedConfig.from_file(root/"config.json")
+          wa=WebArenaVerified(config=config)
+          empty_trace=NetworkTrace.model_construct(
+              is_playwright=False,
+              src_file=Path("<no-network-evaluator>"),
+              events=(),
+          )
+          results={}
+          for task_id in (194,195):
+              response=root/"output"/str(task_id)/"agent_response.json"
+              result=wa.evaluate_task(
+                  task_id=task_id,
+                  agent_response=response,
+                  network_trace=empty_trace,
+              )
+              dumped=result.model_dump(mode="json", exclude_none=True)
+              (root/"output"/str(task_id)/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+              results[str(task_id)]={"score":float(result.score),"status":result.status.value}
+              print(task_id,json.dumps(results[str(task_id)]))
+              if float(result.score)!=1.0 or result.status.value!="success":
+                  raise SystemExit(f"held-out task {task_id} did not close: {dumped}")
+
+          transfer={
+              "epistemic_state":"REUSABLE",
+              "source_boundary":"template367 hard-set tasks 193,196,197",
+              "held_out_boundary":"template367 full-set tasks 194,195",
+              "results":results,
+          }
+          (root/"transfer.json").write_text(json.dumps(transfer,indent=2)+"\n")
+          print(json.dumps(transfer,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-payment-fold-heldout-transfer
+          path: artifacts/webarena_payment_fold_transfer
