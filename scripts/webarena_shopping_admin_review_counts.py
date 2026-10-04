@@ -144,6 +144,44 @@ async def scan_all(page):
         raise RuntimeError("no reviews collected")
     return out
 
+async def filtered_term_count(page,term):
+    expand=page.locator('button[data-action="grid-filter-expand"]')
+    if await expand.count()==0:
+        raise RuntimeError("review Filters button not found")
+    await expand.first.click()
+    wrap=page.locator('.admin__data-grid-filters-wrap:visible')
+    if await wrap.count()==0:
+        raise RuntimeError("review filter form did not open")
+    fields=wrap.locator('.admin__form-field')
+    target=None
+    for i in range(await fields.count()):
+        field=fields.nth(i)
+        label=field.locator('.admin__form-field-label')
+        if await label.count() and clean(await label.inner_text()).lower()=="review":
+            target=field
+            break
+    if target is None:
+        raise RuntimeError("Review text filter field not found")
+    control=target.locator('input')
+    if await control.count()==0:
+        raise RuntimeError("Review text filter input not found")
+    await control.first.fill(term)
+    apply=wrap.locator('button[data-action="grid-filter-apply"]')
+    try:
+        async with page.expect_response(lambda r: "/mui/index/render" in r.url, timeout=15000):
+            await apply.click()
+    except Exception:
+        await apply.click()
+    for _ in range(100):
+        await page.wait_for_timeout(100)
+        supports=page.locator('.admin__data-grid-pager-wrap:visible .admin__control-support-text')
+        for i in range(await supports.count()):
+            txt=clean(await supports.nth(i).inner_text())
+            m=re.search(r"([0-9,]+)\s+records?\s+found",txt,re.I)
+            if m:
+                return int(m.group(1).replace(",",""))
+    raise RuntimeError("filtered review record count not found")
+
 def task_mode(task):
     tid=int(task["intent_template_id"])
     inst=task.get("instantiation_dict",{})
@@ -211,15 +249,18 @@ async def main():
         page=await ctx.new_page()
         resp=await page.goto(a.base_url.rstrip("/")+REVIEW_GRID,wait_until="networkidle",timeout=120000)
         if resp is None or resp.status!=200: raise RuntimeError("review grid navigation failed")
-        rows=await scan_all(page)
         if mode["kind"]=="term":
-            rows=await enrich_full_text(ctx,rows)
-        count=count_rows(rows,mode)
+            count=await filtered_term_count(page,mode["term"])
+            rows_scanned=None
+        else:
+            rows=await scan_all(page)
+            count=count_rows(rows,mode)
+            rows_scanned=len(rows)
         await browser.close()
     response={"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":[count],"error_details":None}
     out=Path(a.output_dir)/str(a.task_id); out.mkdir(parents=True,exist_ok=True)
     (out/"agent_response.json").write_text(json.dumps(response,indent=2)+"\n")
-    evidence={"task_id":a.task_id,"mode":mode,"rows_scanned":len(rows),"count":count}
+    evidence={"task_id":a.task_id,"mode":mode,"rows_scanned":rows_scanned,"count":count}
     (out/"capability_evidence.json").write_text(json.dumps(evidence,indent=2)+"\n")
     print(json.dumps(evidence,indent=2))
 
