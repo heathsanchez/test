@@ -204,3 +204,66 @@ Current warranted/reusable closure:
 - template 270: 5/5 across hard + held-out full-set instances; REUSABLE within family;
 - templates 268 and 271: 2/2 cross-template report-navigation reclosure; WARRANTED_BOUNDED;
 - total officially closed tasks in this compiled Orders Report lineage: 7.
+
+
+## Second compiled family: Shopping Admin payment folds
+
+**State: REUSABLE within template 367**
+
+The second capability uses the observable Magento order grid, preserving its declared default Purchase Date descending order, and compiles:
+
+```
+recent-order selection
++ status predicate
++ Grand Total (Purchased)
++ sum / absolute-difference fold
+```
+
+Hard-set qualification:
+
+- run: `37226358212`
+- job: `111506707784`
+- capability live-grid refinement commit: `1f80614ffe84f44d83956d6019bb7019332f1229`
+- artifact: `11311624802`
+- artifact digest: `sha256:9367052b466ae5534a58e9ef9aa0dad8c24b2c333f66ded54875d4805ef215c7`
+- task 193: computed 182.40, score 1.0, success
+- task 196: computed 194.25, score 1.0, success
+- task 197: computed 778.20, score 1.0, success
+
+Held-out transfer:
+
+- run: `37226580696`
+- job: `111507364737`
+- pending-predicate generalization commit: `0b8d5057012251208b0df7938f9af4a05603b831`
+- transfer workflow commit: `707f1edfbe293f65e74694f46f4f13764abae590`
+- artifact: `11311479642`
+- artifact digest: `sha256:415861feaf937e32e56007a9716c7d1658b3dde1bd25143e46ccad8098d521df`
+- task 194: computed 555.20, score 1.0, success
+- task 195: computed 885.40, score 1.0, success
+- same Shopping Admin image digest: `sha256:d0531dd27ed98d0c459ff9e88118bf2ed8b660b0ed99c38837db46c065a5be13`
+
+Thus template 367 is 5/5 under the pinned official evaluator and is promoted to REUSABLE within its declared family.
+
+### Preserved payment-fold residual lineage
+
+The failed attempts constrain the representation:
+
+1. `37225462933`: broad pager selector hit Magento UI wrapping and timed out.
+2. `37225706722`: native pager activation removed the actionability failure, but no completed rows were collected.
+3. `37226023240`: visible-pager refinement still returned zero completed rows.
+4. Schema probe `37226224197` exposed the true separator: Magento renders two tables with the same order-grid headers; the first is an empty/template table and the second is the live nonempty grid. The minimal repair was to distinguish visible/nonempty grid from template grid.
+5. `37226358212`: after exactly that split, 193/196/197 closed 3/3.
+
+This is another direct instance of consequential refinement:
+
+```
+same headers did not imply same protected future
+empty template grid != live populated grid
+=> E_{t+1} = E_t ∩ ker(nonempty-live-grid)
+```
+
+Current compiled Shopping Admin closure now contains:
+
+- Orders Report lineage: 7 official passes (template 270 family plus cross-template 268/271 reclosure);
+- Payment-fold lineage: 5 official passes (template 367 hard + held-out);
+- total official passes in these two compiled lineages: 12.
