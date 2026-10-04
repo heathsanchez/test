@@ -144,7 +144,7 @@ def make_response(rows,selector):
     elif attr=="order_id": data=[int(row["order_id"])]
     elif attr=="date": data=[iso_date(row["purchase_date_raw"])]
     elif attr=="purchase_date_and_order_id":
-        data=[{"purchase_date":iso_date(row["purchase_date_raw"]),"order_id":row["order_id"]}]
+        data=[{"date":iso_date(row["purchase_date_raw"]),"order_id":row["order_id"]}]
     else: raise ValueError(attr)
     return {"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":data,"error_details":None},row
 
