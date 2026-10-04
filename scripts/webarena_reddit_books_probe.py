@@ -38,8 +38,11 @@ async def main():
             resp=await detail.goto(href,wait_until="networkidle",timeout=120000)
             row["status"]=resp.status if resp else None
             row["url"]=detail.url
-            main=detail.locator("main")
-            row["body"]=(await main.inner_text())[:24000] if await main.count() else (await detail.locator("body").inner_text())[:24000]
+            submission=detail.locator(".submission").first
+            if await submission.count()==0:
+                raise RuntimeError(f"submission block missing for rank {row['rank']}")
+            row["submission_text"]=(await submission.inner_text())[:12000]
+            row["submission_html"]=(await submission.inner_html())[:24000]
             await detail.close()
         print(json.dumps(out,indent=2,ensure_ascii=False))
         await browser.close()
