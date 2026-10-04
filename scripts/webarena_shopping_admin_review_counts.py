@@ -86,29 +86,52 @@ async def next_page(page):
         return None
     return await click_grid_button(page,nxt)
 
+async def set_large_page_size(page):
+    wraps=page.locator(".admin__data-grid-pager-wrap:visible")
+    if await wraps.count()==0:
+        return
+    wrap=wraps.first
+    toggle=wrap.locator("button.selectmenu-toggle")
+    if await toggle.count()==0:
+        return
+    await toggle.click()
+    custom=wrap.get_by_role("button",name="Custom")
+    if await custom.count()==0:
+        await toggle.click()
+        return
+    await custom.click()
+    field=wrap.locator(".selectmenu-item-edit input.admin__control-text:visible").last
+    if await field.count()==0:
+        raise RuntimeError("review pager custom size field not found")
+    await field.fill("999")
+    save=wrap.locator(".selectmenu-item-edit button.action-save:visible").last
+    try:
+        async with page.expect_response(lambda r: "/mui/index/render" in r.url, timeout=15000):
+            await save.click()
+    except Exception:
+        await save.click()
+    await page.wait_for_timeout(750)
+    await live_table(page)
+
 async def scan_all(page):
+    await set_large_page_size(page)
+    table,headers=await live_table(page)
     out=[]; seen=set()
-    table,headers=await rewind_first(page)
-    for _ in range(80):
-        lower=[h.lower() for h in headers]
-        ix={k:lower.index(k) for k in ["id","created","title","review"]}
-        rows=table.locator("tbody tr")
-        for ri in range(await rows.count()):
-            cells=rows.nth(ri).locator("td")
-            if await cells.count()<=max(ix.values()): continue
-            rid=clean(await cells.nth(ix["id"]).inner_text())
-            if not rid or rid in seen: continue
-            seen.add(rid)
-            out.append({
-                "review_id":rid,
-                "created_raw":clean(await cells.nth(ix["created"]).inner_text()),
-                "title":clean(await cells.nth(ix["title"]).inner_text()),
-                "detail":clean(await cells.nth(ix["review"]).inner_text()),
-            })
-        nxt=await next_page(page)
-        if nxt is None:
-            break
-        table,headers=nxt
+    lower=[h.lower() for h in headers]
+    ix={k:lower.index(k) for k in ["id","created","title","review"]}
+    rows=table.locator("tbody tr")
+    for ri in range(await rows.count()):
+        cells=rows.nth(ri).locator("td")
+        if await cells.count()<=max(ix.values()): continue
+        rid=clean(await cells.nth(ix["id"]).inner_text())
+        if not rid or rid in seen: continue
+        seen.add(rid)
+        out.append({
+            "review_id":rid,
+            "created_raw":clean(await cells.nth(ix["created"]).inner_text()),
+            "title":clean(await cells.nth(ix["title"]).inner_text()),
+            "detail":clean(await cells.nth(ix["review"]).inner_text()),
+        })
     if not out: raise RuntimeError("no reviews collected")
     return out
 
