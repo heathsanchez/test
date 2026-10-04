@@ -55,28 +55,27 @@ async def next_page(page):
     raise RuntimeError("review pager next did not advance")
 
 async def apply_product_filter(page,product):
-    expand=page.get_by_role("button",name="Filters")
-    await expand.first.click()
-    wrap=page.locator('.admin__data-grid-filters-wrap:visible')
-    fields=wrap.locator('.admin__form-field')
-    target=None
-    for i in range(await fields.count()):
-        field=fields.nth(i)
-        label=field.locator('.admin__form-field-label')
-        if await label.count() and clean(await label.inner_text()).lower()=="product":
-            target=field; break
-    if target is None: raise RuntimeError("Product review filter not found")
-    inp=target.locator("input")
-    if await inp.count()==0: raise RuntimeError("Product review filter input missing")
-    await inp.first.fill(product)
-    apply=wrap.get_by_role("button",name="Apply Filters")
-    try:
-        async with page.expect_response(lambda r: "/mui/index/render" in r.url, timeout=15000):
-            await apply.click()
-    except Exception:
-        await apply.click()
-    await page.wait_for_timeout(500)
-    return await live_table(page)
+    row=page.locator('tr.data-grid-filters[data-role="filter-form"]')
+    if await row.count()==0:
+        raise RuntimeError("legacy review filter row not found")
+    cell=row.locator('td[data-column="name"]')
+    control=cell.locator('input.admin__control-text')
+    if await control.count()==0:
+        raise RuntimeError("legacy Product filter input not found")
+    await control.first.fill(product)
+    search=page.locator('button[data-action="grid-filter-apply"]')
+    if await search.count()==0:
+        search=page.get_by_role("button",name="Search")
+    if await search.count()==0:
+        raise RuntimeError("legacy review Search button not found")
+    await search.first.click()
+    for _ in range(120):
+        await page.wait_for_timeout(100)
+        try:
+            return await live_table(page)
+        except Exception:
+            pass
+    raise RuntimeError("filtered review grid did not render")
 
 async def matching_reviews(page,product):
     table,headers=await apply_product_filter(page,product)
