@@ -411,3 +411,22 @@ order-grid row
 ```
 
 The compiled hard reclosure has been expanded from 14 to 15 tasks and must pass before 15 is treated as the new replayed score floor.
+
+
+## Compiled hard reclosure v2
+
+**State: WARRANTED_BOUNDED — 15/15**
+
+The compiled hard closure was replayed after adding selected-order detail transport.
+
+Evidence:
+
+- run: `37242286450`
+- job: `111553237827`
+- workflow commit: `535c4dc3d9c23b7d15a13db8f695005028e31b6f`
+- artifact: `11318155246`
+- artifact digest: `sha256:c177893cb413a8231e80923b5d3f87ca1ca33ddeb6483ee905674307c7d3dbdf`
+- official scores: all 15 tasks = 1.0, success
+- task IDs: 108, 110, 111, 707, 709, 193, 196, 197, 200, 63, 64, 65, 42, 127, 204.
+
+This supersedes the prior 14-task replay seal as the current compiled hard score floor.
