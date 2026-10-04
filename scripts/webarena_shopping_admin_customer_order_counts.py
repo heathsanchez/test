@@ -72,7 +72,7 @@ async def expose_customer_email(page):
     input_id=await target.get_attribute("for")
     if not input_id:
         raise RuntimeError("Customer Email column checkbox has no id")
-    box=page.locator("#"+input_id)
+    box=target.locator("xpath=preceding-sibling::input[1]")
     if not await box.is_checked():
         await box.check(force=True)
     # Close the dropdown and wait for the grid to re-render.
