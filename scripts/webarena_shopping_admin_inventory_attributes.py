@@ -165,6 +165,11 @@ def mode(task):
     else: raise ValueError(attr)
     return attrs,qty_rule(task["instantiation_dict"]["N"])
 
+def parent_name_for_variant(name):
+    value=clean(name)
+    m=re.match(r"^(.*)-([^-]+)-([^-]+)$",value)
+    return clean(m.group(1)) if m else None
+
 async def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--task-id",type=int,required=True)
@@ -189,6 +194,11 @@ async def main():
             need=[x for x in attrs if x not in {"name","sku"}]
             if need:
                 record.update(await enrich(page,product,need))
+            if "material" in need and not record.get("material"):
+                base=parent_name_for_variant(product["name"])
+                parent=next((p for p in products if base and clean(p["name"]).casefold()==base.casefold()),None)
+                if parent and parent.get("href"):
+                    record.update(await enrich(page,parent,["material"]))
             rows.append(record)
         await browser.close()
     if not rows:
