@@ -1,0 +1,100 @@
+name: WebArena review term-count qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_review_term_counts.yml"
+
+jobs:
+  qualify-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start Shopping Admin
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          mkdir -p artifacts/webarena_review_term_counts
+          docker run -d --name wa -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Prepare authority
+        run: |
+          cp upstream/assets/dataset/webarna-verfied-hard.json artifacts/webarena_review_term_counts/hard.json
+          cp upstream/assets/dataset/webarena-verified.json artifacts/webarena_review_term_counts/full.json
+          cat > artifacts/webarena_review_term_counts/config.json <<'JSON'
+          {"environments":{"__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0}}}
+          JSON
+      - name: Execute hard 11 15
+        run: |
+          for id in 11 15; do
+            python scripts/webarena_shopping_admin_review_counts.py               --task-id "$id" --task-file artifacts/webarena_review_term_counts/hard.json               --base-url http://localhost:7780/admin --output-dir artifacts/webarena_review_term_counts/output
+          done
+      - name: Score hard
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_review_term_counts")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          trace=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          results={}
+          for task_id in (11,15):
+              r=wa.evaluate_task(task_id=task_id,agent_response=root/"output"/str(task_id)/"agent_response.json",network_trace=trace)
+              d=r.model_dump(mode="json",exclude_none=True)
+              results[str(task_id)]={"score":float(r.score),"status":r.status.value}
+              print(task_id,results[str(task_id)])
+              if float(r.score)!=1.0 or r.status.value!="success": raise SystemExit(d)
+          (root/"qualification.json").write_text(json.dumps({"epistemic_state":"WARRANTED_BOUNDED","results":results},indent=2)+"\n")
+          PY
+      - name: Execute held-out 12 13 14
+        run: |
+          for id in 12 13 14; do
+            python scripts/webarena_shopping_admin_review_counts.py               --task-id "$id" --task-file artifacts/webarena_review_term_counts/full.json               --base-url http://localhost:7780/admin --output-dir artifacts/webarena_review_term_counts/output
+          done
+      - name: Score held-outs
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_review_term_counts")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          trace=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          results={}
+          for task_id in (12,13,14):
+              r=wa.evaluate_task(task_id=task_id,agent_response=root/"output"/str(task_id)/"agent_response.json",network_trace=trace)
+              d=r.model_dump(mode="json",exclude_none=True)
+              results[str(task_id)]={"score":float(r.score),"status":r.status.value}
+              print(task_id,results[str(task_id)])
+              if float(r.score)!=1.0 or r.status.value!="success": raise SystemExit(d)
+          (root/"transfer.json").write_text(json.dumps({"epistemic_state":"REUSABLE","results":results},indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-review-term-counts
+          path: artifacts/webarena_review_term_counts
