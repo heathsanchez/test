@@ -451,3 +451,52 @@ Evidence:
 This supersedes the 15-task seal as the current replayed hard score floor.
 
 The review-rating family is WARRANTED_BOUNDED on hard tasks 113 and 214. Its held-out transfer is not yet REUSABLE: task 115 exposed an over-merge between `Chloe tank` and the related product `Chloe Compete Tank`. That separator is preserved; no broader product-identity claim is made.
+
+
+## Compiled hard reclosure v4
+
+**State: WARRANTED_BOUNDED — 21/21**
+
+The current compiled Shopping Admin hard closure replayed successfully in one reset environment under the pinned official evaluator.
+
+Evidence:
+
+- run: `37244204875`
+- job: `111558740280`
+- artifact: `11319035648`
+- artifact digest: `sha256:7fc8bfe76d07c3907d5815fd0e21c775b94367d57f2e9f316ba42374eba9bd43`
+- all 21 official scores = 1.0, success.
+
+This supersedes the 19-task seal as the current replayed hard score floor.
+
+## Customer phone lookup
+
+**State: REUSABLE — 5/5 within template 364**
+
+- hard 212: score 1.0
+- held-outs 208, 209, 210, 211: all score 1.0
+- run: `37244285228`
+- job: `111558972798`
+- artifact: `11318786930`
+- artifact digest: `sha256:15d05a91b6f5c9208bc0246fea406c0f3af401d5b66d93ea000141d8fa9b27c6`
+
+The held-out separator was phone-number representation: a leading US country code `+1` must be normalized against Magento's stored ten-digit national form. The customer identity/name/email lookup logic was unchanged.
+
+## Review count closure
+
+**State: REUSABLE — 10/10 across templates 288 and 248**
+
+Term-count tasks use Magento's server-side Review-detail filter; date/count tasks use the server-side Created-date filter and grid total. The earlier representation that scanned truncated Review cells was rejected.
+
+Evidence:
+
+- run: `37244403567`
+- job: `111559312176`
+- artifact: `11318896715`
+- artifact digest: `sha256:a7f1306ff6bade465996fe41ef63f12ab0e1991fd9f2d018ed84edae65c1f74a`
+- hard 11: score 1.0
+- hard 15: score 1.0
+- hard 345: score 1.0
+- held-outs 12, 13, 14, 344, 346, 347, 348: all score 1.0
+
+The key separator was consequential information loss: the visible grid truncates review detail text, so term matching must use the server-side full-detail filter rather than the rendered truncated cell.
