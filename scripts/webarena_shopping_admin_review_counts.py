@@ -116,28 +116,32 @@ async def set_large_page_size(page):
     await live_table(page)
 
 async def scan_all(page):
-    await set_large_page_size(page)
-    table,headers=await live_table(page)
+    await rewind_first(page)
     out=[]; seen=set()
-    lower=[h.lower() for h in headers]
-    ix={k:lower.index(k) for k in ["id","created","title","review"]}
-    rows=table.locator("tbody tr")
-    for ri in range(await rows.count()):
-        cells=rows.nth(ri).locator("td")
-        if await cells.count()<=max(ix.values()): continue
-        rid=clean(await cells.nth(ix["id"]).inner_text())
-        if not rid or rid in seen: continue
-        seen.add(rid)
-        links=rows.nth(ri).locator('a[href*="/review/product/edit/"]')
-        edit_href=await links.first.get_attribute("href") if await links.count() else None
-        out.append({
-            "review_id":rid,
-            "created_raw":clean(await cells.nth(ix["created"]).inner_text()),
-            "title":clean(await cells.nth(ix["title"]).inner_text()),
-            "detail":clean(await cells.nth(ix["review"]).inner_text()),
-            "edit_href":edit_href,
-        })
-    if not out: raise RuntimeError("no reviews collected")
+    for _ in range(80):
+        table,headers=await live_table(page)
+        lower=[h.lower() for h in headers]
+        ix={k:lower.index(k) for k in ["id","created","title","review"]}
+        rows=table.locator("tbody tr")
+        for ri in range(await rows.count()):
+            cells=rows.nth(ri).locator("td")
+            if await cells.count()<=max(ix.values()): continue
+            rid=clean(await cells.nth(ix["id"]).inner_text())
+            if not rid or rid in seen: continue
+            seen.add(rid)
+            links=rows.nth(ri).locator('a[href*="/review/product/edit/"]')
+            edit_href=await links.first.get_attribute("href") if await links.count() else None
+            out.append({
+                "review_id":rid,
+                "created_raw":clean(await cells.nth(ix["created"]).inner_text()),
+                "title":clean(await cells.nth(ix["title"]).inner_text()),
+                "detail":clean(await cells.nth(ix["review"]).inner_text()),
+                "edit_href":edit_href,
+            })
+        if await next_page(page) is None:
+            break
+    if not out:
+        raise RuntimeError("no reviews collected")
     return out
 
 def task_mode(task):
