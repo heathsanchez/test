@@ -50,66 +50,46 @@ async def first_id(table,headers):
     cells=row.locator("td")
     return clean(await cells.nth(idx).inner_text()) if await cells.count()>idx else None
 
-async def pager_state(page):
-    pager=page.locator('.admin__data-grid-pager:visible').first
-    current=pager.locator('input[data-ui-id="current-page-input"]')
-    labels=pager.locator('label.admin__control-support-text')
-    pages=1
-    for i in range(await labels.count()):
-        txt=clean(await labels.nth(i).inner_text())
-        m=re.search(r"of\s+(\d+)",txt,re.I)
-        if m:
-            pages=int(m.group(1))
+async def click_grid_button(page,button):
+    try:
+        async with page.expect_response(lambda r: "/mui/index/render" in r.url, timeout=15000):
+            await button.click(force=True)
+    except Exception:
+        # If the response races ahead of the waiter, fall back to a bounded UI settle.
+        await button.click(force=True)
+    await page.wait_for_timeout(500)
+    return await live_table(page)
+
+async def rewind_first(page):
+    for _ in range(50):
+        wraps=page.locator(".admin__data-grid-pager-wrap:visible")
+        prev=None
+        for i in range(await wraps.count()):
+            cand=wraps.nth(i).locator("button.action-previous")
+            if await cand.count():
+                prev=cand
+                break
+        if prev is None or not await prev.is_enabled():
+            return await live_table(page)
+        await click_grid_button(page,prev)
+    raise RuntimeError("review pager did not reach first page")
+
+async def next_page(page):
+    wraps=page.locator(".admin__data-grid-pager-wrap:visible")
+    nxt=None
+    for i in range(await wraps.count()):
+        cand=wraps.nth(i).locator("button.action-next")
+        if await cand.count() and await cand.is_enabled():
+            nxt=cand
             break
-    return pager,current,pages
-
-async def read_current_page(page, attempts=80):
-    for _ in range(attempts):
-        fresh=page.locator('input[data-ui-id="current-page-input"]:visible').first
-        if await fresh.count():
-            try:
-                return fresh,(await fresh.input_value(timeout=500)).strip()
-            except Exception:
-                pass
-        await page.wait_for_timeout(100)
-    return None,None
-
-async def goto_page(page,target:int,previous_first=None):
-    table,headers=await live_table(page)
-    _,_,pages=await pager_state(page)
-    if target<1 or target>pages:
-        raise RuntimeError(f"review page {target} outside 1..{pages}")
-    current,now=await read_current_page(page)
-    if current is None:
-        if target==1:
-            return table,headers,pages
-        raise RuntimeError("review pager current-page input unavailable")
-    if now==str(target):
-        return table,headers,pages
-    await current.fill(str(target))
-    await current.press("Enter")
-    for _ in range(160):
-        await page.wait_for_timeout(100)
-        fresh,now=await read_current_page(page,attempts=1)
-        if fresh is None: continue
-        try:
-            table2,headers2=await live_table(page)
-            first=await first_id(table2,headers2)
-        except Exception:
-            continue
-        if now==str(target) and (previous_first is None or first!=previous_first):
-            return table2,headers2,pages
-    raise RuntimeError(f"review pager failed to reach page {target}")
+    if nxt is None:
+        return None
+    return await click_grid_button(page,nxt)
 
 async def scan_all(page):
     out=[]; seen=set()
-    table,headers=await live_table(page)
-    first=await first_id(table,headers)
-    table,headers,pages=await goto_page(page,1,previous_first=None)
-    for pageno in range(1,pages+1):
-        if pageno>1:
-            prev_first=await first_id(table,headers)
-            table,headers,_=await goto_page(page,pageno,previous_first=prev_first)
+    table,headers=await rewind_first(page)
+    for _ in range(80):
         lower=[h.lower() for h in headers]
         ix={k:lower.index(k) for k in ["id","created","title","review"]}
         rows=table.locator("tbody tr")
@@ -125,6 +105,10 @@ async def scan_all(page):
                 "title":clean(await cells.nth(ix["title"]).inner_text()),
                 "detail":clean(await cells.nth(ix["review"]).inner_text()),
             })
+        nxt=await next_page(page)
+        if nxt is None:
+            break
+        table,headers=nxt
     if not out: raise RuntimeError("no reviews collected")
     return out
 
