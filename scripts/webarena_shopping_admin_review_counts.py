@@ -168,6 +168,50 @@ async def filtered_term_count(page,term):
                 return int(txt.replace(",",""))
     raise RuntimeError("filtered legacy review count not found")
 
+async def filtered_date_count(page,mode):
+    if mode["kind"]=="all":
+        total=page.locator("#reviewGrid-total-count")
+        if await total.count()==0:
+            raise RuntimeError("review total count not found")
+        txt=clean(await total.inner_text()).replace(",","")
+        if not txt.isdigit():
+            raise RuntimeError(f"invalid review total count: {txt!r}")
+        return int(txt)
+
+    if mode["kind"]=="month":
+        y,m=mode["year"],mode["month"]
+        start=f"{m}/1/{y}"
+        end=f"{m}/{calendar.monthrange(y,m)[1]}/{y}"
+    elif mode["kind"]=="year":
+        y=mode["year"]
+        start=f"1/1/{y}"
+        end=f"12/31/{y}"
+    else:
+        raise ValueError(mode)
+
+    row=page.locator('tr.data-grid-filters[data-role="filter-form"]')
+    cell=row.locator('td[data-column="created_at"]')
+    frm=cell.locator('input[name="created_at[from]"]')
+    to=cell.locator('input[name="created_at[to]"]')
+    if await frm.count()==0 or await to.count()==0:
+        raise RuntimeError("legacy Created date inputs not found")
+    await frm.fill(start)
+    await to.fill(end)
+    search=page.locator('button[data-action="grid-filter-apply"]')
+    if await search.count()==0:
+        search=page.get_by_role("button",name="Search")
+    if await search.count()==0:
+        raise RuntimeError("legacy review Search button not found")
+    await search.first.click()
+    for _ in range(120):
+        await page.wait_for_timeout(100)
+        total=page.locator("#reviewGrid-total-count")
+        if await total.count():
+            txt=clean(await total.inner_text()).replace(",","")
+            if txt.isdigit():
+                return int(txt)
+    raise RuntimeError("filtered review date count not found")
+
 def task_mode(task):
     tid=int(task["intent_template_id"])
     inst=task.get("instantiation_dict",{})
@@ -239,9 +283,8 @@ async def main():
             count=await filtered_term_count(page,mode["term"])
             rows_scanned=None
         else:
-            rows=await scan_all(page)
-            count=count_rows(rows,mode)
-            rows_scanned=len(rows)
+            count=await filtered_date_count(page,mode)
+            rows_scanned=None
         await browser.close()
     response={"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":[count],"error_details":None}
     out=Path(a.output_dir)/str(a.task_id); out.mkdir(parents=True,exist_ok=True)
