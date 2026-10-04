@@ -50,51 +50,49 @@ async def first_id(table,headers):
     cells=row.locator("td")
     return clean(await cells.nth(idx).inner_text()) if await cells.count()>idx else None
 
-async def rewind_first(page):
-    table,headers=await live_table(page)
+async def pager_state(page):
     pager=page.locator('.admin__data-grid-pager:visible').first
     current=pager.locator('input[data-ui-id="current-page-input"]')
-    if await current.count()==0:
-        return
-    value=(await current.input_value()).strip()
-    if value=="1":
-        return
-    before=await first_id(table,headers)
-    await current.fill("1")
+    labels=pager.locator('label.admin__control-support-text')
+    pages=1
+    for i in range(await labels.count()):
+        txt=clean(await labels.nth(i).inner_text())
+        m=re.search(r"of\s+(\d+)",txt,re.I)
+        if m:
+            pages=int(m.group(1))
+            break
+    return pager,current,pages
+
+async def goto_page(page,target:int,previous_first=None):
+    table,headers=await live_table(page)
+    pager,current,pages=await pager_state(page)
+    if target<1 or target>pages:
+        raise RuntimeError(f"review page {target} outside 1..{pages}")
+    now=(await current.input_value()).strip()
+    if now==str(target):
+        return table,headers,pages
+    await current.fill(str(target))
     await current.press("Enter")
-    for _ in range(100):
+    for _ in range(120):
         await page.wait_for_timeout(100)
         table2,headers2=await live_table(page)
         now=(await current.input_value()).strip()
         first=await first_id(table2,headers2)
-        if now=="1" and first and first!=before:
-            return
-    raise RuntimeError("review pager failed to set current page to 1")
-
-async def advance(page,table,headers):
-    wraps=page.locator(".admin__data-grid-pager-wrap:visible")
-    nxt=None
-    for i in range(await wraps.count()):
-        cand=wraps.nth(i).locator("button.action-next")
-        if await cand.count() and await cand.is_enabled():
-            nxt=cand; break
-    if nxt is None: return False
-    before=await first_id(table,headers)
-    await nxt.click(force=True)
-    for _ in range(80):
-        await page.wait_for_timeout(100)
-        table2,headers2=await live_table(page)
-        current=await first_id(table2,headers2)
-        if before and current and current!=before: return True
-    raise RuntimeError("review pager next did not change grid")
+        if now==str(target) and (previous_first is None or first!=previous_first):
+            return table2,headers2,pages
+    raise RuntimeError(f"review pager failed to reach page {target}")
 
 async def scan_all(page):
     out=[]; seen=set()
-    for _ in range(80):
-        table,headers=await live_table(page)
+    table,headers=await live_table(page)
+    first=await first_id(table,headers)
+    table,headers,pages=await goto_page(page,1,previous_first=None)
+    for pageno in range(1,pages+1):
+        if pageno>1:
+            prev_first=await first_id(table,headers)
+            table,headers,_=await goto_page(page,pageno,previous_first=prev_first)
         lower=[h.lower() for h in headers]
-        keys=["id","created","title","review"]
-        ix={k:lower.index(k) for k in keys}
+        ix={k:lower.index(k) for k in ["id","created","title","review"]}
         rows=table.locator("tbody tr")
         for ri in range(await rows.count()):
             cells=rows.nth(ri).locator("td")
@@ -108,7 +106,6 @@ async def scan_all(page):
                 "title":clean(await cells.nth(ix["title"]).inner_text()),
                 "detail":clean(await cells.nth(ix["review"]).inner_text()),
             })
-        if not await advance(page,table,headers): break
     if not out: raise RuntimeError("no reviews collected")
     return out
 
@@ -159,7 +156,6 @@ async def main():
         page=await ctx.new_page()
         resp=await page.goto(a.base_url.rstrip("/")+REVIEW_GRID,wait_until="networkidle",timeout=120000)
         if resp is None or resp.status!=200: raise RuntimeError("review grid navigation failed")
-        await rewind_first(page)
         rows=await scan_all(page)
         count=count_rows(rows,mode)
         await browser.close()
