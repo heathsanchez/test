@@ -77,7 +77,10 @@ jobs:
           done
           python scripts/webarena_shopping_admin_customer_lookup.py --task-id 212 --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
           python scripts/webarena_shopping_admin_inventory_attributes.py --task-id 184 --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
-      - name: Officially score 19-task compiled closure
+          for id in 11 15; do
+            python scripts/webarena_shopping_admin_review_counts.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+      - name: Officially score 21-task compiled closure
         run: |
           python - <<'PY'
           import json
@@ -89,7 +92,7 @@ jobs:
           out=root/"output"
           wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
           empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
-          ids=(108,110,111,707,709,193,196,197,200,63,64,65,42,127,204,113,214,212,184)
+          ids=(108,110,111,707,709,193,196,197,200,63,64,65,42,127,204,113,214,212,184,11,15)
           results={}
           for task_id in ids:
               task=wa.get_task(task_id)
@@ -108,7 +111,7 @@ jobs:
                   raise SystemExit(f"compiled reclosure failed at {task_id}: {dumped}")
           seal={
               "epistemic_state":"WARRANTED_BOUNDED",
-              "boundary":"19 currently compiled WebArena-Verified hard tasks in one reset Shopping Admin environment",
+              "boundary":"21 currently compiled WebArena-Verified hard tasks in one reset Shopping Admin environment",
               "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
               "task_ids":list(ids),
               "success_count":len(ids),
