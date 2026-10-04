@@ -63,25 +63,36 @@ async def pager_state(page):
             break
     return pager,current,pages
 
+async def read_current_page(page, attempts=80):
+    for _ in range(attempts):
+        fresh=page.locator('input[data-ui-id="current-page-input"]:visible').first
+        if await fresh.count():
+            try:
+                return fresh,(await fresh.input_value(timeout=500)).strip()
+            except Exception:
+                pass
+        await page.wait_for_timeout(100)
+    return None,None
+
 async def goto_page(page,target:int,previous_first=None):
     table,headers=await live_table(page)
-    _,current,pages=await pager_state(page)
+    _,_,pages=await pager_state(page)
     if target<1 or target>pages:
         raise RuntimeError(f"review page {target} outside 1..{pages}")
-    now=(await current.input_value(timeout=5000)).strip()
+    current,now=await read_current_page(page)
+    if current is None:
+        if target==1:
+            return table,headers,pages
+        raise RuntimeError("review pager current-page input unavailable")
     if now==str(target):
         return table,headers,pages
     await current.fill(str(target))
     await current.press("Enter")
     for _ in range(160):
         await page.wait_for_timeout(100)
-        # Magento replaces the pager DOM on every grid reload. Reacquire both
-        # pager input and table from the page root rather than retaining children.
-        fresh=page.locator('input[data-ui-id="current-page-input"]:visible').first
-        if await fresh.count()==0:
-            continue
+        fresh,now=await read_current_page(page,attempts=1)
+        if fresh is None: continue
         try:
-            now=(await fresh.input_value(timeout=1000)).strip()
             table2,headers2=await live_table(page)
             first=await first_id(table2,headers2)
         except Exception:
