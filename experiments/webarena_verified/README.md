@@ -500,3 +500,22 @@ Evidence:
 - held-outs 12, 13, 14, 344, 346, 347, 348: all score 1.0
 
 The key separator was consequential information loss: the visible grid truncates review detail text, so term matching must use the server-side full-detail filter rather than the rendered truncated cell.
+
+
+## Compiled hard reclosure v5
+
+**State: WARRANTED_BOUNDED — 22/22**
+
+The compiled hard closure was replayed after adding the review date-count capability.
+
+Evidence:
+
+- run: `37244596332`
+- job: `111559864357`
+- workflow commit: `d6d83884aff855dcb180feaa0156c768183bb791`
+- artifact: `11318791615`
+- artifact digest: `sha256:51f6f741b4a8ba4187c6b52324766e424bdffe931ad0b0030dcdc8ad7ec07866`
+- all 22 official scores = 1.0, success.
+- task IDs: 108, 110, 111, 707, 709, 193, 196, 197, 200, 63, 64, 65, 42, 127, 204, 113, 214, 212, 184, 11, 15, 345.
+
+This supersedes the 21-task seal as the authoritative replayed hard score floor.
