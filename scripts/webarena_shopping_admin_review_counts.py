@@ -145,42 +145,28 @@ async def scan_all(page):
     return out
 
 async def filtered_term_count(page,term):
-    expand=page.get_by_role("button",name="Filters")
-    if await expand.count()==0:
-        raise RuntimeError("review Filters button not found")
-    await expand.first.click()
-    wrap=page.locator('.admin__data-grid-filters-wrap:visible')
-    if await wrap.count()==0:
-        raise RuntimeError("review filter form did not open")
-    fields=wrap.locator('.admin__form-field')
-    target=None
-    for i in range(await fields.count()):
-        field=fields.nth(i)
-        label=field.locator('.admin__form-field-label')
-        if await label.count() and clean(await label.inner_text()).lower()=="review":
-            target=field
-            break
-    if target is None:
-        raise RuntimeError("Review text filter field not found")
-    control=target.locator('input')
+    row=page.locator('tr.data-grid-filters[data-role="filter-form"]')
+    if await row.count()==0:
+        raise RuntimeError("legacy review filter row not found")
+    cell=row.locator('td[data-column="detail"]')
+    control=cell.locator('input.admin__control-text')
     if await control.count()==0:
-        raise RuntimeError("Review text filter input not found")
+        raise RuntimeError("legacy Review filter input not found")
     await control.first.fill(term)
-    apply=wrap.get_by_role("button",name="Apply Filters")
-    try:
-        async with page.expect_response(lambda r: "/mui/index/render" in r.url, timeout=15000):
-            await apply.click()
-    except Exception:
-        await apply.click()
-    for _ in range(100):
+    search=page.locator('button[data-action="grid-filter-apply"]')
+    if await search.count()==0:
+        search=page.get_by_role("button",name="Search")
+    if await search.count()==0:
+        raise RuntimeError("legacy review Search button not found")
+    await search.first.click()
+    for _ in range(120):
         await page.wait_for_timeout(100)
-        supports=page.locator('.admin__data-grid-pager-wrap:visible .admin__control-support-text')
-        for i in range(await supports.count()):
-            txt=clean(await supports.nth(i).inner_text())
-            m=re.search(r"([0-9,]+)\s+records?\s+found",txt,re.I)
-            if m:
-                return int(m.group(1).replace(",",""))
-    raise RuntimeError("filtered review record count not found")
+        total=page.locator('#reviewGrid-total-count')
+        if await total.count():
+            txt=clean(await total.inner_text())
+            if txt.replace(",","").isdigit():
+                return int(txt.replace(",",""))
+    raise RuntimeError("filtered legacy review count not found")
 
 def task_mode(task):
     tid=int(task["intent_template_id"])
