@@ -8,6 +8,8 @@ REVIEWS="/review/product/"
 
 def clean(s): return re.sub(r"\s+"," ",s).strip()
 def norm(s): return clean(s).casefold()
+def product_terms(s):
+    return [t for t in re.findall(r"[a-z0-9]+",norm(s)) if len(t)>=2]
 
 async def live_table(page):
     for _ in range(100):
@@ -78,8 +80,10 @@ async def apply_product_filter(page,product):
     raise RuntimeError("filtered review grid did not render")
 
 async def matching_reviews(page,product):
-    table,headers=await apply_product_filter(page,product)
-    target=norm(product); out=[]; seen=set()
+    terms=product_terms(product)
+    if not terms: raise RuntimeError("empty product query")
+    table,headers=await apply_product_filter(page,terms[0])
+    out=[]; seen=set()
     lower=[h.lower() for h in headers]
     ix={k:lower.index(k) for k in ["id","title","nickname","product"]}
     rows=table.locator("tbody tr")
@@ -90,7 +94,8 @@ async def matching_reviews(page,product):
         if not rid or rid in seen: continue
         seen.add(rid)
         pname=clean(await cells.nth(ix["product"]).inner_text())
-        if norm(pname)!=target: continue
+        hay=norm(pname)
+        if not all(term in hay for term in terms): continue
         links=row.locator('a[href*="/review/product/edit/"]')
         href=await links.first.get_attribute("href") if await links.count() else None
         out.append({
