@@ -165,6 +165,13 @@ def mode(task):
     else: raise ValueError(attr)
     return attrs,qty_rule(task["instantiation_dict"]["N"])
 
+def variant_suffixes(name):
+    value=clean(name)
+    parts=[p.strip() for p in value.split("-")]
+    if len(parts)<3:
+        return {}
+    return {"size":parts[-2] or None,"color":parts[-1] or None}
+
 def parent_name_for_variant(name):
     value=clean(name)
     m=re.match(r"^(.*)-([^-]+)-([^-]+)$",value)
@@ -194,6 +201,10 @@ async def main():
             need=[x for x in attrs if x not in {"name","sku"}]
             if need:
                 record.update(await enrich(page,product,need))
+            suffixes=variant_suffixes(product["name"])
+            for key in ("size","color"):
+                if key in need and not record.get(key) and suffixes.get(key):
+                    record[key]=suffixes[key]
             if "material" in need and not record.get("material"):
                 base=parent_name_for_variant(product["name"])
                 parent=next((p for p in products if base and clean(p["name"]).casefold()==base.casefold()),None)
