@@ -142,7 +142,10 @@ jobs:
           for id in 170 171 172; do
             python scripts/webarena_gitlab_personal_project_stars.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:8023 --output-dir "$OUT"
           done
-      - name: Officially score 34-task cross-site closure
+          for id in 303 304 307; do
+            python scripts/webarena_gitlab_commit_counts.py --task-id "$id" --task-file "$TASKS" --output-dir "$OUT"
+          done
+      - name: Officially score 37-task cross-site closure
         run: |
           python - <<'PY'
           import json
@@ -154,7 +157,7 @@ jobs:
           out=root/"output"
           wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
           empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
-          ids=(108,110,111,707,709,193,196,197,200,63,64,65,42,127,204,113,214,212,184,11,15,345,66,67,68,28,29,31,163,165,166,170,171,172)
+          ids=(108,110,111,707,709,193,196,197,200,63,64,65,42,127,204,113,214,212,184,11,15,345,66,67,68,28,29,31,163,165,166,170,171,172,303,304,307)
           results={}
           for task_id in ids:
               task=wa.get_task(task_id)
@@ -173,7 +176,7 @@ jobs:
                   raise SystemExit(f"compiled reclosure failed at {task_id}: {dumped}")
           seal={
               "epistemic_state":"WARRANTED_BOUNDED",
-              "boundary":"34 currently compiled WebArena-Verified hard tasks across reset Shopping Admin, Reddit, Shopping, and GitLab environments",
+              "boundary":"37 currently compiled WebArena-Verified hard tasks across reset Shopping Admin, Reddit, Shopping, and GitLab environments",
               "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
               "task_ids":list(ids),
               "success_count":len(ids),
