@@ -1,5 +1,10 @@
 # Arena eight-UNKNOWN checkpoint
 
+**Superseded by `arena-major-dispatch-v1`.** The replay below is historical.
+A later regression exposed an invalid recursor-major shortcut. Removing it
+changes two folded-constant ACCEPT results to UNKNOWN. This checkpoint must
+not be used as current checker authority.
+
 Candidate: `e06da5873684f0e58c736bae3d00c6316eb0a7ba`.
 Corpus: Lean Kernel Arena `b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42`, all 196 cases.
 

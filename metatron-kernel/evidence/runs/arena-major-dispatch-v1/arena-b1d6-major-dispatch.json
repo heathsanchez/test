@@ -1,0 +1,1982 @@
+{
+  "arena_sha": "b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42",
+  "candidate_sha": "58b77d34d441b90dc6a103abd98a8d879c23c445",
+  "case_count": 196,
+  "cases": [
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0018122270012099762,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "7f9b3c07a64b441f8dd0f7dd2912274241fdb17118953fb089f796fdd1590af4",
+      "status": "matched",
+      "stderr": "",
+      "test": "corner-cases/proof-param-ok"
+    },
+    {
+      "actual": "unknown",
+      "elapsed_seconds": 0.06406598600005964,
+      "exit_code": 2,
+      "expected": "accept",
+      "sha256": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5",
+      "status": "incomplete",
+      "stderr": "",
+      "test": "init-prelude"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0016411790002166526,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "7db8148079e2e8160a1a4c71258ad11b17ce18edfa84ab1e12eae937ec9538d1",
+      "status": "matched",
+      "stderr": "",
+      "test": "other/level-index-out-of-order"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.00439820400060853,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "2eec8aaa1d9c5009f69e7507b08e3f81c23adf56fb8d541a96393b721a715150",
+      "status": "matched",
+      "stderr": "",
+      "test": "other/nat-lit-add"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.005378515999836964,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "f5295492eefe75bdd5714183ccbbebede81bd8d7338e2db98569246f836f1107",
+      "status": "matched",
+      "stderr": "",
+      "test": "other/nat-lit-ble"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0055374650000885595,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "ce96962a24c958b86fa2a37cfc8a3477255c7e67ab69f1ba927e8a5d6cc85d12",
+      "status": "matched",
+      "stderr": "",
+      "test": "other/nat-lit-sub"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0015125450008781627,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "3279c9c8ae24d5b3a8433ddee5d4a421c4e15e3cd84117fb4873d1284112b96d",
+      "status": "matched",
+      "stderr": "",
+      "test": "other/sparse-name-index"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 1.226034504999916,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "552d6e8398f579fcf59ab9abd8187fc7a8a037697da66c129aacb4cc1b9dd414",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/app-lam"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.06715794099909544,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "08e16707dc6623394c62125592462b7548dd647d0b8a93138dce433d80411d22",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/args-before-unfold"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.2429243629994744,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "9e31c146f590cd29a464f45eb2a9ec6aec092dfd0d146a3c5f744b3fc674133a",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/beta-ladder"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.05574037100086571,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "4895c59c421bb395f830aaa778db01cf166e9319b546a994e373e640298f4bb7",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/church-numerals"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.00667135900039284,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "0152a64c923590cc1ef4209652d2ceac248d8668ad11c9b74e183bb3da6ca7e2",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/discarded-argument-match"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.004565867999190232,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "ee46aa31d32fe7cc04c1428bd58597c7b843d3fd98340f0fa6c9ab20a6bc7147",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/discarded-argument"
+    },
+    {
+      "actual": "unknown",
+      "elapsed_seconds": 0.019319066999742063,
+      "exit_code": 2,
+      "expected": "accept",
+      "sha256": "f11febc1959dd30a0c2b4f3491635b4d1279946d51286bd7dfec5fb19229d773",
+      "status": "incomplete",
+      "stderr": "",
+      "test": "perf/folded-constant-first"
+    },
+    {
+      "actual": "unknown",
+      "elapsed_seconds": 0.012704914001005818,
+      "exit_code": 2,
+      "expected": "accept",
+      "sha256": "e1a9380283d3285a7242a45e79ce760056c34201089d21fdc3b25a22e4997494",
+      "status": "incomplete",
+      "stderr": "",
+      "test": "perf/folded-constant-last"
+    },
+    {
+      "actual": "unknown",
+      "elapsed_seconds": 0.015268021999872872,
+      "exit_code": 2,
+      "expected": "accept",
+      "sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "status": "incomplete",
+      "stderr": "",
+      "test": "perf/fueled-chain"
+    },
+    {
+      "actual": "unknown",
+      "elapsed_seconds": 0.19914264399994863,
+      "exit_code": 2,
+      "expected": "accept",
+      "sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "status": "incomplete",
+      "stderr": "",
+      "test": "perf/grind-ring-5"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0032687780003470834,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "4d23216f53395a334f8788b052e268587503317af5f79ca4251416ce617c9df9",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/identical-nesting"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.003950558999349596,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "8cc3996fb088522e56c3670b0bd3b2397ee7b5a81c7fdc634c69a5f052e02e7f",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/irrelevance-before-evaluation"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.49815372500052035,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "d02afad06729004912e5feeaf25379240b106d98b571cfcfffd974d08853ad65",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/let-ladder"
+    },
+    {
+      "actual": "unknown",
+      "elapsed_seconds": 0.05804644500130962,
+      "exit_code": 2,
+      "expected": "accept",
+      "sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "status": "incomplete",
+      "stderr": "",
+      "test": "perf/magma-list-deep-n21"
+    },
+    {
+      "actual": "unknown",
+      "elapsed_seconds": 0.05831180599852814,
+      "exit_code": 2,
+      "expected": "accept",
+      "sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "status": "incomplete",
+      "stderr": "",
+      "test": "perf/magma-list-deep-n36"
+    },
+    {
+      "actual": "unknown",
+      "elapsed_seconds": 0.03131995200055826,
+      "exit_code": 2,
+      "expected": "accept",
+      "sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "status": "incomplete",
+      "stderr": "",
+      "test": "perf/magma-list-pair-n21"
+    },
+    {
+      "actual": "unknown",
+      "elapsed_seconds": 0.029132672998457565,
+      "exit_code": 2,
+      "expected": "accept",
+      "sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "status": "incomplete",
+      "stderr": "",
+      "test": "perf/magma-list-pair-n7"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.018908566000391147,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "67725ab1b59ee3886c97c9120d4d2e0f2b5d193c1a68796193d544dc33f697f5",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/proj-cheap-struct"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.00903391800056852,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "948fbbb87ef6368f57bcd9799afc0b4ad3d1fe040a418b3ac38045b1489f78fa",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/proj-lazy-struct"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.010045435999927577,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "b2fed80e90e956f24bcbe898ce7cfef5ae4c92d0f81daf42e0a2a3c817012f6f",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/proj-stuck-struct"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.00281488300061028,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "831bb058c28d82bf4c2c6146ae9f91b22b44a914ef362ee19dd66f3211104d37",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/repeated-subproblem"
+    },
+    {
+      "actual": "unknown",
+      "elapsed_seconds": 0.015252363000399782,
+      "exit_code": 2,
+      "expected": "accept",
+      "sha256": "dbc065108aa98512149c3f1a5bb6279630c53bdf64256516ba10ed256322883b",
+      "status": "incomplete",
+      "stderr": "",
+      "test": "perf/shared-subterm"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.07653516599930299,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "73b80da0cfca3226068945fe617eafba6da87d8e24803ff1a987a5d10c1f1a57",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/shift-cascade"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.06760389900045993,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "3839db32d95b2ded9bf2ac70960ae4a060b9a998bd67422ed41bc087b1f74179",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/unroll-versus-evaluate"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.002032731001236243,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "66160bdc748c91306eddc888fe8a268dd336c385979902022c2902da0680efd5",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/001_basicDef"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0015323249990615295,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "aa2c0aa79d56f1ad43b41df7bd9a5e1876eafcba560a39845f5a9a5c290a72a2",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/003_arrowType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0014924650004104478,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "74d890dafbd178c44ef0d1b8b5ef339f628efcd5c2a84d33307330b512ee8a08",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/004_dependentType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0014523740010190522,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "50e86e6b9f1c07c40359497444fc8b9645fc8565550aac1875d0856129f71c46",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/005_constType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0017688619991531596,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "e20bf2f42a95fc8edf901b00f1c99d3f8d2f4293abebe50d835269a1187283dd",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/006_betaReduction"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0016374440001527546,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "d5157c04725cc6c0b1940e7050d1a2d6d564675930d8c8a77a9cab1cd35ea2dd",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/007_betaReduction2"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0013775919996987795,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "4b8379c48d2018983f1edad8fc7437743f77ceed517a73db9d5b344042ad52aa",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/008_forallSortWhnf"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0014048130014998605,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "3bdd74e5e5c4b6413961de59db89ec750ac301dd86c6f8cfedf91e8f01a5ee2c",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/013_thmProof"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0011796420003520325,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "93618512baf81894760413b5d79aca2021f954ac4d95d8d21bd6a7e8ded87b74",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/015_levelComp1"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0010750639994512312,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "6caaf69b531f7e0729782aee92680d531394251e51ae96471f5934e55b0cd502",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/016_levelComp2"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0012371390002954286,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "de86ba3543bfe36e79071304f1dd974208bf6e1bb936a2afb3e2057e6fdf61dc",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/017_levelComp3"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0010908889998972882,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "67f5ee4d9bebc000d57f0bbf08b84481634209b78844f31409bc737c82625a20",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/018_levelParams"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001078639999832376,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "6f318f55f779e71bbdd005b8cd3773ac1196188c47a86c68f8647734d4526160",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/020_levelComp4"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0010043969996331725,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "04d8623e060042fc0063306d129928e1b754f3e8fe73116358ae5d4b5f1e7fdb",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/021_levelComp5"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001602631000423571,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "eab978e8b1707d4d570b8b9ac8317f5f3f624c90bafdfd015c7c881ec4e24d9d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/022_imax1"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0012352260000625392,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "a680737e27fc6636484fbe312a401f3b3f18b64c21bb5f0beae24cbae5810a2a",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/023_imax2"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0011448400000517722,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "8b6dd66b224c828c90e312ff9a4c17add5addd50e2a8132bf0edceb53cb5bede",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/024_levelMaxComm"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0016060260004451266,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "c1374bd0f3ac87765db5f0b5b0cf48263b5c1c00fabd07db25cd014e05fc845a",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/025_levelMaxAssoc"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001224904999617138,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "d8dfa08ce074504e6aedf2ae8b2a2696af429d6cb8901bde4a26cca603762f52",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/026_levelMaxIdem"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0010983989996020682,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "e1fc01bc9246e2f9dce058722fbeeea7d0cd48ee189f0f0d00c10d34ab812d77",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/027_levelMaxAbsorb"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001250028000868042,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "c7f349ea6d7d5a1fd2e9cfd1467f230e6ff8cc3b280bf6f1f38241b1487b3010",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/028_inferVar"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0013037089993304107,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "16e32a5cdb9b653f3ea28ca44eefd1915e18cba958a0017ad7646b3d6f7d08ca",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/029_defEqLambda"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0017645049993006978,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "c0bfe06648cd6fc49ca8b9488a88ab79cc4d518613e7eb5b81db4508389716fb",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/030_peano1"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0019498860001476714,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "107b66eff6598febc300a0dcd89c5e658bdb41f9e79e5c869ca9ea84560ef61d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/031_peano2"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001774050999301835,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "a155941886992c8340cfed582f0c73b634c347b4525b2e58ee93ff91895492da",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/032_peano3"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0011538929993548663,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "b9a44f49220a12951ac34ae4a4269a899fd81093949ea216e37744f519b5fbea",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/033_letType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0011432169994805008,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "c42e3dca20c90a0e942b394ec729548dee81114f0faf2e03dec503cf3ac7a234",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/034_letTypeDep"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0011119090013380628,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "648dcc1d99fb02a44fcb00bccdfeb7221bff807cd1f184239c9f4aa8749677e3",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/035_letRed"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0011812049997388385,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "18b97de6ae61b368ae7eb7fbe34c768590ba2a9e06249edb40a1e53fd932ffdb",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/036_empty"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001462338999772328,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "60f0170efef96a411a34d9fed5b53f421d04537fdb4fbf3129c2733991c4af07",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/037_boolType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0012821170003007865,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "023dc45dfe86c392d1253bd438b9bb3b1da07a80a5e5083acd751149c652411d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/038_twoBool"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0012761980015056906,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "656a1be9f3bb92fd10d459cf3e3a860dbb7213dbce10d2c788d94aed8e0e9b59",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/039_andType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0015905420004855841,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "2f82e7d70c3c170a7fb5b9d081c328a0075c8109f4979862cf5666355b94fd7d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/040_prodType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001449234001484001,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "08970427c4e28233478d7e73fdfb47fc26776805f71f36cc83e3cad434a41791",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/041_pprodType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001379192999593215,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "29f904a27e80054d1667118acdfc3595d238a45376062117d5e9eee136608248",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/042_pUnitType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0012924019993079128,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "17e2890610e6c4f97c9f8d62919736f27928d058aa6df4f769e285418b9eba2e",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/043_eqType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0011866829991049599,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "e1ea8ce5e5814320ec6f9c1d10bfe7fa0955432595627a40f629e56366bf49be",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/044_natDef"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0021273950005706865,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "10f50558c3fafe8d13f4129fa45d6b2d3732768e50eb9989d2f2ba66c696e14c",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/045_rbTreeDef"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001376680000248598,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "7927f942d5f7c496d93352e55955110fb22e0195707b73e6f3897b5cd88a8894",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/055_reduceCtorParam.mk"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001408037000146578,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "4ead0880735e18eb8317edbe6608f1891b35bd321a8062cb279f75a3fd74f753",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/058_predWithTypeField"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0012710999999399064,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "35536ab3714f8d578c1c07776eb9be463b9cda56a05ed3113bc8658f27465814",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/059_typeWithTypeField"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0011524710007506656,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "ed5a51876b8dde1bd53599ba783c213a7648ac461fd85c6e5892a411c3a0b5df",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/060_typeWithTypeFieldPoly"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0010761360008473275,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "0f2b78a85ead0e23165febd2f3a83f251e12d2c1cadc293f528a7fa444016f36",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/062_emptyRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0013304200001584832,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "3da418a44a96a39dcbf70cd482c6ef8320d8cbb2593de2c21f163dd862551afd",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/063_boolRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001649382000323385,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "9dfcc750a51b3e8ab9954696c40177bad30d486287b627fe06408086d468016b",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/064_twoBoolRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001467256000978523,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "6d876dc6840102814fc56ba83bd2008855e0fbc41f691f4795885fc4b5da51a9",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/065_andRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0014370709996001096,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "a599e1935d3291f405a860c0507cfd39d2d719162ba10d797c0251c858969aec",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/066_prodRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.00169858600020234,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "537333591de9684245331a0ba1e051ae79b9dc5749e02b8c623b8c3725a82340",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/067_pprodRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.002006851998885395,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "41d98f6240e8fb36c63b4baa22fbf940a28195c482dc584399a407c69cee1d39",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/068_punitRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0016820919991005212,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "5af40a654e735fbe4a4c5f244a36afd8b606932c054abe822b06493ccef0663b",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/069_eqRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0013687880000361474,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "d68c2401d23beda918b8e8017ac45965be44e60920a9bab158412d6fb65b3556",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/070_nRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.003118340999208158,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "2c88f371f5859df7de86e51fe52fc85d9be7fb242ad61ef0d4155b1263812ab6",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/071_rbTreeRef"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0015378940006485209,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "a360387a4cef76fa0a83ea4e9080f65d6170289b25aaaece7ff6301ffe11b305",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/072_boolPropRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0017065179999917746,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "572a2975c19e88123eca7c032a4915e7641c4d2fe6d81f95ee52597ef33f057e",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/074_existsRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0017896030003612395,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "055d92f0c45196c33862eeca4610d988a9be97375009725ca51e3ef64a10b832",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/075_typeSingletonRecReduction"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0018219119992863853,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "9b443e52e98b316eb0ee92484016986db4b7a62397de64d2ed1f8b6323905d3e",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/076_sortElimPropRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0016601079987594858,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "eaaa3909ab1527239fa0373e392464e6941097162531033d9a7ad422e7cb9945",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/077_sortElimProp2Rec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.002891459000238683,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "4fc92c213242a1fadda56ef895988f4407df5fbb495805eb565e76c794ebe92d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/078_boolRecEqns"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0023003260012046667,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "f6d9afec199974f6658dfd9609b5eb6256ef562d6ab9ee1c8899620314d233a6",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/079_prodRecEqns"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0030005239987076493,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "36eb71b330ee527eb6b3171b4f691c111ff229ad46ba58d4e450b95dae8a412d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/080_nRecReduction"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.004251804000887205,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "09c0bde7c1899d49cad18951123ed5fe6f54d6bf2cef6c6d0ba464e4571ae370",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/081_listRecReduction"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0424143379987072,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "88349328dd81100fb22396180bef9b5c2b0997275b7c3c672b19a7ac87ed72f9",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/082_RBTree.id_spec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0026204589994449634,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "9d2b8259b2c66875bcad6be7401d02efa153c01f00a24d03bd9e908ec5e97c42",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/083_And.right"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0018937509994430002,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "8cdc1c4b40f2ae776fc7bc898b01d9a9c4efb9f7bf0099162dbd7d2aff705464",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/084_Prod.snd"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0016898630001378478,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "c1936a363731616d9a7971eac15ae781fbf8ccd5c4d545e289e4020eb02772a5",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/085_PProd.snd"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.003255378000176279,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "9a84a3af533679eadb262be72db7a2d17798aaeba1aea38d4144c9c003c4e179",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/086_PSigma.snd"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0017034440006682416,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "f5619c6c975d73e06ed3b80fa20142f62f7ce0696dc7c8fdce648a9ecfcc800d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/089_projProp1"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001797195998733514,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "a9d95724c06cc3571103baff68ce75eb3dad454bf935ced5da20deb2e7993348",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/091_projProp3"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0017136589995061513,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "ac7867ab127119a680f62464f4cde3491cb4a5e73b496f2f13b8e3d650f99a5a",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/095_projDataIndexRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.002181696001571254,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "2fe756cf6d2b1e6e2c819f8858b1881d88f4f99564257911c730ca2756aa959d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/098_projRed"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0022286259991233237,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "39dab799309ad05a2f30670776d74b4e6b177175271291dd078a3d3737eef338",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/099_ruleK"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001244409999344498,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "46963fdc4eab7dca74ccaaaa9986f28bbf15fef7f3ba2055681f7b10ee83f930",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/102_aNatLit"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0015638130007573636,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "1918f1c8c5454442474d1db51cf6480182f7e13e31b5b1dd1319751aa8991f90",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/103_natLitEq"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0013479859990184195,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "cf25561da46b200deb6aef5aa82fb3bb6051913dae7e92dca1c8b6bb8ff35ba0",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/104_proofIrrelevance"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.002114715000061551,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "f697489bbf650d37795af2f6f347029016e7b517bb19b03179d51a065c2fefa2",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/106_proofIrrelevanceWhnf"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0014142469990474638,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "f7b2b47cff6e252ac53454889406ef852a97357ccd0a03fcbfcd1f0cae3b83ee",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/107_proofIrrelevanceUnderBinder"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0015898519995971583,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "2771b6cf7b538a8718718696b9d1bcae86f9612a0a933c15140012aa6b7cf733",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/108_unitEta1"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0014830410000286065,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "14b6411c82f6401fedd29cffdf8a27d8adfc41938a5f28801d5ffbf151b5da0c",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/109_unitEta2"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0015165919994615251,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "650b2ff08d1c246397a1605cbaa8a6f756cc68ef6304c2476ac1d13ced56087e",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/110_unitEta3"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0028797100003430387,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "a686b22362e05728ef0fce00646dd6f63996ab66e89290bf13ecd492cac17a6d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/112_structEta"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0018184079999628011,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "da363ebc05eca706a952bc9496fe76999850a12b63fe59243707e2c8a581e76d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/114_funEta"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0017525179991935147,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "a7fbe049abfd96e27d3904a6aea9dd7b9d4fe9c49e5095aacf369678f7af6438",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/115_funEtaDep"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0014063540002098307,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "dfc7393cbdc2b2de3d98494acaef6d91d258fd7b3f5f5aa3ddc4ef8b9bfe072f",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/119_reduceCtorParamRefl.mk"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0021674439994967543,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "755bcadfde765454067ad543e81f61cef5ee0e50a724cb0c838d4078a62fad97",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/120_reduceCtorParamRefl2.mk"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0015583349995722529,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "c6a0ad6e173b048457b5b768ba6f8e257d949df3b65c3c6982cdb18d69e031dd",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/121_rTreeRec"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0019479330003377981,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "a191e8bf9036a3bae39b6095ac535eb23ee2ecffc7d80f1560eb3625358492a6",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/122_rtreeRecReduction"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.002009997000641306,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "7b8b4753ff45ddbd9f93f61e78bfa9cf6cb0d217e6901e9fee6d81fc8894fbee",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/123_accRecType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.002972870999656152,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "8cfbf2d3768db33e875e6b5a00856a257146a508bc5a11c63eecdaed9a78cca9",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/124_accRecReduction"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.001725035999697866,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "98824b3b879da8e81d1801ced0b42430fcec33e686014f36b69ac908b1da19c8",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/126_quotMkType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0019701360015460523,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "312dc3ffc10c664b544a22df7c4a19a5b843bdf5f44ee56e99cb3a2faaf13da7",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/127_quotIndType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0017046349985321285,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "3abbf269039bfe725e22e5ae35438451f87ea200b2434e2e402deac0b9c8faf3",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/128_quotLiftType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0017856270005722763,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "eb746a91c6b322e9db9e6db05c23a534afd377055246e1e317a15794bdceece8",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/129_quotSoundType"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0019342520008649444,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "24ddef406335a38ac813223668785b6bfc456f0125aa5f54559c1d7fbacc9113",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/130_quotLiftReduction"
+    },
+    {
+      "actual": "accept",
+      "elapsed_seconds": 0.0019379169989406364,
+      "exit_code": 0,
+      "expected": "accept",
+      "sha256": "1afa34bb26783ac3305dca53b2d205efab560dbf38ca3dd84962115f5bab3198",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/131_quotIndReduction"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0025203380009770626,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "2fa6a967f15f76cfdcea3ef1992ff31a4cc4aa647b0f8fabf0ff61eedb3afbf1",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/constlevels"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.002478825001162477,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "134ba7d444a9015a073a84b2a919738968a1742e0ba00ecb3535eaece9908278",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/ctor-num-fields"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.002250860999993165,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "04a692635fe2c6755bc973c4520a29ef3707b5dad6ba23eadcd5dd6e71c0f06e",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/k-rec-conv"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013267549984448124,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "df7d23ff199c4956620f3b1b4d17976c6bbe99ec6c1b5a4e803a7f9f415e331f",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/large-elim-param"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0034941690009873128,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "f3e9ff227b49feedb76e24332ec070498e9d82e4d04d371066dffc243a8de36b",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/large-elim-prop-bool"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0012682960004894994,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "497eaa80a214386c679356c33a72c8beab5019c4938494b1608e3772a2756191",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/level-imax-leq"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0015113429999473738,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "d368d5569321b717b7ec95bd1f4fa5bbd7d6e1f8d6ebdf1a0644dc8bc76bc2ec",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/level-imax-normalization"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0015786950007168343,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "5a49d132bb0c7dca091baa481333f5e97e390fde72c8ec18c6124a690ec47d7c",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/nat-rec-k-lie"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013773310001852224,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "934e59fdc4f2a978605c4a44e90b94b57e9940f3828620c0db337b7125cdd169",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/nat-rec-rules"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0022356080007739365,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "25afcc9267523cfd26edf94ca01ebe34ca0e8a24954e4b4e3d397a61688b8778",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/nested-unused-param"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.001175526000224636,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "738f28bc1175d70faf09f4b45ae7ca92e8b8d397f6c5d0183240cd695f6d7bc4",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/orphan-rec"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.001324971999565605,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "3ab758759629ad56f872cb43671b765d05f63ce5033ae36a7c7e237b3565bcc1",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/proj-non-structure"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0019344730008015176,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "d7d0c58b3e62b9b73f7228c121818e9e0602b3fe8284b43a6b41f7c0b2137f65",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/proj-of-imax-prop"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.005548052000449388,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "4bdc45de8980cf9cb6e712ab6260f42a89201876f096441fb5ec49e3a0052a22",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/proj-of-stuck-prop"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.005239695999989635,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "c1e3e96748ade2a9806837460821ea725f460a1f8bc1601d7ce121a9b28ffed0",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/proj-of-subst-prop"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013757579999946756,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "e800053a06ad3f9af370f4377b500d52231d6b8522c3b1f35d15fbe1d75f2257",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/rec-k-lie"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.005945633000010275,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "8a240552317ba17d44d175c10531e5f988f55569db5eff734701735ce598fa73",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/rec-missing-ih"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.005494691000421881,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "572d2eb54a4e7d98d2e1a7bad01c5574f85ed5dacfd5bd1734f88ac37d515759",
+      "status": "matched",
+      "stderr": "",
+      "test": "bugs/rec-of-subst-prop"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0012242089997016592,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "eab650028a71177bd4d9fcb6a84b4e92dd91cf4e7af67023af458d18729be0e2",
+      "status": "matched",
+      "stderr": "",
+      "test": "other/extra-rec"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.004531440001301235,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "9fcac9c9e16cda51f60bbd91fd14c359bf8b2272aaf02fef86ef0c2aba9333f0",
+      "status": "matched",
+      "stderr": "",
+      "test": "other/nat-lit-add-bad"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013275950004754122,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "2c9b12979ea3da11272d6eca4b0a39523a863d6fb501daf61c4edb8996a97daa",
+      "status": "matched",
+      "stderr": "",
+      "test": "other/orphan-ctor"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013538650000555208,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "d7c5ab71c706123991510274596d1c36026201e7ccfd15fc134664fe7dee9116",
+      "status": "matched",
+      "stderr": "",
+      "test": "other/proj-of-prop"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.004071086001204094,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "5484b765b659b0d4a77aa75d82ae3d81f04d9731de30ee08dd5e4c58d0076fba",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/refute-cheap-first"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.004818761000933591,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "ea6fdc9ab4986b6a97e494c7af868704a3e15552506ca2014743a91a83a0e2ec",
+      "status": "matched",
+      "stderr": "",
+      "test": "perf/refute-cheap-last"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.001169746999948984,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "18c9ea60e02b97067822697e4c9dc716e5e7ba63cacd5688b753c8e92845f415",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/002_badDef"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0011923120000574272,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "64b1823f5bc87e743ad9e61b0a5b4907d141cd7434e4a9d9316deec82148891f",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/009_forallSortBad"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013162590003048535,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "3a9f600737260fecac39cce77739eba58b52e1bb79c59d5d1d583e3d33b62842",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/010_nonTypeType"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0011807740011136048,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "b4f10c5b711b37f776c31f73fde48de4f0c040c4c7cd54483d6ff61d81ce3105",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/011_nonTypeAxiom"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0012324419985816348,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "388e6d33ebe9e93e6bfa0ab7a35eb260461850cf3e975842beeb196205a0b990",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/012_nonPropThm"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013385230013227556,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "53d4c834fb25b5169a4d3847507b7dc7125552f54d81a8970d29cb57682a6f19",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/014_selfProof"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0012736949993268354,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "d33d515d2f0d6688cff31b9c3e5c69d4ec488a4b921c3ea6df2ccf5e6234e422",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/019_tut06_bad01"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0011272329993516905,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "0b5743d6dca5ca51a5966d5b1b1a2883fd0ddd0548b36a9c8b66d0fedda3e9c8",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/046_inductBadNonSort"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0011439980007708073,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "bc9abb544e1e918b8cadf898b7251f0b4fb6ba43a89569343b094be27ad83c56",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/047_inductBadNonSort2"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0010332709989597788,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "00e01ad9e397d9ac2f53a0a0932c15681c097fd42eb5f81d3d1779ba8706875e",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/048_inductLevelParam"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.001662270999077009,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "a7aa4192b8e986b2cf7c3845d208e818b27db7edda2492d3e5e180f8c379746b",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/049_inductTooFewParams"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.001140221998866764,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "e00ec458cd70b88e1f8ef6938dbf38b431c5a2d09086f22b8f46216a412625b4",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/050_inductWrongCtorParams"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0010837869995157234,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "376541e4a12f98f6c3bddd3f2137ff92347ec8cc802de17147154f14fc539af7",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/051_inductWrongCtorResParams"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0010260799990646774,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "37bdaecc5ee679e398f190217c451777f14f5ea82d4d45472909574cb2a875d3",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/052_inductWrongCtorResLevel"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0012298080000618938,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "ae3f46380ddb3b87ec47dd94f11facfb3b095d68a7e43fea1c051a54ea7df94a",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/053_inductInIndex"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0012857430010626558,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "891ebd478f35c1b58597f8d5b90855c05683d1945c3392a1b8a49c7036618c72",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/054_indNeg"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0011585410011321073,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "2bd8aa0b62145bfb04c3292516dd8df438594e104efb89f5de6b653db13ed19b",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/056_reduceCtorType.mk"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.001298986999245244,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "ac00e7cb143dfa35fb91c578756027daac4518aace7b27bdbd0097c1d2eae139",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/057_indNegReducible"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0014704810000694124,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "6852310d3ee1571f605ea6447f85d0e01c867fd209d1185321318078549cf45a",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/061_typeWithTooHighTypeField.mk"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013584619991888758,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "32fa46330a24a77b132ba55d9f9c88c89b4b2730d75fae453d066678a03ef0ca",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/073_BogusRecursor"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013016510001762072,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "c523a27118e7e081c515535d7f9e3d69e623f7a1c04a900213086510063dae79",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/087_projOutOfRange"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0015741679999337066,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "ca8056aa5df3b0f96a7a5eca355cce043d91c49563ae228cd4768f0bbe1bfaf4",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/088_projNotStruct"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0017202089984493796,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "710944c5a71c80cae0913c31ebe13186401e2717f4e5e731128590acd591d4f9",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/090_projProp2"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013654730009875493,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "958d3fdb2f292912c18fbc8ed3686c60d7d2fa19504385b7062276e20f0e5589",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/092_projProp4"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0014205160005076323,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "c6b12e00b68eb80438a619d29a523d4af0907e56e058541b675f34e26f98164e",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/093_projProp5"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0012975150002603186,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "b8da2aaeb0422306639a720608ff66ffa6c50a75426e18bb3bd58c5f483d13b2",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/094_projProp6"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0018134799993276829,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "5153a2bfdb3191f67bcedeccfc2306bf2514fba530a58237660664de1f8f2b6a",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/096_projIndexData"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0017349310001009144,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "e044fa7d4fc048c6103e60a5c1b41e07070c54cc998403ae323b04ed5cea7793",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/097_projIndexData2"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0018350480004301062,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "2147c3416825e1c7f78382501f4c3e2f8165d23d464c998a077e69a12e51697a",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/100_ruleKbad"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0024513240005035186,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "59a4dc34b1175f59d9efd17c4c5b9d9f07bdb54c882dc66a65737d29be6d4356",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/101_ruleKAcc"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0014083379992371192,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "2a1fa7289c339a899efdc2a1e4db11cc3d27064caa6cfb4b345a0bc1c247e95d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/105_proofIrrelevanceBad"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0016060260004451266,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "cbb7373c1ca899628177c7d6eb97dc6cf2f1faa3d14cdd1b1d90a5103e15f5d4",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/111_indexedUnitEta"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0015269659998011775,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "68793088cc096a96a4b7ed07f7417d88a4dafcc7ca4e8b53f6a756aed91e1b2d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/113_indexedStructEta"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0014686290014651604,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "54a1fa957b69925682e54479b3c152bfd131ca7f4a9713c05b195c83e9cd239a",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/116_funEtaBad"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0020347339996078517,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "cb1cb23af8bccc7eea0d76f643fe26948f6181a420128743f3ac7b08cd188427",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/117_reflOccLeft"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.001292012000703835,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "f7e26071a31d8a99affda951e49d5ddbe7ba2d387d4641733759a9e0e6e375bd",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/118_reflOccInIndex"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0021081049999338575,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "7868dfaa2a5574fa383e4fbf42f84d3eab78c43614f0034d2f78f2069ca00f64",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/125_accRecNoEta"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0010556950001046062,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "3ddcdcf8426bc589d22186cbb600585763982f4cf5d6c097d1ba506add38562c",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/132_dup_defs"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.001120371998695191,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "5215371a7c7f856b51f2da56aef208ca4ca729642dc778ad3e0ce8ab1906da0d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/133_dup_ind_def"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0010968669994326774,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "2ac3801ead3ade2a80fbfc1eabe5afc32191dc6fe92a327a3c04877788298788",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/134_dup_ctor_def"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0010468919990671566,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "c151eff211496e19088a099de9647fc09c5d8862c844f5cbac4922fd000aeb99",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/135_dup_rec_def"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0012035989984724438,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "084cbdbf52408c13578c9b5e603917d9cbe4f4eed72c8363a9955532c50bf9f9",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/136_misnamed_rec_user"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0013465450010698987,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "1491e5f6039864c0b1107e47b981951a82f704213e082400dbc09e8f42c70043",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/137_dup_rec_def2"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0016006980004021898,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "8298ec6977778857c4e5a6325eba54b1e81d03c09119342d8dc983b97f2ef1cc",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/138_dup_ctor_rec"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0015584140001010383,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "5ab46914e77307c3d93780fff5ff2c85f717ce1de2dbf3784049ccd6bab6aaa2",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/139_DupConCon"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0012127829995733919,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "210d79a51f88327822ee74f0dd95cc375d8ac95e634c2764f91ed6f3a9766d1d",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/140_falseFromUnsafe"
+    },
+    {
+      "actual": "reject",
+      "elapsed_seconds": 0.0015230959998007165,
+      "exit_code": 1,
+      "expected": "reject",
+      "sha256": "54e78ff1b3f6335f31703983abb67f840c9b13ca9c2d6bbb3aae9398f8232fe1",
+      "status": "matched",
+      "stderr": "",
+      "test": "tutorial/141_falseFromPartial"
+    }
+  ],
+  "counts": {
+    "error": 0,
+    "incomplete": 10,
+    "incorrect": 0,
+    "matched": 186
+  },
+  "elapsed_seconds": 3.1482142229997407,
+  "qualified": true,
+  "schema": "nucleus-arena-full-replay-v1",
+  "verdict_counts": {
+    "accept": 115,
+    "error": 0,
+    "reject": 71,
+    "unknown": 10
+  }
+}

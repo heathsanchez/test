@@ -432,3 +432,47 @@ fn polymorphic_delta_preserves_unknown_until_level_instantiation_is_explicit() {
             .is_unknown()
     );
 }
+
+#[test]
+fn recursor_output_constructor_does_not_identify_its_symbolic_major() {
+    use metatron_kernel::machine::{RecursorReduction, RecursorRule};
+    let mut exprs = IdTable::default();
+    let nodes = [
+        Expr::Sort(LevelId(0)),
+        Expr::BVar(0),
+        Expr::Const { name: NameId(1), levels: vec![] }, // zero
+        Expr::Const { name: NameId(2), levels: vec![] }, // successor
+        Expr::App { fun: ExprId(3), arg: ExprId(2) },
+        Expr::Const { name: NameId(3), levels: vec![] }, // recursor
+        Expr::App { fun: ExprId(5), arg: ExprId(0) },
+        Expr::App { fun: ExprId(6), arg: ExprId(4) },
+        Expr::App { fun: ExprId(7), arg: ExprId(4) },
+        Expr::App { fun: ExprId(8), arg: ExprId(1) },
+        Expr::Lam { domain: ExprId(0), body: ExprId(4) },
+        Expr::Lam { domain: ExprId(0), body: ExprId(10) },
+        Expr::Lam { domain: ExprId(0), body: ExprId(11) },
+        Expr::Lam { domain: ExprId(0), body: ExprId(12) },
+    ];
+    for (index, node) in nodes.into_iter().enumerate() {
+        exprs.insert(ExprId(index as u64), node).unwrap();
+    }
+    // Both branch programs expose successor, but the actual major is free.
+    // The machine consumes already certified programs; this isolates dispatch.
+    let reduction = RecursorReduction {
+        k: false, num_params: 0, num_indices: 0, level_params: vec![],
+        rules: vec![
+            RecursorRule { constructor: NameId(1), constructor_level_params: vec![],
+                num_params: 0, num_fields: 0, rhs: ExprId(12) },
+            RecursorRule { constructor: NameId(2), constructor_level_params: vec![],
+                num_params: 0, num_fields: 1, rhs: ExprId(13) },
+        ],
+    };
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(0), &exprs, &levels, HashMap::new())
+        .with_recursor_reductions(HashMap::from([(NameId(3), reduction)]));
+    let closure = Closure::new(ExprId(9), EnvFrame::empty().extend_free(FreeId(100)));
+    let exposed = machine.expose(closure, Transparency::Full, 100);
+    assert!(matches!(exposed.proven_value(), Some(Value::Neutral(neutral))
+        if matches!(neutral.head, NeutralHead::Const { name: NameId(3), .. })
+            && neutral.spine.len() == 4));
+}

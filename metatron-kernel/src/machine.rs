@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::environment::{BoolPrimitives, NatPrimitives, QuotPrimitives};
 use crate::id::{ExprId, IdTable, LevelId, NameId};
@@ -80,7 +79,6 @@ pub struct Exposure {
 
 type VisitKey = (AuthorityId, ExprId, u64);
 const INLINE_VISIT_CAPACITY: usize = 8;
-static NEXT_OPAQUE_MAJOR_FREE: AtomicU64 = AtomicU64::new(1 << 62);
 
 struct VisitSet {
     inline: [Option<VisitKey>; INLINE_VISIT_CAPACITY],
@@ -552,7 +550,6 @@ impl<'a> Machine<'a> {
                                 self.rule_constructor_application(
                                     target,
                                     reduction,
-                                    &arguments[..prefix_len],
                                     transparency,
                                     budget,
                                 )
@@ -892,7 +889,6 @@ impl<'a> Machine<'a> {
         &self,
         target: &Closure,
         reduction: &RecursorReduction,
-        prefix: &[Closure],
         transparency: Transparency,
         budget: usize,
     ) -> Option<(NameId, Vec<Closure>)> {
@@ -910,19 +906,11 @@ impl<'a> Machine<'a> {
         if transparency != Transparency::Full {
             return None;
         }
-        // If every possible iota branch has the same certified outer
-        // constructor, that constructor is observable without forcing the
-        // major. Its fields remain opaque, so no payload equality is assumed.
-        if let Some(common) =
-            self.common_recursor_result_constructor(reduction, prefix, budget.min(512))
-        {
-            return Some(common);
-        }
         let exposed = self
             .expose_internal(
                 target.clone(),
                 Transparency::Full,
-                budget.saturating_sub(1),
+                budget.saturating_sub(1).min(16),
                 false,
                 false,
             )
@@ -936,70 +924,6 @@ impl<'a> Machine<'a> {
             }) if matches_rule(name, spine.len()) => Some((name, spine)),
             _ => None,
         }
-    }
-
-    fn common_recursor_result_constructor(
-        &self,
-        reduction: &RecursorReduction,
-        prefix: &[Closure],
-        budget: usize,
-    ) -> Option<(NameId, Vec<Closure>)> {
-        let bvar_zero = self.expressions.iter_raw().find_map(|(id, expression)| {
-            matches!(expression, Expr::BVar(0)).then_some(ExprId(id))
-        })?;
-        let mut common = None;
-        for (rule_index, rule) in reduction.rules.iter().enumerate() {
-            let mut arguments = prefix.to_vec();
-            for field_index in 0..rule.num_fields {
-                let discriminator = u64::try_from(rule_index)
-                    .ok()?
-                    .checked_mul(1_024)?
-                    .checked_add(u64::try_from(field_index).ok()?)?;
-                arguments.push(Closure::new(
-                    bvar_zero,
-                    EnvFrame::empty().extend_free(FreeId(u64::MAX - 1 - discriminator)),
-                ));
-            }
-            let exposed = self.expose_internal_with_pending(
-                Closure::with_levels(
-                    rule.rhs,
-                    EnvFrame::empty(),
-                    LevelSubstitution::default(),
-                ),
-                Transparency::Full,
-                budget,
-                false,
-                false,
-                arguments.iter().rev().cloned().collect(),
-            );
-            let Value::Neutral(Neutral {
-                head: NeutralHead::Const { name, .. },
-                spine,
-            }) = &exposed.proven_value()?.value
-            else {
-                return None;
-            };
-            let constructor_rule = self
-                .recursor_reductions
-                .values()
-                .flat_map(|candidate| candidate.rules.iter())
-                .find(|candidate| candidate.constructor == *name)?;
-            let arity = constructor_rule.num_params + constructor_rule.num_fields;
-            if spine.len() != arity {
-                return None;
-            }
-            match common {
-                None => common = Some((*name, arity)),
-                Some((common_name, common_arity))
-                    if common_name == *name && common_arity == arity => {}
-                Some(_) => return None,
-            }
-        }
-        let (constructor, arity) = common?;
-        let arguments = (0..arity)
-            .map(|_| opaque_major_closure(bvar_zero))
-            .collect::<Option<Vec<_>>>()?;
-        Some((constructor, arguments))
     }
 
     fn resolve_level(
@@ -1024,18 +948,6 @@ fn append_pending(spine: &mut Vec<Closure>, pending: &mut Vec<Closure>) {
     while let Some(argument) = pending.pop() {
         spine.push(argument);
     }
-}
-
-fn opaque_major_closure(bvar_zero: ExprId) -> Option<Closure> {
-    let free = NEXT_OPAQUE_MAJOR_FREE
-        .try_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-            current.checked_add(1)
-        })
-        .ok()?;
-    Some(Closure::new(
-        bvar_zero,
-        EnvFrame::empty().extend_free(FreeId(free)),
-    ))
 }
 
 #[inline]
