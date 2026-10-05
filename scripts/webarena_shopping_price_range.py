@@ -7,11 +7,20 @@ from playwright.async_api import async_playwright
 
 def clean(s): return re.sub(r"\s+"," ",s).strip()
 
-async def page_prices(page):
+def tokens(text):
+    return [t for t in re.findall(r"[a-z0-9]+",text.casefold()) if len(t)>1]
+
+async def page_prices(page,query):
     values=[]
+    wanted=tokens(query)
     items=page.locator(".product-item")
     for i in range(await items.count()):
         item=items.nth(i)
+        name_el=item.locator(".product-item-link").first
+        name=clean(await name_el.inner_text()) if await name_el.count() else clean(await item.inner_text())
+        hay=name.casefold()
+        if wanted and not all(t in hay for t in wanted):
+            continue
         nums=[]
         priced=item.locator('[data-price-amount]')
         for j in range(await priced.count()):
@@ -31,14 +40,14 @@ async def page_prices(page):
             values.extend(nums)
     return values
 
-async def collect_all(page,start_url):
+async def collect_all(page,start_url,query):
     url=start_url
     seen_urls=set(); values=[]; pages=0
     while url and url not in seen_urls and pages<50:
         seen_urls.add(url); pages+=1
         r=await page.goto(url,wait_until="networkidle",timeout=120000)
         if r is None or r.status!=200: raise RuntimeError(f"search page failed: {url}")
-        values.extend(await page_prices(page))
+        values.extend(await page_prices(page,query))
         nxt=page.locator(".pages-item-next a").first
         if await nxt.count()==0 or not await nxt.is_visible():
             break
@@ -63,7 +72,7 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(headless=True)
         page=await b.new_page()
-        values,pages=await collect_all(page,start)
+        values,pages=await collect_all(page,start,query)
         await b.close()
     mn=min(values); mx=max(values)
     response={"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":[{"min":mn,"max":mx}],"error_details":None}
