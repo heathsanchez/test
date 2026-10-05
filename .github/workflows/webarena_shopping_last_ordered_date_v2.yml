@@ -5,6 +5,7 @@ on:
     branches: [webarena-verified-capability-compiler-v1]
     paths:
       - "scripts/webarena_shopping_last_ordered_date_v2.py"
+      - "scripts/webarena_shopping_order_history_probe.py"
       - ".github/workflows/webarena_shopping_last_ordered_date_v2.yml"
 jobs:
   qualify:
