@@ -35,7 +35,7 @@ def product_match(wanted,observed):
         return True
     tokens=[t for t in re.findall(r"[a-z0-9]+",wtxt) if len(t)>2]
     observed_tokens=re.findall(r"[a-z0-9]+",otxt)
-    return bool(tokens) and all(any(tok in obs or obs in tok for obs in observed_tokens) for tok in tokens)
+    return bool(tokens) and all(any(tok == obs or tok in obs for obs in observed_tokens) for tok in tokens)
 
 def dims(text):
     m=re.search(r"(\d+(?:\.\d+)?)\s*[*x×]\s*(\d+(?:\.\d+)?)",text,re.I)
