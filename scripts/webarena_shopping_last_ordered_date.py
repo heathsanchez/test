@@ -9,7 +9,7 @@ def clean(s): return re.sub(r"\s+"," ",s).strip()
 
 def parse_date(text):
     s=clean(text)
-    for fmt in ("%m/%d/%Y","%B %d, %Y","%b %d, %Y"):
+    for fmt in ("%m/%d/%y","%m/%d/%Y","%B %d, %Y","%b %d, %Y"):
         try: return datetime.strptime(s,fmt)
         except ValueError: pass
     raise ValueError(f"unsupported order date: {s!r}")
