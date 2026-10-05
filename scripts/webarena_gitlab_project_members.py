@@ -33,22 +33,26 @@ async def resolve_project(page,base,wanted):
     return best
 
 async def members(page,base,path):
-    urls=[path+"/-/project_members",path+"/-/settings/members"]
-    for u in urls:
-        r=await page.goto(base+u,wait_until="networkidle",timeout=180000)
-        if r is None or r.status!=200: continue
-        body=clean(await page.locator("body").inner_text())
-        found=[]
-        links=page.locator('a[href^="/"]')
-        for i in range(await links.count()):
-            a=links.nth(i); href=await a.get_attribute("href"); txt=clean(await a.inner_text())
-            if not href or href.count("/")!=1: continue
-            user=href.strip("/")
-            if user.casefold() in {"byteblaze","dashboard","explore","help","users","groups","projects"}: continue
-            if txt and ("@" in txt or user.casefold() in txt.casefold()) and user not in found:
-                found.append(user)
-        if found: return found,body[:12000],u
-    raise RuntimeError("project member list unavailable")
+    u=path+"/-/project_members"
+    r=await page.goto(base+u,wait_until="networkidle",timeout=180000)
+    if r is None or r.status!=200:
+        raise RuntimeError("project member page unavailable")
+    body=clean(await page.locator("body").inner_text())
+    rows=page.locator('[data-testid^="members-table-row-"]')
+    found=[]
+    for i in range(await rows.count()):
+        txt=clean(await rows.nth(i).inner_text())
+        m=re.search(r"@([A-Za-z0-9_.-]+)",txt)
+        if not m:
+            continue
+        user=m.group(1)
+        if user.casefold()=="byteblaze":
+            continue
+        if user not in found:
+            found.append(user)
+    if not found:
+        raise RuntimeError("no other project members found")
+    return found,body[:12000],u
 
 async def main():
     ap=argparse.ArgumentParser()
