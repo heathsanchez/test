@@ -123,6 +123,24 @@ pub(crate) fn convert_with_policy_in_context(
     initial_depth: usize,
     context: &[TypeValue],
 ) -> Judgment<()> {
+    let mut congruence_attempts = 32;
+    convert_in_context_with_congruence(
+        checker, left, right, budget, delta_policy, initial_depth, context, 0,
+        &mut congruence_attempts,
+    )
+}
+
+fn convert_in_context_with_congruence(
+    checker: &TypeChecker<'_>,
+    left: &TypeValue,
+    right: &TypeValue,
+    budget: usize,
+    delta_policy: DeltaPolicy,
+    initial_depth: usize,
+    context: &[TypeValue],
+    congruence_depth: usize,
+    congruence_attempts: &mut usize,
+) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
     #[cfg(feature = "diagnostics")]
@@ -276,6 +294,41 @@ pub(crate) fn convert_with_policy_in_context(
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
                 let machine = checker.machine();
+                // Positive congruence before unfolding. Failed premises only
+                // decline this rule; all nested probes share an attempt limit.
+                if congruence_depth < 16 && *congruence_attempts > 0 {
+                    *congruence_attempts -= 1;
+                    let probe_budget = remaining;
+                    let opaque_left = machine.expose(left.clone(), Transparency::Opaque, probe_budget);
+                    let opaque_right = machine.expose(right.clone(), Transparency::Opaque, probe_budget);
+                    if let (Some(Value::Neutral(lhs)), Some(Value::Neutral(rhs))) =
+                        (opaque_left.proven_value(), opaque_right.proven_value())
+                        && let (
+                            NeutralHead::Const { name: left_name, .. },
+                            NeutralHead::Const { name: right_name, .. },
+                        ) = (&lhs.head, &rhs.head)
+                        && left_name == right_name
+                        && definition_arguments_used(checker, *left_name, lhs.spine.len())
+                        && !lhs.spine.is_empty()
+                        && lhs.spine.len() == rhs.spine.len()
+                        && compare_neutral_heads(checker, lhs, rhs, probe_budget).is_proven()
+                        && lhs.spine.iter().zip(&rhs.spine).rev().all(|(left_arg, right_arg)| {
+                            convert_in_context_with_congruence(
+                                checker,
+                                &TypeValue::Term(left_arg.clone()),
+                                &TypeValue::Term(right_arg.clone()),
+                                probe_budget / lhs.spine.len(),
+                                delta_policy,
+                                depth,
+                                context,
+                                congruence_depth + 1,
+                                congruence_attempts,
+                            ).is_proven()
+                        })
+                    {
+                        continue;
+                    }
+                }
                 if delta_policy == DeltaPolicy::GuardedSemanticFallback
                     && let Some((rigid_head, congruence)) =
                         rigid_application_head_congruence(checker, &left, &right, remaining)
@@ -726,6 +779,28 @@ fn resolve_local_closure(checker: &TypeChecker<'_>, closure: &Closure) -> Option
         }
     }
     None
+}
+
+// Skip speculative argument equality when direct beta reduction can erase an
+// argument. This is only a cost gate; ordinary conversion remains authoritative.
+fn definition_arguments_used(
+    checker: &TypeChecker<'_>,
+    name: crate::id::NameId,
+    arity: usize,
+) -> bool {
+    let Some(mut expression) = checker.definition_value(name) else {
+        return false;
+    };
+    for _ in 0..arity {
+        let Some(Expr::Lam { body, .. }) = checker.expression(expression) else {
+            return false;
+        };
+        if !expression_uses_bvar(checker, *body, 0, 64) {
+            return false;
+        }
+        expression = *body;
+    }
+    true
 }
 
 fn expression_uses_bvar(
