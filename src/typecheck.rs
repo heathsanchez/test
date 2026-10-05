@@ -1473,6 +1473,10 @@ impl<'a> TypeChecker<'a> {
         self.environment.nat_primitives()
     }
 
+    pub(crate) fn definition_value(&self, name: NameId) -> Option<ExprId> {
+        self.environment.get(name)?.value
+    }
+
     pub(crate) fn distinct_bool_constructors(&self, left: NameId, right: NameId) -> bool {
         if left == right {
             return false;
