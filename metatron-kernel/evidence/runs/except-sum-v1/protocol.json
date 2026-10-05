@@ -1,0 +1,34 @@
+{
+  "arena": {
+    "accept": 115,
+    "corpus_cases": 196,
+    "errors": 0,
+    "reject": 71,
+    "unknown": 10,
+    "wrong": 0
+  },
+  "base_commit": "2d726b8c6f8ad1fc116a4de8882c3bef6a44f7d3",
+  "limits": [
+    "No whole-Arena verdict gain; perf/fueled-chain remains UNKNOWN.",
+    "Hosted qualification is pending.",
+    "This does not claim arbitrary sum or arbitrary nonrecursive inductive completeness."
+  ],
+  "negative_controls": {
+    "wrong_parameter_field_assignment": "UNKNOWN",
+    "wrong_recursor_rule_selection": "UNKNOWN"
+  },
+  "residual_contraction": {
+    "after": "Functor:stage=inductive",
+    "before": "Except:stage=inductive",
+    "whole_case": "UNKNOWN"
+  },
+  "schema": "nucleus-except-sum-v1",
+  "state": "WARRANTED_BOUNDED_LOCAL",
+  "witness": {
+    "after": "ACCEPT through exact Except prefix",
+    "before": "UNKNOWN at Except:stage=inductive",
+    "bytes": 9643,
+    "sha256": "600df604e287efd74cdb8915b00e18e5c64c4cf55b6864d1d0e100892845c564",
+    "source": "good/perf/fueled-chain.ndjson prefix through Except"
+  }
+}
