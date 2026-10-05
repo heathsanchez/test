@@ -1,0 +1,84 @@
+name: WebArena Reddit submit primitive qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_reddit_submit_primitive.yml"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start Reddit
+        run: |
+          mkdir -p artifacts/webarena_reddit_submit
+          docker pull am1n3e/webarena-verified-reddit
+          docker image inspect am1n3e/webarena-verified-reddit --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_reddit_submit/reddit_image_digest.txt
+          docker run -d --name webarena-verified-reddit -p 9999:80 -p 9998:8877 am1n3e/webarena-verified-reddit
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9999 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Prepare authority and execute
+        run: |
+          ROOT=artifacts/webarena_reddit_submit
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__REDDIT__":{"urls":["http://localhost:9999"],"active_url_idx":0}}}
+          JSON
+          for id in 634 640 645 646 647; do
+            python scripts/webarena_reddit_submit.py --task-id "$id" --task-file "$ROOT/hard.json" --base-url http://localhost:9999 --output-dir "$ROOT/output"
+          done
+      - name: Officially score mutation and network certificate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_reddit_submit")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          results={}; failures=[]
+          for task_id in (634,640,645,646,647):
+              out=root/"output"/str(task_id)
+              trace=NetworkTrace.from_har(out/"network.har")
+              result=wa.evaluate_task(task_id=task_id,agent_response=out/"agent_response.json",network_trace=trace)
+              dumped=result.model_dump(mode="json",exclude_none=True)
+              (out/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+              results[str(task_id)]={"score":float(result.score),"status":result.status.value,"evaluation_events":len(trace.evaluation_events)}
+              if float(result.score)!=1.0 or result.status.value!="success": failures.append(task_id)
+          seal={
+            "epistemic_state":"CANDIDATE",
+            "boundary":"explicit-forum Reddit submit primitive with HAR-certified network effects",
+            "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+            "results":results,
+            "failures":failures
+          }
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+          if failures: raise SystemExit(f"qualification residuals: {failures}")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-reddit-submit-primitive
+          path: artifacts/webarena_reddit_submit
