@@ -9,7 +9,20 @@ REVIEWS="/review/product/"
 def clean(s): return re.sub(r"\s+"," ",s).strip()
 def norm(s): return clean(s).casefold()
 def product_terms(s):
-    return [t for t in re.findall(r"[a-z0-9]+",norm(s)) if len(t)>=2]
+    stop={"product","products","item","items"}
+    out=[]
+    for t in re.findall(r"[a-z0-9]+",norm(s)):
+        if len(t)<2 or t in stop: continue
+        # Family descriptions are commonly plural while catalog names are
+        # singular ("tanks products" -> "tank"). Keep this deliberately small.
+        if len(t)>3 and t.endswith("s") and not t.endswith("ss"):
+            t=t[:-1]
+        out.append(t)
+    return out
+
+def term_match(term,text):
+    words=re.findall(r"[a-z0-9]+",norm(text))
+    return any(w==term or (len(term)>3 and (w.startswith(term) or term.startswith(w))) for w in words)
 
 async def live_table(page):
     for _ in range(100):
@@ -94,8 +107,7 @@ async def matching_reviews(page,product):
         if not rid or rid in seen: continue
         seen.add(rid)
         pname=clean(await cells.nth(ix["product"]).inner_text())
-        hay=norm(pname)
-        if not all(term in hay for term in terms): continue
+        if not all(term_match(term,pname) for term in terms): continue
         links=row.locator('a[href*="/review/product/edit/"]')
         href=await links.first.get_attribute("href") if await links.count() else None
         out.append({
@@ -130,7 +142,7 @@ async def main():
     a=ap.parse_args()
     tasks=json.loads(Path(a.task_file).read_text()); task=next(t for t in tasks if int(t["task_id"])==a.task_id)
     tid=int(task["intent_template_id"]); product=str(task["instantiation_dict"]["product"])
-    if tid not in {245,249} or norm(product)=="tanks products": raise SystemExit("unsupported non-exact-product review task")
+    if tid not in {245,249}: raise SystemExit("unsupported review-rating template")
     async with async_playwright() as p:
         browser=await p.chromium.launch(headless=True)
         ctx=await browser.new_context(extra_http_headers={"X-M2-Admin-Auto-Login":"admin:admin1234"})
