@@ -73,7 +73,7 @@ async def main():
     wanted=clean(task["instantiation_dict"]["description"]).casefold()
     async with async_playwright() as p:
         b=await p.chromium.launch(headless=True)
-        ctx=await b.new_context(extra_http_headers={"X-Magento-Customer-Auto-Login":"2"})
+        ctx=await b.new_context(extra_http_headers={"X-M2-Customer-Auto-Login":"emma.lopez@gmail.com:Password.123"})
         page=await ctx.new_page()
         orders,pages=await collect_history(page,a.base_url)
         match=None; inspected=0
