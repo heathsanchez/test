@@ -5,7 +5,7 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import quote, urlparse
 from playwright.async_api import async_playwright
-from webarena_gitlab_commit_counts import BASE, login
+from webarena_gitlab_commit_counts import BASE, sign_in
 
 async def api_json(page,url):
     payload=await page.evaluate(
@@ -53,7 +53,7 @@ async def main():
     path=path.split("/-/")[0]
     async with async_playwright() as p:
         b=await p.chromium.launch(headless=True); page=await b.new_page()
-        await login(page)
+        await sign_in(page)
         count,identity,evidence=await contributor_counts(page,path,inst["branch_name"])
         await b.close()
     if "number of commits" not in str(inst["attribute"]).casefold():
