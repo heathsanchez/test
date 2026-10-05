@@ -615,3 +615,40 @@ Evidence:
 - Reddit additions beyond the prior 25-task seal: hard 28, 29, 31.
 
 This supersedes the 25-task cross-site seal as the authoritative replayed hard score floor.
+
+
+## Shopping low-star review-title family
+
+**State: REUSABLE — 5/5 within template 136**
+
+The public product page is not a static sufficient representation: Magento reports the review count immediately, but review rows are lazy-loaded only after activating the Reviews tab. The minimum repair was to activate that tab, wait for live review rows, then project review title + rating and follow review pagination.
+
+Evidence:
+
+- run: `37246995788`
+- job: `111566723227`
+- artifact: `11319301914`
+- artifact digest: `sha256:1036a246b13adff4a5c9e49d3c111bbb3bf04ff8a46ff2d0cc3570374c98f49c`
+- hard 163, 165, 166: all score 1.0
+- held-outs 164, 167: all score 1.0
+
+The branch was reverted to the exact known-green implementation in commit `6314057bd6dedd0d136101894741b7b7aaec783a`; a later unneeded activation-path refinement was not retained.
+
+## GitLab personal-project star family
+
+**State: REUSABLE — 5/5 within template 289**
+
+The capability logs into the pinned GitLab environment as the benchmark's seeded user, enumerates the complete personal-project listing with observed star counts, opens each project to recover its visible project ID, then applies the requested star predicate.
+
+Evidence:
+
+- run: `37246547955`
+- job: `111565473919`
+- artifact: `11319258386`
+- artifact digest: `sha256:c42845f7ecc69551c909230c4a9072c01e0be2aca95939fcb1d30ca0e49a5962`
+- hard 170, 171, 172: all score 1.0
+- held-outs 168, 169: all score 1.0
+
+Observed personal-project state included 12 projects spanning star counts 0, 1, 2, and 6. The same live representation therefore supports least-star, less-than-five, zero-star, most-star, and >100-star predicates without task-specific project IDs.
+
+The individually warranted hard-task set is now **34**. A four-site 34-task reclosure is the promotion gate before 34 becomes the replayed score floor.
