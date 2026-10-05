@@ -1,0 +1,1395 @@
+{
+  "counts": {
+    "accept": 115,
+    "reject": 71,
+    "unknown": 10
+  },
+  "wrong": [],
+  "errors": [],
+  "unknowns": [
+    "init-prelude",
+    "perf/folded-constant-first",
+    "perf/folded-constant-last",
+    "perf/fueled-chain",
+    "perf/grind-ring-5",
+    "perf/magma-list-deep-n21",
+    "perf/magma-list-deep-n36",
+    "perf/magma-list-pair-n21",
+    "perf/magma-list-pair-n7",
+    "perf/shared-subterm"
+  ],
+  "rows": [
+    {
+      "test": "corner-cases/proof-param-ok",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0021486859986907803,
+      "stderr": ""
+    },
+    {
+      "test": "init-prelude",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.058710340003017336,
+      "stderr": ""
+    },
+    {
+      "test": "other/level-index-out-of-order",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001812078000511974,
+      "stderr": ""
+    },
+    {
+      "test": "other/nat-lit-add",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.004640870000002906,
+      "stderr": ""
+    },
+    {
+      "test": "other/nat-lit-ble",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.005154206999577582,
+      "stderr": ""
+    },
+    {
+      "test": "other/nat-lit-sub",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.004944348998833448,
+      "stderr": ""
+    },
+    {
+      "test": "other/sparse-name-index",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015271869997377507,
+      "stderr": ""
+    },
+    {
+      "test": "perf/app-lam",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 1.3408808720050729,
+      "stderr": ""
+    },
+    {
+      "test": "perf/args-before-unfold",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.07384794599784072,
+      "stderr": ""
+    },
+    {
+      "test": "perf/beta-ladder",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.23895013500441564,
+      "stderr": ""
+    },
+    {
+      "test": "perf/church-numerals",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.057641655002953485,
+      "stderr": ""
+    },
+    {
+      "test": "perf/discarded-argument-match",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.007065126999805216,
+      "stderr": ""
+    },
+    {
+      "test": "perf/discarded-argument",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.004327968003053684,
+      "stderr": ""
+    },
+    {
+      "test": "perf/folded-constant-first",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.02012447000015527,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_first:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "test": "perf/folded-constant-last",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.013914003997342661,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=kernel_folded_constant_last:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "test": "perf/fueled-chain",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.016518342999916058,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=Functor:stage=inductive:verdict=Unknown\n"
+    },
+    {
+      "test": "perf/grind-ring-5",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.20111038300092332,
+      "stderr": ""
+    },
+    {
+      "test": "perf/identical-nesting",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.003206604000297375,
+      "stderr": ""
+    },
+    {
+      "test": "perf/irrelevance-before-evaluation",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.004000398002972361,
+      "stderr": ""
+    },
+    {
+      "test": "perf/let-ladder",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.5098127730016131,
+      "stderr": ""
+    },
+    {
+      "test": "perf/magma-list-deep-n21",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.058940378003171645,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "test": "perf/magma-list-deep-n36",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.05328223900141893,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "test": "perf/magma-list-pair-n21",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.026461998997547198,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "test": "perf/magma-list-pair-n7",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.02760461100115208,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.noConfusion_of_Nat.aux._f:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "test": "perf/proj-cheap-struct",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.019496462002280168,
+      "stderr": ""
+    },
+    {
+      "test": "perf/proj-lazy-struct",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.009129420999670401,
+      "stderr": ""
+    },
+    {
+      "test": "perf/proj-stuck-struct",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.014167852001264691,
+      "stderr": ""
+    },
+    {
+      "test": "perf/repeated-subproblem",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.003042156000446994,
+      "stderr": ""
+    },
+    {
+      "test": "perf/shared-subterm",
+      "expected": 0,
+      "actual": 2,
+      "seconds": 0.015288736001821235,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=kernel_shared_subterm:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "test": "perf/shift-cascade",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.07366454000293743,
+      "stderr": ""
+    },
+    {
+      "test": "perf/unroll-versus-evaluate",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.07011170299665537,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/001_basicDef",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0020203520034556277,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/003_arrowType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.00118660199950682,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/004_dependentType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011273729978711344,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/005_constType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013119919967721216,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/006_betaReduction",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013612059992738068,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/007_betaReduction2",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012443899977370165,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/008_forallSortWhnf",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001268346000870224,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/013_thmProof",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013468850011122413,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/015_levelComp1",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013309709975146689,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/016_levelComp2",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011127100005978718,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/017_levelComp3",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013639099997817539,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/018_levelParams",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014618380009778775,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/020_levelComp4",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012342150002950802,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/021_levelComp5",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012772089976351708,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/022_imax1",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001405613002134487,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/023_imax2",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001200744001835119,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/024_levelMaxComm",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013153770050848834,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/025_levelMaxAssoc",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013772000020253472,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/026_levelMaxIdem",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012262820018804632,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/027_levelMaxAbsorb",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012446210021153092,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/028_inferVar",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011714799984474666,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/029_defEqLambda",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013590430025942624,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/030_peano1",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001504833999206312,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/031_peano2",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0017259270025533624,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/032_peano3",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0017833640013122931,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/033_letType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011968679973506369,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/034_letTypeDep",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011686860016197897,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/035_letRed",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011422259995015338,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/036_empty",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011442289978731424,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/037_boolType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011670230014715344,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/038_twoBool",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012177799944765866,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/039_andType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014413169992621988,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/040_prodType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013833799966960214,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/041_pprodType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014351280042319559,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/042_pUnitType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012577300003613345,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/043_eqType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0013526830007322133,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/044_natDef",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012242390002938919,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/045_rbTreeDef",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0023146870007622056,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/055_reduceCtorParam.mk",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014999359991634265,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/058_predWithTypeField",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012105689966119826,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/059_typeWithTypeField",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011973079963354394,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/060_typeWithTypeFieldPoly",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001298011004109867,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/062_emptyRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0011254299970460124,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/063_boolRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014087980016483925,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/064_twoBoolRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015253390010911971,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/065_andRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014911329999449663,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/066_prodRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016176330027519725,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/067_pprodRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0018179569960921071,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/068_punitRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016103129964903928,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/069_eqRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016137880011228845,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/070_nRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016921560018090531,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/071_rbTreeRef",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.002868783994927071,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/072_boolPropRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015103660043678246,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/074_existsRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001396580002619885,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/075_typeSingletonRecReduction",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015314929987653159,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/076_sortElimPropRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016900929986150004,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/077_sortElimProp2Rec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0017246450006496161,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/078_boolRecEqns",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.002394397000898607,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/079_prodRecEqns",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0021836589949089102,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/080_nRecReduction",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0027453670045360923,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/081_listRecReduction",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.004069678005180322,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/082_RBTree.id_spec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.04643911199673312,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/083_And.right",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0018967159994645044,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/084_Prod.snd",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0017372639995301142,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/085_PProd.snd",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015572129996144213,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/086_PSigma.snd",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0017924280036822893,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/089_projProp1",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016324759999406524,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/091_projProp3",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001682592002907768,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/095_projDataIndexRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016296009998768568,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/098_projRed",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001958428001671564,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/099_ruleK",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001713819001452066,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/102_aNatLit",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015643929946236312,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/103_natLitEq",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014520040058414452,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/104_proofIrrelevance",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016085699971881695,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/106_proofIrrelevanceWhnf",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014692900003865361,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/107_proofIrrelevanceUnderBinder",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0012840700001106597,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/108_unitEta1",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001533055998152122,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/109_unitEta2",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0019877819941029884,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/110_unitEta3",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0018950930025312118,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/112_structEta",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0025700530022731982,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/114_funEta",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.001547006999317091,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/115_funEtaDep",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.00149946499732323,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/119_reduceCtorParamRefl.mk",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0017791880018194206,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/120_reduceCtorParamRefl2.mk",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014199449942680076,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/121_rTreeRec",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0014156580000417307,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/122_rtreeRecReduction",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.002313856006367132,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/123_accRecType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0019372460010345094,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/124_accRecReduction",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.003228075998777058,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/126_quotMkType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015575029974570498,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/127_quotIndType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0016905539960134774,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/128_quotLiftType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0015987660008249804,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/129_quotSoundType",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0017810900026233867,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/130_quotLiftReduction",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0022595440022996627,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/131_quotIndReduction",
+      "expected": 0,
+      "actual": 0,
+      "seconds": 0.0021740340016549453,
+      "stderr": ""
+    },
+    {
+      "test": "bugs/constlevels",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.00246086699917214,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_test:stage=theorem.proposition:verdict=REJECT:reason=rigid-value-constructor-mismatch\n"
+    },
+    {
+      "test": "bugs/ctor-num-fields",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0023579219996463507,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Test.0.S:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "bugs/k-rec-conv",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.002289194002514705,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=bad:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch\n"
+    },
+    {
+      "test": "bugs/large-elim-param",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001376369000354316,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=MyBool:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "bugs/large-elim-prop-bool",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0035507740030880086,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=NewBool:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "bugs/level-imax-leq",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0014832399974693544,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "bugs/level-imax-normalization",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0015607679961249232,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=down:stage=definition.value:verdict=REJECT:reason=distinct-canonical-universes\n"
+    },
+    {
+      "test": "bugs/nat-rec-k-lie",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0014730750044691376,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=Nat:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "bugs/nat-rec-rules",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001639355999941472,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "bugs/nested-unused-param",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0021552960024564527,
+      "stderr": ""
+    },
+    {
+      "test": "bugs/orphan-rec",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012765779974870384,
+      "stderr": ""
+    },
+    {
+      "test": "bugs/proj-non-structure",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013732939987676218,
+      "stderr": ""
+    },
+    {
+      "test": "bugs/proj-of-imax-prop",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0015908329951344058,
+      "stderr": ""
+    },
+    {
+      "test": "bugs/proj-of-stuck-prop",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.005524114996660501,
+      "stderr": ""
+    },
+    {
+      "test": "bugs/proj-of-subst-prop",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0054091510028229095,
+      "stderr": ""
+    },
+    {
+      "test": "bugs/rec-k-lie",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0014057480002520606,
+      "stderr": ""
+    },
+    {
+      "test": "bugs/rec-missing-ih",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.007325575999857392,
+      "stderr": ""
+    },
+    {
+      "test": "bugs/rec-of-subst-prop",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.005457478997414,
+      "stderr": ""
+    },
+    {
+      "test": "other/extra-rec",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013071649955236353,
+      "stderr": ""
+    },
+    {
+      "test": "other/nat-lit-add-bad",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.004189814004348591,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=natAddLitBad:stage=theorem.value:verdict=REJECT:reason=distinct-Nat-literals\n"
+    },
+    {
+      "test": "other/orphan-ctor",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013109499996062368,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "other/proj-of-prop",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013454229992930777,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=badFalse:stage=theorem.value:verdict=REJECT:reason=distinct-opaque-proposition-types\n"
+    },
+    {
+      "test": "perf/refute-cheap-first",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.005738158004533034,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_first:stage=theorem.value:verdict=REJECT:reason=certified-constructor-argument-mismatch\n"
+    },
+    {
+      "test": "perf/refute-cheap-last",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.005367228004615754,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_last:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch\n"
+    },
+    {
+      "test": "tutorial/002_badDef",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012639389969990589,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=badDef:stage=definition.value:verdict=REJECT:reason=distinct-canonical-universes\n"
+    },
+    {
+      "test": "tutorial/009_forallSortBad",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013080659991828725,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=forallSortBad:stage=definition.value:verdict=REJECT:reason=term-type-is-rigid-nonsort\n"
+    },
+    {
+      "test": "tutorial/010_nonTypeType",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012190019988338463,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=nonTypeType:stage=definition.type:verdict=REJECT:reason=term-is-not-a-type\n"
+    },
+    {
+      "test": "tutorial/011_nonTypeAxiom",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012140440012444742,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=nonTypeAxiom:stage=axiom.type:verdict=REJECT:reason=term-is-not-a-type\n"
+    },
+    {
+      "test": "tutorial/012_nonPropThm",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001230267997016199,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=nonPropThm:stage=theorem.proposition:verdict=REJECT:reason=distinct-canonical-universes\n"
+    },
+    {
+      "test": "tutorial/014_selfProof",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011272830015514046,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=selfProof:stage=theorem.value:verdict=REJECT:reason=unknown-constant\n"
+    },
+    {
+      "test": "tutorial/019_tut06_bad01",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012162769999122247,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/046_inductBadNonSort",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011736930027836934,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductBadNonSort:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/047_inductBadNonSort2",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012090870004612952,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductBadNonSort2:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/048_inductLevelParam",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012681059961323626,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductLevelParam:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/049_inductTooFewParams",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001202084997203201,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductTooFewParams:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/050_inductWrongCtorParams",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.00117375300033018,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductWrongCtorParams:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/051_inductWrongCtorResParams",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011954360015806742,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductWrongCtorResParams:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/052_inductWrongCtorResLevel",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013604650011984631,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductWrongCtorResLevel:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/053_inductInIndex",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012292969986447133,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=inductInIndex:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/054_indNeg",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011582189981709234,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=indNeg:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/056_reduceCtorType.mk",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011965879966737702,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=reduceCtorType:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/057_indNegReducible",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.00117676799709443,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=indNegReducible:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/061_typeWithTooHighTypeField.mk",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001127802999690175,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=typeWithTooHighTypeField:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/073_BogusRecursor",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001305222001974471,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=BogusRecursor:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/087_projOutOfRange",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013384119956754148,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=projOutOfRange:stage=definition.value:verdict=REJECT:reason=projection-index-out-of-range\n"
+    },
+    {
+      "test": "tutorial/088_projNotStruct",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012622069989447482,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/090_projProp2",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0015671770015615039,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/092_projProp4",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0014001649979036301,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/093_projProp5",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013341650046641007,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/094_projProp6",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0015043219973449595,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/096_projIndexData",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0019023839995497838,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=projIndexData:stage=definition.value:verdict=REJECT:reason=projection-type-name-mismatch\n"
+    },
+    {
+      "test": "tutorial/097_projIndexData2",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0020669630030170083,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=projIndexData2:stage=definition.value:verdict=REJECT:reason=projection-type-name-mismatch\n"
+    },
+    {
+      "test": "tutorial/100_ruleKbad",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0017302830019616522,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=REJECT:reason=rule-k-target-mismatch\n"
+    },
+    {
+      "test": "tutorial/101_ruleKAcc",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.002305784000782296,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=REJECT:reason=certified-stuck-recursor-mismatch\n"
+    },
+    {
+      "test": "tutorial/105_proofIrrelevanceBad",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0015359009994426742,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=proofIrrelevanceBad:stage=definition.value:verdict=REJECT:reason=distinct-rigid-local-terms\n"
+    },
+    {
+      "test": "tutorial/111_indexedUnitEta",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0019788790013990365,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=indexedUnitEta:stage=definition.value:verdict=REJECT:reason=non-eta-structure-mismatch\n"
+    },
+    {
+      "test": "tutorial/113_indexedStructEta",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.002078800003801007,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=indexedStructEta:stage=definition.value:verdict=REJECT:reason=non-eta-structure-mismatch\n"
+    },
+    {
+      "test": "tutorial/116_funEtaBad",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0016047949975472875,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=funEtaBad:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch\n"
+    },
+    {
+      "test": "tutorial/117_reflOccLeft",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001489428999775555,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=reflOccLeft:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/118_reflOccInIndex",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.00137610799720278,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=reflOccInIndex:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "test": "tutorial/125_accRecNoEta",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.002324682005564682,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=accRecNoEta:stage=theorem.value:verdict=REJECT:reason=certified-stuck-recursor-mismatch\n"
+    },
+    {
+      "test": "tutorial/132_dup_defs",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011789809941546991,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/133_dup_ind_def",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012978800004930235,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/134_dup_ctor_def",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0013368599975365214,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/135_dup_rec_def",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0011793710000347346,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/136_misnamed_rec_user",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012942359971930273,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/137_dup_rec_def2",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0014828499988652766,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/138_dup_ctor_rec",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0014940870023565367,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/139_DupConCon",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.001251761001185514,
+      "stderr": ""
+    },
+    {
+      "test": "tutorial/140_falseFromUnsafe",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0014668360017822124,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=unsafeLoop:stage=definition.value:verdict=REJECT:reason=unknown-constant\n"
+    },
+    {
+      "test": "tutorial/141_falseFromPartial",
+      "expected": 1,
+      "actual": 1,
+      "seconds": 0.0012801740012946539,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=partialLoop:stage=definition.value:verdict=REJECT:reason=unknown-constant\n"
+    }
+  ]
+}
