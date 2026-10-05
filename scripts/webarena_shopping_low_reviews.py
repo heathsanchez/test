@@ -60,11 +60,11 @@ async def main():
         page=await browser.new_page()
         r=await page.goto(start,wait_until="networkidle",timeout=120000)
         if r is None or r.status!=200: raise RuntimeError("product page failed")
-        tab=page.locator("#tab-label-reviews-title")
-        if await tab.count():
-            await tab.click()
+        reviews_link=page.locator(".product-info-main .reviews-actions a.action.view").first
+        if await reviews_link.count():
+            await reviews_link.click()
             for _ in range(120):
-                if await page.locator(".review-item").count()>0:
+                if await page.locator("#product-review-container .review-item").count()>0:
                     break
                 count_text=page.locator(".reviews-actions [itemprop='reviewCount']")
                 if await count_text.count() and clean(await count_text.inner_text())=="0":
