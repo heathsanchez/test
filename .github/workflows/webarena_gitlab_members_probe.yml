@@ -1,0 +1,30 @@
+name: WebArena GitLab members probe
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - "scripts/webarena_gitlab_members_probe.py"
+      - ".github/workflows/webarena_gitlab_members_probe.yml"
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start GitLab
+        run: |
+          docker pull am1n3e/webarena-verified-gitlab
+          docker run -d --name wa-gitlab -p 8023:80 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 240); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: |
+          pip install playwright
+          playwright install --with-deps chromium
+      - run: python scripts/webarena_gitlab_members_probe.py
