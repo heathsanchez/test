@@ -15,17 +15,37 @@ def rating_stars(text):
     return None
 
 def predicate(description):
-    text=clean(description).casefold()
+    raw=clean(description)
+    text=raw.casefold()
     max_stars=None
-    m=re.search(r"rating of\s*(\d+(?:\.\d+)?)\s*or less stars",text)
+    m=re.search(r"\s+with\s+a\s+rating\s+of\s*(\d+(?:\.\d+)?)\s*or\s+less\s+stars\s*$",text)
     if m:
         max_stars=float(m.group(1))
-        text=text[:m.start()]
-    stop={"being","explicitly","with","a","rating","of","or","less","stars","the","for","product","on","current","page","mention","mentions","who","name","names","get"}
+        text=text[:m.start()].strip()
+
+    explicit=False
+    if re.search(r"\bexplicitly\b",text):
+        explicit=True
+        text=re.sub(r"\bexplicitly\b"," ",text)
+        text=clean(text)
+
+    # Relational language like "ear cups being small" or "price being unfair"
+    # protects local semantic association, not global bag-of-words co-occurrence.
+    m=re.fullmatch(r"(.+?)\s+being\s+(.+)",text)
+    if m:
+        left=[t for t in re.findall(r"[a-z0-9]+",m.group(1)) if len(t)>2]
+        right=[t for t in re.findall(r"[a-z0-9]+",m.group(2)) if len(t)>2]
+        return {"mode":"proximity","left":left,"right":right,"window":100},max_stars
+
+    # "complain of X" protects the complained-about topic X; the verb itself
+    # need not appear literally in natural review prose.
+    text=re.sub(r"^complain\s+of\s+(?:the\s+)?","",text)
+
+    stop={"with","the","for","product","on","current","page","mention","mentions","who","name","names","get","good","a","an","of"}
     tokens=[t for t in re.findall(r"[a-z0-9]+",text) if len(t)>2 and t not in stop]
-    # "complain of customer service" expresses the topic customer service;
-    # keep complain only as a soft term so held-out transfer can test necessity.
-    return tokens,max_stars
+    if explicit:
+        return {"mode":"phrase","phrase":" ".join(tokens)},max_stars
+    return {"mode":"all_tokens","tokens":tokens},max_stars
 
 async def activate_reviews(page):
     tab=page.locator("#tab-label-reviews-title")
@@ -65,10 +85,26 @@ async def collect(page):
         if page.url==before: break
     return out
 
-def matches(review,tokens,max_stars):
+def matches(review,rule,max_stars):
     text=review["text"].casefold()
-    if max_stars is not None and (review["stars"] is None or review["stars"]>max_stars): return False
-    return all(tok in text for tok in tokens)
+    if max_stars is not None and (review["stars"] is None or review["stars"]>max_stars):
+        return False
+    mode=rule["mode"]
+    if mode=="phrase":
+        return rule["phrase"] in text
+    if mode=="all_tokens":
+        return all(tok in text for tok in rule["tokens"])
+    if mode=="proximity":
+        left_positions=[]
+        right_positions=[]
+        for tok in rule["left"]:
+            left_positions.extend(m.start() for m in re.finditer(re.escape(tok),text))
+        for tok in rule["right"]:
+            right_positions.extend(m.start() for m in re.finditer(re.escape(tok),text))
+        if not left_positions or not right_positions:
+            return False
+        return min(abs(a-b) for a in left_positions for b in right_positions)<=rule["window"]
+    raise ValueError(rule)
 
 async def main():
     ap=argparse.ArgumentParser()
@@ -77,7 +113,7 @@ async def main():
     a=ap.parse_args()
     task=next(t for t in json.loads(Path(a.task_file).read_text()) if int(t["task_id"])==a.task_id)
     desc=str(task["instantiation_dict"]["description"])
-    tokens,max_stars=predicate(desc)
+    rule,max_stars=predicate(desc)
     start=str(task["start_urls"][0]).replace("__SHOPPING__",a.base_url.rstrip("/"))
     async with async_playwright() as p:
         b=await p.chromium.launch(headless=True); page=await b.new_page()
@@ -88,10 +124,10 @@ async def main():
         await b.close()
     names=[]
     for rev in reviews:
-        if matches(rev,tokens,max_stars) and rev["author"] not in names: names.append(rev["author"])
+        if matches(rev,rule,max_stars) and rev["author"] not in names: names.append(rev["author"])
     response={"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":names,"error_details":None} if names else {"task_type":"RETRIEVE","status":"NOT_FOUND_ERROR","retrieved_data":None,"error_details":None}
     out=Path(a.output_dir)/str(a.task_id); out.mkdir(parents=True,exist_ok=True)
     (out/"agent_response.json").write_text(json.dumps(response,indent=2)+"\n")
-    (out/"capability_evidence.json").write_text(json.dumps({"description":desc,"tokens":tokens,"max_stars":max_stars,"reviews":reviews,"response":response},indent=2)+"\n")
-    print(json.dumps({"task_id":a.task_id,"tokens":tokens,"max_stars":max_stars,"review_count":len(reviews),"response":response},indent=2))
+    (out/"capability_evidence.json").write_text(json.dumps({"description":desc,"rule":rule,"max_stars":max_stars,"reviews":reviews,"response":response},indent=2)+"\n")
+    print(json.dumps({"task_id":a.task_id,"rule":rule,"max_stars":max_stars,"review_count":len(reviews),"response":response},indent=2))
 if __name__=="__main__": asyncio.run(main())
