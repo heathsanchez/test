@@ -710,3 +710,22 @@ Evidence:
 - hard 350: `abisubramanya27`, score 1.0
 
 The individually warranted hard-task set is now **39**. The 39-task cross-site reclosure is the promotion gate before 39 becomes the authoritative replayed floor.
+
+
+## GitLab SSH clone URL family
+
+**State: WARRANTED_BOUNDED — 3/3 hard**
+
+The capability resolves each requested project through GitLab's authenticated project API and projects the repository's own `ssh_url_to_repo`. Semantic selectors such as "best GAN implementation" and "most starred Covid project" are resolved against the live candidate set and observed star counts rather than benchmark answers.
+
+Evidence:
+
+- run: `37254638304`
+- job: `111588996720`
+- artifact: `11322795260`
+- artifact digest: `sha256:e73530cb856ccd0e15bb4662603092419aa6118524cf0023aba2838f4b222040`
+- hard 293: score 1.0
+- hard 296: score 1.0
+- hard 297: score 1.0
+
+The individually warranted hard-task set is now **42**. The 42-task cross-site reclosure is the promotion gate before 42 becomes the authoritative replayed floor.
