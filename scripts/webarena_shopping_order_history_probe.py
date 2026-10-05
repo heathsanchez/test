@@ -37,21 +37,30 @@ def dims(text):
     return {"width":m.group(1)+" inch","height":m.group(2)+" inch"}
 
 async def history(page,base):
-    r=await page.goto(base+"/sales/order/history/?limit=50",wait_until="networkidle",timeout=180000)
-    if r is None or r.status!=200: raise RuntimeError("order history failed")
-    rows=page.locator("#my-orders-table tbody tr")
-    out=[]
-    for i in range(await rows.count()):
-        row=rows.nth(i); cells=row.locator("td")
-        vals=[clean(await cells.nth(j).inner_text()) for j in range(await cells.count())]
-        if len(vals)<4: continue
-        try: dt=datetime.strptime(vals[1],"%m/%d/%y")
-        except ValueError:
-            try: dt=datetime.strptime(vals[1],"%m/%d/%Y")
-            except ValueError: continue
-        view=row.get_by_role("link",name=re.compile("^View Order$",re.I))
-        href=await view.first.get_attribute("href") if await view.count() else None
-        if href: out.append({"order_no":vals[0],"date":dt,"href":href})
+    url=base+"/sales/order/history/"
+    seen=set(); out=[]
+    for _ in range(20):
+        if url in seen: break
+        seen.add(url)
+        r=await page.goto(url,wait_until="networkidle",timeout=180000)
+        if r is None or r.status!=200: raise RuntimeError("order history failed")
+        rows=page.locator("#my-orders-table tbody tr")
+        for i in range(await rows.count()):
+            row=rows.nth(i); cells=row.locator("td")
+            vals=[clean(await cells.nth(j).inner_text()) for j in range(await cells.count())]
+            if len(vals)<4: continue
+            try: dt=datetime.strptime(vals[1],"%m/%d/%y")
+            except ValueError:
+                try: dt=datetime.strptime(vals[1],"%m/%d/%Y")
+                except ValueError: continue
+            view=row.get_by_role("link",name=re.compile("^View Order$",re.I))
+            href=await view.first.get_attribute("href") if await view.count() else None
+            if href: out.append({"order_no":vals[0],"date":dt,"href":href})
+        nxt=page.locator(".pages-item-next a").first
+        if await nxt.count()==0 or not await nxt.is_visible(): break
+        href=await nxt.get_attribute("href")
+        if not href: break
+        url=href
     if not out: raise RuntimeError("no orders found")
     return out
 
