@@ -139,6 +139,9 @@ jobs:
           for id in 163 165 166; do
             python scripts/webarena_shopping_low_reviews.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
           done
+          for id in 21 25; do
+            python scripts/webarena_shopping_reviewer_mentions.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
+          done
           for id in 335 337 338; do
             python scripts/webarena_shopping_last_ordered_date_v2.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
           done
@@ -161,7 +164,7 @@ jobs:
           for id in 50 96 191 235; do
             python scripts/webarena_shopping_order_summary.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
           done
-      - name: Officially score 53-task cross-site closure
+      - name: Officially score 55-task cross-site closure
         run: |
           python - <<'PY'
           import json
@@ -173,7 +176,7 @@ jobs:
           out=root/"output"
           wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
           empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
-          ids=(108,110,111,707,709,193,196,197,200,63,64,65,42,127,204,113,214,212,184,11,15,345,66,67,68,28,29,31,163,165,166,335,337,338,147,148,149,170,171,172,303,304,307,349,350,293,296,297,316,50,96,191,235)
+          ids=(108,110,111,707,709,193,196,197,200,63,64,65,42,127,204,113,214,212,184,11,15,345,66,67,68,28,29,31,163,165,166,21,25,335,337,338,147,148,149,170,171,172,303,304,307,349,350,293,296,297,316,50,96,191,235)
           results={}
           for task_id in ids:
               task=wa.get_task(task_id)
@@ -192,7 +195,7 @@ jobs:
                   raise SystemExit(f"compiled reclosure failed at {task_id}: {dumped}")
           seal={
               "epistemic_state":"WARRANTED_BOUNDED",
-              "boundary":"53 currently compiled WebArena-Verified hard tasks across reset Shopping Admin, Reddit, Shopping, and GitLab environments",
+              "boundary":"55 currently compiled WebArena-Verified hard tasks across reset Shopping Admin, Reddit, Shopping, and GitLab environments",
               "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
               "task_ids":list(ids),
               "success_count":len(ids),
