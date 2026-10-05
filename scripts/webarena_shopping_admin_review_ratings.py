@@ -95,28 +95,32 @@ async def apply_product_filter(page,product):
 async def matching_reviews(page,product):
     terms=product_terms(product)
     if not terms: raise RuntimeError("empty product query")
-    table,headers=await apply_product_filter(page,terms[0])
+    await apply_product_filter(page,terms[0])
     out=[]; seen=set()
-    lower=[h.lower() for h in headers]
-    ix={k:lower.index(k) for k in ["id","title","nickname","product"]}
-    rows=table.locator("tbody tr")
-    for ri in range(await rows.count()):
-        row=rows.nth(ri); cells=row.locator("td")
-        if await cells.count()<=max(ix.values()): continue
-        rid=clean(await cells.nth(ix["id"]).inner_text())
-        if not rid or rid in seen: continue
-        seen.add(rid)
-        pname=clean(await cells.nth(ix["product"]).inner_text())
-        if not all(term_match(term,pname) for term in terms): continue
-        links=row.locator('a[href*="/review/product/edit/"]')
-        href=await links.first.get_attribute("href") if await links.count() else None
-        out.append({
-            "review_id":rid,
-            "product":pname,
-            "title":clean(await cells.nth(ix["title"]).inner_text()),
-            "nickname":clean(await cells.nth(ix["nickname"]).inner_text()),
-            "href":href,
-        })
+    for _ in range(80):
+        table,headers=await live_table(page)
+        lower=[h.lower() for h in headers]
+        ix={k:lower.index(k) for k in ["id","title","nickname","product"]}
+        rows=table.locator("tbody tr")
+        for ri in range(await rows.count()):
+            row=rows.nth(ri); cells=row.locator("td")
+            if await cells.count()<=max(ix.values()): continue
+            rid=clean(await cells.nth(ix["id"]).inner_text())
+            if not rid or rid in seen: continue
+            seen.add(rid)
+            pname=clean(await cells.nth(ix["product"]).inner_text())
+            if not all(term_match(term,pname) for term in terms): continue
+            links=row.locator('a[href*="/review/product/edit/"]')
+            href=await links.first.get_attribute("href") if await links.count() else None
+            out.append({
+                "review_id":rid,
+                "product":pname,
+                "title":clean(await cells.nth(ix["title"]).inner_text()),
+                "nickname":clean(await cells.nth(ix["nickname"]).inner_text()),
+                "href":href,
+            })
+        if not await next_page(page):
+            break
     return out
 
 async def star_value(page,href):
