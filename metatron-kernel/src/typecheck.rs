@@ -334,17 +334,36 @@ impl<'a> TypeChecker<'a> {
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true, cache) {
-                    Judgment::Proven { .. } => Judgment::proven(
-                        match body {
-                            PiBody::Fixed(body) => body,
-                            PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
-                                body.expr,
-                                body.env.extend(self.closure(*arg, frame.clone())),
-                                body.levels,
-                            )),
-                        },
-                        "application-type-instantiation",
-                    ),
+                    Judgment::Proven { .. } => {
+                        // The function was checked under a fresh local above, and
+                        // the argument was checked against its domain. Re-infer a
+                        // literal lambda body in the substituted environment:
+                        // its inferred Pi body is open, not a constant codomain.
+                        if let PiBody::Fixed(inferred_body) = &body
+                            && (!matches!(self.expressions.get(*fun), Some(Expr::Lam { .. }))
+                                || self.type_depends_on_free(
+                                    inferred_body,
+                                    FreeId(context.len() as u64),
+                                    (*remaining).min(4096),
+                                ) != Some(false))
+                            && let Some(instantiated) = self.infer_literal_beta_spine(
+                                expression, context, frame, remaining, cache,
+                            )
+                        {
+                            return instantiated;
+                        }
+                        Judgment::proven(
+                            match body {
+                                PiBody::Fixed(body) => body,
+                                PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
+                                    body.expr,
+                                    body.env.extend(self.closure(*arg, frame.clone())),
+                                    body.levels,
+                                )),
+                            },
+                            "application-type-instantiation",
+                        )
+                    }
                     Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
                     Judgment::Unknown { residual } => Judgment::Unknown { residual },
                 }
@@ -366,12 +385,12 @@ impl<'a> TypeChecker<'a> {
                 };
                 let structure_type =
                     match self.infer_in(*structure, context, frame, remaining, cache) {
-                    Judgment::Proven { value, .. } => value,
-                    Judgment::Refuted { obstruction } => {
-                        return Judgment::Refuted { obstruction };
-                    }
-                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
-                };
+                        Judgment::Proven { value, .. } => value,
+                        Judgment::Refuted { obstruction } => {
+                            return Judgment::Refuted { obstruction };
+                        }
+                        Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                    };
                 let TypeValue::Term(structure_type) = structure_type else {
                     return Judgment::refuted("projection-not-structure");
                 };
@@ -492,15 +511,7 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
                 let established = TypeValue::Term(self.closure(*ty, frame.clone()));
-                match self.check_in(
-                    *value,
-                    &established,
-                    context,
-                    frame,
-                    remaining,
-                    true,
-                    cache,
-                ) {
+                match self.check_in(*value, &established, context, frame, remaining, true, cache) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
@@ -552,6 +563,185 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    // Whole-function inference has already succeeded. Reconstruct the
+    // literal lambda telescope, checking each supplied argument in the caller
+    // context while retaining each actual argument in the lexical environment.
+    fn infer_literal_beta_spine(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+    ) -> Option<Judgment<TypeValue>> {
+        let mut eligibility_remaining = *remaining;
+        let mut head = expression;
+        let mut arguments = Vec::new();
+        while let Some(Expr::App { fun, arg }) = self.expressions.get(head) {
+            if !take_step(&mut eligibility_remaining) {
+                return None;
+            }
+            arguments.push(*arg);
+            head = *fun;
+        }
+        if !matches!(self.expressions.get(head), Some(Expr::Lam { .. })) {
+            return None;
+        }
+        // This bounded rule consumes only directly nested literal binders.
+        // General returned-function representation remains a separate obligation.
+        let mut probe = head;
+        for _ in &arguments {
+            if !take_step(&mut eligibility_remaining) {
+                return None;
+            }
+            let Some(Expr::Lam { body, .. }) = self.expressions.get(probe) else {
+                return None;
+            };
+            probe = *body;
+        }
+        // Declining eligibility preserves the caller's remaining budget.
+        *remaining = eligibility_remaining;
+        let mut lexical_context = context.to_vec();
+        let mut lexical_frame = frame.clone();
+        for arg in arguments.into_iter().rev() {
+            let Some(Expr::Lam { domain, body }) = self.expressions.get(head) else {
+                return None;
+            };
+            let domain_type =
+                self.infer_in(*domain, &lexical_context, &lexical_frame, remaining, cache);
+            match self.sort_level(domain_type, *remaining) {
+                Judgment::Proven { .. } => {}
+                Judgment::Refuted { obstruction } => {
+                    return Some(Judgment::Refuted { obstruction });
+                }
+                Judgment::Unknown { residual } => return Some(Judgment::Unknown { residual }),
+            }
+            let domain = TypeValue::Term(self.closure(*domain, lexical_frame.clone()));
+            match self.check_in(arg, &domain, context, frame, remaining, true, cache) {
+                Judgment::Proven { .. } => {}
+                Judgment::Refuted { obstruction } => {
+                    return Some(Judgment::Refuted { obstruction });
+                }
+                Judgment::Unknown { residual } => return Some(Judgment::Unknown { residual }),
+            }
+            lexical_context.push(domain);
+            lexical_frame = lexical_frame.extend(self.closure(arg, frame.clone()));
+            head = *body;
+        }
+        Some(self.infer_in(head, &lexical_context, &lexical_frame, remaining, cache))
+    }
+
+    // Syntactic support of an inferred type, through its actual closures.
+    // Only a proved absence skips substitution. Exhaustion remains conservative.
+    fn type_depends_on_free(&self, ty: &TypeValue, free: FreeId, budget: usize) -> Option<bool> {
+        struct Support<'a, 'b> {
+            checker: &'a TypeChecker<'b>,
+            free: FreeId,
+            remaining: usize,
+            cache: HashMap<(ExprId, u64, usize), bool>,
+        }
+        impl Support<'_, '_> {
+            fn tick(&mut self) -> Option<()> {
+                if self.remaining == 0 {
+                    return None;
+                }
+                self.remaining -= 1;
+                Some(())
+            }
+            fn ty(&mut self, ty: &TypeValue) -> Option<bool> {
+                self.tick()?;
+                match ty {
+                    TypeValue::Sort(_) => Some(false),
+                    TypeValue::Term(c) => self.closure(c),
+                    TypeValue::Pi { domain, body } => Some(self.ty(domain)? || self.ty(body)?),
+                }
+            }
+            fn closure(&mut self, c: &Closure) -> Option<bool> {
+                self.expr(c.expr, &c.env, 0)
+            }
+            fn neutral(&mut self, n: &Neutral) -> Option<bool> {
+                self.tick()?;
+                let head = match &n.head {
+                    NeutralHead::Free(f) => *f == self.free,
+                    NeutralHead::Const { .. } => false,
+                    NeutralHead::Projection { structure, .. } => self.neutral(structure)?,
+                };
+                if head {
+                    return Some(true);
+                }
+                for a in &n.spine {
+                    if self.closure(a)? {
+                        return Some(true);
+                    }
+                }
+                Some(false)
+            }
+            fn expr(&mut self, e: ExprId, frame: &EnvFrame, depth: usize) -> Option<bool> {
+                self.tick()?;
+                let key = (e, frame.id(), depth);
+                if let Some(answer) = self.cache.get(&key) {
+                    return Some(*answer);
+                }
+                let found = match self.checker.expressions.get(e)? {
+                    Expr::Sort(_) | Expr::Const { .. } | Expr::NatLit(_) | Expr::StrLit(_) => false,
+                    Expr::BVar(k) => {
+                        let k = usize::try_from(*k).ok()?;
+                        if k < depth {
+                            false
+                        } else {
+                            match frame.lookup(u64::try_from(k - depth).ok()?)? {
+                                EnvBinding::Free(f) => f == self.free,
+                                EnvBinding::Closure(c) => self.closure(&c)?,
+                                EnvBinding::Neutral(n) => self.neutral(&n)?,
+                            }
+                        }
+                    }
+                    Expr::App { fun, arg } => {
+                        self.expr(*fun, frame, depth)? || self.expr(*arg, frame, depth)?
+                    }
+                    Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                        self.expr(*domain, frame, depth)?
+                            || self.expr(*body, frame, depth.checked_add(1)?)?
+                    }
+                    Expr::Let { ty, value, body } => {
+                        self.expr(*ty, frame, depth)?
+                            || self.expr(*value, frame, depth)?
+                            || self.expr(*body, frame, depth.checked_add(1)?)?
+                    }
+                    Expr::Proj { structure, .. } => self.expr(*structure, frame, depth)?,
+                };
+                self.cache.insert(key, found);
+                Some(found)
+            }
+        }
+        Support {
+            checker: self,
+            free,
+            remaining: budget,
+            cache: HashMap::new(),
+        }
+        .ty(ty)
+    }
+
+    /// Infer the universe of a type in an already validated telescope.
+    pub(crate) fn infer_sort_in_context(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        budget: usize,
+    ) -> Judgment<LevelTerm> {
+        let mut remaining = budget;
+        let inferred = self.infer_in(
+            expression,
+            context,
+            frame,
+            &mut remaining,
+            &mut HashMap::new(),
+        );
+        self.sort_level(inferred, remaining)
+    }
+
     fn sort_level(&self, ty: Judgment<TypeValue>, budget: usize) -> Judgment<LevelTerm> {
         let ty = match ty {
             Judgment::Proven { value, .. } => value,
@@ -593,7 +783,7 @@ impl<'a> TypeChecker<'a> {
                     | Value::Sort(_)
                     | Value::Lam { .. }
                     | Value::Neutral(_)
-                    | Value::StuckProjection { .. } => None
+                    | Value::StuckProjection { .. } => None,
                 }
             }
             TypeValue::Sort(_) => None,
@@ -852,11 +1042,15 @@ impl<'a> TypeChecker<'a> {
             LevelSubstitution::new(substitutions),
         ));
         for argument in &neutral.spine[..neutral.spine.len().saturating_sub(1)] {
-            let Some((_domain, body)) =
-                self.pi_view(Judgment::proven(current, "rule-k-recursor-spine"), budget / 4)
-            else {
+            let Some((_domain, body)) = self.pi_view(
+                Judgment::proven(current, "rule-k-recursor-spine"),
+                budget / 4,
+            ) else {
                 if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
-                    eprintln!("NUCLEUS_RULE_K:head={}:stage=recursor-spine-type-missing", name.0);
+                    eprintln!(
+                        "NUCLEUS_RULE_K:head={}:stage=recursor-spine-type-missing",
+                        name.0
+                    );
                 }
                 return RuleKAttempt::NotApplicable;
             };
@@ -891,8 +1085,7 @@ impl<'a> TypeChecker<'a> {
                 if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
                     eprintln!(
                         "NUCLEUS_RULE_K:head={}:stage=constructor-level-map-missing:param={}",
-                        name.0,
-                        parameter.0
+                        name.0, parameter.0
                     );
                 }
                 return RuleKAttempt::NotApplicable;
@@ -909,7 +1102,10 @@ impl<'a> TypeChecker<'a> {
         let Some(constructor_type) = self.neutral_result_type(&constructor, context, budget / 4)
         else {
             if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
-                eprintln!("NUCLEUS_RULE_K:head={}:stage=constructor-type-missing", name.0);
+                eprintln!(
+                    "NUCLEUS_RULE_K:head={}:stage=constructor-type-missing",
+                    name.0
+                );
             }
             return RuleKAttempt::NotApplicable;
         };
@@ -1016,12 +1212,7 @@ impl<'a> TypeChecker<'a> {
         };
         self.normalize_type_value(&result_type, budget)
             .is_some_and(|normalized| {
-                self.normalized_type_is_definitely_nonproposition(
-                    &normalized,
-                    context,
-                    budget,
-                    0,
-                )
+                self.normalized_type_is_definitely_nonproposition(&normalized, context, budget, 0)
             })
     }
 
@@ -1072,9 +1263,9 @@ impl<'a> TypeChecker<'a> {
         constructor: NameId,
     ) -> Option<(NameId, usize)> {
         let specs = self.environment.projection_specs();
-        let mut matches = specs.into_iter().filter(|(_, spec)| {
-            !spec.eta_expandable && spec.constructor == constructor
-        });
+        let mut matches = specs
+            .into_iter()
+            .filter(|(_, spec)| !spec.eta_expandable && spec.constructor == constructor);
         let (type_name, spec) = matches.next()?;
         if matches.next().is_some() {
             return None;
@@ -1115,7 +1306,8 @@ impl<'a> TypeChecker<'a> {
                     };
                     match binding {
                         crate::value::EnvBinding::Closure(bound) => closure = bound,
-                        crate::value::EnvBinding::Free(_) | crate::value::EnvBinding::Neutral(_) => return false,
+                        crate::value::EnvBinding::Free(_)
+                        | crate::value::EnvBinding::Neutral(_) => return false,
                     }
                 }
                 Expr::Const { name, levels } => break (*name, levels.clone()),
