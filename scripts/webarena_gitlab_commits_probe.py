@@ -2,7 +2,7 @@
 import asyncio,json,re
 from playwright.async_api import async_playwright
 BASE="http://localhost:8023"
-PATH="/a11yproject/a11yproject.com/-/commits/master"
+PATH="/a11yproject/a11yproject.com/-/commits/main"
 def clean(s): return re.sub(r"\s+"," ",s).strip()
 async def main():
   async with async_playwright() as p:
