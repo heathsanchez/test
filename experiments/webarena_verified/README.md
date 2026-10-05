@@ -782,3 +782,25 @@ Additional hard tasks have passed official qualification individually:
 - Shopping order summaries / negative existence cases: 50, 96, 191, 235.
 
 These raise the individually qualified set to 53, but they are not part of the authoritative replayed floor until the current cross-site reclosure passes. Task 338 previously exposed an unsound reverse-substring product matcher (`HP` matched inside `toothpaste`); that equivalence has been removed and is being requalified.
+
+
+## Compiled cross-site hard reclosure v8
+
+**State: WARRANTED_BOUNDED — 53/53 across four sites**
+
+The compiled closure now replays 53 hard tasks across independently reset Shopping Admin, Reddit, Shopping, and GitLab environments under pinned upstream authority `6473f72db5dcefc97b5725b59e734504edc28a21`.
+
+Evidence:
+
+- run: `37259675717`
+- job: `111604076980`
+- artifact: `11324586078`
+- artifact digest: `sha256:4353efe9aba9198a7e827f3331cfb91997c1e67ba5dfdff8fce87c93621f1669`
+- all 53 official scores = 1.0, success.
+- additions beyond the prior 42-task seal include:
+  - Shopping purchased options: 147, 148, 149;
+  - Shopping last-ordered date: 335, 337, 338;
+  - GitLab top-3 contributor emails: 316;
+  - Shopping order summaries / negative-existence cases: 50, 96, 191, 235.
+
+This supersedes the 42-task seal as the authoritative replayed hard score floor.
