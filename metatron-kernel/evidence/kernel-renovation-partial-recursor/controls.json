@@ -1,0 +1,22 @@
+[
+  {
+    "case": "eq",
+    "control": "dependencies-only",
+    "exit_code": 0
+  },
+  {
+    "case": "eq",
+    "control": "replace-right-side-with-left",
+    "exit_code": 0
+  },
+  {
+    "case": "prod",
+    "control": "dependencies-only",
+    "exit_code": 0
+  },
+  {
+    "case": "prod",
+    "control": "replace-right-side-with-left",
+    "exit_code": 0
+  }
+]

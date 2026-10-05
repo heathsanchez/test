@@ -1,0 +1,103 @@
+{
+  "cases": [
+    {
+      "actual": "UNKNOWN",
+      "case": "eq",
+      "elapsed_seconds": 0.0017971449997276068,
+      "exit_code": 2,
+      "expected": "ACCEPT",
+      "meta": {
+        "meta": {
+          "exporter": {
+            "name": "lean4export",
+            "version": "3.1.0"
+          },
+          "format": {
+            "version": "3.1.0"
+          },
+          "lean": {
+            "githash": "63da8abdd58db2d6d4f6a648a6e24df2949d6a11",
+            "version": "4.36.0, commit 63da8abdd58db2d6d4f6a648a6e24df2949d6a11"
+          }
+        }
+      },
+      "sha256": "2a050819f4ca819a0e9f30b45ed17381a2a75763b070ab2fda649195cbb19563",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "actual": "UNKNOWN",
+      "case": "prod",
+      "elapsed_seconds": 0.001619757000298705,
+      "exit_code": 2,
+      "expected": "ACCEPT",
+      "meta": {
+        "meta": {
+          "exporter": {
+            "name": "lean4export",
+            "version": "3.1.0"
+          },
+          "format": {
+            "version": "3.1.0"
+          },
+          "lean": {
+            "githash": "63da8abdd58db2d6d4f6a648a6e24df2949d6a11",
+            "version": "4.36.0, commit 63da8abdd58db2d6d4f6a648a6e24df2949d6a11"
+          }
+        }
+      },
+      "sha256": "65a87471ffacffa16d68b92b51fb3b5c79699f3433c955f6e901afdd159a8793",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "checked_at_utc": "2026-10-05T20:44:13.734189+00:00",
+  "checker_source_unchanged": true,
+  "compatibility_gate": "FAILED",
+  "container_readlink_shim_sha256": "4ccbe9678cb0549dc2a135c7616a5ef57a7ea3af0a1cef102dda377e32eb7351",
+  "controls": [
+    {
+      "case": "eq",
+      "control": "dependencies-only",
+      "exit_code": 0
+    },
+    {
+      "case": "eq",
+      "control": "replace-right-side-with-left",
+      "exit_code": 0
+    },
+    {
+      "case": "prod",
+      "control": "dependencies-only",
+      "exit_code": 0
+    },
+    {
+      "case": "prod",
+      "control": "replace-right-side-with-left",
+      "exit_code": 0
+    }
+  ],
+  "fixture_sha256": "9607ac6a21647b9870f3cd1421c1c3d629049b870ea1db9e37290f710f6b563a",
+  "format": "3.1.0",
+  "lean4export_sha": "66f1fb4bc256072069767fce52d39480e4524869",
+  "lean_pr_sha": "63da8abdd58db2d6d4f6a648a6e24df2949d6a11",
+  "nucleus_binary_sha256": "6d3640c407e73985016a4038f2ebd955812361ee48571681694dbc3eca2cea23",
+  "nucleus_sha": "e7c4855177eb2086c14e90b851be99062ee8c959",
+  "official_lean_check_exit_code": 0,
+  "passed": 0,
+  "required": 2,
+  "rule_state": "CANDIDATE",
+  "schema": "nucleus-partial-recursor-compatibility-v1",
+  "toolchain_release": {
+    "archive_sha256": "85e8aa5e14348f9cd8b11f3d79945eda8b99a422dc2f21096522e2ae71864219",
+    "asset_id": 609881250,
+    "digest": "sha256:85e8aa5e14348f9cd8b11f3d79945eda8b99a422dc2f21096522e2ae71864219",
+    "url": "https://github.com/leanprover/lean4-pr-releases/releases/download/pr-release-15374/lean-4.36.0-pre-linux.tar.zst"
+  },
+  "upstream": {
+    "draft": true,
+    "merged": false,
+    "test_path": "tests/elab/12520_2.lean",
+    "url": "https://github.com/leanprover/lean4/pull/15374"
+  }
+}
