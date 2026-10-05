@@ -56,7 +56,7 @@ async def collect_orders(page,base):
         url=href
     return out
 
-async def adjustment(page,order,conditions):
+async def adjustment(page,order,conditions,kept_already_found=False):
     low=conditions.casefold(); subtract=Decimal("0")
     evidence={"shipping":Decimal("0"),"kept_items":[]}
     r=await page.goto(order["href"],wait_until="networkidle",timeout=180000)
@@ -69,10 +69,10 @@ async def adjustment(page,order,conditions):
         subtract+=shipping; evidence["shipping"]=shipping
 
     kept_match=re.search(r"only kept the\s+(.+?)\s+and the shop",conditions,re.I)
-    if kept_match:
+    kept_found=kept_already_found
+    if kept_match and not kept_already_found:
         wanted=clean(kept_match.group(1)).casefold()
         rows=page.locator(".table-order-items tbody tr, #my-orders-table tbody tr")
-        found=False
         for i in range(await rows.count()):
             row=rows.nth(i)
             name_el=row.locator(".product-item-name").first
@@ -82,9 +82,11 @@ async def adjustment(page,order,conditions):
             vals=re.findall(r"\$\s*([0-9][0-9,]*(?:\.\d{1,2})?)",clean(await row.inner_text()))
             if not vals: raise RuntimeError(f"kept item amount unavailable: {name}")
             amount=Decimal(vals[-1].replace(",",""))
-            subtract+=amount; evidence["kept_items"].append({"name":name,"amount":amount}); found=True
-        if not found: raise RuntimeError(f"kept item not found: {wanted}")
-    return subtract,evidence
+            subtract+=amount
+            evidence["kept_items"].append({"name":name,"amount":amount})
+            kept_found=True
+            break
+    return subtract,evidence,kept_found
 
 async def main():
     ap=argparse.ArgumentParser()
@@ -101,9 +103,13 @@ async def main():
         orders=await collect_orders(page,a.base_url)
         canceled=[o for o in orders if within(o["date"],bounds) and o["status"].casefold() in {"canceled","cancelled"}]
         refund=sum((o["total"] for o in canceled),Decimal("0")); adjustments=[]
+        kept_required=bool(re.search(r"only kept the\s+(.+?)\s+and the shop",conditions,re.I))
+        kept_found=False
         for o in canceled:
-            sub,ev=await adjustment(page,o,conditions); refund-=sub
+            sub,ev,kept_found=await adjustment(page,o,conditions,kept_found); refund-=sub
             adjustments.append({"order_no":o["order_no"],"subtract":sub,**ev})
+        if kept_required and not kept_found:
+            raise RuntimeError("kept item was not found in any canceled order in the protected period")
         await b.close()
     refund=refund.quantize(Decimal("0.01"))
     response={"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":[float(refund)],"error_details":None}
