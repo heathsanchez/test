@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse, asyncio, calendar, json, re
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 from playwright.async_api import async_playwright
 
 BASE="http://localhost:7770"
@@ -64,6 +65,18 @@ async def history(page,base):
     if not out: raise RuntimeError("no orders found")
     return out
 
+async def catalog_aliases(page,base,query):
+    r=await page.goto(base.rstrip("/")+"/catalogsearch/result/?q="+quote(query),wait_until="networkidle",timeout=180000)
+    if r is None or r.status!=200:
+        return []
+    names=[]
+    loc=page.locator(".product-item-link")
+    for i in range(min(40,await loc.count())):
+        name=clean(await loc.nth(i).inner_text())
+        if name and name not in names:
+            names.append(name)
+    return names
+
 async def order_items(page,href):
     r=await page.goto(href,wait_until="networkidle",timeout=180000)
     if r is None or r.status!=200: raise RuntimeError(f"order detail failed: {href}")
@@ -115,12 +128,14 @@ async def main():
         tasks=json.loads(Path(args.task_file).read_text())
         task=next(t for t in tasks if int(t["task_id"])==args.task_id)
         inst=task["instantiation_dict"]; bounds=parse_period(inst["time"])
-        orders=await history(page,args.base_url.rstrip("/"))
+        base=args.base_url.rstrip("/")
+        aliases=[inst["product"]]+await catalog_aliases(page,base,inst["product"])
+        orders=await history(page,base)
         relevant=[o for o in orders if in_period(o["date"],bounds)]
         matches=[]
         for o in relevant:
             for item in await order_items(page,o["href"]):
-                if product_match(inst["product"],item["name"]):
+                if any(product_match(alias,item["name"]) for alias in aliases):
                     matches.append({"order_no":o["order_no"],"date":o["date"].date().isoformat(),**item})
         data=response_data(inst["option"],matches)
         response={"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":data,"error_details":None} if data else {"task_type":"RETRIEVE","status":"NOT_FOUND_ERROR","retrieved_data":None,"error_details":None}
