@@ -1,0 +1,283 @@
+   Compiling metatron-kernel v0.1.0 (/workspace/nucleus-frontier10/metatron-kernel)
+warning: method `infer_sort_in_context` is never used
+   --> src/typecheck.rs:727:19
+    |
+ 38 | impl<'a> TypeChecker<'a> {
+    | ------------------------ method in this implementation
+...
+727 |     pub(crate) fn infer_sort_in_context(
+    |                   ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `metatron-kernel` (lib) generated 1 warning
+warning: `metatron-kernel` (lib test) generated 1 warning (1 duplicate)
+    Finished `release` profile [optimized] target(s) in 5.74s
+     Running unittests src/lib.rs (metatron-kernel/target/release/deps/metatron_kernel-39681795687556e2)
+
+running 11 tests
+test capability::tests::duplicate_declared_names_reject ... ok
+test checker::tests::exact_and_fixture_satisfies_each_independently_derived_claim ... ok
+test checker::tests::g25_boolprop_reconstructs_prop_only_binary_recursor ... ok
+test checker::tests::g26_rejects_impossible_owned_recursor_metadata ... ok
+test capability::tests::distinct_declared_names_do_not_fire ... ok
+test checker::tests::good_beta_definition_has_one_trusted_conversion_call ... ok
+test checker::tests::universe_parameter_uniqueness_keeps_distinct_binders ... ok
+test checker::tests::g3_001_ablation_requires_guarded_semantic_delta ... ok
+test nat::tests::parses_beyond_u64_and_steps_exactly ... ok
+test nat::tests::subtraction_truncates_at_zero ... ok
+test checker::tests::rejected_twobool_block_cannot_partially_extend_authority ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (metatron-kernel/target/release/deps/metatron_kernel-aa6b4e615d41e944)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cli_verdict.rs (metatron-kernel/target/release/deps/cli_verdict-933214375322a46e)
+
+running 1 test
+test arena_exit_codes_preserve_unknown ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/closed_pair_record.rs (metatron-kernel/target/release/deps/closed_pair_record-d010c8f87a08e6ba)
+
+running 5 tests
+test closed_pair_record_has_a_derived_contract ... ok
+test closed_pair_record_does_not_depend_on_its_name ... ok
+test closed_pair_record_does_not_admit_recursive_metadata ... ok
+test closed_pair_record_checks_rule_field_annotations ... ok
+test closed_pair_record_checks_field_universe_even_when_annotations_agree ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/convert.rs (metatron-kernel/target/release/deps/convert-73ffb8be8a19345a)
+
+running 12 tests
+test conversion_budget_exhaustion_preserves_unknown ... ok
+test application_congruence_checks_universe_arguments ... ok
+test beta_zeta_and_reducible_delta_are_convertible ... ok
+test matching_projections_compare_only_the_selected_fields ... ok
+test projection_congruence_failure_does_not_force_unused_structure_arguments ... ok
+test failed_definition_argument_congruence_falls_back_to_its_body ... ok
+test matching_definition_applications_preserve_unforced_arguments ... ok
+test rigid_pi_values_compare_relationally ... ok
+test syntactic_identity_is_proven_before_reduction ... ok
+test stuck_projection_preserves_its_application_spine ... ok
+test unequal_supported_sorts_are_refuted ... ok
+test unresolved_imax_comparison_preserves_unknown ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/diagnostics.rs (metatron-kernel/target/release/deps/diagnostics-894e11992f258c75)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/end_to_end.rs (metatron-kernel/target/release/deps/end_to_end-a34b2f56fcb550ff)
+
+running 73 tests
+test binary_enum_recursor_rules_are_derived_not_axiomatized ... ok
+test binary_enum_constructor_index_is_checked_not_trusted ... ok
+test beta_checked_definition_is_accepted ... ok
+test and_parameter_and_field_order_are_derived_not_trusted ... ok
+test and_broader_neighbors_preserve_unknown ... ok
+test definition_is_not_installed_before_its_value_is_checked ... ok
+test empty_recursor_metadata_is_checked_not_trusted ... ok
+test derived_empty_recursor_is_available_as_an_opaque_constant ... ok
+test fabricated_extra_and_orphan_recursors_are_rejected ... ok
+test g10_001_derived_binary_enum_authority_is_accepted ... ok
+test g11_001_derived_twobool_authority_is_accepted ... ok
+test g12_001_exact_and_authority_is_accepted ... ok
+test eq_broader_neighbors_preserve_unknown ... ok
+test g13_001_exact_prod_authority_is_accepted ... ok
+test and_recursor_rule_and_metadata_are_derived_not_trusted ... ok
+test g14_001_exact_pprod_authority_is_accepted ... ok
+test g13_candidate_preserves_the_sealed_g12_behavior_vector ... ok
+test eq_index_constructor_recursor_and_rule_are_derived_not_trusted ... ok
+test g15_shared_representation_earns_no_fourth_family ... ok
+test g16_punit_law_does_not_authorize_a_renamed_family ... ok
+test g16_001_exact_punit_authority_is_accepted ... ok
+test g17_001_exact_eq_authority_is_accepted ... ok
+test g18_001_exact_nat_authority_is_accepted ... ok
+test g17_eq_law_does_not_authorize_a_renamed_family ... ok
+test g18_nat_law_does_not_authorize_a_renamed_family ... ok
+test g14_candidate_preserves_the_sealed_g13_behavior_vector ... ok
+test g21_does_not_preempt_conversion_sensitive_constructor_parameters ... ok
+test g20_inductive_arity_law_rejects_first_malformed_corridor ... ok
+test g22_preserves_conversion_sensitive_constructor_control ... ok
+test g22_definite_negative_recursive_field_is_rejected ... ok
+test g21_constructor_result_coherence_rejects_malformed_corridor ... ok
+test certified_product_structure_eta_is_accepted ... ok
+test g23_conversion_is_required_not_syntactic_parameter_matching ... ok
+test g19_rbtree_does_not_authorize_a_renamed_family ... ok
+test g3_001_opaque_hint_does_not_make_a_definition_semantically_inaccessible ... ok
+test g4_001_dependent_bodies_are_related_under_a_shared_binder ... ok
+test g23_does_not_authorize_a_renamed_family ... ok
+test g5_001_rigid_nonsort_is_refuted_not_erased_to_unknown ... ok
+test g6_001_non_propositional_theorem_is_rejected ... ok
+test g23_001_conversion_lifted_unary_recursive_authority_is_accepted ... ok
+test g7_001_duplicate_universe_parameters_are_rejected ... ok
+test g9_001_derived_empty_inductive_authority_is_accepted ... ok
+test g8_001_imax_idempotence_decides_the_peano_type ... ok
+test out_of_order_level_axiom_is_accepted ... ok
+test g19_001_exact_rbtree_authority_is_accepted ... ok
+test nat_broader_neighbors_preserve_unknown ... ok
+test indexed_singletons_without_eta_are_rejected ... ok
+test pprod_broader_neighbors_preserve_unknown ... ok
+test nat_recursive_constructor_recursor_and_rules_are_derived_not_trusted ... ok
+test nested_block_cannot_claim_an_external_constructor_rule ... ok
+test punit_broader_neighbors_preserve_unknown ... ok
+test pprod_sort_telescope_and_result_level_are_derived_not_trusted ... ok
+test prod_broader_neighbors_preserve_unknown ... ok
+test prod_constructor_recursor_rule_and_metadata_are_derived_not_trusted ... ok
+test pprod_constructor_recursor_rule_and_metadata_are_derived_not_trusted ... ok
+test prod_universe_telescope_and_result_level_are_derived_not_trusted ... ok
+test indexed_recursive_proposition_checks_exact_list_perm_contract ... ok
+test punit_sort_constructor_recursor_and_rule_are_derived_not_trusted ... ok
+test shared_closed_inductive_engine_matches_sealed_g9_g10_g11_verdict_vector ... ok
+test rbtree_broader_neighbors_remain_unknown ... ok
+test sparse_name_axiom_is_accepted ... ok
+test certified_stuck_recursors_are_not_equal_to_rigid_locals_or_constructors ... ok
+test theorem_is_not_installed_before_its_proof_is_checked ... ok
+test unbound_axiom_type_is_rejected ... ok
+test twobool_does_not_earn_recursive_or_unsafe_authority ... ok
+test unsupported_inductive_is_unknown ... ok
+test valid_theorem_can_be_used_by_a_later_theorem ... ok
+test twobool_does_not_earn_indexed_inductive_authority ... ok
+test twobool_constructor_claims_are_derived_not_trusted ... ok
+test typed_rule_k_accepts_the_certified_eq_recursor_case ... ok
+test twobool_recursor_and_rule_claims_are_derived_not_trusted ... ok
+test typed_rule_k_rejects_an_invalid_target ... ok
+test rbtree_recursor_type_and_rules_are_derived_not_trusted ... ok
+
+test result: ok. 73 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/environment.rs (metatron-kernel/target/release/deps/environment-72632908ec1e648f)
+
+running 3 tests
+test recursor_signature_has_no_delta_or_iota_body ... ok
+test constructor_signature_has_no_delta_body ... ok
+test theorem_signature_has_no_delta_body ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/id_table.rs (metatron-kernel/target/release/deps/id_table-abf9b03a6c5586e4)
+
+running 2 tests
+test duplicate_id_is_rejected_with_table_kind_and_numeric_id ... ok
+test sparse_and_out_of_order_ids_are_independent ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/indexed_prop.rs (metatron-kernel/target/release/deps/indexed_prop-6f62e59a6a714be0)
+
+running 7 tests
+test recursive_prop_refuses_false_index_metadata ... ok
+test recursive_prop_refuses_a_false_nonrecursive_annotation ... ok
+test recursive_prop_refuses_a_rule_that_drops_recursive_calls ... ok
+test recursive_prop_refuses_out_of_range_variables_without_panicking ... ok
+test recursive_prop_refuses_large_elimination_even_with_unchanged_metadata ... ok
+test admitted_recursive_prop_rules_execute_cons_and_both_trans_hypotheses ... ok
+test recursive_prop_contract_is_independent_of_the_family_name ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/inference_sharing.rs (metatron-kernel/target/release/deps/inference_sharing-016a9548277b396b)
+
+running 2 tests
+test shared_bvar_syntax_retains_its_own_binder_type ... ok
+test shared_lambda_dag_is_checked_once_per_typing_frame ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/level.rs (metatron-kernel/target/release/deps/level-8c43756cd0fdf113)
+
+running 7 tests
+test equality_over_26_parameters_does_not_enumerate_boolean_cases ... ok
+test imax_is_idempotent_without_parameter_case_enumeration ... ok
+test imax_with_successor_right_is_max ... ok
+test instantiation_expands_sparse_level_graph_with_explicit_substitution ... ok
+test instantiation_rejects_cycles_missing_parameters_and_exhausted_budget ... ok
+test max_is_commutative_and_idempotent ... ok
+test unresolved_imax_does_not_guess ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/machine.rs (metatron-kernel/target/release/deps/machine-d63c6fc8de6a7e44)
+
+running 12 tests
+test beta_uses_explicit_environment_extension ... ok
+test delta_requires_reducible_transparency_and_records_its_witness ... ok
+test conversion_projection_probe_does_not_delta_reduce_its_structure ... ok
+test cyclic_delta_returns_unknown ... ok
+test exhausted_reduction_budget_preserves_unknown ... ok
+test full_transparency_can_request_a_nonpreferred_definition_body ... ok
+test full_transparency_keeps_a_nonpreferred_delta_cycle_unknown ... ok
+test polymorphic_delta_preserves_unknown_until_level_instantiation_is_explicit ... ok
+test recursor_output_constructor_does_not_identify_its_symbolic_major ... ok
+test revisiting_shared_syntax_after_beta_is_not_a_cycle ... ok
+test zeta_uses_let_value_without_substitution_copy ... ok
+test semantic_locals_use_explicit_identity_not_source_index_aliasing ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/parser.rs (metatron-kernel/target/release/deps/parser-65c1bc98ec491a4e)
+
+running 11 tests
+test missing_theorem_all_name_reference_is_malformed ... ok
+test missing_nested_inductive_type_reference_is_malformed ... ok
+test missing_reference_is_malformed_not_unknown ... ok
+test parses_theorem_as_a_distinct_supported_declaration ... ok
+test missing_theorem_expression_reference_is_malformed ... ok
+test preserves_unsupported_declaration_for_semantic_unknown ... ok
+test resolves_forward_referenced_levels ... ok
+test unknown_structural_table_record_is_malformed ... ok
+test parses_the_complete_empty_inductive_contract ... ok
+test run_separates_malformed_input_from_supported_and_unimplemented_semantics ... ok
+test parses_sparse_name_index ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/relation_record.rs (metatron-kernel/target/release/deps/relation_record-7159aa41f693f976)
+
+running 5 tests
+test relation_and_proof_record_does_not_depend_on_type_name ... ok
+test relation_record_requires_the_correct_result_universe ... ok
+test relation_and_proof_record_checks_exact_exported_setoid ... ok
+test relation_record_recursor_cannot_lie_about_field_annotation ... ok
+test relation_record_requires_proof_even_when_all_annotations_agree ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/rigid_locals.rs (metatron-kernel/target/release/deps/rigid_locals-c2991d596237d3b7)
+
+running 2 tests
+test distinct_locals_of_a_rigid_type_variable_are_definitely_unequal ... ok
+test proof_locals_remain_irrelevant_and_same_data_local_remains_equal ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/typecheck.rs (metatron-kernel/target/release/deps/typecheck-b260636b339a5e49)
+
+running 7 tests
+test identity_application_checks_its_argument ... ok
+test pi_sort_uses_imax_of_domain_and_body_sorts ... ok
+test let_inference_uses_the_established_annotation ... ok
+test unbound_bvar_is_refuted ... ok
+test sort_u_has_type_sort_successor_u ... ok
+test annotated_identity_lambda_infers_a_pi_type ... ok
+test dependent_application_instantiates_the_pi_body_with_the_argument_closure ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests metatron_kernel
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
