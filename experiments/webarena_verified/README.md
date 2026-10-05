@@ -559,3 +559,40 @@ Evidence:
 - held-out 30: score 1.0
 
 This raises the individually warranted hard-task set to **28**. The cross-site 28-task replay remains the authoritative promotion gate before 28 is called the replayed score floor.
+
+
+## Compiled cross-site hard reclosure v1
+
+**State: WARRANTED_BOUNDED — 25/25**
+
+The compiled closure now spans two independently reset benchmark sites: Shopping Admin and Reddit.
+
+Evidence:
+
+- run: `37246143552`
+- job: `111564334037`
+- workflow commit: `e2ac19e4dd87821e8c8ddd8919eea05661b8ae5d`
+- artifact: `11319133733`
+- artifact digest: `sha256:1693fbfb34b8911ae5a638515c43e11f084ff7c458e9c7f4bc85ba3f175d9e38`
+- all 25 official scores = 1.0, success
+- boundary: 22 previously compiled Shopping Admin hard tasks + Reddit hard 66, 67, 68.
+
+This supersedes the 22-task single-site seal as the authoritative replayed hard score floor.
+
+## Rejected notification-precondition hypothesis
+
+Task 491 does **not** fail because the named customer lacks a pending order.
+
+Run `37246303426` reused the verified Magento order-grid scanner and found:
+
+- customer: Sarah Miller
+- pending order: `000000299`
+- purchase date: May 31, 2023 2:55:09 AM
+
+Therefore:
+
+```
+no pending order => ACTION_NOT_ALLOWED
+```
+
+is REJECTED as the explanatory rule for task 491. The next separator must be inside the selected order's notification/comment action or another task-specific admissibility condition. No task-491 pass is claimed.
