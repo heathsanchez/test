@@ -15,7 +15,7 @@ jobs:
       - name: Start GitLab
         run: |
           docker pull am1n3e/webarena-verified-gitlab
-          docker run -d --name wa-gitlab -p 8023:80 am1n3e/webarena-verified-gitlab
+          docker run -d --name wa-gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
           for i in $(seq 1 240); do
             code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
             if [ "$code" = "200" ]; then exit 0; fi
