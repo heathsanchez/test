@@ -45,35 +45,42 @@ async def sign_in(page):
     await page.wait_for_url("**/",timeout=120000)
 
 async def count_commits(page,repo_path,author,start,end):
-    total=0; seen=set(); pages=0; observations=[]
+    # Use GitLab's own authenticated REST surface rather than guessing the
+    # commit-list UI pagination contract.
+    project_id=repo_path.strip("/").replace("/","%2F")
+    total=0; pages=0; seen=set(); observations=[]
     for pageno in range(1,80):
-        url=f"{BASE}{repo_path}/-/commits/main?page={pageno}"
-        r=await page.goto(url,wait_until="networkidle",timeout=180000)
-        if r is None or r.status!=200: raise RuntimeError(f"commit page failed {url}")
-        rows=page.locator(".commit")
-        n=await rows.count()
-        if n==0: break
+        api=(
+            f"{BASE}/api/v4/projects/{project_id}/repository/commits"
+            f"?ref_name=main&since={start.isoformat()}&until={end.isoformat()}&per_page=100&page={pageno}"
+        )
+        payload=await page.evaluate(
+            """async (url) => {
+                const r = await fetch(url, {credentials:'same-origin'});
+                return {status:r.status, text:await r.text()};
+            }""",
+            api,
+        )
+        if payload["status"]!=200:
+            raise RuntimeError(f"GitLab commits API failed: {payload['status']} {payload['text'][:500]}")
+        data=json.loads(payload["text"])
         pages+=1
-        new=0
-        oldest=None
-        for i in range(n):
-            row=rows.nth(i)
-            sha=clean(await row.locator(".label-monospace").first.inner_text()) if await row.locator(".label-monospace").count() else clean(await row.inner_text())[:80]
-            if sha in seen: continue
-            seen.add(sha); new+=1
-            a=clean(await row.locator(".commit-author-link").first.inner_text()) if await row.locator(".commit-author-link").count() else ""
-            time=row.locator("time").first
-            iso=await time.get_attribute("datetime") if await time.count() else None
-            if not iso: continue
-            dt=datetime.fromisoformat(iso.replace("Z","+00:00"))
-            oldest=dt if oldest is None or dt<oldest else oldest
-            if a.casefold()==author.casefold() and start<=dt<end:
+        if not data:
+            break
+        for item in data:
+            sha=item.get("id") or item.get("short_id")
+            if not sha or sha in seen:
+                continue
+            seen.add(sha)
+            name=clean(str(item.get("author_name","")))
+            # Task names may be shortened (e.g. "Kilian" for "Kilian Valkhof").
+            wanted=author.casefold()
+            observed=name.casefold()
+            if observed==wanted or observed.startswith(wanted+" "):
                 total+=1
-                observations.append({"sha":sha,"author":a,"datetime":iso})
-        if new==0: break
-        # Commit pages are reverse chronological; once the oldest visible commit
-        # precedes the requested interval, later pages cannot contribute.
-        if oldest is not None and oldest<start: break
+                observations.append({"sha":str(sha)[:8],"author":name,"datetime":item.get("authored_date")})
+        if len(data)<100:
+            break
     return total,{"pages_scanned":pages,"commits_seen":len(seen),"matches":observations}
 
 async def main():
