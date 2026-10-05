@@ -1488,6 +1488,55 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
     )
 }
 
+fn generic_two_parameter_sum_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [first, second], [_recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || inductive.level_params.len() != 2
+        || first.num_params != 2
+        || second.num_params != 2
+        || first.num_fields != 1
+        || second.num_fields != 1
+        || first.is_unsafe
+        || second.is_unsafe
+    {
+        return false;
+    }
+
+    let Some((parameters, result)) = pi_spine(export, inductive.ty, 2) else {
+        return false;
+    };
+    if !parameters
+        .iter()
+        .all(|parameter| matches!(export.exprs.get(*parameter), Some(Expr::Sort(_))))
+        || !matches!(
+            export.exprs.get(result),
+            Some(Expr::Sort(level))
+                if exported_level_is_definitely_nonzero(export, *level, 128)
+        )
+    {
+        return false;
+    }
+
+    let Some((first_domains, _)) = pi_spine(export, first.ty, 3) else {
+        return false;
+    };
+    let Some((second_domains, _)) = pi_spine(export, second.ty, 3) else {
+        return false;
+    };
+    is_bvar(export, first_domains[2], 1) && is_bvar(export, second_domains[2], 0)
+}
+
 // Two fields with the same closed type need no new dependent telescope law.
 // Selection alone grants nothing: the field universe and every rule annotation
 // are independently checked before the existing constructor contract is used.
@@ -2504,7 +2553,11 @@ fn check_generic_nonrecursive_type(
 )->Result<Environment,Verdict>{
     let [inductive]=block.types.as_slice() else{return Err(Verdict::Unknown);};
     let [recursor]=block.recursors.as_slice() else{return Err(Verdict::Unknown);};
-    if !generic_nonrecursive_type_candidate(export,block){return Err(Verdict::Unknown);}
+    if !generic_nonrecursive_type_candidate(export,block)
+        && !generic_two_parameter_sum_candidate(export, block)
+    {
+        return Err(Verdict::Unknown);
+    }
     if closed_pair_record_candidate(export, block)
         && !closed_pair_record_obligations(export, environment, block, limits, delta_policy)
     {
@@ -2596,32 +2649,31 @@ fn check_generic_nonrecursive_type(
         d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
     }
     d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy)?;
-    let environment = d.finish();
+    let mut environment = d.finish();
 
-    let [constructor] = block.constructors.as_slice() else {
-        return Err(Verdict::Unknown);
-    };
-    let p = usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
-    let fields = usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?;
-    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
-        return Err(Verdict::Unknown);
-    };
-    let field_types = constructor_domains[p..]
-        .iter()
-        .copied()
-        .map(ProjectionFieldType::Derived)
-        .collect::<Vec<_>>();
-    let environment = environment
-        .install_projection_spec(
-            inductive.name,
-            ProjectionSpec {
-                constructor: constructor.name,
-                num_params: p,
-                field_types,
-                eta_expandable: false,
-            },
-        )
-        .map_err(|_| Verdict::Reject)?;
+    if let [constructor] = block.constructors.as_slice() {
+        let p = usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
+        let fields = usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?;
+        let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
+            return Err(Verdict::Unknown);
+        };
+        let field_types = constructor_domains[p..]
+            .iter()
+            .copied()
+            .map(ProjectionFieldType::Derived)
+            .collect::<Vec<_>>();
+        environment = environment
+            .install_projection_spec(
+                inductive.name,
+                ProjectionSpec {
+                    constructor: constructor.name,
+                    num_params: p,
+                    field_types,
+                    eta_expandable: false,
+                },
+            )
+            .map_err(|_| Verdict::Reject)?;
+    }
     install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
@@ -9058,7 +9110,9 @@ fn check_binary_enum(
             return Err(Verdict::Unknown);
         }
         BinaryEnumSortLaw::Type
-    } else if generic_nonrecursive_type_candidate(export, block) {
+    } else if generic_nonrecursive_type_candidate(export, block)
+        || generic_two_parameter_sum_candidate(export, block)
+    {
         return check_generic_nonrecursive_type(export, environment, block, limits, delta_policy);
     } else if generic_nonrecursive_prop_small_candidate(export, block) {
         return check_generic_nonrecursive_prop_small(
