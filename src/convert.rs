@@ -129,12 +129,7 @@ pub(crate) fn convert_with_policy_in_context(
     crate::diagnostics::conversion();
 
     let mut remaining = budget;
-    let mut work = vec![(
-        left.clone(),
-        right.clone(),
-        initial_depth,
-        context.to_vec(),
-    )];
+    let mut work = vec![(left.clone(), right.clone(), initial_depth, context.to_vec())];
     let mut visited = ConversionVisitSet::new();
     let mut unit_like_frees = HashMap::new();
     let mut proposition_frees = HashSet::new();
@@ -335,8 +330,11 @@ pub(crate) fn convert_with_policy_in_context(
                 }
                 let cheap_left =
                     machine.expose_for_conversion(left.clone(), Transparency::Reducible, remaining);
-                let cheap_right =
-                    machine.expose_for_conversion(right.clone(), Transparency::Reducible, remaining);
+                let cheap_right = machine.expose_for_conversion(
+                    right.clone(),
+                    Transparency::Reducible,
+                    remaining,
+                );
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
@@ -614,6 +612,14 @@ fn eta_contract(checker: &TypeChecker<'_>, closure: &Closure, depth: usize) -> O
     let Expr::Lam { body, .. } = checker.expression(closure.expr)? else {
         return None;
     };
+    if std::env::var_os("NUCLEUS_TRACE_ETA").is_some() {
+        eprintln!(
+            "NUCLEUS_ETA_BODY:closure={:?}:body={:?}:body_expr={:?}",
+            closure,
+            body,
+            checker.expression(*body)
+        );
+    }
     let Expr::App { fun, arg } = checker.expression(*body)? else {
         return None;
     };
@@ -625,6 +631,83 @@ fn eta_contract(checker: &TypeChecker<'_>, closure: &Closure, depth: usize) -> O
     }
     let free = fresh_local(depth)?;
     Some(closure.sibling(*fun, closure.env.extend_free(free)))
+}
+
+// Evaluated function eta for a bare local function versus an explicit lambda.
+// This is the semantic counterpart of eta_contract above: it is admitted only
+// when evaluating the lambda body under a fresh local yields exactly f x, where
+// f is the same bare local function and x is that fresh local.  The local's
+// declared Pi domain is still compared through the ordinary conversion worklist.
+fn evaluated_free_eta(
+    checker: &TypeChecker<'_>,
+    neutral: &Neutral,
+    lambda_domain: &Closure,
+    lambda_body: &Closure,
+    budget: usize,
+    depth: usize,
+    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
+    context: &[TypeValue],
+) -> bool {
+    if !neutral.spine.is_empty() {
+        return false;
+    }
+    let NeutralHead::Free(function_free) = neutral.head else {
+        return false;
+    };
+    let Some(argument_free) = fresh_local(depth) else {
+        return false;
+    };
+    let exposed_body = checker.machine().expose(
+        lambda_body.under_free(argument_free),
+        Transparency::Reducible,
+        budget,
+    );
+    let Some(Value::Neutral(body_neutral)) = exposed_body.proven_value() else {
+        return false;
+    };
+    if body_neutral.head != NeutralHead::Free(function_free) || body_neutral.spine.len() != 1 {
+        return false;
+    }
+    let exposed_argument = checker.machine().expose(
+        body_neutral.spine[0].clone(),
+        Transparency::Reducible,
+        budget,
+    );
+    let Some(Value::Neutral(argument_neutral)) = exposed_argument.proven_value() else {
+        return false;
+    };
+    if argument_neutral.head != NeutralHead::Free(argument_free)
+        || !argument_neutral.spine.is_empty()
+    {
+        return false;
+    }
+
+    // Pay for function-domain exposure only after the eta shape is established.
+    // This preserves the exact semantic condition while rejecting non-eta
+    // Neutral/Lam pairs before the expensive type exposure.
+    let Some(function_type) = context.get(function_free.0 as usize) else {
+        return false;
+    };
+    let function_domain = match function_type {
+        TypeValue::Pi { domain, .. } => (**domain).clone(),
+        TypeValue::Term(closure) => {
+            let exposed = checker
+                .machine()
+                .expose(closure.clone(), Transparency::Reducible, budget);
+            let Some(Value::Pi { domain, .. }) = exposed.proven_value() else {
+                return false;
+            };
+            TypeValue::Term(domain.clone())
+        }
+        TypeValue::Sort(_) => return false,
+    };
+    work.push((
+        function_domain,
+        TypeValue::Term(lambda_domain.clone()),
+        depth,
+        context.to_vec(),
+    ));
+    true
 }
 
 fn resolve_local_closure(checker: &TypeChecker<'_>, closure: &Closure) -> Option<Closure> {
@@ -788,9 +871,10 @@ fn rigid_local_non_eta_constructor_mismatch(
     let Some(TypeValue::Term(target_type)) = context.get(index) else {
         return false;
     };
-    let exposed = checker
-        .machine()
-        .expose(target_type.clone(), Transparency::Reducible, budget.min(64));
+    let exposed =
+        checker
+            .machine()
+            .expose(target_type.clone(), Transparency::Reducible, budget.min(64));
     matches!(
         exposed.proven_value(),
         Some(Value::Neutral(Neutral {
@@ -816,15 +900,12 @@ fn distinct_non_eta_structure_locals(
     if left == right {
         return false;
     }
-    let (Ok(left_index), Ok(right_index)) =
-        (usize::try_from(left.0), usize::try_from(right.0))
+    let (Ok(left_index), Ok(right_index)) = (usize::try_from(left.0), usize::try_from(right.0))
     else {
         return false;
     };
-    let (
-        Some(TypeValue::Term(left_type)),
-        Some(TypeValue::Term(right_type)),
-    ) = (context.get(left_index), context.get(right_index))
+    let (Some(TypeValue::Term(left_type)), Some(TypeValue::Term(right_type))) =
+        (context.get(left_index), context.get(right_index))
     else {
         return false;
     };
@@ -842,9 +923,7 @@ fn distinct_non_eta_structure_locals(
     };
     expose_type(left_type)
         .zip(expose_type(right_type))
-        .is_some_and(|(left, right)| {
-            left == right && checker.is_non_eta_structure_type(left)
-        })
+        .is_some_and(|(left, right)| left == right && checker.is_non_eta_structure_type(left))
 }
 
 fn compare_values(
@@ -861,318 +940,345 @@ fn compare_values(
     let mut current_right = right.clone();
     let mut current_budget = budget;
     loop {
-    match (&current_left, &current_right) {
-        (Value::NatLit(left), Value::NatLit(right)) => {
-            if left != right {
-                return Judgment::refuted("distinct-Nat-literals");
-            }
-        }
-        (Value::NatLit(literal), Value::Neutral(neutral)) => {
-            return compare_nat_literal_neutral(
-                checker,
-                literal,
-                neutral,
-                current_budget,
-                depth,
-                context,
-                work,
-                proof_function_frees,
-            );
-        }
-        (Value::Neutral(neutral), Value::NatLit(literal)) => {
-            return compare_nat_literal_neutral(
-                checker,
-                literal,
-                neutral,
-                current_budget,
-                depth,
-                context,
-                work,
-                proof_function_frees,
-            );
-        }
-        (Value::Sort(left), Value::Sort(right)) => {
-            work.push((
-                TypeValue::Sort(left.clone()),
-                TypeValue::Sort(right.clone()),
-                depth,
-                context.to_vec(),
-            ));
-        }
-        (
-            Value::Pi {
-                domain: left_domain,
-                body: left_body,
-            },
-            Value::Pi {
-                domain: right_domain,
-                body: right_body,
-            },
-        )
-        | (
-            Value::Lam {
-                domain: left_domain,
-                body: left_body,
-            },
-            Value::Lam {
-                domain: right_domain,
-                body: right_body,
-            },
-        ) => {
-            let Some(free) = fresh_local(depth) else {
-                return Judgment::unknown("binder-depth-overflow");
-            };
-            let left_domain_type = TypeValue::Term(left_domain.clone());
-            let right_domain_type = TypeValue::Term(right_domain.clone());
-            if let (Some(left_key), Some(right_key)) = (
-                checker.fixed_proof_function_type_key(&left_domain_type, current_budget),
-                checker.fixed_proof_function_type_key(&right_domain_type, current_budget),
-            ) && left_key == right_key
-            {
-                proof_function_frees.insert(free, left_key);
-            }
-            let mut body_context = context.to_vec();
-            if body_context.len() == depth {
-                body_context.push(left_domain_type);
-            }
-            work.push((
-                TypeValue::Term(left_body.under_free(free)),
-                TypeValue::Term(right_body.under_free(free)),
-                depth.saturating_add(1),
-                body_context,
-            ));
-            work.push((
-                TypeValue::Term(left_domain.clone()),
-                TypeValue::Term(right_domain.clone()),
-                depth,
-                context.to_vec(),
-            ));
-        }
-        (
-            Value::StuckProjection {
-                type_name: left_type,
-                index: left_index,
-                structure: left_structure,
-                spine: left_spine,
-            },
-            Value::StuckProjection {
-                type_name: right_type,
-                index: right_index,
-                structure: right_structure,
-                spine: right_spine,
-            },
-        ) if left_type == right_type && left_index == right_index => {
-            if same_rigid_application_congruence(
-                checker,
-                left_structure,
-                right_structure,
-                current_budget,
-            ) && same_closure_spine_congruence(
-                checker,
-                left_spine,
-                right_spine,
-                current_budget,
-            ) {
-                return Judgment::proven((), "stuck-projection-rigid-application-congruence");
-            }
-            let machine = checker.machine();
-            let left_value = machine.projection_value_for_conversion(
-                left_structure.clone(),
-                *left_type,
-                *left_index,
-                left_spine,
-                current_budget,
-            );
-            let right_value = machine.projection_value_for_conversion(
-                right_structure.clone(),
-                *right_type,
-                *right_index,
-                right_spine,
-                current_budget,
-            );
-            let (Some(left_value), Some(right_value)) =
-                (left_value.proven_value(), right_value.proven_value())
-            else {
-                return Judgment::unknown("lazy-projection-value-exposure");
-            };
-            if current_budget == 0 {
-                return Judgment::unknown("lazy-projection-budget-exhausted");
-            }
-            current_left = left_value.clone();
-            current_right = right_value.clone();
-            current_budget -= 1;
-            continue;
-        }
-        (
-            Value::StuckProjection {
-                type_name,
-                index,
-                structure,
-                spine,
-            },
-            _,
-        ) => {
-            let exposed = checker.machine().projection_value_for_conversion(
-                structure.clone(),
-                *type_name,
-                *index,
-                spine,
-                current_budget,
-            );
-            let Some(exposed) = exposed.proven_value() else {
-                return Judgment::unknown("lazy-projection-value-exposure");
-            };
-            if current_budget == 0 {
-                return Judgment::unknown("lazy-projection-budget-exhausted");
-            }
-            current_left = exposed.clone();
-            current_budget -= 1;
-            continue;
-        }
-        (
-            _,
-            Value::StuckProjection {
-                type_name,
-                index,
-                structure,
-                spine,
-            },
-        ) => {
-            let exposed = checker.machine().projection_value_for_conversion(
-                structure.clone(),
-                *type_name,
-                *index,
-                spine,
-                current_budget,
-            );
-            let Some(exposed) = exposed.proven_value() else {
-                return Judgment::unknown("lazy-projection-value-exposure");
-            };
-            if current_budget == 0 {
-                return Judgment::unknown("lazy-projection-budget-exhausted");
-            }
-            current_right = exposed.clone();
-            current_budget -= 1;
-            continue;
-        }
-        (Value::Neutral(left), Value::Neutral(right)) => {
-            if certified_structure_eta(
-                checker, left, right, current_budget, depth, work, context,
-            ) || certified_structure_eta(
-                checker, right, left, current_budget, depth, work, context,
-            ) {
-                return Judgment::proven((), "certified-structure-eta");
-            }
-            if rigid_local_non_eta_constructor_mismatch(
-                checker,
-                left,
-                right,
-                context,
-                current_budget,
-            ) || rigid_local_non_eta_constructor_mismatch(
-                checker,
-                right,
-                left,
-                context,
-                current_budget,
-            ) {
-                return Judgment::refuted("non-eta-structure-mismatch");
-            }
-            if distinct_non_eta_structure_locals(
-                checker,
-                left,
-                right,
-                context,
-                current_budget,
-            ) {
-                return Judgment::refuted("non-eta-structure-mismatch");
-            }
-            match checker.rule_k_reduce_neutral(left, context, current_budget) {
-                RuleKAttempt::Reduced(closure) => {
-                    let exposed = checker.machine().expose(
-                        closure,
-                        Transparency::Reducible,
-                        current_budget.saturating_sub(1),
-                    );
-                    let Some(reduced) = exposed.proven_value() else {
-                        return Judgment::unknown("rule-k-reduction-exposure");
-                    };
-                    let other = Value::Neutral(right.clone());
-                    return compare_values(
-                        checker,
-                        reduced,
-                        &other,
-                        current_budget.saturating_sub(1),
-                        depth,
-                        context,
-                        work,
-                        proof_function_frees,
-                    );
+        match (&current_left, &current_right) {
+            (Value::NatLit(left), Value::NatLit(right)) => {
+                if left != right {
+                    return Judgment::refuted("distinct-Nat-literals");
                 }
-                RuleKAttempt::DefiniteMismatch => {
-                    return Judgment::refuted("rule-k-target-mismatch");
-                }
-                RuleKAttempt::NotApplicable => {}
             }
-            match checker.rule_k_reduce_neutral(right, context, current_budget) {
-                RuleKAttempt::Reduced(closure) => {
-                    let exposed = checker.machine().expose(
-                        closure,
-                        Transparency::Reducible,
-                        current_budget.saturating_sub(1),
-                    );
-                    let Some(reduced) = exposed.proven_value() else {
-                        return Judgment::unknown("rule-k-reduction-exposure");
-                    };
-                    let other = Value::Neutral(left.clone());
-                    return compare_values(
-                        checker,
-                        &other,
-                        reduced,
-                        current_budget.saturating_sub(1),
-                        depth,
-                        context,
-                        work,
-                        proof_function_frees,
-                    );
-                }
-                RuleKAttempt::DefiniteMismatch => {
-                    return Judgment::refuted("rule-k-target-mismatch");
-                }
-                RuleKAttempt::NotApplicable => {}
-            }
-            if one_neutral_head_is_free(left, right)
-                && (checker.certified_stuck_nonproof_recursor_on_local(
-                    left,
-                    context,
+            (Value::NatLit(literal), Value::Neutral(neutral)) => {
+                return compare_nat_literal_neutral(
+                    checker,
+                    literal,
+                    neutral,
                     current_budget,
-                ) || checker.certified_stuck_nonproof_recursor_on_local(
+                    depth,
+                    context,
+                    work,
+                    proof_function_frees,
+                );
+            }
+            (Value::Neutral(neutral), Value::NatLit(literal)) => {
+                return compare_nat_literal_neutral(
+                    checker,
+                    literal,
+                    neutral,
+                    current_budget,
+                    depth,
+                    context,
+                    work,
+                    proof_function_frees,
+                );
+            }
+            (Value::Sort(left), Value::Sort(right)) => {
+                work.push((
+                    TypeValue::Sort(left.clone()),
+                    TypeValue::Sort(right.clone()),
+                    depth,
+                    context.to_vec(),
+                ));
+            }
+            (
+                Value::Pi {
+                    domain: left_domain,
+                    body: left_body,
+                },
+                Value::Pi {
+                    domain: right_domain,
+                    body: right_body,
+                },
+            )
+            | (
+                Value::Lam {
+                    domain: left_domain,
+                    body: left_body,
+                },
+                Value::Lam {
+                    domain: right_domain,
+                    body: right_body,
+                },
+            ) => {
+                let Some(free) = fresh_local(depth) else {
+                    return Judgment::unknown("binder-depth-overflow");
+                };
+                let left_domain_type = TypeValue::Term(left_domain.clone());
+                let right_domain_type = TypeValue::Term(right_domain.clone());
+                if let (Some(left_key), Some(right_key)) = (
+                    checker.fixed_proof_function_type_key(&left_domain_type, current_budget),
+                    checker.fixed_proof_function_type_key(&right_domain_type, current_budget),
+                ) && left_key == right_key
+                {
+                    proof_function_frees.insert(free, left_key);
+                }
+                let mut body_context = context.to_vec();
+                if body_context.len() == depth {
+                    body_context.push(left_domain_type);
+                }
+                work.push((
+                    TypeValue::Term(left_body.under_free(free)),
+                    TypeValue::Term(right_body.under_free(free)),
+                    depth.saturating_add(1),
+                    body_context,
+                ));
+                work.push((
+                    TypeValue::Term(left_domain.clone()),
+                    TypeValue::Term(right_domain.clone()),
+                    depth,
+                    context.to_vec(),
+                ));
+            }
+            (
+                Value::StuckProjection {
+                    type_name: left_type,
+                    index: left_index,
+                    structure: left_structure,
+                    spine: left_spine,
+                },
+                Value::StuckProjection {
+                    type_name: right_type,
+                    index: right_index,
+                    structure: right_structure,
+                    spine: right_spine,
+                },
+            ) if left_type == right_type && left_index == right_index => {
+                if same_rigid_application_congruence(
+                    checker,
+                    left_structure,
+                    right_structure,
+                    current_budget,
+                ) && same_closure_spine_congruence(
+                    checker,
+                    left_spine,
+                    right_spine,
+                    current_budget,
+                ) {
+                    return Judgment::proven((), "stuck-projection-rigid-application-congruence");
+                }
+                let machine = checker.machine();
+                let left_value = machine.projection_value_for_conversion(
+                    left_structure.clone(),
+                    *left_type,
+                    *left_index,
+                    left_spine,
+                    current_budget,
+                );
+                let right_value = machine.projection_value_for_conversion(
+                    right_structure.clone(),
+                    *right_type,
+                    *right_index,
+                    right_spine,
+                    current_budget,
+                );
+                let (Some(left_value), Some(right_value)) =
+                    (left_value.proven_value(), right_value.proven_value())
+                else {
+                    return Judgment::unknown("lazy-projection-value-exposure");
+                };
+                if current_budget == 0 {
+                    return Judgment::unknown("lazy-projection-budget-exhausted");
+                }
+                current_left = left_value.clone();
+                current_right = right_value.clone();
+                current_budget -= 1;
+                continue;
+            }
+            (
+                Value::StuckProjection {
+                    type_name,
+                    index,
+                    structure,
+                    spine,
+                },
+                _,
+            ) => {
+                let exposed = checker.machine().projection_value_for_conversion(
+                    structure.clone(),
+                    *type_name,
+                    *index,
+                    spine,
+                    current_budget,
+                );
+                let Some(exposed) = exposed.proven_value() else {
+                    return Judgment::unknown("lazy-projection-value-exposure");
+                };
+                if current_budget == 0 {
+                    return Judgment::unknown("lazy-projection-budget-exhausted");
+                }
+                current_left = exposed.clone();
+                current_budget -= 1;
+                continue;
+            }
+            (
+                _,
+                Value::StuckProjection {
+                    type_name,
+                    index,
+                    structure,
+                    spine,
+                },
+            ) => {
+                let exposed = checker.machine().projection_value_for_conversion(
+                    structure.clone(),
+                    *type_name,
+                    *index,
+                    spine,
+                    current_budget,
+                );
+                let Some(exposed) = exposed.proven_value() else {
+                    return Judgment::unknown("lazy-projection-value-exposure");
+                };
+                if current_budget == 0 {
+                    return Judgment::unknown("lazy-projection-budget-exhausted");
+                }
+                current_right = exposed.clone();
+                current_budget -= 1;
+                continue;
+            }
+            (Value::Neutral(left), Value::Neutral(right)) => {
+                if certified_structure_eta(
+                    checker,
+                    left,
+                    right,
+                    current_budget,
+                    depth,
+                    work,
+                    context,
+                ) || certified_structure_eta(
+                    checker,
+                    right,
+                    left,
+                    current_budget,
+                    depth,
+                    work,
+                    context,
+                ) {
+                    return Judgment::proven((), "certified-structure-eta");
+                }
+                if rigid_local_non_eta_constructor_mismatch(
+                    checker,
+                    left,
                     right,
                     context,
                     current_budget,
-                ))
-            {
-                return Judgment::refuted("certified-stuck-recursor-mismatch");
+                ) || rigid_local_non_eta_constructor_mismatch(
+                    checker,
+                    right,
+                    left,
+                    context,
+                    current_budget,
+                ) {
+                    return Judgment::refuted("non-eta-structure-mismatch");
+                }
+                if distinct_non_eta_structure_locals(checker, left, right, context, current_budget)
+                {
+                    return Judgment::refuted("non-eta-structure-mismatch");
+                }
+                match checker.rule_k_reduce_neutral(left, context, current_budget) {
+                    RuleKAttempt::Reduced(closure) => {
+                        let exposed = checker.machine().expose(
+                            closure,
+                            Transparency::Reducible,
+                            current_budget.saturating_sub(1),
+                        );
+                        let Some(reduced) = exposed.proven_value() else {
+                            return Judgment::unknown("rule-k-reduction-exposure");
+                        };
+                        let other = Value::Neutral(right.clone());
+                        return compare_values(
+                            checker,
+                            reduced,
+                            &other,
+                            current_budget.saturating_sub(1),
+                            depth,
+                            context,
+                            work,
+                            proof_function_frees,
+                        );
+                    }
+                    RuleKAttempt::DefiniteMismatch => {
+                        return Judgment::refuted("rule-k-target-mismatch");
+                    }
+                    RuleKAttempt::NotApplicable => {}
+                }
+                match checker.rule_k_reduce_neutral(right, context, current_budget) {
+                    RuleKAttempt::Reduced(closure) => {
+                        let exposed = checker.machine().expose(
+                            closure,
+                            Transparency::Reducible,
+                            current_budget.saturating_sub(1),
+                        );
+                        let Some(reduced) = exposed.proven_value() else {
+                            return Judgment::unknown("rule-k-reduction-exposure");
+                        };
+                        let other = Value::Neutral(left.clone());
+                        return compare_values(
+                            checker,
+                            &other,
+                            reduced,
+                            current_budget.saturating_sub(1),
+                            depth,
+                            context,
+                            work,
+                            proof_function_frees,
+                        );
+                    }
+                    RuleKAttempt::DefiniteMismatch => {
+                        return Judgment::refuted("rule-k-target-mismatch");
+                    }
+                    RuleKAttempt::NotApplicable => {}
+                }
+                if one_neutral_head_is_free(left, right)
+                    && (checker.certified_stuck_nonproof_recursor_on_local(
+                        left,
+                        context,
+                        current_budget,
+                    ) || checker.certified_stuck_nonproof_recursor_on_local(
+                        right,
+                        context,
+                        current_budget,
+                    ))
+                {
+                    return Judgment::refuted("certified-stuck-recursor-mismatch");
+                }
+                match compare_neutral_heads(checker, left, right, current_budget) {
+                    Judgment::Proven { .. } => {}
+                    other => return other,
+                }
+                if left.spine.len() != right.spine.len() {
+                    return Judgment::refuted("neutral-spine-length");
+                }
+                work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
+                    (
+                        TypeValue::Term(left.clone()),
+                        TypeValue::Term(right.clone()),
+                        depth,
+                        context.to_vec(),
+                    )
+                }));
             }
-            match compare_neutral_heads(checker, left, right, current_budget) {
-                Judgment::Proven { .. } => {}
-                other => return other,
-            }
-            if left.spine.len() != right.spine.len() {
-                return Judgment::refuted("neutral-spine-length");
-            }
-            work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
-                (
-                    TypeValue::Term(left.clone()),
-                    TypeValue::Term(right.clone()),
+            (Value::Neutral(neutral), Value::Lam { domain, body })
+            | (Value::Lam { domain, body }, Value::Neutral(neutral))
+                if evaluated_free_eta(
+                    checker,
+                    neutral,
+                    domain,
+                    body,
+                    current_budget,
                     depth,
-                    context.to_vec(),
-                )
-            }));
+                    work,
+                    context,
+                ) => {}
+            _ => {
+                if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
+                    eprintln!(
+                        "NUCLEUS_VALUE_MISMATCH:left={:?}:right={:?}:budget={}:depth={}",
+                        current_left, current_right, current_budget, depth
+                    );
+                }
+                return Judgment::refuted("rigid-value-constructor-mismatch");
+            }
         }
-        _ => return Judgment::refuted("rigid-value-constructor-mismatch"),
-    }
-    break;
+        break;
     }
     Judgment::proven((), "rigid-value-comparison")
 }

@@ -1,0 +1,18 @@
+{
+  "schema": "nucleus-arena-qualification-protocol-v1",
+  "candidate_sha": "d935a62d5b17be0852fed590c3f98a57887fe4f6",
+  "arena_sha": "b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42",
+  "corpus_cases": 196,
+  "commands": [
+    "cargo test --release",
+    "python replay_arena.py target/release/metatron-kernel arena-tests arena-b1d6-rbtree.json d935a62d5b17be0852fed590c3f98a57887fe4f6 b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42"
+  ],
+  "result": {
+    "accept": 116,
+    "reject": 71,
+    "unknown": 9,
+    "incorrect": 0,
+    "error": 0
+  },
+  "warrant": "The exact RBTree validator derives the constructor, recursor, and rule contracts before installing the corresponding recursor reduction authority."
+}
