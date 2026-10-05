@@ -729,3 +729,56 @@ Evidence:
 - hard 297: score 1.0
 
 The individually warranted hard-task set is now **42**. The 42-task cross-site reclosure is the promotion gate before 42 becomes the authoritative replayed floor.
+
+
+## Compiled cross-site hard reclosure v5
+
+**State: WARRANTED_BOUNDED — 37/37**
+
+Evidence:
+
+- run: `37254838358`
+- job: `111589583496`
+- artifact: `11322692781`
+- artifact digest: `sha256:7358867a07e56cfdad2f14f41da810ae41ccc022b55daf47fb26f5251a682664`
+- all 37 official scores = 1.0, success.
+- additions beyond 34: GitLab hard 303, 304, 307.
+
+## Compiled cross-site hard reclosure v6
+
+**State: WARRANTED_BOUNDED — 39/39**
+
+Evidence:
+
+- run: `37254883155`
+- job: `111589718547`
+- artifact: `11322947035`
+- artifact digest: `sha256:967199805e6a77960a7d6624b700c0320538e85555003af97fc9e336e3c592d7`
+- all 39 official scores = 1.0, success.
+- additions beyond 37: GitLab hard 349, 350.
+
+## Compiled cross-site hard reclosure v7
+
+**State: WARRANTED_BOUNDED — 42/42 across four sites**
+
+Evidence:
+
+- run: `37255257786`
+- job: `111590829304`
+- artifact: `11322797701`
+- artifact digest: `sha256:a9dab58cdced4a32bb16f196c4958a582e3f9a64255107c0a96414b6ee86982d`
+- all 42 official scores = 1.0, success.
+- additions beyond 39: GitLab hard 293, 296, 297.
+
+This supersedes the 34-task seal as the authoritative replayed hard score floor.
+
+## Current promotion frontier
+
+Additional hard tasks have passed official qualification individually:
+
+- Shopping purchased options: 147, 148, 149.
+- Shopping last-ordered date: 335, 337, 338.
+- GitLab top-3 contributor emails: 316.
+- Shopping order summaries / negative existence cases: 50, 96, 191, 235.
+
+These raise the individually qualified set to 53, but they are not part of the authoritative replayed floor until the current cross-site reclosure passes. Task 338 previously exposed an unsound reverse-substring product matcher (`HP` matched inside `toothpaste`); that equivalence has been removed and is being requalified.
