@@ -1,0 +1,73 @@
+name: WebArena Shopping reviewer-mentions qualification
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - "scripts/webarena_shopping_reviewer_mentions.py"
+      - ".github/workflows/webarena_shopping_reviewer_mentions.yml"
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start Shopping
+        run: |
+          docker pull am1n3e/webarena-verified-shopping
+          mkdir -p artifacts/webarena_shopping_reviewer_mentions
+          docker run -d --name wa-shopping -p 7770:80 am1n3e/webarena-verified-shopping
+          for i in $(seq 1 180); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7770 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Prepare authority
+        run: |
+          cp upstream/assets/dataset/webarna-verfied-hard.json artifacts/webarena_shopping_reviewer_mentions/hard.json
+          cat > artifacts/webarena_shopping_reviewer_mentions/config.json <<'JSON'
+          {"environments":{"__SHOPPING__":{"urls":["http://localhost:7770"],"active_url_idx":0}}}
+          JSON
+      - name: Execute hard 21 25
+        run: |
+          for id in 21 25; do
+            python scripts/webarena_shopping_reviewer_mentions.py               --task-id "$id" --task-file artifacts/webarena_shopping_reviewer_mentions/hard.json               --base-url http://localhost:7770 --output-dir artifacts/webarena_shopping_reviewer_mentions/output
+          done
+      - name: Score hard
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_shopping_reviewer_mentions")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          trace=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          results={}
+          for task_id in (21,25):
+              r=wa.evaluate_task(task_id=task_id,agent_response=root/"output"/str(task_id)/"agent_response.json",network_trace=trace)
+              d=r.model_dump(mode="json",exclude_none=True)
+              results[str(task_id)]={"score":float(r.score),"status":r.status.value}
+              print(task_id,results[str(task_id)])
+              if float(r.score)!=1.0 or r.status.value!="success": raise SystemExit(d)
+          (root/"qualification.json").write_text(json.dumps({"epistemic_state":"WARRANTED_BOUNDED","results":results},indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-shopping-reviewer-mentions
+          path: artifacts/webarena_shopping_reviewer_mentions
