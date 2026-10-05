@@ -10,7 +10,7 @@ def clean(s): return re.sub(r"\s+"," ",s).strip()
 def tokens(text):
     return [t for t in re.findall(r"[a-z0-9]+",text.casefold()) if len(t)>1]
 
-async def page_prices(page,query):
+async def page_prices(page,query,match_mode="product"):
     values=[]
     wanted=tokens(query)
     items=page.locator(".product-item")
@@ -19,7 +19,7 @@ async def page_prices(page,query):
         name_el=item.locator(".product-item-link").first
         name=clean(await name_el.inner_text()) if await name_el.count() else clean(await item.inner_text())
         hay=name.casefold()
-        if wanted and not all(t in hay for t in wanted):
+        if match_mode=="product" and wanted and not all(t in hay for t in wanted):
             continue
         nums=[]
         priced=item.locator('[data-price-amount]')
@@ -40,14 +40,14 @@ async def page_prices(page,query):
             values.extend(nums)
     return values
 
-async def collect_all(page,start_url,query):
+async def collect_all(page,start_url,query,match_mode):
     url=start_url
     seen_urls=set(); values=[]; pages=0
     while url and url not in seen_urls and pages<50:
         seen_urls.add(url); pages+=1
         r=await page.goto(url,wait_until="networkidle",timeout=120000)
         if r is None or r.status!=200: raise RuntimeError(f"search page failed: {url}")
-        values.extend(await page_prices(page,query))
+        values.extend(await page_prices(page,query,match_mode))
         nxt=page.locator(".pages-item-next a").first
         if await nxt.count()==0 or not await nxt.is_visible():
             break
@@ -66,19 +66,26 @@ async def main():
     a=ap.parse_args()
     tasks=json.loads(Path(a.task_file).read_text())
     task=next(t for t in tasks if int(t["task_id"])==a.task_id)
-    if int(task["intent_template_id"])!=159: raise SystemExit("unsupported template")
-    query=str(task["instantiation_dict"]["product"])
+    tid=int(task["intent_template_id"])
+    if tid==159:
+        query=str(task["instantiation_dict"]["product"])
+        match_mode="product"
+    elif tid==370:
+        query=str(task["instantiation_dict"]["brand"])
+        match_mode="brand"
+    else:
+        raise SystemExit("unsupported template")
     start=a.base_url.rstrip("/")+"/catalogsearch/result/?q="+quote(query)
     async with async_playwright() as p:
         b=await p.chromium.launch(headless=True)
         page=await b.new_page()
-        values,pages=await collect_all(page,start,query)
+        values,pages=await collect_all(page,start,query,match_mode)
         await b.close()
     mn=min(values); mx=max(values)
     response={"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":[{"min":mn,"max":mx}],"error_details":None}
     out=Path(a.output_dir)/str(a.task_id); out.mkdir(parents=True,exist_ok=True)
     (out/"agent_response.json").write_text(json.dumps(response,indent=2)+"\n")
-    evidence={"query":query,"pages_scanned":pages,"price_observations":len(values),"min":mn,"max":mx}
+    evidence={"query":query,"match_mode":match_mode,"pages_scanned":pages,"price_observations":len(values),"min":mn,"max":mx}
     (out/"capability_evidence.json").write_text(json.dumps(evidence,indent=2)+"\n")
     print(json.dumps({"task_id":a.task_id,**evidence},indent=2))
 
