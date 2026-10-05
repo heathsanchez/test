@@ -596,3 +596,22 @@ no pending order => ACTION_NOT_ALLOWED
 ```
 
 is REJECTED as the explanatory rule for task 491. The next separator must be inside the selected order's notification/comment action or another task-specific admissibility condition. No task-491 pass is claimed.
+
+
+## Compiled cross-site hard reclosure v2
+
+**State: WARRANTED_BOUNDED — 28/28**
+
+The compiled closure now replays 28 hard tasks across independently reset Shopping Admin and Reddit environments.
+
+Evidence:
+
+- run: `37246366927`
+- job: `111564966237`
+- workflow commit: `7ac98de22e01a59ca6a852079c58172de19c171a`
+- artifact: `11318724028`
+- artifact digest: `sha256:ec7fc37d461fb1d2413b29a65f1c2088f58d91f967085bbf2ed33ff14d833c76`
+- all 28 official scores = 1.0, success
+- Reddit additions beyond the prior 25-task seal: hard 28, 29, 31.
+
+This supersedes the 25-task cross-site seal as the authoritative replayed hard score floor.
