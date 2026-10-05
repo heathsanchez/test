@@ -519,3 +519,43 @@ Evidence:
 - task IDs: 108, 110, 111, 707, 709, 193, 196, 197, 200, 63, 64, 65, 42, 127, 204, 113, 214, 212, 184, 11, 15, 345.
 
 This supersedes the 21-task seal as the authoritative replayed hard score floor.
+
+
+## Reddit Books top-ten family
+
+**State: REUSABLE — 4/4 within template 17**
+
+One live `/f/books/hot` snapshot is reduced to the top ten submissions, then each candidate is re-opened through its internal Postmill permalink so classification is based on submission content rather than external title links or comment text.
+
+Evidence:
+
+- run: `37245823093`
+- job: `111563402323`
+- artifact: `11319291215`
+- artifact digest: `sha256:efdb248a87303932a381758f23d8788a3c2f430383eb0f04bcc5a7d70d13fe71`
+- hard 66: score 1.0
+- hard 67: score 1.0
+- hard 68: score 1.0
+- held-out 69: score 1.0
+
+The preserved separator was title-link identity: a hot-list title may point to an external article, while the protected post state lives at the internal Postmill permalink. The capability therefore transports the selected hot-list post into its internal submission representation before extracting protected consequence.
+
+## Reddit newest-post comment family
+
+**State: REUSABLE — 5/5 within template 33**
+
+The capability resolves the requested forum from the live forum index/search surface, opens its New view, selects the first submission, follows the internal permalink, and counts comments whose observed net score is negative and whose author differs from the submission author.
+
+Evidence:
+
+- run: `37246088405`
+- job: `111564176891`
+- artifact: `11318743343`
+- artifact digest: `sha256:6b9ddd1d118adfe79bc57a11f2f5cadbc26c2a0009f0af0a7b27cb6dd60f06de`
+- hard 28: score 1.0
+- hard 29: score 1.0
+- hard 31: score 1.0
+- held-out 27: score 1.0
+- held-out 30: score 1.0
+
+This raises the individually warranted hard-task set to **28**. The cross-site 28-task replay remains the authoritative promotion gate before 28 is called the replayed score floor.
