@@ -1,0 +1,63 @@
+{
+  "arena": {
+    "accept": 115,
+    "corpus_cases": 196,
+    "errors": 0,
+    "reject": 71,
+    "sha": "b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42",
+    "unknown": 10,
+    "wrong": 0
+  },
+  "base_sha": "3ec6337b49c4881f023e01e50060510970ce0464",
+  "candidate_sha": "b054a40562901e17cd136fed7217a05c9e923861",
+  "derived_authority": [
+    "safe nonrecursive operation records containing a unary type-constructor parameter",
+    "verified reducible identity parameter markers in recursor annotations",
+    "safe one-parameter optional-value families with nullary and unary constructors"
+  ],
+  "fixtures": [
+    {
+      "path": "tests/fixtures/good-functor-v434.ndjson",
+      "sha256": "4b8167c328eb2cc20a690009148279d79b1c5f7e18173043205798352096062e"
+    },
+    {
+      "path": "tests/fixtures/good-applicative-v434.ndjson",
+      "sha256": "df0a03ac5d3c94a7a2207610b2e3b76428884c44c39e273e726323d2936b3703"
+    },
+    {
+      "path": "tests/fixtures/good-monad-except-of-v434.ndjson",
+      "sha256": "81e210099315c83b25826ef0654dc726faf41dc7b30d92be8109f807105b4d83"
+    },
+    {
+      "path": "tests/fixtures/good-option-v434.ndjson",
+      "sha256": "8f44bac1373ee6ff143fae0c88f46f97f915c031ffa8c2eea082903281bf360d"
+    }
+  ],
+  "fueled_chain": {
+    "after": "Nat.eq_of_beq_eq_true._f:stage=definition.value:application-function-type",
+    "before": "Functor:stage=inductive",
+    "cleared": [
+      "Functor",
+      "Pure",
+      "Seq",
+      "SeqLeft",
+      "SeqRight",
+      "Applicative",
+      "Bind",
+      "Monad",
+      "MonadExceptOf",
+      "Option"
+    ],
+    "whole_case": "UNKNOWN"
+  },
+  "limits": [
+    "No whole-Arena verdict gain; perf/fueled-chain remains UNKNOWN.",
+    "Hosted qualification pending runner availability."
+  ],
+  "schema": "nucleus-fueled-inductives-v1",
+  "state": "WARRANTED_BOUNDED_LOCAL",
+  "validation": [
+    "cargo test --release: PASS",
+    "frozen Arena replay: qualified, 115 ACCEPT / 71 REJECT / 10 UNKNOWN / 0 wrong / 0 errors"
+  ]
+}

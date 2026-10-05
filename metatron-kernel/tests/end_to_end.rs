@@ -51,6 +51,125 @@ fn generic_two_parameter_sum_preserves_unknown_outside_its_derived_contract() {
 }
 
 #[test]
+fn unary_type_constructor_operation_record_accepts_exact_functor_contract() {
+    assert_eq!(run_fixture("good-functor-v434.ndjson"), Verdict::Accept);
+}
+
+#[test]
+fn unary_type_constructor_operation_record_preserves_unknown_outside_its_contract() {
+    let bytes = include_str!("fixtures/good-functor-v434.ndjson");
+    let wrong_field_count = bytes.replacen(
+        "\"name\":48,\"numFields\":2,\"numParams\":1,\"type\":200",
+        "\"name\":48,\"numFields\":1,\"numParams\":1,\"type\":200",
+        1,
+    );
+    assert_ne!(wrong_field_count, bytes);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(wrong_field_count)),
+        Verdict::Unknown
+    );
+
+    let wrong_rule = bytes.replacen(
+        "\"ctor\":48,\"nfields\":2,\"rhs\":242",
+        "\"ctor\":48,\"nfields\":2,\"rhs\":241",
+        1,
+    );
+    assert_ne!(wrong_rule, bytes);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(wrong_rule)),
+        Verdict::Unknown
+    );
+}
+
+#[test]
+fn unary_type_constructor_operation_record_accepts_exact_applicative_contract() {
+    assert_eq!(
+        run_fixture("good-applicative-v434.ndjson"),
+        Verdict::Accept
+    );
+}
+
+#[test]
+fn unary_type_constructor_operation_record_checks_applicative_metadata_and_rule() {
+    let bytes = include_str!("fixtures/good-applicative-v434.ndjson");
+    let wrong_field_count = bytes.replacen(
+        "\"name\":70,\"numFields\":5,\"numParams\":1,\"type\":386",
+        "\"name\":70,\"numFields\":4,\"numParams\":1,\"type\":386",
+        1,
+    );
+    assert_ne!(wrong_field_count, bytes);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(wrong_field_count)),
+        Verdict::Reject
+    );
+
+    let wrong_rule = bytes.replacen(
+        "\"ctor\":70,\"nfields\":5,\"rhs\":427",
+        "\"ctor\":70,\"nfields\":4,\"rhs\":427",
+        1,
+    );
+    assert_ne!(wrong_rule, bytes);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(wrong_rule)),
+        Verdict::Unknown
+    );
+}
+
+#[test]
+fn unary_type_constructor_operation_record_accepts_exact_monad_except_of_contract() {
+    assert_eq!(
+        run_fixture("good-monad-except-of-v434.ndjson"),
+        Verdict::Accept
+    );
+}
+
+#[test]
+fn unary_type_constructor_operation_record_checks_monad_except_of_rule() {
+    let bytes = include_str!("fixtures/good-monad-except-of-v434.ndjson");
+    let wrong_rule = bytes.replacen(
+        "\"ctor\":90,\"nfields\":2,\"rhs\":544",
+        "\"ctor\":90,\"nfields\":2,\"rhs\":543",
+        1,
+    );
+    assert_ne!(wrong_rule, bytes);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(wrong_rule)),
+        Verdict::Unknown
+    );
+}
+
+#[test]
+fn generic_optional_value_family_accepts_exact_option_contract() {
+    assert_eq!(run_fixture("good-option-v434.ndjson"), Verdict::Accept);
+}
+
+#[test]
+fn generic_optional_value_family_preserves_unknown_outside_its_contract() {
+    let bytes = include_str!("fixtures/good-option-v434.ndjson");
+    let wrong_field = bytes.replacen(
+        "\"name\":100,\"numFields\":1,\"numParams\":1,\"type\":561",
+        "\"name\":100,\"numFields\":1,\"numParams\":1,\"type\":558",
+        1,
+    );
+    assert_ne!(wrong_field, bytes);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(wrong_field)),
+        Verdict::Unknown
+    );
+
+    let wrong_rule = bytes.replacen(
+        "\"ctor\":100,\"nfields\":1,\"rhs\":584",
+        "\"ctor\":100,\"nfields\":1,\"rhs\":580",
+        1,
+    );
+    assert_ne!(wrong_rule, bytes);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(wrong_rule)),
+        Verdict::Unknown
+    );
+}
+
+#[test]
 fn typed_rule_k_accepts_the_certified_eq_recursor_case() {
     assert_eq!(run_fixture("good-rule-k.ndjson"), Verdict::Accept);
 }

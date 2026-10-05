@@ -1470,8 +1470,15 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
 
     let relation_proof_structure = generic_relation_proof_record_candidate(export, block);
     let closed_pair_structure = closed_pair_record_candidate(export, block);
+    let unary_type_constructor_operations =
+        unary_type_constructor_operation_record_candidate(export, block);
 
-    if !dependent_pair && !scalar_structure && !relation_proof_structure && !closed_pair_structure {
+    if !dependent_pair
+        && !scalar_structure
+        && !relation_proof_structure
+        && !closed_pair_structure
+        && !unary_type_constructor_operations
+    {
         return false;
     }
 
@@ -1486,6 +1493,62 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         Some(Expr::Sort(level))
             if exported_level_is_definitely_nonzero(export, *level, 128)
     )
+}
+
+// A nonrecursive record over a unary type constructor may package operations
+// whose field types mention that parameter.  This boundary covers the two-field
+// operation telescope used by Functor while leaving the constructor, recursor,
+// and rule bodies to the generic derived-signature checks below.
+fn unary_type_constructor_operation_record_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [_recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params == 0
+        || constructor.num_params != inductive.num_params
+        || constructor.num_fields < 2
+    {
+        return false;
+    }
+
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((parameters, result)) = pi_spine(export, inductive.ty, parameter_count) else {
+        return false;
+    };
+    let has_unary_type_constructor = parameters.iter().any(|parameter| {
+        let Some((argument_sorts, application_sort)) = pi_spine(export, *parameter, 1) else {
+            return false;
+        };
+        matches!(export.exprs.get(argument_sorts[0]), Some(Expr::Sort(_)))
+            && matches!(export.exprs.get(application_sort), Some(Expr::Sort(_)))
+    });
+    if !has_unary_type_constructor
+        || !matches!(
+            export.exprs.get(result),
+            Some(Expr::Sort(level))
+                if exported_level_is_definitely_nonzero(export, *level, 128)
+        )
+    {
+        return false;
+    }
+
+    let Ok(field_count) = usize::try_from(constructor.num_fields) else {
+        return false;
+    };
+    let Some((domains, _)) = pi_spine(export, constructor.ty, parameter_count + field_count) else {
+        return false;
+    };
+    domains[parameter_count..]
+        .iter()
+        .all(|field| !expression_contains_constant(export, *field, inductive.name))
 }
 
 fn generic_two_parameter_sum_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
@@ -1535,6 +1598,50 @@ fn generic_two_parameter_sum_candidate(export: &ResolvedExport, block: &Inductiv
         return false;
     };
     is_bvar(export, first_domains[2], 1) && is_bvar(export, second_domains[2], 0)
+}
+
+fn generic_optional_value_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [empty, value], [_recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || inductive.level_params.len() != 1
+        || empty.num_params != 1
+        || empty.num_fields != 0
+        || empty.is_unsafe
+        || value.num_params != 1
+        || value.num_fields != 1
+        || value.is_unsafe
+    {
+        return false;
+    }
+
+    let Some((parameters, result)) = pi_spine(export, inductive.ty, 1) else {
+        return false;
+    };
+    if !matches!(export.exprs.get(parameters[0]), Some(Expr::Sort(_)))
+        || !matches!(
+            export.exprs.get(result),
+            Some(Expr::Sort(level))
+                if exported_level_is_definitely_nonzero(export, *level, 128)
+        )
+    {
+        return false;
+    }
+
+    let Some((value_domains, _)) = pi_spine(export, value.ty, 2) else {
+        return false;
+    };
+    is_bvar(export, value_domains[1], 0)
 }
 
 // Two fields with the same closed type need no new dependent telescope law.
@@ -1727,6 +1834,7 @@ fn expr_eq_with_bvar_shift(
 
 fn generic_nonrecursive_recursor_shape(
     export: &ResolvedExport,
+    environment: &Environment,
     inductive: &crate::syntax::InductiveType,
     constructors: &[Constructor],
     recursor: &Recursor,
@@ -1735,7 +1843,27 @@ fn generic_nonrecursive_recursor_shape(
     let c = constructors.len();
     let Some((ind_params,_)) = pi_spine(export,inductive.ty,p) else { return false; };
     let Some((domains,result)) = pi_spine(export,recursor.ty,p+c+2) else { return false; };
-    if domains[..p] != ind_params[..] { return false; }
+    if !domains[..p]
+        .iter()
+        .zip(&ind_params)
+        .all(|(recursor_parameter, inductive_parameter)| {
+            recursor_parameter == inductive_parameter
+                || identity_alias_application_matches(
+                    export,
+                    environment,
+                    *inductive_parameter,
+                    *recursor_parameter,
+                )
+                || identity_alias_application_matches(
+                    export,
+                    environment,
+                    *recursor_parameter,
+                    *inductive_parameter,
+                )
+        })
+    {
+        return false;
+    }
 
     let motive=domains[p];
     let Some((motive_domains,motive_sort))=pi_spine(export,motive,1) else{return false;};
@@ -1788,6 +1916,40 @@ fn generic_nonrecursive_recursor_shape(
            || !args.iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f-1-k) as u64)){return false;}
     }
     true
+}
+
+// Elaborator-only parameter markers such as `semiOutParam` are reducible
+// identity definitions.  Recursor exports may erase the marker while the
+// inductive arity retains it, so accept only the directly certified identity
+// redex rather than granting general delta conversion to shape matching.
+fn identity_alias_application_matches(
+    export: &ResolvedExport,
+    environment: &Environment,
+    wrapped: ExprId,
+    plain: ExprId,
+) -> bool {
+    let Some(Expr::App { fun, arg }) = export.exprs.get(wrapped) else {
+        return false;
+    };
+    if *arg != plain {
+        return false;
+    }
+    let Some(Expr::Const { name, levels }) = export.exprs.get(*fun) else {
+        return false;
+    };
+    let Some(declaration) = environment.get(*name) else {
+        return false;
+    };
+    if levels.len() != declaration.level_params.len() {
+        return false;
+    }
+    let Some(value) = declaration.value else {
+        return false;
+    };
+    matches!(
+        export.exprs.get(value),
+        Some(Expr::Lam { body, .. }) if is_bvar(export, *body, 0)
+    )
 }
 
 // A bounded extension of singleton-Prop admission: two proposition
@@ -2092,7 +2254,13 @@ fn check_generic_prop_singleton_large_elim(
             && recursor.level_params.get(1..) == Some(inductive.level_params.as_slice()),
     );
     let recursor_shape_ok =
-        generic_nonrecursive_recursor_shape(export, inductive, &block.constructors, recursor);
+        generic_nonrecursive_recursor_shape(
+            export,
+            environment,
+            inductive,
+            &block.constructors,
+            recursor,
+        );
     let field_is_prop = generic_prop_singleton_field_is_proposition(
         export,
         environment,
@@ -2555,6 +2723,7 @@ fn check_generic_nonrecursive_type(
     let [recursor]=block.recursors.as_slice() else{return Err(Verdict::Unknown);};
     if !generic_nonrecursive_type_candidate(export,block)
         && !generic_two_parameter_sum_candidate(export, block)
+        && !generic_optional_value_candidate(export, block)
     {
         return Err(Verdict::Unknown);
     }
@@ -2613,7 +2782,13 @@ fn check_generic_nonrecursive_type(
         recursor.level_params.len() == inductive.level_params.len() + 1,
     );
     let recursor_shape_ok =
-        generic_nonrecursive_recursor_shape(export, inductive, &block.constructors, recursor);
+        generic_nonrecursive_recursor_shape(
+            export,
+            environment,
+            inductive,
+            &block.constructors,
+            recursor,
+        );
 
     if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
         eprintln!(
@@ -9112,6 +9287,7 @@ fn check_binary_enum(
         BinaryEnumSortLaw::Type
     } else if generic_nonrecursive_type_candidate(export, block)
         || generic_two_parameter_sum_candidate(export, block)
+        || generic_optional_value_candidate(export, block)
     {
         return check_generic_nonrecursive_type(export, environment, block, limits, delta_policy);
     } else if generic_nonrecursive_prop_small_candidate(export, block) {
