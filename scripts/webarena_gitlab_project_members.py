@@ -36,20 +36,18 @@ async def members(page,base,path):
     u=path+"/-/project_members"
     r=await page.goto(base+u,wait_until="networkidle",timeout=180000)
     if r is None or r.status!=200:
-        raise RuntimeError("project member page unavailable")
+        raise RuntimeError("project member list unavailable")
     body=clean(await page.locator("body").inner_text())
-    rows=page.locator('[data-testid^="members-table-row-"]')
+    table=page.locator('[data-testid="members-table"]')
+    if await table.count()==0:
+        raise RuntimeError("project member table unavailable")
     found=[]
+    rows=table.locator('[data-testid^="members-table-row-"]')
     for i in range(await rows.count()):
-        txt=clean(await rows.nth(i).inner_text())
-        m=re.search(r"@([A-Za-z0-9_.-]+)",txt)
-        if not m:
-            continue
-        user=m.group(1)
-        if user.casefold()=="byteblaze":
-            continue
-        if user not in found:
-            found.append(user)
+        txt=await rows.nth(i).inner_text()
+        for user in re.findall(r"@([A-Za-z0-9_.-]+)",txt):
+            if user.casefold()=="byteblaze": continue
+            if user not in found: found.append(user)
     if not found:
         raise RuntimeError("no other project members found")
     return found,body[:12000],u
