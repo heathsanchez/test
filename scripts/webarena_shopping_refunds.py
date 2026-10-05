@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from playwright.async_api import async_playwright
-from webarena_shopping_order_history_probe import AUTH_HEADER, clean
+from webarena_shopping_order_history_probe import AUTH_HEADER, clean, product_match
 
 def money(s):
     m=re.search(r"-?\$?\s*([0-9][0-9,]*(?:\.\d{1,2})?)",clean(s))
@@ -78,7 +78,7 @@ async def adjustment(page,order,conditions):
             name_el=row.locator(".product-item-name").first
             if await name_el.count()==0: continue
             name=clean(await name_el.inner_text())
-            if wanted not in name.casefold(): continue
+            if not product_match(wanted,name): continue
             vals=re.findall(r"\$\s*([0-9][0-9,]*(?:\.\d{1,2})?)",clean(await row.inner_text()))
             if not vals: raise RuntimeError(f"kept item amount unavailable: {name}")
             amount=Decimal(vals[-1].replace(",",""))
