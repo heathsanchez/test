@@ -20,6 +20,37 @@ fn indexed_recursive_proposition_checks_exact_list_perm_contract() {
 }
 
 #[test]
+fn generic_two_parameter_sum_accepts_exact_except_contract() {
+    assert_eq!(run_fixture("good-except-v434.ndjson"), Verdict::Accept);
+}
+
+#[test]
+fn generic_two_parameter_sum_preserves_unknown_outside_its_derived_contract() {
+    let bytes = include_str!("fixtures/good-except-v434.ndjson");
+    let wrong_field = bytes.replacen(
+        "\"name\":26,\"numFields\":1,\"numParams\":2,\"type\":83",
+        "\"name\":26,\"numFields\":1,\"numParams\":2,\"type\":86",
+        1,
+    );
+    assert_ne!(wrong_field, bytes);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(wrong_field)),
+        Verdict::Unknown
+    );
+
+    let wrong_rule = bytes.replacen(
+        "\"ctor\":26,\"nfields\":1,\"rhs\":115",
+        "\"ctor\":26,\"nfields\":1,\"rhs\":121",
+        1,
+    );
+    assert_ne!(wrong_rule, bytes);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(wrong_rule)),
+        Verdict::Unknown
+    );
+}
+
+#[test]
 fn typed_rule_k_accepts_the_certified_eq_recursor_case() {
     assert_eq!(run_fixture("good-rule-k.ndjson"), Verdict::Accept);
 }
