@@ -674,3 +674,39 @@ Task IDs:
 `108, 110, 111, 707, 709, 193, 196, 197, 200, 63, 64, 65, 42, 127, 204, 113, 214, 212, 184, 11, 15, 345, 66, 67, 68, 28, 29, 31, 163, 165, 166, 170, 171, 172`.
 
 This supersedes all earlier single-site and cross-site seals as the authoritative replayed hard score floor.
+
+
+## GitLab author/date commit-count family
+
+**State: WARRANTED_BOUNDED — 3/3 hard**
+
+The capability transports the current repository identity into GitLab's authenticated repository-commits API and counts commits inside the protected author/date interval. This replaced the rejected assumption that the rendered commits page supports ordinary `?page=N` pagination.
+
+Evidence:
+
+- run: `37254286983`
+- job: `111587975035`
+- artifact: `11321984263`
+- artifact digest: `sha256:fdb08c2122e8471bd2e4bd3e2b846e813898da47e0b621fb2ee582ab2c19c279`
+- hard 303: count 1, score 1.0
+- hard 304: count 14, score 1.0
+- hard 307: count 5, score 1.0
+
+Preserved separator: the first implementation reread the same 40 rendered commits when adding `?page=2`. Exact authenticated API pagination plus prefix-compatible author identity (e.g. `Kilian` -> `Kilian Valkhof`) is the minimum sufficient representation.
+
+## GitLab project-member family
+
+**State: WARRANTED_BOUNDED — 2/2 hard**
+
+The capability resolves the requested project, opens GitLab's rendered `/-/project_members` page, and reads usernames from stable `members-table-row-*` records while excluding the benchmark user.
+
+Evidence:
+
+- run: `37254281067`
+- job: `111587956565`
+- artifact: `11322004243`
+- artifact digest: `sha256:ee5dde982e7570e01b857be6d5b74710796d117ffffcaecf5f9595eb2d1525c2`
+- hard 349: `yjlou`, score 1.0
+- hard 350: `abisubramanya27`, score 1.0
+
+The individually warranted hard-task set is now **39**. The 39-task cross-site reclosure is the promotion gate before 39 becomes the authoritative replayed floor.
