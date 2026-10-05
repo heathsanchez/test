@@ -5,7 +5,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from urllib.parse import quote
 from playwright.async_api import async_playwright
-from webarena_gitlab_commit_counts import BASE, login
+from webarena_gitlab_commit_counts import BASE, sign_in
 
 def norm(s): return re.sub(r"[^a-z0-9]+","",str(s).casefold())
 
@@ -47,7 +47,7 @@ async def main():
     wanted=str(task["instantiation_dict"]["repo"])
     async with async_playwright() as p:
         b=await p.chromium.launch(headless=True); page=await b.new_page()
-        await login(page)
+        await sign_in(page)
         projects=await api_json(page,BASE+"/api/v4/projects?simple=true&per_page=100&search="+quote("react"))
         chosen=choose_project(wanted,projects)
         pid=chosen["id"]
