@@ -652,3 +652,25 @@ Evidence:
 Observed personal-project state included 12 projects spanning star counts 0, 1, 2, and 6. The same live representation therefore supports least-star, less-than-five, zero-star, most-star, and >100-star predicates without task-specific project IDs.
 
 The individually warranted hard-task set is now **34**. A four-site 34-task reclosure is the promotion gate before 34 becomes the replayed score floor.
+
+
+## Compiled cross-site hard reclosure v4
+
+**State: WARRANTED_BOUNDED — 34/34 across four sites**
+
+The compiled closure now replays 34 hard tasks across independently reset Shopping Admin, Reddit, Shopping, and GitLab environments.
+
+Evidence:
+
+- run: `37247557913`
+- job: `111568344723`
+- workflow commit: `1e692e5515f5aac80ca139dfccb0c222cba04ab7`
+- artifact: `11319961405`
+- artifact digest: `sha256:a9b7fac6729cff449d0f8eff9793bfea2d4be009db79e7d6780a99ded8be313e`
+- all 34 official scores = 1.0, success
+- boundary: reset Shopping Admin + Reddit + Shopping + GitLab environments under pinned upstream authority `6473f72db5dcefc97b5725b59e734504edc28a21`.
+
+Task IDs:
+`108, 110, 111, 707, 709, 193, 196, 197, 200, 63, 64, 65, 42, 127, 204, 113, 214, 212, 184, 11, 15, 345, 66, 67, 68, 28, 29, 31, 163, 165, 166, 170, 171, 172`.
+
+This supersedes all earlier single-site and cross-site seals as the authoritative replayed hard score floor.
