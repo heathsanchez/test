@@ -28,9 +28,14 @@ def in_period(dt,bounds):
     return bounds[0] <= (dt.year,dt.month) <= bounds[1]
 
 def product_match(wanted,observed):
-    w=norm(wanted.replace("artifical","artificial"))
-    o=norm(observed.replace("artifical","artificial"))
-    return w in o or o in w
+    wtxt=wanted.replace("artifical","artificial").casefold()
+    otxt=observed.replace("artifical","artificial").casefold()
+    w=norm(wtxt); o=norm(otxt)
+    if w in o or o in w:
+        return True
+    tokens=[t for t in re.findall(r"[a-z0-9]+",wtxt) if len(t)>2]
+    observed_tokens=re.findall(r"[a-z0-9]+",otxt)
+    return bool(tokens) and all(any(tok in obs or obs in tok for obs in observed_tokens) for tok in tokens)
 
 def dims(text):
     m=re.search(r"(\d+(?:\.\d+)?)\s*[*x×]\s*(\d+(?:\.\d+)?)",text,re.I)
