@@ -354,7 +354,7 @@ impl<'a> TypeChecker<'a> {
                             );
                             let full = self.machine().expose(
                                 closure,
-                                Transparency::All,
+                                Transparency::Full,
                                 (*remaining).max(1024),
                             );
                             eprintln!(
