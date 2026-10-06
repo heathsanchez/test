@@ -1,0 +1,129 @@
+name: Nucleus guarded major exposure v1
+
+on:
+  push:
+    branches: [nucleus-guarded-major-exposure-v1]
+    paths:
+      - ".github/workflows/nucleus-guarded-major-exposure-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ARENA_ARTIFACT: "11272848230"
+
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build and protect release suite
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch immutable Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/a /tmp/tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/a
+          tar --no-same-owner -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/tests
+
+      - name: Run exact residual separator
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/guarded-major-exposure-v1
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess, time
+
+          good = [
+              "init-prelude",
+              "perf/folded-constant-first",
+              "perf/folded-constant-last",
+              "perf/fueled-chain",
+              "perf/grind-ring-5",
+              "perf/magma-list-deep-n21",
+              "perf/magma-list-deep-n36",
+              "perf/magma-list-pair-n21",
+              "perf/magma-list-pair-n7",
+              "perf/shared-subterm",
+          ]
+          env = os.environ | {
+              "NUCLEUS_GUARDED_RECURSOR_MAJOR_EXPOSURE": "1",
+              "NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD": "1",
+              "NUCLEUS_TRACE_DOWNSTREAM": "1",
+          }
+
+          def run(path):
+              started = time.monotonic()
+              try:
+                  with open(path, "rb") as source:
+                      q = subprocess.run(
+                          ["/tmp/nucleus"],
+                          stdin=source,
+                          stdout=subprocess.DEVNULL,
+                          stderr=subprocess.PIPE,
+                          timeout=30,
+                          env=env,
+                      )
+                  rc = q.returncode
+                  lines = q.stderr.decode(errors="replace").splitlines()
+              except subprocess.TimeoutExpired as e:
+                  rc = 124
+                  raw = e.stderr or b""
+                  lines = raw.decode(errors="replace").splitlines() if isinstance(raw, bytes) else str(raw).splitlines()
+              return {
+                  "exit": rc,
+                  "seconds": time.monotonic() - started,
+                  "major_tail": [x for x in lines if x.startswith("NUCLEUS_RECURSOR_MAJOR_GUARD:")][-20:],
+                  "downstream": [x for x in lines if x.startswith("NUCLEUS_DOWNSTREAM:")][-10:],
+              }
+
+          results = {}
+          for name in good:
+              results[name] = run(f"/tmp/tests/good/{name}.ndjson")
+
+          bad_name = "bugs/nested-unused-param"
+          results[bad_name] = run(f"/tmp/tests/bad/{bad_name}.ndjson")
+
+          gains = sorted(name for name in good if results[name]["exit"] == 0)
+          unknowns = sorted(name for name in good if results[name]["exit"] == 2)
+          wrong = sorted(name for name in good if results[name]["exit"] == 1)
+          errors = sorted(name for name in good if results[name]["exit"] not in (0, 2))
+          report = {
+              "schema": "nucleus-guarded-major-exposure-v1",
+              "sha": os.environ["GITHUB_SHA"],
+              "gains": gains,
+              "unknowns": unknowns,
+              "wrong": wrong,
+              "errors": errors,
+              "protected_nested_unused_param_exit": results[bad_name]["exit"],
+              "results": results,
+          }
+          print(json.dumps(report, indent=2))
+          pathlib.Path(
+              "metatron-kernel/evidence-out/guarded-major-exposure-v1/result.json"
+          ).write_text(json.dumps(report, indent=2) + "\n")
+
+          assert results[bad_name]["exit"] == 1, report
+          assert not wrong, report
+          assert not errors, report
+          assert gains, report
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-guarded-major-exposure-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/guarded-major-exposure-v1
+          if-no-files-found: error
