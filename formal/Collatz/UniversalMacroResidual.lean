@@ -26,7 +26,7 @@ theorem actualAffineFixed_iff_periodic_eq (n k : Nat) :
   · intro hper
     unfold ActualAffineFixed
     have ha := exact_affine n k
-    simpa [hper] using ha.symm
+    simpa [hper] using ha
 
 theorem actualAffineFixed_positive_periodic
     {n k : Nat} (hn : 0 < n) (hk : 0 < k)
