@@ -70,10 +70,35 @@ fn check_export_with_policy(
     // This obstruction depends only on declaration ownership, so it remains
     // decisive even when an earlier unsupported declaration would make the
     // sequential checker stop at UNKNOWN.
-    if export.declarations.iter().any(|declaration| {
-        matches!(declaration, Declaration::Inductive(block)
-            if recursor_claims_external_constructor(block))
+    if let Some((owner, recursor, constructor)) = export.declarations.iter().find_map(|declaration| {
+        let Declaration::Inductive(block) = declaration else {
+            return None;
+        };
+        let constructors = block
+            .constructors
+            .iter()
+            .map(|constructor| constructor.name)
+            .collect::<HashSet<_>>();
+        block.recursors.iter().find_map(|recursor| {
+            recursor.rules.iter().find_map(|rule| {
+                (!constructors.contains(&rule.constructor)).then_some((
+                    block.types.first().map(|inductive| inductive.name),
+                    recursor.name,
+                    rule.constructor,
+                ))
+            })
+        })
     }) {
+        if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+            let owner = owner
+                .map(|name| trace_name(&export, name))
+                .unwrap_or_else(|| "<empty-inductive-block>".to_string());
+            eprintln!(
+                "NUCLEUS_DOWNSTREAM_DETAIL:stage=preflight-external-recursor-constructor:owner={owner}:recursor={}:constructor={}",
+                trace_name(&export, recursor),
+                trace_name(&export, constructor),
+            );
+        }
         return trace_direct_reject("preflight-external-recursor-constructor");
     }
 
