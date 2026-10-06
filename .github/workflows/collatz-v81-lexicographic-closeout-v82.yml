@@ -1,0 +1,91 @@
+name: Collatz V81 lexicographic closeout V82
+on:
+  push:
+    branches: [collatz-v81-lexicographic-closeout-v82]
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v80-fresh-interface-v81
+          run-id: 37437716076
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v81
+
+      - name: Verify V81 prospective authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json
+          q=json.load(open('parent-v81/qualification.json'))
+          claimed=q.pop('certificate_sha256')
+          got=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          assert claimed==got=='cf152e580fce5a4a46ba8c98a2b83a16aacf91ee794a521bdf8eb6a20968c4cf'
+          assert q['status']=='WARRANTED_BOUNDED_FRESH_INTERFACE_ZEROZERO'
+          assert q['interface_survives'] is True
+          assert q['combined_collision_states']==0
+          assert q['zero_zero_paths']==0
+          print('V81_AUTHORITY_VERIFIED')
+          PY
+
+      - name: Kernel-check lexicographic closeout
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal | tee evidence/spine.log
+          lake env lean -DautoImplicit=false formal/Collatz/BiadicLexicographicCloseout.lean             | tee evidence/lex-closeout.log
+          ! grep -q 'sorryAx' evidence/lex-closeout.log
+          ! grep -q 'Lean.ofReduceBool' evidence/lex-closeout.log
+          grep -q 'zero_tail_kernel_empty_of_eventual_lex_rank' evidence/lex-closeout.log
+          grep -q 'collatz_of_zero_tail_eventual_lex_rank' evidence/lex-closeout.log
+          grep -q 'no_infinite_switch_precision_of_no_two_past_source' evidence/lex-closeout.log
+          git rev-parse HEAD > evidence/commit.txt
+
+      - name: Seal qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            'schema':'COLLATZ_V81_LEXICOGRAPHIC_CLOSEOUT_V82_QUALIFICATION',
+            'status':'WARRANTED_FORMAL_INTERFACE',
+            'parent_v81_qualification_sha256':'cf152e580fce5a4a46ba8c98a2b83a16aacf91ee794a521bdf8eb6a20968c4cf',
+            'lexicographic_kernel_closeout':True,
+            'positive_collatz_closeout':True,
+            'natural_source_bar':True,
+            'remaining_precision_major_rank':True,
+            'instantiated_collatz_progress':False,
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+            'residual':(
+              'prove every ZeroTailLive no-exit state reaches a later live macro '
+              'state that either decreases remaining source precision or preserves '
+              'it while decreasing the defect reserve'
+            ),
+          }
+          result['certificate_sha256']=hashlib.sha256(
+            json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v81-lexicographic-closeout-v82
+          path: evidence
+          if-no-files-found: error
