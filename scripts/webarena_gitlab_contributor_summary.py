@@ -68,7 +68,7 @@ async def main():
         elif all(x in attr for x in ("full name","username","user location","email")):
             profile=await resolve_user(page,top)
             data=[{
-                "full_name":clean(top.get("name","")),
+                "full_name":clean(profile.get("name","")) or clean(top.get("name","")),
                 "username":clean(profile.get("username","")),
                 "user_location":clean(profile.get("location","")),
                 "email":clean(top.get("email","")),
