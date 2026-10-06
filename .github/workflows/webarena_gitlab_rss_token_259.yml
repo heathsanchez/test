@@ -1,0 +1,74 @@
+name: WebArena GitLab RSS token qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_gitlab_rss_token_259.yml"
+      - "scripts/webarena_gitlab_rss_token.py"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start GitLab
+        run: |
+          mkdir -p artifacts/webarena_gitlab_rss_token_259
+          docker pull am1n3e/webarena-verified-gitlab
+          docker image inspect am1n3e/webarena-verified-gitlab --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_gitlab_rss_token_259/gitlab_image_digest.txt
+          docker run -d --name webarena-verified-gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 180); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 3
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Execute
+        run: |
+          ROOT=artifacts/webarena_gitlab_rss_token_259
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0}}}
+          JSON
+          python scripts/webarena_gitlab_rss_token.py --task-id 259 --task-file "$ROOT/hard.json" --output-dir "$ROOT/output"
+      - name: Officially score
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_gitlab_rss_token_259")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
+          out=root/"output"/"259"
+          result=wa.evaluate_task(task_id=259,agent_response=out/"agent_response.json",network_trace=empty)
+          dumped=result.model_dump(mode="json",exclude_none=True)
+          (out/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+          ok=float(result.score)==1.0 and result.status.value=="success"
+          seal={"epistemic_state":"WARRANTED_BOUNDED" if ok else "REJECTED","result":{"score":float(result.score),"status":result.status.value},"upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21"}
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+          if not ok: raise SystemExit("task 259 failed")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-gitlab-rss-token-259
+          path: artifacts/webarena_gitlab_rss_token_259
