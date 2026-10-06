@@ -329,6 +329,132 @@ fn block_has_nested_inductive(block: &InductiveBlock) -> bool {
     block.types.iter().any(|inductive| inductive.num_nested != 0)
 }
 
+/// Lean #14577 boundary: nested-inductive specialization may erase
+/// parametric arguments from the auxiliary declarations. Those original
+/// arguments still have to be well-typed in the constructor's local telescope.
+///
+/// This is rejection-only. We inspect application arguments that do not
+/// themselves contain one of the inductives being declared whenever a sibling
+/// argument does contain one. A definite contextual inference failure is a
+/// malformed nested declaration; UNKNOWN never becomes REJECT here.
+fn nested_application_has_definitely_ill_typed_erased_argument(
+    export: &ResolvedExport,
+    checker: &TypeChecker<'_>,
+    inductive_names: &HashSet<NameId>,
+    expression: ExprId,
+    context: &[TypeValue],
+    frame: &EnvFrame,
+    budget: usize,
+) -> bool {
+    let contains_declared_inductive = |expression: ExprId| {
+        inductive_names
+            .iter()
+            .any(|name| expression_contains_constant(export, expression, *name))
+    };
+
+    let (_, arguments) = application_spine(export, expression);
+    if arguments.iter().copied().any(&contains_declared_inductive) {
+        for argument in arguments.iter().copied() {
+            if contains_declared_inductive(argument) {
+                continue;
+            }
+            if matches!(
+                checker.infer_in_context(argument, context, frame, budget),
+                Judgment::Refuted { .. }
+            ) {
+                return true;
+            }
+        }
+    }
+
+    match export.exprs.get(expression) {
+        Some(Expr::App { fun, arg }) => {
+            nested_application_has_definitely_ill_typed_erased_argument(
+                export, checker, inductive_names, *fun, context, frame, budget,
+            ) || nested_application_has_definitely_ill_typed_erased_argument(
+                export, checker, inductive_names, *arg, context, frame, budget,
+            )
+        }
+        Some(Expr::Lam { domain, body } | Expr::Pi { domain, body }) => {
+            nested_application_has_definitely_ill_typed_erased_argument(
+                export, checker, inductive_names, *domain, context, frame, budget,
+            ) || nested_application_has_definitely_ill_typed_erased_argument(
+                export, checker, inductive_names, *body, context, frame, budget,
+            )
+        }
+        Some(Expr::Let { ty, value, body }) => {
+            nested_application_has_definitely_ill_typed_erased_argument(
+                export, checker, inductive_names, *ty, context, frame, budget,
+            ) || nested_application_has_definitely_ill_typed_erased_argument(
+                export, checker, inductive_names, *value, context, frame, budget,
+            ) || nested_application_has_definitely_ill_typed_erased_argument(
+                export, checker, inductive_names, *body, context, frame, budget,
+            )
+        }
+        Some(Expr::Proj { structure, .. }) => {
+            nested_application_has_definitely_ill_typed_erased_argument(
+                export, checker, inductive_names, *structure, context, frame, budget,
+            )
+        }
+        Some(Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. })
+        | None => false,
+    }
+}
+
+fn nested_inductive_has_definitely_ill_typed_erased_parameter(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> bool {
+    if !block_has_nested_inductive(block) {
+        return false;
+    }
+    let inductive_names = block
+        .types
+        .iter()
+        .map(|inductive| inductive.name)
+        .collect::<HashSet<_>>();
+
+    for constructor in &block.constructors {
+        let checker = TypeChecker::with_level_substitution(
+            &export.exprs,
+            &export.levels,
+            environment,
+            parameter_substitution(&constructor.level_params),
+        )
+        .with_delta_policy(delta_policy);
+        let Some(total_binders) = constructor.num_params.checked_add(constructor.num_fields) else {
+            return true;
+        };
+        let mut current = constructor.ty;
+        let mut context = Vec::new();
+        let mut frame = EnvFrame::empty();
+
+        for depth in 0..total_binders {
+            let Some(Expr::Pi { domain, body }) = export.exprs.get(current) else {
+                break;
+            };
+            if nested_application_has_definitely_ill_typed_erased_argument(
+                export,
+                &checker,
+                &inductive_names,
+                *domain,
+                &context,
+                &frame,
+                limits.judgment_steps,
+            ) {
+                return true;
+            }
+            context.push(TypeValue::Term(checker.closure(*domain, frame.clone())));
+            frame = frame.extend_free(FreeId(90_000 + u64::from(depth)));
+            current = *body;
+        }
+    }
+    false
+}
+
 fn recursor_claims_external_constructor(block: &InductiveBlock) -> bool {
     let constructors = block
         .constructors
@@ -1263,6 +1389,16 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    if nested_inductive_has_definitely_ill_typed_erased_parameter(
+        export,
+        environment,
+        block,
+        limits,
+        delta_policy,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
     if recursor_claims_external_constructor(block) {
         // Lean nested-inductive elaboration may introduce recursor rules for
         // constructors of specialized nested carriers (for example
