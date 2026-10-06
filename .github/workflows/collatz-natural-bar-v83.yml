@@ -1,0 +1,87 @@
+name: Collatz natural bar V83
+on:
+  push:
+    branches: [collatz-natural-bar-v83]
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v81-interface-rank-v82
+          run-id: 37438226223
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v82
+
+      - name: Verify V82 authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json
+          q=json.load(open('parent-v82/qualification.json'))
+          claimed=q.pop('certificate_sha256')
+          got=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          assert claimed==got=='d4817f3ba0c970c1d5e7d653c5d9b0bb58f82070cf3e049e443e5f331366557b'
+          assert q['status']=='WARRANTED_BOUNDED_ACYCLIC_INTERFACE'
+          assert q['recurrent_sccs']==0 and q['leftover_states']==0
+          assert q['max_elimination_rank']==5
+          print('V82_AUTHORITY_VERIFIED')
+          PY
+
+      - name: Kernel-check abstract natural-bar theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal | tee evidence/spine.log
+          lake env lean -DautoImplicit=false formal/Collatz/NaturalBar.lean | tee evidence/natural-bar.log
+          ! grep -q 'sorryAx' evidence/natural-bar.log
+          ! grep -q 'Lean.ofReduceBool' evidence/natural-bar.log
+          grep -q 'no_infinite_strict_refinement_no_two_zero' evidence/natural-bar.log
+          git rev-parse HEAD > evidence/commit.txt
+
+      - name: Seal qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            'schema':'COLLATZ_NATURAL_BAR_V83_QUALIFICATION',
+            'status':'WARRANTED_ABSTRACT_NATURAL_BAR',
+            'parent_v82_run':37438226223,
+            'theorem':'no_infinite_strict_refinement_no_two_zero',
+            'meaning':(
+              'For a fixed natural source, no infinite strictly increasing '
+              'precision sequence can satisfy the no-two-zero interval law.'
+            ),
+            'remaining_collatz_residual':(
+              'Prove all-depth source-admitted switch classification and '
+              'universal no-two-zero for genuine Collatz switch refinements.'
+            ),
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+          }
+          result['certificate_sha256']=hashlib.sha256(
+            json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-natural-bar-v83
+          path: evidence
+          if-no-files-found: error
