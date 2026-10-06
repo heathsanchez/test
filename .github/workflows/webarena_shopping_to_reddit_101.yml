@@ -6,7 +6,7 @@ on:
     branches: [webarena-verified-capability-compiler-v1]
     paths:
       - ".github/workflows/webarena_shopping_to_reddit_101.yml"
-      - "scripts/webarena_shopping_to_reddit_reviews.py"
+      - "scripts/webarena_shopping_to_reddit_reviews.py"\n      - "scripts/webarena_shopping_to_reddit_reviews_v2.py"
 
 jobs:
   qualify:
@@ -55,7 +55,7 @@ jobs:
           {"environments":{"__SHOPPING__":{"urls":["http://localhost:7770"],"active_url_idx":0},"__REDDIT__":{"urls":["http://localhost:9999"],"active_url_idx":0}}}
           JSON
           for id in 671 672 673 674 675; do
-            python scripts/webarena_shopping_to_reddit_reviews.py --task-id "$id" --task-file "$ROOT/hard.json" --output-dir "$ROOT/output"
+            python scripts/webarena_shopping_to_reddit_reviews_v2.py --task-id "$id" --task-file "$ROOT/hard.json" --output-dir "$ROOT/output"
           done
       - name: Officially score network consequences
         run: |
