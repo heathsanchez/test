@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/webarena_gitlab_search_to_reddit_116.yml"
       - "scripts/webarena_gitlab_search_to_reddit.py"
+      - "scripts/webarena_gitlab_search_to_reddit_v2.py"
 
 jobs:
   qualify:
@@ -55,7 +56,7 @@ jobs:
           {"environments":{"__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0},"__REDDIT__":{"urls":["http://localhost:9999"],"active_url_idx":0}}}
           JSON
           for id in 681 682 683; do
-            python scripts/webarena_gitlab_search_to_reddit.py --task-id "$id" --task-file "$ROOT/hard.json" --output-dir "$ROOT/output"
+            python scripts/webarena_gitlab_search_to_reddit_v2.py --task-id "$id" --task-file "$ROOT/hard.json" --output-dir "$ROOT/output"
           done
       - name: Officially score network consequences
         run: |
