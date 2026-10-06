@@ -51,6 +51,13 @@ pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
     }
 }
 
+fn trace_direct_reject(stage: &str) -> Verdict {
+    if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+        eprintln!("NUCLEUS_DOWNSTREAM:name=<direct>:stage={stage}:verdict=Reject");
+    }
+    Verdict::Reject
+}
+
 fn check_export_with_policy(
     mut export: ResolvedExport,
     limits: Limits,
@@ -67,15 +74,21 @@ fn check_export_with_policy(
         matches!(declaration, Declaration::Inductive(block)
             if recursor_claims_external_constructor(block))
     }) {
-        return Verdict::Reject;
+        return trace_direct_reject("preflight-external-recursor-constructor");
     }
 
     if export.declarations.iter().any(|declaration| {
         matches!(declaration, Declaration::Inductive(block)
-            if recursor_rule_drops_required_minor_argument(&export, block)
-                || proof_dependent_result_sort_is_definitely_malformed(&export, block))
+            if recursor_rule_drops_required_minor_argument(&export, block))
     }) {
-        return Verdict::Reject;
+        return trace_direct_reject("preflight-recursor-drops-required-minor");
+    }
+
+    if export.declarations.iter().any(|declaration| {
+        matches!(declaration, Declaration::Inductive(block)
+            if proof_dependent_result_sort_is_definitely_malformed(&export, block))
+    }) {
+        return trace_direct_reject("preflight-proof-dependent-result-sort");
     }
 
     let mut environment = Environment::empty();
@@ -93,7 +106,7 @@ fn check_export_with_policy(
             Declaration::Inductive(_) | Declaration::Unsupported { .. } => None,
         };
         if level_parameters.is_some_and(has_duplicate_parameter) {
-            return Verdict::Reject;
+            return trace_direct_reject("duplicate-level-parameter");
         }
 
         let (name, established) = match declaration {
@@ -251,7 +264,7 @@ fn check_export_with_policy(
         };
 
         let Ok(extended) = environment.extend(name, established) else {
-            return Verdict::Reject;
+            return trace_direct_reject("environment-extend");
         };
         environment = extended;
 
@@ -271,7 +284,7 @@ fn check_export_with_policy(
             };
             if let Some(operation) = operation {
                 let Ok(extended) = environment.install_nat_operation(name, operation) else {
-                    return Verdict::Reject;
+                    return trace_direct_reject("nat-operation-install");
                 };
                 environment = extended;
             }

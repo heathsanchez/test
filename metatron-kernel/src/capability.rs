@@ -52,6 +52,12 @@ pub(crate) fn execute(export: &ResolvedExport) -> Option<Verdict> {
             if std::env::var_os("NUCLEUS_TRACE_CAPABILITY").is_some() {
                 eprintln!("NUCLEUS_CAPABILITY_HIT:{}:{verdict:?}", capability.id);
             }
+            if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+                eprintln!(
+                    "NUCLEUS_DOWNSTREAM:name=<capability>:stage={}:verdict={verdict:?}",
+                    capability.id
+                );
+            }
             return Some(verdict);
         }
     }
