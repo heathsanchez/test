@@ -8,6 +8,10 @@ from webarena_gitlab_commit_counts import BASE, sign_in
 
 def clean(s): return re.sub(r"\s+"," ",str(s)).strip()
 
+def project_path_from_url(url):
+    path=urlparse(url).path.rstrip("/")
+    return path.split("/-/",1)[0]
+
 async def api_json(page,url):
     payload=await page.evaluate("""async (url) => {
       const r=await fetch(url,{credentials:'same-origin'});
@@ -53,7 +57,7 @@ async def main():
     a=ap.parse_args()
     task=next(t for t in json.loads(Path(a.task_file).read_text()) if int(t["task_id"])==a.task_id)
     if int(task["intent_template_id"])!=316: raise SystemExit("unsupported template")
-    inst=task["instantiation_dict"]; repo=urlparse(task["start_urls"][0].replace("__GITLAB__",BASE)).path.rstrip("/")
+    inst=task["instantiation_dict"]; repo=project_path_from_url(task["start_urls"][0].replace("__GITLAB__",BASE))
     async with async_playwright() as p:
         b=await p.chromium.launch(headless=True); page=await b.new_page()
         await sign_in(page)
