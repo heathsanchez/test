@@ -42,7 +42,7 @@ jobs:
           from webarena_verified.types.config import WebArenaVerifiedConfig
           from webarena_verified.types.tracing import NetworkTrace
           root=Path("artifacts/webarena_action_policy_refusal")
-          (root/"config.json").write_text('{"environments":{}}\n')
+          (root/"config.json").write_text('{"environments":{"__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0},"__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0}}}\n')
           wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
           empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
           results={}; failures=[]
