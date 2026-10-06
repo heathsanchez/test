@@ -5,7 +5,7 @@ on:
   push:
     branches: [webarena-verified-capability-compiler-v1]
     paths:
-      - ".github/workflows/webarena_category_membership_probe.yml"
+      - ".github/workflows/webarena_category_membership_probe.yml"\n      - "scripts/webarena_shopping_category_membership_probe.py"
 
 jobs:
   probe:
