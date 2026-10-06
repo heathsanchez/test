@@ -1,4 +1,4 @@
-import Collatz.GuardedDyadicSwitch
+import Mathlib
 
 namespace CollatzFinal.SourceProduct
 
