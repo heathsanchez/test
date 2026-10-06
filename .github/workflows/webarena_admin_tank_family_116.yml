@@ -6,6 +6,7 @@ on:
     branches: [webarena-verified-capability-compiler-v1]
     paths:
       - ".github/workflows/webarena_admin_tank_family_116.yml"
+      - "scripts/webarena_shopping_admin_family_reviews.py"
 
 jobs:
   qualify:
@@ -44,7 +45,7 @@ jobs:
           cat > "$ROOT/config.json" <<'JSON'
           {"environments":{"__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0}}}
           JSON
-          python scripts/webarena_shopping_admin_review_ratings.py --task-id 116 --task-file "$ROOT/hard.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/output"
+          python scripts/webarena_shopping_admin_family_reviews.py --task-id 116 --task-file "$ROOT/hard.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/output"
       - name: Officially score
         run: |
           python - <<'PY'
