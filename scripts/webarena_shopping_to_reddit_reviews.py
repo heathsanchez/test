@@ -47,7 +47,28 @@ def rating_predicate(spec):
         n=float(m.group(1)); return lambda x:x is not None and x==n
     raise ValueError(f"unsupported rating spec: {spec}")
 
+async def graphql_product(page,product):
+    query="""query($search:String!){products(search:$search,pageSize:50){items{sku name url_key url_suffix}}}"""
+    payload=await page.evaluate("""async ({url,query,search}) => {
+      const r=await fetch(url+'/graphql',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({query,variables:{search}})});
+      return {status:r.status,text:await r.text()};
+    }""",{"url":SHOPPING,"query":query,"search":product})
+    if payload["status"]!=200: return None
+    data=json.loads(payload["text"])
+    items=data.get("data",{}).get("products",{}).get("items",[])
+    ranked=sorted(((product_match(product,x.get("name","")),x) for x in items),key=lambda z:z[0],reverse=True)
+    if not ranked: return None
+    score,x=ranked[0]
+    if score < max(1,len(words(product))-1): return None
+    key=clean(x.get("url_key","")); suffix=x.get("url_suffix") or ".html"
+    if not key: return None
+    return {"name":clean(x.get("name","")),"href":SHOPPING+"/"+key+suffix,"score":score,"sku":x.get("sku")}
+
 async def find_product(page,product):
+    r=await page.goto(SHOPPING,wait_until="networkidle",timeout=120000)
+    if r is not None and r.status in (200,302):
+        exact=await graphql_product(page,product)
+        if exact: return exact
     url=SHOPPING+"/catalogsearch/result/?q="+quote(product)
     seen=set(); candidates=[]
     for _ in range(20):
@@ -154,20 +175,32 @@ async def main():
     inst=task["instantiation_dict"]; product=clean(inst["product"]); pred=rating_predicate(inst["rating"])
     out=Path(a.output_dir)/str(a.task_id); out.mkdir(parents=True,exist_ok=True)
     har=out/"network.har"
-    async with async_playwright() as p:
-        browser=await p.chromium.launch(headless=True)
-        shop=await browser.new_page()
-        product_row=await find_product(shop,product)
-        reviews=await collect_reviews(shop,product_row["href"])
-        selected=[r for r in reviews if pred(r["stars"])]
-        if not selected: raise RuntimeError("no qualifying reviews")
-        title=f"real user feedback on {product}"
-        body="\n".join(f'- "{r["title"]}"' for r in selected)
-        reddit_ctx=await browser.new_context(extra_http_headers=REDDIT_AUTH,record_har_path=str(har),record_har_mode="full")
-        reddit=await reddit_ctx.new_page()
-        forum=await choose_forum(reddit,"game related discussion forum")
-        post=await submit(reddit,forum,title,body)
-        await reddit_ctx.close(); await browser.close()
+    stage="playwright_start"; diagnostic={"task_id":a.task_id,"product":product,"rating":inst["rating"],"stage":stage}
+    try:
+        async with async_playwright() as p:
+            browser=await p.chromium.launch(headless=True)
+            stage="context_create"; diagnostic["stage"]=stage
+            ctx=await browser.new_context(extra_http_headers=REDDIT_AUTH,record_har_path=str(har),record_har_mode="full")
+            stage="shopping_find_product"; diagnostic["stage"]=stage
+            shop=await ctx.new_page()
+            product_row=await find_product(shop,product); diagnostic["resolved_product"]=product_row
+            stage="shopping_collect_reviews"; diagnostic["stage"]=stage
+            reviews=await collect_reviews(shop,product_row["href"]); diagnostic["review_count"]=len(reviews)
+            selected=[r for r in reviews if pred(r["stars"])]; diagnostic["selected"]=selected
+            if not selected: raise RuntimeError("no qualifying reviews")
+            title=f"real user feedback on {product}"
+            body="\n".join(f'- "{r["title"]}"' for r in selected)
+            stage="reddit_choose_forum"; diagnostic["stage"]=stage
+            reddit=await ctx.new_page()
+            forum=await choose_forum(reddit,"game gaming related discussion forum"); diagnostic["forum"]=forum
+            stage="reddit_submit"; diagnostic["stage"]=stage
+            post=await submit(reddit,forum,title,body)
+            await ctx.close(); await browser.close()
+    except Exception as e:
+        diagnostic.update({"exception_type":type(e).__name__,"exception":str(e)})
+        (out/"failure_evidence.json").write_text(json.dumps(diagnostic,indent=2,ensure_ascii=False)+"\n")
+        print(json.dumps(diagnostic,indent=2,ensure_ascii=False))
+        raise
     response={"task_type":"MUTATE","status":"SUCCESS","retrieved_data":None,"error_details":None}
     (out/"agent_response.json").write_text(json.dumps(response,indent=2)+"\n")
     ev={"task_id":a.task_id,"product":product,"resolved_product":product_row,"reviews":reviews,"selected":selected,"forum":forum,"title":title,"body":body,**post}
