@@ -81,6 +81,28 @@ impl<'a> TypeChecker<'a> {
         )
     }
 
+    /// Infer an expression in an already established local telescope.
+    ///
+    /// This is intentionally crate-private: inductive validation uses it to
+    /// check original nested-application parameters that specialization would
+    /// otherwise erase. It grants no declaration authority by itself.
+    pub(crate) fn infer_in_context(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        budget: usize,
+    ) -> Judgment<TypeValue> {
+        let mut remaining = budget;
+        self.infer_in(
+            expression,
+            context,
+            frame,
+            &mut remaining,
+            &mut HashMap::new(),
+        )
+    }
+
     pub fn check(&self, expression: ExprId, expected: &TypeValue, budget: usize) -> Judgment<()> {
         let mut remaining = budget;
         self.check_in(
