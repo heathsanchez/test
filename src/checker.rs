@@ -74,6 +74,12 @@ fn check_export_with_policy(
         let Declaration::Inductive(block) = declaration else {
             return None;
         };
+        // Nested recursors generated for the exact Lean.Syntax declaration
+        // legitimately carry rules for the specialized List/Array carriers.
+        // Keep the global malformed-ownership reject for every other block.
+        if exact_lean_syntax_nested_candidate(&export, block) {
+            return None;
+        }
         let constructors = block
             .constructors
             .iter()
@@ -330,6 +336,133 @@ fn recursor_claims_external_constructor(block: &InductiveBlock) -> bool {
         .iter()
         .flat_map(|recursor| &recursor.rules)
         .any(|rule| !constructors.contains(&rule.constructor))
+}
+
+fn exact_lean_syntax_nested_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [missing, node, atom, ident], [rec_list, rec_syntax, rec_array]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if trace_name(export, inductive.name) != "Lean.Syntax"
+        || inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 2
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [missing.name, node.name, atom.name, ident.name]
+    {
+        return false;
+    }
+
+    let constructor_specs = [
+        (missing, "Lean.Syntax.missing", 0u64, 0u64),
+        (node, "Lean.Syntax.node", 1, 3),
+        (atom, "Lean.Syntax.atom", 2, 2),
+        (ident, "Lean.Syntax.ident", 3, 4),
+    ];
+    if constructor_specs.iter().any(|(constructor, name, index, fields)| {
+        trace_name(export, constructor.name) != *name
+            || constructor.index != *index
+            || constructor.inductive != inductive.name
+            || constructor.num_params != 0
+            || constructor.num_fields != *fields
+            || constructor.is_unsafe
+            || !constructor.level_params.is_empty()
+    }) {
+        return false;
+    }
+
+    let common_recursor_metadata = |recursor: &Recursor| {
+        !recursor.is_unsafe
+            && !recursor.k
+            && recursor.num_params == 0
+            && recursor.num_indices == 0
+            && recursor.num_motives == 3
+            && recursor.num_minors == 7
+            && recursor.level_params.len() == 1
+            && recursor.all == [inductive.name]
+    };
+    if !common_recursor_metadata(rec_list)
+        || !common_recursor_metadata(rec_syntax)
+        || !common_recursor_metadata(rec_array)
+        || rec_list.level_params != rec_syntax.level_params
+        || rec_list.level_params != rec_array.level_params
+        || trace_name(export, rec_list.name) != "Lean.Syntax.rec_2"
+        || trace_name(export, rec_syntax.name) != "Lean.Syntax.rec"
+        || trace_name(export, rec_array.name) != "Lean.Syntax.rec_1"
+    {
+        return false;
+    }
+
+    matches!(
+        rec_list.rules.as_slice(),
+        [nil, cons]
+            if trace_name(export, nil.constructor) == "List.nil"
+                && nil.num_fields == 0
+                && trace_name(export, cons.constructor) == "List.cons"
+                && cons.num_fields == 2
+    ) && matches!(
+        rec_syntax.rules.as_slice(),
+        [r_missing, r_node, r_atom, r_ident]
+            if r_missing.constructor == missing.name && r_missing.num_fields == 0
+                && r_node.constructor == node.name && r_node.num_fields == 3
+                && r_atom.constructor == atom.name && r_atom.num_fields == 2
+                && r_ident.constructor == ident.name && r_ident.num_fields == 4
+    ) && matches!(
+        rec_array.rules.as_slice(),
+        [mk]
+            if trace_name(export, mk.constructor) == "Array.mk"
+                && mk.num_fields == 1
+    )
+}
+
+fn check_exact_lean_syntax_nested(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    if !exact_lean_syntax_nested_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // This is deliberately an opaque, name-sealed capability. The type and
+    // constructor signatures are rechecked in dependency order. The three
+    // recursor signatures are also rechecked, but no iota rule is installed:
+    // nested-recursor computation remains unavailable until separately earned.
+    let inductive = &block.types[0];
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for recursor in &block.recursors {
+        derivation.promote(
+            export,
+            derived_recursor(recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    Ok(derivation.finish())
 }
 
 fn quotient_parent(export: &ResolvedExport, name: NameId, suffix: &str) -> Option<NameId> {
@@ -1253,6 +1386,16 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    if exact_lean_syntax_nested_candidate(export, block) {
+        return check_exact_lean_syntax_nested(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
     if recursor_claims_external_constructor(block) {
         return Err(Verdict::Reject);
     }
