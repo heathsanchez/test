@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      SOURCE_COMMIT: 95a07a1c624a229597f326a925c50c017e340a76
-      SOURCE_SUBTREE: 2473e4ab8588facb6f77eff1c49edc60f1368836
+      SOURCE_COMMIT: 6a64cfc2c85bf72c7e262ef15eb496a655cedde4
+      SOURCE_SUBTREE: bdace9d2e9e75d8a3b5ff7ed71ca4d898cf9517d
       ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
       ARENA_ARTIFACT: "11272848230"
       MATHLIB_ARENA_SHA: 4c30c4ac4f14a3a899116beb3ea6131880e79a98
