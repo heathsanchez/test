@@ -1,0 +1,216 @@
+name: WebArena compiled 65-task hard reclosure
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_compiled_reclosure_65.yml"
+
+jobs:
+  reclose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start Shopping Admin once
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          mkdir -p artifacts/webarena_compiled_hard
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_compiled_hard/environment_image_digest.txt
+          docker run -d --name webarena-verified-shopping_admin -p 7780:80 -p 7781:8877 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Start Shopping once
+        run: |
+          docker pull am1n3e/webarena-verified-shopping
+          docker image inspect am1n3e/webarena-verified-shopping --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_compiled_hard/shopping_image_digest.txt
+          docker run -d --name webarena-verified-shopping -p 7770:80 am1n3e/webarena-verified-shopping
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7770 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Start Reddit once
+        run: |
+          docker pull am1n3e/webarena-verified-reddit
+          docker image inspect am1n3e/webarena-verified-reddit --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_compiled_hard/reddit_image_digest.txt
+          docker run -d --name webarena-verified-reddit -p 9999:80 -p 9998:8877 am1n3e/webarena-verified-reddit
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9999 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Start GitLab once
+        run: |
+          docker pull am1n3e/webarena-verified-gitlab
+          docker image inspect am1n3e/webarena-verified-gitlab --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_compiled_hard/gitlab_image_digest.txt
+          docker run -d --name webarena-verified-gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 180); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 3
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install evaluator and browser once
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Prepare authority
+        run: |
+          cp upstream/assets/dataset/webarna-verfied-hard.json artifacts/webarena_compiled_hard/hard.json
+          cat > artifacts/webarena_compiled_hard/config.json <<'JSON'
+          {
+            "environments": {
+              "__SHOPPING_ADMIN__": {
+                "urls": ["http://localhost:7780/admin"],
+                "active_url_idx": 0
+              },
+              "__REDDIT__": {
+                "urls": ["http://localhost:9999"],
+                "active_url_idx": 0
+              },
+              "__SHOPPING__": {
+                "urls": ["http://localhost:7770"],
+                "active_url_idx": 0
+              },
+              "__GITLAB__": {
+                "urls": ["http://localhost:8023"],
+                "active_url_idx": 0
+              }
+            }
+          }
+          JSON
+      - name: Execute all compiled hard capabilities
+        run: |
+          ROOT=artifacts/webarena_compiled_hard
+          TASKS=$ROOT/hard.json
+          OUT=$ROOT/output
+          for id in 108 110 111; do
+            python scripts/webarena_shopping_admin_monthly_complete.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          for id in 707 709; do
+            python scripts/webarena_shopping_admin_orders_report_nav.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          for id in 193 196 197; do
+            python scripts/webarena_shopping_admin_payment_fold_v2.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          python scripts/webarena_shopping_admin_visible_order_selector.py --task-id 200 --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          for id in 63 64 65; do
+            python scripts/webarena_shopping_admin_customer_order_counts.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          for id in 42 127; do
+            python scripts/webarena_shopping_admin_search_terms.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          python scripts/webarena_shopping_admin_order_detail.py --task-id 204 --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          for id in 113 214; do
+            python scripts/webarena_shopping_admin_review_ratings_authority55.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          python scripts/webarena_shopping_admin_customer_lookup.py --task-id 212 --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          python scripts/webarena_shopping_admin_inventory_attributes.py --task-id 184 --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          for id in 11 15; do
+            python scripts/webarena_shopping_admin_review_counts.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          done
+          python scripts/webarena_shopping_admin_review_counts.py --task-id 345 --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
+          for id in 66 67 68; do
+            python scripts/webarena_reddit_books_top10.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:9999 --output-dir "$OUT"
+          done
+          for id in 28 29 31; do
+            python scripts/webarena_reddit_recent_comments.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:9999 --output-dir "$OUT"
+          done
+          for id in 163 165 166; do
+            python scripts/webarena_shopping_low_reviews.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
+          done
+          for id in 21 25; do
+            python scripts/webarena_shopping_reviewer_mentions.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
+          done
+          for id in 335 337 338; do
+            python scripts/webarena_shopping_last_ordered_date_v2.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
+          done
+          for id in 147 148 149; do
+            python scripts/webarena_shopping_order_history_probe.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
+          done
+          for id in 170 171 172; do
+            python scripts/webarena_gitlab_personal_project_stars.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:8023 --output-dir "$OUT"
+          done
+          for id in 303 304 307; do
+            python scripts/webarena_gitlab_commit_counts.py --task-id "$id" --task-file "$TASKS" --output-dir "$OUT"
+          done
+          for id in 349 350; do
+            python scripts/webarena_gitlab_project_members.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:8023 --output-dir "$OUT"
+          done
+          for id in 293 296 297; do
+            python scripts/webarena_gitlab_ssh_clone.py --task-id "$id" --task-file "$TASKS" --output-dir "$OUT"
+          done
+          python scripts/webarena_gitlab_top3_contributors.py --task-id 316 --task-file "$TASKS" --output-dir "$OUT"
+          for id in 50 96 191 235; do
+            python scripts/webarena_shopping_order_summary.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
+          done
+          for id in 320 321 323; do
+            python scripts/webarena_shopping_refunds.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
+          done
+          for id in 387 388; do
+            python scripts/webarena_shopping_brand_reviewers.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
+          done
+          for id in 684 685 686 687 688; do
+            python scripts/webarena_gitlab_to_reddit_promote.py --task-id "$id" --task-file "$TASKS" --output-dir "$OUT"
+          done
+      - name: Officially score 65-task cross-site closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_compiled_hard")
+          out=root/"output"
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
+          ids=(108,110,111,707,709,193,196,197,200,63,64,65,42,127,204,113,214,212,184,11,15,345,66,67,68,28,29,31,163,165,166,21,25,335,337,338,147,148,149,170,171,172,303,304,307,349,350,293,296,297,316,50,96,191,235,320,321,323,387,388,684,685,686,687,688)
+          results={}
+          for task_id in ids:
+              task=wa.get_task(task_id)
+              has_network=any(e.evaluator=="NetworkEventEvaluator" for e in task.eval)
+              trace=(out/str(task_id)/"network.har") if has_network else empty
+              result=wa.evaluate_task(
+                  task_id=task_id,
+                  agent_response=out/str(task_id)/"agent_response.json",
+                  network_trace=trace,
+              )
+              dumped=result.model_dump(mode="json",exclude_none=True)
+              (out/str(task_id)/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+              results[str(task_id)]={"score":float(result.score),"status":result.status.value}
+              print(task_id,results[str(task_id)])
+              if float(result.score)!=1.0 or result.status.value!="success":
+                  raise SystemExit(f"compiled reclosure failed at {task_id}: {dumped}")
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED",
+              "boundary":"65 compiled WebArena-Verified hard tasks across reset Shopping Admin, Reddit, Shopping, and GitLab environments",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "task_ids":list(ids),
+              "success_count":len(ids),
+              "results":results,
+          }
+          (root/"compiled_reclosure.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-compiled-reclosure-65
+          path: artifacts/webarena_compiled_hard
