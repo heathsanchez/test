@@ -33,13 +33,21 @@ async def api(page,url):
     return json.loads(payload["text"])
 
 async def select_project(page,topic):
-    url=f"{GITLAB}/api/v4/projects?search={quote(topic)}&order_by=similarity&sort=desc&simple=true&per_page=100"
-    rows=await api(page,url)
-    if not isinstance(rows,list) or not rows: raise RuntimeError(f"no GitLab projects for {topic!r}")
+    queries=[clean(topic),*toks(topic)]
+    rows=[]; seen=set()
+    for q in queries:
+        url=f"{GITLAB}/api/v4/projects?search={quote(q)}&simple=true&per_page=100"
+        batch=await api(page,url)
+        if not isinstance(batch,list): continue
+        for p in batch:
+            path=clean(p.get("path_with_namespace",""))
+            if not path or path in seen: continue
+            seen.add(path); rows.append(p)
+    if not rows: raise RuntimeError(f"no GitLab projects for {topic!r}")
     ranked=sorted(((project_score(topic,p),i,p) for i,p in enumerate(rows)),key=lambda x:(-x[0],x[1]))
     score,_,p=ranked[0]
     if score<=0: raise RuntimeError(f"no relevant GitLab project for {topic!r}")
-    return p,[{"score":s,"path":x.get("path_with_namespace"),"description":x.get("description")} for s,_,x in ranked[:10]]
+    return p,[{"score":sc,"path":x.get("path_with_namespace"),"description":x.get("description")} for sc,_,x in ranked[:10]]
 
 async def commit_count(page,p):
     project_id=quote(str(p["path_with_namespace"]),safe="")
@@ -81,18 +89,31 @@ async def main():
     if int(task["intent_template_id"])!=116: raise SystemExit("unsupported template")
     topic=clean(task["instantiation_dict"]["topic"])
     out=Path(a.output_dir)/str(a.task_id); out.mkdir(parents=True,exist_ok=True); har=out/"network.har"
-    async with async_playwright() as p:
-        browser=await p.chromium.launch(headless=True)
-        git=await browser.new_page(); await sign_in(git)
-        project,candidates=await select_project(git,topic)
-        count,branch=await commit_count(git,project)
-        path=clean(project["path_with_namespace"]); url=f"{GITLAB}/{path}"
-        body=f"{count} commit{'s' if count!=1 else ''} already!"
-        reddit_ctx=await browser.new_context(extra_http_headers=REDDIT_AUTH,record_har_path=str(har),record_har_mode="full")
-        reddit=await reddit_ctx.new_page()
-        forum=await choose_forum(reddit,topic+" technology programming machine learning artificial intelligence")
-        post=await submit_url(reddit,forum,path,url,body)
-        await reddit_ctx.close(); await browser.close()
+    stage="playwright_start"; diagnostic={"task_id":a.task_id,"topic":topic,"stage":stage}
+    try:
+        async with async_playwright() as p:
+            browser=await p.chromium.launch(headless=True)
+            stage="context_create"; diagnostic["stage"]=stage
+            ctx=await browser.new_context(extra_http_headers=REDDIT_AUTH,record_har_path=str(har),record_har_mode="full")
+            stage="gitlab_sign_in"; diagnostic["stage"]=stage
+            git=await ctx.new_page(); await sign_in(git)
+            stage="gitlab_select_project"; diagnostic["stage"]=stage
+            project,candidates=await select_project(git,topic); diagnostic["candidates"]=candidates
+            stage="gitlab_commit_count"; diagnostic["stage"]=stage
+            count,branch=await commit_count(git,project)
+            path=clean(project["path_with_namespace"]); url=f"{GITLAB}/{path}"
+            body=f"{count} commit{'s' if count!=1 else ''} already!"
+            stage="reddit_choose_forum"; diagnostic["stage"]=stage
+            reddit=await ctx.new_page()
+            forum=await choose_forum(reddit,topic+" technology programming machine learning artificial intelligence")
+            stage="reddit_submit"; diagnostic["stage"]=stage
+            post=await submit_url(reddit,forum,path,url,body)
+            await ctx.close(); await browser.close()
+    except Exception as e:
+        diagnostic.update({"exception_type":type(e).__name__,"exception":str(e)})
+        (out/"failure_evidence.json").write_text(json.dumps(diagnostic,indent=2,ensure_ascii=False)+"\n")
+        print(json.dumps(diagnostic,indent=2,ensure_ascii=False))
+        raise
     response={"task_type":"MUTATE","status":"SUCCESS","retrieved_data":None,"error_details":None}
     (out/"agent_response.json").write_text(json.dumps(response,indent=2)+"\n")
     evidence={"task_id":a.task_id,"topic":topic,"project":path,"branch":branch,"commit_count":count,"candidates":candidates,"forum":forum,"body":body,**post}
