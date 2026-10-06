@@ -5,7 +5,7 @@ on:
   push:
     branches: [webarena-verified-capability-compiler-v1]
     paths:
-      - ".github/workflows/webarena_admin_inventory_185_186.yml"
+      - ".github/workflows/webarena_admin_inventory_185_186.yml"\n      - "scripts/webarena_shopping_admin_inventory_attributes_v2.py"
 
 jobs:
   qualify:
@@ -45,7 +45,7 @@ jobs:
           {"environments":{"__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0}}}
           JSON
           for id in 185 186; do
-            python scripts/webarena_shopping_admin_inventory_attributes.py --task-id "$id" --task-file "$ROOT/hard.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/output"
+            python scripts/webarena_shopping_admin_inventory_attributes_v2.py --task-id "$id" --task-file "$ROOT/hard.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/output"
           done
       - name: Officially score
         run: |
