@@ -85,6 +85,7 @@ jobs:
               return {
                   "exit": rc,
                   "seconds": time.monotonic() - started,
+                  "major_all": [x for x in lines if x.startswith("NUCLEUS_RECURSOR_MAJOR_GUARD:")][-2000:],
                   "major_tail": [x for x in lines if x.startswith("NUCLEUS_RECURSOR_MAJOR_GUARD:")][-20:],
                   "major_nonfree": [
                       x for x in lines
