@@ -1,0 +1,78 @@
+name: WebArena Shopping price-range v2 qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_shopping_price_range_v2.yml"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start Shopping
+        run: |
+          mkdir -p artifacts/webarena_shopping_price_range_v2
+          docker pull am1n3e/webarena-verified-shopping
+          docker image inspect am1n3e/webarena-verified-shopping --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_shopping_price_range_v2/shopping_image_digest.txt
+          docker run -d --name webarena-verified-shopping -p 7770:80 am1n3e/webarena-verified-shopping
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7770 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Execute family
+        run: |
+          ROOT=artifacts/webarena_shopping_price_range_v2
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__SHOPPING__":{"urls":["http://localhost:7770"],"active_url_idx":0}}}
+          JSON
+          for id in 124 125 226; do
+            python scripts/webarena_shopping_price_range_v2.py --task-id "$id" --task-file "$ROOT/hard.json" --output-dir "$ROOT/output"
+          done
+      - name: Officially score
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_shopping_price_range_v2")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
+          results={}; failures=[]
+          for task_id in (124,125,226):
+              out=root/"output"/str(task_id)
+              result=wa.evaluate_task(task_id=task_id,agent_response=out/"agent_response.json",network_trace=empty)
+              dumped=result.model_dump(mode="json",exclude_none=True)
+              (out/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+              results[str(task_id)]={"score":float(result.score),"status":result.status.value}
+              if float(result.score)!=1.0 or result.status.value!="success": failures.append(task_id)
+          seal={"epistemic_state":"WARRANTED_BOUNDED" if not failures else "REJECTED","upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21","results":results,"failures":failures}
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+          if failures: raise SystemExit(f"qualification residuals: {failures}")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-shopping-price-range-v2
+          path: artifacts/webarena_shopping_price_range_v2
