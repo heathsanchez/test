@@ -45,6 +45,10 @@ async def enrich(page,product,attributes):
     # size/color child. Force base.main's existing parent fallback.
     if "material" in attributes and base.parent_name_for_variant(product.get("name","")):
         result["material"]=None
+    elif "material" in attributes and result.get("material"):
+        # Magento stores material as a multi-select. The benchmark's singular
+        # material observable is the primary selected material.
+        result["material"]=result["material"].split(",",1)[0].strip()
     return result
 
 base.scan_products=scan_products
