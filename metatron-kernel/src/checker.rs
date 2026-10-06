@@ -40,6 +40,11 @@ pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
         .any(|expression| matches!(expression, Expr::StrLit(_)));
     let verdict = check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback);
     if has_unqualified_string_literal && matches!(verdict, Verdict::Accept | Verdict::Reject) {
+        if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+            eprintln!(
+                "NUCLEUS_DOWNSTREAM:name=<string-literal-guard>:stage=string-literal-guard:inner={verdict:?}:verdict=Unknown"
+            );
+        }
         Verdict::Unknown
     } else {
         verdict
