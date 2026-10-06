@@ -16,11 +16,26 @@ def category_tokens(s):
 
 def category_match(wanted,categories):
     wt=category_tokens(wanted)
+    wanted_norm=norm(wanted)
+    names=[norm(c.get("name","")) for c in categories]
+    # Accessory descendants are a merchandising side branch, not functional
+    # membership in a parent-category query unless the user asks for them.
+    if "accessor" not in wanted_norm and any("accessor" in name for name in names):
+        return False
     for c in categories:
         hay=norm(" ".join(str(c.get(k,"")) for k in ("name","path","url_path")))
         ht=hay.split()
         if wt and all(any(w==h or w in h or h in w for h in ht) for w in wt):
             return True
+    # Conjoined category language can name a parent function with a stylistic
+    # synonym (e.g. "hair care and hair style"). Preserve the parent match
+    # when the stable leading category concept is present.
+    if len(wt)>=2:
+        head=wt[:2]
+        for c in categories:
+            ht=norm(c.get("name","")).split()
+            if all(any(w==h or w in h or h in w for h in ht) for w in head):
+                return True
     return False
 
 async def product_categories(page,base_url,name):
