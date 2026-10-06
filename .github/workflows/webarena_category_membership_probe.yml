@@ -1,0 +1,41 @@
+name: WebArena Shopping category membership probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_category_membership_probe.yml"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start Shopping
+        run: |
+          mkdir -p artifacts/webarena_category_membership_probe
+          docker pull am1n3e/webarena-verified-shopping
+          docker run -d --name webarena-verified-shopping -p 7770:80 am1n3e/webarena-verified-shopping
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7770 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install playwright
+          playwright install --with-deps chromium
+      - name: Probe three relevant products
+        run: |
+          python scripts/webarena_shopping_category_membership_probe.py --output artifacts/webarena_category_membership_probe/probe.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-category-membership-probe
+          path: artifacts/webarena_category_membership_probe
