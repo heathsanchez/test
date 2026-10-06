@@ -86,6 +86,11 @@ jobs:
                   "exit": rc,
                   "seconds": time.monotonic() - started,
                   "major_tail": [x for x in lines if x.startswith("NUCLEUS_RECURSOR_MAJOR_GUARD:")][-20:],
+                  "major_nonfree": [
+                      x for x in lines
+                      if x.startswith("NUCLEUS_RECURSOR_MAJOR_GUARD:")
+                      and "head: Free" not in x
+                  ][-100:],
                   "downstream": [x for x in lines if x.startswith("NUCLEUS_DOWNSTREAM:")][-10:],
               }
 
