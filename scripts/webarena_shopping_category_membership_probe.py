@@ -25,7 +25,8 @@ async def main():
     ap=argparse.ArgumentParser(); ap.add_argument("--base-url",default="http://localhost:7770"); ap.add_argument("--output",required=True); a=ap.parse_args()
     out={}
     async with async_playwright() as p:
-        b=await p.chromium.launch(headless=True); page=await b.new_page()\n        await page.goto(a.base_url.rstrip("/"),wait_until="networkidle",timeout=120000)
+        b=await p.chromium.launch(headless=True); page=await b.new_page()
+        await page.goto(a.base_url.rstrip("/"),wait_until="networkidle",timeout=120000)
         for name in PRODUCTS:
             data=await gql(page,a.base_url,name)
             items=data.get("data",{}).get("products",{}).get("items",[])
