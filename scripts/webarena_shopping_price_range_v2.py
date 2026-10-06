@@ -44,13 +44,21 @@ async def first_sorted_price(page,search_url,direction):
     name=clean(await name_el.inner_text()) if await name_el.count() else clean(await item.inner_text())
     return await final_price(item),{"url":url,"name":name}
 
+def token_equiv(a,b):
+    return a==b or a.startswith(b) or b.startswith(a)
+
+def query_match(name,query):
+    observed=tokens(name); wanted=tokens(query)
+    return bool(wanted) and all(any(token_equiv(o,w) for o in observed) for w in wanted)
+
 def brand_match(name,brand):
     observed=tokens(name); wanted=tokens(brand)
-    return bool(wanted) and all(any(o==w or o.startswith(w) or w.startswith(o) for o in observed) for w in wanted)
+    if not wanted or len(observed)<len(wanted): return False
+    return all(token_equiv(observed[i],wanted[i]) for i in range(len(wanted)))
 
-async def brand_prices(page,search_url,brand):
+async def filtered_prices(page,search_url,predicate):
     url=search_url; seen=set(); values=[]; rows=[]; pages=0
-    while url and url not in seen and pages<60:
+    while url and url not in seen and pages<80:
         seen.add(url); pages+=1
         r=await page.goto(url,wait_until="networkidle",timeout=120000)
         if r is None or r.status!=200: raise RuntimeError(f"search failed: {url}")
@@ -59,7 +67,7 @@ async def brand_prices(page,search_url,brand):
             item=items.nth(i)
             link=item.locator(".product-item-link").first
             name=clean(await link.inner_text()) if await link.count() else clean(await item.inner_text())
-            if not brand_match(name,brand): continue
+            if not predicate(name): continue
             price=await final_price(item)
             values.append(price); rows.append({"name":name,"price":price})
         nxt=page.locator(".pages-item-next a").first
@@ -67,8 +75,11 @@ async def brand_prices(page,search_url,brand):
         href=await nxt.get_attribute("href")
         if not href: break
         url=href
-    if not values: raise RuntimeError(f"no brand products matched {brand!r}")
+    if not values: raise RuntimeError("no semantically matching products")
     return values,{"pages":pages,"matched":rows}
+
+async def brand_prices(page,search_url,brand):
+    return await filtered_prices(page,search_url,lambda name: brand_match(name,brand))
 
 async def main():
     ap=argparse.ArgumentParser()
@@ -85,9 +96,9 @@ async def main():
         if tid==159:
             query=str(inst["product"])
             search=a.base_url.rstrip("/")+"/catalogsearch/result/?q="+quote(query)
-            mn,lo=await first_sorted_price(page,search,"asc")
-            mx,hi=await first_sorted_price(page,search,"desc")
-            evidence={"mode":"search-sort","query":query,"low":lo,"high":hi,"min":mn,"max":mx}
+            values,detail=await filtered_prices(page,search,lambda name: query_match(name,query))
+            mn=min(values); mx=max(values)
+            evidence={"mode":"semantic-name-membership","query":query,**detail,"min":mn,"max":mx}
         elif tid==370:
             brand=str(inst["brand"])
             search=a.base_url.rstrip("/")+"/catalogsearch/result/?q="+quote(brand)
