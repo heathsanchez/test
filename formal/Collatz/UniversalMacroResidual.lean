@@ -22,7 +22,7 @@ theorem actualAffineFixed_iff_periodic_eq (n k : Nat) :
     have hmul :
         2 ^ k * iter shortcut k n = 2 ^ k * n :=
       ha.trans hfix.symm
-    exact Nat.eq_of_mul_eq_mul_left (by positivity) hmul
+    exact Nat.eq_of_mul_eq_mul_left (Nat.pow_pos (by decide)) hmul
   · intro hper
     unfold ActualAffineFixed
     have ha := exact_affine n k
