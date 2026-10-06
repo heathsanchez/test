@@ -74,6 +74,12 @@ fn check_export_with_policy(
         let Declaration::Inductive(block) = declaration else {
             return None;
         };
+        // Nested inductives legitimately generate recursor rules for
+        // constructors belonging to specialized nested carriers. Those are
+        // not an ownership contradiction; leave them to the inductive checker.
+        if block_has_nested_inductive(block) {
+            return None;
+        }
         let constructors = block
             .constructors
             .iter()
@@ -317,6 +323,10 @@ fn check_export_with_policy(
     }
 
     Verdict::Accept
+}
+
+fn block_has_nested_inductive(block: &InductiveBlock) -> bool {
+    block.types.iter().any(|inductive| inductive.num_nested != 0)
 }
 
 fn recursor_claims_external_constructor(block: &InductiveBlock) -> bool {
@@ -1254,6 +1264,14 @@ fn check_inductive(
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
     if recursor_claims_external_constructor(block) {
+        // Lean nested-inductive elaboration may introduce recursor rules for
+        // constructors of specialized nested carriers (for example
+        // Lean.Syntax.rec_2 over List.nil). Nucleus does not yet reconstruct
+        // that specialization/restoration law, so classify it as unsupported
+        // rather than malformed.
+        if block_has_nested_inductive(block) {
+            return Err(Verdict::Unknown);
+        }
         return Err(Verdict::Reject);
     }
 
