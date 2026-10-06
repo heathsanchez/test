@@ -923,7 +923,7 @@ impl<'a> Machine<'a> {
                 );
                 active.set(false);
                 Some(result)
-            })??;
+            })?;
             let exposed = exposed.proven_value()?.value.clone();
             if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD").is_some() {
                 eprintln!(
