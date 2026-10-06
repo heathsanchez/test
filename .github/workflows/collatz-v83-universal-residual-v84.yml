@@ -45,6 +45,10 @@ jobs:
           mkdir -p evidence
           lake env lean --version | tee evidence/toolchain.txt
           lake build CollatzFinal | tee evidence/spine.log
+          lake env lean -DautoImplicit=false \
+            -o .lake/build/lib/lean/Collatz/BiadicLexicographicCloseout.olean \
+            formal/Collatz/BiadicLexicographicCloseout.lean \
+            > evidence/lex-closeout-build.log
           lake env lean -DautoImplicit=false formal/Collatz/UniversalMacroResidual.lean \
             | tee evidence/universal-residual.log
           ! grep -q 'sorryAx' evidence/universal-residual.log
