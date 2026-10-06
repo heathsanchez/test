@@ -5,7 +5,8 @@ on:
   push:
     branches: [webarena-verified-capability-compiler-v1]
     paths:
-      - ".github/workflows/webarena_admin_inventory_185_186.yml"\n      - "scripts/webarena_shopping_admin_inventory_attributes_v2.py"
+      - ".github/workflows/webarena_admin_inventory_185_186.yml"
+      - "scripts/webarena_shopping_admin_inventory_attributes_v2.py"
 
 jobs:
   qualify:
