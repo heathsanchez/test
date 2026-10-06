@@ -6,7 +6,8 @@ on:
     branches: [webarena-verified-capability-compiler-v1]
     paths:
       - ".github/workflows/webarena_shopping_to_reddit_101.yml"
-      - "scripts/webarena_shopping_to_reddit_reviews.py"\n      - "scripts/webarena_shopping_to_reddit_reviews_v2.py"
+      - "scripts/webarena_shopping_to_reddit_reviews.py"
+      - "scripts/webarena_shopping_to_reddit_reviews_v2.py"
 
 jobs:
   qualify:
