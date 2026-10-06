@@ -5,7 +5,8 @@ on:
   push:
     branches: [webarena-verified-capability-compiler-v1]
     paths:
-      - ".github/workflows/webarena_gitlab_contributor_semantics_v2.yml"\n      - "scripts/webarena_gitlab_contributor_summary.py"
+      - ".github/workflows/webarena_gitlab_contributor_semantics_v2.yml"
+      - "scripts/webarena_gitlab_contributor_summary.py"
 
 jobs:
   qualify:
