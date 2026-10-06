@@ -1,0 +1,88 @@
+name: Collatz V83 universal residual V84
+on:
+  push:
+    branches: [collatz-v83-universal-residual-v84]
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v82-interface-kernel-v83
+          run-id: 37439111683
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v83
+
+      - name: Verify V83 authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json
+          q=json.load(open('parent-v83/qualification.json'))
+          claimed=q.pop('certificate_sha256')
+          got=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          assert claimed==got=='6d18fd5fb3c0e6455b66ec2543ad18f62925fe02251f772cadf2c55d612f7431'
+          assert q['status']=='WARRANTED_BOUNDED_FINITE_MACRO_RANK'
+          assert q['recurrent_sccs']==0
+          assert q['leftover_nodes']==0
+          print('V83_AUTHORITY_VERIFIED')
+          PY
+
+      - name: Kernel-check universal residual decomposition
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal | tee evidence/spine.log
+          lake env lean -DautoImplicit=false formal/Collatz/UniversalMacroResidual.lean \
+            | tee evidence/universal-residual.log
+          ! grep -q 'sorryAx' evidence/universal-residual.log
+          ! grep -q 'Lean.ofReduceBool' evidence/universal-residual.log
+          grep -q 'actualAffineFixed_iff_periodic_eq' evidence/universal-residual.log
+          grep -q 'collatz_of_zero_tail_eventual_lex_or_periodic_free' evidence/universal-residual.log
+          grep -q 'collatz_of_zero_tail_eventual_lex_or_affine_fixed' evidence/universal-residual.log
+          git rev-parse HEAD > evidence/commit.txt
+
+      - name: Seal qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            'schema':'COLLATZ_V83_UNIVERSAL_RESIDUAL_V84_QUALIFICATION',
+            'status':'WARRANTED_FORMAL_RESIDUAL_DECOMPOSITION',
+            'parent_v83_qualification_sha256':'6d18fd5fb3c0e6455b66ec2543ad18f62925fe02251f772cadf2c55d612f7431',
+            'actual_affine_fixed_iff_periodic':True,
+            'lex_or_periodic_closeout':True,
+            'lex_or_affine_fixed_closeout':True,
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+            'remaining_obligations':[
+              'universal source-admitted macro coverage/classification',
+              'exclude PositivePeriodic endpoints on ZeroTailLive states',
+            ],
+          }
+          result['certificate_sha256']=hashlib.sha256(
+            json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v83-universal-residual-v84
+          path: evidence
+          if-no-files-found: error
