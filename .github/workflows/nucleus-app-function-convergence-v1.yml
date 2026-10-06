@@ -55,6 +55,7 @@ jobs:
           results = {}
           env = os.environ | {
               "NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE": "1",
+              "NUCLEUS_TRACE_NEUTRAL_HEADS": "1",
               "NUCLEUS_TRACE_DOWNSTREAM": "1",
           }
           for name, path in targets:
@@ -80,6 +81,10 @@ jobs:
                       line for line in lines
                       if line.startswith("NUCLEUS_APPLICATION_FUNCTION_EXPOSURE:")
                   ][-10:],
+                  "neutral_head_mismatch": [
+                      line for line in lines
+                      if line.startswith("NUCLEUS_NEUTRAL_HEAD_MISMATCH:")
+                  ][-20:],
                   "downstream": [
                       line for line in lines
                       if line.startswith("NUCLEUS_DOWNSTREAM:")
