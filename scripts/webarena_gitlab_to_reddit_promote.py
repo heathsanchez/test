@@ -52,15 +52,33 @@ async def main():
     if int(task["intent_template_id"])!=117: raise SystemExit("unsupported template")
     inst=task["instantiation_dict"]; repo=clean(inst["repo"]); forum=clean(inst["forum"])
     out=Path(a.output_dir)/str(a.task_id); out.mkdir(parents=True,exist_ok=True); har=out/"network.har"
-    async with async_playwright() as p:
-        b=await p.chromium.launch(headless=True)
-        ctx=await b.new_context(extra_http_headers=REDDIT_AUTH,record_har_path=str(har),record_har_mode="full")
-        git=await ctx.new_page(); await sign_in(git)
-        project=await fetch_project(git,repo)
-        reddit=await ctx.new_page()
-        post_url=f"{GITLAB}/{project['path']}"
-        post=await submit_url_post(reddit,forum,project["description"],post_url)
-        await ctx.close(); await b.close()
+    stage="playwright_start"
+    diagnostic={"task_id":a.task_id,"repo":repo,"forum":forum,"stage":stage}
+    try:
+        async with async_playwright() as p:
+            stage="browser_launch"; diagnostic["stage"]=stage
+            b=await p.chromium.launch(headless=True)
+            stage="context_create"; diagnostic["stage"]=stage
+            ctx=await b.new_context(extra_http_headers=REDDIT_AUTH,record_har_path=str(har),record_har_mode="full")
+            stage="gitlab_sign_in"; diagnostic["stage"]=stage
+            git=await ctx.new_page(); await sign_in(git)
+            stage="gitlab_fetch_project"; diagnostic["stage"]=stage
+            project=await fetch_project(git,repo)
+            diagnostic["project"]=project
+            stage="reddit_open"; diagnostic["stage"]=stage
+            reddit=await ctx.new_page()
+            post_url=f"{GITLAB}/{project['path']}"
+            diagnostic["post_url"]=post_url
+            stage="reddit_submit"; diagnostic["stage"]=stage
+            post=await submit_url_post(reddit,forum,project["description"],post_url)
+            diagnostic["post"]=post
+            stage="close"; diagnostic["stage"]=stage
+            await ctx.close(); await b.close()
+    except Exception as e:
+        diagnostic.update({"stage":stage,"exception_type":type(e).__name__,"exception":str(e)})
+        (out/"failure_evidence.json").write_text(json.dumps(diagnostic,indent=2,ensure_ascii=False)+"\n")
+        print(json.dumps(diagnostic,indent=2,ensure_ascii=False))
+        raise
     response={"task_type":"MUTATE","status":"SUCCESS","retrieved_data":None,"error_details":None}
     evidence={"task_id":a.task_id,"repo":repo,"forum":forum,"project":project,"post_url":post_url,**post}
     (out/"agent_response.json").write_text(json.dumps(response,indent=2,ensure_ascii=False)+"\n")
