@@ -908,7 +908,7 @@ impl<'a> Machine<'a> {
         }
         if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD").is_some() {
             eprintln!(
-                "NUCLEUS_RECURSOR_MAJOR_PATH:start:target={:?}:transparency={:?}:budget={}",
+                "NUCLEUS_RECURSOR_MAJOR_GUARD:start:target={:?}:transparency={:?}:budget={}",
                 target.expr,
                 transparency,
                 budget.saturating_sub(1).min(16),
@@ -923,7 +923,7 @@ impl<'a> Machine<'a> {
         );
         if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD").is_some() {
             eprintln!(
-                "NUCLEUS_RECURSOR_MAJOR_PATH:result:target={:?}:judgment={:?}",
+                "NUCLEUS_RECURSOR_MAJOR_GUARD:result:target={:?}:judgment={:?}",
                 target.expr,
                 exposed_judgment,
             );
