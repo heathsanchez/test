@@ -79,7 +79,6 @@ theorem three_pow_mod_two (r : Nat) :
   | zero => decide
   | succ r ih =>
       rw [Nat.pow_succ, Nat.mul_mod, ih]
-      decide
 
 /-- Every positive odd anchor-owner pair has a next natural episode.
 
@@ -96,7 +95,6 @@ theorem naturalEpisode_exists
   have hNodd : N % 2 = 1 := by
     dsimp [N]
     rw [Nat.mul_mod, three_pow_mod_two r, hmodd]
-    decide
   have hNgt : 1 < N := by
     cases r with
     | zero => omega
@@ -115,11 +113,12 @@ theorem naturalEpisode_exists
   obtain ⟨k, y, hky, hyodd⟩ :=
     nat_dyadic_decomposition (N / 2) hhalf
   have hypos : 0 < y := by
-    by_contra h
-    have hy0 : y = 0 := Nat.eq_zero_of_not_pos h
-    subst y
-    simp at hky
-    omega
+    have hyne : y ≠ 0 := by
+      intro hy0
+      subst y
+      simp at hky
+      omega
+    exact Nat.pos_of_ne_zero hyne
   let s := k + 1
   have hspos : 0 < s := by dsimp [s]; omega
   have hNy : N = 2 ^ s * y + 1 := by
@@ -138,11 +137,12 @@ theorem naturalEpisode_exists
   obtain ⟨k', m', hkm, hm'odd⟩ :=
     nat_dyadic_decomposition ((y + 1) / 2) hyhalf
   have hm'pos : 0 < m' := by
-    by_contra h
-    have hm0 : m' = 0 := Nat.eq_zero_of_not_pos h
-    subst m'
-    simp at hkm
-    omega
+    have hmne : m' ≠ 0 := by
+      intro hm0
+      subst m'
+      simp at hkm
+      omega
+    exact Nat.pos_of_ne_zero hmne
   let r' := k' + 1
   have hr'pos : 0 < r' := by dsimp [r']; omega
   have hym : y + 1 = 2 ^ r' * m' := by
