@@ -52,6 +52,10 @@ jobs:
             -o .lake/build/lib/lean/Collatz/UniversalMacroResidual.olean \
             formal/Collatz/UniversalMacroResidual.lean \
             > evidence/universal-residual-build.log
+          lake env lean -DautoImplicit=false \
+            -o .lake/build/lib/lean/Collatz/ProtectedFutureQuotient.olean \
+            formal/Collatz/ProtectedFutureQuotient.lean \
+            > evidence/protected-future-build.log
           lake env lean -DautoImplicit=false formal/Collatz/SourcePrecisionMacroCloseout.lean \
             | tee evidence/source-precision-closeout.log
           ! grep -q 'sorryAx' evidence/source-precision-closeout.log
