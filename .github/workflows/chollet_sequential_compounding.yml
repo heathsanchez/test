@@ -1,0 +1,362 @@
+name: Chollet sequential verifier compounding test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-sequential-compounding-v4]
+    paths:
+      - ".github/workflows/chollet_sequential_compounding.yml"
+
+jobs:
+  sequential-compounding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      UPSTREAM_SHA: 6473f72db5dcefc97b5725b59e734504edc28a21
+      A_AUTHORITY_RUN: "37567480458"
+      A_AUTHORITY_HEAD: "3d3dc88fdbb6b22e2af8905177e78642eba1a8ff"
+      A_POLICY: "newest__semantic__sum"
+      A_FREEZE_SHA256: "ea0c264a1d2b5e2001cdd32fa5904cce9ded87dc50797805e6f192e2f87d9f2e"
+      A_CODE_SHA256: "135be75255d17c6de537c1f5e6d1a214b62626d636a928370470ae3180591314"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen capability A authority
+        run: |
+          ROOT=artifacts/chollet_sequential
+          mkdir -p "$ROOT"
+          ACTUAL=$(sha256sum scripts/webarena_multibit_verifier_transfer.py | awk '{print $1}')
+          test "$ACTUAL" = "$A_CODE_SHA256"
+          cat > "$ROOT/capability_a_authority.json" <<JSON
+          {
+            "state": "WARRANTED_BOUNDED_REUSABLE",
+            "run_id": $A_AUTHORITY_RUN,
+            "head": "$A_AUTHORITY_HEAD",
+            "policy": "$A_POLICY",
+            "freeze_sha256": "$A_FREEZE_SHA256",
+            "code_sha256": "$A_CODE_SHA256",
+            "training_task_replayed_in_this_run": false
+          }
+          JSON
+          cat "$ROOT/capability_a_authority.json"
+
+      - name: Checkout pinned WebArena-Verified authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout "$UPSTREAM_SHA"
+
+      - name: Start Shopping Admin
+        run: |
+          ROOT=artifacts/chollet_sequential
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}'             | tee "$ROOT/environment_image_digest.txt"
+          docker run -d --name webarena-verified-shopping_admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          docker logs webarena-verified-shopping_admin || true
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Prepare candidate-facing no-answer task files
+        run: |
+          ROOT=artifacts/chollet_sequential
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard_authority.json"
+          cp upstream/assets/dataset/webarena-verified.json "$ROOT/full_authority.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("artifacts/chollet_sequential")
+          for src,dst in (("hard_authority.json","hard_no_eval.json"),("full_authority.json","full_no_eval.json")):
+              tasks=json.loads((root/src).read_text())
+              stripped=[]
+              for task in tasks:
+                  row={k:v for k,v in task.items() if k not in {"eval","reference_url"}}
+                  stripped.append(row)
+              (root/dst).write_text(json.dumps(stripped,indent=2)+"\n")
+          split={
+              "capability_A":{
+                  "training_task":193,
+                  "training_replayed":False,
+                  "preservation_tasks":[194,195,196,197],
+                  "authority_run":37567480458
+              },
+              "capability_B":{
+                  "training_tasks":[11,348],
+                  "held_out_tasks":[12,13,14,15,344,345,346,347],
+                  "policy_bits":{
+                      "term_binding":["semantic","ignore_filter"],
+                      "time_binding":["semantic","ignore_filter"]
+                  }
+              },
+              "candidate_task_files_contain_eval":False
+          }
+          (root/"sequential_split.json").write_text(json.dumps(split,indent=2)+"\n")
+          print(json.dumps(split,indent=2))
+          PY
+          cat > "$ROOT/config.json" <<'JSON'
+          {
+            "environments": {
+              "__SHOPPING_ADMIN__": {
+                "urls": ["http://localhost:7780/admin"],
+                "active_url_idx": 0
+              }
+            }
+          }
+          JSON
+          sha256sum scripts/webarena_shopping_admin_review_counts.py             | tee "$ROOT/capability_b_semantic_code.sha256"
+
+      - name: Generate B semantic training consequences
+        run: |
+          ROOT=artifacts/chollet_sequential
+          python scripts/webarena_shopping_admin_review_counts.py             --task-id 11 --task-file "$ROOT/full_no_eval.json"             --base-url http://localhost:7780/admin --output-dir "$ROOT/b_train/semantic"
+          python scripts/webarena_shopping_admin_review_counts.py             --task-id 348 --task-file "$ROOT/full_no_eval.json"             --base-url http://localhost:7780/admin --output-dir "$ROOT/b_train/semantic"
+
+      - name: Generate B ignore-filter training consequences
+        run: |
+          python - <<'PY'
+          import asyncio, json, re
+          from pathlib import Path
+          from playwright.async_api import async_playwright
+
+          async def main():
+              root=Path("artifacts/chollet_sequential")
+              async with async_playwright() as p:
+                  browser=await p.chromium.launch(headless=True)
+                  ctx=await browser.new_context(extra_http_headers={"X-M2-Admin-Auto-Login":"admin:admin1234"})
+                  page=await ctx.new_page()
+                  resp=await page.goto("http://localhost:7780/admin/review/product/",wait_until="networkidle",timeout=120000)
+                  if resp is None or resp.status!=200:
+                      raise RuntimeError("review grid navigation failed")
+                  total=page.locator("#reviewGrid-total-count")
+                  if await total.count()==0:
+                      raise RuntimeError("review total count not found")
+                  txt=re.sub(r"\s+"," ",await total.inner_text()).strip().replace(",","")
+                  if not txt.isdigit():
+                      raise RuntimeError(txt)
+                  count=int(txt)
+                  for task_id in (11,348):
+                      out=root/"b_train"/"ignore"/str(task_id)
+                      out.mkdir(parents=True,exist_ok=True)
+                      response={"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":[count],"error_details":None}
+                      (out/"agent_response.json").write_text(json.dumps(response,indent=2)+"\n")
+                      (out/"capability_evidence.json").write_text(json.dumps({
+                          "task_id":task_id,
+                          "policy":"ignore_filter_return_all_reviews",
+                          "count":count
+                      },indent=2)+"\n")
+                  await browser.close()
+              print(json.dumps({"ignore_filter_count":count},indent=2))
+          asyncio.run(main())
+          PY
+
+      - name: Compose and score four B policies on training only
+        run: |
+          python - <<'PY'
+          import hashlib, json, shutil
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/chollet_sequential")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
+
+          policies=[
+              ("semantic","semantic"),
+              ("semantic","ignore_filter"),
+              ("ignore_filter","semantic"),
+              ("ignore_filter","ignore_filter"),
+          ]
+          results={}
+          passing=[]
+          for term_binding,time_binding in policies:
+              pid=f"term={term_binding}__time={time_binding}"
+              pdir=root/"b_train"/"policies"/pid
+              for task_id,binding in ((11,term_binding),(348,time_binding)):
+                  src=root/"b_train"/("semantic" if binding=="semantic" else "ignore")/str(task_id)/"agent_response.json"
+                  dst=pdir/str(task_id)
+                  dst.mkdir(parents=True,exist_ok=True)
+                  shutil.copy2(src,dst/"agent_response.json")
+              task_results={}
+              for task_id in (11,348):
+                  response=pdir/str(task_id)/"agent_response.json"
+                  r=wa.evaluate_task(task_id=task_id,agent_response=response,network_trace=empty)
+                  d=r.model_dump(mode="json",exclude_none=True)
+                  (response.parent/"eval_result.json").write_text(json.dumps(d,indent=2)+"\n")
+                  task_results[str(task_id)]={"score":float(r.score),"status":r.status.value}
+              success=sum(v["score"]==1.0 and v["status"]=="success" for v in task_results.values())
+              results[pid]={"results":task_results,"success_count":success}
+              if success==2:
+                  passing.append(pid)
+
+          assert passing==["term=semantic__time=semantic"], {"passing":passing,"results":results}
+          frozen={
+              "epistemic_state":"CANDIDATE_FROZEN_AFTER_B_TRAINING",
+              "capability_A_training_replayed":False,
+              "B_training_tasks":[11,348],
+              "B_selected_policy_id":passing[0],
+              "B_selected_policy":{"term_binding":"semantic","time_binding":"semantic"},
+              "B_training_results":results,
+              "B_semantic_code_sha256":(root/"capability_b_semantic_code.sha256").read_text().split()[0],
+              "held_out_answers_observed_before_B_freeze":False
+          }
+          frozen["B_freeze_sha256"]=hashlib.sha256(json.dumps(frozen,sort_keys=True).encode()).hexdigest()
+          (root/"capability_b_frozen.json").write_text(json.dumps(frozen,indent=2)+"\n")
+          print(json.dumps(frozen,indent=2))
+          PY
+
+      - name: Execute frozen B on untouched siblings
+        run: |
+          ROOT=artifacts/chollet_sequential
+          for id in 12 13 14 15 344 345 346 347; do
+            python scripts/webarena_shopping_admin_review_counts.py               --task-id "$id" --task-file "$ROOT/full_no_eval.json"               --base-url http://localhost:7780/admin --output-dir "$ROOT/b_heldout/selected"
+          done
+
+      - name: Execute pre-B ignore baseline post-freeze
+        run: |
+          python - <<'PY'
+          import asyncio, json, re
+          from pathlib import Path
+          from playwright.async_api import async_playwright
+
+          async def main():
+              root=Path("artifacts/chollet_sequential")
+              async with async_playwright() as p:
+                  browser=await p.chromium.launch(headless=True)
+                  ctx=await browser.new_context(extra_http_headers={"X-M2-Admin-Auto-Login":"admin:admin1234"})
+                  page=await ctx.new_page()
+                  resp=await page.goto("http://localhost:7780/admin/review/product/",wait_until="networkidle",timeout=120000)
+                  if resp is None or resp.status!=200:
+                      raise RuntimeError("review grid navigation failed")
+                  total=page.locator("#reviewGrid-total-count")
+                  txt=re.sub(r"\s+"," ",await total.inner_text()).strip().replace(",","")
+                  count=int(txt)
+                  for task_id in (12,13,14,15,344,345,346,347):
+                      out=root/"b_heldout"/"baseline_ignore"/str(task_id)
+                      out.mkdir(parents=True,exist_ok=True)
+                      response={"task_type":"RETRIEVE","status":"SUCCESS","retrieved_data":[count],"error_details":None}
+                      (out/"agent_response.json").write_text(json.dumps(response,indent=2)+"\n")
+                  await browser.close()
+              print(json.dumps({"baseline_ignore_count":count},indent=2))
+          asyncio.run(main())
+          PY
+
+      - name: Re-execute frozen A only after B acquisition
+        run: |
+          ROOT=artifacts/chollet_sequential
+          python scripts/webarena_multibit_verifier_transfer.py observe             --base-url http://localhost:7780/admin             --output "$ROOT/a_preservation_snapshot.json"
+          for id in 194 195 196 197; do
+            python scripts/webarena_multibit_verifier_transfer.py compute               --snapshot "$ROOT/a_preservation_snapshot.json"               --task-id "$id"               --task-file "$ROOT/full_no_eval.json"               --recency newest               --status-binding semantic               --aggregation sum               --output-dir "$ROOT/a_preservation"
+          done
+
+      - name: Qualify sequential compounding
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/chollet_sequential")
+          b_frozen=json.loads((root/"capability_b_frozen.json").read_text())
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
+
+          def score(group, ids):
+              results={}
+              for task_id in ids:
+                  p=group/str(task_id)/"agent_response.json"
+                  r=wa.evaluate_task(task_id=task_id,agent_response=p,network_trace=empty)
+                  d=r.model_dump(mode="json",exclude_none=True)
+                  (p.parent/"eval_result.json").write_text(json.dumps(d,indent=2)+"\n")
+                  results[str(task_id)]={"score":float(r.score),"status":r.status.value}
+              return {
+                  "results":results,
+                  "success_count":sum(v["score"]==1.0 and v["status"]=="success" for v in results.values())
+              }
+
+          b_ids=(12,13,14,15,344,345,346,347)
+          a_ids=(194,195,196,197)
+          b_selected=score(root/"b_heldout"/"selected",b_ids)
+          b_baseline=score(root/"b_heldout"/"baseline_ignore",b_ids)
+          a_preserved=score(root/"a_preservation",a_ids)
+
+          a_contracts={}
+          for task_id in a_ids:
+              ev=json.loads((root/"a_preservation"/str(task_id)/"candidate_evidence.json").read_text())
+              a_contracts[str(task_id)]=ev["protected_response_shape_contract"]
+          a_contracts_green=all(v["passes"] for v in a_contracts.values())
+
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED" if (
+                  b_selected["success_count"]==8
+                  and b_baseline["success_count"]<8
+                  and a_preserved["success_count"]==4
+                  and a_contracts_green
+              ) else "REJECTED",
+              "experiment":"sequential non-math verifier capability compounding",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "capability_A":{
+                  "prior_authority_run":37567480458,
+                  "prior_freeze_sha256":"ea0c264a1d2b5e2001cdd32fa5904cce9ded87dc50797805e6f192e2f87d9f2e",
+                  "training_task_193_replayed":False,
+                  "post_B_preservation":a_preserved,
+                  "protected_contracts":a_contracts
+              },
+              "capability_B":{
+                  "training_tasks":[11,348],
+                  "selected_policy":b_frozen["B_selected_policy"],
+                  "freeze_sha256":b_frozen["B_freeze_sha256"],
+                  "training_results":b_frozen["B_training_results"],
+                  "held_out_tasks":list(b_ids),
+                  "held_out_selected":b_selected,
+                  "pre_B_ignore_baseline":b_baseline
+              },
+              "combined_post_B_success_count":a_preserved["success_count"]+b_selected["success_count"],
+              "combined_post_B_task_count":len(a_ids)+len(b_ids),
+              "claims":{
+                  "sequential_verifier_selected_capability_compounding_outside_math_code":{
+                      "state":"WARRANTED_BOUNDED" if (
+                          b_selected["success_count"]==8
+                          and b_baseline["success_count"]<8
+                          and a_preserved["success_count"]==4
+                      ) else "REJECTED",
+                      "boundary":"frozen payment semantics A followed by review-filter semantics B in one WebArena Shopping Admin world"
+                  },
+                  "open_ended_nonmath_scaling":{
+                      "state":"UNKNOWN",
+                      "boundary":"two sequential bounded capability families do not establish arbitrary-depth growth"
+                  }
+              }
+          }
+          (root/"sequential_compounding_result.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+
+          assert b_selected["success_count"]==8, seal
+          assert b_baseline["success_count"]<8, seal
+          assert a_preserved["success_count"]==4, seal
+          assert a_contracts_green, seal
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chollet-sequential-verifier-compounding
+          path: artifacts/chollet_sequential
