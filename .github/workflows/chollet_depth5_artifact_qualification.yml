@@ -1,0 +1,84 @@
+name: Chollet depth5 artifact qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-depth5-representation-fix-v8]
+    paths:
+      - ".github/workflows/chollet_depth5_artifact_qualification.yml"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned evaluator
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install evaluator
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]"
+      - name: Recover failed-run evidence artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api /repos/heathsanchez/test/actions/artifacts/11467013627/zip > /tmp/depth5.zip
+          mkdir -p artifacts/chollet_depth5
+          unzip -o /tmp/depth5.zip -d artifacts/chollet_depth5
+          echo "2a8d2792cd605e4076e6b044a957ed49c913db692b71259e5320da5494d416e8  artifact" > artifacts/chollet_depth5/source_artifact_digest.txt
+      - name: Score protected depth5 future
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          r=Path("artifacts/chollet_depth5")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(r/"config.json"))
+          e=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          def score(g,ids):
+              rr={}
+              for tid in ids:
+                  x=wa.evaluate_task(task_id=tid,agent_response=r/g/str(tid)/"agent_response.json",network_trace=e)
+                  rr[str(tid)]={"score":float(x.score),"status":x.status.value}
+              return {"results":rr,"success_count":sum(v["score"]==1 and v["status"]=="success" for v in rr.values())}
+          A=score("a",(194,195,196,197))
+          B=score("b",(12,13,14,15,344,345,346,347))
+          C=score("c",(164,165,166,167))
+          D=score("d",(168,169,172))
+          E=score("e",(62,64,65))
+          counts=(A["success_count"],B["success_count"],C["success_count"],D["success_count"],E["success_count"])
+          result={
+              "epistemic_state":"WARRANTED_BOUNDED" if counts==(4,8,4,3,3) else "REJECTED",
+              "experiment":"depth5 no-revisit retention after induced grouped-count representation",
+              "source_run":37587520311,
+              "source_artifact":11467013627,
+              "source_artifact_digest":"sha256:2a8d2792cd605e4076e6b044a957ed49c913db692b71259e5320da5494d416e8",
+              "A":A,"B":B,"C":C,"D":D,"E":E,
+              "training_replayed":{"A":False,"B":False,"C":False,"D":False,"E":False},
+              "combined_success_count":sum(counts),
+              "combined_task_count":22,
+              "claims":{
+                  "depth5_sequential_compounding_with_representation_invention":{"state":"WARRANTED_BOUNDED" if counts==(4,8,4,3,3) else "REJECTED"},
+                  "open_ended_nonmath_scaling":{"state":"UNKNOWN"}
+              }
+          }
+          (r/"depth5_qualified.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result,indent=2))
+          assert result["epistemic_state"]=="WARRANTED_BOUNDED",result
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chollet-depth5-qualified
+          path: artifacts/chollet_depth5
