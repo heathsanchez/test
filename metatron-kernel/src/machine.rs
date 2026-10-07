@@ -10,11 +10,6 @@ use crate::value::{
     Closure, EnvBinding, EnvFrame, FreeId, LevelSubstitution, Neutral, NeutralHead, Value,
 };
 
-std::thread_local! {
-    static GUARDED_RECURSOR_MAJOR_EXPOSURE_ACTIVE: std::cell::Cell<bool> =
-        const { std::cell::Cell::new(false) };
-}
-
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct AuthorityId(pub u64);
 
@@ -908,47 +903,13 @@ impl<'a> Machine<'a> {
         {
             return Some((constructor, arguments));
         }
-        if std::env::var_os("NUCLEUS_GUARDED_RECURSOR_MAJOR_EXPOSURE").is_some() {
-            let exposed = GUARDED_RECURSOR_MAJOR_EXPOSURE_ACTIVE.with(|active| {
-                if active.get() {
-                    return None;
-                }
-                active.set(true);
-                let result = self.expose_internal(
-                    target.clone(),
-                    Transparency::Full,
-                    budget.saturating_sub(1).min(16),
-                    false,
-                    false,
-                );
-                active.set(false);
-                Some(result)
-            })?;
-            let exposed = exposed.proven_value()?.value.clone();
-            if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD").is_some() {
-                eprintln!(
-                    "NUCLEUS_RECURSOR_MAJOR_GUARD:target={:?}:exposed={:?}:budget={}",
-                    target.expr,
-                    exposed,
-                    budget.saturating_sub(1).min(16),
-                );
-            }
-            return match exposed {
-                Value::Neutral(Neutral {
-                    head: NeutralHead::Const { name, .. },
-                    spine,
-                }) if matches_rule(name, spine.len()) => Some((name, spine)),
-                _ => None,
-            };
-        }
-
-        if transparency != Transparency::Full {
+        if budget == 0 {
             return None;
         }
         let exposed = self
             .expose_internal(
                 target.clone(),
-                Transparency::Full,
+                transparency,
                 budget.saturating_sub(1).min(16),
                 false,
                 false,
