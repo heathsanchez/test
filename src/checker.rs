@@ -533,6 +533,40 @@ fn nested_parameter_has_definite_projection_owner_mismatch(
     false
 }
 
+fn external_recursor_matches_declared_family(
+    export: &ResolvedExport,
+    owner: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let Some(owner_block) = export.declarations.iter().find_map(|declaration| {
+        let Declaration::Inductive(candidate) = declaration else {
+            return None;
+        };
+        candidate
+            .types
+            .iter()
+            .any(|inductive| inductive.name == owner)
+            .then_some(candidate)
+    }) else {
+        return false;
+    };
+
+    if owner_block.types.iter().any(|inductive| inductive.is_unsafe)
+        || owner_block.constructors.iter().any(|constructor| constructor.is_unsafe)
+        || recursor.rules.len() != owner_block.constructors.len()
+    {
+        return false;
+    }
+
+    recursor
+        .rules
+        .iter()
+        .zip(&owner_block.constructors)
+        .all(|(rule, constructor)| {
+            rule.constructor == constructor.name && rule.num_fields == constructor.num_fields
+        })
+}
+
 fn generated_nested_family_candidate(
     export: &ResolvedExport,
     block: &InductiveBlock,
@@ -591,7 +625,7 @@ fn generated_nested_family_candidate(
         _ => None,
     };
     let mut families = HashSet::new();
-    let mut saw_current_family = false;
+    let mut current_family_recursors = 0usize;
 
     for recursor in &block.recursors {
         if recursor.is_unsafe
@@ -628,7 +662,7 @@ fn generated_nested_family_candidate(
             return false;
         }
         if owner == inductive.name {
-            saw_current_family = true;
+            current_family_recursors += 1;
             if recursor.rules.len() != block.constructors.len()
                 || !recursor
                     .rules
@@ -641,13 +675,20 @@ fn generated_nested_family_candidate(
             {
                 return false;
             }
+        } else if !external_recursor_matches_declared_family(export, owner, recursor) {
+            return false;
         }
         families.insert(owner);
     }
 
-    saw_current_family
-        && families.len() == block.recursors.len()
-        && families.len() == nested_count + 1
+    // num_nested counts nested occurrences, not distinct carrier owners.
+    // The same lawful carrier may occur multiple times. Require exactly one
+    // recursor for the declared family and exact constructor metadata for
+    // every independently declared external carrier.
+    current_family_recursors == 1
+        && families.contains(&inductive.name)
+        && families.len() >= 2
+        && families.len() <= nested_count + 1
 }
 
 fn check_generated_nested_family(
