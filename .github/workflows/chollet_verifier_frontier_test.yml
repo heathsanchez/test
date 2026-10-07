@@ -1,0 +1,185 @@
+name: Chollet verifier-frontier test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-verifier-frontier-test-v1]
+    paths:
+      - "scripts/webarena_verifier_contract_audit.py"
+      - ".github/workflows/chollet_verifier_frontier_test.yml"
+
+jobs:
+  verifier-frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      UPSTREAM_SHA: 6473f72db5dcefc97b5725b59e734504edc28a21
+      OLD_SHA: 3ebbce7f6ffb0e83c7a2618665913f19dd1a514d
+      NEW_SHA: eb1fa5daf85048a29abf1de0d82cf8c3fed38290
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout pinned WebArena-Verified authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout "$UPSTREAM_SHA"
+
+      - name: Audit task contract versus evaluator contract
+        run: |
+          mkdir -p artifacts/chollet_verifier_frontier
+          python scripts/webarena_verifier_contract_audit.py \
+            --dataset upstream/assets/dataset/webarena-verified.json \
+            --output artifacts/chollet_verifier_frontier/contract_audit.json
+
+      - name: Materialize pre-separator and post-separator capabilities
+        run: |
+          git show "$OLD_SHA:scripts/webarena_shopping_admin_visible_order_selector.py" > /tmp/selector_old.py
+          git show "$NEW_SHA:scripts/webarena_shopping_admin_visible_order_selector.py" > /tmp/selector_new.py
+          sha256sum /tmp/selector_old.py /tmp/selector_new.py | tee artifacts/chollet_verifier_frontier/candidate_digests.txt
+          git diff "$OLD_SHA" "$NEW_SHA" -- scripts/webarena_shopping_admin_visible_order_selector.py \
+            > artifacts/chollet_verifier_frontier/separator.diff
+          cat artifacts/chollet_verifier_frontier/separator.diff
+
+      - name: Start one shared Shopping Admin world
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker image inspect am1n3e/webarena-verified-shopping_admin \
+            --format '{{index .RepoDigests 0}}' | tee artifacts/chollet_verifier_frontier/environment_image_digest.txt
+          docker run -d --name webarena-verified-shopping_admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          docker logs webarena-verified-shopping_admin || true
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Prepare frozen datasets
+        run: |
+          ROOT=artifacts/chollet_verifier_frontier
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cp upstream/assets/dataset/webarena-verified.json "$ROOT/full.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {
+            "environments": {
+              "__SHOPPING_ADMIN__": {
+                "urls": ["http://localhost:7780/admin"],
+                "active_url_idx": 0
+              }
+            }
+          }
+          JSON
+
+      - name: Execute pre-separator candidate
+        run: |
+          ROOT=artifacts/chollet_verifier_frontier
+          python /tmp/selector_old.py --task-id 200 --task-file "$ROOT/hard.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/old"
+          for id in 199 202 203; do
+            python /tmp/selector_old.py --task-id "$id" --task-file "$ROOT/full.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/old"
+          done
+
+      - name: Execute post-separator candidate
+        run: |
+          ROOT=artifacts/chollet_verifier_frontier
+          python /tmp/selector_new.py --task-id 200 --task-file "$ROOT/hard.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/new"
+          for id in 199 202 203; do
+            python /tmp/selector_new.py --task-id "$id" --task-file "$ROOT/full.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/new"
+          done
+
+      - name: Score both authorities and qualify causal separator
+        run: |
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/chollet_verifier_frontier")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(
+              is_playwright=False,
+              src_file=Path("<no-network-evaluator>"),
+              events=(),
+          )
+          full=json.loads((root/"full.json").read_text())
+          task203=next(t for t in full if int(t["task_id"])==203)
+          spec=task203["instantiation_dict"]["retrieved_data_format_spec"]
+          requested=sorted(dict.fromkeys(re.findall(r'"([^"]+)"', spec)))
+
+          results={}
+          for candidate in ("old","new"):
+              official={}
+              for task_id in (200,199,202,203):
+                  response=root/candidate/str(task_id)/"agent_response.json"
+                  result=wa.evaluate_task(task_id=task_id,agent_response=response,network_trace=empty)
+                  dumped=result.model_dump(mode="json",exclude_none=True)
+                  (root/candidate/str(task_id)/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+                  official[str(task_id)]={"score":float(result.score),"status":result.status.value}
+
+              response203=json.loads((root/candidate/"203"/"agent_response.json").read_text())
+              rows=response203["retrieved_data"]
+              output_keys=sorted(rows[0].keys()) if rows and isinstance(rows[0],dict) else []
+              results[candidate]={
+                  "official": official,
+                  "official_pass_count": sum(v["score"]==1.0 and v["status"]=="success" for v in official.values()),
+                  "task203_instruction_contract": {
+                      "requested_keys": requested,
+                      "output_keys": output_keys,
+                      "passes": output_keys==requested,
+                  },
+              }
+
+          claims={
+              "verifier_can_select_a_benchmark_improving_refinement": {
+                  "state": "WARRANTED_BOUNDED",
+                  "evidence": "official score changes old 3/4 -> new 4/4 under identical pinned evaluator/world",
+              },
+              "verifier_success_implies_instruction_fidelity": {
+                  "state": "REJECTED_ON_THIS_BOUNDARY",
+                  "evidence": "task 203 post-separator output passes evaluator while violating the task's explicit requested key contract",
+              },
+              "general_nonverifiable_frontier_becomes_unbounded_with_verification": {
+                  "state": "UNKNOWN",
+                  "evidence": "one bounded web-task separator cannot establish indefinite RLVR scaling",
+              },
+          }
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED",
+              "experiment":"external verifier as developmental separator in a non-math/code web task",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "old_candidate_commit":"3ebbce7f6ffb0e83c7a2618665913f19dd1a514d",
+              "new_candidate_commit":"eb1fa5daf85048a29abf1de0d82cf8c3fed38290",
+              "separator":"task 203 output object key purchase_date -> date",
+              "results":results,
+              "claims":claims,
+          }
+          (root/"causal_separator_result.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+
+          assert results["old"]["official_pass_count"]==3, seal
+          assert results["new"]["official_pass_count"]==4, seal
+          assert results["old"]["official"]["203"]["score"]==0.0, seal
+          assert results["new"]["official"]["203"]["score"]==1.0, seal
+          assert results["old"]["task203_instruction_contract"]["passes"] is True, seal
+          assert results["new"]["task203_instruction_contract"]["passes"] is False, seal
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chollet-verifier-frontier-test
+          path: artifacts/chollet_verifier_frontier
