@@ -330,7 +330,63 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
-                let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                let Some((domain, body)) = self.pi_view(function_type.clone(), *remaining) else {
+                    if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
+                        let summary = match &function_type {
+                            Judgment::Proven {
+                                value: TypeValue::Term(closure),
+                                ..
+                            } => format!(
+                                "term(expr={:?},env={})",
+                                closure.expr,
+                                closure.env.id()
+                            ),
+                            Judgment::Proven {
+                                value: TypeValue::Pi { .. },
+                                ..
+                            } => "pi".to_string(),
+                            Judgment::Proven {
+                                value: TypeValue::Sort(level),
+                                ..
+                            } => format!("sort({level:?})"),
+                            Judgment::Refuted { obstruction } => {
+                                format!("refuted({})", obstruction.0)
+                            }
+                            Judgment::Unknown { residual } => {
+                                format!("unknown({})", residual.0)
+                            }
+                        };
+                        let (reducible, full) = match &function_type {
+                            Judgment::Proven {
+                                value: TypeValue::Term(closure),
+                                ..
+                            } => {
+                                let probe_budget = (*remaining).max(4096);
+                                (
+                                    self.machine().expose(
+                                        closure.clone(),
+                                        Transparency::Reducible,
+                                        probe_budget,
+                                    ),
+                                    self.machine().expose(
+                                        closure.clone(),
+                                        Transparency::Full,
+                                        probe_budget,
+                                    ),
+                                )
+                            }
+                            _ => (
+                                Judgment::unknown("not-term"),
+                                Judgment::unknown("not-term"),
+                            ),
+                        };
+                        eprintln!(
+                            "NUCLEUS_APPLICATION_FUNCTION_TYPE:application={expression:?}:function={fun:?}:argument={arg:?}:context_len={}:frame={}:remaining={}:function_type={summary}:reducible={reducible:?}:full={full:?}",
+                            context.len(),
+                            frame.id(),
+                            *remaining,
+                        );
+                    }
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true, cache) {
