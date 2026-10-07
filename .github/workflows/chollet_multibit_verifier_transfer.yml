@@ -1,0 +1,275 @@
+name: Chollet multibit verifier transfer test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-verifier-multibit-v3]
+    paths:
+      - "scripts/webarena_multibit_verifier_transfer.py"
+      - ".github/workflows/chollet_multibit_verifier_transfer.yml"
+
+jobs:
+  multibit-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned WebArena-Verified authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Start Shopping Admin
+        run: |
+          ROOT=artifacts/chollet_multibit
+          mkdir -p "$ROOT"
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}'             | tee "$ROOT/environment_image_digest.txt"
+          docker run -d --name webarena-verified-shopping_admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          docker logs webarena-verified-shopping_admin || true
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Freeze observation and task split
+        run: |
+          ROOT=artifacts/chollet_multibit
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cp upstream/assets/dataset/webarena-verified.json "$ROOT/full.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {
+            "environments": {
+              "__SHOPPING_ADMIN__": {
+                "urls": ["http://localhost:7780/admin"],
+                "active_url_idx": 0
+              }
+            }
+          }
+          JSON
+          python scripts/webarena_multibit_verifier_transfer.py observe             --base-url http://localhost:7780/admin             --output "$ROOT/order_snapshot.json"
+          sha256sum scripts/webarena_multibit_verifier_transfer.py > "$ROOT/candidate_code.sha256"
+          sha256sum "$ROOT/order_snapshot.json" > "$ROOT/observation.sha256"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("artifacts/chollet_multibit")
+          hard=json.loads((root/"hard.json").read_text())
+          full=json.loads((root/"full.json").read_text())
+          train=next(t for t in hard if int(t["task_id"])==193)
+          held=[next(t for t in full if int(t["task_id"])==i) for i in (194,195,196,197)]
+          manifest={
+              "training_task_id":193,
+              "held_out_task_ids":[194,195,196,197],
+              "training_intent":train["intent"],
+              "held_out_intents":[{"task_id":int(t["task_id"]),"intent":t["intent"]} for t in held],
+              "policy_bits":{
+                  "recency":["newest","oldest"],
+                  "status_binding":["semantic","coarse_non_cancelled"],
+                  "aggregation":["sum","mean"]
+              },
+              "candidate_count":8,
+              "note":"Expected answers are omitted from this candidate-facing split manifest."
+          }
+          (root/"split_manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
+          print(json.dumps(manifest,indent=2))
+          PY
+
+      - name: Generate all eight policies on exactly one training task
+        run: |
+          ROOT=artifacts/chollet_multibit
+          for recency in newest oldest; do
+            for status in semantic coarse_non_cancelled; do
+              for agg in sum mean; do
+                policy="${recency}__${status}__${agg}"
+                python scripts/webarena_multibit_verifier_transfer.py compute                   --snapshot "$ROOT/order_snapshot.json"                   --task-id 193                   --task-file "$ROOT/hard.json"                   --recency "$recency"                   --status-binding "$status"                   --aggregation "$agg"                   --output-dir "$ROOT/train/$policy"
+              done
+            done
+          done
+
+      - name: Select and freeze policy using only task 193 verifier feedback
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/chollet_multibit")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
+          policies=[]
+          for recency in ("newest","oldest"):
+              for status in ("semantic","coarse_non_cancelled"):
+                  for agg in ("sum","mean"):
+                      policies.append(f"{recency}__{status}__{agg}")
+
+          results={}
+          passing=[]
+          for policy in policies:
+              p=root/"train"/policy/"193"/"agent_response.json"
+              r=wa.evaluate_task(task_id=193,agent_response=p,network_trace=empty)
+              d=r.model_dump(mode="json",exclude_none=True)
+              (p.parent/"eval_result.json").write_text(json.dumps(d,indent=2)+"\n")
+              row={"score":float(r.score),"status":r.status.value}
+              results[policy]=row
+              if row["score"]==1.0 and row["status"]=="success":
+                  passing.append(policy)
+
+          assert len(passing)==1, {"passing":passing,"results":results}
+          selected=passing[0]
+          recency,status,agg=selected.split("__")
+          frozen={
+              "epistemic_state":"CANDIDATE_FROZEN_AFTER_SINGLE_VERIFIER_FEEDBACK",
+              "training_task_id":193,
+              "selected_policy":{
+                  "recency":recency,
+                  "status_binding":status,
+                  "aggregation":agg,
+              },
+              "selected_policy_id":selected,
+              "training_results":results,
+              "candidate_count":len(policies),
+              "candidate_code_sha256":(root/"candidate_code.sha256").read_text().split()[0],
+              "observation_sha256":(root/"observation.sha256").read_text().split()[0],
+              "held_out_answers_observed_before_freeze":False,
+          }
+          frozen["freeze_sha256"]=hashlib.sha256(json.dumps(frozen,sort_keys=True).encode()).hexdigest()
+          (root/"frozen_policy.json").write_text(json.dumps(frozen,indent=2)+"\n")
+          print(json.dumps(frozen,indent=2))
+          PY
+
+      - name: Execute frozen policy on untouched siblings
+        run: |
+          ROOT=artifacts/chollet_multibit
+          eval "$(python - <<'PY'
+          import json, shlex
+          p=json.load(open("artifacts/chollet_multibit/frozen_policy.json"))["selected_policy"]
+          print("RECENCY="+shlex.quote(p["recency"]))
+          print("STATUS_BINDING="+shlex.quote(p["status_binding"]))
+          print("AGGREGATION="+shlex.quote(p["aggregation"]))
+          PY
+          )"
+          for id in 194 195 196 197; do
+            python scripts/webarena_multibit_verifier_transfer.py compute               --snapshot "$ROOT/order_snapshot.json"               --task-id "$id"               --task-file "$ROOT/full.json"               --recency "$RECENCY"               --status-binding "$STATUS_BINDING"               --aggregation "$AGGREGATION"               --output-dir "$ROOT/heldout/selected"
+          done
+
+      - name: Post-freeze policy matrix on held-outs
+        run: |
+          ROOT=artifacts/chollet_multibit
+          SELECTED=$(python -c 'import json; print(json.load(open("artifacts/chollet_multibit/frozen_policy.json"))["selected_policy_id"])')
+          for recency in newest oldest; do
+            for status in semantic coarse_non_cancelled; do
+              for agg in sum mean; do
+                policy="${recency}__${status}__${agg}"
+                if [ "$policy" = "$SELECTED" ]; then
+                  continue
+                fi
+                for id in 194 195 196 197; do
+                  python scripts/webarena_multibit_verifier_transfer.py compute                     --snapshot "$ROOT/order_snapshot.json"                     --task-id "$id"                     --task-file "$ROOT/full.json"                     --recency "$recency"                     --status-binding "$status"                     --aggregation "$agg"                     --output-dir "$ROOT/heldout/matrix/$policy"
+                done
+              done
+            done
+          done
+
+      - name: Score held-outs after freeze and qualify multibit transfer
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/chollet_multibit")
+          frozen=json.loads((root/"frozen_policy.json").read_text())
+          selected=frozen["selected_policy_id"]
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
+
+          policies=[]
+          for recency in ("newest","oldest"):
+              for status in ("semantic","coarse_non_cancelled"):
+                  for agg in ("sum","mean"):
+                      policies.append(f"{recency}__{status}__{agg}")
+
+          matrix={}
+          for policy in policies:
+              base=root/"heldout"/("selected" if policy==selected else "matrix"/policy)
+              results={}
+              protected_contracts={}
+              for task_id in (194,195,196,197):
+                  p=base/str(task_id)/"agent_response.json"
+                  r=wa.evaluate_task(task_id=task_id,agent_response=p,network_trace=empty)
+                  d=r.model_dump(mode="json",exclude_none=True)
+                  (p.parent/"eval_result.json").write_text(json.dumps(d,indent=2)+"\n")
+                  results[str(task_id)]={"score":float(r.score),"status":r.status.value}
+                  evidence=json.loads((p.parent/"candidate_evidence.json").read_text())
+                  protected_contracts[str(task_id)]=evidence["protected_response_shape_contract"]
+              matrix[policy]={
+                  "results":results,
+                  "success_count":sum(v["score"]==1.0 and v["status"]=="success" for v in results.values()),
+                  "protected_contracts":protected_contracts,
+              }
+
+          selected_count=matrix[selected]["success_count"]
+          rejected_counts={p:v["success_count"] for p,v in matrix.items() if p!=selected}
+          max_rejected=max(rejected_counts.values())
+          selected_contracts=matrix[selected]["protected_contracts"]
+          all_contracts=all(v["passes"] for v in selected_contracts.values())
+
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED" if selected_count==4 and all_contracts else "REJECTED",
+              "experiment":"one verifier-scored task selects a three-bit semantic policy, frozen before four sibling evaluations",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "training_task_id":193,
+              "held_out_task_ids":[194,195,196,197],
+              "selected_policy_id":selected,
+              "selected_policy":frozen["selected_policy"],
+              "freeze_sha256":frozen["freeze_sha256"],
+              "training_results":frozen["training_results"],
+              "selected_heldout_success_count":selected_count,
+              "max_rejected_heldout_success_count":max_rejected,
+              "rejected_heldout_success_counts":rejected_counts,
+              "selected_protected_contracts":selected_contracts,
+              "policy_matrix":matrix,
+              "claims":{
+                  "single_aligned_verifier_signal_can_select_multibit_reusable_nonmath_semantics":{
+                      "state":"WARRANTED_BOUNDED" if selected_count==4 and max_rejected<4 else "UNKNOWN",
+                      "boundary":"three-bit policy over recency, status binding, and aggregation in template 367"
+                  },
+                  "verification_is_sufficient_for_open_ended_nonmath_scaling":{
+                      "state":"UNKNOWN",
+                      "boundary":"three-bit bounded family is still not open-ended capability growth"
+                  }
+              }
+          }
+          (root/"multibit_transfer_result.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+
+          assert selected=="newest__semantic__sum", seal
+          assert selected_count==4, seal
+          assert all_contracts, seal
+          assert max_rejected<4, seal
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chollet-multibit-verifier-transfer
+          path: artifacts/chollet_multibit
