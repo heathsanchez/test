@@ -38,7 +38,7 @@ V90 algebraic episode whose endpoint is reached by the shortcut orbit. -/
 theorem actual_algebraic_episode_exists
     {r m : Nat}
     (hr : 0 < r) (hm : 0 < m) (hmodd : m % 2 = 1) :
-    ∃ s r' m',
+    ∃ s r' m' : Nat,
       AlgebraicEpisode r (m : Int) s r' (m' : Int) ∧
       iter shortcut (r + s) (2 ^ r * m - 1) =
         (2 ^ r' * m' - 1 : Nat) := by
