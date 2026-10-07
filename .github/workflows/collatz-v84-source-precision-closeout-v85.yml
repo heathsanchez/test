@@ -53,6 +53,10 @@ jobs:
             formal/Collatz/UniversalMacroResidual.lean \
             > evidence/universal-residual-build.log
           lake env lean -DautoImplicit=false \
+            -o .lake/build/lib/lean/Collatz/GuardedExitObligation.olean \
+            formal/Collatz/GuardedExitObligation.lean \
+            > evidence/guarded-exit-build.log
+          lake env lean -DautoImplicit=false \
             -o .lake/build/lib/lean/Collatz/ProtectedFutureQuotient.olean \
             formal/Collatz/ProtectedFutureQuotient.lean \
             > evidence/protected-future-build.log
