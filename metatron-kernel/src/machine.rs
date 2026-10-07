@@ -672,6 +672,16 @@ impl<'a> Machine<'a> {
                         preserve_stuck_projection,
                     );
                     let Some(exposure) = exposed_structure.proven_value() else {
+                        if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD").is_some() {
+                            eprintln!(
+                                "NUCLEUS_RECURSOR_MAJOR_GUARD:projection-stuck:type={:?}:index={}:structure={:?}:transparency={:?}:judgment={:?}",
+                                type_name,
+                                index,
+                                structure.expr,
+                                structure_transparency,
+                                exposed_structure,
+                            );
+                        }
                         if preserve_stuck_projection {
                             let mut spine = Vec::new();
                             append_pending(&mut spine, &mut pending);
@@ -688,6 +698,16 @@ impl<'a> Machine<'a> {
                         return Judgment::unknown("projection-structure-stuck");
                     };
                     let Value::Neutral(neutral) = &exposure.value else {
+                        if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD").is_some() {
+                            eprintln!(
+                                "NUCLEUS_RECURSOR_MAJOR_GUARD:projection-nonneutral:type={:?}:index={}:structure={:?}:transparency={:?}:value={:?}",
+                                type_name,
+                                index,
+                                structure.expr,
+                                structure_transparency,
+                                exposure.value,
+                            );
+                        }
                         if preserve_stuck_projection {
                             let mut spine = Vec::new();
                             append_pending(&mut spine, &mut pending);
