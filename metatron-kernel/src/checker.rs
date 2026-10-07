@@ -106,6 +106,57 @@ fn check_export_with_policy(
                 trace_name(&export, recursor),
                 trace_name(&export, constructor),
             );
+            if owner == "Lean.PersistentHashMap.Node" {
+                if let Some(Declaration::Inductive(block)) = export.declarations.iter().find(|declaration| {
+                    matches!(declaration, Declaration::Inductive(block)
+                        if block.types.first().is_some_and(|inductive| trace_name(&export, inductive.name) == owner))
+                }) {
+                    for inductive in &block.types {
+                        eprintln!(
+                            "NUCLEUS_NESTED_SHAPE:type={}:params={}:indices={}:nested={}:recursive={}:reflexive={}:unsafe={}:levels={}:ctors={}",
+                            trace_name(&export, inductive.name),
+                            inductive.num_params,
+                            inductive.num_indices,
+                            inductive.num_nested,
+                            inductive.is_recursive,
+                            inductive.is_reflexive,
+                            inductive.is_unsafe,
+                            inductive.level_params.len(),
+                            inductive.constructors.len(),
+                        );
+                    }
+                    for ctor in &block.constructors {
+                        eprintln!(
+                            "NUCLEUS_NESTED_SHAPE:ctor={}:index={}:induct={}:params={}:fields={}:unsafe={}:levels={}",
+                            trace_name(&export, ctor.name),
+                            ctor.index,
+                            trace_name(&export, ctor.inductive),
+                            ctor.num_params,
+                            ctor.num_fields,
+                            ctor.is_unsafe,
+                            ctor.level_params.len(),
+                        );
+                    }
+                    for rec in &block.recursors {
+                        let rule_desc = rec.rules.iter().map(|rule| {
+                            format!("{}#{}", trace_name(&export, rule.constructor), rule.num_fields)
+                        }).collect::<Vec<_>>().join(",");
+                        eprintln!(
+                            "NUCLEUS_NESTED_SHAPE:rec={}:params={}:indices={}:motives={}:minors={}:k={}:unsafe={}:levels={}:all={}:rules=[{}]",
+                            trace_name(&export, rec.name),
+                            rec.num_params,
+                            rec.num_indices,
+                            rec.num_motives,
+                            rec.num_minors,
+                            rec.k,
+                            rec.is_unsafe,
+                            rec.level_params.len(),
+                            rec.all.len(),
+                            rule_desc,
+                        );
+                    }
+                }
+            }
         }
         return trace_direct_reject("preflight-external-recursor-constructor");
     }
