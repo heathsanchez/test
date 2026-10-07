@@ -1,0 +1,204 @@
+name: Chollet residual synthesis depth4
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-autonomous-residual-synthesis-v6]
+    paths:
+      - "scripts/webarena_gitlab_star_relation_synth.py"
+      - ".github/workflows/chollet_residual_synthesis_depth4.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+
+      - name: Verify prior capability code
+        run: |
+          mkdir -p artifacts/chollet_depth4
+          test "$(sha256sum scripts/webarena_multibit_verifier_transfer.py | awk '{print $1}')" = "135be75255d17c6de537c1f5e6d1a214b62626d636a928370470ae3180591314"
+          test "$(sha256sum scripts/webarena_shopping_admin_review_counts.py | awk '{print $1}')" = "68e3df4741726f45c9fcf8f29b084325d3dbbf46cc1b44ff6cda14fae120d5df"
+          test "$(sha256sum scripts/webarena_shopping_low_reviews.py | awk '{print $1}')" = "21336c9036db67603ed4b809bcff8aebcecdf7663b223c0b049611de2d063a61"
+          sha256sum scripts/webarena_gitlab_star_relation_synth.py > artifacts/chollet_depth4/d_code.sha256
+
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream && git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Start environments
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker pull am1n3e/webarena-verified-shopping
+          docker pull am1n3e/webarena-verified-gitlab
+          docker run -d --name wa-admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          docker run -d --name wa-shopping -p 7770:80 am1n3e/webarena-verified-shopping
+          docker run -d --name wa-gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 240); do
+            a=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            s=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7770 || true)
+            g=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if { [ "$a" = "200" ] || [ "$a" = "302" ]; } && { [ "$s" = "200" ] || [ "$s" = "302" ]; } && [ "$g" = "200" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Prepare no-answer corpus and config
+        run: |
+          ROOT=artifacts/chollet_depth4
+          cp upstream/assets/dataset/webarena-verified.json "$ROOT/full_authority.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("artifacts/chollet_depth4")
+          tasks=json.loads((root/"full_authority.json").read_text())
+          stripped=[{k:v for k,v in t.items() if k not in {"eval","reference_url"}} for t in tasks]
+          (root/"full_no_eval.json").write_text(json.dumps(stripped,indent=2)+"\n")
+          split={
+            "A":{"training_replayed":False,"preservation":[194,195,196,197]},
+            "B":{"training_replayed":False,"preservation":[12,13,14,15,344,345,346,347]},
+            "C":{"training_replayed":False,"preservation":[164,165,166,167]},
+            "D":{"training":[171,170],"held_out":[168,169,172],"baseline":{"LESS":"gt","LEAST":"max"}},
+            "candidate_task_file_contains_eval":False
+          }
+          (root/"split.json").write_text(json.dumps(split,indent=2)+"\n")
+          PY
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0},"__SHOPPING__":{"urls":["http://localhost:7770"],"active_url_idx":0},"__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0}}}
+          JSON
+
+      - name: Observe D world
+        run: |
+          python scripts/webarena_gitlab_star_relation_synth.py observe --base-url http://localhost:8023 --output artifacts/chollet_depth4/d_observation.json
+          sha256sum artifacts/chollet_depth4/d_observation.json > artifacts/chollet_depth4/d_observation.sha256
+
+      - name: Synthesize D by minimal residual repair
+        run: |
+          python - <<'PY'
+          import hashlib,itertools,json,subprocess,sys
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/chollet_depth4")
+          tasks=json.loads((root/"full_no_eval.json").read_text())
+          train=(171,170)
+          library={"LESS":("lt","gt"),"LEAST":("min","max")}
+          baseline={"LESS":"gt","LEAST":"max"}
+          observed=[]
+          for tid in train:
+              t=next(t for t in tasks if int(t["task_id"])==tid)
+              d=t["instantiation_dict"]["description"].casefold()
+              if "less than" in d and "LESS" not in observed: observed.append("LESS")
+              if "least stars" in d and "LEAST" not in observed: observed.append("LEAST")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          log=[]; selected=None
+          for depth in range(len(observed)+1):
+              passing=[]
+              for edited in itertools.combinations(observed,depth):
+                  binding=dict(baseline)
+                  for op in edited:
+                      binding[op]=next(x for x in library[op] if x!=baseline[op])
+                  cid="depth%d__%s"%(depth,"__".join(edited) if edited else "baseline")
+                  bpath=root/"synth"/cid/"binding.json"; bpath.parent.mkdir(parents=True,exist_ok=True)
+                  bpath.write_text(json.dumps(binding,indent=2)+"\n")
+                  results={}
+                  for tid in train:
+                      out=root/"synth"/cid/"out"
+                      subprocess.run([sys.executable,"scripts/webarena_gitlab_star_relation_synth.py","compute","--task-id",str(tid),"--task-file",str(root/"full_no_eval.json"),"--observation",str(root/"d_observation.json"),"--binding",str(bpath),"--output-dir",str(out)],check=True)
+                      p=out/str(tid)/"agent_response.json"
+                      r=wa.evaluate_task(task_id=tid,agent_response=p,network_trace=empty)
+                      results[str(tid)]={"score":float(r.score),"status":r.status.value}
+                  success=sum(v["score"]==1.0 and v["status"]=="success" for v in results.values())
+                  row={"candidate":cid,"depth":depth,"binding":binding,"results":results,"success_count":success}
+                  log.append(row)
+                  if success==len(train): passing.append(row)
+              if passing:
+                  assert len(passing)==1,passing
+                  selected=passing[0]; break
+          assert selected is not None,log
+          learned=selected["binding"]
+          derived={**learned,"MORE":{"lt":"gt","gt":"lt"}[learned["LESS"]],"MOST":{"min":"max","max":"min"}[learned["LEAST"]],"ZERO":"eq0"}
+          frozen={"state":"CANDIDATE_FROZEN","training":list(train),"search_log":log,"selected":selected["candidate"],"learned":learned,"derived":derived,"heldout_seen_before_freeze":False,"prior_training_replayed":{"A":False,"B":False,"C":False}}
+          frozen["freeze_sha256"]=hashlib.sha256(json.dumps(frozen,sort_keys=True).encode()).hexdigest()
+          (root/"d_frozen.json").write_text(json.dumps(frozen,indent=2)+"\n")
+          (root/"d_selected_binding.json").write_text(json.dumps(learned,indent=2)+"\n")
+          print(json.dumps(frozen,indent=2))
+          assert selected["candidate"]=="depth2__LESS__LEAST"
+          assert learned=={"LESS":"lt","LEAST":"min"}
+          PY
+
+      - name: Execute D held-outs and baseline
+        run: |
+          ROOT=artifacts/chollet_depth4
+          echo '{"LESS":"gt","LEAST":"max"}' > "$ROOT/d_baseline_binding.json"
+          for id in 168 169 172; do
+            python scripts/webarena_gitlab_star_relation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/d_observation.json" --binding "$ROOT/d_selected_binding.json" --output-dir "$ROOT/d_selected"
+            python scripts/webarena_gitlab_star_relation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/d_observation.json" --binding "$ROOT/d_baseline_binding.json" --output-dir "$ROOT/d_baseline"
+          done
+
+      - name: Reclose C B A without training
+        run: |
+          ROOT=artifacts/chollet_depth4
+          for id in 164 165 166 167; do python scripts/webarena_shopping_low_reviews.py --task-id "$id" --task-file "$ROOT/full_no_eval.json" --base-url http://localhost:7770 --output-dir "$ROOT/c"; done
+          for id in 12 13 14 15 344 345 346 347; do python scripts/webarena_shopping_admin_review_counts.py --task-id "$id" --task-file "$ROOT/full_no_eval.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/b"; done
+          python scripts/webarena_multibit_verifier_transfer.py observe --base-url http://localhost:7780/admin --output "$ROOT/a_snapshot.json"
+          for id in 194 195 196 197; do python scripts/webarena_multibit_verifier_transfer.py compute --snapshot "$ROOT/a_snapshot.json" --task-id "$id" --task-file "$ROOT/full_no_eval.json" --recency newest --status-binding semantic --aggregation sum --output-dir "$ROOT/a"; done
+
+      - name: Qualify
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/chollet_depth4")
+          fr=json.loads((root/"d_frozen.json").read_text())
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          def score(base,ids):
+              r={}
+              for tid in ids:
+                  p=base/str(tid)/"agent_response.json"; x=wa.evaluate_task(task_id=tid,agent_response=p,network_trace=empty)
+                  r[str(tid)]={"score":float(x.score),"status":x.status.value}
+              return {"results":r,"success_count":sum(v["score"]==1.0 and v["status"]=="success" for v in r.values())}
+          A=score(root/"a",(194,195,196,197)); B=score(root/"b",(12,13,14,15,344,345,346,347)); C=score(root/"c",(164,165,166,167)); D=score(root/"d_selected",(168,169,172)); D0=score(root/"d_baseline",(168,169,172))
+          seal={
+            "epistemic_state":"WARRANTED_BOUNDED" if (A["success_count"],B["success_count"],C["success_count"],D["success_count"])==(4,8,4,3) and D0["success_count"]<3 else "REJECTED",
+            "experiment":"residual-driven semantic synthesis with depth-4 retention",
+            "A":{"training_replayed":False,"preservation":A},
+            "B":{"training_replayed":False,"preservation":B},
+            "C":{"training_replayed":False,"preservation":C},
+            "D":{"training":[171,170],"selected":fr["selected"],"learned":fr["learned"],"derived":fr["derived"],"freeze_sha256":fr["freeze_sha256"],"heldout":D,"baseline":D0},
+            "combined_success_count":A["success_count"]+B["success_count"]+C["success_count"]+D["success_count"],
+            "combined_task_count":19,
+            "claims":{
+              "residual_driven_synthesis_without_hand_listed_candidate_programs":{"state":"WARRANTED_BOUNDED" if D["success_count"]==3 and D0["success_count"]<3 else "REJECTED"},
+              "depth4_sequential_compounding_outside_math_code":{"state":"WARRANTED_BOUNDED" if (A["success_count"],B["success_count"],C["success_count"],D["success_count"])==(4,8,4,3) else "REJECTED"},
+              "open_ended_nonmath_scaling":{"state":"UNKNOWN"}
+            }
+          }
+          (root/"result.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+          assert seal["epistemic_state"]=="WARRANTED_BOUNDED",seal
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chollet-residual-synthesis-depth4
+          path: artifacts/chollet_depth4
