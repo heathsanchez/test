@@ -1,0 +1,103 @@
+name: Chollet representation invention E
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-representation-invention-v7]
+    paths:
+      - "scripts/webarena_customer_count_representation_synth.py"
+      - ".github/workflows/chollet_representation_invention_e.yml"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream && git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start admin
+        run: |
+          mkdir -p artifacts/chollet_e
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker run -d --name wa-admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            a=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$a" = "200" ] || [ "$a" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Prepare no-answer corpus
+        run: |
+          ROOT=artifacts/chollet_e
+          cp upstream/assets/dataset/webarena-verified.json "$ROOT/full_authority.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=Path("artifacts/chollet_e")
+          t=json.loads((r/"full_authority.json").read_text())
+          (r/"full_no_eval.json").write_text(json.dumps([{k:v for k,v in x.items() if k not in {"eval","reference_url"}} for x in t],indent=2)+"\n")
+          PY
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0}}}
+          JSON
+      - name: Observe and induce from task 63
+        run: |
+          ROOT=artifacts/chollet_e
+          python scripts/webarena_customer_count_representation_synth.py observe --base-url http://localhost:7780/admin --output "$ROOT/observation.json"
+          python scripts/webarena_customer_count_representation_synth.py induce --task-id 63 --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/observation.json" --output "$ROOT/representation.json"
+          sha256sum scripts/webarena_customer_count_representation_synth.py > "$ROOT/code.sha256"
+          sha256sum "$ROOT/representation.json" > "$ROOT/representation.sha256"
+      - name: Qualify invented representation on training only
+        run: |
+          ROOT=artifacts/chollet_e
+          python scripts/webarena_customer_count_representation_synth.py compute --task-id 63 --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/observation.json" --representation "$ROOT/representation.json" --output-dir "$ROOT/train/selected"
+          python scripts/webarena_customer_count_representation_synth.py compute --task-id 63 --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/observation.json" --representation "$ROOT/representation.json" --ablate-grouping --output-dir "$ROOT/train/ablation"
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          r=Path("artifacts/chollet_e"); wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(r/"config.json")); e=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          out={}
+          for g in ("selected","ablation"):
+            x=wa.evaluate_task(task_id=63,agent_response=r/"train"/g/"63"/"agent_response.json",network_trace=e)
+            out[g]={"score":float(x.score),"status":x.status.value}
+          assert out["selected"]=={"score":1.0,"status":"success"},out
+          assert out["ablation"]["score"]<1.0 or out["ablation"]["status"]!="success",out
+          frozen={"state":"CANDIDATE_FROZEN","training_task":63,"training_results":out,"representation":json.loads((r/"representation.json").read_text()),"heldout_seen_before_freeze":False}
+          frozen["freeze_sha256"]=hashlib.sha256(json.dumps(frozen,sort_keys=True).encode()).hexdigest()
+          (r/"frozen.json").write_text(json.dumps(frozen,indent=2)+"\n"); print(json.dumps(frozen,indent=2))
+          PY
+      - name: Heldout transfer
+        run: |
+          ROOT=artifacts/chollet_e
+          for id in 62 64 65; do
+            python scripts/webarena_customer_count_representation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/observation.json" --representation "$ROOT/representation.json" --output-dir "$ROOT/heldout/selected"
+            python scripts/webarena_customer_count_representation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/observation.json" --representation "$ROOT/representation.json" --ablate-grouping --output-dir "$ROOT/heldout/ablation"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          r=Path("artifacts/chollet_e"); wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(r/"config.json")); e=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          def score(g):
+            rr={}
+            for tid in (62,64,65):
+                x=wa.evaluate_task(task_id=tid,agent_response=r/"heldout"/g/str(tid)/"agent_response.json",network_trace=e); rr[str(tid)]={"score":float(x.score),"status":x.status.value}
+            return {"results":rr,"success_count":sum(v["score"]==1 and v["status"]=="success" for v in rr.values())}
+          s=score("selected"); a=score("ablation"); f=json.loads((r/"frozen.json").read_text())
+          result={"epistemic_state":"WARRANTED_BOUNDED" if s["success_count"]==3 and a["success_count"]<3 else "REJECTED","representation":f["representation"],"freeze_sha256":f["freeze_sha256"],"selected":s,"grouping_ablation":a}
+          (r/"result.json").write_text(json.dumps(result,indent=2)+"\n"); print(json.dumps(result,indent=2)); assert result["epistemic_state"]=="WARRANTED_BOUNDED",result
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: chollet-representation-invention-e, path: artifacts/chollet_e}
