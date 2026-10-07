@@ -1,0 +1,99 @@
+name: Collatz V90 actual episode V91
+on:
+  push:
+    branches: [collatz-v90-actual-episode-v91]
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v88-episode-determinism-v90
+          run-id: 37553997184
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v90
+
+      - name: Verify V90 authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json
+          q=json.load(open('parent-v90/qualification.json'))
+          claimed=q.pop('certificate_sha256')
+          got=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          assert claimed==got=='a5d5127f319f5d6d4d3de63b4476f58e3bd7f29f7295635bba24def5e00a009f'
+          assert q['status']=='WARRANTED_FORMAL_EPISODE_DETERMINISM'
+          print('V90_AUTHORITY_VERIFIED')
+          PY
+
+      - name: Kernel-check actual episode semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal | tee evidence/spine.log
+          lake env lean -DautoImplicit=false \
+            -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean \
+            formal/Collatz/GuardedDyadicSwitch.lean \
+            > evidence/guarded-dyadic-build.log
+          lake env lean -DautoImplicit=false \
+            -o .lake/build/lib/lean/Collatz/EpisodeDeterminism.olean \
+            formal/Collatz/EpisodeDeterminism.lean \
+            > evidence/episode-determinism-build.log
+          lake env lean -DautoImplicit=false formal/Collatz/ActualEpisode.lean \
+            | tee evidence/actual-episode.log
+          ! grep -q 'sorryAx' evidence/actual-episode.log
+          ! grep -q 'Lean.ofReduceBool' evidence/actual-episode.log
+          grep -q 'iter_anchor_owner' evidence/actual-episode.log
+          grep -q 'naturalEpisode_exists' evidence/actual-episode.log
+          grep -q 'naturalEpisode_actual' evidence/actual-episode.log
+          grep -q 'actual_next_episode_exists' evidence/actual-episode.log
+          git rev-parse HEAD > evidence/commit.txt
+
+      - name: Seal qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            'schema':'COLLATZ_V90_ACTUAL_EPISODE_V91_QUALIFICATION',
+            'status':'WARRANTED_FORMAL_ACTUAL_EPISODE',
+            'parent_v90_qualification_sha256':'a5d5127f319f5d6d4d3de63b4476f58e3bd7f29f7295635bba24def5e00a009f',
+            'odd_run_exact':True,
+            'even_strip_exact':True,
+            'natural_episode_exists':True,
+            'natural_episode_matches_shortcut':True,
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+            'remaining_obligations':[
+              'bridge NaturalEpisode to V90 AlgebraicEpisode certificate semantics',
+              'compose actual episodes into same-anchor first-return certificates',
+              'prove distinct first-return cylinder separation universally',
+              'classify infinite fresh-anchor continuation using V86 source congruences',
+              'exclude PositivePeriodic endpoints on ZeroTailLive states',
+            ],
+          }
+          result['certificate_sha256']=hashlib.sha256(
+            json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          ).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v90-actual-episode-v91
+          path: evidence
+          if-no-files-found: error
