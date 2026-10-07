@@ -41,7 +41,7 @@ theorem actual_algebraic_episode_exists
     ∃ s r' m',
       AlgebraicEpisode r (m : Int) s r' (m' : Int) ∧
       iter shortcut (r + s) (2 ^ r * m - 1) =
-        2 ^ r' * m' - 1 := by
+        (2 ^ r' * m' - 1 : Nat) := by
   obtain ⟨s, r', m', hnat, hactual⟩ :=
     actual_next_episode_exists hr hm hmodd
   exact ⟨s, r', m', naturalEpisode_to_algebraic hnat, hactual⟩
