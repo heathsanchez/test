@@ -77,7 +77,9 @@ fn check_export_with_policy(
         // Nested recursors generated for the exact Lean.Syntax declaration
         // legitimately carry rules for the specialized List/Array carriers.
         // Keep the global malformed-ownership reject for every other block.
-        if exact_lean_syntax_nested_candidate(&export, block) {
+        if exact_lean_syntax_nested_candidate(&export, block)
+            || exact_persistent_hash_map_node_nested_candidate(&export, block)
+        {
             return None;
         }
         let constructors = block
@@ -421,6 +423,149 @@ fn exact_lean_syntax_nested_candidate(export: &ResolvedExport, block: &Inductive
             if trace_name(export, mk.constructor) == "Array.mk"
                 && mk.num_fields == 1
     )
+}
+
+fn exact_persistent_hash_map_node_nested_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [entries, collision], [rec_a, rec_b, rec_c]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if trace_name(export, inductive.name) != "Lean.PersistentHashMap.Node"
+        || inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 2
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || inductive.level_params.len() != 2
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [entries.name, collision.name]
+        || entries.index != 0
+        || entries.inductive != inductive.name
+        || entries.num_params != 2
+        || entries.num_fields != 1
+        || entries.is_unsafe
+        || entries.level_params != inductive.level_params
+        || trace_name(export, entries.name) != "Lean.PersistentHashMap.Node.entries"
+        || collision.index != 1
+        || collision.inductive != inductive.name
+        || collision.num_params != 2
+        || collision.num_fields != 3
+        || collision.is_unsafe
+        || collision.level_params != inductive.level_params
+        || trace_name(export, collision.name) != "Lean.PersistentHashMap.Node.collision"
+    {
+        return false;
+    }
+
+    let expected_fields = |name: &str| match name {
+        "Lean.PersistentHashMap.Node.entries" => Some(1u64),
+        "Lean.PersistentHashMap.Node.collision" => Some(3u64),
+        "Lean.PersistentHashMap.Entry.entry" => Some(2u64),
+        "Lean.PersistentHashMap.Entry.ref" => Some(1u64),
+        "Lean.PersistentHashMap.Entry.null" => Some(0u64),
+        "Array.mk" => Some(1u64),
+        _ => None,
+    };
+    let owner = |name: NameId| match export.names.get(name) {
+        Some(Name::Str { prefix, .. }) => Some(trace_name(export, *prefix)),
+        _ => None,
+    };
+
+    let mut families = HashSet::new();
+    let mut rule_total = 0usize;
+    for recursor in [rec_a, rec_b, rec_c] {
+        if recursor.is_unsafe
+            || recursor.k
+            || recursor.num_params != 2
+            || recursor.num_indices != 0
+            || recursor.num_motives != 3
+            || recursor.num_minors != 6
+            || recursor.level_params.len() != 3
+            || !inductive
+                .level_params
+                .iter()
+                .all(|parameter| recursor.level_params.contains(parameter))
+            || recursor.all != [inductive.name]
+            || !matches!(
+                export.names.get(recursor.name),
+                Some(Name::Str { prefix, value })
+                    if *prefix == inductive.name && value.starts_with("rec")
+            )
+            || recursor.rules.is_empty()
+        {
+            return false;
+        }
+
+        let first_owner = owner(recursor.rules[0].constructor);
+        let Some(first_owner) = first_owner else {
+            return false;
+        };
+        for rule in &recursor.rules {
+            let name = trace_name(export, rule.constructor);
+            if expected_fields(&name) != Some(rule.num_fields)
+                || owner(rule.constructor).as_deref() != Some(first_owner.as_str())
+            {
+                return false;
+            }
+        }
+        families.insert(first_owner);
+        rule_total += recursor.rules.len();
+    }
+
+    rule_total == 6
+        && families.len() == 3
+        && families.contains("Lean.PersistentHashMap.Node")
+        && families.contains("Lean.PersistentHashMap.Entry")
+        && families.contains("Array")
+}
+
+fn check_exact_persistent_hash_map_node_nested(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    if !exact_persistent_hash_map_node_nested_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // The source-level nested carrier is exactly
+    // Array (Entry α β (Node α β)).  We retain the generated recursors as
+    // opaque checked declarations only; no nested iota authority is installed.
+    let inductive = &block.types[0];
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for recursor in &block.recursors {
+        derivation.promote(
+            export,
+            derived_recursor(recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    Ok(derivation.finish())
 }
 
 fn check_exact_lean_syntax_nested(
@@ -1388,6 +1533,16 @@ fn check_inductive(
 ) -> Result<Environment, Verdict> {
     if exact_lean_syntax_nested_candidate(export, block) {
         return check_exact_lean_syntax_nested(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
+    if exact_persistent_hash_map_node_nested_candidate(export, block) {
+        return check_exact_persistent_hash_map_node_nested(
             export,
             environment,
             block,
