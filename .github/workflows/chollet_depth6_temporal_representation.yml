@@ -1,0 +1,222 @@
+name: Chollet depth6 temporal representation compounding
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-temporal-representation-v9]
+    paths:
+      - "scripts/webarena_gitlab_temporal_count_representation_synth.py"
+      - ".github/workflows/chollet_depth6_temporal_representation.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+
+      - name: Verify depth5 lineage
+        run: |
+          mkdir -p artifacts/chollet_depth6
+          test "$(sha256sum scripts/webarena_multibit_verifier_transfer.py | awk '{print $1}')" = "135be75255d17c6de537c1f5e6d1a214b62626d636a928370470ae3180591314"
+          test "$(sha256sum scripts/webarena_shopping_admin_review_counts.py | awk '{print $1}')" = "68e3df4741726f45c9fcf8f29b084325d3dbbf46cc1b44ff6cda14fae120d5df"
+          test "$(sha256sum scripts/webarena_shopping_low_reviews.py | awk '{print $1}')" = "21336c9036db67603ed4b809bcff8aebcecdf7663b223c0b049611de2d063a61"
+          git diff --exit-code 94116303cf81aae92251cf8caa588bc084d104dd -- scripts/webarena_gitlab_star_relation_synth.py
+          git diff --exit-code ae877cefddc2e2335805c396a8bf1f88a4063b94 -- scripts/webarena_customer_count_representation_synth.py
+          sha256sum scripts/webarena_gitlab_temporal_count_representation_synth.py > artifacts/chollet_depth6/f_code.sha256
+          cat > artifacts/chollet_depth6/lineage.json <<'JSON'
+          {
+            "depth5_authority":{"run":37699595758,"artifact":11517107016,"digest":"sha256:54916c29b2e89d2d922f5d6bd09273d45a4787c956340f7d6545d28cae5af73e"},
+            "A":{"training_replayed":false},
+            "B":{"training_replayed":false},
+            "C":{"training_replayed":false},
+            "D":{"training_replayed":false},
+            "E":{"training_replayed":false}
+          }
+          JSON
+
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream && git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Start environments
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker pull am1n3e/webarena-verified-shopping
+          docker pull am1n3e/webarena-verified-gitlab
+          docker run -d --name wa-admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          docker run -d --name wa-shopping -p 7770:80 am1n3e/webarena-verified-shopping
+          docker run -d --name wa-gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 240); do
+            a=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            s=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7770 || true)
+            g=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if { [ "$a" = "200" ] || [ "$a" = "302" ]; } && { [ "$s" = "200" ] || [ "$s" = "302" ]; } && [ "$g" = "200" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Prepare no-answer corpus
+        run: |
+          ROOT=artifacts/chollet_depth6
+          cp upstream/assets/dataset/webarena-verified.json "$ROOT/full_authority.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=Path("artifacts/chollet_depth6")
+          tasks=json.loads((r/"full_authority.json").read_text())
+          stripped=[{k:v for k,v in t.items() if k not in {"eval","reference_url"}} for t in tasks]
+          (r/"full_no_eval.json").write_text(json.dumps(stripped,indent=2)+"\n")
+          split={
+            "A":{"training_replayed":False,"preservation":[194,195,196,197]},
+            "B":{"training_replayed":False,"preservation":[12,13,14,15,344,345,346,347]},
+            "C":{"training_replayed":False,"preservation":[164,165,166,167]},
+            "D":{"training_replayed":False,"preservation":[168,169,172]},
+            "E":{"training_replayed":False,"preservation":[62,64,65]},
+            "F":{"training":[303,304],"held_out":[305,306,307],"representation_family":"schema-induced temporal event count"},
+            "candidate_task_file_contains_eval":False
+          }
+          (r/"split.json").write_text(json.dumps(split,indent=2)+"\n")
+          PY
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0},"__SHOPPING__":{"urls":["http://localhost:7770"],"active_url_idx":0},"__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0}}}
+          JSON
+
+      - name: Observe F and generate role bindings
+        run: |
+          ROOT=artifacts/chollet_depth6
+          python scripts/webarena_gitlab_temporal_count_representation_synth.py observe --task-file "$ROOT/full_no_eval.json" --task-id 303 --output "$ROOT/f_observation.json"
+          python scripts/webarena_gitlab_temporal_count_representation_synth.py generate --task-file "$ROOT/full_no_eval.json" --training-ids 303,304 --observation "$ROOT/f_observation.json" --output "$ROOT/f_candidates.json"
+          sha256sum "$ROOT/f_observation.json" > "$ROOT/f_observation.sha256"
+
+      - name: Qualify and freeze F on training only
+        run: |
+          python - <<'PY'
+          import hashlib,json,subprocess,sys
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          r=Path("artifacts/chollet_depth6")
+          reps=json.loads((r/"f_candidates.json").read_text())
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(r/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          results=[]; passing=[]
+          for i,rep in enumerate(reps):
+              cid=f"candidate_{i:02d}"
+              rp=r/"f_train"/cid/"representation.json"; rp.parent.mkdir(parents=True,exist_ok=True); rp.write_text(json.dumps(rep,indent=2)+"\n")
+              task_results={}
+              for tid in (303,304):
+                  out=r/"f_train"/cid/"out"
+                  subprocess.run([sys.executable,"scripts/webarena_gitlab_temporal_count_representation_synth.py","compute","--task-file",str(r/"full_no_eval.json"),"--task-id",str(tid),"--observation",str(r/"f_observation.json"),"--representation",str(rp),"--output-dir",str(out)],check=True)
+                  p=out/str(tid)/"agent_response.json"
+                  x=wa.evaluate_task(task_id=tid,agent_response=p,network_trace=empty)
+                  task_results[str(tid)]={"score":float(x.score),"status":x.status.value}
+              success=sum(v["score"]==1.0 and v["status"]=="success" for v in task_results.values())
+              row={"candidate":cid,"representation":rep,"training_results":task_results,"success_count":success}
+              results.append(row)
+              if success==2: passing.append(row)
+          assert passing,results
+          passing=sorted(passing,key=lambda x:json.dumps(x["representation"],sort_keys=True))
+          selected=passing[0]
+          frozen={
+            "state":"CANDIDATE_FROZEN",
+            "training":[303,304],
+            "candidate_count":len(reps),
+            "passing_candidate_count":len(passing),
+            "selected_candidate":selected["candidate"],
+            "selected_representation":selected["representation"],
+            "training_results":results,
+            "selection_rule":"lexicographically canonical member of verifier-passing role-equivalence class",
+            "heldout_seen_before_freeze":False,
+            "prior_training_replayed":{"A":False,"B":False,"C":False,"D":False,"E":False},
+            "code_sha256":(r/"f_code.sha256").read_text().split()[0]
+          }
+          frozen["freeze_sha256"]=hashlib.sha256(json.dumps(frozen,sort_keys=True).encode()).hexdigest()
+          (r/"f_frozen.json").write_text(json.dumps(frozen,indent=2)+"\n")
+          (r/"f_selected_representation.json").write_text(json.dumps(selected["representation"],indent=2)+"\n")
+          print(json.dumps(frozen,indent=2))
+          PY
+
+      - name: Execute F held-outs and temporal ablation
+        run: |
+          ROOT=artifacts/chollet_depth6
+          for id in 305 306 307; do
+            python scripts/webarena_gitlab_temporal_count_representation_synth.py compute --task-file "$ROOT/full_no_eval.json" --task-id "$id" --observation "$ROOT/f_observation.json" --representation "$ROOT/f_selected_representation.json" --output-dir "$ROOT/f_selected"
+            python scripts/webarena_gitlab_temporal_count_representation_synth.py compute --task-file "$ROOT/full_no_eval.json" --task-id "$id" --observation "$ROOT/f_observation.json" --representation "$ROOT/f_selected_representation.json" --ablate-window --output-dir "$ROOT/f_ablation"
+          done
+
+      - name: Reclose E D C B A without training
+        run: |
+          ROOT=artifacts/chollet_depth6
+          python scripts/webarena_customer_count_representation_synth.py observe --base-url http://localhost:7780/admin --output "$ROOT/e_obs.json"
+          cat > "$ROOT/e_rep.json" <<'JSON'
+          {"representation_type":"grouped_row_count","group_key":"customer email","measure":"row_count","source_row_semantics":"one row per order","induced_from":{"output_entity_phrase":"customer email","matched_header":"Customer Email","header_similarity":1.0,"measure_phrase":"number of orders"}}
+          JSON
+          for id in 62 64 65; do python scripts/webarena_customer_count_representation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/e_obs.json" --representation "$ROOT/e_rep.json" --output-dir "$ROOT/e"; done
+
+          python scripts/webarena_gitlab_star_relation_synth.py observe --base-url http://localhost:8023 --output "$ROOT/d_obs.json"
+          echo '{"LESS":"lt","LEAST":"min"}' > "$ROOT/d_binding.json"
+          for id in 168 169 172; do python scripts/webarena_gitlab_star_relation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/d_obs.json" --binding "$ROOT/d_binding.json" --output-dir "$ROOT/d"; done
+
+          for id in 164 165 166 167; do python scripts/webarena_shopping_low_reviews.py --task-id "$id" --task-file "$ROOT/full_no_eval.json" --base-url http://localhost:7770 --output-dir "$ROOT/c"; done
+          for id in 12 13 14 15 344 345 346 347; do python scripts/webarena_shopping_admin_review_counts.py --task-id "$id" --task-file "$ROOT/full_no_eval.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/b"; done
+          python scripts/webarena_multibit_verifier_transfer.py observe --base-url http://localhost:7780/admin --output "$ROOT/a_obs.json"
+          for id in 194 195 196 197; do python scripts/webarena_multibit_verifier_transfer.py compute --snapshot "$ROOT/a_obs.json" --task-id "$id" --task-file "$ROOT/full_no_eval.json" --recency newest --status-binding semantic --aggregation sum --output-dir "$ROOT/a"; done
+
+      - name: Qualify depth6
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          r=Path("artifacts/chollet_depth6")
+          fr=json.loads((r/"f_frozen.json").read_text())
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(r/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          def score(g,ids):
+              rr={}
+              for tid in ids:
+                  p=r/g/str(tid)/"agent_response.json"
+                  x=wa.evaluate_task(task_id=tid,agent_response=p,network_trace=empty)
+                  rr[str(tid)]={"score":float(x.score),"status":x.status.value}
+              return {"results":rr,"success_count":sum(v["score"]==1.0 and v["status"]=="success" for v in rr.values())}
+          A=score("a",(194,195,196,197)); B=score("b",(12,13,14,15,344,345,346,347)); C=score("c",(164,165,166,167)); D=score("d",(168,169,172)); E=score("e",(62,64,65)); F=score("f_selected",(305,306,307)); F0=score("f_ablation",(305,306,307))
+          counts=(A["success_count"],B["success_count"],C["success_count"],D["success_count"],E["success_count"],F["success_count"])
+          result={
+            "epistemic_state":"WARRANTED_BOUNDED" if counts==(4,8,4,3,3,3) and F0["success_count"]<3 else "REJECTED",
+            "experiment":"depth6 sequential compounding with second schema-induced representation",
+            "depth5_authority_run":37699595758,
+            "A":A,"B":B,"C":C,"D":D,"E":E,
+            "F":{"training":[303,304],"representation":fr["selected_representation"],"freeze_sha256":fr["freeze_sha256"],"passing_candidate_count":fr["passing_candidate_count"],"heldout":F,"temporal_ablation":F0},
+            "prior_training_replayed":{"A":False,"B":False,"C":False,"D":False,"E":False},
+            "combined_success_count":sum(counts),"combined_task_count":25,
+            "claims":{
+              "second_representation_invention_transfers":{"state":"WARRANTED_BOUNDED" if F["success_count"]==3 and F0["success_count"]<3 else "REJECTED"},
+              "depth6_sequential_compounding_with_multiple_representation_inventions":{"state":"WARRANTED_BOUNDED" if counts==(4,8,4,3,3,3) else "REJECTED"},
+              "open_ended_nonmath_scaling":{"state":"UNKNOWN"}
+            }
+          }
+          (r/"result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result,indent=2))
+          assert result["epistemic_state"]=="WARRANTED_BOUNDED",result
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chollet-depth6-temporal-representation
+          path: artifacts/chollet_depth6
