@@ -122,7 +122,10 @@ fn check_export_with_policy(
                 trace_name(&export, recursor),
                 trace_name(&export, constructor),
             );
-            if owner == "Lean.PersistentHashMap.Node" || owner == "Lean.Elab.InfoTree" {
+            if owner == "Lean.PersistentHashMap.Node"
+                || owner == "Lean.Elab.InfoTree"
+                || owner == "Lean.Compiler.LCNF.Alt"
+            {
                 if let Some(Declaration::Inductive(block)) = export.declarations.iter().find(|declaration| {
                     matches!(declaration, Declaration::Inductive(block)
                         if block.types.first().is_some_and(|inductive| trace_name(&export, inductive.name) == owner))
