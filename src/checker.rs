@@ -77,7 +77,8 @@ fn check_export_with_policy(
         // Nested recursors generated for the exact Lean.Syntax declaration
         // legitimately carry rules for the specialized List/Array carriers.
         // Keep the global malformed-ownership reject for every other block.
-        if generated_nested_family_candidate(&export, block)
+        if (generated_nested_family_candidate(&export, block)
+            || generated_mutual_nested_family_candidate(&export, block))
             && nested_parameter_has_definite_projection_owner_mismatch(&export, block)
         {
             return Some((
@@ -92,6 +93,7 @@ fn check_export_with_policy(
             ));
         }
         if generated_nested_family_candidate(&export, block)
+            || generated_mutual_nested_family_candidate(&export, block)
             || exact_lean_syntax_nested_candidate(&export, block)
             || exact_persistent_hash_map_node_nested_candidate(&export, block)
             || exact_persistent_array_node_nested_candidate(&export, block)
@@ -500,10 +502,7 @@ fn nested_parameter_has_definite_projection_owner_mismatch(
     export: &ResolvedExport,
     block: &InductiveBlock,
 ) -> bool {
-    let [inductive] = block.types.as_slice() else {
-        return false;
-    };
-    if inductive.num_nested == 0 {
+    if block.types.is_empty() || block.types.iter().all(|inductive| inductive.num_nested == 0) {
         return false;
     }
 
@@ -568,6 +567,207 @@ fn external_recursor_matches_declared_family(
         .all(|(rule, constructor)| {
             rule.constructor == constructor.name && rule.num_fields == constructor.num_fields
         })
+}
+
+fn generated_mutual_nested_family_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    if block.types.len() < 2 || block.constructors.is_empty() {
+        return false;
+    }
+
+    let type_names = block.types.iter().map(|inductive| inductive.name).collect::<Vec<_>>();
+    let first = &block.types[0];
+    let Ok(nested_count) = usize::try_from(first.num_nested) else {
+        return false;
+    };
+    if nested_count == 0
+        || block.recursors.len() != type_names.len() + nested_count
+        || has_duplicate_parameter(&first.level_params)
+    {
+        return false;
+    }
+
+    for inductive in &block.types {
+        if inductive.all != type_names
+            || inductive.num_params != first.num_params
+            || inductive.num_indices != first.num_indices
+            || inductive.num_nested != first.num_nested
+            || !inductive.is_recursive
+            || inductive.is_reflexive
+            || inductive.is_unsafe
+            || inductive.level_params != first.level_params
+            || inductive.constructors.is_empty()
+        {
+            return false;
+        }
+
+        let owned = block
+            .constructors
+            .iter()
+            .filter(|constructor| constructor.inductive == inductive.name)
+            .collect::<Vec<_>>();
+        if owned.len() != inductive.constructors.len()
+            || !owned
+                .iter()
+                .zip(&inductive.constructors)
+                .enumerate()
+                .all(|(index, (constructor, name))| {
+                    constructor.name == *name
+                        && constructor.index == index as u64
+                        && constructor.num_params == inductive.num_params
+                        && !constructor.is_unsafe
+                        && constructor.level_params == inductive.level_params
+                })
+        {
+            return false;
+        }
+    }
+
+    let total_rules = block
+        .recursors
+        .iter()
+        .try_fold(0usize, |total, recursor| total.checked_add(recursor.rules.len()));
+    let Some(total_rules) = total_rules else {
+        return false;
+    };
+    let expected_total = block
+        .constructors
+        .len()
+        .checked_add(
+            block.recursors
+                .len()
+                .saturating_sub(block.types.len())
+                .checked_sub(0)
+                .unwrap_or(0),
+        );
+    if total_rules == 0 || expected_total.is_none() {
+        return false;
+    }
+
+    let family_owner = |constructor: NameId| match export.names.get(constructor) {
+        Some(Name::Str { prefix, .. }) => Some(*prefix),
+        _ => None,
+    };
+    let declared = type_names.iter().copied().collect::<HashSet<_>>();
+    let mut declared_recursor_counts = HashMap::<NameId, usize>::new();
+    let mut families = HashSet::new();
+
+    for recursor in &block.recursors {
+        if recursor.is_unsafe
+            || recursor.k
+            || recursor.num_params != first.num_params
+            || recursor.num_indices != first.num_indices
+            || recursor.num_motives != block.recursors.len() as u64
+            || recursor.num_minors != total_rules as u64
+            || recursor.level_params.len() != first.level_params.len() + 1
+            || has_duplicate_parameter(&recursor.level_params)
+            || !first
+                .level_params
+                .iter()
+                .all(|parameter| recursor.level_params.contains(parameter))
+            || recursor.all != type_names
+            || recursor.rules.is_empty()
+        {
+            return false;
+        }
+
+        let Some(Name::Str { prefix: recursor_prefix, value }) = export.names.get(recursor.name) else {
+            return false;
+        };
+        if !declared.contains(recursor_prefix) || !value.starts_with("rec") {
+            return false;
+        }
+
+        let Some(owner) = family_owner(recursor.rules[0].constructor) else {
+            return false;
+        };
+        if !recursor
+            .rules
+            .iter()
+            .all(|rule| family_owner(rule.constructor) == Some(owner))
+        {
+            return false;
+        }
+
+        if declared.contains(&owner) {
+            if *recursor_prefix != owner {
+                return false;
+            }
+            let Some(inductive) = block.types.iter().find(|inductive| inductive.name == owner) else {
+                return false;
+            };
+            let owned = block
+                .constructors
+                .iter()
+                .filter(|constructor| constructor.inductive == owner)
+                .collect::<Vec<_>>();
+            if recursor.rules.len() != owned.len()
+                || !recursor.rules.iter().zip(owned).all(|(rule, constructor)| {
+                    rule.constructor == constructor.name
+                        && rule.num_fields == constructor.num_fields
+                })
+            {
+                return false;
+            }
+            *declared_recursor_counts.entry(inductive.name).or_default() += 1;
+        } else if !external_recursor_matches_declared_family(export, owner, recursor) {
+            return false;
+        }
+
+        families.insert(owner);
+    }
+
+    block
+        .types
+        .iter()
+        .all(|inductive| declared_recursor_counts.get(&inductive.name) == Some(&1usize))
+        && families.is_superset(&declared)
+        && families.len() > declared.len()
+        && families.len() <= declared.len() + nested_count
+}
+
+fn check_generated_mutual_nested_family(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    if !generated_mutual_nested_family_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // Mutual nested families must stage all type signatures before any
+    // constructor signature, because constructors may refer across the mutual
+    // block. Recursors remain opaque; this grants no nested iota authority.
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    for inductive in &block.types {
+        derivation.promote(
+            export,
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for recursor in &block.recursors {
+        derivation.promote(
+            export,
+            derived_recursor(recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    Ok(derivation.finish())
 }
 
 fn generated_nested_family_candidate(
@@ -2075,6 +2275,16 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    if generated_mutual_nested_family_candidate(export, block) {
+        return check_generated_mutual_nested_family(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
     if generated_nested_family_candidate(export, block) {
         return check_generated_nested_family(
             export,
