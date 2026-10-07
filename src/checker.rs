@@ -77,7 +77,8 @@ fn check_export_with_policy(
         // Nested recursors generated for the exact Lean.Syntax declaration
         // legitimately carry rules for the specialized List/Array carriers.
         // Keep the global malformed-ownership reject for every other block.
-        if exact_lean_syntax_nested_candidate(&export, block)
+        if generated_nested_family_candidate(&export, block)
+            || exact_lean_syntax_nested_candidate(&export, block)
             || exact_persistent_hash_map_node_nested_candidate(&export, block)
             || exact_persistent_array_node_nested_candidate(&export, block)
         {
@@ -390,6 +391,168 @@ fn recursor_claims_external_constructor(block: &InductiveBlock) -> bool {
         .iter()
         .flat_map(|recursor| &recursor.rules)
         .any(|rule| !constructors.contains(&rule.constructor))
+}
+
+fn generated_nested_family_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let [inductive] = block.types.as_slice() else {
+        return false;
+    };
+    let Ok(nested_count) = usize::try_from(inductive.num_nested) else {
+        return false;
+    };
+    if nested_count == 0
+        || block.recursors.len() != nested_count + 1
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || has_duplicate_parameter(&inductive.level_params)
+        || inductive.all != [inductive.name]
+        || inductive.constructors.len() != block.constructors.len()
+        || !inductive
+            .constructors
+            .iter()
+            .zip(&block.constructors)
+            .all(|(name, constructor)| *name == constructor.name)
+        || block.constructors.is_empty()
+    {
+        return false;
+    }
+
+    for (index, constructor) in block.constructors.iter().enumerate() {
+        let Ok(index) = u64::try_from(index) else {
+            return false;
+        };
+        if constructor.index != index
+            || constructor.inductive != inductive.name
+            || constructor.num_params != inductive.num_params
+            || constructor.is_unsafe
+            || constructor.level_params != inductive.level_params
+        {
+            return false;
+        }
+    }
+
+    let total_rules = block
+        .recursors
+        .iter()
+        .try_fold(0usize, |total, recursor| total.checked_add(recursor.rules.len()));
+    let Some(total_rules) = total_rules else {
+        return false;
+    };
+    if total_rules == 0 {
+        return false;
+    }
+
+    let family_owner = |constructor: NameId| match export.names.get(constructor) {
+        Some(Name::Str { prefix, .. }) => Some(*prefix),
+        _ => None,
+    };
+    let mut families = HashSet::new();
+    let mut saw_current_family = false;
+
+    for recursor in &block.recursors {
+        if recursor.is_unsafe
+            || recursor.k
+            || recursor.num_params != inductive.num_params
+            || recursor.num_indices != inductive.num_indices
+            || recursor.num_motives != block.recursors.len() as u64
+            || recursor.num_minors != total_rules as u64
+            || recursor.level_params.len() != inductive.level_params.len() + 1
+            || has_duplicate_parameter(&recursor.level_params)
+            || !inductive
+                .level_params
+                .iter()
+                .all(|parameter| recursor.level_params.contains(parameter))
+            || recursor.all != [inductive.name]
+            || !matches!(
+                export.names.get(recursor.name),
+                Some(Name::Str { prefix, value })
+                    if *prefix == inductive.name && value.starts_with("rec")
+            )
+            || recursor.rules.is_empty()
+        {
+            return false;
+        }
+
+        let Some(owner) = family_owner(recursor.rules[0].constructor) else {
+            return false;
+        };
+        if !recursor
+            .rules
+            .iter()
+            .all(|rule| family_owner(rule.constructor) == Some(owner))
+        {
+            return false;
+        }
+        if owner == inductive.name {
+            saw_current_family = true;
+            if recursor.rules.len() != block.constructors.len()
+                || !recursor
+                    .rules
+                    .iter()
+                    .zip(&block.constructors)
+                    .all(|(rule, constructor)| {
+                        rule.constructor == constructor.name
+                            && rule.num_fields == constructor.num_fields
+                    })
+            {
+                return false;
+            }
+        }
+        families.insert(owner);
+    }
+
+    saw_current_family
+        && families.len() == block.recursors.len()
+        && families.len() == nested_count + 1
+}
+
+fn check_generated_nested_family(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    if !generated_nested_family_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // Lean's nested-inductive compilation produces one motive/recursor family
+    // per carrier.  The original constructor signatures are still present in
+    // the export.  Rechecking them *after staging the inductive type* is the
+    // critical soundness separator: malformed erased nested parameters (the
+    // #14576 class) are rejected here, while legitimate nested carriers pass.
+    // Generated recursors remain opaque: this grants declaration authority,
+    // never nested iota computation.
+    let inductive = &block.types[0];
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for recursor in &block.recursors {
+        derivation.promote(
+            export,
+            derived_recursor(recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    Ok(derivation.finish())
 }
 
 fn exact_lean_syntax_nested_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
@@ -1728,6 +1891,16 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    if generated_nested_family_candidate(export, block) {
+        return check_generated_nested_family(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
     if exact_lean_syntax_nested_candidate(export, block) {
         return check_exact_lean_syntax_nested(
             export,
