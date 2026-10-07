@@ -1,0 +1,338 @@
+name: Chollet sequential capability compounding
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-verifier-compounding-v4]
+    paths:
+      - "scripts/webarena_sequential_compounding.py"
+      - ".github/workflows/chollet_sequential_compounding.yml"
+
+jobs:
+  compound:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned WebArena-Verified authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Start Reddit
+        run: |
+          ROOT=artifacts/chollet_compounding
+          mkdir -p "$ROOT"
+          docker pull am1n3e/webarena-verified-reddit
+          docker image inspect am1n3e/webarena-verified-reddit --format '{{index .RepoDigests 0}}'             | tee "$ROOT/reddit_image_digest.txt"
+          docker run -d --name webarena-verified-reddit -p 9999:80 -p 9998:8877 am1n3e/webarena-verified-reddit
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9999 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Start GitLab
+        run: |
+          ROOT=artifacts/chollet_compounding
+          docker pull am1n3e/webarena-verified-gitlab
+          docker image inspect am1n3e/webarena-verified-gitlab --format '{{index .RepoDigests 0}}'             | tee "$ROOT/gitlab_image_digest.txt"
+          docker run -d --name webarena-verified-gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 180); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 3
+          done
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Build candidate-facing authorities with evaluator fields removed
+        run: |
+          ROOT=artifacts/chollet_compounding
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/official_hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {
+            "environments": {
+              "__REDDIT__": {
+                "urls": ["http://localhost:9999"],
+                "active_url_idx": 0
+              },
+              "__GITLAB__": {
+                "urls": ["http://localhost:8023"],
+                "active_url_idx": 0
+              }
+            }
+          }
+          JSON
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          root=Path("artifacts/chollet_compounding")
+          tasks=json.loads((root/"official_hard.json").read_text())
+          wanted={684,685,686,687,688}
+          rows=[]
+          for t in tasks:
+              tid=int(t["task_id"])
+              if tid not in wanted:
+                  continue
+              rows.append({
+                  "task_id":tid,
+                  "intent_template_id":int(t["intent_template_id"]),
+                  "sites":t.get("sites",[]),
+                  "intent":t["intent"],
+                  "instantiation_dict":t["instantiation_dict"],
+              })
+          assert {r["task_id"] for r in rows}==wanted
+          assert all("eval" not in r for r in rows)
+          train=[r for r in rows if r["task_id"] in {684,685}]
+          held=[r for r in rows if r["task_id"] in {686,687,688}]
+          (root/"candidate_train.json").write_text(json.dumps(train,indent=2)+"\n")
+          (root/"candidate_heldout.json").write_text(json.dumps(held,indent=2)+"\n")
+          manifest={
+              "source_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "training_A_task":684,
+              "training_B_task":685,
+              "heldout_composition_tasks":[686,687,688],
+              "candidate_fields":sorted(train[0].keys()),
+              "evaluator_fields_removed":True,
+              "capability_A_grammar":["description","repo_path"],
+              "capability_B_grammar":["requested","fixed_lifeprotips"],
+          }
+          (root/"split_manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
+          for name in ("candidate_train.json","candidate_heldout.json"):
+              b=(root/name).read_bytes()
+              (root/(name+".sha256")).write_text(hashlib.sha256(b).hexdigest()+"\n")
+          PY
+          sha256sum scripts/webarena_sequential_compounding.py > "$ROOT/candidate_code.sha256"
+
+      - name: Learn capability A from task 684 only
+        run: |
+          ROOT=artifacts/chollet_compounding
+          for title_source in description repo_path; do
+            python scripts/webarena_sequential_compounding.py               --task-id 684               --task-file "$ROOT/candidate_train.json"               --output-dir "$ROOT/train_A/$title_source"               --title-source "$title_source"               --forum-mode requested
+          done
+
+      - name: Freeze capability A using only task 684 verifier feedback
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/chollet_compounding")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          results={}
+          passing=[]
+          for title_source in ("description","repo_path"):
+              out=root/"train_A"/title_source/"684"
+              trace=NetworkTrace.from_har(out/"network.har")
+              r=wa.evaluate_task(task_id=684,agent_response=out/"agent_response.json",network_trace=trace)
+              d=r.model_dump(mode="json",exclude_none=True)
+              (out/"eval_result.json").write_text(json.dumps(d,indent=2)+"\n")
+              row={"score":float(r.score),"status":r.status.value,"evaluation_events":len(trace.evaluation_events)}
+              results[title_source]=row
+              if row["score"]==1.0 and row["status"]=="success":
+                  passing.append(title_source)
+          assert len(passing)==1, {"passing":passing,"results":results}
+          cap={
+              "epistemic_state":"CAPABILITY_A_FROZEN_AFTER_VERIFIER_FEEDBACK",
+              "training_task_id":684,
+              "selected_title_source":passing[0],
+              "training_results":results,
+              "candidate_code_sha256":(root/"candidate_code.sha256").read_text().split()[0],
+              "candidate_train_sha256":(root/"candidate_train.json.sha256").read_text().strip(),
+              "heldout_answers_observed":False,
+          }
+          cap["capability_A_sha256"]=hashlib.sha256(json.dumps(cap,sort_keys=True).encode()).hexdigest()
+          (root/"capability_A.json").write_text(json.dumps(cap,indent=2)+"\n")
+          print(json.dumps(cap,indent=2))
+          PY
+
+      - name: Learn capability B on task 685 while reusing frozen A
+        run: |
+          ROOT=artifacts/chollet_compounding
+          TITLE_SOURCE=$(python -c 'import json; print(json.load(open("artifacts/chollet_compounding/capability_A.json"))["selected_title_source"])')
+          for forum_mode in requested fixed_lifeprotips; do
+            python scripts/webarena_sequential_compounding.py               --task-id 685               --task-file "$ROOT/candidate_train.json"               --output-dir "$ROOT/train_B/$forum_mode"               --title-source "$TITLE_SOURCE"               --forum-mode "$forum_mode"
+          done
+
+      - name: Freeze capability B and composed AB before held-outs
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/chollet_compounding")
+          capA=json.loads((root/"capability_A.json").read_text())
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          results={}
+          passing=[]
+          for forum_mode in ("requested","fixed_lifeprotips"):
+              out=root/"train_B"/forum_mode/"685"
+              trace=NetworkTrace.from_har(out/"network.har")
+              r=wa.evaluate_task(task_id=685,agent_response=out/"agent_response.json",network_trace=trace)
+              d=r.model_dump(mode="json",exclude_none=True)
+              (out/"eval_result.json").write_text(json.dumps(d,indent=2)+"\n")
+              row={"score":float(r.score),"status":r.status.value,"evaluation_events":len(trace.evaluation_events)}
+              results[forum_mode]=row
+              if row["score"]==1.0 and row["status"]=="success":
+                  passing.append(forum_mode)
+          assert len(passing)==1, {"passing":passing,"results":results}
+          capB={
+              "epistemic_state":"CAPABILITY_B_FROZEN_AFTER_VERIFIER_FEEDBACK",
+              "training_task_id":685,
+              "reused_capability_A_sha256":capA["capability_A_sha256"],
+              "reused_title_source":capA["selected_title_source"],
+              "selected_forum_mode":passing[0],
+              "training_results":results,
+              "heldout_answers_observed":False,
+          }
+          capB["capability_B_sha256"]=hashlib.sha256(json.dumps(capB,sort_keys=True).encode()).hexdigest()
+          final={
+              "epistemic_state":"COMPOSED_AB_FROZEN_BEFORE_HELDOUTS",
+              "title_source":capA["selected_title_source"],
+              "forum_mode":capB["selected_forum_mode"],
+              "capability_A_sha256":capA["capability_A_sha256"],
+              "capability_B_sha256":capB["capability_B_sha256"],
+              "candidate_code_sha256":capA["candidate_code_sha256"],
+              "heldout_answers_observed":False,
+          }
+          final["composed_AB_sha256"]=hashlib.sha256(json.dumps(final,sort_keys=True).encode()).hexdigest()
+          (root/"capability_B.json").write_text(json.dumps(capB,indent=2)+"\n")
+          (root/"composed_AB.json").write_text(json.dumps(final,indent=2)+"\n")
+          print(json.dumps({"capability_B":capB,"composed_AB":final},indent=2))
+          PY
+
+      - name: Execute frozen AB on untouched composed tasks 686-688
+        run: |
+          ROOT=artifacts/chollet_compounding
+          eval "$(python - <<'PY'
+          import json, shlex
+          c=json.load(open("artifacts/chollet_compounding/composed_AB.json"))
+          print("TITLE_SOURCE="+shlex.quote(c["title_source"]))
+          print("FORUM_MODE="+shlex.quote(c["forum_mode"]))
+          PY
+          )"
+          for id in 686 687 688; do
+            python scripts/webarena_sequential_compounding.py               --task-id "$id"               --task-file "$ROOT/candidate_heldout.json"               --output-dir "$ROOT/heldout/selected"               --title-source "$TITLE_SOURCE"               --forum-mode "$FORUM_MODE"
+          done
+
+      - name: Run post-freeze component ablations on held-outs
+        run: |
+          ROOT=artifacts/chollet_compounding
+          for id in 686 687 688; do
+            python scripts/webarena_sequential_compounding.py               --task-id "$id" --task-file "$ROOT/candidate_heldout.json"               --output-dir "$ROOT/heldout/wrong_A"               --title-source repo_path --forum-mode requested
+            python scripts/webarena_sequential_compounding.py               --task-id "$id" --task-file "$ROOT/candidate_heldout.json"               --output-dir "$ROOT/heldout/wrong_B"               --title-source description --forum-mode fixed_lifeprotips
+            python scripts/webarena_sequential_compounding.py               --task-id "$id" --task-file "$ROOT/candidate_heldout.json"               --output-dir "$ROOT/heldout/wrong_AB"               --title-source repo_path --forum-mode fixed_lifeprotips
+          done
+
+      - name: Score post-freeze transfer, retention, and ablations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/chollet_compounding")
+          capA=json.loads((root/"capability_A.json").read_text())
+          capB=json.loads((root/"capability_B.json").read_text())
+          composed=json.loads((root/"composed_AB.json").read_text())
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+
+          groups={}
+          for group in ("selected","wrong_A","wrong_B","wrong_AB"):
+              results={}
+              protected={}
+              for task_id in (686,687,688):
+                  out=root/"heldout"/group/str(task_id)
+                  trace=NetworkTrace.from_har(out/"network.har")
+                  r=wa.evaluate_task(task_id=task_id,agent_response=out/"agent_response.json",network_trace=trace)
+                  d=r.model_dump(mode="json",exclude_none=True)
+                  (out/"eval_result.json").write_text(json.dumps(d,indent=2)+"\n")
+                  results[str(task_id)]={
+                      "score":float(r.score),
+                      "status":r.status.value,
+                      "evaluation_events":len(trace.evaluation_events),
+                  }
+                  ev=json.loads((out/"capability_evidence.json").read_text())
+                  protected[str(task_id)]=ev["protected_contract"]
+              groups[group]={
+                  "results":results,
+                  "success_count":sum(v["score"]==1.0 and v["status"]=="success" for v in results.values()),
+                  "protected_contracts":protected,
+              }
+
+          selected_contracts=groups["selected"]["protected_contracts"]
+          protected_all=all(v["all_pass"] for v in selected_contracts.values())
+          A_retained=all(v["title_matches_live_gitlab_description"] for v in selected_contracts.values())
+          B_retained=all(v["effective_forum_matches_requested_forum"] for v in selected_contracts.values())
+          selected_count=groups["selected"]["success_count"]
+          ablation_counts={g:groups[g]["success_count"] for g in ("wrong_A","wrong_B","wrong_AB")}
+
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED"
+                  if selected_count==3 and protected_all and max(ablation_counts.values())<3
+                  else "REJECTED",
+              "experiment":"sequential verifier-selected capability A then B, frozen composition, untouched cross-site held-outs",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "training_A_task":684,
+              "training_B_task":685,
+              "heldout_tasks":[686,687,688],
+              "capability_A":capA,
+              "capability_B":capB,
+              "composed_AB":composed,
+              "selected_heldout_success_count":selected_count,
+              "ablation_success_counts":ablation_counts,
+              "capability_A_retained_after_learning_B":A_retained,
+              "capability_B_active_in_composition":B_retained,
+              "selected_protected_contracts_all_pass":protected_all,
+              "heldout_groups":groups,
+              "claims":{
+                  "sequential_verifier_selected_capabilities_can_compound_without_forgetting_on_nonmath_tasks":{
+                      "state":"WARRANTED_BOUNDED"
+                          if selected_count==3 and A_retained and B_retained and max(ablation_counts.values())<3
+                          else "UNKNOWN",
+                      "boundary":"two sequentially selected semantics in WebArena template 117, tested on three untouched GitLab-to-Reddit tasks"
+                  },
+                  "verification_is_sufficient_for_open_ended_nonmath_scaling":{
+                      "state":"UNKNOWN",
+                      "boundary":"two-capability bounded composition is not open-ended autonomous growth"
+                  }
+              }
+          }
+          (root/"sequential_compounding_result.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+
+          assert capA["selected_title_source"]=="description", seal
+          assert capB["selected_forum_mode"]=="requested", seal
+          assert selected_count==3, seal
+          assert protected_all, seal
+          assert A_retained and B_retained, seal
+          assert max(ablation_counts.values())<3, seal
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chollet-sequential-capability-compounding
+          path: artifacts/chollet_compounding
