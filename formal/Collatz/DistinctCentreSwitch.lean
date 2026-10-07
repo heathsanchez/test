@@ -87,7 +87,7 @@ theorem separated_admissible_switch_old_order
     DyadicOrder
       (returnDefect A₁ B₁ ((2 : Int) ^ D₁) m) h := by
   obtain ⟨w, hwD, hw⟩ := hadm
-  have hhw : h < w := lt_of_lt_of_le hsep hwD
+  have hhw : h < w := by omega
   have hC₁ :
       (((2 : Int) ^ D₁) - A₁) % 2 = 1 :=
     return_denominator_coefficient_odd hD₁ hA₁
@@ -138,7 +138,7 @@ theorem separated_admissible_switch_precision_gain
       pulledPrecision H h < pulledPrecision H w := by
   obtain ⟨w, hwD, hw⟩ := hadm
   refine ⟨w, hw, ?_⟩
-  have hhw : h < w := lt_of_lt_of_le hsep hwD
+  have hhw : h < w := by omega
   unfold pulledPrecision
   omega
 
