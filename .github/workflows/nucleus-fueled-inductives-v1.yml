@@ -2,7 +2,7 @@ name: Nucleus Lean.Syntax nested separator v1
 
 on:
   push:
-    branches: [nucleus-lean-syntax-nested-v1]
+    branches: [nucleus-no-confusion-function-type-v1]
     paths:
       - ".github/workflows/nucleus-fueled-inductives-v1.yml"
       - "metatron-kernel/**"
@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      SOURCE_COMMIT: 0c89185e231b80325532aada627b7baef40a583d
-      SOURCE_SUBTREE: 39940e74d3ad6d133824fa3f6c5105f71bb611ec
+      SOURCE_COMMIT: afb9c981b6e6ac0e0f65d3635eeb0b751077be3b
+      SOURCE_SUBTREE: b5130ae9e8e293eeea4c6389d6d2dcb9599ac6f8
       ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
       ARENA_ARTIFACT: "11272848230"
       MATHLIB_ARENA_SHA: 4c30c4ac4f14a3a899116beb3ea6131880e79a98
@@ -148,6 +148,7 @@ jobs:
           set +e
           ulimit -s unlimited
           NUCLEUS_TRACE_DOWNSTREAM=1 \
+          NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 \
           /usr/bin/time -f 'real_seconds=%e\nuser_seconds=%U\nsys_seconds=%S\nmax_rss_kb=%M' \
             -o "$out/mathlib-time.txt" \
             /tmp/nucleus \
