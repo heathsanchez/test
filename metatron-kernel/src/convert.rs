@@ -1610,6 +1610,19 @@ fn compare_neutral_heads(
                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
                     left.head, left.spine, right.head, right.spine, budget
                 );
+                for (side, neutral) in [("left", left), ("right", right)] {
+                    for (index, closure) in neutral.spine.iter().enumerate() {
+                        eprintln!(
+                            "NUCLEUS_NEUTRAL_SPINE_ENV:side={side}:index={index}:expr={:?}:env={}:b0={:?}:b1={:?}:b2={:?}:b3={:?}",
+                            closure.expr,
+                            closure.env.id(),
+                            closure.env.lookup(0),
+                            closure.env.lookup(1),
+                            closure.env.lookup(2),
+                            closure.env.lookup(3),
+                        );
+                    }
+                }
             }
             Judgment::refuted("distinct-neutral-heads")
         }
