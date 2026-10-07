@@ -1,0 +1,77 @@
+name: Collatz V88 switch dichotomy V89
+on:
+  push:
+    branches: [collatz-v88-switch-dichotomy-v89]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v87-distinct-centre-switch-v88
+          run-id: 37553452903
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v88
+      - name: Verify V88 authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json
+          q=json.load(open('parent-v88/qualification.json'))
+          claimed=q.pop('certificate_sha256')
+          got=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          assert claimed==got=='79b4d17de53a7e7f532440e253728c6a18164cdb741fe0058e48f1bc9ecd898d'
+          assert q['status']=='WARRANTED_FORMAL_DISTINCT_CENTRE_GAIN'
+          print('V88_AUTHORITY_VERIFIED')
+          PY
+      - name: Kernel-check switch dichotomy
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal | tee evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/guarded.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SameCentreMacro.olean formal/Collatz/SameCentreMacro.lean > evidence/same.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/DistinctCentreSwitch.olean formal/Collatz/DistinctCentreSwitch.lean > evidence/distinct.log
+          lake env lean -DautoImplicit=false formal/Collatz/SwitchDichotomy.lean | tee evidence/switch-dichotomy.log
+          ! grep -q 'sorryAx' evidence/switch-dichotomy.log
+          ! grep -q 'Lean.ofReduceBool' evidence/switch-dichotomy.log
+          grep -q 'admitted_distinct_switch_gain_or_deep' evidence/switch-dichotomy.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            'schema':'COLLATZ_V88_SWITCH_DICHOTOMY_V89_QUALIFICATION',
+            'status':'WARRANTED_FORMAL_SWITCH_DICHOTOMY',
+            'parent_v88_qualification_sha256':'79b4d17de53a7e7f532440e253728c6a18164cdb741fe0058e48f1bc9ecd898d',
+            'separated_switch_gives_precision_gain':True,
+            'nonseparated_switch_named_deep_cancellation':True,
+            'global_collatz':'UNKNOWN','qed':False,
+            'remaining_obligations':[
+              'eliminate or compile DeepSwitchCancellation on actual source-admitted return events',
+              'prove source-admitted return-event production on arbitrary ZeroTailLive states',
+              'exclude PositivePeriodic endpoints on ZeroTailLive states'
+            ]
+          }
+          result['certificate_sha256']=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v88-switch-dichotomy-v89
+          path: evidence
+          if-no-files-found: error
