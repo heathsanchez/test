@@ -906,17 +906,29 @@ impl<'a> Machine<'a> {
         if budget == 0 {
             return None;
         }
-        let exposed = self
-            .expose_internal(
-                target.clone(),
+        if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD").is_some() {
+            eprintln!(
+                "NUCLEUS_RECURSOR_MAJOR_PATH:start:target={:?}:transparency={:?}:budget={}",
+                target.expr,
                 transparency,
                 budget.saturating_sub(1).min(16),
-                false,
-                false,
-            )
-            .proven_value()?
-            .value
-            .clone();
+            );
+        }
+        let exposed_judgment = self.expose_internal(
+            target.clone(),
+            transparency,
+            budget.saturating_sub(1).min(16),
+            false,
+            false,
+        );
+        if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD").is_some() {
+            eprintln!(
+                "NUCLEUS_RECURSOR_MAJOR_PATH:result:target={:?}:judgment={:?}",
+                target.expr,
+                exposed_judgment,
+            );
+        }
+        let exposed = exposed_judgment.proven_value()?.value.clone();
         match exposed {
             Value::Neutral(Neutral {
                 head: NeutralHead::Const { name, .. },
