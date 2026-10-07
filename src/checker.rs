@@ -403,7 +403,7 @@ fn exact_lean_syntax_nested_candidate(export: &ResolvedExport, block: &Inductive
     if trace_name(export, inductive.name) != "Lean.Syntax"
         || inductive.num_params != 0
         || inductive.num_indices != 0
-        || inductive.num_nested != 3
+        || inductive.num_nested != 2
         || !inductive.is_recursive
         || inductive.is_reflexive
         || inductive.is_unsafe
