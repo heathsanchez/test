@@ -1,4 +1,5 @@
 import Collatz.UniversalMacroResidual
+import Collatz.ProtectedFutureQuotient
 
 namespace CollatzFinal
 namespace SourceProduct
@@ -44,7 +45,10 @@ theorem collatz_of_source_precision_macro_classification
   · intro s hs
     obtain ⟨j, hjlive, hswitch | hsame | hper⟩ := hmacro s hs
     · refine ⟨j, hjlive, Or.inl (Or.inl ?_)⟩
-      unfold sourcePrecisionMajor
+      change
+        remainingPrecision (iter step j s).source
+            (precision (iter step j s)) <
+          remainingPrecision s.source (precision s)
       have hsrc :
           (iter step j s).source = s.source :=
         iter_step_source j s
@@ -52,7 +56,10 @@ theorem collatz_of_source_precision_macro_classification
       exact remainingPrecision_strict
         (hprecision s hs) hswitch
     · refine ⟨j, hjlive, Or.inl (Or.inr ⟨?_, hsame.2⟩)⟩
-      unfold sourcePrecisionMajor
+      change
+        remainingPrecision (iter step j s).source
+            (precision (iter step j s)) =
+          remainingPrecision s.source (precision s)
       have hsrc :
           (iter step j s).source = s.source :=
         iter_step_source j s
