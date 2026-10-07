@@ -903,13 +903,13 @@ impl<'a> Machine<'a> {
         {
             return Some((constructor, arguments));
         }
-        if transparency != Transparency::Full {
+        if budget == 0 {
             return None;
         }
         let exposed = self
             .expose_internal(
                 target.clone(),
-                Transparency::Full,
+                transparency,
                 budget.saturating_sub(1).min(16),
                 false,
                 false,
