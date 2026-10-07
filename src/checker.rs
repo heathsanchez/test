@@ -403,7 +403,7 @@ fn exact_lean_syntax_nested_candidate(export: &ResolvedExport, block: &Inductive
     if trace_name(export, inductive.name) != "Lean.Syntax"
         || inductive.num_params != 0
         || inductive.num_indices != 0
-        || inductive.num_nested != 2
+        || inductive.num_nested != 3
         || !inductive.is_recursive
         || inductive.is_reflexive
         || inductive.is_unsafe
@@ -480,7 +480,7 @@ fn exact_persistent_hash_map_node_nested_candidate(
     export: &ResolvedExport,
     block: &InductiveBlock,
 ) -> bool {
-    let ([inductive], [entries, collision], [rec_a, rec_b, rec_c]) = (
+    let ([inductive], [entries, collision], [rec_a, rec_b, rec_c, rec_d]) = (
         block.types.as_slice(),
         block.constructors.as_slice(),
         block.recursors.as_slice(),
@@ -523,6 +523,8 @@ fn exact_persistent_hash_map_node_nested_candidate(
         "Lean.PersistentHashMap.Entry.ref" => Some(1u64),
         "Lean.PersistentHashMap.Entry.null" => Some(0u64),
         "Array.mk" => Some(1u64),
+        "List.nil" => Some(0u64),
+        "List.cons" => Some(2u64),
         _ => None,
     };
     let owner = |name: NameId| match export.names.get(name) {
@@ -532,13 +534,13 @@ fn exact_persistent_hash_map_node_nested_candidate(
 
     let mut families = HashSet::new();
     let mut rule_total = 0usize;
-    for recursor in [rec_a, rec_b, rec_c] {
+    for recursor in [rec_a, rec_b, rec_c, rec_d] {
         if recursor.is_unsafe
             || recursor.k
             || recursor.num_params != 2
             || recursor.num_indices != 0
-            || recursor.num_motives != 3
-            || recursor.num_minors != 6
+            || recursor.num_motives != 4
+            || recursor.num_minors != 8
             || recursor.level_params.len() != 3
             || !inductive
                 .level_params
@@ -571,10 +573,11 @@ fn exact_persistent_hash_map_node_nested_candidate(
         rule_total += recursor.rules.len();
     }
 
-    rule_total == 6
-        && families.len() == 3
+    rule_total == 8
+        && families.len() == 4
         && families.contains("Lean.PersistentHashMap.Node")
         && families.contains("Lean.PersistentHashMap.Entry")
+        && families.contains("List")
         && families.contains("Array")
 }
 
