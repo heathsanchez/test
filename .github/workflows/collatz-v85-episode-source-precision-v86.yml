@@ -43,6 +43,10 @@ jobs:
           mkdir -p evidence
           lake env lean --version | tee evidence/toolchain.txt
           lake build CollatzFinal | tee evidence/spine.log
+          lake env lean -DautoImplicit=false \
+            -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean \
+            formal/Collatz/GuardedDyadicSwitch.lean \
+            > evidence/guarded-dyadic-build.log
           lake env lean -DautoImplicit=false formal/Collatz/EpisodeSourcePrecision.lean \
             | tee evidence/episode-source-precision.log
           ! grep -q 'sorryAx' evidence/episode-source-precision.log
