@@ -2,7 +2,7 @@ name: Nucleus Lean.Syntax nested separator v1
 
 on:
   push:
-    branches: [nucleus-no-confusion-micro-v2]
+    branches: [nucleus-no-confusion-neutral-v1]
     paths:
       - ".github/workflows/nucleus-fueled-inductives-v1.yml"
       - "metatron-kernel/**"
@@ -73,6 +73,7 @@ jobs:
                           env=os.environ | {
                               "NUCLEUS_TRACE_DOWNSTREAM": "1",
                               "NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE": "1",
+                              "NUCLEUS_TRACE_NEUTRAL_HEADS": "1",
                           },
                       )
                   rows.append({
