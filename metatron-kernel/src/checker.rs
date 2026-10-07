@@ -78,6 +78,20 @@ fn check_export_with_policy(
         // legitimately carry rules for the specialized List/Array carriers.
         // Keep the global malformed-ownership reject for every other block.
         if generated_nested_family_candidate(&export, block)
+            && nested_parameter_has_definite_projection_owner_mismatch(&export, block)
+        {
+            return Some((
+                block.types.first().map(|inductive| inductive.name),
+                block.recursors.first().map(|recursor| recursor.name).unwrap_or(NameId(0)),
+                block.recursors
+                    .iter()
+                    .flat_map(|recursor| &recursor.rules)
+                    .find(|rule| !block.constructors.iter().any(|ctor| ctor.name == rule.constructor))
+                    .map(|rule| rule.constructor)
+                    .unwrap_or(NameId(0)),
+            ));
+        }
+        if generated_nested_family_candidate(&export, block)
             || exact_lean_syntax_nested_candidate(&export, block)
             || exact_persistent_hash_map_node_nested_candidate(&export, block)
             || exact_persistent_array_node_nested_candidate(&export, block)
@@ -391,6 +405,132 @@ fn recursor_claims_external_constructor(block: &InductiveBlock) -> bool {
         .iter()
         .flat_map(|recursor| &recursor.rules)
         .any(|rule| !constructors.contains(&rule.constructor))
+}
+
+fn expression_has_definite_projection_owner_mismatch(
+    export: &ResolvedExport,
+    expression: ExprId,
+    binder_domains: &[ExprId],
+    local_depth: u64,
+) -> bool {
+    match export.exprs.get(expression) {
+        Some(Expr::Proj {
+            type_name,
+            structure,
+            ..
+        }) => {
+            let direct_mismatch = match export.exprs.get(*structure) {
+                Some(Expr::BVar(index)) if *index >= local_depth => {
+                    let external = (*index - local_depth) as usize;
+                    binder_domains
+                        .len()
+                        .checked_sub(1 + external)
+                        .and_then(|position| binder_domains.get(position))
+                        .is_some_and(|domain| {
+                            let (head, _) = application_spine(export, *domain);
+                            matches!(
+                                export.exprs.get(head),
+                                Some(Expr::Const { name, .. }) if *name != *type_name
+                            )
+                        })
+                }
+                _ => false,
+            };
+            direct_mismatch
+                || expression_has_definite_projection_owner_mismatch(
+                    export,
+                    *structure,
+                    binder_domains,
+                    local_depth,
+                )
+        }
+        Some(Expr::App { fun, arg }) => {
+            expression_has_definite_projection_owner_mismatch(
+                export,
+                *fun,
+                binder_domains,
+                local_depth,
+            ) || expression_has_definite_projection_owner_mismatch(
+                export,
+                *arg,
+                binder_domains,
+                local_depth,
+            )
+        }
+        Some(Expr::Lam { domain, body } | Expr::Pi { domain, body }) => {
+            expression_has_definite_projection_owner_mismatch(
+                export,
+                *domain,
+                binder_domains,
+                local_depth,
+            ) || expression_has_definite_projection_owner_mismatch(
+                export,
+                *body,
+                binder_domains,
+                local_depth + 1,
+            )
+        }
+        Some(Expr::Let { ty, value, body }) => {
+            expression_has_definite_projection_owner_mismatch(
+                export,
+                *ty,
+                binder_domains,
+                local_depth,
+            ) || expression_has_definite_projection_owner_mismatch(
+                export,
+                *value,
+                binder_domains,
+                local_depth,
+            ) || expression_has_definite_projection_owner_mismatch(
+                export,
+                *body,
+                binder_domains,
+                local_depth + 1,
+            )
+        }
+        Some(Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. })
+        | None => false,
+    }
+}
+
+fn nested_parameter_has_definite_projection_owner_mismatch(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let [inductive] = block.types.as_slice() else {
+        return false;
+    };
+    if inductive.num_nested == 0 {
+        return false;
+    }
+
+    for constructor in &block.constructors {
+        let Some(binder_count) = constructor
+            .num_params
+            .checked_add(constructor.num_fields)
+            .and_then(|count| usize::try_from(count).ok())
+        else {
+            return true;
+        };
+        let mut current = constructor.ty;
+        let mut binder_domains = Vec::with_capacity(binder_count);
+        for _ in 0..binder_count {
+            let Some(Expr::Pi { domain, body }) = export.exprs.get(current) else {
+                return false;
+            };
+            if expression_has_definite_projection_owner_mismatch(
+                export,
+                *domain,
+                &binder_domains,
+                0,
+            ) {
+                return true;
+            }
+            binder_domains.push(*domain);
+            current = *body;
+        }
+    }
+    false
 }
 
 fn generated_nested_family_candidate(
