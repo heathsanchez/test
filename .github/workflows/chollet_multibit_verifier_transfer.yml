@@ -210,7 +210,7 @@ jobs:
 
           matrix={}
           for policy in policies:
-              base=root/"heldout"/("selected" if policy==selected else "matrix"/policy)
+              base=(root/"heldout"/"selected") if policy==selected else (root/"heldout"/"matrix"/policy)
               results={}
               protected_contracts={}
               for task_id in (194,195,196,197):
