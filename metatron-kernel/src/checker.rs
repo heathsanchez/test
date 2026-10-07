@@ -491,7 +491,7 @@ fn exact_persistent_hash_map_node_nested_candidate(
     if trace_name(export, inductive.name) != "Lean.PersistentHashMap.Node"
         || inductive.num_params != 2
         || inductive.num_indices != 0
-        || inductive.num_nested != 2
+        || inductive.num_nested != 3
         || !inductive.is_recursive
         || inductive.is_reflexive
         || inductive.is_unsafe
