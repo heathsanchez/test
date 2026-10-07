@@ -1,0 +1,112 @@
+name: Chollet residual synthesis D only
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-autonomous-residual-synthesis-v6]
+    paths: [".github/workflows/chollet_residual_synthesis_d_only.yml"]
+jobs:
+  synth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream && git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - run: |
+          mkdir -p artifacts/chollet_d_only
+          docker pull am1n3e/webarena-verified-gitlab
+          docker run -d --name wa-gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 240); do
+            g=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if [ "$g" = "200" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Prepare no-answer tasks
+        run: |
+          ROOT=artifacts/chollet_d_only
+          cp upstream/assets/dataset/webarena-verified.json "$ROOT/full_authority.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("artifacts/chollet_d_only")
+          tasks=json.loads((root/"full_authority.json").read_text())
+          (root/"full_no_eval.json").write_text(json.dumps([{k:v for k,v in t.items() if k not in {"eval","reference_url"}} for t in tasks],indent=2)+"\n")
+          PY
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0}}}
+          JSON
+      - name: Observe
+        run: |
+          python scripts/webarena_gitlab_star_relation_synth.py observe --base-url http://localhost:8023 --output artifacts/chollet_d_only/obs.json
+      - name: Synthesize
+        run: |
+          python - <<'PY'
+          import itertools,json,subprocess,sys,hashlib
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/chollet_d_only"); train=(171,170)
+          library={"LESS":("lt","gt"),"LEAST":("min","max")}; baseline={"LESS":"gt","LEAST":"max"}; ops=["LESS","LEAST"]
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          log=[]; selected=None
+          for depth in range(3):
+            passing=[]
+            for edited in itertools.combinations(ops,depth):
+              b=dict(baseline)
+              for op in edited: b[op]=next(x for x in library[op] if x!=baseline[op])
+              cid="depth%d__%s"%(depth,"__".join(edited) if edited else "baseline")
+              bp=root/cid/"binding.json"; bp.parent.mkdir(parents=True,exist_ok=True); bp.write_text(json.dumps(b))
+              rr={}
+              for tid in train:
+                out=root/cid/"out"
+                subprocess.run([sys.executable,"scripts/webarena_gitlab_star_relation_synth.py","compute","--task-id",str(tid),"--task-file",str(root/"full_no_eval.json"),"--observation",str(root/"obs.json"),"--binding",str(bp),"--output-dir",str(out)],check=True)
+                p=out/str(tid)/"agent_response.json"; x=wa.evaluate_task(task_id=tid,agent_response=p,network_trace=empty)
+                rr[str(tid)]={"score":float(x.score),"status":x.status.value}
+              row={"candidate":cid,"depth":depth,"binding":b,"results":rr,"success_count":sum(v["score"]==1 and v["status"]=="success" for v in rr.values())}; log.append(row)
+              if row["success_count"]==2: passing.append(row)
+            if passing:
+              assert len(passing)==1; selected=passing[0]; break
+          assert selected and selected["binding"]=={"LESS":"lt","LEAST":"min"},log
+          learned=selected["binding"]; derived={**learned,"MORE":"gt","MOST":"max","ZERO":"eq0"}
+          frozen={"selected":selected["candidate"],"learned":learned,"derived":derived,"search_log":log,"heldout_seen_before_freeze":False}
+          frozen["freeze_sha256"]=hashlib.sha256(json.dumps(frozen,sort_keys=True).encode()).hexdigest()
+          (root/"frozen.json").write_text(json.dumps(frozen,indent=2)); (root/"selected_binding.json").write_text(json.dumps(learned))
+          print(json.dumps(frozen,indent=2))
+          PY
+      - name: Heldout transfer
+        run: |
+          ROOT=artifacts/chollet_d_only
+          echo '{"LESS":"gt","LEAST":"max"}' > "$ROOT/baseline_binding.json"
+          for id in 168 169 172; do
+            python scripts/webarena_gitlab_star_relation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/obs.json" --binding "$ROOT/selected_binding.json" --output-dir "$ROOT/selected"
+            python scripts/webarena_gitlab_star_relation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/obs.json" --binding "$ROOT/baseline_binding.json" --output-dir "$ROOT/baseline"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/chollet_d_only"); wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json")); e=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<none>"),events=())
+          def score(g):
+            r={}
+            for tid in (168,169,172):
+              x=wa.evaluate_task(task_id=tid,agent_response=root/g/str(tid)/"agent_response.json",network_trace=e); r[str(tid)]={"score":float(x.score),"status":x.status.value}
+            return {"results":r,"success_count":sum(v["score"]==1 and v["status"]=="success" for v in r.values())}
+          s=score("selected"); b=score("baseline"); f=json.loads((root/"frozen.json").read_text())
+          result={"epistemic_state":"WARRANTED_BOUNDED" if s["success_count"]==3 and b["success_count"]<3 else "REJECTED","selected":s,"baseline":b,"synthesis":f}
+          (root/"result.json").write_text(json.dumps(result,indent=2)); print(json.dumps(result,indent=2)); assert result["epistemic_state"]=="WARRANTED_BOUNDED"
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: chollet-residual-synthesis-d-only, path: artifacts/chollet_d_only}
