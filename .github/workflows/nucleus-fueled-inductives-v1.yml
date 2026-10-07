@@ -2,7 +2,7 @@ name: Nucleus Lean.Syntax nested separator v1
 
 on:
   push:
-    branches: [nucleus-no-confusion-micro-v1]
+    branches: [nucleus-no-confusion-micro-v2]
     paths:
       - ".github/workflows/nucleus-fueled-inductives-v1.yml"
       - "metatron-kernel/**"
@@ -116,6 +116,9 @@ jobs:
           by_test = {r["test"].removesuffix(".ndjson"): r for r in rows}
           assert by_test["bugs/nested-unused-param"]["actual"] == 1, by_test["bugs/nested-unused-param"]
           PY
+
+      - name: End trace-only microgate
+        run: exit 1
 
       - uses: cachix/install-nix-action@v31
 
