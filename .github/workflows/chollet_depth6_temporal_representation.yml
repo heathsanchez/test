@@ -157,23 +157,27 @@ jobs:
             python scripts/webarena_gitlab_temporal_count_representation_synth.py compute --task-file "$ROOT/full_no_eval.json" --task-id "$id" --observation "$ROOT/f_observation.json" --representation "$ROOT/f_selected_representation.json" --ablate-window --output-dir "$ROOT/f_ablation"
           done
 
-      - name: Reclose E D C B A without training
+      - name: Reclose A B C D E without training
         run: |
           ROOT=artifacts/chollet_depth6
-          python scripts/webarena_customer_count_representation_synth.py observe --base-url http://localhost:7780/admin --output "$ROOT/e_obs.json"
-          cat > "$ROOT/e_rep.json" <<'JSON'
-          {"representation_type":"grouped_row_count","group_key":"customer email","measure":"row_count","source_row_semantics":"one row per order","induced_from":{"output_entity_phrase":"customer email","matched_header":"Customer Email","header_similarity":1.0,"measure_phrase":"number of orders"}}
-          JSON
-          for id in 62 64 65; do python scripts/webarena_customer_count_representation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/e_obs.json" --representation "$ROOT/e_rep.json" --output-dir "$ROOT/e"; done
+          # A must run before E: E intentionally traverses the shared Magento
+          # order grid and leaves user-persistent pager state at the boundary.
+          # The prior failed run demonstrated this state-contamination separator.
+          python scripts/webarena_multibit_verifier_transfer.py observe --base-url http://localhost:7780/admin --output "$ROOT/a_obs.json"
+          for id in 194 195 196 197; do python scripts/webarena_multibit_verifier_transfer.py compute --snapshot "$ROOT/a_obs.json" --task-id "$id" --task-file "$ROOT/full_no_eval.json" --recency newest --status-binding semantic --aggregation sum --output-dir "$ROOT/a"; done
+
+          for id in 12 13 14 15 344 345 346 347; do python scripts/webarena_shopping_admin_review_counts.py --task-id "$id" --task-file "$ROOT/full_no_eval.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/b"; done
+          for id in 164 165 166 167; do python scripts/webarena_shopping_low_reviews.py --task-id "$id" --task-file "$ROOT/full_no_eval.json" --base-url http://localhost:7770 --output-dir "$ROOT/c"; done
 
           python scripts/webarena_gitlab_star_relation_synth.py observe --base-url http://localhost:8023 --output "$ROOT/d_obs.json"
           echo '{"LESS":"lt","LEAST":"min"}' > "$ROOT/d_binding.json"
           for id in 168 169 172; do python scripts/webarena_gitlab_star_relation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/d_obs.json" --binding "$ROOT/d_binding.json" --output-dir "$ROOT/d"; done
 
-          for id in 164 165 166 167; do python scripts/webarena_shopping_low_reviews.py --task-id "$id" --task-file "$ROOT/full_no_eval.json" --base-url http://localhost:7770 --output-dir "$ROOT/c"; done
-          for id in 12 13 14 15 344 345 346 347; do python scripts/webarena_shopping_admin_review_counts.py --task-id "$id" --task-file "$ROOT/full_no_eval.json" --base-url http://localhost:7780/admin --output-dir "$ROOT/b"; done
-          python scripts/webarena_multibit_verifier_transfer.py observe --base-url http://localhost:7780/admin --output "$ROOT/a_obs.json"
-          for id in 194 195 196 197; do python scripts/webarena_multibit_verifier_transfer.py compute --snapshot "$ROOT/a_obs.json" --task-id "$id" --task-file "$ROOT/full_no_eval.json" --recency newest --status-binding semantic --aggregation sum --output-dir "$ROOT/a"; done
+          python scripts/webarena_customer_count_representation_synth.py observe --base-url http://localhost:7780/admin --output "$ROOT/e_obs.json"
+          cat > "$ROOT/e_rep.json" <<'JSON'
+          {"representation_type":"grouped_row_count","group_key":"customer email","measure":"row_count","source_row_semantics":"one row per order","induced_from":{"output_entity_phrase":"customer email","matched_header":"Customer Email","header_similarity":1.0,"measure_phrase":"number of orders"}}
+          JSON
+          for id in 62 64 65; do python scripts/webarena_customer_count_representation_synth.py compute --task-id "$id" --task-file "$ROOT/full_no_eval.json" --observation "$ROOT/e_obs.json" --representation "$ROOT/e_rep.json" --output-dir "$ROOT/e"; done
 
       - name: Qualify depth6
         run: |
