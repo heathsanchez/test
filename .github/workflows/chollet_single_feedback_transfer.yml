@@ -1,0 +1,227 @@
+name: Chollet single-feedback transfer test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-verifier-transfer-v2]
+    paths:
+      - "scripts/webarena_single_feedback_transfer.py"
+      - ".github/workflows/chollet_single_feedback_transfer.yml"
+
+jobs:
+  single-feedback-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned WebArena-Verified authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Start Shopping Admin
+        run: |
+          mkdir -p artifacts/chollet_single_feedback
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}'             | tee artifacts/chollet_single_feedback/environment_image_digest.txt
+          docker run -d --name webarena-verified-shopping_admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          docker logs webarena-verified-shopping_admin || true
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Prepare frozen task sources
+        run: |
+          ROOT=artifacts/chollet_single_feedback
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cp upstream/assets/dataset/webarena-verified.json "$ROOT/full.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {
+            "environments": {
+              "__SHOPPING_ADMIN__": {
+                "urls": ["http://localhost:7780/admin"],
+                "active_url_idx": 0
+              }
+            }
+          }
+          JSON
+          sha256sum scripts/webarena_single_feedback_transfer.py > "$ROOT/candidate_code.sha256"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("artifacts/chollet_single_feedback")
+          hard=json.loads((root/"hard.json").read_text())
+          full=json.loads((root/"full.json").read_text())
+          train=next(t for t in hard if int(t["task_id"])==193)
+          held=[next(t for t in full if int(t["task_id"])==i) for i in (194,195,196,197)]
+          manifest={
+              "training_task_id":193,
+              "held_out_task_ids":[194,195,196,197],
+              "training_intent":train["intent"],
+              "held_out_intents":[{"task_id":int(t["task_id"]),"intent":t["intent"]} for t in held],
+              "selection_grammar":["newest","oldest"],
+              "note":"Expected answers are not copied into the candidate-facing manifest."
+          }
+          (root/"split_manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
+          print(json.dumps(manifest,indent=2))
+          PY
+
+      - name: Generate two candidates on one training instance
+        run: |
+          ROOT=artifacts/chollet_single_feedback
+          for orientation in newest oldest; do
+            python scripts/webarena_single_feedback_transfer.py               --task-id 193               --task-file "$ROOT/hard.json"               --base-url http://localhost:7780/admin               --orientation "$orientation"               --output-dir "$ROOT/train/$orientation"
+          done
+
+      - name: Select capability using only training verifier feedback
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/chollet_single_feedback")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(
+              is_playwright=False,
+              src_file=Path("<no-network-evaluator>"),
+              events=(),
+          )
+          results={}
+          passing=[]
+          for orientation in ("newest","oldest"):
+              p=root/"train"/orientation/"193"/"agent_response.json"
+              r=wa.evaluate_task(task_id=193,agent_response=p,network_trace=empty)
+              d=r.model_dump(mode="json",exclude_none=True)
+              (p.parent/"eval_result.json").write_text(json.dumps(d,indent=2)+"\n")
+              row={"score":float(r.score),"status":r.status.value}
+              results[orientation]=row
+              if row["score"]==1.0 and row["status"]=="success":
+                  passing.append(orientation)
+
+          assert len(passing)==1, {"results":results,"passing":passing}
+          selected=passing[0]
+          code_digest=(root/"candidate_code.sha256").read_text().split()[0]
+          frozen={
+              "epistemic_state":"CANDIDATE_FROZEN_AFTER_SINGLE_VERIFIER_FEEDBACK",
+              "training_task_id":193,
+              "selected_orientation":selected,
+              "training_results":results,
+              "candidate_code_sha256":code_digest,
+              "selection_grammar":["newest","oldest"],
+              "held_out_answers_observed_before_freeze":False,
+          }
+          payload=json.dumps(frozen,sort_keys=True).encode()
+          frozen["freeze_sha256"]=hashlib.sha256(payload).hexdigest()
+          (root/"frozen_capability.json").write_text(json.dumps(frozen,indent=2)+"\n")
+          print(json.dumps(frozen,indent=2))
+          PY
+
+      - name: Execute untouched siblings with frozen capability
+        run: |
+          ROOT=artifacts/chollet_single_feedback
+          ORIENTATION=$(python - <<'PY'
+          import json
+          print(json.load(open("artifacts/chollet_single_feedback/frozen_capability.json"))["selected_orientation"])
+          PY
+          )
+          for id in 194 195 196 197; do
+            python scripts/webarena_single_feedback_transfer.py               --task-id "$id"               --task-file "$ROOT/full.json"               --base-url http://localhost:7780/admin               --orientation "$ORIENTATION"               --output-dir "$ROOT/heldout/selected"
+          done
+
+      - name: Execute rejected orientation post-freeze for ablation
+        run: |
+          ROOT=artifacts/chollet_single_feedback
+          SELECTED=$(python - <<'PY'
+          import json
+          print(json.load(open("artifacts/chollet_single_feedback/frozen_capability.json"))["selected_orientation"])
+          PY
+          )
+          if [ "$SELECTED" = "newest" ]; then REJECTED=oldest; else REJECTED=newest; fi
+          for id in 194 195 196 197; do
+            python scripts/webarena_single_feedback_transfer.py               --task-id "$id"               --task-file "$ROOT/full.json"               --base-url http://localhost:7780/admin               --orientation "$REJECTED"               --output-dir "$ROOT/heldout/rejected"
+          done
+
+      - name: Score held-out siblings only after freeze
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/chollet_single_feedback")
+          frozen=json.loads((root/"frozen_capability.json").read_text())
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(
+              is_playwright=False,
+              src_file=Path("<no-network-evaluator>"),
+              events=(),
+          )
+
+          groups={}
+          for group in ("selected","rejected"):
+              results={}
+              for task_id in (194,195,196,197):
+                  p=root/"heldout"/group/str(task_id)/"agent_response.json"
+                  r=wa.evaluate_task(task_id=task_id,agent_response=p,network_trace=empty)
+                  d=r.model_dump(mode="json",exclude_none=True)
+                  (p.parent/"eval_result.json").write_text(json.dumps(d,indent=2)+"\n")
+                  results[str(task_id)]={"score":float(r.score),"status":r.status.value}
+              groups[group]={
+                  "results":results,
+                  "success_count":sum(v["score"]==1.0 and v["status"]=="success" for v in results.values()),
+              }
+
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED" if groups["selected"]["success_count"]==4 else "REJECTED",
+              "experiment":"single verifier feedback selects one semantic bit, then frozen transfer to untouched non-math/code sibling tasks",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "training_task_id":193,
+              "held_out_task_ids":[194,195,196,197],
+              "selected_orientation":frozen["selected_orientation"],
+              "freeze_sha256":frozen["freeze_sha256"],
+              "training_results":frozen["training_results"],
+              "held_out":groups,
+              "claims":{
+                  "single_external_verifier_signal_can_select_reusable_nonmath_semantics":{
+                      "state":"WARRANTED_BOUNDED" if groups["selected"]["success_count"]==4 else "REJECTED",
+                      "boundary":"one recency-orientation bit in WebArena-Verified template 367"
+                  },
+                  "verification_is_sufficient_for_open_ended_nonmath_scaling":{
+                      "state":"UNKNOWN",
+                      "boundary":"not tested by a one-bit, five-instance family"
+                  }
+              }
+          }
+          (root/"transfer_result.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+
+          assert frozen["selected_orientation"]=="newest", seal
+          assert groups["selected"]["success_count"]==4, seal
+          assert groups["rejected"]["success_count"] < groups["selected"]["success_count"], seal
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chollet-single-feedback-transfer
+          path: artifacts/chollet_single_feedback
