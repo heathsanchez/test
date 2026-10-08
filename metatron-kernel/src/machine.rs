@@ -713,7 +713,7 @@ impl<'a> Machine<'a> {
                             closure = field;
                             continue;
                         }
-                        NeutralHead::Const { .. } => {
+                        NeutralHead::Const { name, levels } => {
                             if preserve_stuck_projection {
                                 let mut spine = Vec::new();
                                 append_pending(&mut spine, &mut pending);
@@ -725,6 +725,19 @@ impl<'a> Machine<'a> {
                                         spine,
                                     },
                                     transitions,
+                                );
+                            }
+                            if std::env::var_os("NUCLEUS_TRACE_MACHINE_PROJECTION").is_some() {
+                                eprintln!(
+                                    "NUCLEUS_MACHINE_PROJECTION_MISMATCH:type_name={:?}:index={}:expected_constructor={:?}:actual_constructor={:?}:actual_levels={:?}:structure_expr={:?}:structure_env={}:structure_spine_len={}",
+                                    type_name,
+                                    index,
+                                    spec.constructor,
+                                    name,
+                                    levels,
+                                    structure.expr,
+                                    structure.env.id(),
+                                    neutral.spine.len(),
                                 );
                             }
                             return Judgment::unknown("projection-constructor-mismatch");
