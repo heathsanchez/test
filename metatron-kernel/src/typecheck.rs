@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::environment::Environment;
 use crate::id::{ExprId, IdTable, LevelId, NameId};
@@ -721,6 +721,168 @@ impl<'a> TypeChecker<'a> {
             cache: HashMap::new(),
         }
         .ty(ty)
+    }
+
+    /// Prove equality of two closures after quotienting away environment
+    /// bindings that the shared expression cannot observe.
+    ///
+    /// This is intentionally syntax-preserving: expressions and universe
+    /// substitutions must match exactly. Only the captured environment is
+    /// quotiented, and only along de Bruijn references actually reachable from
+    /// the expression. Exhaustion is conservative.
+    pub(crate) fn support_equivalent_closures(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        budget: usize,
+    ) -> Option<bool> {
+        struct Equiv<'a, 'b> {
+            checker: &'a TypeChecker<'b>,
+            remaining: usize,
+            seen: HashSet<(ExprId, u64, u64, usize)>,
+        }
+
+        impl Equiv<'_, '_> {
+            fn tick(&mut self) -> Option<()> {
+                if self.remaining == 0 {
+                    return None;
+                }
+                self.remaining -= 1;
+                Some(())
+            }
+
+            fn closure(&mut self, left: &Closure, right: &Closure) -> Option<bool> {
+                self.tick()?;
+                if left.expr != right.expr || left.levels != right.levels {
+                    return Some(false);
+                }
+                self.expr(left.expr, &left.env, &right.env, 0)
+            }
+
+            fn binding(&mut self, left: EnvBinding, right: EnvBinding) -> Option<bool> {
+                self.tick()?;
+                match (left, right) {
+                    (EnvBinding::Free(left), EnvBinding::Free(right)) => Some(left == right),
+                    (EnvBinding::Closure(left), EnvBinding::Closure(right)) => {
+                        self.closure(&left, &right)
+                    }
+                    (EnvBinding::Neutral(left), EnvBinding::Neutral(right)) => {
+                        self.neutral(&left, &right)
+                    }
+                    _ => Some(false),
+                }
+            }
+
+            fn neutral(&mut self, left: &Neutral, right: &Neutral) -> Option<bool> {
+                self.tick()?;
+                let heads_equal = match (&left.head, &right.head) {
+                    (NeutralHead::Free(left), NeutralHead::Free(right)) => left == right,
+                    (
+                        NeutralHead::Const {
+                            name: left_name,
+                            levels: left_levels,
+                        },
+                        NeutralHead::Const {
+                            name: right_name,
+                            levels: right_levels,
+                        },
+                    ) => left_name == right_name && left_levels == right_levels,
+                    (
+                        NeutralHead::Projection {
+                            type_name: left_type,
+                            index: left_index,
+                            structure: left_structure,
+                        },
+                        NeutralHead::Projection {
+                            type_name: right_type,
+                            index: right_index,
+                            structure: right_structure,
+                        },
+                    ) => {
+                        left_type == right_type
+                            && left_index == right_index
+                            && self.neutral(left_structure, right_structure)?
+                    }
+                    _ => false,
+                };
+                if !heads_equal || left.spine.len() != right.spine.len() {
+                    return Some(false);
+                }
+                for (left, right) in left.spine.iter().zip(&right.spine) {
+                    if !self.closure(left, right)? {
+                        return Some(false);
+                    }
+                }
+                Some(true)
+            }
+
+            fn expr(
+                &mut self,
+                expression: ExprId,
+                left_frame: &EnvFrame,
+                right_frame: &EnvFrame,
+                depth: usize,
+            ) -> Option<bool> {
+                self.tick()?;
+                if left_frame.id() == right_frame.id() {
+                    return Some(true);
+                }
+                let key = (expression, left_frame.id(), right_frame.id(), depth);
+                if !self.seen.insert(key) {
+                    return Some(true);
+                }
+
+                match self.checker.expressions.get(expression)? {
+                    Expr::Sort(_) | Expr::Const { .. } | Expr::NatLit(_) | Expr::StrLit(_) => {
+                        Some(true)
+                    }
+                    Expr::BVar(index) => {
+                        let index = usize::try_from(*index).ok()?;
+                        if index < depth {
+                            Some(true)
+                        } else {
+                            let index = u64::try_from(index - depth).ok()?;
+                            let left = left_frame.lookup(index)?;
+                            let right = right_frame.lookup(index)?;
+                            self.binding(left, right)
+                        }
+                    }
+                    Expr::App { fun, arg } => Some(
+                        self.expr(*fun, left_frame, right_frame, depth)?
+                            && self.expr(*arg, left_frame, right_frame, depth)?,
+                    ),
+                    Expr::Lam { domain, body } | Expr::Pi { domain, body } => Some(
+                        self.expr(*domain, left_frame, right_frame, depth)?
+                            && self.expr(
+                                *body,
+                                left_frame,
+                                right_frame,
+                                depth.checked_add(1)?,
+                            )?,
+                    ),
+                    Expr::Let { ty, value, body } => Some(
+                        self.expr(*ty, left_frame, right_frame, depth)?
+                            && self.expr(*value, left_frame, right_frame, depth)?
+                            && self.expr(
+                                *body,
+                                left_frame,
+                                right_frame,
+                                depth.checked_add(1)?,
+                            )?,
+                    ),
+                    Expr::Proj { structure, .. } => {
+                        self.expr(*structure, left_frame, right_frame, depth)
+                    }
+                }
+            }
+        }
+
+        Equiv {
+            checker: self,
+            remaining: budget,
+            seen: HashSet::new(),
+        }
+        .closure(left, right)
     }
 
     /// Infer the universe of a type in an already validated telescope.
