@@ -1,0 +1,109 @@
+name: Nucleus noConfusion typed separator
+
+on:
+  push:
+    branches: [nucleus-noconfusion-typed-separator-v1]
+    paths:
+      - ".github/workflows/nucleus-noconfusion-typed-separator.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  microgate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SOURCE_COMMIT: a767ed29044d8b7007fee83a307b947e5d24a2d1
+      SOURCE_SUBTREE: 0884c5509e689485dcaca879495901cb917094d6
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind exact Nucleus source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          echo "source_commit=$SOURCE_COMMIT"
+          echo "source_subtree=$SOURCE_SUBTREE"
+          echo "qualification_commit=$GITHUB_SHA"
+      - name: Release suite and checker
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+      - name: Immutable frozen Arena witnesses
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/frozen-artifact /tmp/frozen-tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/frozen.zip
+          unzip -q /tmp/frozen.zip -d /tmp/frozen-artifact
+          tar --no-same-owner -xzf /tmp/frozen-artifact/lean-arena-tests.tar.gz -C /tmp/frozen-tests
+      - name: Exact three positive and protected negative separator
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/noconfusion-typed-separator-v1
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, time
+          selected = [
+              ("good", "init-prelude.ndjson", 0),
+              ("good", "perf/fueled-chain.ndjson", 0),
+              ("good", "perf/magma-list-pair-n7.ndjson", 0),
+              ("bad", "bugs/nested-unused-param.ndjson", 1),
+          ]
+          rows = []
+          for bucket, rel, expected in selected:
+              fixture = pathlib.Path("/tmp/frozen-tests") / bucket / rel
+              data = fixture.read_bytes()
+              started = time.monotonic()
+              proc = subprocess.run(
+                  ["/tmp/nucleus"], input=data, stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE, timeout=35,
+                  env=os.environ | {
+                      "NUCLEUS_TRACE_DOWNSTREAM": "1",
+                      "NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE": "1",
+                      "NUCLEUS_TRACE_NEUTRAL_HEADS": "1",
+                      "NUCLEUS_TRACE_NEUTRAL_MAJOR": "1",
+                      "NUCLEUS_TRACE_CHECK_CONVERSION": "1",
+                  },
+              )
+              stderr = proc.stderr.decode(errors="replace")
+              rows.append({
+                  "test": rel, "expected": expected, "actual": proc.returncode,
+                  "seconds": time.monotonic()-started,
+                  "fixture_sha256": hashlib.sha256(data).hexdigest(),
+                  "stderr": stderr[-150000:],
+              })
+          report = {
+              "schema": "nucleus-noconfusion-typed-separator-v1",
+              "source_commit": os.environ["SOURCE_COMMIT"],
+              "source_subtree": os.environ["SOURCE_SUBTREE"],
+              "qualification_commit": os.environ["GITHUB_SHA"],
+              "arena_artifact": int(os.environ["ARENA_ARTIFACT"]),
+              "rows": rows,
+          }
+          path = pathlib.Path("metatron-kernel/evidence-out/noconfusion-typed-separator-v1/result.json")
+          path.write_text(json.dumps(report, indent=2, sort_keys=True)+"\n")
+          print(json.dumps({
+              "source_commit": report["source_commit"],
+              "qualification_commit": report["qualification_commit"],
+              "cases": [{
+                  "test": r["test"], "expected":r["expected"],
+                  "actual":r["actual"], "seconds":r["seconds"],
+                  "trace_lines":len(r["stderr"].splitlines()),
+              } for r in rows],
+          }, sort_keys=True))
+          assert len(rows)==4
+          assert all((r["actual"] in (0,2)) if r["expected"]==0 else r["actual"]==1 for r in rows), rows
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-noconfusion-typed-separator-${{ github.sha }}
+          path: metatron-kernel/evidence-out/noconfusion-typed-separator-v1
+          if-no-files-found: error
