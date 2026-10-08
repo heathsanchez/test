@@ -1612,12 +1612,25 @@ fn compare_neutral_heads(
                     }
                     other => format!("{other:?}"),
                 };
+                let render_spine = |spine: &[Closure]| {
+                    spine.iter().map(|closure| {
+                        format!(
+                            "expr={:?},env={},b0={:?},b1={:?},b2={:?},b3={:?}",
+                            closure.expr,
+                            closure.env.id(),
+                            closure.env.lookup(0),
+                            closure.env.lookup(1),
+                            closure.env.lookup(2),
+                            closure.env.lookup(3),
+                        )
+                    }).collect::<Vec<_>>()
+                };
                 eprintln!(
                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={}:left_spine={:?}:right={}:right_spine={:?}:budget={}",
                     render_head(&left.head),
-                    left.spine,
+                    render_spine(&left.spine),
                     render_head(&right.head),
-                    right.spine,
+                    render_spine(&right.spine),
                     budget
                 );
             }
