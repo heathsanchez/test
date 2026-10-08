@@ -1,0 +1,58 @@
+name: Nucleus noConfusion named microgate v1
+
+on:
+  push:
+    branches: [nucleus-no-confusion-name-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-no-confusion-named-microgate-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_SUBTREE: 9889068bb2eebe3572050e220a1c2fe7c2856813
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind and build traced Nucleus
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+      - name: Fetch frozen Arena fixture
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+          find /tmp/arena-tests -name 'init-prelude.ndjson' -print
+      - name: Trace exact init-prelude blocker
+        run: |
+          set -euo pipefail
+          fixture="$(find /tmp/arena-tests -name 'init-prelude.ndjson' | head -n1)"
+          test -n "$fixture"
+          set +e
+          NUCLEUS_TRACE_DOWNSTREAM=1           NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1           NUCLEUS_TRACE_NEUTRAL_HEADS=1             /tmp/nucleus < "$fixture" > evidence/stdout.txt 2> evidence/stderr.txt
+          rc=$?
+          set -e
+          echo "$rc" > evidence/exit.txt
+          cat evidence/stderr.txt
+          test "$rc" -eq 2
+          grep -q 'noConfusion_of_Nat.aux._f' evidence/stderr.txt
+          grep -q 'NUCLEUS_NEUTRAL_HEAD_MISMATCH' evidence/stderr.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-no-confusion-named-microgate-${{ github.sha }}
+          path: evidence
+          if-no-files-found: error
