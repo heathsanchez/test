@@ -903,13 +903,17 @@ impl<'a> Machine<'a> {
         {
             return Some((constructor, arguments));
         }
-        if transparency != Transparency::Full {
+        // A certified recursor may need to WHNF its major before the
+        // constructor is visible.  Opaque mode remains rigid, but ordinary
+        // reducible conversion must still perform kernel iota once the major
+        // reduces to one of this recursor's certified constructors.
+        if transparency == Transparency::Opaque {
             return None;
         }
         let exposed = self
             .expose_internal(
                 target.clone(),
-                Transparency::Full,
+                transparency,
                 budget.saturating_sub(1).min(16),
                 false,
                 false,
