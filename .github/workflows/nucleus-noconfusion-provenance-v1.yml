@@ -1,7 +1,7 @@
 name: Nucleus noConfusion conversion provenance
 on:
   push:
-    branches: [nucleus-noconfusion-recursor-major-budget-v1]
+    branches: [nucleus-noconfusion-stuck-projection-separator-v1]
     paths:
       - "metatron-kernel/**"
       - ".github/workflows/nucleus-noconfusion-provenance-v1.yml"
@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      SOURCE_COMMIT: 9becca6a32b0e2aec601d9f475ba03aef10dd9e5
-      SOURCE_SUBTREE: 6553144aae3e81d27d5492d94c028b58d102e6d8
+      SOURCE_COMMIT: 526891c6a4918113c07fd2b65ae07684dd824aa8
+      SOURCE_SUBTREE: 8eaecb24024ab8f24186670f6653156061cca6ac
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +64,7 @@ jobs:
                   'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
                   'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
                   'NUCLEUS_TRACE_CHECK_CONVERSION':'1',
+              'NUCLEUS_TRACE_STUCK_PROJECTION':'1',
                 },
               )
             raw = p.stderr.decode(errors='replace')
@@ -74,6 +75,7 @@ jobs:
                          'first_conversion':[s for s in raw.splitlines() if 'NUCLEUS_CHECK_CONVERSION:' in s][:5],
                          'first_exposure':[s for s in raw.splitlines() if 'NUCLEUS_CHECK_EXPOSE:' in s][:10],
                          'first_application':[s for s in raw.splitlines() if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in s][:3],
+                         'stuck_projection':[s for s in raw.splitlines() if 'NUCLEUS_STUCK_PROJECTION_' in s][:8],
                          'downstream':[s for s in raw.splitlines() if 'NUCLEUS_DOWNSTREAM:' in s][-1:]})
             assert p.returncode in expected, rows[-1]
           report = {'schema':'nucleus-noconfusion-provenance-v1',
