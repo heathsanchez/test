@@ -604,6 +604,14 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                if std::env::var_os("NUCLEUS_TRACE_CHECK_CONVERSION").is_some()
+                    && !conversion.is_proven()
+                {
+                    eprintln!(
+                        "NUCLEUS_CHECK_CONVERSION:expression={expression:?}:expression_node={:?}:depth={}:frame={}:remaining={}:inferred={value:?}:expected={expected:?}:result={conversion:?}",
+                        self.expressions.get(expression), context.len(), frame.id(), *remaining,
+                    );
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
