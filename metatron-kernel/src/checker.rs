@@ -384,6 +384,8 @@ fn check_export_with_policy(
                 Some(NatOperation::Sub)
             } else if name_is_child_str(&export, name, nat.type_name, "ble") {
                 Some(NatOperation::Ble)
+            } else if name_is_child_str(&export, name, nat.type_name, "beq") {
+                Some(NatOperation::Beq)
             } else {
                 None
             };
@@ -8933,6 +8935,7 @@ fn check_exact_nat(
             add: None,
             sub: None,
             ble: None,
+            beq: None,
         })
         .map_err(|_| Verdict::Reject)
 }
