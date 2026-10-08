@@ -1173,6 +1173,18 @@ fn compare_values(
                     spine,
                     current_budget,
                 );
+                if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some()
+                    && exposed.proven_value().is_none()
+                {
+                    eprintln!(
+                        "NUCLEUS_LAZY_PROJECTION:side=left:type_id={}:index={}:structure_expr={:?}:structure_env={}:spine_len={}:judgment={exposed:?}",
+                        type_name.0,
+                        index,
+                        structure.expr,
+                        structure.env.id(),
+                        spine.len(),
+                    );
+                }
                 let Some(exposed) = exposed.proven_value() else {
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
@@ -1199,6 +1211,18 @@ fn compare_values(
                     spine,
                     current_budget,
                 );
+                if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some()
+                    && exposed.proven_value().is_none()
+                {
+                    eprintln!(
+                        "NUCLEUS_LAZY_PROJECTION:side=right:type_id={}:index={}:structure_expr={:?}:structure_env={}:spine_len={}:judgment={exposed:?}",
+                        type_name.0,
+                        index,
+                        structure.expr,
+                        structure.env.id(),
+                        spine.len(),
+                    );
+                }
                 let Some(exposed) = exposed.proven_value() else {
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
