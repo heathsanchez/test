@@ -1,0 +1,66 @@
+name: Nucleus noConfusion deep machine projection trace v1
+
+on:
+  push:
+    branches: [nucleus-no-confusion-machine-projection-v2]
+    paths:
+      - ".github/workflows/nucleus-no-confusion-machine-projection-v2.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+      - name: Fetch frozen init-prelude
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/a /tmp/tests evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/a
+          tar --no-same-owner -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace deep machine projection mismatch
+        run: |
+          set -euo pipefail
+          set +e
+          NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_MACHINE_PROJECTION=1 \
+            /tmp/nucleus < /tmp/tests/good/init-prelude.ndjson \
+            > evidence/stdout.txt 2> evidence/stderr.txt
+          rc=$?
+          set -e
+          echo "$rc" > evidence/exit.txt
+          python3 - <<'PY'
+          import json, pathlib
+          stderr=pathlib.Path("evidence/stderr.txt").read_text(errors="replace").splitlines()
+          d={
+            "exit":int(pathlib.Path("evidence/exit.txt").read_text().strip()),
+            "projection_mismatch":[x for x in stderr if "NUCLEUS_MACHINE_PROJECTION_MISMATCH:" in x],
+            "downstream":[x for x in stderr if "NUCLEUS_DOWNSTREAM:" in x],
+          }
+          pathlib.Path("evidence/result.json").write_text(json.dumps(d,indent=2)+"\n")
+          print(json.dumps(d,indent=2))
+          assert d["exit"] == 2, d
+          assert d["projection_mismatch"], d
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-no-confusion-deep-machine-projection-${{ github.sha }}
+          path: evidence
+          if-no-files-found: error
