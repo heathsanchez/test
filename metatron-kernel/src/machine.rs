@@ -906,17 +906,23 @@ impl<'a> Machine<'a> {
         if transparency != Transparency::Full {
             return None;
         }
-        let exposed = self
-            .expose_internal(
-                target.clone(),
-                Transparency::Full,
+        let exposed_judgment = self.expose_internal(
+            target.clone(),
+            Transparency::Full,
+            budget.saturating_sub(1).min(256),
+            false,
+            false,
+        );
+        if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD").is_some() {
+            eprintln!(
+                "NUCLEUS_RECURSOR_MAJOR_GUARD:target={:?}:frame={}:budget={}:judgment={:?}",
+                target.expr,
+                target.env.id(),
                 budget.saturating_sub(1).min(256),
-                false,
-                false,
-            )
-            .proven_value()?
-            .value
-            .clone();
+                exposed_judgment,
+            );
+        }
+        let exposed = exposed_judgment.proven_value()?.value.clone();
         match exposed {
             Value::Neutral(Neutral {
                 head: NeutralHead::Const { name, .. },
