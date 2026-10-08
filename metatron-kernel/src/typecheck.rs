@@ -604,6 +604,19 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                if std::env::var_os("NUCLEUS_TRACE_CHECK_IN").is_some()
+                    && matches!(
+                        &conversion,
+                        Judgment::Unknown { residual } if residual.0 == "distinct-neutral-heads"
+                    )
+                {
+                    eprintln!(
+                        "NUCLEUS_CHECK_IN:expression={expression:?}:frame={}:context_len={}:remaining={}:inferred={value:?}:expected={expected:?}:conversion={conversion:?}",
+                        frame.id(),
+                        context.len(),
+                        *remaining,
+                    );
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
