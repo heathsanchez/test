@@ -226,6 +226,7 @@ fn check_export_with_policy(
                     &environment,
                     parameter_substitution(&level_params),
                 )
+                .with_names(&export.names)
                 .with_delta_policy(delta_policy);
                 if let Err(verdict) = trace_verdict_boundary(
                     &export,
@@ -250,6 +251,7 @@ fn check_export_with_policy(
                     &environment,
                     parameter_substitution(&level_params),
                 )
+                .with_names(&export.names)
                 .with_delta_policy(delta_policy);
                 if let Err(verdict) = trace_verdict_boundary(
                     &export,
@@ -286,6 +288,7 @@ fn check_export_with_policy(
                     &environment,
                     parameter_substitution(&level_params),
                 )
+                .with_names(&export.names)
                 .with_delta_policy(delta_policy);
                 if let Err(verdict) = trace_verdict_boundary(
                     &export,
