@@ -331,7 +331,6 @@ impl<'a> TypeChecker<'a> {
                     };
                 }
                 let Some((domain, body)) = self.pi_view(function_type.clone(), *remaining) else {
-                    #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
                         let mut reducible = None;
                         let mut full = None;
