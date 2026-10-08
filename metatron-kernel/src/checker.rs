@@ -63,6 +63,13 @@ fn check_export_with_policy(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Verdict {
+    if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
+        eprintln!(
+            "NUCLEUS_NEUTRAL_NAME_MAP:432={}:435={}",
+            trace_name(&export, NameId(432)),
+            trace_name(&export, NameId(435)),
+        );
+    }
     if let Some(verdict) = crate::capability::execute(&export) {
         return verdict;
     }
