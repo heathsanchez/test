@@ -805,6 +805,7 @@ impl<'a> Machine<'a> {
             Add,
             Sub,
             Ble,
+            Beq,
         }
         let operation = if primitives.add == Some(name) {
             Operation::Add
@@ -812,10 +813,12 @@ impl<'a> Machine<'a> {
             Operation::Sub
         } else if primitives.ble == Some(name) {
             Operation::Ble
+        } else if primitives.beq == Some(name) {
+            Operation::Beq
         } else {
             return None;
         };
-        if !levels.is_empty() || pending.len() < 2 {
+        if !levels.is_empty() || pending.len() != 2 {
             return None;
         }
 
@@ -823,6 +826,91 @@ impl<'a> Machine<'a> {
         // is the first source argument.
         let first = pending[pending.len() - 1].clone();
         let second = pending[pending.len() - 2].clone();
+
+        if matches!(operation, Operation::Beq) {
+            let bools = self.bool_primitives.as_ref()?;
+            let first_value = self
+                .expose_internal(
+                    first.clone(),
+                    transparency,
+                    budget.saturating_sub(1),
+                    false,
+                    false,
+                )
+                .proven_value()?
+                .value
+                .clone();
+            let second_value = self
+                .expose_internal(
+                    second.clone(),
+                    transparency,
+                    budget.saturating_sub(1),
+                    false,
+                    false,
+                )
+                .proven_value()?
+                .value
+                .clone();
+
+            let bool_value = |truth: bool| {
+                Value::Neutral(Neutral {
+                    head: NeutralHead::Const {
+                        name: if truth { bools.true_ctor } else { bools.false_ctor },
+                        levels: Vec::new(),
+                    },
+                    spine: Vec::new(),
+                })
+            };
+
+            // Nat literals already have exact native meaning.  Comparing two
+            // literals is therefore the same definitional consequence as
+            // recursively peeling their constructors.
+            if let (Value::NatLit(left), Value::NatLit(right)) = (&first_value, &second_value) {
+                pending.clear();
+                return Some(bool_value(left.compare(right) == std::cmp::Ordering::Equal));
+            }
+
+            let constructor_view = |value: &Value| -> Option<(bool, Option<Closure>)> {
+                match value {
+                    Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name, levels },
+                        spine,
+                    }) if levels.is_empty()
+                        && *name == primitives.zero
+                        && spine.is_empty() =>
+                    {
+                        Some((false, None))
+                    }
+                    Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name, levels },
+                        spine,
+                    }) if levels.is_empty()
+                        && *name == primitives.succ
+                        && spine.len() == 1 =>
+                    {
+                        Some((true, Some(spine[0].clone())))
+                    }
+                    Value::NatLit(value) if value.is_zero() => Some((false, None)),
+                    _ => None,
+                }
+            };
+
+            let (first_succ, first_pred) = constructor_view(&first_value)?;
+            let (second_succ, second_pred) = constructor_view(&second_value)?;
+            pending.clear();
+            return match (first_succ, second_succ) {
+                (false, false) => Some(bool_value(true)),
+                (false, true) | (true, false) => Some(bool_value(false)),
+                (true, true) => Some(Value::Neutral(Neutral {
+                    head: NeutralHead::Const {
+                        name,
+                        levels: Vec::new(),
+                    },
+                    spine: vec![first_pred?, second_pred?],
+                })),
+            };
+        }
+
         let first_value = self
             .expose_internal(first, transparency, budget.saturating_sub(1), false, false)
             .proven_value()?
@@ -836,9 +924,6 @@ impl<'a> Machine<'a> {
         let (Value::NatLit(first), Value::NatLit(second)) = (first_value, second_value) else {
             return None;
         };
-        if pending.len() != 2 {
-            return None;
-        }
         pending.clear();
         Some(match operation {
             Operation::Add => Value::NatLit(first.add(&second)),
@@ -858,6 +943,7 @@ impl<'a> Machine<'a> {
                     spine: Vec::new(),
                 })
             }
+            Operation::Beq => unreachable!("Nat.beq handled before literal-only operations"),
         })
     }
 
