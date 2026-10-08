@@ -1,0 +1,54 @@
+name: Nucleus noConfusion check-in trace v1
+
+on:
+  push:
+    branches: [nucleus-no-confusion-checkin-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-no-confusion-checkin-trace-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_SUBTREE: e362a19a951d5206c133985ebe2c49aea5bdc819
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build traced Nucleus
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+      - name: Fetch init-prelude
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/a /tmp/tests evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/a
+          tar --no-same-owner -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace exact check-in mismatch
+        run: |
+          set -euo pipefail
+          set +e
+          NUCLEUS_TRACE_DOWNSTREAM=1           NUCLEUS_TRACE_CHECK_IN=1           NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1           NUCLEUS_TRACE_NEUTRAL_HEADS=1             /tmp/nucleus < /tmp/tests/good/init-prelude.ndjson             > evidence/stdout.txt 2> evidence/stderr.txt
+          rc=$?
+          set -e
+          echo "$rc" > evidence/exit.txt
+          grep 'NUCLEUS_CHECK_IN:' evidence/stderr.txt | tail -20
+          grep -q 'NUCLEUS_CHECK_IN:' evidence/stderr.txt
+          test "$rc" -eq 2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-no-confusion-checkin-trace-${{ github.sha }}
+          path: evidence
+          if-no-files-found: error
