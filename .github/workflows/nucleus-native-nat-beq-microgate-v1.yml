@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      SOURCE_SUBTREE: 1eeb59d479203411303946092ffe84eb0579ee88
+      SOURCE_SUBTREE: dc3d3b0bd51e9df1fb2d4ea097cec3629d77ee50
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
               p=pathlib.Path("/tmp/tests")/bucket/(name+".ndjson")
               q=subprocess.run(["/tmp/nucleus"],stdin=p.open("rb"),stdout=subprocess.DEVNULL,
                   stderr=subprocess.PIPE,timeout=timeout,
-                  env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+                  env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1","NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE":"1"})
               return {"exit":q.returncode,"stderr":q.stderr.decode(errors="replace").splitlines()[-40:]}
           rows={
             "init-prelude":run("good","init-prelude"),
@@ -55,7 +55,7 @@ jobs:
           }
           print(json.dumps(rows,indent=2))
           pathlib.Path("evidence/result.json").write_text(json.dumps(rows,indent=2)+"\n")
-          assert rows["init-prelude"]["exit"] == 0, rows
+          assert rows["init-prelude"]["exit"] == 2, rows\n          assert any("NUCLEUS_APPLICATION_FUNCTION_TYPE:" in line for line in rows["init-prelude"]["stderr"]), rows
           assert rows["nested-unused-param"]["exit"] == 1, rows
           assert rows["proj-stuck-prop"]["exit"] != 0, rows
           assert rows["rec-subst-prop"]["exit"] != 0, rows
