@@ -160,6 +160,11 @@ fn convert_in_context_with_congruence(
         if left == right {
             continue;
         }
+        if let (TypeValue::Term(left), TypeValue::Term(right)) = (&left, &right)
+            && checker.support_equivalent_closures(left, right, 4096) == Some(true)
+        {
+            continue;
+        }
         if remaining == 0 {
             return Judgment::unknown("conversion-budget-exhausted");
         }
@@ -1321,6 +1326,16 @@ fn compare_values(
                 }
                 if left.spine.len() != right.spine.len() {
                     return Judgment::refuted("neutral-spine-length");
+                }
+                if left
+                    .spine
+                    .iter()
+                    .zip(&right.spine)
+                    .all(|(left, right)| {
+                        checker.support_equivalent_closures(left, right, 4096) == Some(true)
+                    })
+                {
+                    return Judgment::proven((), "support-equivalent-neutral-spine");
                 }
                 work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
                     (
