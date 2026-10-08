@@ -55,7 +55,8 @@ jobs:
           }
           print(json.dumps(rows,indent=2))
           pathlib.Path("evidence/result.json").write_text(json.dumps(rows,indent=2)+"\n")
-          assert rows["init-prelude"]["exit"] == 2, rows\n          assert any("NUCLEUS_LAZY_PROJECTION:" in line for line in rows["init-prelude"]["stderr"]), rows
+          assert rows["init-prelude"]["exit"] == 2, rows
+          assert any("NUCLEUS_LAZY_PROJECTION:" in line for line in rows["init-prelude"]["stderr"]), rows
           assert rows["nested-unused-param"]["exit"] == 1, rows
           assert rows["proj-stuck-prop"]["exit"] != 0, rows
           assert rows["rec-subst-prop"]["exit"] != 0, rows
