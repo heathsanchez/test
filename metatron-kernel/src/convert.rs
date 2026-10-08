@@ -1610,6 +1610,19 @@ fn compare_neutral_heads(
                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
                     left.head, left.spine, right.head, right.spine, budget
                 );
+                if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_MAJOR").is_some() {
+                    for (side, neutral) in [("left", left), ("right", right)] {
+                        if let Some(major) = neutral.spine.last() {
+                            let probe = checker.machine().expose(
+                                major.clone(), Transparency::Full, budget.min(512),
+                            );
+                            eprintln!(
+                                "NUCLEUS_NEUTRAL_MAJOR:side={side}:head={:?}:major_expression={:?}:frame={}:probe={probe:?}",
+                                neutral.head, major.expr, major.env.id(),
+                            );
+                        }
+                    }
+                }
             }
             Judgment::refuted("distinct-neutral-heads")
         }
