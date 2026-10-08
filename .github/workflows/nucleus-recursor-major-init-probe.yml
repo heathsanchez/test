@@ -1,5 +1,5 @@
 name: Nucleus recursor-major init-prelude probe
-# candidate: major-whnf-cap-4096
+# candidate: trace-major-path
 
 on:
   push:
@@ -57,6 +57,7 @@ jobs:
           env=os.environ | {
               "NUCLEUS_DIAG_BYPASS_STRING_GUARD":"1",
               "NUCLEUS_TRACE_DOWNSTREAM":"1",
+              "NUCLEUS_TRACE_RECURSOR_MAJOR_PATH":"1",
           }
           started=time.monotonic()
           with path.open("rb") as source:
@@ -68,6 +69,7 @@ jobs:
               "exit":q.returncode,
               "seconds":time.monotonic()-started,
               "downstream":[x for x in stderr if x.startswith("NUCLEUS_DOWNSTREAM:")][-20:],
+              "recursor_path":[x for x in stderr if x.startswith("NUCLEUS_RECURSOR_")][-100:],
           }
           pathlib.Path("out/result.json").write_text(json.dumps(result,indent=2)+"\n")
           print(json.dumps(result),flush=True)
