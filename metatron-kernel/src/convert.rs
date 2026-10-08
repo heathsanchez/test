@@ -1147,6 +1147,19 @@ fn compare_values(
                 let (Some(left_value), Some(right_value)) =
                     (left_value.proven_value(), right_value.proven_value())
                 else {
+                    if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+                        eprintln!(
+                            "NUCLEUS_LAZY_PROJECTION_PAIR:type_id={}:index={}:left_structure_expr={:?}:left_structure_env={}:left_spine_len={}:left_judgment={left_value:?}:right_structure_expr={:?}:right_structure_env={}:right_spine_len={}:right_judgment={right_value:?}",
+                            left_type.0,
+                            left_index,
+                            left_structure.expr,
+                            left_structure.env.id(),
+                            left_spine.len(),
+                            right_structure.expr,
+                            right_structure.env.id(),
+                            right_spine.len(),
+                        );
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
