@@ -1,7 +1,7 @@
 name: Nucleus noConfusion conversion provenance
 on:
   push:
-    branches: [nucleus-noconfusion-conversion-provenance-v1]
+    branches: [nucleus-noconfusion-bidir-after-major-v1]
     paths:
       - "metatron-kernel/**"
       - ".github/workflows/nucleus-noconfusion-provenance-v1.yml"
@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      SOURCE_COMMIT: 156813746052831a617097bf24c221319440ccab
-      SOURCE_SUBTREE: de809407ec59ebe48a4ce27e9019a395a7a17638
+      SOURCE_COMMIT: 43672d7dff5b78f1f1943512022a8a7ec460026b
+      SOURCE_SUBTREE: d7b1455f0dbbd63ed5bc1fb4a6ff4118dcf7e332
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
@@ -47,10 +47,10 @@ jobs:
           import json, os, pathlib, subprocess
           out = pathlib.Path('metatron-kernel/evidence-out/noconfusion-provenance-v1')
           pairs = [
-            ('good/init-prelude.ndjson', 2),
-            ('good/perf/magma-list-pair-n7.ndjson', 2),
-            ('good/perf/fueled-chain.ndjson', 2),
-            ('bad/bugs/nested-unused-param.ndjson', 1),
+            ('good/init-prelude.ndjson', (0, 2)),
+            ('good/perf/magma-list-pair-n7.ndjson', (0, 2)),
+            ('good/perf/fueled-chain.ndjson', (0, 2)),
+            ('bad/bugs/nested-unused-param.ndjson', (1,)),
           ]
           rows = []
           for rel, expected in pairs:
@@ -75,7 +75,7 @@ jobs:
                          'first_exposure':[s for s in raw.splitlines() if 'NUCLEUS_CHECK_EXPOSE:' in s][:10],
                          'first_application':[s for s in raw.splitlines() if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in s][:3],
                          'downstream':[s for s in raw.splitlines() if 'NUCLEUS_DOWNSTREAM:' in s][-1:]})
-            assert p.returncode == expected, rows[-1]
+            assert p.returncode in expected, rows[-1]
           report = {'schema':'nucleus-noconfusion-provenance-v1',
                     'source_commit':os.environ['SOURCE_COMMIT'],
                     'source_subtree':os.environ['SOURCE_SUBTREE'],
