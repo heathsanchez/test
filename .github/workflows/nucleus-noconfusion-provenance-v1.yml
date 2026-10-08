@@ -1,7 +1,7 @@
 name: Nucleus noConfusion conversion provenance
 on:
   push:
-    branches: [nucleus-noconfusion-projection-congruence-v1]
+    branches: [nucleus-noconfusion-projection-guarded-v1]
     paths:
       - "metatron-kernel/**"
       - ".github/workflows/nucleus-noconfusion-provenance-v1.yml"
@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      SOURCE_COMMIT: 8755193f60ea04dd8fe3dc2414d5fbf50499f177
-      SOURCE_SUBTREE: c909c7b21e119e8e206f829e9fb6ee5b5f315332
+      SOURCE_COMMIT: 9a4b4417cc19826368885a9acc39c1e89a142fd6
+      SOURCE_SUBTREE: 49738f486f7515fb2667f37741b3c5edfae04fba
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
