@@ -1147,6 +1147,15 @@ fn compare_values(
                 let (Some(left_value), Some(right_value)) =
                     (left_value.proven_value(), right_value.proven_value())
                 else {
+                    if std::env::var_os("NUCLEUS_TRACE_STUCK_PROJECTION").is_some() {
+                        let left = format!("{current_left:?}");
+                        let right = format!("{current_right:?}");
+                        eprintln!(
+                            "NUCLEUS_STUCK_PROJECTION_FAILURE:left={}:right={}:budget={current_budget}:depth={depth}",
+                            left.chars().take(2300).collect::<String>(),
+                            right.chars().take(2300).collect::<String>(),
+                        );
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
@@ -1174,6 +1183,15 @@ fn compare_values(
                     current_budget,
                 );
                 let Some(exposed) = exposed.proven_value() else {
+                    if std::env::var_os("NUCLEUS_TRACE_STUCK_PROJECTION").is_some() {
+                        let left = format!("{current_left:?}");
+                        let right = format!("{current_right:?}");
+                        eprintln!(
+                            "NUCLEUS_STUCK_PROJECTION_FAILURE:left={}:right={}:budget={current_budget}:depth={depth}",
+                            left.chars().take(2300).collect::<String>(),
+                            right.chars().take(2300).collect::<String>(),
+                        );
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
@@ -1200,6 +1218,15 @@ fn compare_values(
                     current_budget,
                 );
                 let Some(exposed) = exposed.proven_value() else {
+                    if std::env::var_os("NUCLEUS_TRACE_STUCK_PROJECTION").is_some() {
+                        let left = format!("{current_left:?}");
+                        let right = format!("{current_right:?}");
+                        eprintln!(
+                            "NUCLEUS_STUCK_PROJECTION_FAILURE:left={}:right={}:budget={current_budget}:depth={depth}",
+                            left.chars().take(2300).collect::<String>(),
+                            right.chars().take(2300).collect::<String>(),
+                        );
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
