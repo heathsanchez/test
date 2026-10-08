@@ -237,38 +237,6 @@ fn convert_in_context_with_congruence(
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
                     }
-                    Judgment::Unknown { residual }
-                        if delta_policy == DeltaPolicy::GuardedSemanticFallback
-                            && residual.0 == "distinct-neutral-heads" =>
-                    {
-                        // Positive-only recheck: distinct neutral heads may hide a
-                        // certified computation (notably Bool.rec on a computed
-                        // constructor major). Full exposure may prove equality,
-                        // but failure never creates new rejection authority.
-                        let full_left =
-                            machine.expose_for_conversion(left, Transparency::Full, remaining);
-                        let full_right =
-                            machine.expose_for_conversion(right, Transparency::Full, remaining);
-                        let (Some(full_left), Some(full_right)) =
-                            (full_left.proven_value(), full_right.proven_value())
-                        else {
-                            return Judgment::Unknown { residual };
-                        };
-                        if !compare_values(
-                            checker,
-                            full_left,
-                            full_right,
-                            remaining,
-                            depth,
-                            context,
-                            &mut work,
-                            &mut proof_function_frees,
-                        )
-                        .is_proven()
-                        {
-                            return Judgment::Unknown { residual };
-                        }
-                    }
                     Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
             }
@@ -469,6 +437,37 @@ fn convert_in_context_with_congruence(
                     }
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual }
+                        if delta_policy == DeltaPolicy::GuardedSemanticFallback
+                            && residual.0 == "distinct-neutral-heads" =>
+                    {
+                        // Positive-only semantic retry. If full certified
+                        // reduction proves the terms equal, accept this
+                        // obligation. Otherwise preserve the original UNKNOWN.
+                        let full_left =
+                            machine.expose_for_conversion(left, Transparency::Full, remaining);
+                        let full_right =
+                            machine.expose_for_conversion(right, Transparency::Full, remaining);
+                        let (Some(full_left), Some(full_right)) =
+                            (full_left.proven_value(), full_right.proven_value())
+                        else {
+                            return Judgment::Unknown { residual };
+                        };
+                        if !compare_values(
+                            checker,
+                            full_left,
+                            full_right,
+                            remaining,
+                            depth,
+                            context,
+                            &mut work,
+                            &mut proof_function_frees,
+                        )
+                        .is_proven()
+                        {
+                            return Judgment::Unknown { residual };
+                        }
                     }
                     Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
