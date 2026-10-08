@@ -914,7 +914,7 @@ impl<'a> Machine<'a> {
             .expose_internal(
                 target.clone(),
                 transparency,
-                budget.saturating_sub(1).min(64),
+                budget.saturating_sub(1).min(4096),
                 false,
                 false,
             )
