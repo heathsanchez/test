@@ -297,6 +297,8 @@ impl<'a> Machine<'a> {
         if index >= spec.field_types.len() {
             return Judgment::unknown("projection-index-out-of-range");
         }
+        let trace_projection = std::env::var_os("NUCLEUS_TRACE_PROJECTION_FIELD").is_some();
+        let trace_structure = trace_projection.then(|| structure.clone());
         let exposed = self.expose_internal(
             structure,
             Transparency::Full,
@@ -304,6 +306,11 @@ impl<'a> Machine<'a> {
             false,
             false,
         );
+        if trace_projection {
+            eprintln!(
+                "NUCLEUS_PROJECTION_FIELD:type={type_name:?}:index={index}:budget={budget}:structure={trace_structure:?}:exposed={exposed:?}"
+            );
+        }
         let Some(Value::Neutral(neutral)) = exposed.proven_value().map(|value| &value.value) else {
             return Judgment::unknown("projection-structure-stuck");
         };
