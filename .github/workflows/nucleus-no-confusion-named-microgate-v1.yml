@@ -1,8 +1,8 @@
-name: Nucleus noConfusion named microgate v1
+name: Nucleus noConfusion env microgate v1
 
 on:
   push:
-    branches: [nucleus-no-confusion-name-trace-v1]
+    branches: [nucleus-no-confusion-env-trace-v1]
     paths:
       - ".github/workflows/nucleus-no-confusion-named-microgate-v1.yml"
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      SOURCE_SUBTREE: 9889068bb2eebe3572050e220a1c2fe7c2856813
+      SOURCE_SUBTREE: d4ff7813404ce6df56ee6e0cbe38058ab14e9ef7
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
