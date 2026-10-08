@@ -1116,6 +1116,49 @@ fn compare_values(
                     spine: right_spine,
                 },
             ) if left_type == right_type && left_index == right_index => {
+                // A projection is congruent in its structure and its applied
+                // argument spine.  When two projections share checked field
+                // ownership but their constructor cannot be exposed, use
+                // *proved* conversion of all operands as a separate authority.
+                // No equality is inferred from matching expression IDs alone.
+                //
+                // Restrict this extra attempt to one common syntax shape and
+                // halve its budget, so it cannot self-reenter indefinitely.
+                let probe_budget = (current_budget / 2).min(128);
+                if probe_budget >= 8
+                    && left_structure.expr == right_structure.expr
+                    && left_structure.levels == right_structure.levels
+                    && left_spine.len() == right_spine.len()
+                    && convert_with_policy_in_context(
+                        checker,
+                        &TypeValue::Term(left_structure.clone()),
+                        &TypeValue::Term(right_structure.clone()),
+                        probe_budget,
+                        DeltaPolicy::PreferredOnly,
+                        depth,
+                        context,
+                    )
+                    .is_proven()
+                    && left_spine.iter().zip(right_spine).all(|(left, right)| {
+                        convert_with_policy_in_context(
+                            checker,
+                            &TypeValue::Term(left.clone()),
+                            &TypeValue::Term(right.clone()),
+                            probe_budget,
+                            DeltaPolicy::PreferredOnly,
+                            depth,
+                            context,
+                        )
+                        .is_proven()
+                    })
+                {
+                    if std::env::var_os("NUCLEUS_TRACE_STUCK_PROJECTION").is_some() {
+                        eprintln!(
+                            "NUCLEUS_PROJECTION_CONGRUENCE_PROVEN:type={left_type:?}:field={left_index}:budget={probe_budget}"
+                        );
+                    }
+                    return Judgment::proven((), "proved-stuck-projection-congruence");
+                }
                 if same_rigid_application_congruence(
                     checker,
                     left_structure,
