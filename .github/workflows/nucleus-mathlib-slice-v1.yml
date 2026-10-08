@@ -1,0 +1,129 @@
+name: Nucleus cached Mathlib noConfusion slice v1
+
+on:
+  push:
+    branches: [nucleus-no-confusion-major256-v1]
+    paths:
+      - ".github/workflows/nucleus-mathlib-slice-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  slice:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        id: export-cache
+        with:
+          path: /tmp/arena/_build/tests/mathlib.ndjson
+          key: nucleus-mathlib-export-arena4c30c4ac-mathlibd13f23b7-exporter66f1fb4b
+      - name: Extract exact noConfusion slice
+        run: |
+          set -euo pipefail
+          test "${{ steps.export-cache.outputs.cache-hit }}" = "true"
+          test -f /tmp/arena/_build/tests/mathlib.ndjson
+          mkdir -p evidence
+          python3 - <<'PY'
+          import json, pathlib
+
+          path = pathlib.Path("/tmp/arena/_build/tests/mathlib.ndjson")
+          wanted_expr = {2028, 2027, 5, 2000, 1255, 1876, 2012}
+          wanted_names = {3, 432, 435}
+          expr = {}
+          names = {0: ""}
+          raw_names = {}
+          decls = []
+
+          with path.open() as f:
+              for line in f:
+                  o = json.loads(line)
+                  if "ie" in o:
+                      expr[o["ie"]] = o
+                  if "in" in o:
+                      raw_names[o["in"]] = o
+                  for k in ("def", "thm", "axiom"):
+                      if k in o:
+                          decls.append(o[k])
+
+          unresolved = set(raw_names)
+          while unresolved:
+              progress = False
+              for i in list(unresolved):
+                  o = raw_names[i]
+                  d = o.get("str") or o.get("num")
+                  pre = d["pre"]
+                  if pre not in names:
+                      continue
+                  suffix = d.get("str", str(d.get("i")))
+                  names[i] = (names[pre] + "." if names[pre] else "") + suffix
+                  unresolved.remove(i)
+                  progress = True
+              if not progress:
+                  break
+
+          # Dependency closure from the exact failing application/function.
+          roots = {2028, 2027, 5, 2000, 1255, 1876, 2012}
+          closure = set()
+          stack = list(roots)
+          child_keys = {
+              "app": ("fn","arg"),
+              "lam": ("type","body"),
+              "forallE": ("type","body"),
+              "letE": ("type","value","body"),
+              "proj": ("struct",),
+          }
+          while stack and len(closure) < 5000:
+              e = stack.pop()
+              if e in closure or e not in expr:
+                  continue
+              closure.add(e)
+              o = expr[e]
+              for tag, keys in child_keys.items():
+                  if tag in o:
+                      d = o[tag]
+                      for k in keys:
+                          v = d.get(k)
+                          if isinstance(v, int):
+                              stack.append(v)
+
+          report = {
+              "mathlib_bytes": path.stat().st_size,
+              "wanted_names": {str(i): names.get(i) for i in sorted(wanted_names)},
+              "roots": {str(i): expr.get(i) for i in sorted(roots)},
+              "closure": {str(i): expr[i] for i in sorted(closure)},
+              "closure_names": {
+                  str(i): names.get(i)
+                  for i in sorted(names)
+                  if any(
+                      isinstance(v, dict) and (
+                          (v.get("name") == i) or
+                          (v.get("typeName") == i)
+                      )
+                      for e in closure
+                      for v in expr[e].values()
+                  )
+              },
+              "matching_declarations": [
+                  d for d in decls
+                  if names.get(d.get("name",""), "").endswith("noConfusion_of_Nat.aux._f")
+                  or names.get(d.get("name",""), "").endswith("noConfusion_of_Nat.aux.match_1_1")
+              ],
+          }
+          pathlib.Path("evidence/slice.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+          print(json.dumps({
+              "mathlib_bytes": report["mathlib_bytes"],
+              "wanted_names": report["wanted_names"],
+              "root_count": len(report["roots"]),
+              "closure_count": len(report["closure"]),
+              "matching_declarations": report["matching_declarations"],
+          }, indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-mathlib-no-confusion-slice-${{ github.sha }}
+          path: evidence/slice.json
+          if-no-files-found: error
