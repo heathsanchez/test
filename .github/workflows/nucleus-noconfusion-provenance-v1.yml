@@ -1,0 +1,92 @@
+name: Nucleus noConfusion conversion provenance
+on:
+  push:
+    branches: [nucleus-noconfusion-conversion-provenance-v1]
+    paths:
+      - "metatron-kernel/**"
+      - ".github/workflows/nucleus-noconfusion-provenance-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  three-witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SOURCE_COMMIT: 156813746052831a617097bf24c221319440ccab
+      SOURCE_SUBTREE: de809407ec59ebe48a4ce27e9019a395a7a17638
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind immutable source tree and run release suite
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          echo "source_commit=$SOURCE_COMMIT source_subtree=$SOURCE_SUBTREE qualification_commit=$GITHUB_SHA"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch pinned frozen Arena witness corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Inspect noConfusion and fueled-chain with protected negative
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/noconfusion-provenance-v1
+          ulimit -s 8192
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          out = pathlib.Path('metatron-kernel/evidence-out/noconfusion-provenance-v1')
+          pairs = [
+            ('good/init-prelude.ndjson', 2),
+            ('good/perf/magma-list-pair-n7.ndjson', 2),
+            ('good/perf/fueled-chain.ndjson', 2),
+            ('bad/bugs/nested-unused-param.ndjson', 1),
+          ]
+          rows = []
+          for rel, expected in pairs:
+            with (pathlib.Path('/tmp/arena-tests') / rel).open('rb') as src:
+              p = subprocess.run(
+                ['metatron-kernel/target/release/metatron-kernel'],
+                stdin=src,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=40,
+                env=os.environ | {
+                  'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                  'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
+                  'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                  'NUCLEUS_TRACE_CHECK_CONVERSION':'1',
+                },
+              )
+            raw = p.stderr.decode(errors='replace')
+            path = rel.removesuffix('.ndjson').replace('/','__')
+            (out / (path + '.stderr.txt')).write_text(raw)
+            rows.append({'test':rel,'expected':expected,'actual':p.returncode,
+                         'line_count':len(raw.splitlines()),
+                         'first_conversion':[s for s in raw.splitlines() if 'NUCLEUS_CHECK_CONVERSION:' in s][:5],
+                         'first_exposure':[s for s in raw.splitlines() if 'NUCLEUS_CHECK_EXPOSE:' in s][:10],
+                         'first_application':[s for s in raw.splitlines() if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in s][:3],
+                         'downstream':[s for s in raw.splitlines() if 'NUCLEUS_DOWNSTREAM:' in s][-1:]})
+            assert p.returncode == expected, rows[-1]
+          report = {'schema':'nucleus-noconfusion-provenance-v1',
+                    'source_commit':os.environ['SOURCE_COMMIT'],
+                    'source_subtree':os.environ['SOURCE_SUBTREE'],
+                    'qualification_commit':os.environ['GITHUB_SHA'],
+                    'arena_artifact':os.environ['ARENA_ARTIFACT'], 'rows': rows}
+          (out / 'report.json').write_text(json.dumps(report, indent=2))
+          print(json.dumps(report, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-noconfusion-provenance-${{ github.sha }}
+          path: metatron-kernel/evidence-out/noconfusion-provenance-v1
+          if-no-files-found: warn
