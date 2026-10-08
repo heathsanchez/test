@@ -534,6 +534,16 @@ impl<'a> Machine<'a> {
                         continue;
                     }
                     if let Some(reduction) = self.recursor_reductions.get(name) {
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_PATH").is_some() {
+                            eprintln!(
+                                "NUCLEUS_RECURSOR_PATH:recursor={:?}:pending={}:transparency={:?}:budget={}",
+                                name,
+                                pending.len(),
+                                transparency,
+                                budget,
+                            );
+                        }
                         let required = reduction.num_params
                             + 1
                             + reduction.rules.len()
@@ -901,7 +911,25 @@ impl<'a> Machine<'a> {
         if let Some((constructor, arguments)) = self.constructor_application(target)
             && matches_rule(constructor, arguments.len())
         {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_PATH").is_some() {
+                eprintln!(
+                    "NUCLEUS_RECURSOR_MAJOR_PATH:direct=true:target={:?}:constructor={:?}:arity={}",
+                    target,
+                    constructor,
+                    arguments.len(),
+                );
+            }
             return Some((constructor, arguments));
+        }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_PATH").is_some() {
+            eprintln!(
+                "NUCLEUS_RECURSOR_MAJOR_PATH:direct=false:target={:?}:transparency={:?}:budget={}",
+                target,
+                transparency,
+                budget,
+            );
         }
         // A certified recursor may need to WHNF its major before the
         // constructor is visible.  Opaque mode remains rigid, but ordinary
@@ -910,17 +938,22 @@ impl<'a> Machine<'a> {
         if transparency == Transparency::Opaque {
             return None;
         }
-        let exposed = self
-            .expose_internal(
-                target.clone(),
-                transparency,
-                budget.saturating_sub(1).min(4096),
-                false,
-                false,
-            )
-            .proven_value()?
-            .value
-            .clone();
+        let exposed_judgment = self.expose_internal(
+            target.clone(),
+            transparency,
+            budget.saturating_sub(1).min(4096),
+            false,
+            false,
+        );
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR_PATH").is_some() {
+            eprintln!(
+                "NUCLEUS_RECURSOR_MAJOR_PATH:exposed:target={:?}:judgment={:?}",
+                target,
+                exposed_judgment,
+            );
+        }
+        let exposed = exposed_judgment.proven_value()?.value.clone();
         match exposed {
             Value::Neutral(Neutral {
                 head: NeutralHead::Const { name, .. },
