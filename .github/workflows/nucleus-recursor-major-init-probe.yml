@@ -1,5 +1,5 @@
 name: Nucleus recursor-major init-prelude probe
-# candidate: trace-major-path
+# candidate: trace-major-path-diagnostics
 
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
           p.write_text(s.replace(old,new,1))
           PY
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
-          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
 
       - name: Fetch frozen Arena corpus
