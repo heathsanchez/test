@@ -58,6 +58,7 @@ jobs:
               "NUCLEUS_TRACE_DOWNSTREAM":"1",
               "NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE":"1",
               "NUCLEUS_TRACE_NEUTRAL_HEADS":"1",
+              "NUCLEUS_TRACE_BOOL_REC_MAJOR":"1",
           }
           started=time.monotonic()
           with path.open("rb") as source:
@@ -71,6 +72,7 @@ jobs:
               "downstream":[x for x in stderr if x.startswith("NUCLEUS_DOWNSTREAM:")][-20:],
               "application_function_type":[x for x in stderr if x.startswith("NUCLEUS_APPLICATION_FUNCTION_TYPE:")][-20:],
               "neutral_heads":[x for x in stderr if x.startswith("NUCLEUS_NEUTRAL_HEAD_MISMATCH:")][-20:],
+              "bool_rec_major":[x for x in stderr if x.startswith("NUCLEUS_BOOL_REC_MAJOR:")][-20:],
           }
           pathlib.Path("out/result.json").write_text(json.dumps(result,indent=2)+"\n")
           print(json.dumps(result),flush=True)
