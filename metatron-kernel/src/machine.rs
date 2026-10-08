@@ -713,6 +713,33 @@ impl<'a> Machine<'a> {
                             closure = field;
                             continue;
                         }
+                        // A certified recursor is not a rigid wrong constructor:
+                        // its result may reduce to this structure once its major
+                        // becomes constructor-headed. Preserve the projection as
+                        // neutral instead of turning temporary stuckness into a
+                        // constructor mismatch.
+                        NeutralHead::Const { name, .. }
+                            if self.recursor_reductions.contains_key(name) =>
+                        {
+                            let mut spine = Vec::new();
+                            append_pending(&mut spine, &mut pending);
+                            record_transition(
+                                &mut transitions,
+                                record_witnesses,
+                                TransitionWitness::Rigid,
+                            );
+                            return exposed(
+                                Value::Neutral(Neutral {
+                                    head: NeutralHead::Projection {
+                                        type_name: *type_name,
+                                        index,
+                                        structure: Box::new(neutral.clone()),
+                                    },
+                                    spine,
+                                }),
+                                transitions,
+                            );
+                        }
                         NeutralHead::Const { .. } => {
                             if preserve_stuck_projection {
                                 let mut spine = Vec::new();
