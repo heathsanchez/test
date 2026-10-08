@@ -1124,7 +1124,7 @@ fn compare_values(
                 //
                 // Restrict this extra attempt to one common syntax shape and
                 // halve its budget, so it cannot self-reenter indefinitely.
-                let probe_budget = (current_budget / 2).min(128);
+                let probe_budget = (current_budget / 2).min(512);
                 if probe_budget >= 8
                     && left_structure.expr == right_structure.expr
                     && left_structure.levels == right_structure.levels
@@ -1134,7 +1134,7 @@ fn compare_values(
                         &TypeValue::Term(left_structure.clone()),
                         &TypeValue::Term(right_structure.clone()),
                         probe_budget,
-                        DeltaPolicy::PreferredOnly,
+                        DeltaPolicy::GuardedSemanticFallback,
                         depth,
                         context,
                     )
@@ -1145,7 +1145,7 @@ fn compare_values(
                             &TypeValue::Term(left.clone()),
                             &TypeValue::Term(right.clone()),
                             probe_budget,
-                            DeltaPolicy::PreferredOnly,
+                            DeltaPolicy::GuardedSemanticFallback,
                             depth,
                             context,
                         )
