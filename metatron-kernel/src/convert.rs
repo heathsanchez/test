@@ -1606,9 +1606,19 @@ fn compare_neutral_heads(
         }
         _ => {
             if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
+                let render_head = |head: &NeutralHead| match head {
+                    NeutralHead::Const { name, levels } => {
+                        format!("Const(name={},id={},levels={levels:?})", checker.debug_name(*name), name.0)
+                    }
+                    other => format!("{other:?}"),
+                };
                 eprintln!(
-                    "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
-                    left.head, left.spine, right.head, right.spine, budget
+                    "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={}:left_spine={:?}:right={}:right_spine={:?}:budget={}",
+                    render_head(&left.head),
+                    left.spine,
+                    render_head(&right.head),
+                    right.spine,
+                    budget
                 );
             }
             Judgment::refuted("distinct-neutral-heads")
