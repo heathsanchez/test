@@ -328,7 +328,17 @@ impl<'a> Machine<'a> {
         spine: &[Closure],
         budget: usize,
     ) -> Judgment<Value> {
-        let field = self.projection_field_for_conversion(structure, type_name, index, budget);
+        let field = self.projection_field_for_conversion(structure.clone(), type_name, index, budget);
+        if std::env::var_os("NUCLEUS_TRACE_STUCK_PROJECTION").is_some()
+            && !field.is_proven()
+        {
+            let direct = self.expose_internal(
+                structure.clone(), Transparency::Full, budget.min(256), false, false,
+            );
+            eprintln!(
+                "NUCLEUS_STUCK_PROJECTION_FIELD:type={type_name:?}:index={index}:budget={budget}:field={field:?}:structure={structure:?}:full={direct:?}"
+            );
+        }
         let Some(field) = field.proven_value() else {
             return Judgment::unknown("lazy-projection-field-exposure");
         };
