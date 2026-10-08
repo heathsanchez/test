@@ -2,7 +2,7 @@ name: Nucleus noConfusion major256 microgate v1
 
 on:
   push:
-    branches: [nucleus-no-confusion-major256-v1]
+    branches: [nucleus-no-confusion-major-trace-v2]
     paths:
       - ".github/workflows/nucleus-no-confusion-major256-microgate-v1.yml"
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      SOURCE_SUBTREE: 576abd06ba00204fae3123cd1cd7b4cd5b2bb6e5
+      SOURCE_SUBTREE: 6320b184df4168b9c63dd0b0faebe1496fcd5039
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +45,10 @@ jobs:
               p=pathlib.Path("/tmp/tests")/bucket/(name+".ndjson")
               q=subprocess.run(["/tmp/nucleus"],stdin=p.open("rb"),stdout=subprocess.DEVNULL,
                   stderr=subprocess.PIPE,timeout=timeout,
-                  env=os.environ|{"NUCLEUS_TRACE_DOWNSTREAM":"1"})
+                  env=os.environ|{
+                    "NUCLEUS_TRACE_DOWNSTREAM":"1",
+                    "NUCLEUS_TRACE_RECURSOR_MAJOR_GUARD":"1",
+                  })
               return {"exit":q.returncode,"stderr":q.stderr.decode(errors="replace").splitlines()[-40:]}
           rows={
             "init-prelude":run("good","init-prelude"),
@@ -55,7 +58,8 @@ jobs:
           }
           print(json.dumps(rows,indent=2))
           pathlib.Path("evidence/result.json").write_text(json.dumps(rows,indent=2)+"\n")
-          assert rows["init-prelude"]["exit"] == 0, rows
+          assert rows["init-prelude"]["exit"] == 2, rows
+          assert any("NUCLEUS_RECURSOR_MAJOR_GUARD:" in line for line in rows["init-prelude"]["stderr"]), rows
           assert rows["nested-unused-param"]["exit"] == 1, rows
           assert rows["proj-stuck-prop"]["exit"] != 0, rows
           assert rows["rec-subst-prop"]["exit"] != 0, rows
