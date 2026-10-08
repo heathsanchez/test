@@ -604,6 +604,31 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                if std::env::var_os("NUCLEUS_TRACE_CHECK_CONVERSION").is_some()
+                    && !conversion.is_proven()
+                {
+                    eprintln!(
+                        "NUCLEUS_CHECK_CONVERSION:expression={expression:?}:context_len={}:frame={}:remaining={}:inferred={value:?}:expected={expected:?}:result={conversion:?}",
+                        context.len(), frame.id(), *remaining,
+                    );
+                    for (label, ty) in [("inferred", &value), ("expected", expected)] {
+                        if let TypeValue::Term(closure) = ty {
+                            let reducible = self.machine().expose(
+                                closure.clone(),
+                                Transparency::Reducible,
+                                (*remaining).min(4096),
+                            );
+                            let full = self.machine().expose(
+                                closure.clone(),
+                                Transparency::Full,
+                                (*remaining).min(4096),
+                            );
+                            eprintln!(
+                                "NUCLEUS_CHECK_EXPOSE:{label}:reducible={reducible:?}:full={full:?}"
+                            );
+                        }
+                    }
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
