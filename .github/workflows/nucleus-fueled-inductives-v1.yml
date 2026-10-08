@@ -2,7 +2,7 @@ name: Nucleus Lean.Syntax nested separator v1
 
 on:
   push:
-    branches: [nucleus-no-confusion-neutral-v1]
+    branches: [nucleus-no-confusion-neutral-mathlib-v1]
     paths:
       - ".github/workflows/nucleus-fueled-inductives-v1.yml"
       - "metatron-kernel/**"
@@ -118,8 +118,6 @@ jobs:
           assert by_test["bugs/nested-unused-param"]["actual"] == 1, by_test["bugs/nested-unused-param"]
           PY
 
-      - name: End trace-only microgate
-        run: exit 1
 
       - uses: cachix/install-nix-action@v31
 
@@ -156,6 +154,7 @@ jobs:
           ulimit -s unlimited
           NUCLEUS_TRACE_DOWNSTREAM=1 \
           NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 \
+          NUCLEUS_TRACE_NEUTRAL_HEADS=1 \
           /usr/bin/time -f 'real_seconds=%e\nuser_seconds=%U\nsys_seconds=%S\nmax_rss_kb=%M' \
             -o "$out/mathlib-time.txt" \
             /tmp/nucleus \
