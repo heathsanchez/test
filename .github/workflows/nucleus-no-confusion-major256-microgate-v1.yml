@@ -1,8 +1,8 @@
-name: Nucleus noConfusion major256 microgate v1
+name: Nucleus noConfusion projection trace v1
 
 on:
   push:
-    branches: [nucleus-no-confusion-major256-v1]
+    branches: [nucleus-no-confusion-projection-trace-v1]
     paths:
       - ".github/workflows/nucleus-no-confusion-major256-microgate-v1.yml"
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      SOURCE_SUBTREE: 576abd06ba00204fae3123cd1cd7b4cd5b2bb6e5
+      SOURCE_SUBTREE: cf845cf3f96217ca71e30ea20b74f7f3b9aa3c6b
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
           }
           print(json.dumps(rows,indent=2))
           pathlib.Path("evidence/result.json").write_text(json.dumps(rows,indent=2)+"\n")
-          assert rows["init-prelude"]["exit"] == 0, rows
+          assert rows["init-prelude"]["exit"] == 2, rows\n          assert any("NUCLEUS_LAZY_PROJECTION:" in line for line in rows["init-prelude"]["stderr"]), rows
           assert rows["nested-unused-param"]["exit"] == 1, rows
           assert rows["proj-stuck-prop"]["exit"] != 0, rows
           assert rows["rec-subst-prop"]["exit"] != 0, rows
