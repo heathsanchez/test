@@ -5,7 +5,7 @@ use crate::id::{ExprId, IdTable, LevelId, NameId};
 use crate::judgment::Judgment;
 use crate::level::{LevelTerm, imax, instantiate_level, succ};
 use crate::machine::{Machine, ProjectionFieldType, Transparency};
-use crate::syntax::{Expr, Level};
+use crate::syntax::{Expr, Level, Name};
 use crate::value::{
     Closure, EnvBinding, EnvFrame, FreeId, LevelSubstitution, Neutral, NeutralHead, Value,
 };
@@ -30,6 +30,7 @@ pub(crate) enum RuleKAttempt {
 pub struct TypeChecker<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
+    names: Option<&'a IdTable<NameId, Name>>,
     environment: &'a Environment,
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
@@ -44,6 +45,7 @@ impl<'a> TypeChecker<'a> {
         Self {
             expressions,
             levels,
+            names: None,
             environment,
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
@@ -59,6 +61,7 @@ impl<'a> TypeChecker<'a> {
         Self {
             expressions,
             levels,
+            names: None,
             environment,
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
@@ -68,6 +71,41 @@ impl<'a> TypeChecker<'a> {
     pub fn with_delta_policy(mut self, policy: crate::convert::DeltaPolicy) -> Self {
         self.delta_policy = policy;
         self
+    }
+
+    pub fn with_names(mut self, names: &'a IdTable<NameId, Name>) -> Self {
+        self.names = Some(names);
+        self
+    }
+
+    pub(crate) fn debug_name(&self, mut name: NameId) -> String {
+        let Some(names) = self.names else {
+            return format!("#{}", name.0);
+        };
+        if name == NameId(0) {
+            return "_root".to_string();
+        }
+        let mut parts = Vec::new();
+        let mut guard = 0usize;
+        while name != NameId(0) && guard < 128 {
+            guard += 1;
+            match names.get(name) {
+                Some(Name::Str { prefix, value }) => {
+                    parts.push(value.clone());
+                    name = *prefix;
+                }
+                Some(Name::Num { prefix, value }) => {
+                    parts.push(value.to_string());
+                    name = *prefix;
+                }
+                None => {
+                    parts.push(format!("#{}", name.0));
+                    break;
+                }
+            }
+        }
+        parts.reverse();
+        parts.join(".")
     }
 
     pub fn infer(&self, expression: ExprId, budget: usize) -> Judgment<TypeValue> {
