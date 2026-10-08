@@ -629,7 +629,7 @@ impl<'a> TypeChecker<'a> {
                         }
                     }
                 }
-                match conversion {
+                let result = match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
                             && !definite_conversion_obstruction(obstruction.0) =>
@@ -637,10 +637,94 @@ impl<'a> TypeChecker<'a> {
                         Judgment::unknown(obstruction.0)
                     }
                     other => other,
+                };
+                if matches!(result, Judgment::Unknown { .. })
+                    && let Some(Judgment::Proven { .. }) = self
+                        .check_lambda_against_expected_pi(
+                            expression,
+                            expected,
+                            context,
+                            frame,
+                            remaining,
+                            cache,
+                        )
+                {
+                    return Judgment::proven((), "bidirectional-lambda-check");
                 }
+                result
             }
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
-            Judgment::Unknown { residual } => Judgment::Unknown { residual },
+            Judgment::Unknown { residual } => {
+                if let Some(Judgment::Proven { .. }) = self
+                    .check_lambda_against_expected_pi(
+                        expression,
+                        expected,
+                        context,
+                        frame,
+                        remaining,
+                        cache,
+                    )
+                {
+                    return Judgment::proven((), "bidirectional-lambda-check");
+                }
+                Judgment::Unknown { residual }
+            }
+        }
+    }
+
+    // On an ordinary inference decline only, derive a lambda's judgment from
+    // a *previously established* expected dependent Pi type.  Both the domain
+    // and instantiated body must check independently.  Failed speculative
+    // checks never strengthen the original UNKNOWN to a reject.
+    fn check_lambda_against_expected_pi(
+        &self,
+        expression: ExprId,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+    ) -> Option<Judgment<()>> {
+        let Expr::Lam { domain, body } = self.expressions.get(expression)? else {
+            return None;
+        };
+        let (expected_domain, PiBody::Closure(expected_body)) =
+            self.pi_view(Judgment::proven(expected.clone(), "expected-lambda-pi"), *remaining)?
+        else {
+            return None;
+        };
+
+        let declared_domain_type = self.infer_in(*domain, context, frame, remaining, cache);
+        if !self.sort_level(declared_domain_type, *remaining).is_proven() {
+            return None;
+        }
+        let declared_domain = TypeValue::Term(self.closure(*domain, frame.clone()));
+        if !crate::convert::convert_with_policy_in_context(
+            self,
+            &declared_domain,
+            &expected_domain,
+            *remaining,
+            self.delta_policy,
+            context.len(),
+            context,
+        )
+        .is_proven()
+        {
+            return None;
+        }
+
+        let free = fresh_local(context.len())?;
+        let mut extended = context.to_vec();
+        extended.push(declared_domain);
+        let body_frame = frame.extend_free(free);
+        let expected_body = TypeValue::Term(expected_body.under_free(free));
+        let verdict = self.check_in(
+            *body, &expected_body, &extended, &body_frame, remaining, true, cache,
+        );
+        if verdict.is_proven() {
+            Some(verdict)
+        } else {
+            None
         }
     }
 
