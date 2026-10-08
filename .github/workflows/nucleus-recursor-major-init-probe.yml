@@ -1,0 +1,81 @@
+name: Nucleus recursor-major init-prelude probe
+
+on:
+  push:
+    branches: [nucleus-recursor-major-whnf-v1]
+    paths:
+      - ".github/workflows/nucleus-recursor-major-init-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ARENA_ARTIFACT: "11272848230"
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic string-guard bypass
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("metatron-kernel/src/checker.rs")
+          s=p.read_text()
+          old='if has_unqualified_string_literal && matches!(verdict, Verdict::Accept | Verdict::Reject) {'
+          new='if std::env::var_os("NUCLEUS_DIAG_BYPASS_STRING_GUARD").is_none() && has_unqualified_string_literal && matches!(verdict, Verdict::Accept | Verdict::Reject) {'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,new,1))
+          PY
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests out
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+
+      - name: Probe init-prelude
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess, time
+          path=pathlib.Path("/tmp/arena-tests/good/init-prelude.ndjson")
+          env=os.environ | {
+              "NUCLEUS_DIAG_BYPASS_STRING_GUARD":"1",
+              "NUCLEUS_TRACE_DOWNSTREAM":"1",
+          }
+          started=time.monotonic()
+          with path.open("rb") as source:
+              q=subprocess.run(["/tmp/nucleus"],stdin=source,stdout=subprocess.DEVNULL,
+                               stderr=subprocess.PIPE,timeout=60,env=env)
+          stderr=q.stderr.decode(errors="replace").splitlines()
+          result={
+              "sha":os.environ["GITHUB_SHA"],
+              "exit":q.returncode,
+              "seconds":time.monotonic()-started,
+              "downstream":[x for x in stderr if x.startswith("NUCLEUS_DOWNSTREAM:")][-20:],
+          }
+          pathlib.Path("out/result.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result),flush=True)
+          assert q.returncode in (0,2), result
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-recursor-major-init-probe-${{ github.sha }}
+          path: out/result.json
+          if-no-files-found: error
