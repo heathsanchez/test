@@ -1626,6 +1626,34 @@ fn compare_neutral_heads(
                     left.head, left.spine, right.head, right.spine, budget
                 );
             }
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_BOOL_REC_MAJOR").is_some()
+                && left.spine.len() == 4
+            {
+                let machine = checker.machine();
+                let major = left.spine.last().expect("length checked").clone();
+                let major_reducible =
+                    machine.expose(major.clone(), Transparency::Reducible, budget.min(4096));
+                let major_full =
+                    machine.expose(major.clone(), Transparency::Full, budget.min(4096));
+                let mut argument_exposures = Vec::new();
+                if let Some(Value::Neutral(neutral)) = major_reducible.proven_value() {
+                    for argument in &neutral.spine {
+                        argument_exposures.push((
+                            argument.clone(),
+                            machine.expose(
+                                argument.clone(),
+                                Transparency::Reducible,
+                                budget.min(4096),
+                            ),
+                        ));
+                    }
+                }
+                eprintln!(
+                    "NUCLEUS_BOOL_REC_MAJOR:major={:?}:reducible={:?}:full={:?}:argument_exposures={:?}",
+                    major, major_reducible, major_full, argument_exposures
+                );
+            }
             Judgment::refuted("distinct-neutral-heads")
         }
     }
