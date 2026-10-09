@@ -49,7 +49,8 @@ theorem collatz_of_source_capped_ternary_bar
     have hn : 1 < n := by
       by_cases hgt : 1 < n
       · exact hgt
-      · have hone : n = 1 := by omega
+      · have hnpos : 0 < n := hmin.1.1
+        have hone : n = 1 := by omega
         subst n
         have hgood : CollatzGood 1 := ⟨0, by simp [iter, Terminal]⟩
         exact False.elim (hmin.1.2 hgood)
