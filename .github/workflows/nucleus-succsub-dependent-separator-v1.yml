@@ -1,0 +1,93 @@
+name: Nucleus exact succ-sub dependent type separator
+on:
+  push:
+    branches: [nucleus-succsub-dependent-separator-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      SOURCE_TREE: 3ecc01bc451c89da0ead001b1621d6af325464e2
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind exact sound source and release tests
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_TREE"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Load exact frozen positive and negative fixtures
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/a /tmp/tests metatron-kernel/evidence-out/succsub-dependent-v1
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" >/tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Isolate first exact typed conversion and lexical bindings
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,hashlib,json,pathlib,subprocess,sys
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/tests');out=pathlib.Path('metatron-kernel/evidence-out/succsub-dependent-v1')
+          expected={
+            'init-prelude':'eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5',
+            'perf/magma-list-pair-n7':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'}
+          cases=[]
+          for name,digest in expected.items():
+            raw=(root/'good'/(name+'.ndjson')).read_bytes()
+            assert hashlib.sha256(raw).hexdigest()==digest
+            names={0:''};prefix=[];found=False
+            for line in raw.splitlines(keepends=True):
+              obj=json.loads(line);prefix.append(line)
+              if 'in' in obj:
+                v=obj.get('str',obj.get('num'))
+                prev=names.get(v['pre'],'')
+                names[obj['in']]=prev+('.' if prev else '')+str(v.get('str',v.get('i')))
+              if 'thm' in obj and names.get(obj['thm']['name'])=='Nat.succ_sub_succ_eq_sub':
+                found=True;break
+            assert found,name
+            cases.append((name+'--succsub',b''.join(prefix),False))
+            if name=='init-prelude':
+              neg=false_index(extract(raw))
+              assert hashlib.sha256(neg).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+              cases.append(('false-index',neg,True))
+          cases.append(('malformed',(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),True))
+          rows=[]
+          trace_keys=['NUCLEUS_DEPENDENCY_GAP:','NUCLEUS_SUBLE_BINDING:',
+            'NUCLEUS_APPLICATION_FUNCTION_TYPE:','NUCLEUS_NEUTRAL_HEAD_MISMATCH:',
+            'NUCLEUS_PROJECTION_FIELD_PROBE:','NUCLEUS_DOWNSTREAM:']
+          for name,data,is_negative in cases:
+            env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_DEPENDENCY_GAP':'1',
+              'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1','NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+              'NUCLEUS_TRACE_PROJECTION_FIELD':'1'}
+            p=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+              input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=35,env=env)
+            log=p.stderr.decode(errors='replace').splitlines()
+            captures={}
+            for key in trace_keys:
+              matching=[s for s in log if s.startswith(key)]
+              captures[key[:-1]]={'count':len(matching),'first':matching[:2], 'last':matching[-3:]}
+            row={'case':name,'rc':p.returncode,'negative':is_negative,'sha256':hashlib.sha256(data).hexdigest(),
+              'captures':captures}
+            rows.append(row)
+            print('TYPED_SEPARATION='+json.dumps(row)[:14000],flush=True)
+            assert p.returncode in ((1,2) if is_negative else (0,2)),row
+            if name=='malformed':assert p.returncode==1,row
+          (out/'report.json').write_text(json.dumps({'source_tree':os.environ['SOURCE_TREE'],'rows':rows},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-succsub-dependent-${{ github.sha }}
+          path: metatron-kernel/evidence-out/succsub-dependent-v1
+          if-no-files-found: warn
