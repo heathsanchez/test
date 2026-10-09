@@ -1276,6 +1276,66 @@ impl<'a> TypeChecker<'a> {
                         );
                     }
                 }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_CHAIN6_PI_DOMAIN").is_some()
+                    && context.len()==11
+                    && conversion.is_unknown()
+                    && let (
+                        TypeValue::Pi{domain:actual_domain,body:actual_body,binder},
+                        TypeValue::Term(expected_type),
+                    )=(&value,expected)
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static PRINTED:AtomicUsize=AtomicUsize::new(0);
+                    if PRINTED.fetch_add(1,Ordering::Relaxed)<14 {
+                        let expected_whnf=self.machine().expose(
+                            expected_type.clone(),Transparency::Full,(*remaining).min(4096)
+                        );
+                        let mut domain_relation=None;
+                        let mut body_relation=None;
+                        let mut actual_body_whnf=None;
+                        let mut expected_body_whnf=None;
+                        if let Some(Value::Pi {domain,body})=expected_whnf.proven_value() {
+                            let checked=crate::convert::convert_with_policy_in_context(
+                                self,
+                                actual_domain,
+                                &TypeValue::Term(domain.clone()),
+                                (*remaining).min(512),
+                                crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                context.len(),context,
+                            );
+                            domain_relation=Some(checked.clone());
+                            if checked.is_proven()
+                                && *binder==FreeId(context.len() as u64)
+                            {
+                                let mut ext=context.to_vec();
+                                ext.push(actual_domain.as_ref().clone());
+                                let expected_body=body.under_free(*binder);
+                                body_relation=Some(
+                                    crate::convert::convert_with_policy_in_context(
+                                        self,actual_body.as_ref(),
+                                        &TypeValue::Term(expected_body.clone()),
+                                        (*remaining).min(512),
+                                        crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                        ext.len(),&ext,
+                                    ),
+                                );
+                                actual_body_whnf=match actual_body.as_ref() {
+                                    TypeValue::Term(c)=>Some(self.machine().expose(
+                                        c.clone(),Transparency::Full,512,
+                                    )),
+                                    _=>None,
+                                };
+                                expected_body_whnf=Some(self.machine().expose(
+                                    expected_body,Transparency::Full,512,
+                                ));
+                            }
+                        }
+                        eprintln!(
+                            "NUCLEUS_CHAIN6_PI_DOMAIN:expr={expression:?}:context=11:inferred={value:?}:expected={expected:?}:expected_whnf={expected_whnf:?}:domain={domain_relation:?}:body={body_relation:?}:lhs_body={actual_body_whnf:?}:rhs_body={expected_body_whnf:?}",
+                        );
+                    }
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
