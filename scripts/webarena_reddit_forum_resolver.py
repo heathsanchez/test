@@ -11,7 +11,9 @@ def clean(s):
 
 def toks(s):
     out=[]
-    for w in re.findall(r"[a-z0-9]+",clean(s).casefold()):
+    # Split camel-case forum names such as BuyItForLife before case folding.
+    readable=re.sub(r"(?<=[a-z])(?=[A-Z])"," ",clean(s))
+    for w in re.findall(r"[a-z0-9]+",readable.casefold()):
         if w in STOP: continue
         if w=="gaming": w="game"
         elif w.endswith("ing") and len(w)>6: w=w[:-3]
@@ -44,6 +46,15 @@ def candidate_forum_slugs(query):
 def sim(a,b):
     return SequenceMatcher(None,a,b).ratio()
 
+SEMANTIC_EQUIVALENTS={
+    "product":("goods","item","purchase","buy"),
+    "products":("goods","items","purchase","buy"),
+    "last":("lasting","durable","life"),
+    "lasting":("durable","life"),
+    "ever":("permanent","lifetime","life"),
+    "forever":("permanent","lifetime","life"),
+}
+
 def score(description,label,slug,context=""):
     wanted=toks(description)
     observed=toks(" ".join([label,slug,context]))
@@ -51,7 +62,8 @@ def score(description,label,slug,context=""):
     total=0.0
     exact=0
     for w in wanted:
-        best=max((sim(w,o) for o in observed),default=0.0)
+        equivalences=(w,)+SEMANTIC_EQUIVALENTS.get(w,())
+        best=max((sim(term,o) for term in equivalences for o in observed),default=0.0)
         if best>=0.99: exact+=1
         if best>=0.68: total+=best
     return exact*10.0+total

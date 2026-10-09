@@ -40,6 +40,19 @@ class ForumDiscoveryTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("eli5", variants)
         self.assertEqual(compact("explainlikeimfive"), compact(variants[-1]))
 
+    def test_compound_forum_names_retain_semantic_words(self):
+        from webarena_reddit_forum_resolver import score,toks
+        self.assertEqual(toks("BuyItForLife"),["buy","it","for","life"])
+        intent="Must have product at last for ever recommendations"
+        self.assertGreater(
+            score(intent,"/f/BuyItForLife BuyItForLife","BuyItForLife"),
+            score(intent,"/f/Art Art","Art"),
+        )
+        self.assertGreater(
+            score("DIY toolkit recommendations","/f/DIY DIY","DIY"),
+            score("DIY toolkit recommendations","/f/Art Art","Art"),
+        )
+
     def test_other_forums_not_rewritten_as_aliases(self):
         self.assertIn("deeplearning", candidate_forum_slugs("deep learning"))
         self.assertIn("books", candidate_forum_slugs("books"))
