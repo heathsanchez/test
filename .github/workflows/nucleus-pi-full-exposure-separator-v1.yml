@@ -4,7 +4,7 @@ on:
   push:
     branches: [nucleus-pi-full-exposure-separator-v1]
     paths:
-      - ".github/workflows/nucleus-fueled-inductives-v1.yml"
+      - ".github/workflows/nucleus-pi-full-exposure-separator-v1.yml"
       - "metatron-kernel/**"
   workflow_dispatch:
 
