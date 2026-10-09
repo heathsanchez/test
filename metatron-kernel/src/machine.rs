@@ -343,6 +343,29 @@ impl<'a> Machine<'a> {
         };
         if name != spec.constructor {
             #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_REC_MAJOR").is_some()
+                && self.nat_primitives.as_ref().is_some_and(|nat| nat.recursor == name)
+            {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static COUNT: AtomicUsize = AtomicUsize::new(0);
+                if COUNT.fetch_add(1, Ordering::Relaxed) < 128 {
+                    let reduction = self.recursor_reductions.get(&name);
+                    let major = neutral.spine.last();
+                    let major_syntax = major.and_then(|c| self.expressions.get(c.expr));
+                    let major_binding = major.and_then(|c| match self.expressions.get(c.expr) {
+                        Some(Expr::BVar(n)) => c.env.lookup(*n),
+                        _ => None,
+                    });
+                    let major_full = major.map(|c| self.expose(
+                        c.clone(), Transparency::Full, budget.min(256),
+                    ));
+                    eprintln!(
+                        "NUCLEUS_PROJECTION_REC_MAJOR:type={type_name:?}:field={index}:head={name:?}:expected_ctor={:?}:rules={}:major={major:?}:major_syntax={major_syntax:?}:major_binding={major_binding:?}:major_full={major_full:?}:budget={budget}",
+                        spec.constructor,reduction.map_or(0,|r|r.rules.len())
+                    );
+                }
+            }
+            #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_PROJECTION_ACTUAL_HEAD").is_some() {
                 use std::sync::atomic::{AtomicUsize, Ordering};
                 static PRINTED: AtomicUsize = AtomicUsize::new(0);
