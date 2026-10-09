@@ -18,7 +18,7 @@ def parse_intent(text):
         raise ValueError("unsupported negative-label issue navigation intent")
     repo,label=m.groups()
     parts=repo.split("/")
-    if len(parts)!=2 or not all(re.fullmatch(r"[\w.-]+",p) for p in parts):
+    if len(parts)!=2 or any(p in ("",".","..") for p in parts) or not all(re.fullmatch(r"[\w.-]+",p) for p in parts):
         raise ValueError("repository path invalid")
     return {"repo":repo,"excluded_label":label}
 
