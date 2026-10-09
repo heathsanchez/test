@@ -44,7 +44,8 @@ theorem actual_orbit_eventually_periodic_or_unbounded (n : Nat) :
   · exact Or.inl hp
   · right
     intro B
-    by_contra hno
+    apply Classical.byContradiction
+    intro hno
     have hb : ∀ i, iter shortcut i n ≤ B := by
       intro i
       have hnot : ¬ B < iter shortcut i n := by
@@ -75,7 +76,8 @@ theorem actual_repeated_endpoint_gives_tail_period
 theorem minimal_positive_bad_never_below_source
     {n : Nat} (hmin : MinimalBad PositiveBad n) (k : Nat) :
     n ≤ iter shortcut k n := by
-  by_contra h
+  apply Classical.byContradiction
+  intro h
   have hlt : iter shortcut k n < n := by omega
   have hp : 0 < iter shortcut k n :=
     iter_positive shortcut shortcut_positive k n hmin.1.1
