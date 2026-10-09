@@ -26,7 +26,8 @@ theorem minimal_bad_ternary_endpoint_lower_bound
     {n : Nat} (hmin : MinimalBad PositiveBad n)
     (k : Nat) (hmod : (iter shortcut k n) % 3 = 2) :
     3 * n ≤ 2 * iter shortcut k n - 1 := by
-  by_contra hbad
+  apply Classical.byContradiction
+  intro hbad
   have hc : SourceCappedTernaryReturn n :=
     ⟨k, hmod, by omega⟩
   exact minimal_bad_excludes_capped_ternary hmin hc

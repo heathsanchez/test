@@ -27,7 +27,8 @@ theorem capped_endpoint_has_bounded_anchor
     (hdiv : 2 ^ B ∣ y + 1)
     (hcap : 2 * y - 1 < 3 * n) :
     2 ^ (B + 1) < 3 * n + 3 := by
-  by_contra hbad
+  apply Classical.byContradiction
+  intro hbad
   have hlarge : 3 * n + 3 ≤ 2 ^ (B + 1) := by omega
   exact deep_anchor_not_capped n y B hdiv hlarge hcap
 
