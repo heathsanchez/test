@@ -1022,7 +1022,10 @@ impl<'a> Machine<'a> {
         let major_cap = if bool_rules && nat_beq_major {
             256
         } else if certified_nat_rec {
-            128
+            // Probe strictly the already-certified Nat recursor family:
+            // the rule/constructor/arity checks are unchanged. This
+            // extension is candidate-only until the full corpus replays.
+            256
         } else {
             16
         };
