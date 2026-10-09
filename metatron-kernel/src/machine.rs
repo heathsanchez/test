@@ -1503,13 +1503,36 @@ impl<'a> Machine<'a> {
                 && matches_rule(nat.zero, 0)
                 && matches_rule(nat.succ, 1)
         });
+        // Qualified Bool.rec may receive its major through a checked
+        // lexical substitution rather than as a literal Nat.beq call.
+        // Extra exposure searches for the registered constructor; it NEVER
+        // assumes that a bound major is true or false.
+        let captured_bool_major = match self.expressions.get(target.expr) {
+            Some(Expr::BVar(index)) =>
+                matches!(target.env.lookup(*index), Some(EnvBinding::Closure(_))),
+            _ => false,
+        };
         let major_cap = if bool_rules && nat_beq_major {
             256
+        } else if bool_rules && captured_bool_major {
+            128
         } else if certified_nat_rec {
             128
         } else {
             16
         };
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CAPTURED_BOOL_REC").is_some()
+            && bool_rules && captured_bool_major
+        {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static COUNT: AtomicUsize = AtomicUsize::new(0);
+            if COUNT.fetch_add(1, Ordering::Relaxed) < 32 {
+                eprintln!(
+                    "NUCLEUS_CAPTURED_BOOL_REC:major={target:?}:major_cap={major_cap}:source_certified_rules={bool_rules}:budget={budget}"
+                );
+            }
+        }
         let exposed = self
             .expose_internal(
                 target.clone(),
