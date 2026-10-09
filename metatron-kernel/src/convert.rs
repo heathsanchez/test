@@ -1189,7 +1189,7 @@ fn compare_values(
                             "NUCLEUS_PROJECTION_GAP:case=pair:index={left_index}:depth={depth}:budget={current_budget}:left_expr={:?}:right_expr={:?}:left_spine={}:right_spine={}:left_result={:?}:right_result={:?}",
                             left_structure.expr, right_structure.expr,
                             left_spine.len(), right_spine.len(),
-                            left_value.as_ref().map(|_| ()), right_value.as_ref().map(|_| ())
+                            left_value, right_value
                         );
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
@@ -1223,7 +1223,7 @@ fn compare_values(
                     if std::env::var_os("NUCLEUS_TRACE_PROJECTION_GAP").is_some() {
                         eprintln!(
                             "NUCLEUS_PROJECTION_GAP:case=left:index={index}:depth={depth}:budget={current_budget}:expr={:?}:spine={}:status={:?}",
-                            structure.expr, spine.len(), exposed.as_ref().map(|_| ())
+                            structure.expr, spine.len(), exposed
                         );
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
@@ -1256,7 +1256,7 @@ fn compare_values(
                     if std::env::var_os("NUCLEUS_TRACE_PROJECTION_GAP").is_some() {
                         eprintln!(
                             "NUCLEUS_PROJECTION_GAP:case=right:index={index}:depth={depth}:budget={current_budget}:expr={:?}:spine={}:status={:?}",
-                            structure.expr, spine.len(), exposed.as_ref().map(|_| ())
+                            structure.expr, spine.len(), exposed
                         );
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
