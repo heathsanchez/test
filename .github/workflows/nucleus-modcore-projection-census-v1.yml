@@ -86,12 +86,14 @@ jobs:
               stderr=subprocess.PIPE,timeout=45,
               env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_STUCK_BRANCH':'1',
                                'NUCLEUS_TRACE_RIGID_ARG_GAP':'1',
+                               'NUCLEUS_TRACE_RIGID_ARG_SHADOW':'1',
                                'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
                                'NUCLEUS_TRACE_DEPENDENCY_GAP':'1'})
             trace=p.stderr.decode(errors='replace').splitlines()
             row={'name':name,'rc':p.returncode,'sha256':hashlib.sha256(body).hexdigest(),
                  'stuck_events':[s for s in trace if 'NUCLEUS_STUCK_BRANCH:' in s][:36],
                  'rigid_arg_gaps':[s for s in trace if 'NUCLEUS_RIGID_ARG_GAP:' in s][-50:],
+                 'rigid_shadows':[s for s in trace if 'NUCLEUS_RIGID_SHADOW:' in s][-20:],
                  'typed_gaps':[s for s in trace if 'NUCLEUS_DEPENDENCY_GAP:' in s][:4],
                  'terminal':[s for s in trace if 'NUCLEUS_DOWNSTREAM:' in s][-3:]}
             print('MODCORE_TEST='+json.dumps(row),flush=True)
