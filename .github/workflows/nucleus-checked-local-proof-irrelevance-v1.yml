@@ -87,7 +87,8 @@ jobs:
               lines=p.stderr.decode(errors='replace').splitlines()
               row={'case':name,'rc':p.returncode,'sha256':prefix_digest,
                  'last':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-3:],
-                 'local_proofs':[x for x in lines if 'NUCLEUS_LOCAL_PROOF_IRREL:' in x][-8:]}
+                 'local_proofs':[x for x in lines if 'NUCLEUS_LOCAL_PROOF_IRREL:' in x][-8:],
+                 'local_premises':[x for x in lines if 'NUCLEUS_LOCAL_PROOF_PREMISES:' in x][-45:]}
               rows.append(row)
               print('CONTEXTUAL_RIGID='+json.dumps({k:v for k,v in row.items() if k!='mismatches'}),flush=True)
               assert p.returncode in (0,2),row
