@@ -1876,10 +1876,36 @@ fn compare_neutral_heads(
                 }
             }
             if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
+                let left_head=format!("{:?}",left.head);
+                let right_head=format!("{:?}",right.head);
                 eprintln!(
-                    "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
-                    left.head, left.spine, right.head, right.spine, budget
+                    "NUCLEUS_NEUTRAL_HEAD_MISMATCH:depth={depth}:context_len={}:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
+                    context.len(),left.head,left.spine,right.head,right.spine,budget,
                 );
+                if ((left_head=="Free(FreeId(2))" && right_head=="Free(FreeId(6))") ||
+                    (left_head=="Free(FreeId(6))" && right_head=="Free(FreeId(2))"))
+                {
+                    let a=context.get(2);
+                    let b=context.get(6);
+                    let proposition=|ty:Option<&TypeValue>|{
+                        if let Some(TypeValue::Term(c))=ty {
+                            Some(checker.is_proposition_in_context(
+                                c.expr,context,&c.env,budget.min(1024),
+                            ))
+                        } else {None}
+                    };
+                    let relation=match (a,b) {
+                        (Some(x),Some(y))=>Some(convert_with_policy_in_context(
+                            checker,x,y,budget.min(256),
+                            DeltaPolicy::GuardedSemanticFallback,depth,context,
+                        )),
+                        _=>None,
+                    };
+                    eprintln!(
+                        "NUCLEUS_DEEP_LOCAL_PAIR:source=head-fallback:depth={depth}:context_len={}:free2={a:?}:free6={b:?}:prop2={:?}:prop6={:?}:types={relation:?}",
+                        context.len(),proposition(a),proposition(b),
+                    );
+                }
             }
             if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR").is_some() { eprintln!("NUCLEUS_RECURSOR_MAJOR:left={:?}:right={:?}", left.spine.last(), right.spine.last()); if let Some(c) = right.spine.last() { eprintln!("NUCLEUS_RECURSOR_MAJOR_VALUE:{:?}", checker.machine().expose(c.clone(), Transparency::Full, budget.min(64))); } }
             #[cfg(feature = "diagnostics")]
