@@ -59,9 +59,9 @@ jobs:
             for record in path.read_bytes().splitlines():
               obj=json.loads(record)
               if 'in' in obj:
-                name=obj.get('str',obj.get('num'))
-                prefix=id_to_name.get(name['pre'],'')
-                id_to_name[obj['in']]=prefix+('.' if prefix else '')+str(name.get('str',name.get('i')))
+                part=obj.get('str',obj.get('num'))
+                prefix=id_to_name.get(part['pre'],'')
+                id_to_name[obj['in']]=prefix+('.' if prefix else '')+str(part.get('str',part.get('i')))
               if 'def' in obj:
                 defs[obj['def']['name']]=obj['def']
             import re
