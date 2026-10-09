@@ -1,0 +1,52 @@
+name: Collatz source-affine F clock rigidity
+on:
+  push:
+    branches: [collatz-v119-affine-clock-rigidity]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check distinct-clock affine rigidity without axiomatic shortcuts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake env lean -DautoImplicit=false formal/Collatz/FAffineClockRigidity.lean 2>&1 | tee evidence/rigidity-lean.log
+          python3 - <<'PY'
+          import re,json,hashlib,pathlib,subprocess
+          s=pathlib.Path('evidence/rigidity-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s)
+          axioms={}
+          for name,a in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",s,re.S):
+            vals=[v.strip() for v in a.split(',') if v.strip()]
+            assert set(vals)<=set(['propext','Quot.sound','Classical.choice']),(name,vals)
+            axioms[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",s):
+            axioms[name]=[]
+          for name in ['two_power_exponent_rigid','F_affine_slope_clocks_equal',
+                       'F_uniform_affine_meeting_clocks_equal']:
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
+          result=dict(schema='COLLATZ_AFFINE_CLOCK_RIGIDITY',
+            status='WARRANTED_FORMAL_AFFINE_SLOPE_ONLY',
+            global_collatz='UNKNOWN',qed=False,
+            unrestricted_trajectory_synchronization=False,
+            axioms=axioms,
+            log_sha256=hashlib.sha256(s.encode()).hexdigest(),
+            commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())
+          pathlib.Path('evidence/certificate.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('SOURCE_AFFINE_CLOCK_RIGIDITY_PASS_GLOBAL_COLLATZ_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-affine-F-clock-rigidity
+          path: evidence/
+          if-no-files-found: error
