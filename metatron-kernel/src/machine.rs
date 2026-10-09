@@ -1369,6 +1369,93 @@ impl<'a> Machine<'a> {
         }
     }
 
+    /// Reproduce one *existing* certified Nat.rec iota rule on an already
+    /// evaluated neutral application. The expression evaluator normally
+    /// performs this earlier, but type conversion can retain a rigid
+    /// neutral because its cheap exposure precedes Full unfolding.
+    ///
+    /// No equality is guessed: only the installed recursor metadata,
+    /// literal zero major, original minor arguments, RHS syntax and
+    /// universe substitution are allowed to produce the reduct.
+    pub(crate) fn qualified_nat_zero_recursor_result(
+        &self,
+        neutral: &Neutral,
+        budget: usize,
+    ) -> Judgment<Value> {
+        if budget < 32 {
+            return Judgment::unknown("natrec-zero-iota-small-budget");
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return Judgment::unknown("natrec-zero-iota-nonconst");
+        };
+        let (Some(nat), Some(reduction)) = (
+            self.nat_primitives.as_ref(),
+            self.recursor_reductions.get(name),
+        ) else {
+            return Judgment::unknown("natrec-zero-iota-missing-authority");
+        };
+        if *name != nat.recursor
+            || reduction.num_params != 0
+            || reduction.num_indices != 0
+            || reduction.rules.len() != 2
+            || reduction.level_params.len() != levels.len()
+            || !reduction.rules.iter().any(|r| {
+                r.constructor == nat.succ && r.num_fields == 1 && r.num_params == 0
+            })
+        {
+            return Judgment::unknown("natrec-zero-iota-interface");
+        }
+        let required = reduction.num_params + 1
+            + reduction.rules.len() + reduction.num_indices + 1;
+        if neutral.spine.len() != required {
+            return Judgment::unknown("natrec-zero-iota-arity");
+        }
+        let Some(rule) = reduction.rules.iter().find(|r| {
+            r.constructor == nat.zero && r.num_fields == 0 && r.num_params == 0
+        }) else {
+            return Judgment::unknown("natrec-zero-iota-zero-rule");
+        };
+        let Some(major) = neutral.spine.last() else {
+            return Judgment::unknown("natrec-zero-iota-major-missing");
+        };
+        let major_exposed = self.expose(
+            major.clone(), Transparency::Full, budget.saturating_sub(1).min(256),
+        );
+        if !matches!(
+            major_exposed.proven_value(),
+            Some(Value::NatLit(n)) if n.is_zero()
+        ) {
+            return Judgment::unknown("natrec-zero-iota-major-not-canonical");
+        }
+
+        let substitution = reduction.level_params.iter().copied()
+            .zip(levels.iter().cloned()).collect::<Vec<_>>();
+        let mut result = Closure::with_levels(
+            rule.rhs, EnvFrame::empty(), LevelSubstitution::new(substitution),
+        );
+        let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+        for arg in neutral.spine.iter().take(prefix_len) {
+            let mut lets = 0usize;
+            loop {
+                match self.expressions.get(result.expr) {
+                    Some(Expr::Lam { body, .. }) => {
+                        result = result.sibling(*body, result.env.extend(arg.clone()));
+                        break;
+                    }
+                    Some(Expr::Let { value, body, .. }) if lets < 32 => {
+                        let value = result.sibling(*value, result.env.clone());
+                        result = result.sibling(*body, result.env.extend(value));
+                        lets += 1;
+                    }
+                    _ => return Judgment::unknown("natrec-zero-iota-rhs-telescope"),
+                }
+            }
+        }
+        self.expose(
+            result, Transparency::Full, budget.saturating_sub(1).min(512),
+        )
+    }
+
     fn rule_constructor_application(
         &self,
         target: &Closure,
