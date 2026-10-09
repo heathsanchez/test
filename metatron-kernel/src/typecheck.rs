@@ -775,6 +775,41 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    /// Canonicalize only the named Pi binder. Independent free variables stay
+    /// fixed; a nested Pi declaration shadows the name in its own body.
+    pub(crate) fn rename_pi_bound_type(
+        &self,
+        ty: &TypeValue,
+        from: FreeId,
+        to: FreeId,
+        remaining: &mut usize,
+    ) -> Option<TypeValue> {
+        if from == to {
+            return Some(ty.clone());
+        }
+        if !take_step(remaining) {
+            return None;
+        }
+        match ty {
+            TypeValue::Sort(l) => Some(TypeValue::Sort(l.clone())),
+            TypeValue::Term(c) =>
+                c.rename_local_free(from, to, remaining).map(TypeValue::Term),
+            TypeValue::Pi { domain, body, binder } => {
+                let d = self.rename_pi_bound_type(domain, from, to, remaining)?;
+                let b = if *binder == from {
+                    (**body).clone()
+                } else {
+                    self.rename_pi_bound_type(body, from, to, remaining)?
+                };
+                Some(TypeValue::Pi {
+                    domain: Box::new(d),
+                    body: Box::new(b),
+                    binder: *binder,
+                })
+            }
+        }
+    }
+
     // Syntactic support of an inferred type, through its actual closures.
     // Only a proved absence skips substitution. Exhaustion remains conservative.
     fn type_depends_on_free(&self, ty: &TypeValue, free: FreeId, budget: usize) -> Option<bool> {
