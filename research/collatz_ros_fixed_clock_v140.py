@@ -30,6 +30,7 @@ from pathlib import Path
 SCHEMA="COLLATZ_ROS_V140_FIXED_CLOCK_DECISION"
 PARENT_PATH=Path("research/collatz_ros_state_v134.json")
 PARENT_EXPECTED_SHA="586c5a0bd52757b29abffdc5785c752fbf8faaf4962229a5cea065de3d95d3b0"
+PARENT_GIT_BLOB_SHA="d035f4a639b3e026681d432b3e3ceebe173c9c09"
 PARENT_SHA="af2a2f1f51b5946709288583b09407aef0352d6d"
 PINS={
  "V131_GENERIC_SOUNDNESS":{
@@ -161,9 +162,12 @@ def digest(s)->str:
 
 def parent_bytes()->bytes:
     b=PARENT_PATH.read_bytes()
-    if hashlib.sha256(b).hexdigest()!=PARENT_EXPECTED_SHA:
-        raise ValueError("parent typed research state changed without a new qualification")
     j=json.loads(b)
+    if digest(j)!=PARENT_EXPECTED_SHA:
+        raise ValueError("parent canonical research content changed without qualification")
+    blob_head=("blob "+str(len(b))+"\\0").encode().replace(b"\\\\0",b"\\0")
+    if hashlib.sha1(blob_head+b).hexdigest()!=PARENT_GIT_BLOB_SHA:
+        raise ValueError("parent Git source blob bytes changed without qualification")
     if j["admission_schema"]!="COLLATZ_ROS_V134_LATE_ROOT_REUSE_AUTHORITY":
         raise ValueError("not the active qualified V134 parent")
     if len(j["joins"])!=17 or j["global_collatz"]!="UNKNOWN" or j["qed"] is not False:
@@ -180,7 +184,9 @@ def bootstrap()->dict:
         "parent":{"repo":"heathsanchez/test",
                   "commit":PARENT_SHA,
                   "relative_path":str(PARENT_PATH),
-                  "file_sha256":PARENT_EXPECTED_SHA,
+                  "canonical_state_sha256":PARENT_EXPECTED_SHA,
+                  "git_blob_sha1":PARENT_GIT_BLOB_SHA,
+                  "raw_file_sha256":hashlib.sha256(PARENT_PATH.read_bytes()).hexdigest(),
                   "parent_claim_count":17,
                   "mutated":False},
         "proof_authorities":deepcopy(PINS),
