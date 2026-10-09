@@ -1019,10 +1019,21 @@ impl<'a> Machine<'a> {
                 && matches_rule(nat.zero, 0)
                 && matches_rule(nat.succ, 1)
         });
+        // Only already certified nullary/successor-style recursors:
+        // inspect more deeply to discover a *real* constructor under a
+        // non-Nat closed unary major, never synthesize a branch or type.
+        let checked_unary_family = !certified_nat_rec
+            && reduction.num_params == 0
+            && reduction.num_indices == 0
+            && reduction.rules.len() == 2
+            && reduction.rules.iter().any(|r| r.num_fields == 0)
+            && reduction.rules.iter().any(|r| r.num_fields == 1);
         let major_cap = if bool_rules && nat_beq_major {
             256
         } else if certified_nat_rec {
             128
+        } else if checked_unary_family {
+            2048
         } else {
             16
         };
