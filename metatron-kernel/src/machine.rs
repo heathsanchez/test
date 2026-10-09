@@ -298,12 +298,17 @@ impl<'a> Machine<'a> {
             return Judgment::unknown("projection-index-out-of-range");
         }
         let exposed = self.expose_internal(
-            structure,
+            structure.clone(),
             Transparency::Full,
             budget,
             false,
             false,
         );
+        if std::env::var_os("NUCLEUS_TRACE_LEBLE_PROJECTION").is_some() {
+            eprintln!(
+                "NUCLEUS_LEBLE_PROJECTION:type={type_name:?}:field={index}:budget={budget}:structure={structure:?}:exposed={exposed:?}"
+            );
+        }
         let Some(Value::Neutral(neutral)) = exposed.proven_value().map(|value| &value.value) else {
             return Judgment::unknown("projection-structure-stuck");
         };
