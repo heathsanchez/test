@@ -1360,6 +1360,71 @@ fn compare_values(
             }
             (
                 Value::StuckProjection {
+                    type_name: left_type,
+                    index: left_index,
+                    structure: left_structure,
+                    spine: left_spine,
+                },
+                Value::StuckProjection {
+                    type_name: right_type,
+                    index: right_index,
+                    structure: right_structure,
+                    spine: right_spine,
+                },
+            ) => {
+                // The identical-field branch above has already had the
+                // opportunity to prove same-projection congruence.
+                //
+                // For DIFFERENT projection signatures, never assume equality
+                // and never stop merely because the first side is stuck:
+                // expose the actual other projection if its registered
+                // structure constructor and selected field are available.
+                let machine = checker.machine();
+                let probe = current_budget.min(512);
+                if let Some(next) = machine.projection_value_for_conversion(
+                    right_structure.clone(), *right_type, *right_index,
+                    right_spine, probe,
+                ).proven_value()
+                    && *next != current_right
+                {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_HETERO_PROJECTION").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static EVENTS: AtomicUsize = AtomicUsize::new(0);
+                        if EVENTS.fetch_add(1, Ordering::Relaxed) < 64 {
+                            eprintln!(
+                                "NUCLEUS_HETERO_PROJECTION:reduced=right:depth={depth}:left_type={left_type:?}:right_type={right_type:?}:right_value={next:?}"
+                            );
+                        }
+                    }
+                    current_right = next.clone();
+                    current_budget = current_budget.saturating_sub(1);
+                    continue;
+                }
+                if let Some(next) = machine.projection_value_for_conversion(
+                    left_structure.clone(), *left_type, *left_index,
+                    left_spine, probe,
+                ).proven_value()
+                    && *next != current_left
+                {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_HETERO_PROJECTION").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static EVENTS: AtomicUsize = AtomicUsize::new(0);
+                        if EVENTS.fetch_add(1, Ordering::Relaxed) < 64 {
+                            eprintln!(
+                                "NUCLEUS_HETERO_PROJECTION:reduced=left:depth={depth}:left_type={left_type:?}:right_type={right_type:?}:left_value={next:?}"
+                            );
+                        }
+                    }
+                    current_left = next.clone();
+                    current_budget = current_budget.saturating_sub(1);
+                    continue;
+                }
+                return Judgment::unknown("heterogeneous-projections-not-certified-equal");
+            }
+            (
+                Value::StuckProjection {
                     type_name,
                     index,
                     structure,
