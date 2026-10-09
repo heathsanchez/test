@@ -483,14 +483,21 @@ impl<'a> TypeChecker<'a> {
                         // exact telescope.  Earlier fields of a neutral
                         // structure stay neutral projections rather than
                         // becoming UNKNOWN.
-                        let structure_value = self.machine().expose(
-                            self.closure(*structure, frame.clone()),
-                            Transparency::Reducible,
-                            *remaining,
-                        );
-                        let Some(Value::Neutral(structure_value)) = structure_value.proven_value()
-                        else {
-                            return Judgment::unknown("projection-dependent-structure-value");
+                        // Receiver-free field-zero type inference: no prior
+                        // fields exist, so certified declaration + parameters
+                        // already determine this type.
+                        let structure_value = if index == 0 {
+                            None
+                        } else {
+                            let exposed = self.machine().expose(
+                                self.closure(*structure, frame.clone()),
+                                Transparency::Reducible,
+                                *remaining,
+                            );
+                            let Some(Value::Neutral(receiver)) = exposed.proven_value() else {
+                                return Judgment::unknown("projection-dependent-structure-value");
+                            };
+                            Some(receiver.clone())
                         };
 
                         let mut field_frame = EnvFrame::empty();
@@ -498,6 +505,9 @@ impl<'a> TypeChecker<'a> {
                             field_frame = field_frame.extend(parameter.clone());
                         }
                         for prior_index in 0..index {
+                            let Some(structure_value) = structure_value.as_ref() else {
+                                return Judgment::unknown("projection-prior-field-receiver");
+                            };
                             match &structure_value.head {
                                 NeutralHead::Const { name, .. } if *name == spec.constructor => {
                                     let field_offset = spec.num_params + prior_index;
@@ -591,6 +601,19 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_DEPENDENCY_GAP").is_some() {
+                    if let Judgment::Unknown { residual } = &conversion {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static GAPS: AtomicUsize = AtomicUsize::new(0);
+                        if GAPS.fetch_add(1, Ordering::Relaxed) < 48 {
+                            eprintln!(
+                                "NUCLEUS_DEPENDENCY_GAP:expr={expression:?}:context={}:frame={}:residual={:?}:inferred_type={:?}:expected_type={:?}",
+                                context.len(), frame.id(), residual, value, expected
+                            );
+                        }
+                    }
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
