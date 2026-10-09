@@ -1,0 +1,98 @@
+name: Collatz V120 phase-aware source elimination
+on:
+  push:
+    branches: [collatz-v119-phase-aware-elimination-v120]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-consequences:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate bounded source-relative certificates and compact rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v120_phase_elimination --out evidence/v120-families.json | tee evidence/v120-generate.log
+      - name: Independently replay every affine F and reverse source certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m research.collatz_v120_verify --input evidence/v120-families.json --out evidence/v120-verification.json | tee evidence/v120-check.log
+          python3 - <<'PY'
+          import json
+          j=json.load(open("evidence/v120-verification.json"))
+          assert j["exact_rule_count"] == 149
+          assert j["exact_new_crt_families"] == 4408
+          assert j["reverse_word_types"] == 17
+          assert j["collision_path_types"] == 9
+          assert j["remaining_unknown_crt"] == 159938
+          assert j["global_collatz"] == "UNKNOWN" and not j["qed"]
+          assert not j["all_individual_Lean_witnesses_checked"]
+          print("V120_EXACT_PHASE_ELIMINATION_BOUNDARY_PASS_NOT_QED")
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v120-source-phase-exact-qualification
+          path: evidence/
+          if-no-files-found: error
+  generic-formal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile original-source F-merge and affine reverse proof dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for file in SourceProductAffine CylinderCoalescence ReverseAffineMerger Q7SourceMerger ScaledReverseMerger ThreeCongruenceMerger ParityCollisionBridge AffineFTransportBank FSwapGrammar; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${file}.olean" "formal/Collatz/${file}.lean" > "evidence/${file}.log" 2>&1
+          done
+      - name: Check all-offset protected phase-aware consequence theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean -DautoImplicit=false formal/Collatz/PhaseAwareElimination.lean 2>&1 | tee evidence/v120-lean.log
+          python3 - <<'PY'
+          import re,json,hashlib,pathlib,subprocess
+          s=pathlib.Path('evidence/v120-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s)
+          axs={}
+          for name,ax in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",s,re.S):
+            vals=[v.strip() for v in ax.split(',') if v.strip()]
+            assert set(vals)<=set(['propext','Quot.sound','Classical.choice']),(name,vals)
+            axs[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",s):
+            axs[name]=[]
+          for name in ['affine_phase_family_lower_merge','affine_phase_family_all_offsets']:
+            assert 'CollatzFinal.SourceProduct.'+name in axs,name
+          out=dict(schema='COLLATZ_V120_FORMAL_GENERIC_PHASE_MERGER',
+            status='WARRANTED_FORMAL_CONDITIONAL_SCHEMA',
+            axioms=axs,
+            source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            lean_log_sha256=hashlib.sha256(s.encode()).hexdigest(),
+            individual_rules_lean_reified=False,
+            universal_event_producer=False,
+            global_collatz='UNKNOWN',qed=False)
+          out['certificate_sha256']=hashlib.sha256(json.dumps(out,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          pathlib.Path('evidence/v120-formal-qualification.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('V120_FORMAL_SCHEMA_PASS_NOT_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v120-phase-merge-generic-lean
+          path: evidence/
+          if-no-files-found: error
