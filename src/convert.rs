@@ -1480,7 +1480,7 @@ fn compare_values(
                 // Do NOT permute arguments or identify unrelated locals.
                 if depth==13 && context.len()==13 && current_budget>=1024
                     && left.head==right.head
-                    && matches!(left.head,NeutralHead::Free(_))
+                    && matches!(&left.head,NeutralHead::Free(_))
                     && left.spine.len()==2
                     && convert_with_policy_in_context(
                         checker,
