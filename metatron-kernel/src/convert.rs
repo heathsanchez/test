@@ -1380,6 +1380,25 @@ fn compare_values(
                         eprintln!(
                             "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=single_left:depth={depth}:budget={current_budget}:projection_type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}:other={current_right:?}"
                         );
+                        if let Value::StuckProjection {
+                            type_name: other_type,
+                            index: other_index,
+                            structure: other_structure,
+                            spine: other_spine,
+                        } = &current_right
+                        {
+                            let other_field = checker.machine().projection_field_for_conversion(
+                                other_structure.clone(), *other_type, *other_index,
+                                current_budget.min(1024),
+                            );
+                            let other_value = checker.machine().projection_value_for_conversion(
+                                other_structure.clone(), *other_type, *other_index,
+                                other_spine, current_budget.min(1024),
+                            );
+                            eprintln!(
+                                "NUCLEUS_CROSS_PROJECTION_OTHER:depth={depth}:left_type={type_name:?}:left_index={index}:right_type={other_type:?}:right_index={other_index}:right_structure={other_structure:?}:right_pending={other_spine:?}:right_field={other_field:?}:right_value={other_value:?}"
+                            );
+                        }
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
