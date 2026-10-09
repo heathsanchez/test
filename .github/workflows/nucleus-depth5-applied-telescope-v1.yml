@@ -1,8 +1,8 @@
-name: Nucleus closed 3-field record source-authority qualification
+name: Nucleus Lean.SourceInfo immutable inductive contract
 
 on:
   push:
-    branches: [nucleus-closed-three-field-record-v1]
+    branches: [nucleus-sourceinfo-contract-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -114,6 +114,48 @@ jobs:
           out=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/closed-three-field-report.json')
           out.parent.mkdir(parents=True,exist_ok=True)
           out.write_text(json.dumps(rows,indent=2))
+          PY
+
+      - name: Census exact Lean.SourceInfo inductive schema and prelude
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests/good')
+          rows=[]
+          for case in ('init-prelude','perf/grind-ring-5'):
+              names={0:''};prefix=[]; target=None;full=(root/(case+'.ndjson')).read_bytes()
+              for line in full.splitlines(keepends=True):
+                  d=json.loads(line);prefix.append(line)
+                  if 'in' in d:
+                      z=d.get('str',d.get('num'))
+                      pre=names.get(z['pre'],'')
+                      names[d['in']]=pre+('.' if pre else '')+str(z.get('str',z.get('i')))
+                  if 'inductive' in d and any(
+                      names.get(t['name'])=='Lean.SourceInfo'
+                      for t in d['inductive'].get('types',[])
+                  ):
+                      target=d['inductive'];break
+              assert target is not None,case
+              item={'case':case,'sha256':hashlib.sha256(b''.join(prefix)).hexdigest(),
+                    'types':[dict(name=names.get(t['name']),numParams=t.get('numParams'),numIndices=t.get('numIndices'),
+                         numNested=t.get('numNested'),isRec=t.get('isRec'),isReflexive=t.get('isReflexive'),
+                         isUnsafe=t.get('isUnsafe'),levelParams=t.get('levelParams'),type=t.get('type'),
+                         ctors=t.get('ctors')) for t in target.get('types',[])],
+                    'constructors':[dict(name=names.get(c['name']),numParams=c.get('numParams'),
+                         numFields=c.get('numFields'),levelParams=c.get('levelParams'),type=c.get('type'),
+                         index=c.get('cidx'),isUnsafe=c.get('isUnsafe')) for c in target.get('ctors',[])],
+                    'recursors':[dict(name=names.get(r['name']),numParams=r.get('numParams'),numIndices=r.get('numIndices'),
+                         numMotives=r.get('numMotives'),numMinors=r.get('numMinors'),levelParams=r.get('levelParams'),
+                         type=r.get('type'),k=r.get('k'),rules=r.get('rules')) for r in target.get('recs',[])]}
+              result=subprocess.run(['/tmp/nucleus'],input=b''.join(prefix),stdout=subprocess.DEVNULL,timeout=90)
+              item['prefix_rc']=result.returncode
+              print('NUCLEUS_SOURCEINFO_CONTRACT='+json.dumps(item),flush=True)
+              rows.append(item)
+              assert result.returncode==2,'SourceInfo prefix must remain UNKNOWN until checked admission'
+          path=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/sourceinfo-contract.json')
+          path.parent.mkdir(parents=True,exist_ok=True)
+          path.write_text(json.dumps(rows,indent=2))
           PY
 
       - name: Require new contextual proof with exact negative controls
@@ -240,7 +282,7 @@ jobs:
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
           PY
 
-      - name: Requalify complete 196-case protected corpus with strict ACCEPT gain
+      - name: Preserve frozen196 verdicts in SourceInfo contract audit
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -278,14 +320,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
-          print('NATREC_PROJECTION_CONGRUENCE_196_GAIN',flush=True)
+          assert accepted==118 and unknown==7, 'SOURCEINFO_DIAGNOSTIC_CHANGED_FROZEN196'
+          print('SOURCEINFO_CONTRACT_DIAGNOSTIC_ONLY',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-closed-three-field-${{ github.sha }}
+          name: nucleus-sourceinfo-contract-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -298,7 +340,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="closed three-field record: ${{ job.status }}; no complete replay"
+          description="sourceinfo contract: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -309,6 +351,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/closed-three-field-record" \
+            -f context="nucleus/sourceinfo-contract" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
