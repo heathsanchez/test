@@ -103,8 +103,11 @@ class LateRootController(ChartController):
         t=(n-23)//384
         if (n,p,i,j)!=root23_family(t) or w["common"]!=5+81*t:
             raise ValueError("V133 earlier-root, clock, slope or endpoint was altered")
-        if is_active and self.state["support"][ROOT23_ID]["status"]!="WARRANTED_FORMAL":
-            raise ValueError("cannot use revoked V133 parametric theorem")
+        if is_active and (
+            self.state["support"][ROOT23_ID]["status"]!="WARRANTED_FORMAL" or
+            self.state["support"][GENERIC_ID]["status"]!="WARRANTED_FORMAL"
+        ):
+            raise ValueError("V133 source23 theorem or its V131 chart premise was revoked")
 
     def audit(self)->None:
         # ChartController.audit has the prior specific V132 frozen-list
@@ -134,10 +137,23 @@ class LateRootController(ChartController):
             raise ValueError("source23 consequence reuse is NOT global Collatz QED")
 
     def admit_root23(self,t:int)->bool:
-        if self.state["support"][ROOT23_ID]["status"]!="WARRANTED_FORMAL":
-            raise ValueError("root23 all-offset theorem no longer qualifies new leaves")
+        if (self.state["support"][ROOT23_ID]["status"]!="WARRANTED_FORMAL" or
+            self.state["support"][GENERIC_ID]["status"]!="WARRANTED_FORMAL"):
+            raise ValueError("root23 theorem or its V131 chart premise no longer live")
         n,p,i,j=root23_family(t)
         return self.add(make_join(n,p,i,j,ROOT23_ID,ROOT23_ORIGIN))
+
+    def revoke(self,support_id:str)->int:
+        # V133's Lean source IMPORTS the V131 RootChartOverlapCompiler.
+        # Revoking V131 must therefore withdraw *both* formal V133 chart
+        # instances and all dependent original-source class-merger joins.
+        if support_id==GENERIC_ID:
+            affected=0
+            if self.state["support"][ROOT23_ID]["status"]!="REVOKED":
+                affected+=super().revoke(ROOT23_ID)
+            affected+=super().revoke(GENERIC_ID)
+            return affected
+        return super().revoke(support_id)
 
 def migrate(state:dict)->LateRootController:
     source=deepcopy(state)
