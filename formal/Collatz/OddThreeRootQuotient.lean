@@ -117,7 +117,9 @@ theorem odd_three_root_first_step_normalization_stutters (t : Nat) :
     iter shortcut 1 (6 * t + 3) = 9 * t + 5 := by
   constructor
   · omega
-  · exact root_represents_mod9_five t
+  · have heq : 6 * t + 3 = 3 + 6 * t := by omega
+    rw [heq]
+    exact root_represents_mod9_five t
 
 #print axioms three_even_half
 #print axioms every_three_root_reaches_odd_three_root
