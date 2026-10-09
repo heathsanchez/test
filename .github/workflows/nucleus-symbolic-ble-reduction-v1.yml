@@ -124,6 +124,23 @@ jobs:
                   'last_trace':traces[-3:],'seconds':round(row['seconds'],5)}),flush=True)
           PY
 
+      - name: Decode newly exposed Nat sub type obligation
+        run: |
+          python3 - <<'PY'
+          import subprocess,pathlib,os,json,re
+          names=['init-prelude','perf/magma-list-pair-n7']
+          for name in names:
+              raw=(pathlib.Path('/tmp/arena-tests/good')/(name+'.ndjson')).read_bytes()
+              p=subprocess.run(['/tmp/nucleus'],input=raw,stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,timeout=45,env=os.environ|{'NUCLEUS_TRACE_DEPENDENCY_GAP':'1','NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1'})
+              lines=p.stderr.decode(errors='replace').splitlines()
+              gaps=[s for s in lines if s.startswith('NUCLEUS_DEPENDENCY_GAP:')]
+              apps=[s for s in lines if s.startswith('NUCLEUS_APPLICATION_FUNCTION_TYPE:')]
+              terminal=[s for s in lines if s.startswith('NUCLEUS_DOWNSTREAM:')][-2:]
+              print('NEW_TYPE_GAP='+json.dumps({'case':name,'rc':p.returncode,
+                'gaps':gaps[:4],'app':apps[:3],'terminal':terminal}),flush=True)
+          PY
+
       - name: Run exact positive and negative causal witnesses
         run: |
           set -euo pipefail
