@@ -72,13 +72,19 @@ jobs:
                   timeout=45,env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1',
                     'NUCLEUS_TRACE_SUB_SUCC':'1','NUCLEUS_TRACE_NAT_SUBSUCC':'1',
                     'NUCLEUS_TRACE_DEPENDENCY_GAP':'1',
-                    'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1'})
+                    'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
+                    'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                    'NUCLEUS_TRACE_VALUE_MISMATCH':'1'})
               lines=p.stderr.decode(errors='replace').splitlines()
               row={'name':name,'actual':p.returncode,'expected':expected,
                    'sha256':hashlib.sha256(data).hexdigest(),
                    'semantic_rewrites':sum('NUCLEUS_NAT_SUBSUCC:' in x for x in lines),
                    'last':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-3:],
-                   'gaps':[x for x in lines if 'NUCLEUS_DEPENDENCY_GAP:' in x][:2]}
+                   'gaps':[x for x in lines if 'NUCLEUS_DEPENDENCY_GAP:' in x][:2],
+                   'neutral_first':[x[:1700] for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][:10],
+                   'neutral_last':[x[:1700] for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-4:],
+                   'value_first':[x[:2000] for x in lines if 'NUCLEUS_VALUE_MISMATCH:' in x][:4],
+                   'application':[x[:900] for x in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in x][:4]}
               print('SUBSUCC_VERDICT='+json.dumps(row,sort_keys=True),flush=True)
               result.append(row)
           report={'commit':os.environ['GITHUB_SHA'],'cases':result}
