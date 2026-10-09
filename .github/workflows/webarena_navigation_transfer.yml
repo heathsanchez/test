@@ -1,0 +1,111 @@
+name: WebArena blind reviewer and tax navigation admission
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_navigation_transfer.yml"
+      - "scripts/webarena_blind_navigation_transfer.py"
+      - "tests/test_webarena_blind_navigation_transfer.py"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [gitlab, shopping_admin]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch official evaluator
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Start site fixture
+        env:
+          LANE: ${{ matrix.lane }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/transfer
+          if [ "$LANE" = gitlab ]; then
+            image=am1n3e/webarena-verified-gitlab
+            port=8023:8023
+            health=http://localhost:8023/users/sign_in
+          else
+            image=am1n3e/webarena-verified-shopping_admin
+            port=7780:80
+            health=http://localhost:7780/admin
+          fi
+          docker pull "$image"
+          docker image inspect "$image" --format '{{index .RepoDigests 0}}' > artifacts/transfer/image_digest.txt
+          docker run -d --name fixture -p "$port" "$image"
+          for i in $(seq 1 180); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$health" || true)
+            if [ "$code" = 200 ] || [ "$code" = 302 ]; then break; fi
+            if [ "$i" = 180 ]; then exit 1; fi
+            sleep 3
+          done
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Verify intent grammar
+        run: python -m unittest discover -s tests -p 'test_webarena_blind_navigation_transfer.py' -v
+      - name: Execute and score one official navigation
+        env:
+          LANE: ${{ matrix.lane }}
+        run: |
+          cp upstream/assets/dataset/webarna-verfied-hard.json artifacts/transfer/hard.json
+          cat > artifacts/transfer/config.json <<'JSON'
+          {"environments":{
+            "__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0,"credentials":{"username":"byteblaze","password":"hello1234"}},
+            "__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0}
+          }}
+          JSON
+          python - <<'PY'
+          import json,os,subprocess,sys,uuid
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/transfer")
+          tasks=json.loads((root/"hard.json").read_text())
+          ident=357 if os.environ["LANE"]=="gitlab" else 708
+          task=next(t for t in tasks if int(t["task_id"])==ident)
+          slot=uuid.uuid4().hex
+          out=root/"output"/slot
+          out.mkdir(parents=True,exist_ok=True)
+          run=subprocess.run([
+            sys.executable,"scripts/webarena_blind_navigation_transfer.py",
+            "--intent",task["intent"],"--start-url",task["start_urls"][0],
+            "--output-dir",str(out),
+          ],capture_output=True,text=True,timeout=240,check=False)
+          (out/"stdout.txt").write_text(run.stdout[-20000:])
+          (out/"stderr.txt").write_text(run.stderr[-30000:])
+          verdict={"epistemic_state":"CANDIDATE_WITH_RESIDUAL","exit":run.returncode}
+          if run.returncode==0 and (out/"agent_response.json").exists() and (out/"network.har").exists():
+            authority=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+            outcome=authority.evaluate_task(task_id=ident,
+              agent_response=out/"agent_response.json",
+              network_trace=NetworkTrace.from_har(out/"network.har"))
+            (out/"official.json").write_text(json.dumps(outcome.model_dump(mode="json",exclude_none=True),indent=2)+"\n")
+            verdict["official_score"]=float(outcome.score)
+            verdict["official_status"]=outcome.status.value
+            if verdict["official_score"]==1.0 and verdict["official_status"]=="success":
+              verdict["epistemic_state"]="WARRANTED_BOUNDED"
+          (root/"qualification.json").write_text(json.dumps(verdict,indent=2)+"\n")
+          print(json.dumps(verdict,indent=2),flush=True)
+          if verdict["epistemic_state"]!="WARRANTED_BOUNDED":
+            raise SystemExit("navigation admission unresolved")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-blind-nav-transfer-${{ matrix.lane }}
+          path: artifacts/transfer
