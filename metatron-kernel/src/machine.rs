@@ -1022,7 +1022,10 @@ impl<'a> Machine<'a> {
         let major_cap = if bool_rules && nat_beq_major {
             256
         } else if certified_nat_rec {
-            128
+            // Bounded comparator experiment: public folded-constant tests
+            // contain 1000 constructor steps. Keep exact registered
+            // Nat rules and constructor/arity verification unchanged.
+            2048
         } else {
             16
         };
