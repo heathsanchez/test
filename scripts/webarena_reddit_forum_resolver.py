@@ -26,6 +26,21 @@ def forum_key(value):
     tokens=re.findall(r"[a-z0-9]+",clean(value).casefold())
     return "".join(NUMBER_WORDS.get(token,token) for token in tokens)
 
+def compact(value):
+    return re.sub(r"[^a-z0-9]+", "", clean(value).casefold())
+
+def candidate_forum_slugs(query):
+    """Generate literal variants, keeping each candidate source-derived."""
+    query=clean(query)
+    digits_to_words={digit:word for word,digit in NUMBER_WORDS.items()}
+    spelled=re.sub(
+        r"\b([0-9])\b",
+        lambda match: digits_to_words.get(match.group(1),match.group(1)),
+        query.casefold(),
+    )
+    variants=(query,compact(query),re.sub(r"[^a-z0-9]+","-",query.casefold()).strip("-"),compact(spelled))
+    return list(dict.fromkeys(variant for variant in variants if variant))
+
 def sim(a,b):
     return SequenceMatcher(None,a,b).ratio()
 
@@ -75,9 +90,7 @@ async def resolve_forum(page,base,description,max_pages=12):
     # and verify the page's canonical forum link before accepting one.
     if query and len(query.split()) <= 7:
         from urllib.parse import quote
-        variants=[query, re.sub(r"[^a-z0-9]+","",query.casefold()),
-                  re.sub(r"[^a-z0-9]+","-",query.casefold()).strip("-"),
-                  re.sub(r"[^a-z0-9]+","",re.sub(r"\\b([0-9])\\b",lambda m: next((word for word,digit in NUMBER_WORDS.items() if digit==m.group(1)),m.group(1)),query.casefold()))]
+        variants=candidate_forum_slugs(query)
         for variant in dict.fromkeys(v for v in variants if v):
             response=await page.goto(f"{base.rstrip('/')}/f/{quote(variant)}",wait_until="networkidle",timeout=120000)
             if response is None or response.status!=200:
@@ -86,7 +99,7 @@ async def resolve_forum(page,base,description,max_pages=12):
             if len(canonical)<2 or canonical[0]!="f":
                 continue
             slug=canonical[1]
-            if forum_key(slug) != forum_key(query):
+            if compact(slug) != compact(variant):
                 continue
             row={"score":100.0,"label":slug,"slug":slug,"context":"verified direct forum URL"}
             return {**row,"candidates":[row]}
