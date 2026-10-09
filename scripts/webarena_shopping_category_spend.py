@@ -21,11 +21,11 @@ def month_num(token):
 
 def parse_time(text):
     s=clean(text)
-    m=re.fullmatch(r"during\s+([A-Za-z]+)\s+(\d{4})",s,re.I)
+    m=re.fullmatch(r"(?:during\s+)?([A-Za-z]+)\s+(\d{4})",s,re.I)
     if m:
         mon,y=m.groups(); y=int(y); mm=month_num(mon)
         return ("month",datetime(y,mm,1),None)
-    m=re.fullmatch(r"during\s+([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})",s,re.I)
+    m=re.fullmatch(r"(?:during\s+)?([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})",s,re.I)
     if m:
         mon,d,y=m.groups(); dt=datetime(int(y),month_num(mon),int(d))
         return ("day",dt,None)

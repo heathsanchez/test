@@ -10,6 +10,12 @@ on:
       - scripts/webarena_blind_matrix.py
       - tests/test_webarena_blind_retrieval_bridge.py
       - tests/test_webarena_blind_matrix.py
+      - scripts/webarena_shopping_admin_payment_fold_v2.py
+      - scripts/webarena_shopping_category_spend.py
+      - scripts/webarena_gitlab_to_reddit_promote.py
+      - tests/test_webarena_payment_chronology.py
+      - tests/test_webarena_spend_periods.py
+      - tests/test_webarena_crosssite_post_timeout.py
 
 permissions:
   contents: read

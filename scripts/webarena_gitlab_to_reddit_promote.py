@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse, asyncio, json, re
 from pathlib import Path
 from urllib.parse import quote
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
+from webarena_reddit_submit_v3 import observed_postcondition
 from webarena_gitlab_commit_counts import sign_in
 
 GITLAB="http://localhost:8023"
@@ -40,8 +41,21 @@ async def submit_url_post(page,forum,title,url):
     if not forum_value: raise RuntimeError("forum not preselected")
     btn=form.get_by_role("button",name="Create submission").first
     if await btn.count()==0: raise RuntimeError("submit control missing")
-    await btn.click()
-    await page.wait_for_load_state("networkidle",timeout=120000)
+    # Click may have posted successfully before Playwright times out waiting
+    # for navigation. Never replay a potentially committed POST.
+    expected={"forum":forum,"title":title}
+    try:
+        await btn.click()
+    except PlaywrightTimeoutError:
+        if not await observed_postcondition(page,expected):
+            raise
+    try:
+        await page.wait_for_load_state("networkidle",timeout=120000)
+    except PlaywrightTimeoutError:
+        if not await observed_postcondition(page,expected):
+            raise
+    if not await observed_postcondition(page,expected):
+        raise RuntimeError("cross-site Reddit post lacks independently observed forum and title")
     return {"forum_value":forum_value,"final_url":page.url}
 
 async def main():

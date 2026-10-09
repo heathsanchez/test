@@ -16,6 +16,7 @@ import asyncio
 import json
 import re
 from decimal import Decimal, ROUND_HALF_UP
+from datetime import datetime
 from pathlib import Path
 
 from playwright.async_api import async_playwright
@@ -136,17 +137,8 @@ async def collect_rows(page, need: dict, max_pages: int = 20) -> list[dict]:
                 }
             )
 
-        completed = sum(1 for r in rows_out if r["status_class"] == "completed")
-        cancelled = sum(1 for r in rows_out if r["status_class"] == "cancelled")
-        non_cancelled = sum(1 for r in rows_out if r["status_class"] != "cancelled")
-
-        enough = (
-            completed >= need.get("completed", 0)
-            and cancelled >= need.get("cancelled", 0)
-            and non_cancelled >= need.get("non_cancelled", 0)
-        )
-        if enough:
-            return rows_out
+        # "Last N" requires global chronology, not the first N matches
+        # encountered on a mutable order-grid page. Exhaust pagination.
 
         # Use the visible Magento order-grid pager only. Hidden UI-component
         # pager instances are not valid continuations of the visible grid.
@@ -193,7 +185,18 @@ async def collect_rows(page, need: dict, max_pages: int = 20) -> list[dict]:
     return rows_out
 
 
+def purchase_timestamp(row: dict) -> datetime:
+    raw = re.sub(r"\s+", " ", str(row["purchase_date"])).strip()
+    for fmt in ("%b %d, %Y %I:%M:%S %p", "%B %d, %Y %I:%M:%S %p"):
+        try:
+            return datetime.strptime(raw, fmt)
+        except ValueError:
+            continue
+    raise ValueError(f"unrecognized Magento purchase date: {raw!r}")
+
+
 def compute(query: dict, rows: list[dict]) -> tuple[Decimal, dict]:
+    rows = sorted(rows, key=purchase_timestamp, reverse=True)
     if query["mode"] == "sum":
         pred = query["predicate"]
         n = query["n"]
