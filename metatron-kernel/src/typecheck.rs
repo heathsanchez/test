@@ -150,12 +150,15 @@ impl<'a> TypeChecker<'a> {
     }
 
     /// Diagnostic only: instantiate a declaration's dependent Pi telescope
-    /// with the actual application closures, never authorizing acceptance.
+    /// and record independent argument-domain type checks. This does not grant
+    /// a proof judgment: closure frames may encode substitutions whose typing
+    /// requires an independent derivation, not merely syntax re-inference.
     #[cfg(feature = "diagnostics")]
     pub(crate) fn diagnostic_applied_telescope(
         &self,
         name: NameId,
         args: &[Closure],
+        context: &[TypeValue],
         budget: usize,
     ) -> String {
         let Some(decl) = self.environment.get(name) else {
@@ -169,7 +172,34 @@ impl<'a> TypeChecker<'a> {
             );
             match exposed.proven_value() {
                 Some(Value::Pi { domain, body }) => {
-                    steps.push(format!("arg={i}:domain={domain:?}:actual={arg:?}"));
+                    // Check the raw expression under the actual captured
+                    // frame as a diagnostic. The source syntax may be open,
+                    // so success alone is not promoted as a certified
+                    // closure-typing judgment.
+                    let mut infer_fuel = budget.min(1024);
+                    let inferred = self.infer_in(
+                        arg.expr, context, &arg.env, &mut infer_fuel, &mut HashMap::new(),
+                    );
+                    let mut check_fuel = budget.min(1024);
+                    let checked = self.check_in(
+                        arg.expr,
+                        &TypeValue::Term(domain.clone()),
+                        context,
+                        &arg.env,
+                        &mut check_fuel,
+                        true,
+                        &mut HashMap::new(),
+                    );
+                    let arg_whnf = self.machine().expose(
+                        arg.clone(), Transparency::Reducible, budget.min(256),
+                    );
+                    let domain_whnf = self.machine().expose(
+                        domain.clone(), Transparency::Reducible, budget.min(256),
+                    );
+                    steps.push(format!(
+                        "arg={i}:syntax={:?}:domain={domain:?}:domain_whnf={domain_whnf:?}:actual={arg:?}:actual_whnf={arg_whnf:?}:infer={inferred:?}:check={checked:?}",
+                        self.expressions.get(arg.expr),
+                    ));
                     current = Closure::with_levels(
                         body.expr, body.env.extend(arg.clone()), body.levels.clone(),
                     );
