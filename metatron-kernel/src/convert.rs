@@ -1122,7 +1122,11 @@ fn compare_values(
                 // after proving the receiver and all applied arguments equal.
                 // The existing source-level Nat computation never licenses
                 // identifying unrelated binder environments or Nat indices.
-                let probe = (current_budget / 2).min(128);
+                // Bounded experiment only: preserve every checked receiver
+                // and argument premise; grant nested structural projections a
+                // larger finite congruence search without creating any new
+                // definitional-equality axiom.
+                let probe = (current_budget / 2).min(256);
                 if probe >= 8
                     && left_spine.len() == right_spine.len()
                     && convert_with_policy_in_context(
