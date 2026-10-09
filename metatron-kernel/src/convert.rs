@@ -1586,8 +1586,19 @@ fn compare_nat_literal_neutral(
             let major_full = major.map(|term| checker.machine().expose(
                 term.clone(), Transparency::Full, budget.min(96),
             ));
+            let zero_case = if nat_rec_head && neutral.spine.len() == 4 {
+                neutral.spine.get(1)
+            } else {
+                None
+            };
+            let zero_case_reducible = zero_case.map(|term| checker.machine().expose(
+                term.clone(), Transparency::Reducible, budget.min(96),
+            ));
+            let zero_case_full = zero_case.map(|term| checker.machine().expose(
+                term.clone(), Transparency::Full, budget.min(96),
+            ));
             eprintln!(
-                "NUCLEUS_NATREC_MAJOR:head={name:?}:is_certified_nat_rec={nat_rec_head}:is_nat_zero={nat_zero_head}:is_nat_succ={nat_succ_head}:universe={levels:?}:arity={}:major={major:?}:major_reducible={major_reducible:?}:major_full={major_full:?}:depth={depth}:context={}",
+                "NUCLEUS_NATREC_MAJOR:head={name:?}:is_certified_nat_rec={nat_rec_head}:is_nat_zero={nat_zero_head}:is_nat_succ={nat_succ_head}:universe={levels:?}:arity={}:major={major:?}:major_reducible={major_reducible:?}:major_full={major_full:?}:zero_case={zero_case:?}:zero_case_reducible={zero_case_reducible:?}:zero_case_full={zero_case_full:?}:depth={depth}:context={}",
                 neutral.spine.len(), context.len(),
             );
         }
