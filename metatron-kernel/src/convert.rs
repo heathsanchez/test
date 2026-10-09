@@ -194,6 +194,24 @@ fn convert_in_context_with_congruence(
             }
         }
 
+        // An ordinary delta/beta/projection congruence certificate. The
+        // synthetic surface HSub.hSub and a bound Nat.sub application are
+        // equal only after both checked paths resolve to Nat.sub with equal
+        // original Nat operands. Never merge by names or frame IDs alone.
+        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && let Some(obligations) = checked_nat_sub_alias_obligations(
+                checker, left_term, right_term, remaining,
+            )
+        {
+            if std::env::var_os("NUCLEUS_TRACE_NAT_SUB_SUCC_DEFEQ").is_some() {
+                eprintln!("NUCLEUS_NAT_SUB_ALIAS:checked-head-and-operand-obligations");
+            }
+            work.extend(obligations.into_iter().map(|(a,b)| (
+                TypeValue::Term(a), TypeValue::Term(b), depth, local_context.clone(),
+            )));
+            continue;
+        }
+
         // A kernel-rfl consequence for checked Nat.pred/Nat.sub:
         // sub a (succ b) is definitionally pred (sub a b).
         // Only enqueue equivalence of the two original operands after
@@ -1458,6 +1476,33 @@ fn has_local_pred_head(
         }
     }
     false
+}
+
+// Confluence of two separately type-checked aliases for Nat.sub. The
+// checked delta and projection evaluator must recover the registered head;
+// the operand pair stays in the conversion work queue for independent proof.
+fn checked_nat_sub_alias_obligations(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    budget: usize,
+) -> Option<[(Closure, Closure); 2]> {
+    let native_sub = checker.nat_primitives()?.sub?;
+    if budget < 128 {
+        return None;
+    }
+    // A deliberately cheap guard prevents probing every term comparison.
+    if !has_local_pred_head(checker, left, native_sub)
+        && !has_local_pred_head(checker, right, native_sub)
+    {
+        return None;
+    }
+    let a = checked_native_spine(checker, left, native_sub, 2, 96)?;
+    let b = checked_native_spine(checker, right, native_sub, 2, 96)?;
+    Some([
+        (a[0].clone(), b[0].clone()),
+        (a[1].clone(), b[1].clone()),
+    ])
 }
 
 // The 4.34.1 kernel checks this equation by rfl (separate immutable
