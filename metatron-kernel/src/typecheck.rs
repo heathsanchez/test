@@ -728,10 +728,15 @@ impl<'a> TypeChecker<'a> {
         body_context.push(declared_domain);
         let body_frame = frame.extend_free(free);
         let body_type = TypeValue::Term(expected_body.under_free(free));
-        if !self.check_in(
+        let body_judgment = self.check_in(
             *body, &body_type, &body_context, &body_frame,
             &mut trial_remaining, conversion_refutation_is_unknown, &mut trial_cache,
-        ).is_proven() {
+        );
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_BIDIR_LAMBDA").is_some() {
+            eprintln!("NUCLEUS_BIDIR_LAMBDA:body:expr={expression:?}:body={body:?}:depth={}:expected={body_type:?}:judgment={body_judgment:?}:remaining={trial_remaining}",context.len());
+        }
+        if !body_judgment.is_proven() {
             return Judgment::unknown("dependent-lambda-body-not-verified");
         }
         Judgment::proven((), "checked-lambda-pi-derivation")
