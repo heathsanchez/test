@@ -29,10 +29,12 @@ jobs:
           set -euo pipefail
           export PATH="$HOME/.elan/bin:$PATH"
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCappedTernaryBar.olean formal/Collatz/SourceCappedTernaryBar.lean 2>&1 | tee evidence/v118-reduction.log
-          lake env lean -DautoImplicit=false formal/Collatz/MinimalBadTernaryBarrier.lean 2>&1 | tee evidence/v118-barrier.log
-          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v118-reduction.log evidence/v118-barrier.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/MinimalBadTernaryBarrier.olean formal/Collatz/MinimalBadTernaryBarrier.lean 2>&1 | tee evidence/v118-barrier.log
+          lake env lean -DautoImplicit=false formal/Collatz/DeepAnchorCapSeparation.lean 2>&1 | tee evidence/v118-anchor.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v118-reduction.log evidence/v118-barrier.log evidence/v118-anchor.log
           grep -q 'collatz_iff_source_capped_ternary_bar.*depends on axioms' evidence/v118-reduction.log
           grep -q 'minimal_bad_ternary_endpoint_lower_bound.*depends on axioms' evidence/v118-barrier.log
+          grep -q 'deep_anchor_not_capped.*depends on axioms' evidence/v118-anchor.log
           git rev-parse HEAD > evidence/commit.txt
       - name: Seal strictly conditional verdict
         shell: bash
@@ -44,6 +46,7 @@ jobs:
             "schema":"COLLATZ_V118_SOURCE_RELATIVE_BARRIER",
             "status":"WARRANTED_FORMAL_CONDITIONAL_REDUCTION_AND_BARRIER",
             "source_capped_universal_bar_proved":False,
+            "deep_anchor_not_capped_kernel_checked":True,
             "nonterminal_cycles_excluded":False,
             "global_collatz":"UNKNOWN",
             "qed":False}
