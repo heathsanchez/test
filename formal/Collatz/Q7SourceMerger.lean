@@ -51,6 +51,41 @@ theorem q7_source_lower_merge (s : Nat) :
     (reverse_family_lower_merge 10 81 7 64 6 s
       q7_source_reverse_word (by decide) (by decide))
 
+/-- A hypothetical least positive counterexample cannot lie in the
+    immediate inverse-odd ternary class. This is an exclusion of a
+    *minimal bad source*, not a standalone termination proof for every
+    n in the class without a smaller-source induction premise. -/
+theorem minimal_bad_not_ternary_two {n : Nat}
+    (hmin : MinimalBad PositiveBad n) :
+    n % 3 ≠ 2 := by
+  intro hmod
+  let s := n / 3
+  have heq : n = 3 * s + 2 := by
+    dsimp [s]
+    omega
+  have hm : LowerMerge shortcut n (2 * s + 1) := by
+    rw [heq]
+    exact ternary_inverse_odd_lower_merge s
+  exact positive_minimal_no_lower_merge hmin (2 * s + 1) (by omega) hm
+
+/-- The q7 reverse-word certificate also forbids its whole source
+    congruence class as the least possible bad positive source. -/
+theorem minimal_bad_not_q7_class {n : Nat}
+    (hmin : MinimalBad PositiveBad n) :
+    n % 81 ≠ 10 := by
+  intro hmod
+  let s := n / 81
+  have heq : n = 81 * s + 10 := by
+    dsimp [s]
+    omega
+  have hm : LowerMerge shortcut n (64 * s + 7) := by
+    rw [heq]
+    exact q7_source_lower_merge s
+  exact positive_minimal_no_lower_merge hmin (64 * s + 7) (by omega) hm
+
+#print axioms minimal_bad_not_ternary_two
+#print axioms minimal_bad_not_q7_class
+
 #print axioms reverse_family_lower_merge
 #print axioms ternary_inverse_odd_lower_merge
 #print axioms q7_source_reverse_word
