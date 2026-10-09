@@ -820,7 +820,7 @@ impl<'a> TypeChecker<'a> {
                 // Importantly, only the machine's *proven* Pi can advance
                 // application typing; an unresolved projection remains UNKNOWN.
                 if !matches!(
-                    exposed.proven_value().map(|value| &value.value),
+                    exposed.proven_value(),
                     Some(Value::Pi { .. })
                 ) {
                     exposed = machine.expose(
@@ -831,7 +831,7 @@ impl<'a> TypeChecker<'a> {
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_PI_FULL_EXPOSURE").is_some()
                         && matches!(
-                            exposed.proven_value().map(|value| &value.value),
+                            exposed.proven_value(),
                             Some(Value::Pi { .. })
                         )
                     {
