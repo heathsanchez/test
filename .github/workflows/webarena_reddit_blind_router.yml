@@ -1,4 +1,4 @@
-name: WebArena blind Reddit router qualification
+name: WebArena blind Reddit router 32-task qualification
 
 on:
   workflow_dispatch:
@@ -12,6 +12,10 @@ on:
       - "scripts/webarena_reddit_vote.py"
       - "scripts/webarena_reddit_submit_v3.py"
       - "tests/test_webarena_reddit_submit_postcondition.py"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   qualify:
@@ -79,7 +83,7 @@ jobs:
           root=Path("artifacts/webarena_reddit_blind_router")
           tasks=json.loads((root/"hard.json").read_text())
           by_id={int(t["task_id"]):t for t in tasks}
-          ids=(634,640,645,646,647,399,400,401,580,581,584,596,597,598,409,410,651,733,734,735,407,408,721,724,730,636,624,625,644,603,610)
+          ids=(634,640,645,646,647,399,400,401,580,581,584,596,597,598,409,410,651,733,734,735,407,408,721,724,730,636,638,624,625,644,603,610)
           execution={}
           for ident in ids:
               t=by_id[ident]
@@ -109,7 +113,7 @@ jobs:
           from webarena_verified.types.tracing import NetworkTrace
           root=Path("artifacts/webarena_reddit_blind_router")
           wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
-          ids=(634,640,645,646,647,399,400,401,580,581,584,596,597,598,409,410,651,733,734,735,407,408,721,724,730,636,624,625,644,603,610)
+          ids=(634,640,645,646,647,399,400,401,580,581,584,596,597,598,409,410,651,733,734,735,407,408,721,724,730,636,638,624,625,644,603,610)
           results={}; failures=[]
           execution=json.loads((root/"execution_results.json").read_text())
           for ident in ids:
@@ -131,7 +135,7 @@ jobs:
                   failures.append(ident)
           seal={
               "epistemic_state":"WARRANTED_BOUNDED" if not failures else "REJECTED",
-              "boundary":"31-task Reddit action router receiving only natural-language intent and start URL",
+              "boundary":"32-task Reddit action router receiving only natural-language intent and start URL",
               "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
               "agent_forbidden_metadata":["task_id","intent_template_id","instantiation_dict","eval","expected"],
               "results":results,
