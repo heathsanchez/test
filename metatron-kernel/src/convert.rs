@@ -1414,6 +1414,46 @@ fn compare_values(
                 {
                     return Judgment::refuted("certified-stuck-recursor-mismatch");
                 }
+                // A Bool constructor cannot be equated with an unrelated
+                // neutral. It may, however, match a registered recursor after
+                // exact source-defined iota. The major can itself be a
+                // Decidable/Bool recursor with a captured constructor major.
+                // Never select the constructor from the expected Bool result.
+                if current_budget >= 128 {
+                    let candidate = |constructor: &Neutral, recursive: &Neutral| -> Option<Value> {
+                        let NeutralHead::Const { name, levels } = &constructor.head else {
+                            return None;
+                        };
+                        if !constructor.spine.is_empty()
+                            || !levels.is_empty()
+                            || !checker.is_certified_bool_constructor(*name)
+                            || recursive.spine.len() != 5
+                        {
+                            return None;
+                        }
+                        checker.machine().qualified_nested_recursor_result(
+                            recursive, current_budget.min(2048),
+                        ).proven_value().cloned()
+                    };
+                    if let Some(result) = candidate(left, right) {
+                        if result != Value::Neutral(right.clone()) {
+                            return compare_values(
+                                checker, &Value::Neutral(left.clone()), &result,
+                                current_budget.saturating_sub(1),
+                                depth, context, work, proof_function_frees,
+                            );
+                        }
+                    }
+                    if let Some(result) = candidate(right, left) {
+                        if result != Value::Neutral(left.clone()) {
+                            return compare_values(
+                                checker, &result, &Value::Neutral(right.clone()),
+                                current_budget.saturating_sub(1),
+                                depth, context, work, proof_function_frees,
+                            );
+                        }
+                    }
+                }
                 match compare_neutral_heads(checker, left, right, current_budget) {
                     Judgment::Proven { .. } => {}
                     other => return other,
