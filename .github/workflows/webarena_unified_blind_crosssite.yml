@@ -1,0 +1,165 @@
+name: WebArena unified blind cross-site qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_unified_blind_crosssite.yml"
+      - "scripts/webarena_unified_blind_agent.py"
+      - "tests/test_webarena_unified_blind_agent.py"
+      - "scripts/webarena_gitlab_to_reddit_promote.py"
+      - "scripts/webarena_reddit_blind_router.py"
+      - "scripts/webarena_reddit_forum_resolver.py"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned evaluator authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Start Reddit and GitLab once
+        run: |
+          mkdir -p artifacts/webarena_unified_blind
+          docker pull am1n3e/webarena-verified-reddit
+          docker image inspect am1n3e/webarena-verified-reddit --format '{{index .RepoDigests 0}}' > artifacts/webarena_unified_blind/reddit_digest.txt
+          docker run -d --name webarena-reddit -p 9999:80 -p 9998:8877 am1n3e/webarena-verified-reddit
+          for i in $(seq 1 120); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9999 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then break; fi
+            if [ "$i" = 120 ]; then exit 1; fi
+            sleep 2
+          done
+          docker pull am1n3e/webarena-verified-gitlab
+          docker image inspect am1n3e/webarena-verified-gitlab --format '{{index .RepoDigests 0}}' > artifacts/webarena_unified_blind/gitlab_digest.txt
+          docker run -d --name webarena-gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 180); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if [ "$code" = "200" ]; then break; fi
+            if [ "$i" = 180 ]; then exit 1; fi
+            sleep 3
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Verify generic routing and capability boundary
+        run: |
+          python -m unittest discover -s tests -p 'test_webarena_unified_blind_agent.py' -v
+          python -m unittest discover -s tests -p 'test_webarena_forum_resolver.py' -v
+
+      - name: Run opaque-output mixed-site blind agent
+        run: |
+          ROOT=artifacts/webarena_unified_blind
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {
+            "environments": {
+              "__REDDIT__": {"urls":["http://localhost:9999"],"active_url_idx":0},
+              "__GITLAB__": {
+                "urls":["http://localhost:8023"],"active_url_idx":0,
+                "credentials":{"username":"byteblaze","password":"hello1234"}
+              }
+            }
+          }
+          JSON
+          python - <<'PY'
+          import json,subprocess,sys,uuid
+          from pathlib import Path
+          root=Path("artifacts/webarena_unified_blind")
+          tasks=json.loads((root/"hard.json").read_text())
+          by_id={int(t["task_id"]):t for t in tasks}
+          reddit=(634,640,645,646,647,399,400,401,580,581,584,596,597,598,409,410,651,733,734,735,407,408,721,724,730,636,624,625,644,603,610)
+          gitlab=(259,170,171,172,303,304,307)
+          crosssite=(684,685,686,687,688)
+          ids=reddit+gitlab+crosssite
+          records={}
+          for ident in ids:
+              task=by_id[ident]
+              slot=uuid.uuid4().hex
+              start=(task.get("start_urls") or [""])[0]
+              dest=root/"output"/slot
+              cmd=[
+                  sys.executable,"scripts/webarena_unified_blind_agent.py",
+                  "--intent",task["intent"],
+                  "--start-url",start,
+                  "--output-dir",str(dest),
+              ]
+              print("RUN",ident,"site",task["sites"],flush=True)
+              result=subprocess.run(cmd,check=False)
+              records[str(ident)]={"opaque_slot":slot,"exit_code":result.returncode}
+              print("RESULT",ident,"exit",result.returncode,flush=True)
+          (root/"execution_manifest.json").write_text(json.dumps(records,indent=2)+"\n")
+          PY
+
+      - name: Officially score every mixed-site response and network trace
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/webarena_unified_blind")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          records=json.loads((root/"execution_manifest.json").read_text())
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
+          rows={}; failures=[]
+          for ident_text,run in records.items():
+              ident=int(ident_text)
+              out=root/"output"/run["opaque_slot"]
+              if run["exit_code"]!=0 or not (out/"agent_response.json").is_file():
+                  rows[ident_text]={"score":0.0,"status":"execution_failed","exit_code":run["exit_code"]}
+                  failures.append(ident)
+                  continue
+              try:
+                  task=wa.get_task(ident)
+                  protected=any(e.evaluator=="NetworkEventEvaluator" for e in task.eval)
+                  trace=NetworkTrace.from_har(out/"network.har") if protected else empty
+                  result=wa.evaluate_task(task_id=ident,agent_response=out/"agent_response.json",network_trace=trace)
+                  dumped=result.model_dump(mode="json",exclude_none=True)
+                  (out/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+                  row={"score":float(result.score),"status":result.status.value,
+                       "network_events":len(trace.evaluation_events) if protected else None}
+                  rows[ident_text]=row
+                  if row["score"]!=1.0 or row["status"]!="success":
+                      failures.append(ident)
+              except Exception as exc:
+                  rows[ident_text]={"score":0.0,"status":"evaluation_error","error":repr(exc)}
+                  failures.append(ident)
+              print("OFFICIAL",ident,rows[ident_text],flush=True)
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED" if not failures else "CANDIDATE_WITH_RESIDUALS",
+              "boundary":"43 WebArena-Verified Hard tasks, one blind agent, Reddit+GitLab; opaque task output paths",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "result_count":len(rows),
+              "success_count":sum(row.get("score")==1.0 and row.get("status")=="success" for row in rows.values()),
+              "results":rows,
+              "failures":failures,
+          }
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2),flush=True)
+          if len(rows)!=43 or failures:
+              raise SystemExit(f"mixed-site blind residuals: {failures}; evaluated {len(rows)}/43")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-unified-blind-crosssite
+          path: artifacts/webarena_unified_blind
