@@ -1,0 +1,188 @@
+name: Collatz V142 unbounded actual source requires both parity heights
+on:
+  push:
+    branches: [collatz-v142-unbounded-dual-parity-heights]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-heights:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay exact finite peak and first-even controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v142_unbounded_parity_exact > evidence/v142-exact.json
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v142-exact.json')
+          a=json.loads(p.read_text())
+          assert a['schema']=='COLLATZ_V142_UNBOUNDED_BOTH_PARITY_HEIGHTS'
+          assert a['finite_first_even_cases']==12000
+          assert a['bounded_odd_to_bounded_whole_prefix_cases']==250
+          assert a['first_even_never_below_on_samples']
+          assert a['odd_bounded_implies_whole_bounded_on_sample_prefixes']
+          assert len(a['arbitrarily_long_finite_source_changing_prefixes'])==8
+          assert a['arbitrarily_long_finite_source_changing_prefixes'][-1]['finite_odd_run_length']==128
+          assert a['uniform_first_even_clock_claimed'] is False
+          assert a['actual_unbounded_positive_orbit_exhibited'] is False
+          assert a['global_collatz']=='UNKNOWN' and a['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V142_EXACT_BOUNDED_SEAL',
+            'source_commit':head,'status':'WARRANTED_FINITE_EXACT_PARITY_HEIGHT_CONTROLS',
+            'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'all_infinite_claims_require_separate_formal_proof':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v142-exact-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v142-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-heights:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check dual-parity unbounded source theorem against pinned parents
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/ActualOrbitDichotomy.lean)" = e5f90f9ae369a3704f609ac776b3cbbbe16ce4ca
+          test "$(git hash-object formal/Collatz/PerpetualOddNaturalExclusion.lean)" = f8889bfe73567b5a4a7383a7a9223be32da342be
+          test "$(git hash-object formal/Collatz/SourceProductAffine.lean)" = 97a32acc490465c3bb0cd528e42100a6bbfd2f61
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/PerpetualOddNaturalExclusion.olean formal/Collatz/PerpetualOddNaturalExclusion.lean > evidence/v140.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/UnboundedParityHeights.lean 2>&1 | tee evidence/v142-lean.log
+          python3 - <<'PY'
+          import pathlib,re,hashlib,json,subprocess
+          p=pathlib.Path('evidence/v142-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-3500:]
+          axs={}
+          for name,vals in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            xs=[x.strip() for x in vals.split(',') if x.strip()]
+            assert set(xs)<={'propext','Classical.choice','Quot.sound'},(name,xs)
+            axs[name]=xs
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axs[name]=[]
+          targets=['two_power_le_three_power',
+            'positive_source_has_later_even_not_below',
+            'bounded_odd_endpoints_bound_whole_orbit',
+            'unbounded_source_has_unbounded_odd_values',
+            'unbounded_positive_source_has_unbounded_even_values',
+            'unbounded_positive_source_has_both_parity_heights',
+            'least_positive_bad_unbounded_has_both_high_source_attached']
+          for n in targets:
+            assert 'CollatzFinal.SourceProduct.'+n in axs,n
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          result={'schema':'COLLATZ_V142_FORMAL_TWO_UNBOUNDED_PARITY_HEIGHTS',
+            'source_commit':head,
+            'status':'WARRANTED_FORMAL_CONDITIONAL_BOTH_UNBOUNDED_PARITIES',
+            'axioms':axs,'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'least_bad_source_identity_protected':True,
+            'unbounded_branch_requires_unbounded_odd_and_even_values':True,
+            'no_unbounded_orbit_excluded':True,
+            'no_nonterminal_cycle_excluded':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v142-formal-seal.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v142-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-heights,formal-heights]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v142-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v142-formal
+          path: evidence/formal
+      - name: Qualify same-SHA high odd/even values without extrapolated Collatz
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,subprocess,pathlib
+          a=json.loads(pathlib.Path('evidence/exact/v142-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v142-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['all_infinite_claims_require_separate_formal_proof']
+          assert b['status']=='WARRANTED_FORMAL_CONDITIONAL_BOTH_UNBOUNDED_PARITIES'
+          assert b['unbounded_branch_requires_unbounded_odd_and_even_values']
+          assert b['no_unbounded_orbit_excluded'] and b['no_nonterminal_cycle_excluded']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          result={'schema':'COLLATZ_V142_QUALIFIED_RESIDUAL_REFINEMENT',
+            'source_commit':head,'status':'WARRANTED_FORMAL_BOTH_PARITY_HEIGHTS_NECESSARY',
+            'original_source_no_merge_guard':'PRESERVED_FROM_V139',
+            'unbounded_positive_both_odd_even_height_growth':'FORMAL_CONDITIONAL',
+            'source_specific_forcing_exists':'UNKNOWN',
+            'nonterminal_cycles_excluded':False,
+            'unbounded_source_orbit_excluded':False,
+            'operational_controller':'V134_UNCHANGED',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v142-final-seal.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v142-final
+          path: evidence/v142-final-seal.json
+          if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-heights,formal-heights,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Persist same-SHA positive result or proof failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={exact:'${{ needs.exact-heights.result }}',
+              formal:'${{ needs.formal-heights.result }}',
+              final:'${{ needs.final-seal.result }}'};
+            const qualified=Object.values(stages).every(x=>x==='success');
+            const receipt={schema:'COLLATZ_V142_CI_RECEIPT',
+              source_commit:context.sha,run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_DUAL_UNBOUNDED_PARITY_HEIGHTS':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false};
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v142-unbounded-dual-parity-heights',
+              path:'research/ci_seals/collatz_v142_'+context.sha+'.json',
+              message:'CI receipt: V142 dual unbounded parity heights '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(receipt,null,2)+'\n').toString('base64')
+            });
