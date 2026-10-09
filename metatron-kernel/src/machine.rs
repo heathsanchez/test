@@ -1096,7 +1096,10 @@ impl<'a> Machine<'a> {
         let major_cap = if bool_rules && nat_beq_major {
             256
         } else if certified_nat_rec {
-            128
+            // Experimental scope: the source corpus has 1000 unary steps.
+            // Only validated Nat recursor rules may reduce; the shared
+            // cache stores established normal forms, never inferred majors.
+            2048
         } else {
             16
         };
