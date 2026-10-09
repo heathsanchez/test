@@ -26,7 +26,7 @@ jobs:
       - name: Pin candidate source for attribution
         run: |
           mkdir -p artifacts/webarena_shopping_reddit_compound
-          test "$(git rev-parse HEAD)" = "__REF__"
+          test "$(git rev-parse HEAD)" = "26bed0778e14be19a4229ea2a92742210cb1543a"
           git rev-parse HEAD > artifacts/webarena_shopping_reddit_compound/source_commit.txt
 
       - uses: actions/setup-python@v5
