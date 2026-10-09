@@ -1,8 +1,8 @@
-name: Nucleus DecidableBall final predicate spine alignment audit
+name: Nucleus DecidableBall source binder and application syntax census
 
 on:
   push:
-    branches: [nucleus-decidableBall-final-spine-witness-v1]
+    branches: [nucleus-decidableBall-source-syntax-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -58,6 +58,65 @@ jobs:
           gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
           unzip -q /tmp/arena.zip -d /tmp/arena-artifact
           tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+
+      - name: Read immutable DecidableBall lambda and expected Pi source nodes
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('/tmp/arena-tests/good')
+          all_rows=[]
+          for case,application,final_arg in [
+              ('perf/magma-list-pair-n7',7124,6502),
+              ('perf/magma-list-pair-n21',7121,6499),
+          ]:
+              exprs={}
+              names={0:''}
+              for line in (root/(case+'.ndjson')).read_bytes().splitlines():
+                  j=json.loads(line)
+                  if 'in' in j:
+                      z=j.get('str',j.get('num'))
+                      parent=names.get(z['pre'],'')
+                      names[j['in']]=parent+('.' if parent else '')+str(z.get('str',z.get('i')))
+                  if 'ie' in j:
+                      exprs[j['ie']]=j
+              seen=set();nodes=[]
+              def visit(expr_id,depth):
+                  if expr_id in seen or depth>5 or len(nodes)>=72:
+                      return
+                  seen.add(expr_id)
+                  j=exprs.get(expr_id)
+                  if j is None:
+                      return
+                  x=dict(j)
+                  if 'const' in x:
+                      x['source_name']=names.get(x['const']['name'],'')
+                  nodes.append(x)
+                  for field in ('app','lam','forallE','letE','proj'):
+                      if field not in j:
+                          continue
+                      z=j[field]
+                      children={'app':('fn','arg'),'lam':('type','body'),
+                                'forallE':('type','body'),'letE':('type','value','body'),
+                                'proj':('struct',)}[field]
+                      for key in children:
+                          if isinstance(z.get(key),int):
+                              visit(z[key],depth+1)
+              seeds=[application,application-1,application-2,application-3,
+                     application-8,application-9,application-10,final_arg,final_arg+1,
+                     118,6,11]
+              for i in seeds:
+                  visit(i,0)
+              row={'case':case,'application':application,'final_arg':final_arg,
+                   'source_names':{str(i):names.get(i,'') for i in (75,76,147,169)},
+                   'nodes':nodes}
+              print('NUCLEUS_DECIDABLEBALL_SOURCE='+json.dumps(row),flush=True)
+              assert application in exprs and final_arg in exprs
+              all_rows.append(row)
+          out=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/decidable-ball-source.json')
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(all_rows,indent=2))
+          PY
 
       - name: Require new contextual proof with exact negative controls
         run: |
@@ -229,7 +288,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-decidableBall-final-spine-${{ github.sha }}
+          name: nucleus-decidableBall-source-syntax-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -242,7 +301,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="decidableBall final spine: ${{ job.status }}; no complete replay"
+          description="decidableBall source syntax: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -253,6 +312,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/decidableBall-final-spine" \
+            -f context="nucleus/decidableBall-source-syntax" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
