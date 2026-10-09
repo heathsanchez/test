@@ -10,6 +10,8 @@ on:
       - "scripts/webarena_reddit_forum_resolver.py"
       - "tests/test_webarena_forum_resolver.py"
       - "scripts/webarena_reddit_vote.py"
+      - "scripts/webarena_reddit_submit_v3.py"
+      - "tests/test_webarena_reddit_submit_postcondition.py"
 
 jobs:
   qualify:
@@ -19,7 +21,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Test source-derived forum-name discovery
-        run: python -m unittest discover -s tests -p 'test_webarena_forum_resolver.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_webarena_forum_resolver.py' -v
+          python -m unittest discover -s tests -p 'test_webarena_reddit_submit_postcondition.py' -v
 
       - name: Assert blind-agent source boundary
         run: |

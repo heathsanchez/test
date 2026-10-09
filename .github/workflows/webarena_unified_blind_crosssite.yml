@@ -11,6 +11,8 @@ on:
       - "scripts/webarena_gitlab_to_reddit_promote.py"
       - "scripts/webarena_reddit_blind_router.py"
       - "scripts/webarena_reddit_forum_resolver.py"
+      - "scripts/webarena_reddit_submit_v3.py"
+      - "tests/test_webarena_reddit_submit_postcondition.py"
 
 jobs:
   qualify:
@@ -61,6 +63,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_webarena_unified_blind_agent.py' -v
           python -m unittest discover -s tests -p 'test_webarena_forum_resolver.py' -v
+          python -m unittest discover -s tests -p 'test_webarena_reddit_submit_postcondition.py' -v
 
       - name: Run opaque-output mixed-site blind agent
         run: |

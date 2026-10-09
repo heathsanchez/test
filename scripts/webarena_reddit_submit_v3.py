@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse, asyncio, json, re
+from urllib.parse import urlparse
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from pathlib import Path
 from playwright.async_api import async_playwright
 
@@ -32,6 +34,25 @@ def compile_post(task):
         raise SystemExit(f"unsupported explicit-forum submit template {tid}")
     return {"forum":forum,"title":title,"body":body}
 
+
+def postcondition(url,forum,title,visible_text):
+    """Confirm actual posted detail location and user-requested title."""
+    path=urlparse(str(url)).path.strip("/").split("/")
+    if len(path)<4 or path[0]!="f" or path[1].casefold()!=forum_slug(forum).casefold():
+        return False
+    if not path[2].isdigit() or not path[3]:
+        return False
+    return clean(title).casefold() in clean(visible_text).casefold()
+
+
+async def observed_postcondition(page,spec):
+    try:
+        visible=await page.locator("body").inner_text(timeout=5000)
+    except Exception:
+        return False
+    return postcondition(page.url,spec["forum"],spec["title"],visible)
+
+
 async def submit(page,base,spec):
     url=base.rstrip("/")+"/submit/"+spec["forum"]
     r=await page.goto(url,wait_until="networkidle",timeout=120000)
@@ -51,8 +72,25 @@ async def submit(page,base,spec):
     if not forum_value: raise RuntimeError("forum was not preselected")
     submit_btn=form.get_by_role("button",name="Create submission").first
     if await submit_btn.count()==0: raise RuntimeError("submit control missing")
-    await submit_btn.click()
-    await page.wait_for_load_state("networkidle",timeout=120000)
+    # Playwright can time out waiting for scheduled navigation after the
+    # click was already delivered. Never replay a possibly committed mutation.
+    # A timeout is admissible only when the resulting page independently
+    # establishes the intended forum and submitted title.
+    navigation_timeout=False
+    try:
+        await submit_btn.click()
+    except PlaywrightTimeoutError:
+        navigation_timeout=True
+        if not await observed_postcondition(page,spec):
+            raise
+    if not navigation_timeout:
+        try:
+            await page.wait_for_load_state("networkidle",timeout=120000)
+        except PlaywrightTimeoutError:
+            if not await observed_postcondition(page,spec):
+                raise
+    if not await observed_postcondition(page,spec):
+        raise RuntimeError("post-submit page does not confirm forum and title")
     return {"submit_url":url,"forum_value":forum_value,"final_url":page.url}
 
 async def main():
