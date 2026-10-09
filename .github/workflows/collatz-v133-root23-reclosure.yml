@@ -1,0 +1,155 @@
+name: Collatz V133 source23 affine root and late 27 reclosure
+on:
+  push:
+    branches: [collatz-v133-root23-late-join-reclosure]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-root23:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently replay full-affine source23 chart and source27 clocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v133_root23_late_join > evidence/v133-exact.json
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          p=pathlib.Path('evidence/v133-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V133_ROOT23_CHART_AND_27_LATE_RECONCILIATION'
+          assert d['root23_source_chart'][-1]==[5,81]
+          assert d['root3_predecessor_chart'][-1]==[5,81]
+          assert len(d['all_offset_samples'])==7
+          assert d['source27_to23_clocks']==[59,0]
+          assert d['source23_to3_clocks']==[7,1]
+          assert d['source27_to3_composed_clocks']==[66,1]
+          assert d['source27_to2_composed_clocks']==[70,1]
+          assert d['no_entire_original_crt_class_promotion']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          r={'schema':'COLLATZ_V133_EXACT_ROOT23_CAUSAL_REUSE',
+             'status':'WARRANTED_BOUNDED_EXACT_ALL_OFFSET_AFFINE_REPLAY',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'original_source27_first_clock_proved_earlier':True,
+             'new_infinite_root23_chart_formal':'UNKNOWN_UNTIL_LEAN_GATE',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v133-exact-seal.json').write_text(json.dumps(r,sort_keys=True,indent=2)+'\n')
+          print('V133_ROOT23_CHART_AND_27_CAUSAL_COMPOSITION_EXACT_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v133-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-root23:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel qualify root23 chart and source27 consequence composition
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/RootChartOverlapCompiler.lean)" = c35bde45d11aad51f46e6e8beced5322acd43e9b
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin RelationalRootMerger RootChartOverlapCompiler FirstResidualRefinement; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/Root23LateJoinReclosure.lean 2>&1 | tee evidence/v133-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v133-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          axioms={}
+          for name,raw in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            vals=[x.strip() for x in raw.split(',') if x.strip()]
+            assert set(vals)<={'propext','Quot.sound','Classical.choice'},(name,vals)
+            axioms[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          required=['root23ViaChart','root23_chart_source','root23_chart_earlier',
+             'root23_all_offset_law','source27To23','source27To3ByReclosure',
+             'source27_real_root3_meeting','source27To2ByReclosure',
+             'source27_real_root2_meeting','source27_has_certified_smaller_odd_root',
+             'root23_family_not_minimal_bad']
+          for name in required:
+            assert 'CollatzFinal.'+name in axioms,name
+          q={'schema':'COLLATZ_V133_FORMAL_SOURCE23_AND_SOURCE27_REUSE',
+             'status':'WARRANTED_FORMAL_ALL_OFFSET_ROOT23_CHART_AND_TWO_CLOCK_COMPOSITION',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'axioms':axioms,
+             'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+             'v122_source27_exact_first_clock_reused_not_reproved':True,
+             'generic_chart_overlap_source_blob':'c35bde45d11aad51f46e6e8beced5322acd43e9b',
+             'no_claim_for_all_source27_lifts':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v133-formal-seal.json').write_text(json.dumps(q,sort_keys=True,indent=2)+'\n')
+          print('V133_SOURCE23_ALL_OFFSET_ROOT_LAW_AND_27_TO3_LEAN_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v133-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-root23,formal-root23]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v133-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v133-formal
+          path: evidence/formal
+      - name: Seal root-relative source27 consequence without false cylinder promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v133-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v133-formal-seal.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==sha
+          assert b['status']=='WARRANTED_FORMAL_ALL_OFFSET_ROOT23_CHART_AND_TWO_CLOCK_COMPOSITION'
+          assert a['original_source27_first_clock_proved_earlier']
+          assert b['v122_source27_exact_first_clock_reused_not_reproved']
+          assert b['no_claim_for_all_source27_lifts']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          result={'schema':'COLLATZ_V133_SOURCE27_TO_ROOT3_CAUSAL_REUSE',
+              'status':'WARRANTED_FORMAL_NEW_ROOT23_ALL_OFFSET_CHART_AND_27_REJOIN',
+              'source_commit':sha,
+              'root23_to_odd_root3_clocks':[7,1],
+              'v122_original27_to23_clocks':[59,0],
+              'composed_source27_to_root3_clocks':[66,1],
+              'composed_source27_to_root2_clocks':[70,1],
+              'all_source27_crt_family_closed':False,
+              'universal_event_production':'UNKNOWN',
+              'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v133-final-seal.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+          print('V133_REUSED_FORMAL_SOURCE27_LATE_ROOT_JOIN_NOT_GLOBAL_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v133-final
+          path: evidence/v133-final-seal.json
+          if-no-files-found: error
