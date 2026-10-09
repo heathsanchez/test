@@ -1,7 +1,7 @@
 name: Nucleus combined ten residual census
 on:
   push:
-    branches: [nucleus-beq-char-composed-v1]
+    branches: [nucleus-native-ble-constructors-v1]
     paths: [".github/workflows/nucleus-composed-residuals-v1.yml"]
   workflow_dispatch:
 permissions:
@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      SOURCE_COMMIT: 592f622e80460b3a249930510644c4c20e1fcf18
-      SOURCE_SUBTREE: 366700d343550fe8774763ae43a3f47e8f0a9a85
+      SOURCE_COMMIT: 7481eef6e3c595cdc505bd41903bdbcf831a2ab2
+      SOURCE_SUBTREE: 9ce5f70d709fa4fd35b547dbdebe18ea5edbf34a
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
