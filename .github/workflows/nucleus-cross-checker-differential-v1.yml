@@ -1,0 +1,150 @@
+name: Nucleus pinned cross-checker differential
+on:
+  push:
+    branches: [nucleus-cross-checker-differential-v1]
+    paths: [".github/workflows/nucleus-cross-checker-differential-v1.yml", "metatron-kernel/**"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: mathgraph-flash
+            repository: metalogiclabs/mathgraph-lean-kernel
+            revision: 78c7502bac8a5ba000057b3f083bc0595ac65750
+            binary: sokonanoda
+            kind: config
+          - name: sokonanoda
+            repository: intgrah/sokonanoda
+            revision: 7645b1e1fcacfe410c99141f1234381d995b325d
+            binary: sokonanoda
+            kind: flags
+          - name: nanoclo
+            repository: sgraf812/nanoclo
+            revision: a2aa37ebdb2e28b85c4f3681b0bd8564628ea4a4
+            binary: nanoclo
+            kind: config
+    env:
+      ARENA_ARTIFACT: "11272848230"
+      COMPARATOR_NAME: "${{ matrix.name }}"
+      COMPARATOR_REV: "${{ matrix.revision }}"
+      COMPARATOR_BINARY: "${{ matrix.binary }}"
+      COMPARATOR_KIND: "${{ matrix.kind }}"
+      CARGO_PROFILE_RELEASE_LTO: thin
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "8"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: "${{ matrix.repository }}"
+          ref: "${{ matrix.revision }}"
+          path: _reference
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind exact checker authorities
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" != ""
+          test "$(git -C _reference rev-parse HEAD)" = "$COMPARATOR_REV"
+          echo "nucleus_source=$GITHUB_SHA"
+          echo "reference_source=$COMPARATOR_REV"
+          echo "corpus_artifact=$ARENA_ARTIFACT"
+      - name: Compile isolated checkers
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path _reference/Cargo.toml
+          test -x "metatron-kernel/target/release/metatron-kernel"
+          test -x "_reference/target/release/$COMPARATOR_BINARY"
+      - name: Recover exact frozen Arena evidence input
+        env:
+          GH_TOKEN: "${{ github.token }}"
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pinned-artifact /tmp/frozen-tests evidence-differential
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/frozen.zip
+          unzip -q /tmp/frozen.zip -d /tmp/pinned-artifact
+          tar --no-same-owner -xzf /tmp/pinned-artifact/lean-arena-tests.tar.gz -C /tmp/frozen-tests
+      - name: Execute both checkers on identical positive and negative bytes
+        run: |
+          set -euo pipefail
+          ulimit -s 8192
+          cat > /tmp/mathgraph-config.json <<'JSON'
+          {
+            "use_stdin": true,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 2
+          }
+          JSON
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys, time
+          sys.path.insert(0, '.github/scripts')
+          from nucleus_succle_separator import extract, false_index
+          root=pathlib.Path('/tmp/frozen-tests')
+          out=pathlib.Path('evidence-differential')
+          good=['init-prelude', 'perf/folded-constant-first',
+                'perf/folded-constant-last', 'perf/fueled-chain',
+                'perf/grind-ring-5', 'perf/magma-list-deep-n21',
+                'perf/magma-list-deep-n36', 'perf/magma-list-pair-n21',
+                'perf/magma-list-pair-n7', 'perf/shared-subterm']
+          samples=[(n, (root/'good'/(n+'.ndjson')).read_bytes(), True) for n in good]
+          samples.append(('bugs/nested-unused-param',
+                          (root/'bad/bugs/nested-unused-param.ndjson').read_bytes(), False))
+          mutant=false_index(extract((root/'good/init-prelude.ndjson').read_bytes()))
+          assert hashlib.sha256(mutant).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          samples.append(('false-index-mutant', mutant, False))
+          refs=pathlib.Path('_reference/target/release')/os.environ['COMPARATOR_BINARY']
+          if os.environ['COMPARATOR_KIND']=='flags':
+              reference_command=[str(refs),'--stdin','--nat-extension','--string-extension',
+                                 '--axiom-allow-all','--threads','4']
+          else:
+              reference_command=[str(refs),'/tmp/mathgraph-config.json']
+          nucleus_command=['metatron-kernel/target/release/metatron-kernel']
+          rows=[]
+          for name,raw,should_accept in samples:
+              row={'test':name,'fixture_sha256':hashlib.sha256(raw).hexdigest(),
+                   'expected_accept':should_accept}
+              for label,command in [('nucleus',nucleus_command),
+                                    (os.environ['COMPARATOR_NAME'],reference_command)]:
+                  start=time.monotonic()
+                  try:
+                      p=subprocess.run(command,input=raw,stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE,timeout=70,
+                                       env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+                      row[label]={'exit':p.returncode,'elapsed':round(time.monotonic()-start,3),
+                                  'stdout_head':p.stdout[:360].decode(errors='replace'),
+                                  'stderr_tail':p.stderr[-1500:].decode(errors='replace')}
+                  except subprocess.TimeoutExpired:
+                      row[label]={'exit':None,'timeout':70}
+              rows.append(row)
+              print(json.dumps(row,sort_keys=True),flush=True)
+          report={'nucleus_commit':os.environ['GITHUB_SHA'],
+                  'nucleus_source_subtree':subprocess.check_output(['git','rev-parse','HEAD:metatron-kernel'],text=True).strip(),
+                  'reference_name':os.environ['COMPARATOR_NAME'],
+                  'reference_commit':os.environ['COMPARATOR_REV'],
+                  'arena_artifact':os.environ['ARENA_ARTIFACT'],
+                  'rows':rows,
+                  'nucleus_unknown_count':sum(r['nucleus']['exit']==2 for r in rows if r['test'] in good),
+                  'reference_accepted_count':sum(r[os.environ['COMPARATOR_NAME']]['exit']==0 for r in rows if r['test'] in good),
+                  'reference_wrong_accepts':[r['test'] for r in rows if not r['expected_accept'] and r[os.environ['COMPARATOR_NAME']]['exit']==0]}
+          (out/'diff.json').write_text(json.dumps(report,indent=2,sort_keys=True))
+          print("SUMMARY="+json.dumps({k:v for k,v in report.items() if k not in ('rows','nucleus_source_subtree')},sort_keys=True))
+          assert report['nucleus_unknown_count']==10,report
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: "nucleus-diff-${{ matrix.name }}-${{ github.sha }}"
+          path: evidence-differential
+          if-no-files-found: warn
