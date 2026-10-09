@@ -323,7 +323,7 @@ fn convert_in_context_with_congruence(
                         && definition_arguments_used(checker, *left_name, lhs.spine.len())
                         && !lhs.spine.is_empty()
                         && lhs.spine.len() == rhs.spine.len()
-                        && compare_neutral_heads(checker, lhs, rhs, probe_budget).is_proven()
+                        && compare_neutral_heads(checker, lhs, rhs, probe_budget, depth, context).is_proven()
                         && lhs.spine.iter().zip(&rhs.spine).rev().all(|(left_arg, right_arg)| {
                             convert_in_context_with_congruence(
                                 checker,
@@ -1496,7 +1496,7 @@ fn compare_values(
                         );
                     }
                 }
-                match compare_neutral_heads(checker, left, right, current_budget) {
+                match compare_neutral_heads(checker, left, right, current_budget, depth, context) {
                     Judgment::Proven { .. } => {}
                     other => return other,
                 }
@@ -1751,6 +1751,8 @@ fn compare_neutral_heads(
     left: &Neutral,
     right: &Neutral,
     budget: usize,
+    depth: usize,
+    context: &[TypeValue],
 ) -> Judgment<()> {
     match (&left.head, &right.head) {
         (NeutralHead::Free(left), NeutralHead::Free(right)) if left == right => {
@@ -1831,6 +1833,38 @@ fn compare_neutral_heads(
             Judgment::proven((), "same-rigid-constant")
         }
         _ => {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_DEEP_LOCAL_PAIR").is_some()
+                && left.spine.is_empty() && right.spine.is_empty()
+                && matches!((&left.head,&right.head),
+                    (NeutralHead::Free(FreeId(2)),NeutralHead::Free(FreeId(6))) |
+                    (NeutralHead::Free(FreeId(6)),NeutralHead::Free(FreeId(2))))
+            {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static N:AtomicUsize=AtomicUsize::new(0);
+                if N.fetch_add(1,Ordering::Relaxed)<20 {
+                    let a=context.get(2);
+                    let b=context.get(6);
+                    let prop=|value:Option<&TypeValue>|{
+                        if let Some(TypeValue::Term(closure))=value {
+                            Some(checker.is_proposition_in_context(
+                                closure.expr,context,&closure.env,budget.min(1024)
+                            ))
+                        } else {None}
+                    };
+                    let types=match (a,b){
+                        (Some(l),Some(r))=>Some(convert_with_policy_in_context(
+                            checker,l,r,budget.min(256),
+                            DeltaPolicy::GuardedSemanticFallback,depth,context,
+                        )),
+                        _=>None,
+                    };
+                    eprintln!(
+                        "NUCLEUS_DEEP_LOCAL_PAIR:from=head-check:depth={depth}:context_len={}:left_type={a:?}:right_type={b:?}:left_prop={:?}:right_prop={:?}:type_relation={types:?}",
+                        context.len(),prop(a),prop(b),
+                    );
+                }
+            }
             if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
                 eprintln!(
                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
