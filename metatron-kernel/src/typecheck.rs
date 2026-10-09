@@ -874,8 +874,31 @@ impl<'a> TypeChecker<'a> {
         let Some(right_normal) = self.normalize_type_value(&right_ty, budget) else {
             return false;
         };
-        left_normal == right_normal
+        if left_normal == right_normal
             && self.normalized_type_is_proposition(&left_normal, context, budget, 0)
+        {
+            return true;
+        }
+        // Proof irrelevance requires a warrant for the proposition type,
+        // not syntactic equality of distinct closure representations.
+        // Prove both are propositions and their types convert at strictly
+        // decreasing budget. No Nat data indices or stuck recursors merge.
+        let probe = (budget / 4).min(64);
+        if probe < 8
+            || !self.normalized_type_is_proposition(&left_normal, context, probe, 0)
+            || !self.normalized_type_is_proposition(&right_normal, context, probe, 0)
+        {
+            return false;
+        }
+        let same_proposition = crate::convert::convert_with_policy_in_context(
+            self, &left_ty, &right_ty, probe,
+            crate::convert::DeltaPolicy::PreferredOnly,
+            context.len(), context,
+        ).is_proven();
+        if same_proposition && std::env::var_os("NUCLEUS_TRACE_CERTIFIED_PROOF_TYPE").is_some() {
+            eprintln!("NUCLEUS_CERTIFIED_PROOF_TYPE_CONVERTED:budget={probe}");
+        }
+        same_proposition
     }
 
     fn normalize_type_value(&self, ty: &TypeValue, budget: usize) -> Option<Value> {
