@@ -8,7 +8,7 @@ import json
 import re
 from pathlib import Path
 from urllib.parse import urlparse
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError, Error as PlaywrightError
 from webarena_shopping_order_history_probe import AUTH_HEADER
 
 BASE="http://localhost:7770"
@@ -57,11 +57,32 @@ async def add_current_product(page, start_url):
         raise RuntimeError("product wishlist action not visible")
     action_href=await usable.get_attribute("href")
     post_data=await usable.get_attribute("data-post")
-    # One action only, with no automatic retry on ambiguous navigation.
-    await usable.click(timeout=40000,no_wait_after=True)
-    await page.wait_for_load_state("domcontentloaded",timeout=120000)
+    # One action only: collect the click-triggered navigation before
+    # starting readback. Never repeat an ambiguous wishlist mutation.
+    navigation_observed=False
+    try:
+        async with page.expect_navigation(wait_until="domcontentloaded",timeout=18000):
+            await usable.click(timeout=40000,no_wait_after=True)
+        navigation_observed=True
+    except PlaywrightTimeoutError:
+        # The click may have triggered AJAX instead of document navigation.
+        # Continue only to independent readback; do not click again.
+        pass
+    try:
+        await page.wait_for_load_state("networkidle",timeout=120000)
+    except PlaywrightTimeoutError:
+        # Readback is independent and will decide the result.
+        pass
     target_wishlist=BASE+"/wishlist/index/index/"
-    confirmation=await page.goto(target_wishlist,wait_until="networkidle",timeout=120000)
+    try:
+        confirmation=await page.goto(target_wishlist,wait_until="networkidle",timeout=120000)
+    except PlaywrightError as exc:
+        if "ERR_ABORTED" not in str(exc):
+            raise
+        # A GET-only readback may be retried after a racing navigation.
+        # No mutation is reissued.
+        await page.wait_for_load_state("domcontentloaded",timeout=120000)
+        confirmation=await page.goto(target_wishlist,wait_until="networkidle",timeout=120000)
     if confirmation is None or confirmation.status!=200:
         raise RuntimeError("wishlist confirmation page unavailable")
     body=normalize(await page.locator("body").inner_text())
@@ -74,7 +95,7 @@ async def add_current_product(page, start_url):
         "observed_action_href":action_href,
         "observed_data_post":post_data,
         "wishlist_readback_url":page.url,
-        "readback_match":True,
+        "readback_match":True,\n        "click_navigation_observed":navigation_observed,
     }
 
 
