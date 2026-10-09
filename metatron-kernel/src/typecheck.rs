@@ -316,6 +316,58 @@ impl<'a> TypeChecker<'a> {
                             "argument={argument:?}:actual_type={argument_ty:?}:expected={domain:?}:expected_full={expected_exposure:?}:preferred={domain_check:?}:guarded={guarded:?}"
                         ),
                     );
+                    if std::env::var_os("NUCLEUS_TRACE_DEC_BALL_PI_SEPARATION").is_some()
+                        && context.len() == 7
+                        && let (
+                            TypeValue::Pi {
+                                domain: inferred_domain,
+                                body: inferred_body,
+                                binder: inferred_binder,
+                            },
+                            TypeValue::Term(expected_closure),
+                        ) = (&argument_ty, &domain)
+                        && let Some(Value::Pi {
+                            domain: expected_domain,
+                            body: expected_body,
+                        }) = self.machine().expose(
+                            expected_closure.clone(),
+                            Transparency::Full, (*remaining).min(512),
+                        ).proven_value()
+                    {
+                        let observed_domain = TypeValue::Term(expected_domain.clone());
+                        let domain_premise = crate::convert::convert_with_policy_in_context(
+                            self, inferred_domain, &observed_domain, 128,
+                            crate::convert::DeltaPolicy::PreferredOnly,
+                            context.len(), context,
+                        );
+                        let domain_guarded = crate::convert::convert_with_policy_in_context(
+                            self, inferred_domain, &observed_domain, 128,
+                            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                            context.len(), context,
+                        );
+                        let body_premise = if domain_premise.is_proven()
+                            && inferred_binder.0 == context.len() as u64
+                        {
+                            let mut extended = context.to_vec();
+                            extended.push((**inferred_domain).clone());
+                            Some(crate::convert::convert_with_policy_in_context(
+                                self, inferred_body,
+                                &TypeValue::Term(expected_body.under_free(*inferred_binder)),
+                                128,
+                                crate::convert::DeltaPolicy::PreferredOnly,
+                                extended.len(), &extended,
+                            ))
+                        } else {
+                            None
+                        };
+                        note(
+                            "pi-domain-body-separation",
+                            format!(
+                                "binder={inferred_binder:?}:inferred_domain={inferred_domain:?}:expected_domain={expected_domain:?}:domain_preferred={domain_premise:?}:domain_guarded={domain_guarded:?}:body_after_valid_domain={body_premise:?}"
+                            ),
+                        );
+                    }
+
                 }
                 if !domain_check.is_proven() || !take_step(remaining) {
                     return None;
