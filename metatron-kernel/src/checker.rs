@@ -3090,6 +3090,20 @@ fn generic_nonrecursive_recursor_shape(
                         )).collect::<Vec<_>>(),
                     _=>Vec::new(),
                 };
+                let differing_fields=match (&ctor_tel,&minor_tel) {
+                    (Some((cd,_)),Some((md,_)))=>cd[p..].iter().zip(md).enumerate()
+                        .filter(|(k,(a,b))|!expr_eq_with_bvar_shift(
+                            export,**a,**b,*k as u64,(1+j) as u64
+                        ))
+                        .map(|(k,(a,b))|format!(
+                            "field={k}:ctor_expr={a:?}:ctor_node={:?}:minor_expr={b:?}:minor_node={:?}:shift_candidates={:?}",
+                            export.exprs.get(*a),export.exprs.get(*b),
+                            (0..=5).map(|shift|
+                                expr_eq_with_bvar_shift(export,*a,*b,k as u64,shift)
+                            ).collect::<Vec<_>>()
+                        )).collect::<Vec<_>>(),
+                    _=>Vec::new(),
+                };
                 let minor_info=minor_tel.as_ref().map(|(_,minor_result)| {
                     let outer=export.exprs.get(*minor_result);
                     format!("{outer:?}")
@@ -3110,7 +3124,7 @@ fn generic_nonrecursive_recursor_shape(
                         )
                     });
                 rows.push(format!(
-                    "ctor={j}:fields={fields}:ctor_tel={}:minor_tel={}:field_checks={field_checks:?}:minor={minor_info:?}:rule_tail={rule_tail:?}",
+                    "ctor={j}:fields={fields}:ctor_tel={}:minor_tel={}:field_checks={field_checks:?}:differing_fields={differing_fields:?}:minor={minor_info:?}:rule_tail={rule_tail:?}",
                     ctor_tel.is_some(),minor_tel.is_some()
                 ));
             }
