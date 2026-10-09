@@ -97,6 +97,50 @@ jobs:
           assert all(r['actual']!=0 for r in result if r['expected']==-1), 'false-index accepted'
           assert all(r['actual']==1 for r in result if r['expected']==1), 'malformed recursor not rejected'
           PY
+      - name: Requalify immutable 196-case corpus with no wrong verdicts
+        run: |
+          set -euo pipefail
+          ulimit -s 8192
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,time
+          root=pathlib.Path('/tmp/tests')
+          rows=[]
+          for bucket,expected in (('good',0),('bad',1)):
+              for fixture in sorted((root/bucket).rglob('*.ndjson')):
+                  raw=fixture.read_bytes()
+                  started=time.monotonic()
+                  proc=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+                    input=raw,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                    timeout=30)
+                  row={'name':str(fixture.relative_to(root/bucket)).removesuffix('.ndjson'),
+                       'bucket':bucket,'expected':expected,'actual':proc.returncode,
+                       'seconds':round(time.monotonic()-started,5),
+                       'sha256':hashlib.sha256(raw).hexdigest(),
+                       'diagnostic':proc.stderr.decode(errors='replace')[-1400:]}
+                  rows.append(row)
+                  if len(rows)%30==0:
+                      print('FROZEN_PROGRESS='+json.dumps({'processed':len(rows),'last':row['name']}),flush=True)
+          counts={'accept':sum(r['actual']==0 and r['expected']==0 for r in rows),
+                  'reject':sum(r['actual']==1 and r['expected']==1 for r in rows),
+                  'unknown':sum(r['actual']==2 for r in rows)}
+          wrong=[r for r in rows if r['actual'] in (0,1) and r['actual']!=r['expected']]
+          errors=[r for r in rows if r['actual'] not in (0,1,2)]
+          unknowns=[r['name'] for r in rows if r['actual']==2]
+          report={'commit':os.environ['GITHUB_SHA'],
+                  'subtree':subprocess.check_output(['git','rev-parse','HEAD:metatron-kernel'],text=True).strip(),
+                  'arena_commit':'b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42',
+                  'artifact_id':11272848230,'counts':counts,
+                  'unknowns':unknowns,'wrong':wrong,'errors':errors,'rows':rows}
+          pathlib.Path('metatron-kernel/evidence-out/nat-sub-succ/frozen196.json').write_text(
+             json.dumps(report,indent=2,sort_keys=True)+'\n')
+          print('FROZEN196_RESULT='+json.dumps({k:v for k,v in report.items() if k!='rows'},sort_keys=True),flush=True)
+          assert len(rows)==196,len(rows)
+          assert counts['accept']>=115,counts
+          assert counts['reject']==71,counts
+          assert counts['unknown']<=10,counts
+          assert not wrong,wrong
+          assert not errors,errors
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
