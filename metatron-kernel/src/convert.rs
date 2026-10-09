@@ -1557,15 +1557,20 @@ fn rigid_application_head_congruence(
             static SHADOW_BUSY: AtomicBool = AtomicBool::new(false);
             if SHADOW_BUSY.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire).is_ok() {
                 let mut shadow_results = Vec::new();
-                for trial_budget in [128usize, 256usize] {
+                for (trial_budget, policy) in [
+                    (128usize, DeltaPolicy::PreferredOnly),
+                    (256usize, DeltaPolicy::PreferredOnly),
+                    (64usize, DeltaPolicy::GuardedSemanticFallback),
+                    (128usize, DeltaPolicy::GuardedSemanticFallback),
+                ] {
                     let trial = convert_with_policy(
                         checker,
                         &TypeValue::Term(left.clone()),
                         &TypeValue::Term(right.clone()),
                         trial_budget,
-                        DeltaPolicy::PreferredOnly,
+                        policy,
                     );
-                    shadow_results.push((trial_budget, trial));
+                    shadow_results.push((trial_budget, policy, trial));
                 }
                 SHADOW_BUSY.store(false, Ordering::Release);
                 eprintln!("NUCLEUS_RIGID_SHADOW:head={rigid_head:?}:arity={}:argument={arg_index}:baseline={argument_conversion:?}:trials={shadow_results:?}", left_args.len());
