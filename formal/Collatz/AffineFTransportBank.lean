@@ -29,7 +29,8 @@ theorem affine_F_transport_lower_merge
       (a + M * q) k hodd heven hnextodd
   have hscaled :
       3 * (a + M * q) + 2 = (3 * a + 2) + (3 * M) * q := by
-    ring
+    simp [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc, Nat.add_comm,
+      Nat.add_left_comm]
   have hwitness := affine_reverse_sound hword q
   refine ⟨hpPos, hlt, k + 2, t + (k + 2), ?_⟩
   calc
@@ -74,8 +75,9 @@ theorem source_45_reverse_all_offsets (q : Nat) :
     iter shortcut 9 (31 + 512 * q) =
       3 * (45 + 729 * q) + 2 := by
   have hw := affine_reverse_sound source_45_reverse_word q
-  simpa [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc, Nat.add_comm,
-         Nat.add_left_comm] using hw
+  calc
+    iter shortcut 9 (31 + 512 * q) = 137 + 2187 * q := hw
+    _ = 3 * (45 + 729 * q) + 2 := by omega
 
 /-- CONDITIONAL all-depth true lower-source coalescence for the
     45 mod 729 family, at ANY initial odd-run length. -/
