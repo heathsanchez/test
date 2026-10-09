@@ -97,7 +97,7 @@ jobs:
           assert all(r['actual']!=0 for r in result if r['expected']==-1), 'false-index accepted'
           assert all(r['actual']==1 for r in result if r['expected']==1), 'malformed recursor not rejected'
           PY
-      - name: Prove Nat.succ_sub_succ_eq_sub in independent pinned exports
+      - name: Probe Nat.succ_sub_succ_eq_sub in independent pinned exports
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -121,14 +121,16 @@ jobs:
                 env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_NAT_ADDONE':'1',
                                 'NUCLEUS_TRACE_NAT_SUBSUCC':'1',
                                 'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
-                                'NUCLEUS_TRACE_DEPENDENCY_GAP':'1'})
+                                'NUCLEUS_TRACE_DEPENDENCY_GAP':'1',
+                                'NUCLEUS_TRACE_NEUTRAL_HEADS':'1'})
               lines=p.stderr.decode(errors='replace').splitlines()
               row={'name':name,'actual':p.returncode,'sha256':hashlib.sha256(raw).hexdigest(),
                    'nat_add_one':sum('NUCLEUS_NAT_ADDONE:checked-one' in t for t in lines),
                    'last':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-4:],
                    'first_app':[x[:1000] for x in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in x][:7],
                    'last_app':[x[:1000] for x in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in x][-4:],
-                   'type_gaps':[x[:1700] for x in lines if 'NUCLEUS_DEPENDENCY_GAP:' in x][-4:]}
+                   'type_gaps':[x[:1700] for x in lines if 'NUCLEUS_DEPENDENCY_GAP:' in x][-4:],
+                   'last_neutral':[x[:1100] for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-14:]}
               rows.append(row)
               print('SUCC_SUB_SUCC='+json.dumps(row,sort_keys=True),flush=True)
           out=pathlib.Path('metatron-kernel/evidence-out/nat-sub-succ')
