@@ -1011,7 +1011,7 @@ impl<'a> TypeChecker<'a> {
                 }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_REFUTATION_AS_UNKNOWN").is_some()
-                    && context.len() == 7
+                    && (context.len() == 12 || context.len() == 4)
                     && let Judgment::Refuted { obstruction } = &conversion
                     && conversion_refutation_is_unknown
                     && !definite_conversion_obstruction(obstruction.0)
