@@ -110,6 +110,7 @@ theorem source27_reduced_root3_earlier_is_three_root (t : Nat) :
     have h6 : (2 : Nat) * 3 = 6 := by decide
     rw [← h6]
     simp [Nat.mul_assoc]
+    omega
   rw [heq]
   omega
 
@@ -128,6 +129,7 @@ theorem source27_reduced_root3_is_old_dyadic_subfamily (t : Nat) :
   have hp : (2 : Nat) ^ 66 = 2 ^ 59 * 128 := by decide
   rw [hp]
   simp [Nat.mul_assoc]
+  omega
 
 theorem source27_root_and_previous_direct_descent_coexist (t : Nat) :
     LowerMerge shortcut (27 + 2 ^ 66 * t)
