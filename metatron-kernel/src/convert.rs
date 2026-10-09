@@ -200,6 +200,16 @@ fn convert_in_context_with_congruence(
             continue;
         }
 
+        // Lean proof irrelevance after *independent* proposition formation
+        // and exact type conversion. Unlike a FreeId shortcut this checks
+        // the theorem application's argument before certifying a proof.
+        if depth == context.len()
+            && let (TypeValue::Term(lhs),TypeValue::Term(rhs))=(&left,&right)
+            && checker.checked_proof_vs_local_in_context(lhs,rhs,context,remaining)
+        {
+            continue;
+        }
+
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
             && unit_like_free_pair(checker, left_term, right_term, &unit_like_frees, remaining)
         {
