@@ -66,6 +66,26 @@ theorem affine_reverse_lower_merge_all_offsets
         iter shortcut j r + 3 ^ oddCount r j * q := parity_cylinder_shift r j q
     _ = iter shortcut t (p + c * q) := (affine_reverse_sound hword q).symm
 
+/-- The source-relative theorem matching the actual V109 bounded compiler:
+    a reverse certificate may start from any forward prefix j of a
+    deeper cylinder of depth j+h. No forward-prefix bits are discarded. -/
+theorem affine_reverse_lower_merge_prefix_all_offsets
+    (r j h q p c t : Nat)
+    (hword : AffineReverse
+      (iter shortcut j r) (2 ^ h * 3 ^ oddCount r j) p c t)
+    (hbelow : p < r) (hslope : c ≤ 2 ^ (j + h)) :
+    LowerMerge shortcut (r + 2 ^ (j + h) * q) (p + c * q) := by
+  have hmul := Nat.mul_le_mul_right q hslope
+  have hlt : p + c * q < r + 2 ^ (j + h) * q := by omega
+  refine ⟨hlt, j, t, ?_⟩
+  calc
+    iter shortcut j (r + 2 ^ (j + h) * q) =
+      iter shortcut j r + (2 ^ h * 3 ^ oddCount r j) * q :=
+        parity_prefix_shift r j h q
+    _ = iter shortcut t (p + c * q) := (affine_reverse_sound hword q).symm
+
+#print axioms affine_reverse_lower_merge_prefix_all_offsets
+
 #print axioms shortcut_double_predecessor
 #print axioms affine_reverse_sound
 #print axioms affine_reverse_lower_merge_all_offsets
