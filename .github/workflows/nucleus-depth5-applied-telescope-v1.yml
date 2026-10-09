@@ -127,6 +127,7 @@ jobs:
               if 'magma-list-pair' in name:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
                   extra['NUCLEUS_TRACE_RECURSOR_MAJOR']='1'
+                  extra['NUCLEUS_TRACE_EXACT_APP_OBLIGATION']='1'
                   extra['NUCLEUS_TRACE_CAPTURED_FUNCTION_RECOVERY']='1'
                   extra['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE']='1'
                   extra['NUCLEUS_TRACE_NESTED_REC_RHS']='1'
@@ -151,7 +152,8 @@ jobs:
               major=[x for x in lines if 'NUCLEUS_NATREC_MAJOR_AUTHORITY:' in x]
               row={'case':name,'return_code':p.returncode,'downstream_last':downstream[-8:],
                    'typed_proofs':local[-4:],'app_errors':app[-4:],
-                   'function_recovery':[x for x in lines if 'NUCLEUS_CAPTURED_FUNCTION_RECOVERY:' in x][-16:],'major_census':major[-4:],
+                   'function_recovery':[x for x in lines if 'NUCLEUS_CAPTURED_FUNCTION_RECOVERY:' in x][-16:],
+                   'exact_app_obligations':[x for x in lines if 'NUCLEUS_EXACT_APP_OBLIGATION:' in x][-35:],'major_census':major[-4:],
                    'neutral_mismatch':[x for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-6:],
                    'recursor_major':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR:' in x][-8:],
                    'recursor_major_value':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR_VALUE:' in x][-8:],
@@ -217,8 +219,8 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
-          print('CAPTURED_FUNCTION_PI_196_GAIN',flush=True)
+          assert accepted==118 and unknown==7, 'DIAGNOSTIC_CHANGED_FROZEN196'
+          print('CAPTURED_FUNCTION_FIRST_RESIDUAL_DIAGNOSTIC',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
