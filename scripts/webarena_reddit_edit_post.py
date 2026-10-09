@@ -20,30 +20,42 @@ def query_phrase(post):
 
 async def candidates(page,base,post):
     q=query_phrase(post)
-    r=await page.goto(base+"/search?q="+quote(q),wait_until="networkidle",timeout=120000)
-    if r is None or r.status!=200: raise RuntimeError("reddit search failed")
-    rows=[]
-    subs=page.locator(".submission")
-    for i in range(await subs.count()):
-        sub=subs.nth(i)
-        link=sub.locator("a.submission__link").first
-        if await link.count()==0: continue
-        title=clean(await link.inner_text())
-        submitter=sub.locator("a.submission__submitter").first
-        username=clean(await submitter.inner_text()) if await submitter.count() else ""
-        if username.casefold()!="MarvelsGrantMan136".casefold(): continue
-        href=None
-        links=sub.locator("a.text-sm")
-        for j in range(await links.count()):
-            h=await links.nth(j).get_attribute("href")
-            if h and "/f/" in h:
-                href=h; break
-        if not href: continue
-        score_el=sub.locator(".vote__net-score").first
-        votes=parse_score(await score_el.inner_text()) if await score_el.count() else 0
-        rows.append({"title":title,"href":urljoin(base,href),"votes":votes,"match":sim(q,title)})
+    words=q.split()
+    queries=[q]
+    for n in range(len(words)-1,2,-1):
+        candidate=" ".join(words[:n])
+        if candidate not in queries:
+            queries.append(candidate)
+    rows=[]; seen=set()
+    for query in queries:
+        r=await page.goto(base+"/search?q="+quote(query),wait_until="networkidle",timeout=120000)
+        if r is None or r.status!=200: continue
+        subs=page.locator(".submission")
+        for i in range(await subs.count()):
+            sub=subs.nth(i)
+            link=sub.locator("a.submission__link").first
+            if await link.count()==0: continue
+            title=clean(await link.inner_text())
+            submitter=sub.locator("a.submission__submitter").first
+            username=clean(await submitter.inner_text()) if await submitter.count() else ""
+            if username.casefold()!="MarvelsGrantMan136".casefold(): continue
+            href=None
+            links=sub.locator("a.text-sm")
+            for j in range(await links.count()):
+                h=await links.nth(j).get_attribute("href")
+                if h and "/f/" in h:
+                    href=h; break
+            if not href: continue
+            href=urljoin(base,href)
+            if href in seen: continue
+            seen.add(href)
+            score_el=sub.locator(".vote__net-score").first
+            votes=parse_score(await score_el.inner_text()) if await score_el.count() else 0
+            rows.append({"title":title,"href":href,"votes":votes,"match":sim(q,title),"query":query})
+        if rows and max(x["match"] for x in rows)>=0.42:
+            break
     if not rows: raise RuntimeError(f"no owned post candidates for {q!r}")
-    rows=[x for x in rows if x["match"]>=0.42] or rows
+    rows=[x for x in rows if x["match"]>=0.34] or rows
     if "lowest vote count" in post.casefold():
         rows.sort(key=lambda x:(x["votes"],-x["match"]))
     else:
