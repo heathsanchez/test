@@ -64,7 +64,7 @@ theorem three_reverse_ray_unique :
       calc
         x = 2 ^ k * (2 * y) := hx
         _ = 2 ^ (k + 1) * y := by
-          simp [pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+          simp [Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
 
 theorem shortcut_of_double (y : Nat) :
     shortcut (2 * y) = y := by
@@ -82,7 +82,7 @@ theorem three_reverse_ray_exists :
   | succ k ih =>
       intro y
       have hp : 2 ^ (k + 1) * y = 2 * (2 ^ k * y) := by
-        simp [pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+        simp [Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
       calc
         iter shortcut (k + 1) (2 ^ (k + 1) * y) =
             iter shortcut k (shortcut (2 ^ (k + 1) * y)) := rfl
@@ -108,23 +108,27 @@ theorem no_lower_preimage_of_three_multiple
   intro h
   have heq : p = 2 ^ k * y :=
     (all_preimages_of_three_multiple k p y hy).mp h
-  have hp : (1 : Nat) ≤ 2 ^ k := by positivity
+  have hpowpos : 0 < (2 : Nat) ^ k :=
+    Nat.pow_pos (by decide)
+  have hp : (1 : Nat) ≤ 2 ^ k := by omega
   have hle : y ≤ 2 ^ k * y := by
     simpa using (Nat.mul_le_mul_right y hp)
-  omega
+  have hlt' : 2 ^ k * y < y := by simpa only [heq] using hlt
+  exact (Nat.not_lt_of_ge hle) hlt'
 
 /-- This is a structural guarantee for EVERY lawful two-clock
     source-indexed witness, not an assumption about the Collatz conjecture. -/
 theorem three_divisible_join_has_positive_source_clock
     (w : LawfulFutureJoin) (hy : w.source % 3 = 0) :
     0 < w.sourceClock := by
-  by_contra hnot
-  have hz : w.sourceClock = 0 := by omega
-  have hp : iter shortcut w.earlierClock w.earlier = w.source := by
-    simpa [hz, iter] using w.common.symm
-  exact
-    (no_lower_preimage_of_three_multiple
-       w.source w.earlier w.earlierClock hy w.smaller) hp
+  by_cases hz : w.sourceClock = 0
+  · have hp : iter shortcut w.earlierClock w.earlier = w.source := by
+      simpa [hz, iter] using w.common.symm
+    have bad :=
+      (no_lower_preimage_of_three_multiple
+         w.source w.earlier w.earlierClock hy w.smaller) hp
+    exact False.elim bad
+  · omega
 
 /-!
 A source-relative protected-future SEPARATOR: n=27 has exact earliest
