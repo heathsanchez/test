@@ -107,7 +107,24 @@ jobs:
           print(json.dumps({k: v for k, v in report.items() if k != "rows"}, sort_keys=True))
 
           assert len(rows) == 196, len(rows)
-          assert counts == {"accept": 115, "reject": 71, "unknown": 10}, counts
+          # Re-close the protected future: only the ten historically UNKNOWN
+          # positive fixtures may improve. Every previously decided verdict
+          # must remain decided correctly.
+          old_unknowns = {
+              "init-prelude",
+              "perf/folded-constant-first",
+              "perf/folded-constant-last",
+              "perf/fueled-chain",
+              "perf/grind-ring-5",
+              "perf/magma-list-deep-n21",
+              "perf/magma-list-deep-n36",
+              "perf/magma-list-pair-n21",
+              "perf/magma-list-pair-n7",
+              "perf/shared-subterm",
+          }
+          assert set(unknowns).issubset(old_unknowns), unknowns
+          assert counts["accept"] >= 115 and counts["reject"] == 71, counts
+          assert counts["unknown"] == 196-counts["accept"]-counts["reject"], counts
           assert not wrong, wrong
           assert not errors, errors
           by_test = {r["test"].removesuffix(".ndjson"): r for r in rows}
