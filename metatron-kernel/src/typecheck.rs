@@ -701,7 +701,39 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
-                let Some((domain, body)) = self.pi_view(function_type.clone(), *remaining) else {
+                // An existing, independently checked capability can infer
+                // captured syntax through its actual immutable environments.
+                // Only invoke it when ordinary function inference was UNKNOWN,
+                // never after a definite typing refutation. Its own App rule
+                // re-checks every argument against the dependent Pi domain.
+                let ordinary_pi = self.pi_view(function_type.clone(), *remaining);
+                let recovered_pi = if ordinary_pi.is_none()
+                    && function_type.is_unknown() && context.len() >= 4
+                {
+                    let mut probe_fuel = (*remaining).min(2048);
+                    let closure = self.closure(*fun, frame.clone());
+                    let recovered = self.infer_exact_closure_in_context(
+                        &closure, context, &mut probe_fuel, 0,
+                    );
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_CAPTURED_FUNCTION_RECOVERY").is_some() {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static TRACES: AtomicUsize = AtomicUsize::new(0);
+                        if TRACES.fetch_add(1,Ordering::Relaxed) < 32 {
+                            eprintln!(
+                                "NUCLEUS_CAPTURED_FUNCTION_RECOVERY:app={expression:?}:fun={fun:?}:context={}:original={function_type:?}:recovered={recovered:?}",
+                                context.len()
+                            );
+                        }
+                    }
+                    recovered.and_then(|ty| self.pi_view(
+                        Judgment::proven(ty, "checked-captured-function-type"),
+                        probe_fuel,
+                    ))
+                } else {
+                    None
+                };
+                let Some((domain, body)) = ordinary_pi.or(recovered_pi) else {
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
                         let mut reducible = None;
