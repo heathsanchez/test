@@ -3,7 +3,7 @@ name: WebArena integrated blind GitLab fork three-task qualification
 on:
   workflow_dispatch:
   push:
-    branches: [webarena-promote-blind-fork-v1, webarena-verified-capability-compiler-v1]
+    branches: [webarena-fork-reconciled-v1, webarena-verified-capability-compiler-v1]
     paths:
       - '.github/workflows/webarena_gitlab_fork_integrated_3.yml'
       - 'scripts/webarena_blind_proven_additions.py'
