@@ -1014,7 +1014,18 @@ impl<'a> Machine<'a> {
                 Some(Expr::Const { name, levels })
                     if Some(*name) == nat.beq && levels.is_empty())
         });
-        let major_cap = if bool_rules && nat_beq_major { 256 } else { 16 };
+        let certified_nat_rec = self.nat_primitives.as_ref().is_some_and(|nat| {
+            reduction.rules.len() == 2
+                && matches_rule(nat.zero, 0)
+                && matches_rule(nat.succ, 1)
+        });
+        let major_cap = if bool_rules && nat_beq_major {
+            256
+        } else if certified_nat_rec {
+            128
+        } else {
+            16
+        };
         let exposed = self
             .expose_internal(
                 target.clone(),
