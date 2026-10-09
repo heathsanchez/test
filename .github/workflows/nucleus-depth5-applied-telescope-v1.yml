@@ -1,8 +1,8 @@
-name: Nucleus three-constructor recursor-shape failure census
+name: Nucleus three-constructor recursor motive and minor premise
 
 on:
   push:
-    branches: [nucleus-three-ctor-shape-failure-v1]
+    branches: [nucleus-three-ctor-recursor-premise-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -146,11 +146,12 @@ jobs:
               diagnostics=subprocess.run(
                   ['/tmp/nucleus'],input=original,stdout=subprocess.DEVNULL,
                   stderr=subprocess.PIPE,timeout=90,
-                  env=os.environ|{'NUCLEUS_TRACE_GENERIC_NONREC':'1',
+                  env=os.environ|{'NUCLEUS_TRACE_THREE_CTOR_REC_SHAPE':'1',
+                                  'NUCLEUS_TRACE_GENERIC_NONREC':'1',
                                   'NUCLEUS_TRACE_DOWNSTREAM':'1'}
               )
               trace=[line for line in diagnostics.stderr.decode(errors='replace').splitlines()
-                     if 'NUCLEUS_GENERIC' in line or 'NUCLEUS_DOWNSTREAM' in line][-22:]
+                     if 'NUCLEUS_GENERIC' in line or 'NUCLEUS_THREE_CTOR_REC_SHAPE' in line or 'NUCLEUS_DOWNSTREAM' in line][-22:]
               controls=[]
               for label,field_path in (
                   ('first-ctor-field-count',('ctors',0,'numFields')),
@@ -171,6 +172,7 @@ jobs:
               print('NUCLEUS_THREE_CONSTRUCTOR='+json.dumps(record),flush=True)
               rows.append(record)
               assert accepted==2,('unexpectedly accepted an unqualified constructor block',record)
+              assert any('NUCLEUS_THREE_CTOR_REC_SHAPE:' in line for line in trace), ('recursor trace missing',record)
               assert all(x['rc'] in (1,2) for x in controls),('unsafe induction admitted',record)
           p=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/three-constructor-report.json')
           p.parent.mkdir(parents=True,exist_ok=True)
@@ -346,7 +348,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-three-ctor-shape-${{ github.sha }}
+          name: nucleus-three-ctor-premises-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -359,7 +361,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="three ctor shape: ${{ job.status }}; no complete replay"
+          description="three ctor premises: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -370,6 +372,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/three-ctor-shape" \
+            -f context="nucleus/three-ctor-premises" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
