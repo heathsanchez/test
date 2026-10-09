@@ -594,6 +594,9 @@ impl<'a> TypeChecker<'a> {
                         "NUCLEUS_TYPED_PROJECTION_CHECK:expression={expression:?}:frame={}:context_len={}:result={conversion:?}:inferred={value:?}:expected={expected:?}",
                         frame.id(), context.len(),
                     );
+                    if let TypeValue::Term(c) = &value {
+                        eprintln!("NUCLEUS_INFERRED_WHNF:{:?}", self.machine().expose(c.clone(), Transparency::Full, 512));
+                    }
                 }
                 match conversion {
                     Judgment::Refuted { obstruction }
