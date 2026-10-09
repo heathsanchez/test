@@ -1,0 +1,122 @@
+name: Nucleus free-head relevance separator
+
+on:
+  push:
+    branches: [nucleus-free-head-relevance-separator-v1]
+    paths:
+      - ".github/workflows/nucleus-free-head-relevance-separator-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Bind exact certified-projection source tree
+        run: |
+          set -euo pipefail
+          printf 'checker_source_tree=%s\n' "$(git rev-parse HEAD:metatron-kernel)"
+          printf 'qualification_commit=%s\n' "$GITHUB_SHA"
+
+      - name: Verify source equation regression first
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml symbolic_nat_sub_succ_zero_is_exact_source_equation -- --exact --nocapture || {
+            cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml symbolic_nat_sub_succ_zero_is_exact_source_equation -- --nocapture
+            exit 1
+          }
+
+      - name: Build and test corrected Nucleus
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+          sha256sum /tmp/nucleus
+
+      - name: Fetch immutable 196-case Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests metatron-kernel/evidence-out/final-qualification-v1
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+
+      - name: Diagnose exact checked dependent Pi body failure without promotion
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,subprocess,sys
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/arena-tests')
+          names_to_check={
+            'init-prelude':'eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5',
+            'perf/magma-list-pair-n7':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'}
+          rows=[]
+          for name,digest in names_to_check.items():
+            data=(root/'good'/(name+'.ndjson')).read_bytes()
+            assert hashlib.sha256(data).hexdigest()==digest
+            namemap={0:''};prefix=[];found=False
+            for line in data.splitlines(keepends=True):
+              obj=json.loads(line);prefix.append(line)
+              if 'in' in obj:
+                v=obj.get('str',obj.get('num'))
+                ancestor=namemap.get(v['pre'],'')
+                namemap[obj['in']]=ancestor+('.' if ancestor else '')+str(v.get('str',v.get('i')))
+              if 'thm' in obj and namemap.get(obj['thm']['name'])=='Nat.modCore_lt':
+                found=True;break
+            assert found,name
+            body=b''.join(prefix)
+            p=subprocess.run(['/tmp/nucleus'],input=body,stdout=subprocess.DEVNULL,
+              stderr=subprocess.PIPE,timeout=45,
+              env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_FREE_RELEVANCE':'1',
+                               
+                               
+                               'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                               'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
+                               'NUCLEUS_TRACE_DEPENDENCY_GAP':'1'})
+            trace=p.stderr.decode(errors='replace').splitlines()
+            row={'name':name,'rc':p.returncode,'sha256':hashlib.sha256(body).hexdigest(),
+                 'relevance_events':[s for s in trace if 'NUCLEUS_FREE_RELEVANCE:' in s][-56:],
+                 'rigid_arg_gaps':[],
+                 'rigid_shadows':[],
+                 'neutral_mismatches':[s for s in trace if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in s][-40:],
+                 'typed_gaps':[s for s in trace if 'NUCLEUS_DEPENDENCY_GAP:' in s][:4],
+                 'terminal':[s for s in trace if 'NUCLEUS_DOWNSTREAM:' in s][-3:]}
+            print('MODCORE_TEST='+json.dumps(row),flush=True)
+            rows.append(row)
+            assert p.returncode in (0,2),row
+          for name,body,valid in [
+             ('false-index',false_index(extract((root/'good/init-prelude.ndjson').read_bytes())),False),
+             ('nested-unused-param',(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),False)]:
+            p=subprocess.run(['/tmp/nucleus'],input=body,stdout=subprocess.DEVNULL,timeout=30)
+            print('NEGATIVE_TEST='+json.dumps({'name':name,'rc':p.returncode}),flush=True)
+            assert p.returncode in ((1,2) if name=='false-index' else (1,))
+          path=pathlib.Path('metatron-kernel/evidence-out/final-qualification-v1/modcore-bidir.json')
+          path.parent.mkdir(parents=True,exist_ok=True)
+          path.write_text(json.dumps(rows,indent=2))
+          print('DIAGNOSTIC_ONLY_NO_ACCEPTANCE_PROMOTION',flush=True)
+          PY
+
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-free-head-relevance-separator-${{ github.sha }}
+          path: metatron-kernel/evidence-out/final-qualification-v1
+          if-no-files-found: warn
