@@ -1456,6 +1456,144 @@ impl<'a> Machine<'a> {
         )
     }
 
+    /// Evaluate only a source-registered recursor's constructor iota rule.
+    ///
+    /// This handles *evaluated neutrals* retained during conversion, rather
+    /// than guessing a constructor from the desired output. The major may be
+    /// another independently registered recursor: recurse only while the
+    /// major is backed by an exact checked rule, then replay the chosen
+    /// rule's actual RHS through its lambda telescope.
+    ///
+    /// A neutral major without a constructor witness remains UNKNOWN.
+    pub(crate) fn qualified_nested_recursor_result(
+        &self,
+        neutral: &Neutral,
+        budget: usize,
+    ) -> Judgment<Value> {
+        self.qualified_nested_recursor_result_in(neutral, budget.min(2048), 0)
+    }
+
+    fn qualified_nested_recursor_result_in(
+        &self,
+        neutral: &Neutral,
+        budget: usize,
+        depth: usize,
+    ) -> Judgment<Value> {
+        if budget < 48 || depth >= 5 {
+            return Judgment::unknown("nested-recursor-iota-budget");
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return Judgment::unknown("nested-recursor-iota-nonconst");
+        };
+        let Some(reduction) = self.recursor_reductions.get(name) else {
+            return Judgment::unknown("nested-recursor-iota-no-qualified-rule");
+        };
+        if reduction.level_params.len() != levels.len() {
+            return Judgment::unknown("nested-recursor-iota-levels");
+        }
+        let required = reduction.num_params.saturating_add(1)
+            .saturating_add(reduction.rules.len())
+            .saturating_add(reduction.num_indices)
+            .saturating_add(1);
+        if neutral.spine.len() != required {
+            return Judgment::unknown("nested-recursor-iota-arity");
+        }
+        let major = neutral.spine.last().expect("required arity includes major");
+        let major_result = self.expose(
+            major.clone(), Transparency::Full, budget.min(256),
+        );
+        let mut major_value = match major_result.proven_value() {
+            Some(value) => value.clone(),
+            None => return Judgment::unknown("nested-recursor-iota-major-exposure"),
+        };
+        // The recursor itself can be stuck even though its captured major
+        // is later proved canonical. Defer to the installed rule, bounded.
+        if let Value::Neutral(nested) = &major_value {
+            if self.recursor_reductions.contains_key(
+                match &nested.head {
+                    NeutralHead::Const { name, .. } => name,
+                    _ => return Judgment::unknown("nested-recursor-iota-major-neutral"),
+                }
+            ) {
+                major_value = match self.qualified_nested_recursor_result_in(
+                    nested, budget.saturating_sub(16) / 2, depth + 1,
+                ) {
+                    Judgment::Proven { value, .. } => value,
+                    Judgment::Refuted { .. } | Judgment::Unknown { .. } =>
+                        return Judgment::unknown("nested-recursor-iota-child-unresolved"),
+                };
+            }
+        }
+        let Value::Neutral(Neutral {
+            head: NeutralHead::Const {
+                name: constructor,
+                levels: constructor_levels,
+            },
+            spine: constructor_args,
+        }) = major_value else {
+            return Judgment::unknown("nested-recursor-iota-no-constructor");
+        };
+        let Some(rule) = reduction.rules.iter().find(|rule| {
+            rule.constructor == constructor
+                && constructor_args.len() == rule.num_params + rule.num_fields
+        }) else {
+            return Judgment::unknown("nested-recursor-iota-unmatched-rule");
+        };
+        // Check the actual constructor's universe instantiation against
+        // the rule declared in the same certified recursor interface.
+        if rule.constructor_level_params.len() != constructor_levels.len() {
+            return Judgment::unknown("nested-recursor-iota-constructor-level-arity");
+        }
+        for (parameter, actual) in rule.constructor_level_params.iter().zip(&constructor_levels) {
+            let Some(index) = reduction.level_params.iter().position(|name| name == parameter) else {
+                return Judgment::unknown("nested-recursor-iota-constructor-level-map");
+            };
+            if levels[index] != *actual {
+                return Judgment::unknown("nested-recursor-iota-constructor-level-mismatch");
+            }
+        }
+        let substitution = reduction.level_params.iter().copied()
+            .zip(levels.iter().cloned()).collect::<Vec<_>>();
+        let mut result = Closure::with_levels(
+            rule.rhs, EnvFrame::empty(), LevelSubstitution::new(substitution),
+        );
+        let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+        let mut arguments = neutral.spine[..prefix_len].to_vec();
+        arguments.extend(constructor_args[rule.num_params..].iter().cloned());
+
+        // The RHS is the independently checked recursor rule. Consume
+        // exactly its declared binders. Unknown shapes do not grant iota.
+        for arg in arguments {
+            let mut lets = 0usize;
+            loop {
+                match self.expressions.get(result.expr) {
+                    Some(Expr::Lam { body, .. }) => {
+                        result = result.sibling(*body, result.env.extend(arg.clone()));
+                        break;
+                    }
+                    Some(Expr::Let { value, body, .. }) if lets < 16 => {
+                        let value = result.sibling(*value, result.env.clone());
+                        result = result.sibling(*body, result.env.extend(value));
+                        lets += 1;
+                    }
+                    _ => return Judgment::unknown("nested-recursor-iota-rhs-telescope"),
+                }
+            }
+        }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_NESTED_RECURSOR_IOTA").is_some() {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static PRINTED: AtomicUsize = AtomicUsize::new(0);
+            if PRINTED.fetch_add(1, Ordering::Relaxed) < 32 {
+                eprintln!(
+                    "NUCLEUS_NESTED_RECURSOR_IOTA:depth={depth}:recursor={name:?}:constructor={constructor:?}:rule_fields={}:source_rhs={:?}",
+                    rule.num_fields,rule.rhs
+                );
+            }
+        }
+        self.expose(result, Transparency::Full, budget.saturating_sub(24).min(512))
+    }
+
     fn rule_constructor_application(
         &self,
         target: &Closure,
