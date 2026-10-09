@@ -10,6 +10,7 @@ on:
       - scripts/webarena_blind_matrix.py
       - tests/test_webarena_blind_retrieval_bridge.py
       - tests/test_webarena_blind_matrix.py
+      - tests/test_webarena_matrix_crosssite_services.py
       - scripts/webarena_blind_proven_additions.py
       - tests/test_webarena_blind_proven_additions.py
       - scripts/webarena_shopping_sort_blind.py
@@ -89,7 +90,7 @@ jobs:
           if [ "$LANE" = gitlab ] || [ "$LANE" = crosssite ]; then
             start_site gitlab am1n3e/webarena-verified-gitlab@sha256:673ba94d757c5b3f4bb55751ad8b745a33bad2b987349322403cbc41035a92e0 8023:8023 http://localhost:8023/users/sign_in
           fi
-          if [ "$LANE" = shopping ]; then
+          if [ "$LANE" = shopping ] || [ "$LANE" = crosssite ]; then
             start_site shopping am1n3e/webarena-verified-shopping@sha256:3e8cb9b945ea9b1c94ab26dba53e8d12dd0406abbf4bf686fd3bb2b6a5908feb 7770:80 http://localhost:7770
           fi
           if [ "$LANE" = shopping_admin ]; then
