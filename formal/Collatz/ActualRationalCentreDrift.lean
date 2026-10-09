@@ -61,6 +61,7 @@ theorem v148_odd_step_preserves_exact_centre
     simp [v148ActualCentre, bias, he, Nat.pow_succ,
       Nat.mul_add, Nat.mul_assoc, Nat.mul_comm,
       Nat.mul_left_comm]
+    omega
   change
     (v148ActualCentre n (k+1)).oddCoefficient *
       (v148ActualCentre n k).offset =
