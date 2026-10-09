@@ -1,0 +1,67 @@
+name: Collatz V116 biadic stutter obstruction
+on:
+  push:
+    branches: [collatz-v112-biadic-stutter-obstruction-v116]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-and-lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reproduce exact natural-source biadic stutter witnesses
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v116_biadic_stutter.py > evidence/v116-result.json
+          python3 - <<'PY'
+          import json
+          p=json.load(open("evidence/v116-result.json"))
+          assert p["schema"]=="COLLATZ_V116_BIADIC_STUTTER_NO_GO"
+          assert p["global_collatz"]=="UNKNOWN" and p["qed"] is False
+          assert len(p["cases"])==6
+          assert all(z["all_stutter_states_equal"] and
+                     z["source_capped_returns_in_full_prefix"]==0 for z in p["cases"])
+          z=next(x for x in p["cases"] if (x["d"],x["q"],x["stutter_transitions"])==(12,7,100))
+          assert z["modulus"]==8957952 and z["endpoint_residue"]==8957951
+          assert z["first_v2"]-z["last_v2"]==100
+          print("EXACT_V116_BIADIC_STUTTER_REGRESSIONS_PASS_GLOBAL_UNKNOWN")
+          PY
+      - name: Kernel check actual all-ones corridor and declared axioms
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/build.log
+          lake env lean -DautoImplicit=false formal/Collatz/BiadicStutterObstruction.lean | tee evidence/v116-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v116-lean.log
+          grep -q 'v116_all_ones_actual_prefix' evidence/v116-lean.log
+      - name: Seal checked boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > evidence/commit.txt
+          python3 - <<'PY'
+          import hashlib,json
+          data=open("evidence/v116-result.json","rb").read()
+          seal=dict(
+            schema="COLLATZ_V116_QUALIFICATION",
+            status="BOUNDED_EXECUTABLE_PLUS_GENERIC_ACTUAL_PREFIX_THEOREM",
+            evidence_sha256=hashlib.sha256(data).hexdigest(),
+            universal_source_bar=False,
+            global_collatz="UNKNOWN",
+            qed=False)
+          open("evidence/qualification.json","w").write(
+              json.dumps(seal,sort_keys=True,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v116-biadic-stutter-obstruction
+          path: evidence/
+          if-no-files-found: error
