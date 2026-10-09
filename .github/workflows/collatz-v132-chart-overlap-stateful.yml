@@ -20,9 +20,9 @@ jobs:
           python3 -m research.collatz_ros_chart_overlap_v132             --bootstrap --input research/collatz_ros_state_v130.json             --output evidence/v132-state.json | tee evidence/v132-bootstrap.log
           python3 -m research.collatz_ros_chart_overlap_v132             --input evidence/v132-state.json --output evidence/v132-restart.json             | tee evidence/v132-restart.log
           cmp evidence/v132-state.json evidence/v132-restart.json
-          if [ -f research/collatz_ros_state_v132.json ]; then
-            cmp research/collatz_ros_state_v132.json evidence/v132-state.json
-          fi
+          cmp research/collatz_ros_state_v132.json evidence/v132-state.json
+          python3 -m research.collatz_ros_chart_overlap_v132             --input research/collatz_ros_state_v132.json             --output evidence/v132-committed-restart.json             | tee evidence/v132-committed-restart.log
+          cmp research/collatz_ros_state_v132.json evidence/v132-committed-restart.json
           python3 -m research.collatz_ros_chart_overlap_v132             --input evidence/v132-state.json             --revoke-support v131_chart_overlap_generic             --output evidence/v132-revoked.json | tee evidence/v132-revoked.log
           python3 - <<'PY'
           import json,hashlib,pathlib,subprocess
@@ -164,8 +164,7 @@ jobs:
           head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           assert head==p['source_commit']==f['source_commit']
           assert p['new_v132_sha256']==hashlib.sha256((root/'v132-state.json').read_bytes()).hexdigest()
-          if pathlib.Path('research/collatz_ros_state_v132.json').exists():
-              assert pathlib.Path('research/collatz_ros_state_v132.json').read_bytes()==(root/'v132-state.json').read_bytes()
+          assert pathlib.Path('research/collatz_ros_state_v132.json').read_bytes()==(root/'v132-state.json').read_bytes()
           assert f['status']=='WARRANTED_FORMAL_CONDITIONAL_COMPILER_AND_ROOT9_SPECIFIC_FAMILY'
           assert p['generic_premise_instances_only_bounded_exact']==1
           assert state['global_collatz']==p['global_collatz']==f['universal_Collatz']=='UNKNOWN'
