@@ -3184,7 +3184,11 @@ fn generic_nonrecursive_recursor_shape(
         let Some((ctor_domains,_))=pi_spine(export,ctor.ty,p+f) else{return false;};
         let Some((minor_fields,minor_result))=pi_spine(export,domains[p+1+j],f) else{return false;};
         for (k,(cd,md)) in ctor_domains[p..].iter().zip(&minor_fields).enumerate(){
-            if !expr_eq_with_bvar_shift(export,*cd,*md,k as u64,(1+j) as u64){return false;}
+            if !expr_eq_with_bvar_shift(export,*cd,*md,k as u64,(1+j) as u64)
+                && !checked_two_argument_erasure_matches(
+                    export,environment,*cd,*md,k as u64,(1+j) as u64,
+                )
+            {return false;}
         }
         let Some(Expr::App{fun:mm,arg:constructed})=export.exprs.get(minor_result) else{return false;};
         if !is_bvar(export,*mm,(f+j) as u64){return false;}
@@ -3251,6 +3255,51 @@ fn identity_alias_application_matches(
         export.exprs.get(value),
         Some(Expr::Lam { body, .. }) if is_bvar(export, *body, 0)
     )
+}
+
+/// A source-checked two-binder definition can erase an optional second
+/// argument by beta-delta when its exact value is λ x => λ y => x.
+///
+/// Example from an exported constructor signature:
+///     ((optParam Bool) Bool.false)  ≡  Bool.
+/// This is NOT justified by the name "optParam" or by shape of the target
+/// alone. The definition must already have passed the ordinary checker and
+/// its checked RHS must literally project the first binder. Other aliases
+/// and malformed definitions are not granted this conversion.
+fn checked_two_argument_erasure_matches(
+    export: &ResolvedExport,
+    environment: &Environment,
+    wrapped: ExprId,
+    plain: ExprId,
+    cutoff: u64,
+    shift: u64,
+) -> bool {
+    let Some(Expr::App { fun: applied_once, .. }) = export.exprs.get(wrapped)
+    else { return false };
+    let Some(Expr::App { fun: alias_head, arg: protected_first }) =
+        export.exprs.get(*applied_once)
+    else { return false };
+    if !expr_eq_with_bvar_shift(
+        export, *protected_first, plain, cutoff, shift
+    ) {
+        return false;
+    }
+    let Some(Expr::Const { name, levels }) = export.exprs.get(*alias_head)
+    else { return false };
+    let Some(declaration) = environment.get(*name)
+    else { return false };
+    if declaration.level_params.len() != levels.len() {
+        return false;
+    }
+    let Some(source_value) = declaration.value
+    else { return false };
+    let Some(Expr::Lam { body: second_lam, .. }) =
+        export.exprs.get(source_value)
+    else { return false };
+    let Some(Expr::Lam { body: first_binder, .. }) =
+        export.exprs.get(*second_lam)
+    else { return false };
+    matches!(export.exprs.get(*first_binder), Some(Expr::BVar(1)))
 }
 
 // A bounded extension of singleton-Prop admission: two proposition
