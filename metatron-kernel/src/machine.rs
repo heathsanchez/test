@@ -324,6 +324,17 @@ impl<'a> Machine<'a> {
             false,
             false,
         );
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE").is_some() {
+            static COUNT: std::sync::atomic::AtomicUsize =
+                std::sync::atomic::AtomicUsize::new(0);
+            if COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 96 {
+                eprintln!(
+                    "NUCLEUS_PROJECTION_FIELD_PROBE:type={type_name:?}:index={index}:constructor={:?}:structure={structure:?}:full_exposure={exposed:?}",
+                    spec.constructor,
+                );
+            }
+        }
         let Some(Value::Neutral(neutral)) = exposed.proven_value().map(|value| &value.value) else {
             return Judgment::unknown("projection-structure-stuck");
         };
