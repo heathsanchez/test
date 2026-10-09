@@ -78,7 +78,7 @@ theorem any_repeated_anchor_has_actual_admitted_return
   · simpa only [episode_stream_shift] using hAff
   · have hPrefix := episode_stream_matches_actual_shortcut a i
     rw [hPrefix]
-    simpa only [episode_stream_shift] using hTrace
+    simpa only [start, episode_stream_shift] using hTrace
   · exact episode_stream_time_shift a i k
 
 /-- The genuine remaining infinite-stream split. An arbitrary coherent
