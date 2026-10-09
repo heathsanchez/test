@@ -1,0 +1,70 @@
+name: Collatz V113 three-word consequence quotient
+on:
+  push:
+    branches: [collatz-v112-three-word-quotient-v113]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  three-word-exact-classifier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify independent three-word algebra and CRT source coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v113_three_word_quotient > evidence/v113-quotient.json
+          python3 - <<'PY'
+          import json,hashlib
+          path='evidence/v113-quotient.json'
+          d=json.load(open(path))
+          assert d['newly_classified']==1701
+          assert d['remaining_unknown']==167355
+          assert d['total_covered']==8790597
+          assert len(d['compressed_word_bank'])==3
+          assert len(d['records'])==1701
+          assert d['unique_qualifying_presentation_per_family']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          print('THREE_WORD_CRT_COALESCENCE_QUOTIENT_EXACT_BOUNDED')
+          print('SHA256',hashlib.sha256(open(path,'rb').read()).hexdigest())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v113-three-word-quotient-exact
+          path: evidence/
+          if-no-files-found: error
+  three-word-lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check three exact ten-step reverse-law schemata
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CylinderCoalescence.olean formal/Collatz/CylinderCoalescence.lean > evidence/v108.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ReverseAffineMerger.olean formal/Collatz/ReverseAffineMerger.lean > evidence/v109.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/Q7SourceMerger.olean formal/Collatz/Q7SourceMerger.lean > evidence/v110.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ScaledReverseMerger.olean formal/Collatz/ScaledReverseMerger.lean > evidence/v112.log
+          lake env lean -DautoImplicit=false formal/Collatz/ThreeWordInverseQuotient.lean | tee evidence/v113-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v108.log evidence/v109.log evidence/v110.log evidence/v112.log evidence/v113-lean.log
+          grep -q 'v113_r410_source_merge' evidence/v113-lean.log
+          grep -q 'v113_r1982_source_merge' evidence/v113-lean.log
+          grep -q 'v113_r2153_source_merge' evidence/v113-lean.log
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v113-three-word-lean-evidence
+          path: evidence/
+          if-no-files-found: error
