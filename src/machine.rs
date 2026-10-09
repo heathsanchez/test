@@ -1057,12 +1057,20 @@ impl<'a> Machine<'a> {
                     return None;
                 }
                 let predecessor = number.pred()?;
-                let pred_id = self.expressions.iter_raw().find_map(|(id, expr)| {
+                // Reuse the earliest indexed numeral first. This preserves
+                // the exhaustive fallback for exports that store it later,
+                // but avoids a full expression-table walk in the common case.
+                let pred_id = (0u64..4096).find_map(|id| {
+                    matches!(
+                        self.expressions.get(ExprId(id)),
+                        Some(Expr::NatLit(candidate)) if candidate == &predecessor
+                    ).then_some(ExprId(id))
+                }).or_else(|| self.expressions.iter_raw().find_map(|(id, expr)| {
                     match expr {
                         Expr::NatLit(candidate) if candidate == &predecessor => Some(ExprId(id)),
                         _ => None,
                     }
-                })?;
+                }))?;
                 if std::env::var_os("NUCLEUS_TRACE_NAT_IOTA").is_some() { eprintln!("NUCLEUS_NAT_LITERAL_IOTA:constructor_succ:pred_id={pred_id:?}"); }
                 Some((nat.succ, vec![Closure::new(pred_id, EnvFrame::empty())]))
             }
