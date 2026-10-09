@@ -803,6 +803,31 @@ fn definition_arguments_used(
     true
 }
 
+// Reference-derived, source-certified beta erasure: for a checked definition
+// with k leading lambdas, an argument is erasable only if its binder is
+// syntactically absent from the body after those k beta substitutions.
+// This is not a proof-irrelevance shortcut and is conservative if the
+// syntax support scan exceeds its bound.
+fn provably_absent_definition_arguments(
+    checker: &TypeChecker<'_>,
+    name: crate::id::NameId,
+    arity: usize,
+) -> Option<Vec<bool>> {
+    if arity == 0 || arity > 12 {
+        return None;
+    }
+    let mut body = checker.definition_value(name)?;
+    for _ in 0..arity {
+        let Expr::Lam { body: next, .. } = checker.expression(body)? else {
+            return None;
+        };
+        body = *next;
+    }
+    Some((0..arity)
+        .map(|i| !expression_uses_bvar(checker, body, (arity - 1 - i) as u64, 128))
+        .collect())
+}
+
 fn expression_uses_bvar(
     checker: &TypeChecker<'_>,
     expression: ExprId,
@@ -1443,7 +1468,18 @@ fn rigid_application_head_congruence(
         return None;
     };
 
-    for (left, right) in left_args.iter().zip(&right_args) {
+    let erased = provably_absent_definition_arguments(checker, *rigid_head, left_args.len());
+    for (i, (left, right)) in left_args.iter().zip(&right_args).enumerate() {
+        if erased.as_ref().is_some_and(|bits| bits[i]) {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_ABSENT_ARG").is_some() {
+                eprintln!(
+                    "NUCLEUS_CERTIFIED_ABSENT_ARG:constant={rigid_head:?}:arity={}:index={i}",
+                    left_args.len()
+                );
+            }
+            continue;
+        }
         match convert_with_policy(
             checker,
             &TypeValue::Term(left.clone()),
