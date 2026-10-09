@@ -1,8 +1,8 @@
-name: Nucleus Nat recursor zero minor census
+name: Nucleus certified Nat recursor zero iota qualification
 
 on:
   push:
-    branches: [nucleus-depth5-rec-zero-branch-v1]
+    branches: [nucleus-depth5-natrec-zero-iota-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -105,7 +105,8 @@ jobs:
           assert all(r.get('depth5_telescope') for r in rows),'Depth5 witness missing'
           proved=[r['case'] for r in rows if any('depth=5:' in x for x in r['local_proofs'])]
           print('DEPTH5_PROOF_CENSUS='+json.dumps({'depth5_proved':proved}),flush=True)
-          print('CAPTURE_FAILURE_DIAGNOSTIC_ONLY',flush=True)
+          assert all(r['rc']==0 for r in rows),'Nat.modCore_lt positive prefix must ACCEPT'
+          print('CHECKED_DEPTH5_PROP_PREFIX_PASS',flush=True)
           PY
 
       - name: Locate first post-certificate REJECT in protected positives
@@ -123,7 +124,7 @@ jobs:
                   env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1',
                                   'NUCLEUS_TRACE_LOCAL_PROOF_IRREL':'1',
                                   'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
-                                  'NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_CONSTRUCTOR_ARGUMENT':'1','NUCLEUS_TRACE_NATLIT_RIGID':'1'})
+                                  'NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_CONSTRUCTOR_ARGUMENT':'1','NUCLEUS_TRACE_NATLIT_RIGID':'1','NUCLEUS_TRACE_NATREC_ZERO_IOTA':'1'})
               lines=p.stderr.decode(errors='replace').splitlines()
               row={'case':name,'returncode':p.returncode,
                    'downstream':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-8:],
@@ -132,14 +133,51 @@ jobs:
                    'last_application':[x for x in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in x][-6:],
                    'constructor_guard':[x for x in lines if 'NUCLEUS_CONTEXTUAL_CONSTRUCTOR:' in x][-6:],
                    'natlit_rigid':[x for x in lines if 'NUCLEUS_NATLIT_RIGID:' in x][-12:],
-                   'natrec_major':[x for x in lines if 'NUCLEUS_NATREC_MAJOR:' in x][-8:]}
+                   'natrec_major':[x for x in lines if 'NUCLEUS_NATREC_MAJOR:' in x][-8:],
+                   'zero_iota':[x for x in lines if 'NUCLEUS_CERTIFIED_NATREC_ZERO_IOTA:' in x][-12:]}
               rows.append(row)
               print('CERTIFIED_PROP_DOWNSTREAM='+json.dumps(row),flush=True)
           out=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid')
           out.mkdir(parents=True,exist_ok=True)
           (out/'paired-full-positive-differential.json').write_text(json.dumps(rows,indent=2))
-          print('NATREC_HEAD_MAJOR_DIAGNOSTIC_ONLY',flush=True)
-          assert all(any('NUCLEUS_NATREC_MAJOR:' in x for x in row['natrec_major']) for row in rows),'No depth5 major witness'
+          print('NATREC_ZERO_IOTA_CONTEXTUAL_CANDIDATE',flush=True)
+          assert all(any('NUCLEUS_CERTIFIED_NATREC_ZERO_IOTA:' in x for x in row['zero_iota']) for row in rows),'No candidate iota witness'
+          PY
+
+      - name: Verify complete immutable Arena corpus with zero wrong verdicts
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests')
+          totals={}
+          positive_unknowns=[]
+          for kind in ('good','bad'):
+              files=sorted((root/kind).rglob('*.ndjson'))
+              counts={0:0,1:0,2:0,3:0}
+              for case in files:
+                  p=subprocess.run(['/tmp/nucleus'],input=case.read_bytes(),
+                      stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=90)
+                  counts[p.returncode]=counts.get(p.returncode,0)+1
+                  if p.returncode not in ((0,2) if kind=='good' else (1,2)):
+                      raise AssertionError(('UNSAFE_VERDICT',kind,str(case),p.returncode))
+                  if kind=='good' and p.returncode==2:
+                      positive_unknowns.append(str(case.relative_to(root)))
+              totals[kind]=counts
+              totals[kind+'_total']=len(files)
+          accept=totals['good'].get(0,0)
+          reject=totals['bad'].get(1,0)
+          unknown=totals['good'].get(2,0)+totals['bad'].get(2,0)
+          census={'accept':accept,'reject':reject,'unknown':unknown,
+                   'good_total':totals['good_total'],'bad_total':totals['bad_total'],
+                   'positive_unknowns':positive_unknowns}
+          print('FROZEN_196='+json.dumps(census),flush=True)
+          pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/frozen196.json').write_text(json.dumps(census,indent=2))
+          assert totals['good_total']==125 and totals['bad_total']==71
+          assert reject==71
+          assert accept+reject+unknown==196
+          assert accept>118, 'CANDIDATE_NO_COMPLETE_ACCEPT_GAIN'
+          print('WARRANTED_BOUNDED_196_GAIN',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
