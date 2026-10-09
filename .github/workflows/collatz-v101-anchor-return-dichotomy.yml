@@ -1,0 +1,83 @@
+name: Collatz V101 bounded anchor admitted return
+on:
+  push:
+    branches: [collatz-v100-bounded-anchor-return-v101]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v100-coherent-episode-stream
+          run-id: 37876803877
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v100
+      - name: Verify V100 qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib
+          q=json.load(open("parent-v100/qualification.json"))
+          claimed=q.pop("certificate_sha256")
+          computed=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          assert claimed==computed=="abf5b86de928a036e71de89b9362c78deacc9b20563df9f4a9bc42a8e3e757b6"
+          assert q["status"]=="WARRANTED_FORMAL_COHERENT_ACTUAL_EPISODE_STREAM"
+          print("V100_PARENT_VERIFIED")
+          PY
+      - name: Kernel check bounded-anchor return dichotomy
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/dyadic.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SameCentreMacro.olean formal/Collatz/SameCentreMacro.lean > evidence/same.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/DistinctCentreSwitch.olean formal/Collatz/DistinctCentreSwitch.lean > evidence/distinct.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeDeterminism.olean formal/Collatz/EpisodeDeterminism.lean > evidence/determinism.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisode.olean formal/Collatz/ActualEpisode.lean > evidence/actual.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeBridge.olean formal/Collatz/EpisodeBridge.lean > evidence/bridge.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisodeChain.olean formal/Collatz/ActualEpisodeChain.lean > evidence/chain.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualReturnAdmission.olean formal/Collatz/ActualReturnAdmission.lean > evidence/admission.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisodeHorizon.olean formal/Collatz/ActualEpisodeHorizon.lean > evidence/horizon.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CoherentEpisodeStream.olean formal/Collatz/CoherentEpisodeStream.lean > evidence/stream.log
+          lake env lean -DautoImplicit=false formal/Collatz/AnchorReturnDichotomy.lean | tee evidence/v101.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v101.log
+          grep -q 'bounded_actual_stream_has_admitted_return' evidence/v101.log
+          grep -q 'admitted_return_or_unbounded_anchors' evidence/v101.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal anchor-return dichotomy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import json,hashlib
+          r={
+            "schema":"COLLATZ_V100_ANCHOR_RETURN_DICHOTOMY_V101",
+            "status":"WARRANTED_FORMAL_BOUNDED_ANCHOR_RETURN",
+            "parent_v100_qualification_sha256":"abf5b86de928a036e71de89b9362c78deacc9b20563df9f4a9bc42a8e3e757b6",
+            "bounded_anchor_infinite_actual_stream_forces_repeated_anchor":True,
+            "repeated_anchor_source_admitted_certificate":True,
+            "coherent_actual_stream_return_or_unbounded_anchor":True,
+            "unbounded_anchor_case_excluded":False,
+            "all_admitted_returns_yield_descent":False,
+            "global_collatz":"UNKNOWN","qed":False,
+            "residual":"Eliminate or classify the genuinely unbounded fresh-anchor actual continuation; separately prove that admitted return episodes on nonterminating sources force strict progress or a true periodic obstruction."
+          }
+          r["certificate_sha256"]=hashlib.sha256(json.dumps(r,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(r,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v101-anchor-return-dichotomy
+          path: evidence/
+          if-no-files-found: error
