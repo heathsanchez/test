@@ -1473,14 +1473,32 @@ fn compare_values(
                 if left.spine.len() != right.spine.len() {
                     return Judgment::refuted("neutral-spine-length");
                 }
-                work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
-                    (
-                        TypeValue::Term(left.clone()),
-                        TypeValue::Term(right.clone()),
+                // Under a checked bound function, proofs are irrelevant
+                // exactly when their captured types are individually
+                // certified propositions and are definitionally equal.
+                // Do NOT identify unrelated FreeIds or closure environments.
+                // The other arguments still require normal congruence.
+                let certified_spine_proofs =
+                    matches!(left.head, NeutralHead::Free(_))
+                    && depth == context.len()
+                    && current_budget >= 1024
+                    && !left.spine.is_empty();
+                for (lhs, rhs) in left.spine.iter().zip(&right.spine) {
+                    if lhs == rhs {
+                        continue;
+                    }
+                    if certified_spine_proofs && checker.certified_captured_proof_pair(
+                        lhs, rhs, context, current_budget,
+                    ) {
+                        continue;
+                    }
+                    work.push((
+                        TypeValue::Term(lhs.clone()),
+                        TypeValue::Term(rhs.clone()),
                         depth,
                         context.to_vec(),
-                    )
-                }));
+                    ));
+                }
             }
             (Value::Neutral(neutral), Value::Lam { domain, body })
             | (Value::Lam { domain, body }, Value::Neutral(neutral))
