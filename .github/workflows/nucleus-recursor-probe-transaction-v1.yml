@@ -2,7 +2,7 @@ name: Nucleus transactional recursor probe
 on:
   push:
     branches: [nucleus-recursor-probe-transaction-v1]
-    paths: ["metatron-kernel/**", ".github/workflows/nucleus-recursor-probe-transaction-v1.yml", ".github/scripts/nucleus_transactional_recursor_patch.py"]
+    paths: ["metatron-kernel/**", ".github/workflows/nucleus-recursor-probe-transaction-v1.yml", ".github/scripts/nucleus_transactional_recursor_patch.py", ".github/scripts/nucleus_demand_major_patch.py"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,6 +20,7 @@ jobs:
           mkdir -p evidence-transaction
           git rev-parse HEAD:metatron-kernel > evidence-transaction/base-source-tree.txt
           python3 .github/scripts/nucleus_transactional_recursor_patch.py
+          python3 .github/scripts/nucleus_demand_major_patch.py
           git diff -- metatron-kernel/src > evidence-transaction/applied.patch
       - name: Run regression and complete release tests
         run: |
