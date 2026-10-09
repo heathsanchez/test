@@ -1,0 +1,113 @@
+name: Nucleus depth5 constant telescope census
+
+on:
+  push:
+    branches: [nucleus-depth5-constant-telescope-v1]
+    paths:
+      - ".github/workflows/nucleus-depth5-constant-telescope-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Bind exact certified-projection source tree
+        run: |
+          set -euo pipefail
+          printf 'checker_source_tree=%s\n' "$(git rev-parse HEAD:metatron-kernel)"
+          printf 'qualification_commit=%s\n' "$GITHUB_SHA"
+
+      - name: Qualify dependent let-wrapped lambda red-green regression
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test typecheck dependent_let_wrapped_lambda -- --nocapture
+
+      - name: Build and test corrected Nucleus
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+          sha256sum /tmp/nucleus
+
+      - name: Fetch immutable 196-case Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests metatron-kernel/evidence-out/final-qualification-v1
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+
+      - name: Require new contextual proof with exact negative controls
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/contextual-rigid
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess,os,sys
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/arena-tests')
+          protected={
+            'init-prelude':('eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5','bbc3222de771d71ee3213c45509f4c629ff7bdd66c8890ca0234e4bc59a39211'),
+            'perf/magma-list-pair-n7':('abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35','152821725732781c9fca2855aab7001dfd16b77477f85f6fde76c13edcdc897f')}
+          rows=[]
+          for name,(whole_digest,prefix_digest) in protected.items():
+              data=(root/'good'/(name+'.ndjson')).read_bytes()
+              assert hashlib.sha256(data).hexdigest()==whole_digest,name
+              names={0:''};prefix=[];found=False
+              for line in data.splitlines(keepends=True):
+                  j=json.loads(line);prefix.append(line)
+                  if 'in' in j:
+                      z=j.get('str',j.get('num'))
+                      parent=names.get(z['pre'],'')
+                      names[j['in']]=parent+('.' if parent else '')+str(z.get('str',z.get('i')))
+                  if 'thm' in j and names.get(j['thm']['name'])=='Nat.modCore_lt':
+                      found=True;break
+              assert found,name
+              body=b''.join(prefix)
+              assert hashlib.sha256(body).hexdigest()==prefix_digest,name
+              p=subprocess.run(['/tmp/nucleus'],input=body,stdout=subprocess.DEVNULL,
+                 stderr=subprocess.PIPE,timeout=45,
+                 env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_LOCAL_PROOF_IRREL':'1'})
+              lines=p.stderr.decode(errors='replace').splitlines()
+              row={'case':name,'rc':p.returncode,'sha256':prefix_digest,
+                 'last':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-3:],
+                 'local_proofs':[x for x in lines if 'NUCLEUS_LOCAL_PROOF_IRREL:' in x][-8:],
+                 'local_premises':[x for x in lines if 'NUCLEUS_LOCAL_PROOF_PREMISES:' in x][-45:],
+                 'depth5_telescope':[x for x in lines if 'NUCLEUS_DEPTH5_TELESCOPE:' in x][-8:]}
+              rows.append(row)
+              print('CONTEXTUAL_RIGID='+json.dumps({k:v for k,v in row.items() if k!='mismatches'}),flush=True)
+              assert p.returncode in (0,2),row
+          negative=false_index(extract((root/'good/init-prelude.ndjson').read_bytes()))
+          assert hashlib.sha256(negative).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          neg=subprocess.run(['/tmp/nucleus'],input=negative,stdout=subprocess.DEVNULL,timeout=25)
+          malformed=subprocess.run(['/tmp/nucleus'],input=(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),stdout=subprocess.DEVNULL,timeout=25)
+          report={'source':os.environ['GITHUB_SHA'],'rows':rows,'false_index':neg.returncode,'malformed':malformed.returncode}
+          pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/report.json').write_text(json.dumps(report,indent=2))
+          print('NEGATIVES='+json.dumps({'false_index':neg.returncode,'malformed':malformed.returncode}),flush=True)
+          assert neg.returncode in (1,2) and malformed.returncode==1
+          assert all(r.get('depth5_telescope') for r in rows),'Depth5 witness missing'
+          print('DIAGNOSTIC_ONLY_DEPTH5_NOT_A_PROOF',flush=True)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-depth5-telescope-${{ github.sha }}
+          path: metatron-kernel/evidence-out
+          if-no-files-found: warn
