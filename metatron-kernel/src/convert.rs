@@ -1196,7 +1196,27 @@ fn compare_values(
                                 Some(Expr::BVar(i)) => right_structure.env.lookup(*i),
                                 _ => None,
                             };
-                            eprintln!("NUCLEUS_STUCK_BRANCH:paired:depth={depth}:budget={current_budget}:type={left_type:?}:index={left_index}:left_structure={left_structure:?}:right_structure={right_structure:?}:lhs_selected_binding={lhs_bound:?}:rhs_selected_binding={rhs_bound:?}:left_spine={left_spine:?}:right_spine={right_spine:?}:left_result={left_value:?}:right_result={right_value:?}");
+                            let follow_bvar = |c: &Closure| {
+                                let mut c = c.clone();
+                                let mut result = Vec::new();
+                                for _ in 0..10 {
+                                    match checker.expression(c.expr) {
+                                        Some(Expr::BVar(i)) => {
+                                            let selected = c.env.lookup(*i);
+                                            result.push(format!("BVar({i})@{} => {selected:?}", c.env.id()));
+                                            match selected {
+                                                Some(EnvBinding::Closure(next)) => c = next,
+                                                _ => break,
+                                            }
+                                        }
+                                        e => { result.push(format!("TERM={e:?}")); break; }
+                                    }
+                                }
+                                result
+                            };
+                            let lhs_trace = follow_bvar(left_structure);
+                            let rhs_trace = follow_bvar(right_structure);
+                            eprintln!("NUCLEUS_STUCK_BRANCH:paired:depth={depth}:budget={current_budget}:type={left_type:?}:index={left_index}:left_structure={left_structure:?}:right_structure={right_structure:?}:lhs_selected_binding={lhs_bound:?}:rhs_selected_binding={rhs_bound:?}:lhs_binding_trace={lhs_trace:?}:rhs_binding_trace={rhs_trace:?}:left_spine={left_spine:?}:right_spine={right_spine:?}:left_result={left_value:?}:right_result={right_value:?}");
                         }
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
