@@ -363,16 +363,26 @@ impl<'a> Machine<'a> {
         let Some(field) = field.proven_value() else {
             return Judgment::unknown("lazy-projection-field-exposure");
         };
-        let pending = spine.iter().rev().cloned().collect();
+        // Do not eagerly normalize a fully applied projection field through
+        // every recursive definition. A proven preferred reduction is enough
+        // to establish a legitimate rigid comparison; Full is the fallback
+        // only if this bounded first stage cannot produce any certified value.
+        let pending: Vec<Closure> = spine.iter().rev().cloned().collect();
+        let cheap = self.expose_internal_with_pending(
+            field.clone(), Transparency::Reducible,
+            budget.saturating_sub(1), false, true, pending.clone(),
+        ).map(|exposure| exposure.value);
+        if cheap.is_proven() {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CHEAP").is_some() {
+                eprintln!("NUCLEUS_PROJECTION_CHEAP:field={:?}:type={type_name:?}:index={index}", field.expr);
+            }
+            return cheap;
+        }
         self.expose_internal_with_pending(
-            field.clone(),
-            Transparency::Full,
-            budget.saturating_sub(1),
-            false,
-            true,
-            pending,
-        )
-        .map(|exposure| exposure.value)
+            field.clone(), Transparency::Full,
+            budget.saturating_sub(1), false, true, pending,
+        ).map(|exposure| exposure.value)
     }
 
     fn expose_internal(
