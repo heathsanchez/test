@@ -19,6 +19,10 @@ on:
       - "scripts/webarena_shopping_admin_blind_report.py"
       - "tests/test_webarena_shopping_admin_blind_report.py"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   qualify:
     runs-on: ubuntu-latest

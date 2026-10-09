@@ -14,6 +14,10 @@ on:
       - "scripts/webarena_reddit_submit_v3.py"
       - "tests/test_webarena_reddit_submit_postcondition.py"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   qualify:
     runs-on: ubuntu-latest

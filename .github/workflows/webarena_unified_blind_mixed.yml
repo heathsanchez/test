@@ -9,6 +9,10 @@ on:
       - "scripts/webarena_unified_blind_agent.py"
       - "tests/test_webarena_unified_blind_agent.py"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   qualify:
     runs-on: ubuntu-latest
