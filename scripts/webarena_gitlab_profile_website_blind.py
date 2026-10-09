@@ -72,15 +72,32 @@ async def set_website(page,intent):
     form=field.locator("xpath=ancestor::form[1]")
     if await form.count()==0:
         raise RuntimeError("profile website field is not in a form")
-    # Exactly one write. Never repeat a potentially committed form submission.
-    await form.evaluate("(f)=>f.requestSubmit()")
+    # Exactly one write. Wait for an actual profile POST response before
+    # opening the form again; requestSubmit returns before navigation settles.
+    async with page.expect_response(
+        lambda response:
+            response.request.method=="POST" and
+            "/-/profile" in response.url,
+        timeout=40000,
+    ) as receipt:
+        await form.evaluate("(f)=>f.requestSubmit()")
+    submitted_response=await receipt.value
+    if submitted_response.status not in (200,302):
+        raise RuntimeError(f"GitLab profile submission HTTP {submitted_response.status}")
     try:
         await page.wait_for_load_state("networkidle",timeout=120000)
     except Exception:
         pass
-    # An independent read-only re-open establishes the actual final state.
-    readback=await profile_page(page)
-    observed=await readback["field"].input_value()
+    # Safe GET-only polling handles delayed commits and/or cached first reads.
+    # The mutation itself is never replayed.
+    readback=None
+    observed=""
+    for attempt in range(7):
+        readback=await profile_page(page)
+        observed=await readback["field"].input_value()
+        if website_key(observed)==website_key(requested):
+            break
+        await page.wait_for_timeout(min(250*(attempt+1),1500))
     if website_key(observed)!=website_key(requested):
         errors=[]
         for selector in (".flash-container",".flash-alert",".alert",".invalid-feedback",".field_with_errors"):
@@ -97,6 +114,7 @@ async def set_website(page,intent):
         "capability":"gitlab_profile_website_mutation",
         "requested":requested,"submitted":form_value,"previous":prior,"observed":observed,
         "form_url":profile["url"],"readback_url":readback["url"],
+        "submitted_response_status":submitted_response.status,
         "field_selector":profile["selector"],
     }
 
