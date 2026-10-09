@@ -75,6 +75,7 @@ jobs:
           tasks=json.loads((root/"hard.json").read_text())
           by_id={int(t["task_id"]):t for t in tasks}
           ids=(634,640,645,646,647,399,400,401,580,581,584,596,597,598,409,410,651,733,734,735,407,408,721,724,730,636,624,625,644,603,610)
+          execution={}
           for ident in ids:
               t=by_id[ident]
               start=(t.get("start_urls") or ["__REDDIT__"])[0]
@@ -87,7 +88,10 @@ jobs:
                   "--output-dir",str(out),
               ]
               print("BLIND",ident,t["intent"],flush=True)
-              subprocess.run(cmd,check=True)
+              finished=subprocess.run(cmd,check=False)
+              execution[str(ident)]=finished.returncode
+              print("BLIND_RESULT",ident,"exit",finished.returncode,flush=True)
+          (root/"execution_results.json").write_text(json.dumps(execution,indent=2)+"\n")
           PY
 
       - name: Officially score blind outputs
@@ -102,21 +106,31 @@ jobs:
           wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
           ids=(634,640,645,646,647,399,400,401,580,581,584,596,597,598,409,410,651,733,734,735,407,408,721,724,730,636,624,625,644,603,610)
           results={}; failures=[]
+          execution=json.loads((root/"execution_results.json").read_text())
           for ident in ids:
               out=root/"output"/str(ident)
-              trace=NetworkTrace.from_har(out/"network.har")
-              result=wa.evaluate_task(task_id=ident,agent_response=out/"agent_response.json",network_trace=trace)
-              dumped=result.model_dump(mode="json",exclude_none=True)
-              (out/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
-              row={"score":float(result.score),"status":result.status.value,"evaluation_events":len(trace.evaluation_events)}
-              results[str(ident)]=row
-              if row["score"]!=1.0 or row["status"]!="success": failures.append(ident)
+              if execution.get(str(ident))!=0 or not (out/"agent_response.json").is_file() or not (out/"network.har").is_file():
+                  results[str(ident)]={"score":0.0,"status":"execution_failed","exit_code":execution.get(str(ident))}
+                  failures.append(ident)
+                  continue
+              try:
+                  trace=NetworkTrace.from_har(out/"network.har")
+                  result=wa.evaluate_task(task_id=ident,agent_response=out/"agent_response.json",network_trace=trace)
+                  dumped=result.model_dump(mode="json",exclude_none=True)
+                  (out/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+                  row={"score":float(result.score),"status":result.status.value,"evaluation_events":len(trace.evaluation_events)}
+                  results[str(ident)]=row
+                  if row["score"]!=1.0 or row["status"]!="success": failures.append(ident)
+              except Exception as exc:
+                  results[str(ident)]={"score":0.0,"status":"evaluation_error","error":repr(exc)}
+                  failures.append(ident)
           seal={
               "epistemic_state":"WARRANTED_BOUNDED" if not failures else "REJECTED",
               "boundary":"31-task Reddit action router receiving only natural-language intent and start URL",
               "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
               "agent_forbidden_metadata":["task_id","intent_template_id","instantiation_dict","eval","expected"],
               "results":results,
+              "execution":execution,
               "failures":failures,
           }
           (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
