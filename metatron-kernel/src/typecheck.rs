@@ -653,17 +653,22 @@ impl<'a> TypeChecker<'a> {
         // never a way to disregard a refuted or unknown premise. The original
         // algorithm remains authoritative unless every annotation, domain,
         // and dependent body check succeeds under the SAME opened local.
-        if baseline.is_unknown()
-            && let Judgment::Proven { .. } = self.check_lambda_against_expected_pi(
+        if baseline.is_unknown() && matches!(self.expressions.get(expression), Some(Expr::Lam { .. })) {
+            let alternative = self.check_lambda_against_expected_pi(
                 expression, expected, context, frame, remaining,
                 conversion_refutation_is_unknown,
-            )
-        {
+            );
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_BIDIR_LAMBDA").is_some() {
-                eprintln!("NUCLEUS_BIDIR_LAMBDA:proved:expr={expression:?}:depth={}",context.len());
+                eprintln!("NUCLEUS_BIDIR_LAMBDA:attempt:expr={expression:?}:depth={}:result={alternative:?}",context.len());
             }
-            return Judgment::proven((), "checked-dependent-lambda-against-pi");
+            if alternative.is_proven() {
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_BIDIR_LAMBDA").is_some() {
+                    eprintln!("NUCLEUS_BIDIR_LAMBDA:proved:expr={expression:?}:depth={}",context.len());
+                }
+                return alternative;
+            }
         }
         baseline
     }
