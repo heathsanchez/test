@@ -47,7 +47,7 @@ theorem actual_episode_chain_affine
     {r0 m0 r m t A B P : Nat}
     (hc : ActualEpisodeChain r0 m0 r m t A B P) :
     P * m = A * m0 + B := by
-  induction hc with
+  induction hc generalizing r0 m0 with
   | empty r m =>
       simp
   | @append r0 m0 r m t A B P s r' m' hchain he ih =>
@@ -72,7 +72,7 @@ theorem actual_episode_chain_shortcut
     {r0 m0 r m t A B P : Nat}
     (hc : ActualEpisodeChain r0 m0 r m t A B P) :
     iter shortcut t (2 ^ r0 * m0 - 1) = 2 ^ r * m - 1 := by
-  induction hc with
+  induction hc generalizing r0 m0 with
   | empty r m =>
       simp [iter]
   | @append r0 m0 r m t A B P s r' m' hchain he ih =>
