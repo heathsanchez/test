@@ -338,8 +338,33 @@ fn convert_in_context_with_congruence(
                     if congruence.is_proven() {
                         continue;
                     }
-                    if congruence.is_refuted() && checker.is_certified_constructor(rigid_head) {
-                        return Judgment::refuted("certified-constructor-argument-mismatch");
+                    if let Judgment::Refuted { obstruction } = &congruence
+                        && checker.is_certified_constructor(rigid_head)
+                    {
+                        // Injectivity lets us transport a genuinely rigid
+                        // argument inequivalence to the constructor result.
+                        // A PreferredOnly mismatch alone is NOT such evidence:
+                        // an argument may reduce under guarded/full delta or
+                        // recursor iota. This previously misclassified two
+                        // valid Nat.mod_lt exports as REJECT.
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_CONSTRUCTOR_MISMATCH").is_some() {
+                            eprintln!(
+                                "NUCLEUS_CONSTRUCTOR_MISMATCH:head={rigid_head:?}:depth={depth}:obstruction={obstruction:?}"
+                            );
+                        }
+                        if matches!(
+                            obstruction.0,
+                            "distinct-canonical-universes"
+                                | "distinct-Nat-literals"
+                                | "rigid-value-constructor-mismatch"
+                                | "distinct-opaque-proposition-types"
+                        ) {
+                            return Judgment::refuted("certified-constructor-argument-mismatch");
+                        }
+                        return Judgment::unknown(
+                            "preferred-constructor-argument-mismatch-not-definitive",
+                        );
                     }
                     if !congruence.is_refuted()
                         && !lazy_head_delta_used
