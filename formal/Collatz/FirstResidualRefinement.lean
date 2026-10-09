@@ -1,5 +1,10 @@
 import Collatz.CylinderCoalescence
 
+-- The concrete 59-step exact reducer needs more elaborator recursion,
+-- not a new axiom or a weakened theorem.
+set_option maxRecDepth 16384
+set_option maxHeartbeats 2000000
+
 namespace CollatzFinal
 namespace SourceProduct
 
