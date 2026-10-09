@@ -77,7 +77,7 @@ jobs:
           export PATH="$HOME/.elan/bin:$PATH"
           lake env lean --version | tee evidence/toolchain.txt
           lake build CollatzFinal > evidence/spine.log 2>&1
-          for file in SourceProductAffine CylinderCoalescence ReverseAffineMerger Q7SourceMerger ScaledReverseMerger ThreeCongruenceMerger ParityCollisionBridge AffineFTransportBank FSwapGrammar; do
+          for file in SourceProductAffine CylinderCoalescence ReverseAffineMerger Q7SourceMerger ScaledReverseMerger ThreeCongruenceMerger NineCongruenceMerger ParityCollisionBridge AffineFTransportBank FSwapGrammar; do
             lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${file}.olean" "formal/Collatz/${file}.lean" > "evidence/${file}.log" 2>&1
           done
       - name: Check all-offset protected phase-aware consequence theorem
