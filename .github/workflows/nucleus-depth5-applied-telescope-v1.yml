@@ -210,6 +210,8 @@ jobs:
                       if key=='const':
                           r['const']={'name':names.get(z['name'],str(z['name'])),'id':z['name'],'universes':z.get('us')}
                           r['declaration']=definitions.get(z['name'])
+                          if z['name'] in definitions:
+                              r['definition_rhs']=node(definitions[z['name']]['value'],d+1)
                       elif key=='app':r['app']={'fn':node(z['fn'],d+1),'arg':node(z['arg'],d+1)}
                       elif key in ('forallE','lam'):
                           r[key]={'type':node(z['type'],d+1),'body':node(z['body'],d+1)}
