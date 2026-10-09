@@ -1116,6 +1116,40 @@ fn compare_values(
                     spine: right_spine,
                 },
             ) if left_type == right_type && left_index == right_index => {
+                // A checked projection of one fixed field is congruent only
+                // after proving the receiver and all applied arguments equal.
+                // The existing source-level Nat computation never licenses
+                // identifying unrelated binder environments or Nat indices.
+                let probe = (current_budget / 2).min(128);
+                if probe >= 8
+                    && left_spine.len() == right_spine.len()
+                    && convert_with_policy_in_context(
+                        checker,
+                        &TypeValue::Term(left_structure.clone()),
+                        &TypeValue::Term(right_structure.clone()),
+                        probe,
+                        DeltaPolicy::PreferredOnly,
+                        depth,
+                        context,
+                    ).is_proven()
+                    && left_spine.iter().zip(right_spine).all(|(lhs, rhs)| {
+                        convert_with_policy_in_context(
+                            checker,
+                            &TypeValue::Term(lhs.clone()),
+                            &TypeValue::Term(rhs.clone()),
+                            probe,
+                            DeltaPolicy::PreferredOnly,
+                            depth,
+                            context,
+                        ).is_proven()
+                    })
+                {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONGRUENCE").is_some() {
+                        eprintln!("NUCLEUS_PROJECTION_CONGRUENCE:earned-certified-operands");
+                    }
+                    return Judgment::proven((), "certified-projection-congruence");
+                }
                 if same_rigid_application_congruence(
                     checker,
                     left_structure,
