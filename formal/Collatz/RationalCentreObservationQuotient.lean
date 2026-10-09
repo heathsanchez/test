@@ -169,8 +169,8 @@ theorem v147_centre_equivalent_trans
 def v147RationalCentreSetoid : Setoid RationalSourceCentreV147 where
   r := v147CentreEquivalent
   iseqv := ⟨(fun x => v147_centre_equivalent_refl x),
-    (fun x y h => v147_centre_equivalent_symm x y h),
-    (fun x y z hxy hyz => v147_centre_equivalent_trans x y z hxy hyz)⟩
+    (fun h => h.symm),
+    (fun hxy hyz => v147_centre_equivalent_trans _ _ _ hxy hyz)⟩
 
 def V147RationalCentreClass : Type :=
   Quotient v147RationalCentreSetoid
