@@ -362,9 +362,17 @@ fn convert_in_context_with_congruence(
                         ) {
                             return Judgment::refuted("certified-constructor-argument-mismatch");
                         }
-                        return Judgment::unknown(
-                            "preferred-constructor-argument-mismatch-not-definitive",
-                        );
+                        // This is not yet a mismatch, nor grounds for an
+                        // early UNKNOWN. Continue to the ordinary guarded
+                        // comparison below. In particular Full exposure may
+                        // apply an already-certified Nat.rec iota rule when
+                        // its captured major argument is canonical zero.
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_NATREC_MAJOR").is_some() {
+                            eprintln!(
+                                "NUCLEUS_CONSTRUCTOR_FALLTHROUGH:depth={depth}:head={rigid_head:?}:obstruction={obstruction:?}"
+                            );
+                        }
                     }
                     if !congruence.is_refuted()
                         && !lazy_head_delta_used
