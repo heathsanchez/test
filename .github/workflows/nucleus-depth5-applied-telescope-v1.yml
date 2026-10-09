@@ -1,8 +1,8 @@
-name: Nucleus protected Nat.rec PProd projection congruence
+name: Nucleus Nat.mul_pos single-sided projection comparison diagnostic
 
 on:
   push:
-    branches: [nucleus-mulpos-rec-congruence-v1]
+    branches: [nucleus-mulpos-single-projection-other-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -128,6 +128,7 @@ jobs:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
                   extra['NUCLEUS_TRACE_VALUE_MISMATCH']='1'
               else:
+                  extra['NUCLEUS_TRACE_PROJECTION_OTHER']='1'
                   extra['NUCLEUS_TRACE_MULPOS_REC_CONGRUENCE']='1'
                   extra['NUCLEUS_TRACE_REC_ARG_OBLIGATIONS']='1'
                   extra['NUCLEUS_TRACE_PROJECTION_REC_MAJOR']='1'
@@ -156,6 +157,7 @@ jobs:
                    'recursor_major':[x for x in lines if 'NUCLEUS_PROJECTION_REC_MAJOR:' in x][-6:],
                    'recursor_arg_obligations':[x for x in lines if 'NUCLEUS_MULPOS_REC_ARG_OBLIGATIONS:' in x][-8:],
                    'recursor_congruence':[x for x in lines if 'NUCLEUS_MULPOS_REC_CONGRUENCE:' in x][-24:],
+                   'projection_other':[x for x in lines if 'NUCLEUS_PROJECTION_OTHER:' in x][-15:],
                    'projection_cheap':[x for x in lines if 'NUCLEUS_PROJECTION_CHEAP:' in x][-6:],
                    'dependency_gap':[x for x in lines if 'NUCLEUS_DEPENDENCY_GAP:' in x][-6:]}
               idx={0:''}
@@ -181,7 +183,7 @@ jobs:
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
           PY
 
-      - name: Requalify complete 196-case protected corpus with strict ACCEPT gain
+      - name: Requalify frozen196 verdict invariance on diagnostic
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -219,14 +221,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
-          print('NATREC_PROJECTION_CONGRUENCE_196_GAIN',flush=True)
+          assert accepted==118 and unknown==7, 'DIAGNOSTIC_CHANGED_FROZEN196'
+          print('PROJECTION_OTHER_DIAGNOSTIC_ONLY',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-mulpos-rec-congruence-${{ github.sha }}
+          name: nucleus-mulpos-projection-other-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -239,7 +241,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="mulpos rec congruence: ${{ job.status }}; no complete replay"
+          description="mulpos projection other: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -250,6 +252,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/mulpos-rec-congruence" \
+            -f context="nucleus/mulpos-projection-other" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
