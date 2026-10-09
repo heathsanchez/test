@@ -311,6 +311,7 @@ impl<'a> Machine<'a> {
             return Judgment::unknown("projection-structure-neutral");
         };
         if name != spec.constructor {
+            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONSTRUCTOR").is_some() { eprintln!("NUCLEUS_PROJ_FIELD:expected={:?}:actual={:?}", spec.constructor, name); }
             return Judgment::unknown("projection-constructor-mismatch");
         }
         let field_offset = spec.num_params + index;
