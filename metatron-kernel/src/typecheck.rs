@@ -1037,6 +1037,72 @@ impl<'a> TypeChecker<'a> {
                         );
                     }
                 }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_FIRST_PI_DOMAIN").is_some()
+                    && context.len() == 7
+                    && let Judgment::Refuted { obstruction } = &conversion
+                    && !definite_conversion_obstruction(obstruction.0)
+                    && let (
+                        TypeValue::Pi { domain: actual_domain, body: actual_body, binder },
+                        TypeValue::Term(expected_term),
+                    ) = (&value, expected)
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                    if PRINTED.fetch_add(1, Ordering::Relaxed) < 8 {
+                        let expected_exposed = self.machine().expose(
+                            expected_term.clone(), Transparency::Full, (*remaining).min(1024),
+                        );
+                        let mut domain_result = None;
+                        let mut body_result = None;
+                        let mut first_actual_normal = None;
+                        let mut first_expected_normal = None;
+                        if let Some(Value::Pi { domain: anticipated_domain, body: anticipated_body })
+                            = expected_exposed.proven_value()
+                        {
+                            let check = crate::convert::convert_with_policy_in_context(
+                                self,
+                                actual_domain,
+                                &TypeValue::Term(anticipated_domain.clone()),
+                                (*remaining).min(512),
+                                crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                context.len(),
+                                context,
+                            );
+                            domain_result = Some(check.clone());
+                            first_actual_normal = match actual_domain.as_ref() {
+                                TypeValue::Term(c) => Some(self.machine().expose(
+                                    c.clone(), Transparency::Full, 512,
+                                )),
+                                _ => None,
+                            };
+                            first_expected_normal = Some(self.machine().expose(
+                                anticipated_domain.clone(), Transparency::Full, 512,
+                            ));
+                            if check.is_proven()
+                                && *binder == FreeId(context.len() as u64)
+                            {
+                                let mut ext = context.to_vec();
+                                ext.push(actual_domain.as_ref().clone());
+                                body_result = Some(
+                                    crate::convert::convert_with_policy_in_context(
+                                        self,
+                                        actual_body.as_ref(),
+                                        &TypeValue::Term(anticipated_body.under_free(*binder)),
+                                        (*remaining).min(512),
+                                        crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                        ext.len(),
+                                        &ext,
+                                    ),
+                                );
+                            }
+                        }
+                        eprintln!(
+                            "NUCLEUS_FIRST_PI_DOMAIN:expr={expression:?}:context_len={}:reason={obstruction:?}:actual_domain={actual_domain:?}:expected_pi={expected_exposed:?}:domain_relation={domain_result:?}:body_relation={body_result:?}:actual_domain_whnf={first_actual_normal:?}:expected_domain_whnf={first_expected_normal:?}",
+                            context.len(),
+                        );
+                    }
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
