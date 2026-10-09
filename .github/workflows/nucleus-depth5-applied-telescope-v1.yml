@@ -1,8 +1,8 @@
-name: Nucleus certified theorem-versus-local proof irrelevance
+name: Nucleus independently checked context13 proof irrelevance
 
 on:
   push:
-    branches: [nucleus-certified-proof-vs-local-v1]
+    branches: [nucleus-proof-depth13-certified-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -180,6 +180,7 @@ jobs:
                   row['neutral_head_names']={str(k):idx.get(k,'') for k in (169,147,75,62,145,146,170)}
               if 'magma-list-pair' in name:
                   assert row['certified_proof_reuse'], ('new checked proof irrelevance rule never fired',name)
+                  assert any('context=13:' in x for x in row['certified_proof_reuse']), ('no new checked context13 proof reuse',name)
                   assert row['return_code'] in (0,2), ('unsafe theorem verdict',name)
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
               rows.append(row)
@@ -231,7 +232,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-proof-vs-local-${{ github.sha }}
+          name: nucleus-proof-depth13-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -244,7 +245,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="proof vs local: ${{ job.status }}; no complete replay"
+          description="proof depth13: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -255,6 +256,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/proof-vs-local" \
+            -f context="nucleus/proof-depth13" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
