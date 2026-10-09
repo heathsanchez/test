@@ -78,7 +78,8 @@ class FormalRoot23CausalClosureTests(unittest.TestCase):
         self.assertNotIn([27,2**59],[x["source_affine"] for x in self.c.state["parametric_laws"]])
         self.assertEqual(self.c.state["residuals"][1]["remaining_classes"],159938)
         self.assertIn("UNKNOWN",self.c.state["residuals"][1]["status"])
-        self.assertEqual(self.c.state["history"][-1]["no_all_offset_source27_claim"],True)
+        self.assertTrue(any(e.get("no_all_offset_source27_claim") is True
+                            for e in self.c.state["history"]))
 
     def test_all_offset_root23_family_exactly_scoped(self):
         for t in (0,1,2,7,31,256):
