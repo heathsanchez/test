@@ -1062,6 +1062,61 @@ impl<'a> Machine<'a> {
             };
         }
 
+        // Nat.add n 0 = n and Nat.add n (succ 0) = succ n.
+        // These are the exact constructor equations of the checked Prelude
+        // definition, and work for any already well-typed symbolic n.
+        // This contraction does not infer any recursor major or proof index.
+        if matches!(operation, Operation::Add) {
+            let right = self.expose_internal(
+                second.clone(), transparency, budget.saturating_sub(1), false, false,
+            );
+            if let Some(v) = right.proven_value().map(|x| &x.value) {
+                let zero = |v: &Value| matches!(v,
+                    Value::NatLit(n) if n.is_zero())
+                    || matches!(v,
+                    Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name: ctor, levels },
+                        spine,
+                    }) if *ctor==primitives.zero && levels.is_empty() && spine.is_empty());
+                let one = matches!(v,
+                    Value::NatLit(n) if n.pred().is_some_and(|pre| pre.is_zero()))
+                    || matches!(v,
+                    Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name: ctor, levels },
+                        spine,
+                    }) if *ctor == primitives.succ && levels.is_empty() && spine.len()==1
+                        && self.expose_internal(
+                            spine[0].clone(), transparency, budget.saturating_sub(1),
+                            false, false,
+                        ).proven_value().is_some_and(|x| zero(&x.value)));
+                if zero(v) {
+                    let first_value = self.expose_internal(
+                        first.clone(), transparency, budget.saturating_sub(1),
+                        false, false,
+                    );
+                    if let Some(value)=first_value.proven_value() {
+                        pending.clear();
+                        #[cfg(feature="diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_NAT_ADDONE").is_some() {
+                            eprintln!("NUCLEUS_NAT_ADDONE:checked-zero");
+                        }
+                        return Some(value.value.clone());
+                    }
+                }
+                if one {
+                    pending.clear();
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_NAT_ADDONE").is_some() {
+                        eprintln!("NUCLEUS_NAT_ADDONE:checked-one");
+                    }
+                    return Some(Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name: primitives.succ, levels: vec![] },
+                        spine: vec![first],
+                    }));
+                }
+            }
+        }
+
         // Pinned Lean v4.34.1 Init.Prelude defines:
         //   Nat.ble zero _ = true
         //   Nat.ble (succ _) zero = false

@@ -577,3 +577,29 @@ fn symbolic_nat_sub_successor_is_exact_predicate_computation() {
         Some(Value::Neutral(neutral)) if neutral.head == NeutralHead::Free(FreeId(7))
     ));
 }
+
+#[test]
+fn nat_add_symbolic_right_successor_zero_is_succ_without_index_assumption() {
+    let mut exprs=IdTable::default();
+    exprs.insert(ExprId(0),Expr::BVar(0)).unwrap();
+    exprs.insert(ExprId(1),Expr::Const { name: NameId(10), levels: vec![] }).unwrap();
+    exprs.insert(ExprId(2),Expr::Const { name: NameId(11), levels: vec![] }).unwrap();
+    exprs.insert(ExprId(3),Expr::App { fun: ExprId(2), arg: ExprId(1) }).unwrap();
+    exprs.insert(ExprId(4),Expr::Const { name: NameId(20), levels: vec![] }).unwrap();
+    exprs.insert(ExprId(5),Expr::App { fun: ExprId(4), arg: ExprId(0) }).unwrap();
+    exprs.insert(ExprId(6),Expr::App { fun: ExprId(5), arg: ExprId(3) }).unwrap();
+    let levels=zero_levels();
+    let machine=Machine::new(AuthorityId(8), &exprs, &levels, HashMap::new())
+      .with_nat_primitives(Some(NatPrimitives {
+        type_name:NameId(65),type_expr:ExprId(0),zero:NameId(10),
+        succ:NameId(11),recursor:NameId(66),add:Some(NameId(20)),
+        sub:None,pred:None,virtual_bvar_zero:Some(ExprId(0)),ble:None,beq:None,
+      }));
+    let frame=EnvFrame::empty().extend_free(FreeId(17));
+    let got=machine.expose(Closure::new(ExprId(6),frame),Transparency::Reducible,64);
+    let Some(Value::Neutral(s))=got.proven_value() else { panic!("Nat.add arbitrary (succ zero) must reduce"); };
+    assert_eq!(s.head,NeutralHead::Const{name:NameId(11),levels:vec![]});
+    assert_eq!(s.spine.len(),1);
+    let arg=machine.expose(s.spine[0].clone(),Transparency::Opaque,16);
+    assert!(matches!(arg.proven_value(),Some(Value::Neutral(n)) if n.head==NeutralHead::Free(FreeId(17))));
+}
