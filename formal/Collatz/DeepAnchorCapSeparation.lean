@@ -15,7 +15,7 @@ theorem deep_anchor_not_capped
   have hle : 2 ^ B ≤ y + 1 :=
     Nat.le_of_dvd (by omega) hdiv
   have hbig : 3 * n + 3 ≤ 2 * 2 ^ B := by
-    simpa [pow_succ, Nat.mul_comm] using hlarge
+    simpa [Nat.pow_succ, Nat.mul_comm] using hlarge
   intro hcap
   omega
 
