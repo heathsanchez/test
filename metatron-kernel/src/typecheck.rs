@@ -975,14 +975,17 @@ impl<'a> TypeChecker<'a> {
         self.expressions.get(expression)
     }
 
-    /// Refute proof conversion before exposing either proof body, but only
-    /// for an already certified rigid separator: distinct opaque closed
-    /// proposition constants. This path grants no new acceptance authority.
+    /// Refute conversion of two monomorphic constant proof terms before
+    /// exposing either proof body, but only when their declared types reduce
+    /// to distinct opaque closed proposition constants.
+    ///
+    /// This is deliberately refutation-only and non-recursive. It grants no
+    /// new acceptance authority and never invokes ordinary conversion.
     pub(crate) fn proof_terms_different_propositions_before_whnf(
         &self,
         left: &Closure,
         right: &Closure,
-        context: &[TypeValue],
+        _context: &[TypeValue],
         budget: usize,
     ) -> bool {
         if budget < 32 {
@@ -990,53 +993,30 @@ impl<'a> TypeChecker<'a> {
         }
         let probe = budget.min(2048);
 
-        let infer_closure_type = |closure: &Closure| -> Option<TypeValue> {
-            let checker = TypeChecker::with_level_substitution(
-                self.expressions,
-                self.levels,
-                self.environment,
-                closure.levels.to_map(),
-            )
-            .with_delta_policy(self.delta_policy);
-            let mut remaining = probe;
-            checker
-                .infer_in(
-                    closure.expr,
-                    context,
-                    &closure.env,
-                    &mut remaining,
-                    &mut HashMap::new(),
-                )
-                .proven_value()
-                .cloned()
-        };
-
-        let Some(left_type) = infer_closure_type(left) else {
-            return false;
-        };
-        let Some(right_type) = infer_closure_type(right) else {
-            return false;
-        };
-
-        let type_is_proposition = |ty: &TypeValue| -> bool {
-            let TypeValue::Term(closure) = ty else {
-                return false;
+        let declared_constant_type = |term: &Closure| -> Option<TypeValue> {
+            let Expr::Const { name, levels } = self.expression(term.expr)? else {
+                return None;
             };
-            let checker = TypeChecker::with_level_substitution(
-                self.expressions,
-                self.levels,
-                self.environment,
-                closure.levels.to_map(),
-            )
-            .with_delta_policy(self.delta_policy);
-            checker
-                .is_proposition_in_context(closure.expr, context, &closure.env, probe)
-                .is_proven()
+            if !levels.is_empty() {
+                return None;
+            }
+            let declaration = self.environment.get(*name)?;
+            if !declaration.level_params.is_empty() {
+                return None;
+            }
+            Some(TypeValue::Term(Closure::with_levels(
+                declaration.ty,
+                EnvFrame::empty(),
+                LevelSubstitution::default(),
+            )))
         };
 
-        if !type_is_proposition(&left_type) || !type_is_proposition(&right_type) {
+        let Some(left_type) = declared_constant_type(left) else {
             return false;
-        }
+        };
+        let Some(right_type) = declared_constant_type(right) else {
+            return false;
+        };
 
         let rigid_closed_prop = |ty: &TypeValue| -> Option<(NameId, Vec<LevelTerm>)> {
             let TypeValue::Term(closure) = ty else {
