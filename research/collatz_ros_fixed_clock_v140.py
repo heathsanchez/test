@@ -134,7 +134,9 @@ def classify(a:int,p:int,i:int,j:int)->dict:
     sourcechart=chart(a,i,u)
     earlierchart=chart(p,j,v)
     assert sourcechart["endpoint_intercept"]==earlierchart["endpoint_intercept"]==yn
-    assert sourcechart["endpoint_slope"]==earlierchart["endpoint_slope"]==3**(alpha+beta)
+    # Reduced coefficients cancel the common 3^min(alpha,beta):
+    # the endpoint slope is 3^max(alpha,beta), NOT 3^(alpha+beta).
+    assert sourcechart["endpoint_slope"]==earlierchart["endpoint_slope"]==3**max(alpha,beta)
     assert 0<p<a and slopeP<=slopeA
     return {**result,
       "status":"ADMISSIBLE_PRIMITIVE_FULL_OFFSET_CHART",
@@ -144,7 +146,7 @@ def classify(a:int,p:int,i:int,j:int)->dict:
       "primitive_source_multiplier":u,"primitive_earlier_multiplier":v,
       "original_source_slope":slopeA,"earlier_source_slope":slopeP,
       "weighted_left":left,"weighted_right":right,
-      "common_endpoint_slope":3**(alpha+beta),
+      "common_endpoint_slope":3**max(alpha,beta),
       "common_endpoint_intercept":yn,
       "synchronous_guard_invariance_applicable":True,
       "proof_authority":["V136_REDUCED_COEFFICIENTS",
