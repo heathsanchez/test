@@ -1191,6 +1191,48 @@ fn compare_values(
                             left_spine.len(), right_spine.len(),
                             left_value, right_value
                         );
+                        // Diagnose the *substitutions*, never infer their equality
+                        // merely from a shared expression ID. This trace has no
+                        // verdict effect and is capped at four frame slots.
+                        eprintln!(
+                            "NUCLEUS_PROJECTION_ENV:depth={depth}:left_env={}:right_env={}:left_levels={:?}:right_levels={:?}:expr={:?}",
+                            left_structure.env.id(), right_structure.env.id(),
+                            left_structure.levels, right_structure.levels,
+                            checker.expression(left_structure.expr)
+                        );
+                        for slot in 0..4 {
+                            eprintln!(
+                                "NUCLEUS_PROJECTION_BINDING:slot={slot}:left={:?}:right={:?}",
+                                left_structure.env.lookup(slot), right_structure.env.lookup(slot)
+                            );
+                        }
+                        for (slot,(a,b)) in left_spine.iter().zip(right_spine).enumerate() {
+                            eprintln!(
+                                "NUCLEUS_PROJECTION_SPINE:slot={slot}:left={:?}:right={:?}",
+                                a,b
+                            );
+                        }
+                        let probe=current_budget.min(48)/4;
+                        if probe>=4 {
+                            eprintln!(
+                                "NUCLEUS_PROJECTION_STRUCTURE_PROOF:budget={probe}:result={:?}",
+                                convert_with_policy_in_context(
+                                    checker, &TypeValue::Term(left_structure.clone()),
+                                    &TypeValue::Term(right_structure.clone()),
+                                    probe, DeltaPolicy::PreferredOnly, depth, context
+                                )
+                            );
+                            for (slot,(a,b)) in left_spine.iter().zip(right_spine).enumerate() {
+                                eprintln!(
+                                    "NUCLEUS_PROJECTION_SPINE_PROOF:slot={slot}:result={:?}",
+                                    convert_with_policy_in_context(
+                                        checker,&TypeValue::Term(a.clone()),
+                                        &TypeValue::Term(b.clone()),
+                                        probe, DeltaPolicy::PreferredOnly,depth,context
+                                    )
+                                );
+                            }
+                        }
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
