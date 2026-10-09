@@ -344,6 +344,42 @@ fn check_export_with_policy(
                         continue;
                     }
                     Err(verdict) => {
+                        if std::env::var_os("NUCLEUS_TRACE_INDUCTIVE_ENVELOPE").is_some() {
+                            let names = block.types.iter().map(|ty| {
+                                format!(
+                                    "name={}:params={}:indices={}:nested={}:recursive={}:reflexive={}:unsafe={}:universes={}:type_expr={:?}",
+                                    trace_name(&export,ty.name),
+                                    ty.num_params,ty.num_indices,ty.num_nested,
+                                    ty.is_recursive,ty.is_reflexive,ty.is_unsafe,
+                                    ty.level_params.len(),ty.ty
+                                )
+                            }).collect::<Vec<_>>();
+                            let ctors = block.constructors.iter().map(|ctor| {
+                                format!(
+                                    "name={}:params={}:fields={}:index={}:unsafe={}:universes={}:type_expr={:?}",
+                                    trace_name(&export,ctor.name),ctor.num_params,
+                                    ctor.num_fields,ctor.index,ctor.is_unsafe,
+                                    ctor.level_params.len(),ctor.ty
+                                )
+                            }).collect::<Vec<_>>();
+                            let recs = block.recursors.iter().map(|rec| {
+                                format!(
+                                    "name={}:params={}:indices={}:minors={}:motives={}:rules={}:K={}:unsafe={}:universes={}:type_expr={:?}",
+                                    trace_name(&export,rec.name),rec.num_params,rec.num_indices,
+                                    rec.num_minors,rec.num_motives,rec.rules.len(),rec.k,
+                                    rec.is_unsafe,rec.level_params.len(),rec.ty
+                                )
+                            }).collect::<Vec<_>>();
+                            eprintln!(
+                                "NUCLEUS_INDUCTIVE_ENVELOPE:verdict={verdict:?}:types={names:?}:constructors={ctors:?}:recursors={recs:?}:generic_closed_prop={}:generic_prop_large_elim={}:generic_prop_small={}:generic_nonrec_type={}:single_derived_field={}:unary_field_universe={}",
+                                generic_closed_prop_singleton_candidate(&block),
+                                generic_prop_singleton_large_elim_candidate(&export,&block),
+                                generic_nonrecursive_prop_small_candidate(&export,&block),
+                                generic_nonrecursive_type_candidate(&export,&block),
+                                single_derived_field_structure_candidate(&export,&block),
+                                unary_field_universe_candidate(&export,&block)
+                            );
+                        }
                         if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
                             let name = block
                                 .types
