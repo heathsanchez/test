@@ -739,6 +739,12 @@ impl<'a> TypeChecker<'a> {
         actual: &Closure,
         remaining: &mut usize,
     ) -> Option<TypeValue> {
+        // A checked, bounded support result allows a literal transport.
+        // In particular, closed codomains of very deep beta ladders must
+        // not pay to rebuild irrelevant lexical environments.
+        if self.type_depends_on_free(body, binder, (*remaining).min(4096)) == Some(false) {
+            return Some(body.clone());
+        }
         if *remaining == 0 {
             return None;
         }
