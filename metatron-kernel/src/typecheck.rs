@@ -1516,6 +1516,31 @@ impl<'a> TypeChecker<'a> {
         self.environment.get(name)?.value
     }
 
+    /// Unfold a separately checked definition under the caller's exact
+    /// universe substitution. Used by bounded symbolic recognizers only;
+    /// no new beta, projection or recursor authority is introduced here.
+    pub(crate) fn checked_definition_closure(
+        &self,
+        name: NameId,
+        args: &[LevelId],
+        caller: &Closure,
+        budget: usize,
+    ) -> Option<Closure> {
+        let decl = self.environment.get(name)?;
+        let value = decl.value?;
+        if args.len() != decl.level_params.len() || budget == 0 {
+            return None;
+        }
+        let mut subst = Vec::with_capacity(args.len());
+        for (param, arg) in decl.level_params.iter().zip(args) {
+            let level = instantiate_level(self.levels, *arg, &caller.levels, budget).ok()?;
+            subst.push((*param, level));
+        }
+        Some(Closure::with_levels(
+            value, EnvFrame::empty(), LevelSubstitution::new(subst),
+        ))
+    }
+
     pub(crate) fn distinct_bool_constructors(&self, left: NameId, right: NameId) -> bool {
         if left == right {
             return false;
