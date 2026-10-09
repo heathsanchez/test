@@ -1,0 +1,88 @@
+name: Collatz V114 nine exact congruence merger laws
+on:
+  push:
+    branches: [collatz-v113-nine-congruence-laws-v114]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-bounded-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recheck 3-law and 9-law symbolic CRT evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v113_three_laws_audit > evidence/v113-audit.json
+          python3 -m research.collatz_v114_nine_laws_audit | tee evidence/v114-audit.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open("evidence/v113-audit.json"))
+          b=json.load(open("evidence/v114-audit.json"))
+          assert a["v112_recovered_crt"]==1701
+          assert b["newly_covered_crt_classes"]==1296
+          assert b["recovered_by_word"]=={
+            key:144 for key in "abcdefghi"}
+          assert b["total_new_since_v111"]==2997
+          assert b["total_covered_crt"]==8791893
+          assert b["unresolved_crt"]==166059
+          assert b["global_collatz"]=="UNKNOWN" and b["qed"] is False
+          print("V114_NINE_UNBOUNDED_AFFINE_LAWS_AND_CRT_INTERSECTIONS_PASS")
+          PY
+      - name: Seal bounded audit checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > evidence/commit.txt
+          python3 - <<'PY' | tee evidence/qualification.json
+          import json,hashlib
+          r=json.load(open("evidence/v114-audit.json"))
+          obj={"schema":"COLLATZ_V114_NINE_CONGRUENCE",
+            "status":"BOUNDED_EXECUTABLE_EXACT",
+            "witness_digest_sha256":r["witness_digest_sha256"],
+            "new_crt_classes":1296,"remaining_unknown_crt":166059,
+            "global_collatz":"UNKNOWN","qed":False}
+          obj["certificate_sha256"]=hashlib.sha256(json.dumps(obj,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(obj,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v114-exact-bounded-audit
+          path: evidence/
+          if-no-files-found: error
+  lean-nine-universal-laws:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned Lean all-offset checks for twelve parametric source-merger laws
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CylinderCoalescence.olean formal/Collatz/CylinderCoalescence.lean > evidence/v108.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ReverseAffineMerger.olean formal/Collatz/ReverseAffineMerger.lean > evidence/v109.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/Q7SourceMerger.olean formal/Collatz/Q7SourceMerger.lean > evidence/v110.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ScaledReverseMerger.olean formal/Collatz/ScaledReverseMerger.lean > evidence/v112.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ThreeCongruenceMerger.olean formal/Collatz/ThreeCongruenceMerger.lean | tee evidence/v113.log
+          lake env lean -DautoImplicit=false formal/Collatz/NineCongruenceMerger.lean | tee evidence/v114.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v113.log evidence/v114.log
+          for tag in a b c d e f g h i; do
+            grep -q "v114_${tag}_source_merge" evidence/v114.log
+          done
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v114-lean-twelve-laws
+          path: evidence/
+          if-no-files-found: error
