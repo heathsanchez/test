@@ -166,7 +166,7 @@ jobs:
                   import re
                   ids=set()
                   for line in row['actual_head']:
-                      ids.update(int(v) for v in re.findall(r'NameId\\((\\d+)\\)',line))
+                      ids.update(int(v) for v in re.findall(r'NameId\((\d+)\)',line))
                   row['actual_head_names']={str(k):idx.get(k,'') for k in sorted(ids)}
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
               rows.append(row)
