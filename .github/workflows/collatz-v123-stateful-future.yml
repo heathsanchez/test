@@ -20,6 +20,17 @@ jobs:
           python3 -m research.collatz_ros_future_controller_v123 --bootstrap --output evidence/v123-state.json | tee evidence/v123-bootstrap.log
           python3 -m research.collatz_ros_future_controller_v123 --input evidence/v123-state.json --output evidence/v123-roundtrip.json | tee evidence/v123-reload.log
           cmp evidence/v123-state.json evidence/v123-roundtrip.json
+          python3 -m research.collatz_ros_future_controller_v123 --input research/collatz_ros_state_v123.json --output evidence/v123-source-replay.json > evidence/v123-checked-source.log
+          python3 - <<'PY'
+          import json
+          a=json.load(open("research/collatz_ros_state_v123.json"))
+          b=json.load(open("evidence/v123-state.json"))
+          c=json.load(open("evidence/v123-source-replay.json"))
+          assert a==b==c
+          assert a["grammar"]["revision"]==1
+          print("VERSIONED_GITHUB_SNAPSHOT_EQUALS_FRESH_BOOTSTRAP_AND_RESTART")
+          PY
+
           python3 -m research.collatz_ros_future_controller_v123 --input evidence/v123-state.json --revoke-support v122_exact_first_join_27 --output evidence/v123-revoked.json | tee evidence/v123-revoked.log
           python3 - <<'PY'
           import json,hashlib,pathlib,subprocess
