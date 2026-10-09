@@ -1,0 +1,159 @@
+name: Collatz V123 stateful lawful-future controller
+on:
+  push:
+    branches: [collatz-ros-lawful-future-controller-v123]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stateful-controller:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay protected future tests, restart and revocation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m unittest -v research.test_collatz_ros_future_controller_v123 2>&1 | tee evidence/v123-unit.log
+          python3 -m research.collatz_ros_future_controller_v123 --bootstrap --output evidence/v123-state.json | tee evidence/v123-bootstrap.log
+          python3 -m research.collatz_ros_future_controller_v123 --input evidence/v123-state.json --output evidence/v123-roundtrip.json | tee evidence/v123-reload.log
+          cmp evidence/v123-state.json evidence/v123-roundtrip.json
+          python3 -m research.collatz_ros_future_controller_v123 --input evidence/v123-state.json --revoke-support v122_exact_first_join_27 --output evidence/v123-revoked.json | tee evidence/v123-revoked.log
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          root=pathlib.Path("evidence")
+          original=json.loads((root/"v123-state.json").read_text())
+          revoked=json.loads((root/"v123-revoked.json").read_text())
+          assert original["schema"]=="COLLATZ_ROS_LAWFUL_FUTURE_V123"
+          assert original["grammar"]["active"]=="SOURCE_INDEXED_TWO_CLOCK"
+          assert len(original["joins"])==4
+          assert {z["source"] for z in original["joins"]}=={27,11,3}
+          assert len(revoked["joins"])==3 and len(revoked["archived_joins"])==1
+          assert original["global_collatz"]=="UNKNOWN" and original["qed"] is False
+          assert not original["universal_event_producer_proved"]
+          assert original["support"]["v122_exact_first_join_27"]["run"]==37975443683
+          assert original["support"]["v121_no_fixed_F27"]["run"]==37975109424
+          expected=("27", "23", "59", "0")
+          assert any(tuple(str(w[k]) for k in ("source","earlier","source_clock","earlier_clock"))==expected
+                     for w in original["joins"])
+          seal={"schema":"COLLATZ_V123_STATEFUL_EXACT_REPLAY",
+                "status":"WARRANTED_BOUNDED_EXACT",
+                "state_sha256":hashlib.sha256((root/"v123-state.json").read_bytes()).hexdigest(),
+                "source_commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),
+                "live_warranted_bounded_joins":len(original["joins"]),
+                "grammar_revision":original["grammar"]["revision"],
+                "replay_restart_exact":True,"revocation_tested":True,
+                "universal_collatz":False,"global_collatz":"UNKNOWN","qed":False}
+          (root/"v123-exact-qualification.json").write_text(json.dumps(seal,indent=2,sort_keys=True)+"\n")
+          print("V123_RESTART_REPLAY_REVOCATION_PASS_GLOBAL_COLLATZ_UNKNOWN")
+          PY
+          echo V123_CHECKPOINT_BEGIN
+          cat evidence/v123-state.json
+          echo V123_CHECKPOINT_END
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v123-state-and-regressions
+          path: evidence/
+          if-no-files-found: error
+  lawful-join-lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check two-clock source-reduction and monotone composition
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/base-build.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/LawfulFutureJoin.lean 2>&1 | tee evidence/v123-lean.log
+          python3 - <<'PY'
+          import json,re,hashlib,pathlib,subprocess
+          log=pathlib.Path("evidence/v123-lean.log").read_text()
+          assert not re.search(r"sorryAx|Lean\.ofReduceBool|error:",log)
+          axioms={}
+          for name,ax in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+              vals=[v.strip() for v in ax.split(",") if v.strip()]
+              assert set(vals)<={"propext","Classical.choice","Quot.sound"},(name,vals)
+              axioms[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+              axioms[name]=[]
+          expected=["toLowerMerge","common_suffix","compose_meets",
+                    "compose","refutes_minimal_bad","source11_to2_by_reclosure"]
+          for n in expected:
+              assert "CollatzFinal.LawfulFutureJoin."+n in axioms,n
+          seal={"schema":"COLLATZ_V123_TWO_CLOCK_PROOF_COMPOSITION",
+                "status":"WARRANTED_FORMAL_GENERIC_SOUNDNESS_ONLY",
+                "new_theorem_axioms":axioms,
+                "source_commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),
+                "lean_log_sha256":hashlib.sha256(log.encode()).hexdigest(),
+                "global_collatz":"UNKNOWN","qed":False,
+                "no_universal_completeness_claim":True}
+          pathlib.Path("evidence/v123-lean-qualification.json").write_text(
+              json.dumps(seal,indent=2,sort_keys=True)+"\n")
+          print("V123_LAWFUL_TWO_CLOCK_LEAN_PASS_GLOBAL_COLLATZ_UNKNOWN")
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v123-two-clock-Lean
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [stateful-controller, lawful-join-lean]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v123-state-and-regressions
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v123-two-clock-Lean
+          path: evidence/lean
+      - name: Reconcile exact source and kernel warrant
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          a=pathlib.Path("evidence/exact")
+          b=pathlib.Path("evidence/lean")
+          state=json.loads((a/"v123-state.json").read_text())
+          qa=json.loads((a/"v123-exact-qualification.json").read_text())
+          qb=json.loads((b/"v123-lean-qualification.json").read_text())
+          head=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()
+          assert qa["source_commit"]==qb["source_commit"]==head
+          assert qa["state_sha256"]==hashlib.sha256((a/"v123-state.json").read_bytes()).hexdigest()
+          assert state["global_collatz"]==qa["global_collatz"]==qb["global_collatz"]=="UNKNOWN"
+          assert qa["qed"] is qb["qed"] is False
+          assert qa["live_warranted_bounded_joins"]==4
+          assert qb["status"]=="WARRANTED_FORMAL_GENERIC_SOUNDNESS_ONLY"
+          r={"schema":"COLLATZ_V123_FINAL_STATEFUL_CHECKPOINT",
+             "status":"WARRANTED_BOUNDED_ENGINE_AND_FORMAL_SOUNDNESS",
+             "source_commit":head,
+             "state_sha256":qa["state_sha256"],
+             "lean_log_sha256":qb["lean_log_sha256"],
+             "active_protected_join_count":4,
+             "grammar_relative_unknowns_preserved":True,
+             "supports_revocation":True,
+             "universal_event_production":"UNKNOWN",
+             "global_collatz":"UNKNOWN","qed":False}
+          pathlib.Path("evidence/v123-final-seal.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print("V123_FINAL_SEAL_WARRANTED_SCOPED_NOT_UNIVERSAL_QED")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v123-final-research-seal
+          path: evidence/v123-final-seal.json
+          if-no-files-found: error
