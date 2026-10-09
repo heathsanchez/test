@@ -149,6 +149,43 @@ impl<'a> TypeChecker<'a> {
         )
     }
 
+    /// Diagnostic only: instantiate a declaration's dependent Pi telescope
+    /// with the actual application closures, never authorizing acceptance.
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_applied_telescope(
+        &self,
+        name: NameId,
+        args: &[Closure],
+        budget: usize,
+    ) -> String {
+        let Some(decl) = self.environment.get(name) else {
+            return "missing-declaration".into();
+        };
+        let mut current = Closure::new(decl.ty, EnvFrame::empty());
+        let mut steps = Vec::new();
+        for (i, arg) in args.iter().enumerate() {
+            let exposed = self.machine().expose(
+                current.clone(), Transparency::Reducible, budget,
+            );
+            match exposed.proven_value() {
+                Some(Value::Pi { domain, body }) => {
+                    steps.push(format!("arg={i}:domain={domain:?}:actual={arg:?}"));
+                    current = Closure::with_levels(
+                        body.expr, body.env.extend(arg.clone()), body.levels.clone(),
+                    );
+                }
+                other => {
+                    steps.push(format!("arg={i}:non-pi={other:?}"));
+                    return format!("{steps:?}");
+                }
+            }
+        }
+        let codomain = self.machine().expose(
+            current, Transparency::Reducible, budget,
+        );
+        format!("steps={steps:?}:instantiated_codomain={codomain:?}")
+    }
+
     pub(crate) fn is_proposition_in_context(
         &self,
         expression: ExprId,
