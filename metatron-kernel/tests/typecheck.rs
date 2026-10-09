@@ -3,7 +3,7 @@ use metatron_kernel::id::{ExprId, IdTable, LevelId, NameId};
 use metatron_kernel::level::{LevelTerm, succ};
 use metatron_kernel::syntax::{Expr, Level};
 use metatron_kernel::typecheck::{TypeChecker, TypeValue};
-use metatron_kernel::value::{Closure, EnvFrame};
+use metatron_kernel::value::{Closure, EnvFrame, FreeId};
 
 struct Fixture {
     expressions: IdTable<ExprId, Expr>,
@@ -143,6 +143,7 @@ fn annotated_identity_lambda_infers_a_pi_type() {
         Some(&TypeValue::Pi {
             domain: Box::new(domain.clone()),
             body: Box::new(domain),
+            binder: FreeId(0),
         })
     );
 }
