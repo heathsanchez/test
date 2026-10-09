@@ -587,6 +587,14 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                if std::env::var_os("NUCLEUS_TRACE_TYPED_PROJECTION").is_some()
+                    && !conversion.is_proven()
+                {
+                    eprintln!(
+                        "NUCLEUS_TYPED_PROJECTION_CHECK:expression={expression:?}:frame={}:context_len={}:result={conversion:?}:inferred={value:?}:expected={expected:?}",
+                        frame.id(), context.len(),
+                    );
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
