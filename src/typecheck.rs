@@ -611,6 +611,14 @@ impl<'a> TypeChecker<'a> {
                                 "NUCLEUS_DEPENDENCY_GAP:expr={expression:?}:context={}:frame={}:residual={:?}:inferred_type={:?}:expected_type={:?}",
                                 context.len(), frame.id(), residual, value, expected
                             );
+                            if let (TypeValue::Term(inferred), TypeValue::Term(anticipated)) = (&value, expected) {
+                                for slot in 0..6u64 {
+                                    eprintln!(
+                                        "NUCLEUS_SUBLE_BINDING:expr={expression:?}:slot={slot}:actual={:?}:expected={:?}",
+                                        inferred.env.lookup(slot), anticipated.env.lookup(slot)
+                                    );
+                                }
+                            }
                         }
                     }
                 }
