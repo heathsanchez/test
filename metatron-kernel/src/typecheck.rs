@@ -331,7 +331,6 @@ impl<'a> TypeChecker<'a> {
                     };
                 }
                 let Some((domain, body)) = self.pi_view(function_type.clone(), *remaining) else {
-                    #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
                         let mut reducible = None;
                         let mut full = None;
@@ -587,6 +586,14 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                if std::env::var_os("NUCLEUS_TRACE_CHECK_CONVERSION").is_some()
+                    && !conversion.is_proven()
+                {
+                    eprintln!(
+                        "NUCLEUS_CHECK_CONVERSION:expression={expression:?}:depth={}:frame={}:remaining={}:inferred={value:?}:expected={expected:?}:result={conversion:?}",
+                        context.len(), frame.id(), *remaining,
+                    );
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
