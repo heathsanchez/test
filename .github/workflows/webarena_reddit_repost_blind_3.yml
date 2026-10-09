@@ -3,10 +3,12 @@ name: WebArena blind Reddit image repost qualification
 on:
   workflow_dispatch:
   push:
-    branches: [webarena-verified-capability-compiler-v1]
+    branches: [webarena-repost-separator-v1]
     paths:
       - ".github/workflows/webarena_reddit_repost_blind_3.yml"
       - "scripts/webarena_reddit_repost_blind.py"
+      - "scripts/webarena_reddit_repost_image.py"
+      - "tests/test_webarena_repost_separator.py"
       - "tests/test_webarena_reddit_repost_blind.py"
 
 concurrency:
@@ -45,6 +47,7 @@ jobs:
       - name: Test task-ID-blind admission
         run: |
           python -m unittest discover -s tests -p 'test_webarena_reddit_repost_blind.py' -v
+          python -m unittest discover -s tests -p 'test_webarena_repost_separator.py' -v
           python -m py_compile scripts/webarena_reddit_repost_blind.py
       - name: Execute three intent-only image reposts
         run: |
