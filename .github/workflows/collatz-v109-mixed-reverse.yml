@@ -1,0 +1,71 @@
+name: Collatz V109 mixed reverse-affine coalescence
+on:
+  push:
+    branches: [collatz-v108-mixed-reverse-reclosure-v109]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check all-offset and mixed reverse Lean theorems
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/build.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CylinderCoalescence.olean formal/Collatz/CylinderCoalescence.lean | tee evidence/v108-lean.log
+          lake env lean -DautoImplicit=false formal/Collatz/ReverseAffineMerger.lean | tee evidence/v109-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v108-lean.log evidence/v109-lean.log
+          grep -q 'affine_reverse_sound' evidence/v109-lean.log
+          grep -q 'affine_reverse_lower_merge_all_offsets' evidence/v109-lean.log
+      - name: Exact bounded source-relative merger replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v108_reclosure.py > evidence/v108-result.json
+          python3 -m research.collatz_v109_reverse_reclosure > evidence/v109-result.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open("evidence/v108-result.json"))
+          b=json.load(open("evidence/v109-result.json"))
+          assert a["counts"]["certified_cylinders_n_gt_1"]==3904
+          assert b["counts"]["v108_cylinders"]==3904
+          assert b["counts"]["new_reverse_merged_cylinders"]==48
+          assert b["counts"]["unknown_cylinders"]==144
+          assert b["global_collatz"]=="UNKNOWN" and b["qed"] is False
+          print("BOUNDED_3952_SOURCE_FAMILIES_REPLAYED_GLOBAL_UNKNOWN")
+          PY
+      - name: Seal bounded V109 qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > evidence/commit.txt
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            "schema":"COLLATZ_V109_MIXED_REVERSE_AFFINE",
+            "status":"WARRANTED_FORMAL_REVERSE_WORD_LAWS_AND_BOUNDED_EXECUTABLE_MERGERS",
+            "bounded_result_sha256":hashlib.sha256(open("evidence/v109-result.json","rb").read()).hexdigest(),
+            "depth":12,"reverse_budget":12,"v108_merged_cylinders":3904,
+            "new_reverse_merged_cylinders":48,"remaining_unknown_cylinders":144,
+            "individual_witnesses_lean_reified":False,
+            "universal_natural_source_bar":False,
+            "global_collatz":"UNKNOWN","qed":False}
+          result["certificate_sha256"]=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v109-mixed-reverse-affine
+          path: evidence/
+          if-no-files-found: error
