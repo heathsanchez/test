@@ -58,6 +58,7 @@ jobs:
                  'last_mismatch':mismatches[-3:],
                  'major_values':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR_VALUE:' in x][:4],
                  'unary_probe_count':sum('NUCLEUS_CERTIFIED_UNARY_MAJOR:' in x for x in lines),
+                 'unary_major_values':[x[:1500] for x in lines if 'NUCLEUS_UNARY_MAJOR_VALUE:' in x][:8],
                  'terminal':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-4:]}
             rows.append(row)
             pathlib.Path('metatron-kernel/evidence-out/unary-major64-v1',name.replace('/','__')+'.txt').write_text('\n'.join(lines))
