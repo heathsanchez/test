@@ -2533,6 +2533,11 @@ fn check_inductive(
         return install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor);
     }
 
+    if closed_three_constructor_nonrecursive_candidate(export, block) {
+        return check_generic_nonrecursive_type(
+            export, environment, block, limits, delta_policy,
+        );
+    }
     match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
@@ -2557,6 +2562,67 @@ fn exported_level_is_definitely_nonzero(
         }
         Some(Level::Zero | Level::IMax(_, _) | Level::Param(_)) | None => false,
     }
+}
+
+/// A closed, safe, nonrecursive three-constructor sum whose complete
+/// constructor/recursor contracts can be validated by the existing generic
+/// derived-signature checker. Selector alone grants NO admission.
+fn closed_three_constructor_nonrecursive_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [a,b,c], [recursor])=(
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {return false};
+    if inductive.num_params!=0
+        || inductive.num_indices!=0
+        || inductive.num_nested!=0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.k
+        || recursor.num_params!=0
+        || recursor.num_indices!=0
+        || recursor.num_motives!=1
+        || recursor.num_minors!=3
+        || recursor.rules.len()!=3
+        || recursor.level_params.len()!=1
+    {
+        return false;
+    }
+    let Some((_,inductive_sort))=pi_spine(export,inductive.ty,0) else {
+        return false;
+    };
+    if !matches!(
+        export.exprs.get(inductive_sort),
+        Some(Expr::Sort(level)) if exported_level_is_definitely_nonzero(export,*level,128)
+    ) {
+        return false;
+    }
+    for ctor in [a,b,c] {
+        if ctor.is_unsafe
+            || ctor.inductive!=inductive.name
+            || ctor.num_params!=0
+            || !ctor.level_params.is_empty()
+            || ctor.num_fields>4
+        {
+            return false;
+        }
+        let Ok(fields)=usize::try_from(ctor.num_fields) else {return false};
+        let Some((domains,_result))=pi_spine(export,ctor.ty,fields) else {
+            return false;
+        };
+        if domains.iter().any(|field| expression_contains_constant(
+            export,*field,inductive.name
+        )) {
+            return false;
+        }
+    }
+    true
 }
 
 fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
@@ -3892,6 +3958,7 @@ fn check_generic_nonrecursive_type(
     if !generic_nonrecursive_type_candidate(export,block)
         && !generic_two_parameter_sum_candidate(export, block)
         && !generic_optional_value_candidate(export, block)
+        && !closed_three_constructor_nonrecursive_candidate(export, block)
     {
         return Err(Verdict::Unknown);
     }
