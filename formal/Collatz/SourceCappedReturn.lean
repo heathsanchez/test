@@ -158,12 +158,16 @@ theorem minimal_bad_source_capped_coherent_return_non_decrease
     rw [← hshift] at htrace
     rw [hsame] at htrace
     exact htrace
+  have hcapLocal :
+      2 ^ before.anchor * before.owner - 1 ≤ n := by
+    rw [← hbefore]
+    exact hcap
   have hno := minimal_bad_excludes_source_capped_return_descent
     hmin (initialDepth + episodeStreamTime a i)
     (episodeStreamTime before d)
     before.anchor before.owner after.owner
     before.anchor_pos before.owner_pos after.owner_pos
-    hbefore hreturn (by simpa [before] using hcap)
+    hbefore hreturn hcapLocal
   omega
 
 /-- For a source-capped actual repeated-anchor return that is
