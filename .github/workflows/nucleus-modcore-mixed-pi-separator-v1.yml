@@ -85,6 +85,7 @@ jobs:
               'sha256':hashlib.sha256(body).hexdigest(),
               'mixed_pi':traces('NUCLEUS_MIXED_PI:',20),
               'mixed_body_exposures':traces('NUCLEUS_MIXED_PI_BODY_VALUES:',8),
+              'mixed_projection_pieces':traces('NUCLEUS_MIXED_PI_PIECES:',8),
               'dependent_gap':traces('NUCLEUS_DEPENDENCY_GAP:',4),
               'terminal':[s for s in log if s.startswith('NUCLEUS_DOWNSTREAM:')][-2:]}
             rows.append(row)
