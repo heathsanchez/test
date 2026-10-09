@@ -101,7 +101,7 @@ theorem deep_switch_zero_or_high_order
           ((((2 : Int) ^ D₁) - A₁) *
               ((2 : Int) ^ (D₂ + 1) * u) +
             (2 : Int) ^ (D₂ + 1) * z) := by
-              simp [Int.mul_add, Int.mul_assoc,
+              simp [Int.add_mul, Int.mul_add, Int.mul_assoc,
                 Int.mul_comm, Int.mul_left_comm]
         _ = ((((2 : Int) ^ D₁) - A₁) *
               returnDefect A₂ B₂ ((2 : Int) ^ D₂) m +
