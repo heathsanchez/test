@@ -18,6 +18,8 @@ jobs:
           mkdir -p evidence
           python3 -m unittest -v             research.test_collatz_ros_future_controller_v123             research.test_collatz_ros_future_controller_v124             2>&1 | tee evidence/v124-tests.log
           python3 -m research.collatz_ros_future_controller_v124             --bootstrap --input research/collatz_ros_state_v123.json             --output evidence/v124-state.json | tee evidence/v124-bootstrap.log
+          cmp research/collatz_ros_state_v124.json evidence/v124-state.json
+          sha256sum research/collatz_ros_state_v123.json research/collatz_ros_state_v124.json             > evidence/source-controlled-checkpoint-sha256.txt
           python3 -m research.collatz_ros_future_controller_v124             --input evidence/v124-state.json --output evidence/v124-restart.json             | tee evidence/v124-restart.log
           cmp evidence/v124-state.json evidence/v124-restart.json
           python3 -m research.collatz_ros_future_controller_v124             --input evidence/v124-state.json             --revoke-support v124_exact_replay             --output evidence/v124-revoked.json | tee evidence/v124-revoked.log
@@ -37,7 +39,7 @@ jobs:
           assert s['controller_revision']==2
           assert len(s['joins'])==7 and len(s['archived_joins'])==0
           assert len(revoked['joins'])==4 and len(revoked['archived_joins'])==3
-          assert s['support']['v123_compose_schema']['status']=='WARRANTED_FORMAL' if False else True
+          assert s['support']['v123_composition_theorem']['status']=='WARRANTED_FORMAL'
           assert s['support']['v123_composition_theorem']['run']==37978857199
           assert s['support']['v124_exact_replay']['status']=='BOUNDED_EXACT'
           assert s['negative_controls'][2]['changing_source']==2**80-1
@@ -156,6 +158,8 @@ jobs:
           assert q['source_commit']==l['source_commit']==head
           assert q['new_v124_checkpoint_sha256']==hashlib.sha256(
               (a/'v124-state.json').read_bytes()).hexdigest()
+          assert (a/'v124-state.json').read_bytes()==pathlib.Path(
+              'research/collatz_ros_state_v124.json').read_bytes()
           assert s['admission_schema']=='COLLATZ_ROS_V124_TYPED_WARRANT_ADMISSION'
           assert s['global_collatz']==q['global_collatz']==l['global_collatz']=='UNKNOWN'
           assert q['qed'] is l['qed'] is False
