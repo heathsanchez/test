@@ -975,6 +975,99 @@ impl<'a> TypeChecker<'a> {
         self.expressions.get(expression)
     }
 
+    /// Refute proof conversion before exposing either proof body, but only
+    /// when both term types are independently established propositions and
+    /// their proposition types have a definite conversion obstruction.
+    ///
+    /// This is deliberately refutation-only: UNKNOWN never becomes false,
+    /// and this path grants no new proof-irrelevance acceptance authority.
+    pub(crate) fn proof_terms_different_propositions_before_whnf(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if budget < 32 {
+            return false;
+        }
+        let probe = budget.min(2048);
+
+        let infer_closure_type = |closure: &Closure| -> Option<TypeValue> {
+            let checker = TypeChecker::with_level_substitution(
+                self.expressions,
+                self.levels,
+                self.environment,
+                closure.levels.to_map(),
+            )
+            .with_delta_policy(self.delta_policy);
+            let mut remaining = probe;
+            checker
+                .infer_in(
+                    closure.expr,
+                    context,
+                    &closure.env,
+                    &mut remaining,
+                    &mut HashMap::new(),
+                )
+                .proven_value()
+                .cloned()
+        };
+
+        let Some(left_type) = infer_closure_type(left) else {
+            return false;
+        };
+        let Some(right_type) = infer_closure_type(right) else {
+            return false;
+        };
+
+        let type_is_proposition = |ty: &TypeValue| -> bool {
+            let TypeValue::Term(closure) = ty else {
+                return false;
+            };
+            let checker = TypeChecker::with_level_substitution(
+                self.expressions,
+                self.levels,
+                self.environment,
+                closure.levels.to_map(),
+            )
+            .with_delta_policy(self.delta_policy);
+            checker
+                .is_proposition_in_context(closure.expr, context, &closure.env, probe)
+                .is_proven()
+        };
+
+        if !type_is_proposition(&left_type) || !type_is_proposition(&right_type) {
+            return false;
+        }
+
+        match crate::convert::convert_with_policy_in_context(
+            self,
+            &left_type,
+            &right_type,
+            probe,
+            self.delta_policy,
+            context.len(),
+            context,
+        ) {
+            Judgment::Refuted { obstruction }
+                if definite_conversion_obstruction(obstruction.0) =>
+            {
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_PREWHNF_PROOF_REFUTE").is_some() {
+                    eprintln!(
+                        "NUCLEUS_PREWHNF_PROOF_REFUTE:left={:?}:right={:?}:obstruction={:?}",
+                        left_type, right_type, obstruction
+                    );
+                }
+                true
+            }
+            Judgment::Proven { .. }
+            | Judgment::Refuted { .. }
+            | Judgment::Unknown { .. } => false,
+        }
+    }
+
     pub(crate) fn proof_terms_same_proposition(
         &self,
         left: &Closure,
