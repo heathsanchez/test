@@ -28,6 +28,7 @@ on:
       - "tests/test_webarena_reddit_blind_retrieval_expansion.py"
       - "scripts/webarena_unified_blind_74.py"
       - "tests/test_webarena_unified_blind_74.py"
+      - "tests/test_webarena_74_read_before_write.py"
       - "scripts/webarena_shopping_wishlist_blind.py"
       - "tests/test_webarena_shopping_wishlist_blind.py"
       - "tests/test_webarena_unified_blind_four_site.py"
@@ -112,6 +113,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_webarena_unified_blind_compounding.py' -v
           python -m unittest discover -s tests -p 'test_webarena_reddit_blind_retrieval_expansion.py' -v
           python -m unittest discover -s tests -p 'test_webarena_unified_blind_74.py' -v
+          python -m unittest discover -s tests -p 'test_webarena_74_read_before_write.py' -v
           python -m unittest discover -s tests -p 'test_webarena_shopping_wishlist_blind.py' -v
           python -m unittest discover -s tests -p 'test_webarena_gitlab_excluded_label_blind.py' -v
           python -m unittest discover -s tests -p 'test_webarena_shopping_price_filter_blind.py' -v
@@ -147,7 +149,9 @@ jobs:
           gitlab_retrieve=(293,296,297,349,350,786,788,316)
           shopping_wishlist=(519,520)
           reddit_retrieval=(28,29,31,66,67,68)
-          ids=reddit+gitlab+crosssite+shopping+admin+gitlab_retrieve+shopping_wishlist+reddit_retrieval
+          # Read the pristine forum fixture before task-driven submissions/votes
+          # mutate its hot-post rankings. This is scheduling, not task-ID routing.
+          ids=reddit_retrieval+reddit+gitlab+crosssite+shopping+admin+gitlab_retrieve+shopping_wishlist
           assert len(ids)==74 and len(set(ids))==74
           records={}
           for ident in ids:
