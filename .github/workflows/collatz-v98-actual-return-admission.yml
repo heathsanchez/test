@@ -1,0 +1,80 @@
+name: Collatz V98 actual return cylinder admission
+on:
+  push:
+    branches: [collatz-v97-actual-return-admission-v98]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v97-actual-episode-chain
+          run-id: 37874361931
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v97
+      - name: Verify V97 immutable qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib
+          q=json.load(open("parent-v97/qualification.json"))
+          claimed=q.pop("certificate_sha256")
+          computed=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          assert claimed==computed=="3f1f101e8fbaeb3e0ec5445f5519084daf86fc04cc40fe3ce4ac7194be0d06d2"
+          assert q["status"]=="WARRANTED_FORMAL_FINITE_ACTUAL_RETURN_CERTIFICATE"
+          print("V97_PARENT_VERIFIED")
+          PY
+      - name: Kernel-check actual return cylinder admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/dyadic.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SameCentreMacro.olean formal/Collatz/SameCentreMacro.lean > evidence/same.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/DistinctCentreSwitch.olean formal/Collatz/DistinctCentreSwitch.lean > evidence/distinct.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeDeterminism.olean formal/Collatz/EpisodeDeterminism.lean > evidence/determinism.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisode.olean formal/Collatz/ActualEpisode.lean > evidence/actual.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeBridge.olean formal/Collatz/EpisodeBridge.lean > evidence/bridge.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisodeChain.olean formal/Collatz/ActualEpisodeChain.lean > evidence/chain.log
+          lake env lean -DautoImplicit=false formal/Collatz/ActualReturnAdmission.lean | tee evidence/v98.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v98.log
+          grep -q 'actual_same_anchor_return_admission' evidence/v98.log
+          grep -q 'odd_owner_return_zero_or_admissible' evidence/v98.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal return admission qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            "schema":"COLLATZ_V97_ACTUAL_RETURN_ADMISSION_V98",
+            "status":"WARRANTED_FORMAL_ACTUAL_RETURN_CYLINDER_ADMISSION",
+            "parent_v97_qualification_sha256":"3f1f101e8fbaeb3e0ec5445f5519084daf86fc04cc40fe3ce4ac7194be0d06d2",
+            "actual_chain_coefficients_powers_2_3":True,
+            "odd_owner_return_defect_divisible_by_2powDplus1":True,
+            "nonzero_return_is_cylinder_admissible":True,
+            "zero_defect_remains_separate":True,
+            "global_collatz":"UNKNOWN",
+            "qed":False,
+            "residual":"Prove all relevant no-exit actual source continuations generate sufficient same-anchor returns or independent source progress, and exclude nontrivial periodicity."
+          }
+          result["certificate_sha256"]=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v98-actual-return-admission
+          path: evidence/
+          if-no-files-found: error
