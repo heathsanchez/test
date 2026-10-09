@@ -1597,7 +1597,7 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         budget: usize,
     ) -> bool {
-        if context.len() != 13 || budget < 1024 {
+        if !(4..=24).contains(&context.len()) || budget < 1024 {
             return false;
         }
         let mut lf=2048;
@@ -1641,7 +1641,8 @@ impl<'a> TypeChecker<'a> {
             static COUNT: AtomicUsize=AtomicUsize::new(0);
             if COUNT.fetch_add(1,Ordering::Relaxed)<20 {
                 eprintln!(
-                    "NUCLEUS_CONTEXTUAL_PROOF_SPINE:checked:context=13:left_type={left_type:?}:right_type={right_type:?}:type_relation={relation:?}"
+                    "NUCLEUS_CONTEXTUAL_PROOF_SPINE:checked:context={}:left_type={left_type:?}:right_type={right_type:?}:type_relation={relation:?}",
+                    context.len(),
                 );
             }
         }
