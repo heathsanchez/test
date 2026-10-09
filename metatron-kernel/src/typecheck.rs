@@ -424,6 +424,41 @@ impl<'a> TypeChecker<'a> {
                                     note("second-pi-terminal-codomain",format!(
                                         "actual={actual_final:?}:expected={expected_final:?}:actual_full={actual_full:?}:expected_full={expected_full:?}"
                                     ));
+
+                                    if let (
+                                        Some(Value::Neutral(lhs)),
+                                        Some(Value::Neutral(rhs)),
+                                    ) = (actual_full.proven_value(), expected_full.proven_value())
+                                    {
+                                        let mut ctx = one_context.clone();
+                                        ctx.push((**second_inferred_domain).clone());
+                                        let equivalent_head = lhs.head == rhs.head;
+                                        let mut obligations = Vec::new();
+                                        for (i, (left_arg, right_arg)) in lhs.spine.iter().zip(&rhs.spine).enumerate() {
+                                            let preferred = crate::convert::convert_with_policy_in_context(
+                                                self,
+                                                &TypeValue::Term(left_arg.clone()),
+                                                &TypeValue::Term(right_arg.clone()),
+                                                128, crate::convert::DeltaPolicy::PreferredOnly,
+                                                ctx.len(), &ctx,
+                                            );
+                                            let guarded = crate::convert::convert_with_policy_in_context(
+                                                self,
+                                                &TypeValue::Term(left_arg.clone()),
+                                                &TypeValue::Term(right_arg.clone()),
+                                                128, crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                ctx.len(), &ctx,
+                                            );
+                                            obligations.push(format!(
+                                                "arg={i}:left={left_arg:?}:right={right_arg:?}:preferred={preferred:?}:guarded={guarded:?}"
+                                            ));
+                                        }
+                                        note("terminal-neutral-spine-census",format!(
+                                            "head_identical={equivalent_head}:lhs_arity={}:rhs_arity={}:context={}:obligations={obligations:?}",
+                                            lhs.spine.len(),rhs.spine.len(),ctx.len()
+                                        ));
+                                    }
+
                                 }
 
                             } else {
