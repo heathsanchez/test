@@ -1150,6 +1150,58 @@ impl<'a> TypeChecker<'a> {
                                         expected_final_whnf = Some(self.machine().expose(
                                             expected_final, Transparency::Full, 512,
                                         ));
+                                        if let (
+                                            Some(Value::Neutral(actual_neutral)),
+                                            Some(Value::Neutral(expected_neutral)),
+                                        ) = (
+                                            actual_final_whnf.as_ref().and_then(|j| j.proven_value()),
+                                            expected_final_whnf.as_ref().and_then(|j| j.proven_value()),
+                                        ) {
+                                            if actual_neutral.head == expected_neutral.head
+                                                && actual_neutral.spine.len() == 2
+                                                && expected_neutral.spine.len() == 2
+                                            {
+                                                for actual_index in 0..2 {
+                                                    for expected_index in 0..2 {
+                                                        let actual = &actual_neutral.spine[actual_index];
+                                                        let anticipated = &expected_neutral.spine[expected_index];
+                                                        let preferred = crate::convert::convert_with_policy_in_context(
+                                                            self,
+                                                            &TypeValue::Term(actual.clone()),
+                                                            &TypeValue::Term(anticipated.clone()),
+                                                            (*remaining).min(512),
+                                                            crate::convert::DeltaPolicy::PreferredOnly,
+                                                            inner_context.len(),
+                                                            &inner_context,
+                                                        );
+                                                        let guarded = if preferred.is_proven() {
+                                                            preferred.clone()
+                                                        } else {
+                                                            crate::convert::convert_with_policy_in_context(
+                                                                self,
+                                                                &TypeValue::Term(actual.clone()),
+                                                                &TypeValue::Term(anticipated.clone()),
+                                                                (*remaining).min(512),
+                                                                crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                                inner_context.len(),
+                                                                &inner_context,
+                                                            )
+                                                        };
+                                                        let actual_whnf = self.machine().expose(
+                                                            actual.clone(), Transparency::Full, 512,
+                                                        );
+                                                        let expected_whnf = self.machine().expose(
+                                                            anticipated.clone(), Transparency::Full, 512,
+                                                        );
+                                                        eprintln!(
+                                                            "NUCLEUS_FINAL_SPINE_ARG:expr={expression:?}:depth={}:actual_index={actual_index}:expected_index={expected_index}:actual={actual:?}:expected={anticipated:?}:actual_whnf={actual_whnf:?}:expected_whnf={expected_whnf:?}:preferred={preferred:?}:guarded={guarded:?}",
+                                                            inner_context.len(),
+                                                        );
+                                                    }
+                                                }
+                                            }
+                                        }
+
                                     }
                                     eprintln!(
                                         "NUCLEUS_SECOND_PI_DOMAIN:expr={expression:?}:domain={inner_actual_domain:?}:expected_domain={inner_expected_domain:?}:domain_relation={inner_domain_relation:?}:last_relation={last_relation:?}:actual_final_whnf={actual_final_whnf:?}:expected_final_whnf={expected_final_whnf:?}",
