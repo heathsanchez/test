@@ -1042,17 +1042,20 @@ impl<'a> Machine<'a> {
         if certified_unary_family && std::env::var_os("NUCLEUS_TRACE_UNARY_MAJOR").is_some() {
             eprintln!("NUCLEUS_CERTIFIED_UNARY_MAJOR:cap={major_cap}:budget={budget}");
         }
-        let exposed = self
-            .expose_internal(
-                target.clone(),
-                Transparency::Full,
-                budget.saturating_sub(1).min(major_cap),
-                false,
-                false,
-            )
-            .proven_value()?
-            .value
-            .clone();
+        let exposed_result = self.expose_internal(
+            target.clone(),
+            Transparency::Full,
+            budget.saturating_sub(1).min(major_cap),
+            false,
+            false,
+        );
+        #[cfg(feature = "diagnostics")]
+        if certified_unary_family && std::env::var_os("NUCLEUS_TRACE_UNARY_MAJOR").is_some() {
+            eprintln!(
+                "NUCLEUS_UNARY_MAJOR_VALUE:target={target:?}:result={exposed_result:?}:cap={major_cap}"
+            );
+        }
+        let exposed = exposed_result.proven_value()?.value.clone();
         match exposed {
             Value::Neutral(Neutral {
                 head: NeutralHead::Const { name, .. },
