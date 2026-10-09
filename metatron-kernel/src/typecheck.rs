@@ -405,6 +405,76 @@ impl<'a> TypeChecker<'a> {
         )
     }
 
+    /// Read-only recursor certificate and captured major chain. Never changes
+    /// a conversion verdict; no application shape is itself a reduction rule.
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_captured_recursor_major_chain(
+        &self, neutral: &Neutral, budget: usize,
+    ) -> String {
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return "non-constant-head".to_string();
+        };
+        let reduction = self.environment.recursor_reduction(*name);
+        let rules = reduction.map(|r| {
+            r.rules.iter().map(|c| {
+                format!("ctor={:?}:params={}:fields={}", c.constructor, c.num_params, c.num_fields)
+            }).collect::<Vec<_>>()
+        });
+        let mut chain = Vec::new();
+        let mut current = neutral.spine.last().cloned();
+        let machine = self.machine();
+        for step in 0..5 {
+            let Some(closure) = current.take() else { break };
+            let syntax = self.expressions.get(closure.expr);
+            let binding = match syntax {
+                Some(Expr::BVar(n)) => closure.env.lookup(*n),
+                _ => None,
+            };
+            let whnf = machine.expose(
+                closure.clone(), Transparency::Full, budget.min(256),
+            );
+            let value = whnf.proven_value();
+            let classifier = match value {
+                Some(Value::Neutral(Neutral { head: NeutralHead::Const { name: head, .. }, spine })) => {
+                    if let Some(r) = reduction {
+                        format!(
+                            "neutral={head:?}:arity={}:constructor_rule={}:same_recursor={}",
+                            spine.len(), r.rules.iter().any(|rule| rule.constructor == *head),
+                            *head == *name,
+                        )
+                    } else {
+                        format!("neutral={head:?}:arity={}:no_recursor_authority",spine.len())
+                    }
+                }
+                Some(Value::Neutral(n)) => format!("other_neutral={:?}",n.head),
+                Some(Value::NatLit(n)) => format!("nat={n:?}"),
+                Some(Value::Sort(l)) => format!("sort={l:?}"),
+                Some(Value::Lam { .. }) => "lambda".to_string(),
+                Some(Value::Pi { .. }) => "pi".to_string(),
+                Some(Value::StuckProjection { .. }) => "stuck_projection".to_string(),
+                None => format!("unknown_or_refuted={whnf:?}"),
+            };
+            chain.push(format!(
+                "step={step}:expr={:?}:frame={}:syntax={syntax:?}:binding={binding:?}:classifier={classifier}",
+                closure.expr,closure.env.id(),
+            ));
+            current = match value {
+                Some(Value::Neutral(Neutral {
+                    head: NeutralHead::Const { name: inner, .. }, spine,
+                })) if *inner == *name && !spine.is_empty() => spine.last().cloned(),
+                _ => None,
+            };
+            if current.as_ref() == Some(&closure) {
+                chain.push("cyclic-major-closure".to_string());
+                break;
+            }
+        }
+        format!(
+            "head={name:?}:levels={levels:?}:arity={}:qualified={}:rules={rules:?}:major_chain={chain:?}",
+            neutral.spine.len(), reduction.is_some()
+        )
+    }
+
     /// Diagnostic only: instantiate a declaration's dependent Pi telescope
     /// with the actual application closures, never authorizing acceptance.
     #[cfg(feature = "diagnostics")]
