@@ -305,12 +305,27 @@ impl Closure {
                 let result = match f.0.as_ref() {
                     EnvNode::Empty => (f.clone(), false),
                     EnvNode::Extend { parent, value, .. } => {
-                        let (parent_new, parent_changed) = self.frame(parent)?;
-                        let (value_new, value_changed) = self.binding(value)?;
-                        if parent_changed || value_changed {
-                            (parent_new.extend_binding(value_new), true)
+                        // FreeId is the lexical level at which this binder
+                        // was opened. Once the exact binder cell is found,
+                        // its parent is outside this binder's scope. Reuse
+                        // the parent without descending through thousands
+                        // of unrelated outer frames.
+                        if matches!(value, EnvBinding::Free(free) if *free == self.source)
+                            || matches!(value, EnvBinding::Neutral(Neutral {
+                                head: NeutralHead::Free(free), spine,
+                            }) if *free == self.source && spine.is_empty())
+                        {
+                            (parent.extend_binding(
+                                EnvBinding::Closure(self.actual.clone())
+                            ), true)
                         } else {
-                            (f.clone(), false)
+                            let (parent_new, parent_changed) = self.frame(parent)?;
+                            let (value_new, value_changed) = self.binding(value)?;
+                            if parent_changed || value_changed {
+                                (parent_new.extend_binding(value_new), true)
+                            } else {
+                                (f.clone(), false)
+                            }
                         }
                     }
                 };
