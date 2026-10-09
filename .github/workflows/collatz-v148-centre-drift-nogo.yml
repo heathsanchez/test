@@ -1,0 +1,194 @@
+name: Collatz V148 actual rational-centre drift falsifies finite-class stabilization
+on:
+  push:
+    branches: [collatz-v148-centre-drift-no-finite-orbit-quotient]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-drift:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay actual 27, terminal 1, and source-congruence drift controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v148_actual_centre_drift > evidence/v148-exact.json
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          p=pathlib.Path('evidence/v148-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V148_ACTUAL_RATIONAL_CENTRE_DRIFT_AUDIT'
+          assert d['exact_finite_source_cases']==500
+          assert d['steps_per_source']==96
+          assert d['even_steps_strictly_change_observation_class']
+          assert d['odd_steps_preserve_observation_class']
+          assert d['source_relative_affine_identity_checked']
+          assert d['terminal_one_already_has_many_distinct_centre_classes']
+          assert len(d['terminal_one_closed_form_even_clocks'])==20
+          assert d['v146_shadow_source27_after_three_steps_centre']=='-13/9'
+          assert d['universal_no_eventually_fixed_centre_requires_lean']
+          assert d['finiteness_of_actual_evolving_v147_classes_as_no_exit_bar_supported'] is False
+          assert not d['new_general_source_forcing_theorem_proven']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V148_EXACT_ORBIT_CENTRE_SEAL',
+            'status':'WARRANTED_FINITE_EXACT_SOURCE_DRIFT_CONTROLS',
+            'source_commit':h,
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'infinite_semantic_claim_requires_pinned_Lean':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v148-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v148-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-drift:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prove all-source source-centre drift and infinite-time non-stabilization
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/RationalCentreObservationQuotient.lean)" = f7f757a55851d8a51e1b9797a43d8433ccc49045
+          test "$(git hash-object formal/Collatz/ParityCycleResidual.lean)" = c6ff15b2a5aac17754ea315cb5c90507eae394b0
+          test "$(git hash-object formal/Collatz/SourceCentreTransportSeparator.lean)" = b294ad6c7cba66895b94d084855c5e1f2ebc4c69
+          test "$(git hash-object formal/Collatz/SourceProductAffine.lean)" = 97a32acc490465c3bb0cd528e42100a6bbfd2f61
+          test "$(git hash-object formal/Collatz/ActualOrbitDichotomy.lean)" = e5f90f9ae369a3704f609ac776b3cbbbe16ce4ca
+          test "$(git hash-object formal/Collatz/PerpetualOddNaturalExclusion.lean)" = f8889bfe73567b5a4a7383a7a9223be32da342be
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/ActualRationalCentreDrift.lean 2>&1 | tee evidence/v148-lean.log
+          python3 - <<'PY'
+          import json,pathlib,re,hashlib,subprocess
+          p=pathlib.Path('evidence/v148-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-4500:]
+          axs={}
+          for name,v in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            a=[x.strip() for x in v.split(',') if x.strip()]
+            assert set(a)<={'propext','Quot.sound','Classical.choice'},(name,a)
+            axs[name]=a
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axs[name]=[]
+          targets=['v148_odd_step_preserves_exact_centre',
+            'v148_even_step_changes_numerator',
+            'v148_even_step_strict_new_class',
+            'v148_cross_nondecreasing_arbitrary_clocks',
+            'v148_no_eventually_fixed_actual_centre_class',
+            'v148_terminal_one_has_arbitrarily_late_new_centres']
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in axs,name
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V148_FORMAL_NO_FINITE_ACTUAL_CENTRE_STABILIZATION',
+            'status':'WARRANTED_FORMAL_ACTUAL_POSITIVE_SOURCE_CENTRE_DRIFT',
+            'source_commit':h,'axioms':axs,
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'every_actual_even_step_changes_rational_centre_irreversibly':True,
+            'every_positive_source_has_arbitrarily_late_different_rational_centres':True,
+            'terminal_one_itself_has_arbitrarily_late_new_classes':True,
+            'actual_evolving_finite_centres_not_a_valid_noexit_bridge':True,
+            'independent_noexit_source_forcing_theorem_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v148-formal-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v148-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-drift,formal-drift]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v148-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v148-formal
+          path: evidence/formal
+      - name: Seal no-go of finite actual centre-class stabilization with no-QED boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v148-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v148-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['infinite_semantic_claim_requires_pinned_Lean']
+          assert b['every_positive_source_has_arbitrarily_late_different_rational_centres']
+          assert b['terminal_one_itself_has_arbitrarily_late_new_classes']
+          assert not b['independent_noexit_source_forcing_theorem_proved']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          d={'schema':'COLLATZ_V148_SOURCE_OBSERVATION_QUOTIENT_NO_GO',
+             'status':'WARRANTED_FORMAL_NO_ACTUAL_CENTRE_STABILIZATION',
+             'source_commit':h,
+             'rejected_program':'eventual finite actual V147 rational-centre set from NoExit alone',
+             'positive_realizable_control':'source1 terminal two-cycle itself creates new centres forever',
+             'retained_program':'independently justified source-admitted future-merge or nontrivial NoExit-specific obstruction',
+             'operational_controller':'V134_UNCHANGED',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v148-final-seal.json').write_text(json.dumps(d,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v148-final
+          path: evidence/v148-final-seal.json
+          if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-drift,formal-drift,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Persist immutable source-SHA qualified result or proof failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={exact:'${{ needs.exact-drift.result }}',
+              formal:'${{ needs.formal-drift.result }}',
+              final:'${{ needs.final-seal.result }}'};
+            const qualified=Object.values(stages).every(x=>x==='success');
+            const receipt={
+              schema:'COLLATZ_V148_CI_RECEIPT',
+              source_commit:context.sha,run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_NO_ACTUAL_CENTRE_STABILIZATION':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false
+            };
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v148-centre-drift-no-finite-orbit-quotient',
+              path:'research/ci_seals/collatz_v148_'+context.sha+'.json',
+              message:'CI receipt: V148 centre drift semantic no-go '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(receipt,null,2)+'\n').toString('base64')
+            });
