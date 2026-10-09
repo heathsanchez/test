@@ -95,7 +95,8 @@ async def add_current_product(page, start_url):
         "observed_action_href":action_href,
         "observed_data_post":post_data,
         "wishlist_readback_url":page.url,
-        "readback_match":True,\n        "click_navigation_observed":navigation_observed,
+        "readback_match":True,
+        "click_navigation_observed":navigation_observed,
     }
 
 
