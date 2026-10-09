@@ -1,0 +1,172 @@
+name: Nucleus guarded projection-operand separator
+
+on:
+  push:
+    branches: [nucleus-guarded-projection-operand-v1]
+    paths:
+      - ".github/workflows/nucleus-guarded-projection-operand-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Bind exact corrected source tree
+        run: |
+          set -euo pipefail
+          printf 'checker_source_tree=%s\n' "$(git rev-parse HEAD:metatron-kernel)"
+          printf 'qualification_commit=%s\n' "$GITHUB_SHA"
+
+      - name: Build and test corrected Nucleus
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+          sha256sum /tmp/nucleus
+
+      - name: Fetch immutable 196-case Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests metatron-kernel/evidence-out/final-qualification-v1
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+
+      - name: Reclose corrected 196-case frontier
+        run: |
+          set -euo pipefail
+          ulimit -s 8192
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, time
+
+          rows = []
+          for bucket, expected in (("good", 0), ("bad", 1)):
+              root = pathlib.Path("/tmp/arena-tests") / bucket
+              for fixture in sorted(root.rglob("*.ndjson")):
+                  started = time.monotonic()
+                  with fixture.open("rb") as source:
+                      process = subprocess.run(
+                          ["/tmp/nucleus"],
+                          stdin=source,
+                          stdout=subprocess.DEVNULL,
+                          stderr=subprocess.PIPE,
+                          timeout=30,
+                          env=os.environ | {"NUCLEUS_TRACE_DOWNSTREAM": "1", "NUCLEUS_TRACE_PROJECTION_CONGRUENCE": "1"},
+                      )
+                  rows.append({
+                      "test": str(fixture.relative_to(root)),
+                      "expected": expected,
+                      "actual": process.returncode,
+                      "seconds": time.monotonic() - started,
+                      "stderr": process.stderr.decode(errors="replace"),
+                      "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
+                  })
+
+          counts = {
+              "accept": sum(r["expected"] == 0 and r["actual"] == 0 for r in rows),
+              "reject": sum(r["expected"] == 1 and r["actual"] == 1 for r in rows),
+              "unknown": sum(r["actual"] == 2 for r in rows),
+          }
+          wrong = [r for r in rows if r["actual"] in (0, 1) and r["actual"] != r["expected"]]
+          errors = [r for r in rows if r["actual"] not in (0, 1, 2)]
+          unknowns = sorted(r["test"].removesuffix(".ndjson") for r in rows if r["actual"] == 2)
+          report = {
+              "schema": "nucleus-fueled-inductives-v1-arena",
+              "qualification_commit": os.environ["GITHUB_SHA"],
+              "source_commit": os.environ["GITHUB_SHA"],
+              "source_subtree": subprocess.check_output(["git", "rev-parse", "HEAD:metatron-kernel"], text=True).strip(),
+              "arena_sha": os.environ["ARENA_SHA"],
+              "artifact_id": int(os.environ["ARENA_ARTIFACT"]),
+              "counts": counts,
+              "wrong": wrong,
+              "errors": errors,
+              "unknowns": unknowns,
+              "rows": rows,
+          }
+          output = pathlib.Path("metatron-kernel/evidence-out/final-qualification-v1/arena.json")
+          output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+          print(json.dumps({k: v for k, v in report.items() if k != "rows"}, sort_keys=True))
+
+          assert len(rows) == 196, len(rows)
+          assert counts["accept"] >= 115 and counts["reject"] >= 71 and counts["unknown"] <= 10, counts
+          assert not wrong, wrong
+          assert not errors, errors
+          by_test = {r["test"].removesuffix(".ndjson"): r for r in rows}
+          assert by_test["bugs/nested-unused-param"]["actual"] == 1, by_test["bugs/nested-unused-param"]
+          PY
+
+      - name: Run exact positive and negative causal witnesses
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys
+          sys.path.insert(0, '.github/scripts')
+          from nucleus_succle_separator import extract, false_index
+          root=pathlib.Path('/tmp/arena-tests')
+          out=pathlib.Path('metatron-kernel/evidence-out/final-qualification-v1')
+          cases=[]
+          wanted={
+            'init-prelude':('eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5','7eaebdf3245f1cb37bc452c1c3c09843eebfec478f6f7844a6f42c231dac89e9'),
+            'perf/magma-list-pair-n7':('abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35','eec208239d939ba6b2baf93449954bdce99699b0524859bb50570b59865d38d1')
+          }
+          for name,(source_hash,target_hash) in wanted.items():
+              data=(root/'good'/(name+'.ndjson')).read_bytes()
+              assert hashlib.sha256(data).hexdigest()==source_hash
+              names={0:''}; lines=[]
+              for line in data.splitlines(keepends=True):
+                  obj=json.loads(line)
+                  lines.append(line)
+                  if 'in' in obj:
+                      v=obj.get('str',obj.get('num'))
+                      prefix=names.get(v['pre'],'')
+                      names[obj['in']]=prefix+('.' if prefix else '')+str(v.get('str',v.get('i')))
+                  if 'def' in obj and names.get(obj['def']['name'])=='Nat.le_of_ble_eq_true._f':
+                      break
+              prefix=b''.join(lines)
+              assert hashlib.sha256(prefix).hexdigest()==target_hash
+              cases.append((name,prefix,False))
+              if name=='init-prelude':
+                  mutated=false_index(extract(data))
+                  assert hashlib.sha256(mutated).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+                  cases.append(('false-index',mutated,True))
+          cases.append(('nested-unused-param',(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),True))
+          rows=[]
+          for name,data,is_negative in cases:
+              p=subprocess.run(['/tmp/nucleus'],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45,
+                env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1','NUCLEUS_TRACE_PROJECTION_CONGRUENCE':'1'})
+              trace=p.stderr.decode(errors='replace').splitlines()
+              row={'name':name,'rc':p.returncode,'sha256':hashlib.sha256(data).hexdigest(),
+                   'earned_congruence':sum('NUCLEUS_PROJECTION_CONGRUENCE:' in x for x in trace),
+                   'downstream':[x for x in trace if 'NUCLEUS_DOWNSTREAM:' in x][-4:],
+                   'application':[x for x in trace if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in x][:4]}
+              rows.append(row)
+              print(json.dumps({k:v for k,v in row.items() if k!='application'},sort_keys=True))
+              assert p.returncode in ((1,) if name=='nested-unused-param' else ((1,2) if is_negative else (0,2))),row
+          report={'source_commit':os.environ['GITHUB_SHA'],'rows':rows,
+                  'earned_positive':sum(r['rc']==0 for r in rows if r['name'] in wanted)}
+          (out/'guarded-projection-witnesses.json').write_text(json.dumps(report,indent=2))
+          print('earned_positive='+str(report['earned_positive']))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-guarded-projection-operand-${{ github.sha }}
+          path: metatron-kernel/evidence-out/final-qualification-v1
+          if-no-files-found: warn
