@@ -1464,6 +1464,66 @@ fn compare_values(
                         }
                     }
                 }
+                // An admitted projection commutes with definitional
+                // equality of its receiver. For a stuck projection of the
+                // SAME field on the SAME lexical free-headed function,
+                // compare the exact captured receiver argument and pending
+                // projection application before declaring distinct neutral
+                // heads. Different EnvFrame IDs are not enough evidence.
+                //
+                // Narrow boundary from chain6_datF: one receiver argument
+                // and one pending argument. Every premise uses the ordinary
+                // contextual converter with a *strictly lower* budget.
+                if depth==context.len() && current_budget>=1024
+                    && let (
+                        NeutralHead::Projection {
+                            type_name: lhs_type,index:lhs_index,structure:lhs_receiver,
+                        },
+                        NeutralHead::Projection {
+                            type_name:rhs_type,index:rhs_index,structure:rhs_receiver,
+                        },
+                    )=(&left.head,&right.head)
+                    && lhs_type==rhs_type && lhs_index==rhs_index
+                    && checker.has_certified_projection_signature(*lhs_type)
+                    && let (NeutralHead::Free(lhs_function),NeutralHead::Free(rhs_function))=
+                        (&lhs_receiver.head,&rhs_receiver.head)
+                    && lhs_function==rhs_function
+                    && lhs_receiver.spine.len()==1
+                    && rhs_receiver.spine.len()==1
+                    && left.spine.len()==1
+                    && right.spine.len()==1
+                {
+                    let probe=512;
+                    let receiver_check=convert_with_policy_in_context(
+                        checker,
+                        &TypeValue::Term(lhs_receiver.spine[0].clone()),
+                        &TypeValue::Term(rhs_receiver.spine[0].clone()),
+                        probe,DeltaPolicy::PreferredOnly,depth,context,
+                    );
+                    if receiver_check.is_proven() {
+                        let pending_check=convert_with_policy_in_context(
+                            checker,
+                            &TypeValue::Term(left.spine[0].clone()),
+                            &TypeValue::Term(right.spine[0].clone()),
+                            probe,DeltaPolicy::PreferredOnly,depth,context,
+                        );
+                        if pending_check.is_proven() {
+                            #[cfg(feature = "diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_CHAIN6_PROJECTION_CONGRUENCE").is_some() {
+                                use std::sync::atomic::{AtomicUsize, Ordering};
+                                static N: AtomicUsize=AtomicUsize::new(0);
+                                if N.fetch_add(1,Ordering::Relaxed)<24 {
+                                    eprintln!(
+                                        "NUCLEUS_CHAIN6_PROJECTION_CONGRUENCE:proved:depth={depth}:type={lhs_type:?}:field={lhs_index}:function={lhs_function:?}:receiver={receiver_check:?}:pending={pending_check:?}"
+                                    );
+                                }
+                            }
+                            return Judgment::proven(
+                                (),"certified-contextual-projection-application-congruence",
+                            );
+                        }
+                    }
+                }
                 match compare_neutral_heads(checker, left, right, current_budget) {
                     Judgment::Proven { .. } => {}
                     other => return other,
