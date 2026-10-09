@@ -1,8 +1,8 @@
-name: Nucleus SourceInfo synthetic field definitional alias census
+name: Nucleus checked ignored-argument beta-delta field qualification
 
 on:
   push:
-    branches: [nucleus-sourceinfo-synthetic-field-alias-v1]
+    branches: [nucleus-checked-erased-argument-alias-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -151,7 +151,7 @@ jobs:
                                   'NUCLEUS_TRACE_DOWNSTREAM':'1'}
               )
               trace=[line for line in diagnostics.stderr.decode(errors='replace').splitlines()
-                     if 'NUCLEUS_GENERIC' in line or 'NUCLEUS_THREE_CTOR_REC_SHAPE' in line or 'NUCLEUS_DOWNSTREAM' in line][-22:]
+                     if 'NUCLEUS_GENERIC' in line or 'NUCLEUS_THREE_CTOR_REC_SHAPE' in line or 'NUCLEUS_DOWNSTREAM' in line or 'NUCLEUS_CHECKED_SECOND_ARG_ERASURE' in line][-40:]
               controls=[]
               for label,field_path in (
                   ('first-ctor-field-count',('ctors',0,'numFields')),
@@ -171,8 +171,9 @@ jobs:
                           positive=accepted,negatives=controls,trace=trace)
               print('NUCLEUS_THREE_CONSTRUCTOR='+json.dumps(record),flush=True)
               rows.append(record)
-              assert accepted==2,('unexpectedly accepted an unqualified constructor block',record)
+              assert accepted==0,('source-certified field alias did not admit the constructor block',record)
               assert any('NUCLEUS_THREE_CTOR_REC_SHAPE:' in line for line in trace), ('recursor trace missing',record)
+              assert any('NUCLEUS_CHECKED_SECOND_ARG_ERASURE:' in line for line in trace), ('checked beta-delta field witness missing',record)
               assert all(x['rc'] in (1,2) for x in controls),('unsafe induction admitted',record)
           p=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/three-constructor-report.json')
           p.parent.mkdir(parents=True,exist_ok=True)
@@ -383,8 +384,8 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted==118 and unknown==7, 'DIAGNOSTIC_CHANGED_FROZEN196'
-          print('THREE_CONSTRUCTOR_SHAPE_DIAGNOSTIC_ONLY',flush=True)
+          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__INTERNAL_RULE_NOT_PROMOTED'
+          print('CHECKED_ERASURE_PROMOTED_ONLY_AFTER_COMPLETE_ACCEPT',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
@@ -403,7 +404,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="SourceInfo synthetic alias: ${{ job.status }}; no complete replay"
+          description="Nucleus checked erasure full196: ${{ job.status }}"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
