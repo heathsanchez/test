@@ -1324,6 +1324,55 @@ fn compare_values(
                 ) {
                     return Judgment::proven((), "stuck-projection-rigid-application-congruence");
                 }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_PROJECTION_RESIDUAL_PREMISES").is_some()
+                    && depth >= 5 && depth <= 8
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static EVENTS: AtomicUsize = AtomicUsize::new(0);
+                    if EVENTS.fetch_add(1, Ordering::Relaxed) < 60 {
+                        let machine = checker.machine();
+                        let left_exp = machine.expose(
+                            left_structure.clone(), Transparency::Full, 256,
+                        );
+                        let right_exp = machine.expose(
+                            right_structure.clone(), Transparency::Full, 256,
+                        );
+                        let receiver_lo = convert_with_policy_in_context(
+                            checker,
+                            &TypeValue::Term(left_structure.clone()),
+                            &TypeValue::Term(right_structure.clone()),
+                            (current_budget / 2).min(128),
+                            DeltaPolicy::PreferredOnly, depth, context,
+                        );
+                        let receiver_hi = convert_with_policy_in_context(
+                            checker,
+                            &TypeValue::Term(left_structure.clone()),
+                            &TypeValue::Term(right_structure.clone()),
+                            128, DeltaPolicy::PreferredOnly, depth, context,
+                        );
+                        let pending = left_spine.iter().zip(right_spine).map(|(a,b)| {
+                            let low = convert_with_policy_in_context(
+                                checker,
+                                &TypeValue::Term(a.clone()),
+                                &TypeValue::Term(b.clone()),
+                                (current_budget / 2).min(128),
+                                DeltaPolicy::PreferredOnly, depth, context,
+                            );
+                            let high = convert_with_policy_in_context(
+                                checker,
+                                &TypeValue::Term(a.clone()),
+                                &TypeValue::Term(b.clone()),
+                                128, DeltaPolicy::PreferredOnly, depth, context,
+                            );
+                            format!("low={low:?}:high={high:?}")
+                        }).collect::<Vec<_>>();
+                        eprintln!(
+                            "NUCLEUS_PROJECTION_RESIDUAL_PREMISES:depth={depth}:context={}:budget={current_budget}:type={left_type:?}:index={left_index}:left={left_exp:?}:right={right_exp:?}:receiver_low={receiver_lo:?}:receiver_128={receiver_hi:?}:pending={pending:?}",
+                            context.len()
+                        );
+                    }
+                }
                 let machine = checker.machine();
                 let left_value = machine.projection_value_for_conversion(
                     left_structure.clone(),
