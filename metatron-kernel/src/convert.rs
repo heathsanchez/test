@@ -1724,6 +1724,13 @@ fn certified_local_proof_irrelevance(
                 depth,
                 context,
             );
+            if depth == 5 {
+                let left_ty = checker.machine().expose(left_type.clone(), Transparency::Reducible, probe);
+                let right_ty = checker.machine().expose(right_type.clone(), Transparency::Reducible, probe);
+                let left_full = checker.machine().expose(left_type.clone(), Transparency::Full, probe);
+                let right_full = checker.machine().expose(right_type.clone(), Transparency::Full, probe);
+                eprintln!("NUCLEUS_DEPTH5_PROP_EXPOSURE:depth={depth}:left_reducible={left_ty:?}:right_reducible={right_ty:?}:left_full={left_full:?}:right_full={right_full:?}");
+            }
             eprintln!("NUCLEUS_LOCAL_PROOF_PREMISES:depth={depth}:left={left_free:?}:right={right_free:?}:left_type={left_type:?}:right_type={right_type:?}:left_proposition={left_proposition:?}:right_proposition={right_proposition:?}:type_relation={relation:?}");
         }
     }
