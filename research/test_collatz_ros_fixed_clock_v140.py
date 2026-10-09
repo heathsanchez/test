@@ -13,8 +13,8 @@ from copy import deepcopy
 from pathlib import Path
 
 from research.collatz_ros_fixed_clock_v140 import (
-    PAIRS,PARENT_PATH,PARENT_EXPECTED_SHA,PINS,SCHEMA,
-    bootstrap,audit,classify,write,
+    PAIRS,PARENT_PATH,PARENT_EXPECTED_SHA,PARENT_GIT_BLOB_SHA,PINS,SCHEMA,
+    bootstrap,audit,classify,write,digest,
 )
 
 class FixedClockROSDecisionTests(unittest.TestCase):
@@ -23,7 +23,9 @@ class FixedClockROSDecisionTests(unittest.TestCase):
         self.state=bootstrap()
 
     def test_read_only_parent_exact_sha_and_full_warrant_ledger(self):
-        self.assertEqual(hashlib.sha256(self.raw).hexdigest(),PARENT_EXPECTED_SHA)
+        self.assertEqual(digest(json.loads(self.raw)),PARENT_EXPECTED_SHA)
+        header=("blob "+str(len(self.raw))).encode()+bytes([0])
+        self.assertEqual(hashlib.sha1(header+self.raw).hexdigest(),PARENT_GIT_BLOB_SHA)
         self.assertEqual(len(json.loads(self.raw)["joins"]),17)
         self.assertEqual(json.loads(self.raw)["negative_controls"][2]["changing_source"],2**80-1)
         self.assertEqual(self.state["parent"]["mutated"],False)
@@ -115,7 +117,7 @@ class FixedClockROSDecisionTests(unittest.TestCase):
             elif key=="classification":
                 s["tracked_cases"][1]["status"]="COLLATZ_COUNTEREXAMPLE"
             elif key=="parent":
-                s["parent"]["file_sha256"]="0"*64
+                s["parent"]["canonical_state_sha256"]="0"*64
             elif key=="qed":
                 s["qed"]=True
             elif key=="weighted":
