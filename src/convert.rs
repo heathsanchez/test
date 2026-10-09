@@ -1246,6 +1246,18 @@ fn compare_values(
                 continue;
             }
             (Value::Neutral(left), Value::Neutral(right)) => {
+                // Lean proof irrelevance: two checked proof terms of the same
+                // *independently verified* proposition are convertible.
+                // Do not quotient their FreeId values or closure frames.
+                if certified_local_proof_irrelevance(
+                    checker, left, right, context, current_budget, depth,
+                ) {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_LOCAL_PROOF_IRREL").is_some() {
+                        eprintln!("NUCLEUS_LOCAL_PROOF_IRREL:proved:depth={depth}:left={:?}:right={:?}",left.head,right.head);
+                    }
+                    return Judgment::proven((), "checked-local-proof-irrelevance");
+                }
                 if certified_structure_eta(
                     checker,
                     left,
@@ -1651,6 +1663,65 @@ fn compare_neutral_heads(
             Judgment::refuted("distinct-neutral-heads")
         }
     }
+}
+
+/// Proof irrelevance is permitted only after checking BOTH proposition
+/// judgments and checking conversion of their exact dependent types in
+/// the current binder context. The local identifiers themselves are
+/// explicitly *not* assumed interchangeable.
+fn certified_local_proof_irrelevance(
+    checker: &TypeChecker<'_>,
+    left: &Neutral,
+    right: &Neutral,
+    context: &[TypeValue],
+    budget: usize,
+    depth: usize,
+) -> bool {
+    if budget < 32 || depth != context.len()
+        || !left.spine.is_empty() || !right.spine.is_empty()
+    {
+        return false;
+    }
+    let (NeutralHead::Free(left_free), NeutralHead::Free(right_free)) =
+        (&left.head, &right.head)
+    else {
+        return false;
+    };
+    if left_free == right_free {
+        return false;
+    }
+    let (Some(TypeValue::Term(left_type)), Some(TypeValue::Term(right_type))) = (
+        usize::try_from(left_free.0).ok().and_then(|i| context.get(i)),
+        usize::try_from(right_free.0).ok().and_then(|i| context.get(i)),
+    ) else {
+        return false;
+    };
+    // Restrict the proof to the lexical substitution environment actually
+    // checked by infer_in; do not silently drop nontrivial universe maps.
+    if left_type.levels != crate::value::LevelSubstitution::default()
+        || right_type.levels != crate::value::LevelSubstitution::default()
+    {
+        return false;
+    }
+    let probe = budget.min(1024);
+    if !checker
+        .is_proposition_in_context(left_type.expr, context, &left_type.env, probe)
+        .is_proven()
+        || !checker
+            .is_proposition_in_context(right_type.expr, context, &right_type.env, probe)
+            .is_proven()
+    {
+        return false;
+    }
+    convert_with_policy_in_context(
+        checker,
+        &TypeValue::Term(left_type.clone()),
+        &TypeValue::Term(right_type.clone()),
+        probe,
+        DeltaPolicy::PreferredOnly,
+        depth,
+        context,
+    ).is_proven()
 }
 
 fn one_neutral_head_is_free(left: &Neutral, right: &Neutral) -> bool {
