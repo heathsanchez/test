@@ -1030,6 +1030,28 @@ impl<'a> Machine<'a> {
                 head: NeutralHead::Const { name, .. },
                 spine,
             }) if matches_rule(name, spine.len()) => Some((name, spine)),
+            // Lean's trusted Nat numeral representation is definitionally
+            // constructor-shaped. A recursor with independently installed
+            // Nat.zero/Nat.succ iota rules may inspect that exact numeral.
+            // Only reuse a predecessor that exists in the checked export;
+            // no synthetic expression or rule is fabricated.
+            Value::NatLit(number) => {
+                let nat = self.nat_primitives.as_ref()?;
+                if number.is_zero() && matches_rule(nat.zero, 0) {
+                    return Some((nat.zero, Vec::new()));
+                }
+                if !matches_rule(nat.succ, 1) {
+                    return None;
+                }
+                let predecessor = number.pred()?;
+                let pred_id = self.expressions.iter_raw().find_map(|(id, expr)| {
+                    match expr {
+                        Expr::NatLit(candidate) if candidate == &predecessor => Some(ExprId(id)),
+                        _ => None,
+                    }
+                })?;
+                Some((nat.succ, vec![Closure::new(pred_id, EnvFrame::empty())]))
+            }
             _ => None,
         }
     }
