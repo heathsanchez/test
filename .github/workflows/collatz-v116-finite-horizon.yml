@@ -35,8 +35,10 @@ jobs:
           lake env lean --version | tee evidence/toolchain.txt
           lake build CollatzFinal > evidence/spine.log
           lake env lean -DautoImplicit=false formal/Collatz/FiniteHorizonSourceBarrier.lean | tee evidence/v116-lean.log
-          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v116-lean.log
+          lake env lean -DautoImplicit=false formal/Collatz/SourceCappedTernary.lean | tee evidence/v116-ternary-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v116-lean.log evidence/v116-ternary-lean.log
           grep -q 'triple_110_no_capped_ternary_prefix' evidence/v116-lean.log
+          grep -q 'collatz_iff_capped_ternary_bar' evidence/v116-ternary-lean.log
           git rev-parse HEAD > evidence/commit.txt
       - uses: actions/upload-artifact@v4
         if: always()
