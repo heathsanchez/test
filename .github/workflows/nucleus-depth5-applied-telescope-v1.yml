@@ -1,8 +1,8 @@
-name: Nucleus post-iota precise witness separator
+name: Nucleus Nat.mul_pos actual receiver separator
 
 on:
   push:
-    branches: [nucleus-post-iota-witness-separator-v1]
+    branches: [nucleus-mulpos-actual-head-separator-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -128,6 +128,7 @@ jobs:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
                   extra['NUCLEUS_TRACE_VALUE_MISMATCH']='1'
               else:
+                  extra['NUCLEUS_TRACE_PROJECTION_ACTUAL_HEAD']='1'
                   extra['NUCLEUS_TRACE_PROJECTION_LAST_FAILURE']='1'
                   extra['NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE']='1'
                   extra['NUCLEUS_TRACE_PROJECTION_CHEAP']='1'
@@ -147,19 +148,26 @@ jobs:
                    'neutral_mismatch':[x for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-25:],
                    'value_mismatch':[x for x in lines if 'NUCLEUS_VALUE_MISMATCH:' in x][-8:],
                    'projection_failure':[x for x in lines if 'NUCLEUS_PROJECTION_FIELD_PROBE:' in x][-8:],
-                   'projection_exact_gap':[x for x in lines if 'NUCLEUS_POST_IOTA_PROJECTION_GAP:' in x][-12:],
+                   'projection_exact_gap':[x for x in lines if 'NUCLEUS_POST_IOTA_PROJECTION_GAP:' in x][-8:],
+                   'actual_head':[x for x in lines if 'NUCLEUS_PROJECTION_ACTUAL_HEAD:' in x][-12:],
                    'projection_cheap':[x for x in lines if 'NUCLEUS_PROJECTION_CHEAP:' in x][-6:],
                    'dependency_gap':[x for x in lines if 'NUCLEUS_DEPENDENCY_GAP:' in x][-6:]}
+              idx={0:''}
+              for raw in (root/(name+'.ndjson')).read_bytes().splitlines():
+                  j=json.loads(raw)
+                  if 'in' not in j:
+                      continue
+                  z=j.get('str',j.get('num'))
+                  prefix=idx.get(z['pre'],'')
+                  idx[j['in']]=prefix+('.' if prefix else '')+str(z.get('str',z.get('i')))
               if 'magma-list-pair' in name:
-                  idx={0:''}
-                  for raw in (root/(name+'.ndjson')).read_bytes().splitlines():
-                      j=json.loads(raw)
-                      if 'in' not in j:
-                          continue
-                      z=j.get('str',j.get('num'))
-                      prefix=idx.get(z['pre'],'')
-                      idx[j['in']]=prefix+('.' if prefix else '')+str(z.get('str',z.get('i')))
                   row['neutral_head_names']={str(k):idx.get(k,'') for k in (169,147,75,62)}
+              else:
+                  import re
+                  ids=set()
+                  for line in row['actual_head']:
+                      ids.update(int(v) for v in re.findall(r'NameId\\((\\d+)\\)',line))
+                  row['actual_head_names']={str(k):idx.get(k,'') for k in sorted(ids)}
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
               rows.append(row)
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
@@ -210,7 +218,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-post-iota-separator-${{ github.sha }}
+          name: nucleus-mulpos-actual-head-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -223,7 +231,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="post iota separator: ${{ job.status }}; no complete replay"
+          description="mulpos actual head: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -234,6 +242,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/post-iota-separator" \
+            -f context="nucleus/mulpos-actual-head" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
