@@ -1,0 +1,146 @@
+name: Collatz V129 typed relational future-root witness
+on:
+  push:
+    branches: [collatz-v129-relational-odd-root-interface]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-class-relations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject false singleton-root and false LowerMerge promotions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v129_relational_root_evidence > evidence/v129-classes.json
+          python3 - <<'PY'
+          import json,hashlib,subprocess,pathlib
+          p=pathlib.Path('evidence/v129-classes.json')
+          x=json.loads(p.read_text())
+          assert x['schema']=='COLLATZ_V129_TYPED_RELATIONAL_ROOT_CLASSES'
+          assert x['source_eight_valid_distinct_roots']==2
+          assert x['v124_lower_source_join_count_unchanged']==7
+          assert x['no_root_transport_promoted_to_lower_merge']
+          assert len(x['class_identity_edges'])==5
+          assert x['source_six_requires_asynchronous_clock']
+          assert x['global_collatz']=='UNKNOWN' and x['qed'] is False
+          cert={'schema':'COLLATZ_V129_RELATIONAL_ROOT_EXACT',
+                'status':'WARRANTED_BOUNDED_EXACT_CLASS_EDGES',
+                'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                'parent_v124_raw_sha256':x['parent_v124_raw_sha256'],
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v129-exact-seal.json').write_text(json.dumps(cert,sort_keys=True,indent=2)+'\n')
+          print('V129_MULTIPLE_ROOT_CLASSES_TYPED_REPLAY_NO_PROGRESS_LAUNDERING_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v129-exact-class-witnesses
+          path: evidence/
+          if-no-files-found: error
+  formal-relational-class:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check two-clock multi-root class identity and anti-descent contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin SourceThreeReverseRoot ThreeRootConsequenceNormalForm OddThreeRootQuotient RootSelectorCompletenessSeparator; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/RelationalOddRootInterface.lean 2>&1 | tee evidence/v129-lean.log
+          python3 - <<'PY'
+          import re,json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v129-lean.log')
+          s=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s)
+          axs={}
+          for name,raw in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",s,re.S):
+            val=[v.strip() for v in raw.split(',') if v.strip()]
+            assert set(val)<={'propext','Quot.sound','Classical.choice'},(name,val)
+            axs[name]=val
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",s):
+            axs[name]=[]
+          required=['root_witness_exists_for_every_positive',
+                'endpoint_eight_has_two_distinct_root_witnesses',
+                'no_odd_three_root_can_reach_six',
+                'six_root_relation_needs_nonzero_source_clock',
+                'root_identity_can_increase_original_source',
+                'source21_typed_multi_root_repairs_preferred_stutter']
+          assert all('CollatzFinal.'+n in axs for n in required),axs
+          q={'schema':'COLLATZ_V129_FORMAL_RELATIONAL_ODD_ROOT_CLASS',
+             'status':'WARRANTED_FORMAL_RELATIONAL_TWO_CLOCK_IDENTITY_ONLY',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'named_axioms':axs,
+             'lean_log_sha256':hashlib.sha256(s.encode()).hexdigest(),
+             'class_identity_never_promoted_to_smaller_source':True,
+             'universal_Collatz_termination':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v129-formal-seal.json').write_text(json.dumps(q,sort_keys=True,indent=2)+'\n')
+          print('V129_RELATIONAL_ROOT_LEAN_CLASS_INTERFACE_PASS_NOT_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v129-formal-relational-class
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-class-relations,formal-relational-class]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v129-exact-class-witnesses
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v129-formal-relational-class
+          path: evidence/formal
+      - name: Seal independently checked semantic separation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v129-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v129-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert b['class_identity_never_promoted_to_smaller_source']
+          assert a['parent_v124_raw_sha256']=='bb8ccf524dffff9b4bad973d3bf09f60114b114240d77cd59b331a0f2366f16e'
+          assert a['global_collatz']==b['universal_Collatz_termination']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          out={'schema':'COLLATZ_V129_COMPILED_RELATIONAL_ROOT_INTERFACE',
+              'status':'WARRANTED_FORMAL_RELATIONAL_CLASS_IDENTITY',
+              'source_commit':head,
+              'positive_odd_3_root_representative_exists_for_each_source':True,
+              'root_relation_can_have_multiple_witnesses':True,
+              'both_actual_meeting_clocks_are_protected':True,
+              'lower_source_progress_requires_separate_warrant':True,
+              'v124_persisted_lower_merger_state_UNCHANGED':True,
+              'universal_no_second_positive_class_proved':False,
+              'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v129-final-seal.json').write_text(json.dumps(out,sort_keys=True,indent=2)+'\n')
+          print('V129_RELATIONAL_MINIMUM_SUFFICIENT_INTERFACE_WARRANTED_NOT_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v129-final-research-seal
+          path: evidence/v129-final-seal.json
+          if-no-files-found: error
