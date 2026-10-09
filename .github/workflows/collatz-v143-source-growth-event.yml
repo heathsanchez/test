@@ -1,0 +1,204 @@
+name: Collatz V143 source-attached two-step growth event barrier
+on:
+  push:
+    branches: [collatz-v143-source-growth-event-barrier]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-growth-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check exact two-step residues and source-changing Mersenne controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v143_growth_event_exact > evidence/v143-exact.json
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          p=pathlib.Path('evidence/v143-exact.json')
+          q=json.loads(p.read_text())
+          assert q['schema']=='COLLATZ_V143_SOURCE_ATTACHED_GROWTH_EVENT_BARRIER'
+          assert q['exact_two_step_domain_size']==10001
+          assert q['exact_two_step_counts']['two_step_riser']==2500
+          assert q['bounded_trace_sources']==2000
+          assert q['bounded_trace_depth']==256
+          assert len(q['source_changing_mersenne_negative_controls'])==6
+          assert q['source_changing_mersenne_negative_controls'][-1]['K']==128
+          assert q['sample_source27']['source']==27
+          assert q['bounded_trace_is_not_infinite_proof']
+          assert not q['unbounded_positive_source_exhibited']
+          assert not q['unbounded_actual_growth_event_branch_eliminated']
+          assert q['global_collatz']=='UNKNOWN' and q['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          e={'schema':'COLLATZ_V143_EXACT_GROWTH_EVENT_SEAL',
+             'status':'WARRANTED_FINITE_EXACT_GROWTH_CONTROLS',
+             'source_commit':head,
+             'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'universal_lemma_requires_pinned_lean':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v143-exact-seal.json').write_text(
+             json.dumps(e,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v143-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-growth-barrier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check V143 source relative riser necessity against pinned parents
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/UnboundedParityHeights.lean)" = 34ab4a6070114efc7ddee04fdf757806fa4665c4
+          test "$(git hash-object formal/Collatz/ActualOrbitDichotomy.lean)" = e5f90f9ae369a3704f609ac776b3cbbbe16ce4ca
+          test "$(git hash-object formal/Collatz/PerpetualOddNaturalExclusion.lean)" = f8889bfe73567b5a4a7383a7a9223be32da342be
+          test "$(git hash-object formal/Collatz/SourceProductAffine.lean)" = 97a32acc490465c3bb0cd528e42100a6bbfd2f61
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/PerpetualOddNaturalExclusion.olean formal/Collatz/PerpetualOddNaturalExclusion.lean > evidence/v140.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/UnboundedParityHeights.olean formal/Collatz/UnboundedParityHeights.lean > evidence/v142.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/SourceGrowthEventBarrier.lean 2>&1 | tee evidence/v143-lean.log
+          python3 - <<'PY'
+          import json,pathlib,re,subprocess,hashlib
+          p=pathlib.Path('evidence/v143-lean.log')
+          s=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s),s[-4000:]
+          axs={}
+          for name,val in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",s,re.S):
+            xs=[x.strip() for x in val.split(',') if x.strip()]
+            assert set(xs)<={'propext','Classical.choice','Quot.sound'},(name,xs)
+            axs[name]=xs
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",s):
+            axs[name]=[]
+          targets=[
+            'two_shortcuts_nonexpanding_except_three_mod_four',
+            'two_shortcuts_exact_growth_three_mod_four',
+            'shortcut_le_two_times_plus_one',
+            'bounded_growth_events_bound_even_time_orbit',
+            'bounded_growth_events_bound_full_actual_orbit',
+            'actual_unbounded_orbit_has_unbounded_three_mod_four_growth',
+            'least_bad_unbounded_requires_unbounded_true_growth'
+          ]
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in axs,name
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          e={'schema':'COLLATZ_V143_FORMAL_TWO_STEP_RISER_BARRIER',
+             'status':'WARRANTED_FORMAL_CONDITIONAL_ACTUAL_GROWTH_EVENT_NECESSITY',
+             'source_commit':head,'named_axioms':axs,
+             'lean_log_sha256':hashlib.sha256(s.encode()).hexdigest(),
+             'any_unbounded_actual_orbit_requires_unbounded_3mod4':True,
+             'source_relative_bound':'2*n+6*B+5',
+             'minimal_bad_original_source_guard':'V139_PINNED',
+             'genuine_nonterminal_cycle_excluded':False,
+             'genuine_unbounded_orbit_excluded':False,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v143-formal-seal.json').write_text(json.dumps(e,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v143-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-growth-controls, formal-growth-barrier]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v143-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v143-formal
+          path: evidence/formal
+      - name: Independently check V143 exact and formal evidence at same source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v143-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v143-formal-seal.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==sha
+          assert b['status']=='WARRANTED_FORMAL_CONDITIONAL_ACTUAL_GROWTH_EVENT_NECESSITY'
+          assert b['any_unbounded_actual_orbit_requires_unbounded_3mod4']
+          assert a['universal_lemma_requires_pinned_lean']
+          assert not b['genuine_nonterminal_cycle_excluded']
+          assert not b['genuine_unbounded_orbit_excluded']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          result={
+            'schema':'COLLATZ_V143_GROWTH_GENERATOR_FINAL_SEAL',
+            'status':'WARRANTED_FORMAL_CONDITIONAL_3MOD4_UNBOUNDED_GROWTH_GENERATORS',
+            'source_commit':sha,
+            'protected_boundary':'source-attached true shortcut dynamics and clocks',
+            'new_necessary_condition':'unbounded actual orbit requires unbounded true 3 mod 4 two-step risers',
+            'excluded':['unbounded orbit with bounded 3mod4 actual risers'],
+            'unknown':['nonterminal positive periods','unbounded both-parity no-merge source'],
+            'operational_controller':'V134_UNCHANGED','global_collatz':'UNKNOWN','qed':False
+          }
+          pathlib.Path('evidence/v143-final-seal.json').write_text(
+             json.dumps(result,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v143-final
+          path: evidence/v143-final-seal.json
+          if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-growth-controls,formal-growth-barrier,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Persist source pinned success or failure from all V143 gates
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={
+              exact:'${{ needs.exact-growth-controls.result }}',
+              formal:'${{ needs.formal-growth-barrier.result }}',
+              final:'${{ needs.final-seal.result }}'
+            };
+            const qualified=Object.values(stages).every(x=>x==='success');
+            const data={
+              schema:'COLLATZ_V143_CI_RECEIPT',source_commit:context.sha,
+              run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_3MOD4_GROWTH_NECESSITY':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false
+            };
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v143-source-growth-event-barrier',
+              path:'research/ci_seals/collatz_v143_'+context.sha+'.json',
+              message:'CI receipt: V143 source growth event barrier '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(data,null,2)+'\n').toString('base64')
+            });
