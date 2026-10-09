@@ -1,0 +1,142 @@
+name: Nucleus pinned reference differential
+on:
+  push:
+    branches: [nucleus-reference-differential-v1]
+    paths: [".github/workflows/nucleus-reference-differential-v1.yml", "metatron-kernel/**"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        checker: [nucleus, sokonanoda, mathgraph, nanoclo]
+    env:
+      CHECKER: ${{ matrix.checker }}
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build immutable checker source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-reference
+          if [[ "$CHECKER" == nucleus ]]; then
+            cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml > evidence-reference/release-tests.txt 2>&1
+            cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+            cp metatron-kernel/target/release/metatron-kernel /tmp/checked-kernel
+            git rev-parse HEAD:metatron-kernel > evidence-reference/source-tree.txt
+            echo '751dde727e63fac06d881873e7f0b9e08312cd9a' > evidence-reference/source-pin.txt
+          else
+            case "$CHECKER" in
+              sokonanoda) repo=intgrah/sokonanoda; pin=708859e6a799cb6a9c4e4e993a311d3c7e934419; binary=sokonanoda ;;
+              mathgraph) repo=metalogiclabs/mathgraph-lean-kernel; pin=78c7502bac8a5ba000057b3f083bc0595ac65750; binary=sokonanoda ;;
+              nanoclo) repo=sgraf812/nanoclo; pin=a2aa37ebdb2e28b85c4f3681b0bd8564628ea4a4; binary=nanoclo ;;
+            esac
+            git init -q /tmp/reference
+            git -C /tmp/reference remote add origin "https://github.com/$repo"
+            git -C /tmp/reference fetch -q --depth=1 origin "$pin"
+            git -C /tmp/reference checkout -q --detach FETCH_HEAD
+            test "$(git -C /tmp/reference rev-parse HEAD)" = "$pin"
+            printf '%s\n' "$repo@$pin" > evidence-reference/source-pin.txt
+            cargo build --release --locked --manifest-path /tmp/reference/Cargo.toml
+            cp "/tmp/reference/target/release/$binary" /tmp/checked-kernel
+          fi
+          sha256sum /tmp/checked-kernel > evidence-reference/binary.sha256
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}' > /tmp/checker-config.json
+      - name: Fetch exact frozen inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-archive /tmp/frozen
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/corpus.zip
+          unzip -q /tmp/corpus.zip -d /tmp/arena-archive
+          tar --no-same-owner -xzf /tmp/arena-archive/lean-arena-tests.tar.gz -C /tmp/frozen
+      - name: Compare whole residuals and typed prefixes
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys, time
+          root=pathlib.Path('/tmp/frozen')
+          out=pathlib.Path('evidence-reference')
+          checker=os.environ['CHECKER']
+          command=['/tmp/checked-kernel']
+          if checker=='sokonanoda':
+              command+=['--stdin','--nat-extension','--string-extension','--axiom-allow-all','--threads','1']
+          elif checker!='nucleus':
+              command+=['/tmp/checker-config.json']
+          names=['init-prelude','perf/folded-constant-first','perf/folded-constant-last',
+                 'perf/fueled-chain','perf/grind-ring-5','perf/magma-list-deep-n21',
+                 'perf/magma-list-deep-n36','perf/magma-list-pair-n21',
+                 'perf/magma-list-pair-n7','perf/shared-subterm']
+          cases=[(name,(root/'good'/(name+'.ndjson')).read_bytes(),0) for name in names]
+          cases.append(('bugs/nested-unused-param',(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),1))
+          for name in ['init-prelude','perf/magma-list-pair-n7']:
+              data=(root/'good'/(name+'.ndjson')).read_bytes()
+              symbol={0:''}; prefix=[]; found=False
+              for line in data.splitlines(keepends=True):
+                  obj=json.loads(line);prefix.append(line)
+                  if 'in' in obj:
+                      part=obj.get('str',obj.get('num')); parent=symbol.get(part['pre'],'')
+                      symbol[obj['in']]=parent+('.' if parent else '')+str(part.get('str',part.get('i')))
+                  if 'def' in obj and symbol.get(obj['def']['name'])=='Nat.le_of_ble_eq_true._f':
+                      found=True;break
+              assert found,name
+              cases.append((name+'/through-leble',b''.join(prefix),0))
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          negative=false_index(extract((root/'good/init-prelude.ndjson').read_bytes()))
+          assert hashlib.sha256(negative).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          cases.append(('typed-false-index',negative,1))
+          rows=[]
+          def replay(name,data,expected,limit):
+              started=time.monotonic()
+              try:
+                  p=subprocess.run(command,input=data,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+                      timeout=limit,env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+                  rc=p.returncode; err=p.stderr.decode(errors='replace'); std=p.stdout.decode(errors='replace')
+              except subprocess.TimeoutExpired as exc:
+                  rc='TIMEOUT';err=(exc.stderr or b'').decode(errors='replace');std=''
+              row={'checker':checker,'case':name,'expected':expected,'rc':rc,
+                   'sha256':hashlib.sha256(data).hexdigest(),'seconds':round(time.monotonic()-started,6),
+                   'downstream':[x for x in err.splitlines() if 'NUCLEUS_DOWNSTREAM:' in x][-3:],
+                   'stderr_tail':err[-1800:],'stdout_tail':std[-800:]}
+              rows.append(row)
+              safe=name.replace('/','__')
+              (out/(safe+'.stderr.txt')).write_text(err)
+              (out/'report.json').write_text(json.dumps({'source':(out/'source-pin.txt').read_text().strip(),
+                  'qualification':os.environ['GITHUB_SHA'],'arena':os.environ['ARENA_SHA'],
+                  'command':command,'rows':rows},indent=2))
+              print(json.dumps({k:v for k,v in row.items() if k not in ('stderr_tail','stdout_tail')},sort_keys=True),flush=True)
+              return row
+          for name,data,expected in cases:
+              replay(name,data,expected,30)
+          # This is a comparison, not a gate that relabels UNKNOWN as success.
+          # A positive ACCEPT by another checker is not a Nucleus certificate.
+          if checker=='nucleus':
+              frozen=[]
+              for bucket,expected in [('good',0),('bad',1)]:
+                  for path in sorted((root/bucket).rglob('*.ndjson')):
+                      row=replay('frozen196/'+bucket+'/'+str(path.relative_to(root)),path.read_bytes(),expected,30)
+                      frozen.append(row)
+              summary={'accept':sum(r['rc']==0 for r in frozen),'reject':sum(r['rc']==1 for r in frozen),
+                  'unknown':sum(r['rc']==2 for r in frozen),
+                  'wrong':sum(r['rc'] in (0,1) and r['rc']!=r['expected'] for r in frozen),
+                  'errors':sum(r['rc'] not in (0,1,2) for r in frozen)}
+              (out/'frozen-summary.json').write_text(json.dumps(summary,indent=2))
+              print('FROZEN196 '+json.dumps(summary,sort_keys=True),flush=True)
+              assert len(frozen)==196
+              assert summary=={'accept':115,'reject':71,'unknown':10,'wrong':0,'errors':0},summary
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-reference-${{ matrix.checker }}-${{ github.sha }}
+          path: evidence-reference
+          if-no-files-found: error
