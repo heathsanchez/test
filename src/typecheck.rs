@@ -1009,6 +1009,34 @@ impl<'a> TypeChecker<'a> {
                         }
                     }
                 }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_REFUTATION_AS_UNKNOWN").is_some()
+                    && context.len() == 7
+                    && let Judgment::Refuted { obstruction } = &conversion
+                    && conversion_refutation_is_unknown
+                    && !definite_conversion_obstruction(obstruction.0)
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                    if PRINTED.fetch_add(1, Ordering::Relaxed) < 40 {
+                        let source_normal = match &value {
+                            TypeValue::Term(term) => Some(self.machine().expose(
+                                term.clone(), Transparency::Full, (*remaining).min(256),
+                            )),
+                            _ => None,
+                        };
+                        let expected_normal = match expected {
+                            TypeValue::Term(term) => Some(self.machine().expose(
+                                term.clone(), Transparency::Full, (*remaining).min(256),
+                            )),
+                            _ => None,
+                        };
+                        eprintln!(
+                            "NUCLEUS_REFUTATION_AS_UNKNOWN:expr={expression:?}:context_len={}:frame={}:remaining={}:reason={obstruction:?}:actual={value:?}:expected={expected:?}:actual_whnf={source_normal:?}:expected_whnf={expected_normal:?}",
+                            context.len(),frame.id(),remaining,
+                        );
+                    }
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
