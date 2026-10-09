@@ -216,6 +216,129 @@ impl<'a> TypeChecker<'a> {
         format!("steps={steps:?}:instantiated_codomain={codomain:?}")
     }
 
+    /// A fail-closed derivation of the type of captured syntax. Unlike
+    /// infer_in(expr, context, frame), this resolves each BVar through its
+    /// *captured binding* before consulting the conversion context.
+    ///
+    /// This deliberately supports only monomorphic constants, local variables,
+    /// applications, and qualified Nat literals. Other syntax is UNKNOWN.
+    /// No reduction of the SUBJECT is used: an ill-typed discarded beta
+    /// argument must never be legitimized by the well-typed reduct.
+    fn certified_captured_type(
+        &self,
+        term: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+        depth: usize,
+    ) -> Option<TypeValue> {
+        if depth >= 40 || budget < 32
+            || term.levels != LevelSubstitution::default()
+        {
+            return None;
+        }
+        match self.expressions.get(term.expr)? {
+            Expr::BVar(index) => {
+                let bound = term.env.lookup(*index)?;
+                match bound {
+                    EnvBinding::Free(free) => usize::try_from(free.0)
+                        .ok().and_then(|i| context.get(i)).cloned(),
+                    EnvBinding::Closure(actual) => self.certified_captured_type(
+                        &actual, context, budget - 1, depth + 1,
+                    ),
+                    EnvBinding::Neutral(Neutral {
+                        head: NeutralHead::Free(free), spine,
+                    }) if spine.is_empty() => usize::try_from(free.0)
+                        .ok().and_then(|i| context.get(i)).cloned(),
+                    EnvBinding::Neutral(_) => None,
+                }
+            }
+            Expr::Const { name, levels } => {
+                // Universe-polymorphic subjects are not yet admitted by this
+                // narrow certificate. Their exact substitutions must be
+                // independently reconstructed before generalization.
+                let declaration = self.environment.get(*name)?;
+                if !levels.is_empty() || !declaration.level_params.is_empty() {
+                    return None;
+                }
+                Some(TypeValue::Term(Closure::new(
+                    declaration.ty, EnvFrame::empty(),
+                )))
+            }
+            Expr::App { fun, arg } => {
+                let function = term.sibling(*fun, term.env.clone());
+                let argument = term.sibling(*arg, term.env.clone());
+                let function_type = self.certified_captured_type(
+                    &function, context, budget - 1, depth + 1,
+                )?;
+                let argument_type = self.certified_captured_type(
+                    &argument, context, budget - 1, depth + 1,
+                )?;
+                let (domain, body) = self.pi_view(
+                    Judgment::proven(function_type, "certified-captured-function"),
+                    budget / 2,
+                )?;
+                // Type-check the unnormalized argument against the *exact*
+                // current dependent domain before substituting it into the
+                // next binder. Never infer typing solely from its WHNF.
+                if !crate::convert::convert_with_policy_in_context(
+                    self,
+                    &argument_type,
+                    &domain,
+                    budget / 2,
+                    crate::convert::DeltaPolicy::PreferredOnly,
+                    context.len(),
+                    context,
+                ).is_proven() {
+                    return None;
+                }
+                match body {
+                    PiBody::Closure(body) => Some(TypeValue::Term(
+                        Closure::with_levels(
+                            body.expr,
+                            body.env.extend(argument),
+                            body.levels,
+                        ),
+                    )),
+                    PiBody::Fixed(binder, body) => {
+                        let mut remaining = budget / 2;
+                        self.instantiate_fixed_pi_body(
+                            &body, binder, &argument, &mut remaining,
+                        )
+                    }
+                }
+            }
+            Expr::NatLit(_) => {
+                let primitives = self.environment.nat_primitives()?;
+                Some(TypeValue::Term(Closure::new(
+                    primitives.type_expr, EnvFrame::empty(),
+                )))
+            }
+            _ => None,
+        }
+    }
+
+    /// A proposition certificate for the original captured relation term,
+    /// not merely its normal form. Successful argument checks are witnessed
+    /// recursively by certified_captured_type, and the certified output type
+    /// must reduce to Sort 0. This is only used after context-level conversion
+    /// has already established the two local relation types are equal.
+    pub(crate) fn certified_captured_proposition(
+        &self,
+        term: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        let Some(result_type) = self.certified_captured_type(
+            term, context, budget.min(2048), 0,
+        ) else {
+            return false;
+        };
+        matches!(
+            self.normalize_type_value(&result_type, budget.min(1024)),
+            Some(Value::Sort(LevelTerm::Zero))
+        )
+    }
+
     pub(crate) fn is_proposition_in_context(
         &self,
         expression: ExprId,
