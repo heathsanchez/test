@@ -335,6 +335,24 @@ impl<'a> TypeChecker<'a> {
                     };
                 }
                 let Some((domain, body)) = self.pi_view(function_type.clone(), *remaining) else {
+                    // Independent reference checkers flatten checked
+                    // constant applications and instantiate each Pi body
+                    // with the *actual* argument, in its lexical closure.
+                    // Only attempt when the ordinary intermediate inferred
+                    // function type is unresolved; never bypass domain checks.
+                    if function_type.is_unknown()
+                        && let Some(recovered) = self.infer_checked_constant_telescope(
+                            expression, context, frame, remaining, cache,
+                        )
+                    {
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_CONST_TELESCOPE").is_some() {
+                            eprintln!(
+                                "NUCLEUS_CONST_TELESCOPE:application={expression:?}:judgment={recovered:?}"
+                            );
+                        }
+                        return recovered;
+                    }
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
                         let mut reducible = None;
@@ -717,6 +735,62 @@ impl<'a> TypeChecker<'a> {
             head = *body;
         }
         Some(self.infer_in(head, &lexical_context, &lexical_frame, remaining, cache))
+    }
+
+    // Reconstruct a bounded constant application from its checked
+    // declaration telescope. Every supplied argument is checked against
+    // its domain before it is introduced into the dependent Pi body.
+    // This cannot identify unrelated contexts or rewrite any Nat index.
+    fn infer_checked_constant_telescope(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+    ) -> Option<Judgment<TypeValue>> {
+        let mut head = expression;
+        let mut args = Vec::new();
+        while let Some(Expr::App { fun, arg }) = self.expressions.get(head) {
+            if args.len() >= 8 {
+                return None;
+            }
+            args.push(*arg);
+            head = *fun;
+        }
+        if args.len() < 2
+            || !matches!(self.expressions.get(head), Some(Expr::Const { .. }))
+        {
+            return None;
+        }
+        let mut fuel = (*remaining).min(8192);
+        let head_type = self.infer_in(head, context, frame, &mut fuel, cache);
+        let mut current = head_type.proven_value()?.clone();
+        for arg in args.into_iter().rev() {
+            let Some((domain, body)) =
+                self.pi_view(Judgment::proven(current, "checked-constant-telescope"), fuel)
+            else {
+                return None;
+            };
+            match self.check_in(arg, &domain, context, frame, &mut fuel, true, cache) {
+                Judgment::Proven { .. } => {}
+                Judgment::Refuted { obstruction } => {
+                    return Some(Judgment::Refuted { obstruction });
+                }
+                Judgment::Unknown { residual } => {
+                    return Some(Judgment::Unknown { residual });
+                }
+            }
+            current = match body {
+                PiBody::Fixed(ty) => ty,
+                PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
+                    body.expr,
+                    body.env.extend(self.closure(arg, frame.clone())),
+                    body.levels,
+                )),
+            };
+        }
+        Some(Judgment::proven(current, "checked-constant-telescope"))
     }
 
     // Syntactic support of an inferred type, through its actual closures.
