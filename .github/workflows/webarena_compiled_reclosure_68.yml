@@ -1,4 +1,4 @@
-name: WebArena compiled 85-task hard reclosure
+name: WebArena compiled 111-task hard reclosure
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
 jobs:
   reclose:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - name: Checkout pinned authority
@@ -188,7 +188,31 @@ jobs:
           for id in 185 186; do
             python scripts/webarena_shopping_admin_inventory_attributes_v2.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7780/admin --output-dir "$OUT"
           done
-      - name: Officially score 85-task cross-site closure
+          for id in 596 597 598; do
+            python scripts/webarena_reddit_subscribe.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:9999 --output-dir "$OUT"
+          done
+          for id in 409 410 651; do
+            python scripts/webarena_reddit_reply.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:9999 --output-dir "$OUT"
+          done
+          for id in 733 734 735; do
+            python scripts/webarena_reddit_edit_post.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:9999 --output-dir "$OUT"
+          done
+          for id in 407 408 721 724 730; do
+            python scripts/webarena_reddit_vote.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:9999 --output-dir "$OUT"
+          done
+          for id in 636 624 625 644 603; do
+            python scripts/webarena_reddit_semantic_post.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:9999 --output-dir "$OUT"
+          done
+          for id in 44 156 105; do
+            python scripts/webarena_gitlab_navigation.py --task-id "$id" --task-file "$TASKS" --output-dir "$OUT"
+          done
+          for id in 271 273; do
+            python scripts/webarena_shopping_category_price_filter.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:7770 --output-dir "$OUT"
+          done
+          for id in 615 618; do
+            python scripts/webarena_reddit_repost_image.py --task-id "$id" --task-file "$TASKS" --base-url http://localhost:9999 --output-dir "$OUT"
+          done
+      - name: Officially score 111-task cross-site closure
         run: |
           python - <<'PY'
           import json
@@ -200,7 +224,7 @@ jobs:
           out=root/"output"
           wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
           empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<no-network-evaluator>"),events=())
-          ids=(108,110,111,707,709,193,196,197,200,63,64,65,42,127,204,113,214,212,184,11,15,345,66,67,68,28,29,31,163,165,166,21,25,335,337,338,147,148,149,170,171,172,303,304,307,349,350,293,296,297,316,50,96,191,235,320,321,323,387,388,684,685,686,687,688,259,786,788,634,640,645,646,647,491,807,399,400,401,580,581,584,142,143,185,186)
+          ids=(108,110,111,707,709,193,196,197,200,63,64,65,42,127,204,113,214,212,184,11,15,345,66,67,68,28,29,31,163,165,166,21,25,335,337,338,147,148,149,170,171,172,303,304,307,349,350,293,296,297,316,50,96,191,235,320,321,323,387,388,684,685,686,687,688,259,786,788,634,640,645,646,647,491,807,399,400,401,580,581,584,142,143,185,186,596,597,598,409,410,651,733,734,735,407,408,721,724,730,636,624,625,644,603,44,156,105,271,273,615,618)
           results={}
           for task_id in ids:
               task=wa.get_task(task_id)
@@ -219,7 +243,7 @@ jobs:
                   raise SystemExit(f"compiled reclosure failed at {task_id}: {dumped}")
           seal={
               "epistemic_state":"WARRANTED_BOUNDED",
-              "boundary":"85 compiled WebArena-Verified hard tasks across reset Shopping Admin, Reddit, Shopping, and GitLab environments",
+              "boundary":"111 compiled WebArena-Verified hard tasks across reset Shopping Admin, Reddit, Shopping, and GitLab environments",
               "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
               "task_ids":list(ids),
               "success_count":len(ids),
@@ -231,5 +255,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: webarena-compiled-reclosure-85
+          name: webarena-compiled-reclosure-111
           path: artifacts/webarena_compiled_hard
