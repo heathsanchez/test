@@ -1,0 +1,136 @@
+name: Collatz V125 all-clock ternary reverse-root separator
+on:
+  push:
+    branches: [collatz-v125-source-three-reverse-root]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independent reverse-ray and protected source-offset checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v125_three_reverse_root > evidence/v125-exact.json
+          python3 - <<'PY'
+          import json,subprocess,hashlib,pathlib
+          p=pathlib.Path('evidence/v125-exact.json')
+          j=json.loads(p.read_text())
+          assert j['schema']=='COLLATZ_V125_THREE_REVERSE_ROOT_AND_DYADIC_SOURCE_SEPARATION'
+          assert j['reverse_ray_replay_cases']==9000
+          assert j['source27_first_lower_clock']==59
+          assert len(j['samples'])==6
+          assert all(w['source_clock']==0 and w['earlier_clock']==1 and
+              w['dyadic_offset']%3==1 for w in j['samples'])
+          assert j['global_collatz']=='UNKNOWN' and j['qed'] is False
+          cert={'schema':'COLLATZ_V125_EXACT_REPLAY','status':'WARRANTED_BOUNDED_EXACT',
+            'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'new_generic_lean_scope':'UNKNOWN_UNTIL_QUALIFIED',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v125-exact-seal.json').write_text(json.dumps(cert,sort_keys=True,indent=2)+'\n')
+          print('V125_EXACT_SOURCE_RELATIVE_FUTURE_SEPARATOR_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v125-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-root:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Formal uniqueness of ALL inverse clocks modulo three
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/SourceThreeReverseRoot.lean 2>&1 | tee evidence/v125-lean.log
+          python3 - <<'PY'
+          import re,json,hashlib,pathlib,subprocess
+          f=pathlib.Path('evidence/v125-lean.log')
+          t=f.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',t)
+          ax={}
+          for name,v in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",t,re.S):
+            vs=[x.strip() for x in v.split(',') if x.strip()]
+            assert set(vs)<={'propext','Quot.sound','Classical.choice'},(name,vs)
+            ax[name]=vs
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",t):
+            ax[name]=[]
+          required=['three_reverse_step_unique','three_reverse_ray_unique',
+           'three_reverse_ray_exists','all_preimages_of_three_multiple',
+           'no_lower_preimage_of_three_multiple',
+           'three_divisible_join_has_positive_source_clock',
+           'three_lift_is_source27_dyadic','three_lift_zero_clock_join']
+          for k in required:
+            assert 'CollatzFinal.'+k in ax,k
+          r={'schema':'COLLATZ_V125_FORMAL_REVERSE_ROOT',
+            'status':'WARRANTED_FORMAL_ALL_CLOCK_REVERSE_RAY',
+            'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'new_axioms':ax,
+            'lean_log_sha256':hashlib.sha256(t.encode()).hexdigest(),
+            'universal_Collatz':False,'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v125-formal-seal.json').write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
+          print('V125_ALL_CLOCK_TERNARY_REVERSE_ROOT_KERNEL_PASS_GLOBAL_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v125-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-replay,formal-root]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v125-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v125-formal
+          path: evidence/formal
+      - name: Seal exact same-head mathematical boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v125-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v125-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert head==a['source_commit']==b['source_commit']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          r={'schema':'COLLATZ_V125_FINAL_SEMANTIC_SEPARATOR',
+             'status':'WARRANTED_FORMAL_REVERSE_ROOT_PLUS_BOUNDED_SOURCE_LIFT',
+             'source_commit':head,'protected_source27_first_clock':59,
+             'three_multiple_zero_source_clock':'PROVED_IMPOSSIBLE',
+             'source27_parity_lifts_with_ternary_offset1_clock0':'PROVED_ALL_OFFSETS',
+             'universal_event_producer':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v125-final-seal.json').write_text(json.dumps(r,sort_keys=True,indent=2)+'\n')
+          print('V125_QUALIFIED_SEMANTIC_SEPARATOR_NOT_COLLATZ_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v125-final
+          path: evidence/v125-final-seal.json
+          if-no-files-found: error
