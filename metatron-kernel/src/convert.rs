@@ -1183,6 +1183,14 @@ fn compare_values(
                 let (Some(left_value), Some(right_value)) =
                     (left_value.proven_value(), right_value.proven_value())
                 else {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_STUCK_BRANCH").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                        if PRINTED.fetch_add(1, Ordering::Relaxed) < 36 {
+                            eprintln!("NUCLEUS_STUCK_BRANCH:paired:depth={depth}:budget={current_budget}:type={left_type:?}:index={left_index}:left_structure={left_structure:?}:right_structure={right_structure:?}:left_spine={left_spine:?}:right_spine={right_spine:?}:left_result={left_value:?}:right_result={right_value:?}");
+                        }
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
@@ -1210,6 +1218,14 @@ fn compare_values(
                     current_budget,
                 );
                 let Some(exposed) = exposed.proven_value() else {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_STUCK_BRANCH").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                        if PRINTED.fetch_add(1, Ordering::Relaxed) < 36 {
+                            eprintln!("NUCLEUS_STUCK_BRANCH:unpaired:depth={depth}:budget={current_budget}:type={type_name:?}:index={index}:structure={structure:?}:spine={spine:?}:exposure={exposed:?}");
+                        }
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
@@ -1236,6 +1252,14 @@ fn compare_values(
                     current_budget,
                 );
                 let Some(exposed) = exposed.proven_value() else {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_STUCK_BRANCH").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                        if PRINTED.fetch_add(1, Ordering::Relaxed) < 36 {
+                            eprintln!("NUCLEUS_STUCK_BRANCH:unpaired:depth={depth}:budget={current_budget}:type={type_name:?}:index={index}:structure={structure:?}:spine={spine:?}:exposure={exposed:?}");
+                        }
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
