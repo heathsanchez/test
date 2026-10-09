@@ -357,6 +357,20 @@ impl<'a> TypeChecker<'a> {
                                     ),
                             );
                         }
+                        if std::env::var_os("NUCLEUS_TRACE_APP_HEAD").is_some() {
+                            let mut cursor = *fun;
+                            for level in 0..12 {
+                                let node = self.expressions.get(cursor);
+                                eprintln!(
+                                    "NUCLEUS_APP_HEAD:application={expression:?}:level={level}:expr={cursor:?}:node={node:?}:context_len={}:frame={}",
+                                    context.len(), frame.id()
+                                );
+                                match node {
+                                    Some(Expr::App { fun: next, .. }) => cursor = *next,
+                                    _ => break,
+                                }
+                            }
+                        }
                         eprintln!(
                             "NUCLEUS_APPLICATION_FUNCTION_TYPE:application={:?}:function={:?}:argument={:?}:context_len={}:frame={}:remaining={}:function_type={:?}:reducible={:?}:full={:?}",
                             expression,
