@@ -1376,6 +1376,17 @@ fn compare_values(
                 );
                 let Some(exposed) = exposed.proven_value() else {
                     #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_PROJECTION_OTHER").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                        if PRINTED.fetch_add(1, Ordering::Relaxed) < 30 {
+                            eprintln!(
+                                "NUCLEUS_PROJECTION_OTHER:side=left:depth={depth}:context={}:budget={current_budget}:type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}:other={current_right:?}:failed={exposed:?}",
+                                context.len()
+                            );
+                        }
+                    }
+                    #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_PROJECTION_LAST_FAILURE").is_some() {
                         eprintln!(
                             "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=single:depth={depth}:budget={current_budget}:projection_type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}"
@@ -1407,6 +1418,17 @@ fn compare_values(
                     current_budget,
                 );
                 let Some(exposed) = exposed.proven_value() else {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_PROJECTION_OTHER").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                        if PRINTED.fetch_add(1, Ordering::Relaxed) < 30 {
+                            eprintln!(
+                                "NUCLEUS_PROJECTION_OTHER:side=right:depth={depth}:context={}:budget={current_budget}:type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}:other={current_left:?}:failed={exposed:?}",
+                                context.len()
+                            );
+                        }
+                    }
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_PROJECTION_LAST_FAILURE").is_some() {
                         eprintln!(
