@@ -1563,6 +1563,35 @@ fn compare_nat_literal_neutral(
     let NeutralHead::Const { name, levels } = &neutral.head else {
         return Judgment::refuted("Nat-literal-neutral-head");
     };
+    if literal.is_zero() && *name == primitives.recursor && budget >= 32 {
+        let result = checker.machine().qualified_nat_zero_recursor_result(
+            neutral, budget,
+        );
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_NATREC_MAJOR").is_some() {
+            eprintln!(
+                "NUCLEUS_ZERO_IOTA_REPLAY:depth={depth}:budget={budget}:result={result:?}"
+            );
+        }
+        return match result {
+            Judgment::Proven { value, .. } => {
+                if value == Value::Neutral(neutral.clone()) {
+                    Judgment::unknown("natrec-zero-iota-nonprogress")
+                } else {
+                    compare_values(
+                        checker, &Value::NatLit(literal.clone()), &value,
+                        budget.saturating_sub(1), depth, context,
+                        work, proof_function_frees,
+                    )
+                }
+            }
+            Judgment::Refuted { .. } | Judgment::Unknown { .. } => {
+                // A polymorphic Nat.rec is not a Nat constructor. Failure
+                // to reduce it cannot establish numeral inequality.
+                Judgment::unknown("natrec-zero-iota-unresolved")
+            }
+        };
+    }
     if !levels.is_empty() {
         // A polymorphic recursor is not the constructor for zero. A
         // source-certified iota step requires first identifying its exact
