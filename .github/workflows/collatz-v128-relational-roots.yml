@@ -1,0 +1,138 @@
+name: Collatz V128 relational multi-root separator
+on:
+  push:
+    branches: [collatz-v128-relational-root-separator]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source21 chosen-root all-clock counterexample controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v128_root_selector_separator > evidence/v128-exact.json
+          python3 - <<'PY'
+          import json,hashlib,subprocess,pathlib
+          p=pathlib.Path('evidence/v128-exact.json')
+          j=json.loads(p.read_text())
+          assert j['schema']=='COLLATZ_V128_RELATIONAL_ROOT_SELECTOR_SEPARATOR'
+          assert j['forward_invariant_envelope']==[1,2,4,8,16,21,32]
+          assert j['preferred_root']==21 and j['smaller_odd_three_root']==3
+          assert (j['source_clock'],j['earlier_clock'],j['actual_common_endpoint'])==(3,2,8)
+          assert j['observed_stutter_clocks']==1001
+          assert j['grammar_status']=='PREFERRED_ROOT_SELECTOR_REJECTED_AS_COMPLETE'
+          assert j['global_collatz']=='UNKNOWN' and j['qed'] is False
+          seal={'schema':'COLLATZ_V128_EXACT_FUTURE_SEPARATOR',
+             'status':'WARRANTED_BOUNDED_EXACT',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'false_completeness_rejected':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v128-exact-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          print('V128_SOURCE21_FALSE_ROOT_FIXED_POINT_EXACT_PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v128-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prove ALL-CLOCK root stutter and actual earlier odd-root merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin SourceThreeReverseRoot ThreeRootConsequenceNormalForm OddThreeRootQuotient; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/RootSelectorCompletenessSeparator.lean 2>&1 | tee evidence/v128-lean.log
+          python3 - <<'PY'
+          import re,json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v128-lean.log')
+          text=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',text)
+          axioms={}
+          for name,raw in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",text,re.S):
+            vals=[x.strip() for x in raw.split(',') if x.strip()]
+            assert set(vals)<={'propext','Quot.sound','Classical.choice'},(name,vals)
+            axioms[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",text):
+            axioms[name]=[]
+          for n in ['source21_preferred_root_stutters_everywhere',
+                    'source21_has_earlier_odd_three_root_join',
+                    'preferred_root_grammar_not_lower_merge_complete']:
+            assert 'CollatzFinal.'+n in axioms,n
+          q={'schema':'COLLATZ_V128_FORMAL_SOURCE21_ROOT_SEPARATOR',
+             'status':'WARRANTED_FORMAL_ALL_CLOCK_PREFERRED_ROOT_INCOMPLETENESS',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'new_axioms':axioms,
+             'lean_log_sha256':hashlib.sha256(text.encode()).hexdigest(),
+             'all_positive_Collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v128-formal-seal.json').write_text(json.dumps(q,sort_keys=True,indent=2)+'\n')
+          print('V128_ALL_CLOCK_FALSE_CANONICAL_ROOT_LEAN_PASS_GLOBAL_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v128-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-separator,formal-separator]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v128-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v128-formal
+          path: evidence/formal
+      - name: Seal rejection of false canonical-root completeness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v128-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v128-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['false_completeness_rejected']
+          assert b['status']=='WARRANTED_FORMAL_ALL_CLOCK_PREFERRED_ROOT_INCOMPLETENESS'
+          assert a['global_collatz']==b['all_positive_Collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          r={'schema':'COLLATZ_V128_PROTECTED_RELATIONAL_ROOT_BOUNDARY',
+             'status':'WARRANTED_FORMAL_NEGATIVE_SEPARATOR_AND_LOCAL_MERGER',
+             'source_commit':head,
+             'single_selected_root_not_complete':True,
+             'necessary_semantic_refinement':'RELATIONAL_MULTIPLE_ROOTS',
+             'real_smaller_root_example':[21,3,3,2,8],
+             'universal_original_source_event_producer':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v128-final-seal.json').write_text(json.dumps(r,sort_keys=True,indent=2)+'\n')
+          print('V128_FALSIFIER_QUALIFIED_RELATIONAL_ROOTS_REQUIRED_NOT_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v128-final
+          path: evidence/v128-final-seal.json
+          if-no-files-found: error
