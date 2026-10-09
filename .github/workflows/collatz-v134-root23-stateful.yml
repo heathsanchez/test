@@ -20,9 +20,9 @@ jobs:
           python3 -m research.collatz_ros_root23_v134             --bootstrap --input research/collatz_ros_state_v132.json             --output evidence/v134-state.json | tee evidence/v134-bootstrap.log
           python3 -m research.collatz_ros_root23_v134             --input evidence/v134-state.json             --output evidence/v134-restored.json | tee evidence/v134-restored.log
           cmp evidence/v134-state.json evidence/v134-restored.json
-          if [ -f research/collatz_ros_state_v134.json ]; then
-            cmp research/collatz_ros_state_v134.json evidence/v134-state.json
-          fi
+          cmp research/collatz_ros_state_v134.json evidence/v134-state.json
+          python3 -m research.collatz_ros_root23_v134             --input research/collatz_ros_state_v134.json             --output evidence/v134-committed-restart.json             | tee evidence/v134-committed-restart.log
+          cmp research/collatz_ros_state_v134.json evidence/v134-committed-restart.json
           python3 -m research.collatz_ros_root23_v134             --input evidence/v134-state.json --revoke-support v133_formal_root23_chart_and_27_composition             --output evidence/v134-revoked.json | tee evidence/v134-revoked.log
           python3 - <<'PY'
           import json,hashlib,pathlib,subprocess
@@ -159,8 +159,7 @@ jobs:
           head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           assert q['source_commit']==f['source_commit']==head
           assert q['new_v134_state_sha256']==hashlib.sha256((root/'v134-state.json').read_bytes()).hexdigest()
-          if pathlib.Path('research/collatz_ros_state_v134.json').exists():
-            assert pathlib.Path('research/collatz_ros_state_v134.json').read_bytes()==(root/'v134-state.json').read_bytes()
+          assert pathlib.Path('research/collatz_ros_state_v134.json').read_bytes()==(root/'v134-state.json').read_bytes()
           assert q['source27_first_lower_clock_preserved']==59
           assert q['source27_root3_later_clock']==66
           assert q['live_source_relative_joins']==17
