@@ -1197,6 +1197,66 @@ impl<'a> TypeChecker<'a> {
                                                             "NUCLEUS_FINAL_SPINE_ARG:expr={expression:?}:depth={}:actual_index={actual_index}:expected_index={expected_index}:actual={actual:?}:expected={anticipated:?}:actual_whnf={actual_whnf:?}:expected_whnf={expected_whnf:?}:preferred={preferred:?}:guarded={guarded:?}",
                                                             inner_context.len(),
                                                         );
+                                                        if actual_index == 1 && expected_index == 1
+                                                            && std::env::var_os("NUCLEUS_TRACE_PROOF_ARGUMENT_TYPES").is_some()
+                                                        {
+                                                            let mut fuel_left=2048;
+                                                            let mut fuel_right=2048;
+                                                            let actual_type=self.infer_exact_closure_in_context(
+                                                                actual, &inner_context, &mut fuel_left, 0,
+                                                            );
+                                                            let expected_type=self.infer_exact_closure_in_context(
+                                                                anticipated, &inner_context, &mut fuel_right, 0,
+                                                            );
+                                                            let mut type_conversion=None;
+                                                            let mut left_prop=None;
+                                                            let mut right_prop=None;
+                                                            if let Some(ty)=actual_type.as_ref() {
+                                                                if let TypeValue::Term(type_closure)=ty {
+                                                                    let mut fuel=2048;
+                                                                    let inferred_type=self.infer_exact_closure_in_context(
+                                                                        type_closure, &inner_context, &mut fuel, 0,
+                                                                    );
+                                                                    left_prop=inferred_type.map(|v|
+                                                                        self.sort_level(
+                                                                            Judgment::proven(v,"checked-proof-argument-type"),
+                                                                            fuel.min(1024)
+                                                                        )
+                                                                    );
+                                                                }
+                                                            }
+                                                            if let Some(ty)=expected_type.as_ref() {
+                                                                if let TypeValue::Term(type_closure)=ty {
+                                                                    let mut fuel=2048;
+                                                                    let inferred_type=self.infer_exact_closure_in_context(
+                                                                        type_closure, &inner_context, &mut fuel, 0,
+                                                                    );
+                                                                    right_prop=inferred_type.map(|v|
+                                                                        self.sort_level(
+                                                                            Judgment::proven(v,"checked-local-proof-type"),
+                                                                            fuel.min(1024)
+                                                                        )
+                                                                    );
+                                                                }
+                                                            }
+                                                            if let (Some(a),Some(b))=(&actual_type,&expected_type) {
+                                                                type_conversion=Some(
+                                                                    crate::convert::convert_with_policy_in_context(
+                                                                        self,a,b,2048,
+                                                                        crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                                        inner_context.len(), &inner_context,
+                                                                    )
+                                                                );
+                                                            }
+                                                            eprintln!(
+                                                                "NUCLEUS_PROOF_ARGUMENT_TYPES:expr={expression:?}:context_len={}:actual_type={actual_type:?}:expected_type={expected_type:?}:type_conversion={type_conversion:?}:actual_type_sort={left_prop:?}:expected_type_sort={right_prop:?}:old_proof_relation={}",
+                                                                inner_context.len(),
+                                                                self.proof_terms_same_proposition(
+                                                                    actual,anticipated,&inner_context,2048
+                                                                ),
+                                                            );
+                                                        }
+
                                                     }
                                                 }
                                             }
