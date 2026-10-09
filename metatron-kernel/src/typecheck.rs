@@ -1587,7 +1587,7 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         budget: usize,
     ) -> bool {
-        if context.len() != 9 || budget < 256 {
+        if (context.len() != 9 && context.len() != 13) || budget < 256 {
             return false;
         }
         let probe=budget.min(2048);
@@ -1653,7 +1653,8 @@ impl<'a> TypeChecker<'a> {
             static PRINTED: AtomicUsize = AtomicUsize::new(0);
             if PRINTED.fetch_add(1,Ordering::Relaxed)<24 {
                 eprintln!(
-                    "NUCLEUS_CERTIFIED_PROOF_VS_LOCAL:proved:context=9:left_type={left_type:?}:right_type={right_type:?}:type_relation={converted:?}"
+                    "NUCLEUS_CERTIFIED_PROOF_VS_LOCAL:proved:context={}:left_type={left_type:?}:right_type={right_type:?}:type_relation={converted:?}",
+                    context.len()
                 );
             }
         }
