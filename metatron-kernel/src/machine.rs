@@ -318,7 +318,7 @@ impl<'a> Machine<'a> {
             return Judgment::unknown("projection-index-out-of-range");
         }
         let exposed = self.expose_internal(
-            structure,
+            structure.clone(),
             Transparency::Full,
             budget,
             false,
