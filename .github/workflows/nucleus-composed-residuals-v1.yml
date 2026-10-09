@@ -66,7 +66,7 @@ jobs:
                  "downstream":[x for x in lines if "NUCLEUS_DOWNSTREAM:" in x][-2:],
                  "application":[x[:900] for x in lines if "NUCLEUS_APPLICATION_FUNCTION_TYPE:" in x][:2],
                  "typed":[x[:1900] for x in lines if "NUCLEUS_TYPED_PROJECTION_CHECK:" in x][:4],
-                 "whnf":[x[:1200] for x in lines if "NUCLEUS_LE_TYPE_WHNF:" in x][:4],
+                 "whnf":[x[:1200] for x in lines if "NUCLEUS_LE_INDEX_WHNF:" in x][:8],
                  "split":[x[:1900] for x in lines if "NUCLEUS_TYPED_PROJECTION_SPLIT:" in x][:4]}
             rows.append(row)
             assert run.returncode in (0,1,2),row
