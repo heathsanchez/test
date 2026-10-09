@@ -198,6 +198,69 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    /// Proof irrelevance in an exact *captured* lexical environment.
+    /// Unlike a heuristic free-variable quotient, this derives each proof's
+    /// type independently, checks BOTH types inhabit Prop and proves their
+    /// definitional equality. It may only be used as a positive certificate.
+    ///
+    /// Restrict the recursive subjudgment budget so nested congruence probes
+    /// cannot silently consume an unbounded conversion search.
+    pub(crate) fn certified_captured_proof_pair(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if budget < 1024 || context.is_empty() {
+            return false;
+        }
+        let mut left_fuel = budget.min(1024);
+        let mut right_fuel = budget.min(1024);
+        let Some(left_type) = self.infer_exact_closure_in_context(
+            left, context, &mut left_fuel, 0,
+        ) else { return false };
+        let Some(right_type) = self.infer_exact_closure_in_context(
+            right, context, &mut right_fuel, 0,
+        ) else { return false };
+        let certified_prop = |ty: &TypeValue| -> bool {
+            let TypeValue::Term(closure) = ty else { return false };
+            let mut remaining = budget.min(512);
+            let Some(inferred) = self.infer_exact_closure_in_context(
+                closure, context, &mut remaining, 0,
+            ) else { return false };
+            matches!(
+                self.sort_level(
+                    Judgment::proven(inferred, "captured-proposition-type-check"),
+                    remaining,
+                ),
+                Judgment::Proven { value: LevelTerm::Zero, .. }
+            )
+        };
+        if !certified_prop(&left_type) || !certified_prop(&right_type) {
+            return false;
+        }
+        let relation = crate::convert::convert_with_policy_in_context(
+            self, &left_type, &right_type, budget.min(256),
+            crate::convert::DeltaPolicy::PreferredOnly,
+            context.len(), context,
+        );
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CAPTURED_PROOF_PAIR").is_some()
+            && relation.is_proven()
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static EARNED: AtomicUsize = AtomicUsize::new(0);
+            if EARNED.fetch_add(1, Ordering::Relaxed) < 64 {
+                eprintln!(
+                    "NUCLEUS_CAPTURED_PROOF_PAIR:proved:depth={}:left={left:?}:right={right:?}:left_type={left_type:?}:right_type={right_type:?}:type_relation={relation:?}",
+                    context.len()
+                );
+            }
+        }
+        relation.is_proven()
+    }
+
     /// A deliberately partial *typing derivation* for evaluated closures.
     /// In contrast to inferring just the normalized neutral head, this
     /// reconstructs the original expression's typing through its capture
