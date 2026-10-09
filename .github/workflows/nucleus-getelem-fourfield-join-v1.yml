@@ -1,0 +1,112 @@
+name: Nucleus GetElem qualified 4-field record crossover
+on:
+  push:
+    branches: [nucleus-getelem-fourfield-join-v1]
+    paths: [".github/workflows/nucleus-getelem-fourfield-join-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  reclose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SOURCE_COMMIT: a22fe583766d3a89c62e4d8a15cfdac2c9775266
+      SOURCE_SUBTREE: b6493bb695ce883d52dc679cfa916911f12e472d
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Pin source and run Rust release tests
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Download immutable frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/a /tmp/tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Reclose frozen196 and protect malformed record and indexed proof
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/getelem-derived-v1
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,copy,subprocess,time
+          root=pathlib.Path('/tmp/tests')
+          out=pathlib.Path('metatron-kernel/evidence-out/getelem-derived-v1')
+          rows=[]
+          def run(label,body,want):
+            t=time.monotonic()
+            r=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+              input=body,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=50,
+              env=os.environ | {'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_GENERIC_NONREC':'1'})
+            lines=r.stderr.decode(errors='replace').splitlines()
+            row={'case':label,'expected':want,'rc':r.returncode,'sec':round(time.monotonic()-t,3),
+              'sha256':hashlib.sha256(body).hexdigest(),
+              'terminal':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-3:],
+              'derived':[x[:550] for x in lines if 'NUCLEUS_GENERIC_NONREC:' in x][-6:]}
+            rows.append(row)
+            assert r.returncode in (0,1,2),row
+            assert r.returncode != (1 if want==0 else 0),row
+            return row
+          # Exact protected 196-case universe; do not infer gain from fixture prefixes.
+          for bucket,want in [('good',0),('bad',1)]:
+            for p in sorted((root/bucket).rglob('*.ndjson')):
+              run(p.relative_to(root).as_posix(),p.read_bytes(),want)
+          count={'accept':sum(r['rc']==0 and r['expected']==0 for r in rows),
+                 'reject':sum(r['rc']==1 and r['expected']==1 for r in rows),
+                 'unknown':sum(r['rc']==2 for r in rows)}
+          assert len(rows)==196,len(rows)
+          assert count['accept']>=118 and count['reject']==71 and count['unknown']<=7,count
+          # Shape boundary: mutate exact GetElem? constructor metadata.
+          path=root/'good/perf/magma-list-deep-n21.ndjson'
+          raw=path.read_bytes()
+          assert hashlib.sha256(raw).hexdigest()=='b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526'
+          lines=raw.splitlines(keepends=True)
+          k=next(i for i,line in enumerate(lines) if 'inductive' in (j:=json.loads(line))
+                 and j['inductive']['types'][0]['name']==1070)
+          base=json.loads(lines[k])
+          assert base['inductive']['ctors'][0]['numFields']==3
+          mutants=[]
+          for label,part,field,value in [
+            ('wrong-constructor-owner','ctor','induct',1071),
+            ('wrong-constructor-ordinal','ctor','cidx',3),
+            ('wrong-constructor-arity','ctor','numFields',4),
+            ('wrong-recursor-index-count','rec','numIndices',1)]:
+            changed=copy.deepcopy(base)
+            obj=changed['inductive']['ctors'][0] if part=='ctor' else changed['inductive']['recs'][0]
+            obj[field]=value
+            src=lines.copy()
+            src[k]=(json.dumps(changed,separators=(',',':'))+'\n').encode()
+            mutant=run('GetElem?/mutant/'+label,b''.join(src),0)
+            # Mutation is malformed: never allow full ACCEPT.
+            assert mutant['rc']!=0,mutant
+            mutants.append(mutant)
+          negatives=[r for r in rows if r['case']=='bad/bugs/nested-unused-param.ndjson']
+          assert len(negatives)==1 and negatives[0]['rc']==1,negatives
+          # The pinned invalid equality index cannot become an ACCEPT.
+          import sys
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          false_case=false_index(extract((root/'good/init-prelude.ndjson').read_bytes()))
+          assert hashlib.sha256(false_case).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          false_result=run('protected/false-index',false_case,1)
+          assert false_result['rc'] in (1,2),false_result
+          result={'source':os.environ['SOURCE_COMMIT'],'subtree':os.environ['SOURCE_SUBTREE'],
+                  'qualification':os.environ['GITHUB_SHA'],'counts':count,'frozen':rows,'mutants':mutants}
+          (out/'report.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps({'counts':count,'deep':[r for r in rows if r['case'].endswith(('magma-list-deep-n21.ndjson','magma-list-deep-n36.ndjson'))],'mutants':mutants},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-getelem-crossover-${{ github.sha }}
+          path: metatron-kernel/evidence-out/getelem-derived-v1
+          if-no-files-found: warn
