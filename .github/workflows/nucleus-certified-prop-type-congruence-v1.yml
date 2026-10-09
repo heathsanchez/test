@@ -1,0 +1,102 @@
+name: Nucleus Nat.le_of_ble future-prefix residual
+on:
+  push:
+    branches: [nucleus-certified-prop-type-congruence-v1]
+    paths: [".github/workflows/nucleus-certified-prop-type-congruence-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      SOURCE_COMMIT: 6e9b103d9f9436ce0652b346e1e4427f05dc60b8
+      SOURCE_SUBTREE: de0b60be9caefdb4eaa637060cc174e060b583b3
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind qualified source and build with diagnostics
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch pinned independent corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena /tmp/tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena
+          tar -xzf /tmp/arena/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Reclose at the next exact common declaration
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/leble-prefix-v1
+          python3 - <<'PY'
+          import os,sys,pathlib,json,hashlib,subprocess,time
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          out=pathlib.Path('metatron-kernel/evidence-out/leble-prefix-v1')
+          root=pathlib.Path('/tmp/tests')
+          wanted={
+            'init-prelude':('eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5',
+              '7eaebdf3245f1cb37bc452c1c3c09843eebfec478f6f7844a6f42c231dac89e9'),
+            'perf/magma-list-pair-n7':('abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
+              'eec208239d939ba6b2baf93449954bdce99699b0524859bb50570b59865d38d1')}
+          cases=[]
+          for name,(source_hash,target_hash) in wanted.items():
+            data=(root/'good'/(name+'.ndjson')).read_bytes()
+            assert hashlib.sha256(data).hexdigest()==source_hash
+            names={0:''};rows=[]
+            for line in data.splitlines(keepends=True):
+              obj=json.loads(line);rows.append(line)
+              if 'in' in obj:
+                v=obj.get('str',obj.get('num'))
+                prefix=names.get(v['pre'],'')
+                names[obj['in']]=prefix+('.' if prefix else '')+str(v.get('str',v.get('i')))
+              if 'def' in obj and names.get(obj['def']['name'])=='Nat.le_of_ble_eq_true._f':
+                break
+            shortened=b''.join(rows)
+            assert hashlib.sha256(shortened).hexdigest()==target_hash,name
+            (out/(name.replace('/','__')+'.ndjson')).write_bytes(shortened)
+            cases.append((name,shortened,2))
+            if name=='init-prelude':
+              old=extract(data)
+              mutant=false_index(old)
+              assert hashlib.sha256(mutant).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+              cases.append(('false-index',mutant,2))
+          bad=(root/'bad/bugs/nested-unused-param.ndjson').read_bytes()
+          cases.append(('nested-unused-param',bad,1))
+          results=[]
+          for name,data,expected in cases:
+            start=time.monotonic()
+            p=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=data,
+              stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45,
+              env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1','NUCLEUS_TRACE_CERTIFIED_PROOF_TYPE':'1'})
+            lines=p.stderr.decode(errors='replace').splitlines()
+            (out/(name.replace('/','__')+'.stderr.txt')).write_text('\n'.join(lines)+'\n')
+            row={'case':name,'rc':p.returncode,'expected':expected,
+              'elapsed':round(time.monotonic()-start,3),
+              'sha256':hashlib.sha256(data).hexdigest(),
+              'terminal':[l for l in lines if 'NUCLEUS_DOWNSTREAM:' in l][-2:],
+              'app':[l[:1400] for l in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in l][:6]}
+            results.append(row)
+            print(json.dumps(row,sort_keys=True))
+            assert (p.returncode in (0,2) if name in wanted else p.returncode==expected),row
+            if name=='false-index': assert p.returncode!=0,row
+          print('earned_prefix_accepts='+str(sum(r['rc']==0 for r in results if r['case'] in wanted)))
+          (out/'report.json').write_text(json.dumps({'source':os.environ['SOURCE_COMMIT'],
+                 'tree':os.environ['SOURCE_SUBTREE'],'qualification':os.environ['GITHUB_SHA'],
+                 'cases':results},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-leble-prefix-${{ github.sha }}
+          path: metatron-kernel/evidence-out/leble-prefix-v1
+          if-no-files-found: warn
