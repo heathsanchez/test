@@ -168,7 +168,8 @@ theorem minimal_bad_source_capped_coherent_return_non_decrease
     before.anchor before.owner after.owner
     before.anchor_pos before.owner_pos after.owner_pos
     hbefore hreturn hcapLocal
-  omega
+  have hleLocal : before.owner ≤ after.owner := by omega
+  exact hleLocal
 
 /-- For a source-capped actual repeated-anchor return that is
 nonzero and cylinder-admitted, equality is also impossible:
