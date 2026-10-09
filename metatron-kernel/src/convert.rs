@@ -1724,6 +1724,16 @@ fn certified_local_proof_irrelevance(
                 depth,
                 context,
             );
+            if depth == 5 {
+                let mut probes = Vec::new();
+                for (label, ty) in [("left",left_type),("right",right_type)] {
+                    for fuel in [256usize, 2048usize] {
+                        let result = checker.infer_sort_in_context(ty.expr,context,&ty.env,fuel);
+                        probes.push((label,fuel,result));
+                    }
+                }
+                eprintln!("NUCLEUS_DEPTH5_SORT_PROBES:{probes:?}");
+            }
             eprintln!("NUCLEUS_LOCAL_PROOF_PREMISES:depth={depth}:left={left_free:?}:right={right_free:?}:left_type={left_type:?}:right_type={right_type:?}:left_proposition={left_proposition:?}:right_proposition={right_proposition:?}:type_relation={relation:?}");
         }
     }
