@@ -176,6 +176,10 @@ jobs:
                   for line in row['actual_head']:
                       ids.update(int(v) for v in re.findall(r'NameId\((\d+)\)',line))
                   row['actual_head_names']={str(k):idx.get(k,'') for k in sorted(ids)}
+                  peer_ids=set()
+                  for witness in row['projection_other']:
+                      peer_ids.update(int(v) for v in re.findall(r'NameId\((\d+)\)',witness))
+                  row['projection_peer_names']={str(k):idx.get(k,'') for k in sorted(peer_ids)}
               if name in ('init-prelude','perf/grind-ring-5'):
                   assert row['recursor_arg_obligations'], ('no comparable Nat.rec receiver obligations',name)
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
