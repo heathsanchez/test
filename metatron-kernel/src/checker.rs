@@ -3105,7 +3105,7 @@ fn generic_nonrecursive_recursor_shape(
                             is_bvar(export,head,(fields+c-1-j) as u64),
                             args.len(),fields,
                             args.iter().enumerate().all(|(k,a)|
-                                is_bvar(export,*a,(fields-1-k) as u64)
+                                fields.checked_sub(1+k).is_some_and(|v|is_bvar(export,*a,v as u64))
                             )
                         )
                     });
