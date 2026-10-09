@@ -1,8 +1,8 @@
-name: Nucleus protected Nat.rec PProd projection congruence
+name: Nucleus post-congruence first surviving projection operand
 
 on:
   push:
-    branches: [nucleus-mulpos-rec-congruence-v1]
+    branches: [nucleus-mulpos-postcongruence-separator-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -176,12 +176,13 @@ jobs:
                   row['actual_head_names']={str(k):idx.get(k,'') for k in sorted(ids)}
               if name in ('init-prelude','perf/grind-ring-5'):
                   assert row['recursor_arg_obligations'], ('no comparable Nat.rec receiver obligations',name)
+                  assert any('shape=single_' in x and 'other=' in x for x in row['projection_exact_gap']), ('missing opposite operand',name)
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
               rows.append(row)
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
           PY
 
-      - name: Requalify complete 196-case protected corpus with strict ACCEPT gain
+      - name: Require full196 unchanged for read-only operand census
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -219,14 +220,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
-          print('NATREC_PROJECTION_CONGRUENCE_196_GAIN',flush=True)
+          assert accepted==118 and unknown==7, 'DIAGNOSTIC_CHANGED_FROZEN196'
+          print('MULPOS_POST_CONGRUENCE_DIAGNOSTIC_ONLY',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-mulpos-rec-congruence-${{ github.sha }}
+          name: nucleus-mulpos-postcongruence-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -239,7 +240,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="mulpos rec congruence: ${{ job.status }}; no complete replay"
+          description="mulpos postcongruence: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -250,6 +251,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/mulpos-rec-congruence" \
+            -f context="nucleus/mulpos-postcongruence" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
