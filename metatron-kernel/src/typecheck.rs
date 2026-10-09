@@ -254,21 +254,63 @@ impl<'a> TypeChecker<'a> {
             Expr::App { fun, arg } => {
                 let function = term.sibling(*fun, term.env.clone());
                 let argument = term.sibling(*arg, term.env.clone());
+                #[cfg(feature = "diagnostics")]
+                let note = |stage: &str, witness: String| {
+                    if std::env::var_os("NUCLEUS_TRACE_EXACT_APP_OBLIGATION").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static EMITTED: AtomicUsize = AtomicUsize::new(0);
+                        if EMITTED.fetch_add(1, Ordering::Relaxed) < 64 {
+                            eprintln!(
+                                "NUCLEUS_EXACT_APP_OBLIGATION:stage={stage}:expr={:?}:context={}:frame={}:depth={depth}:witness={witness}",
+                                term.expr, context.len(), term.env.id()
+                            );
+                        }
+                    }
+                };
                 let function_ty = self.infer_exact_closure_in_context(
                     &function, context, remaining, depth + 1,
-                )?;
-                let (domain, body) = self.pi_view(
-                    Judgment::proven(function_ty, "exact-captured-function-type"),
+                );
+                #[cfg(feature = "diagnostics")]
+                if function_ty.is_none() {
+                    note("function-child-unresolved", format!("child={function:?}"));
+                }
+                let function_ty = function_ty?;
+                let pi = self.pi_view(
+                    Judgment::proven(function_ty.clone(), "exact-captured-function-type"),
                     (*remaining).min(512),
-                )?;
+                );
+                #[cfg(feature = "diagnostics")]
+                if pi.is_none() {
+                    note("pi-view-unresolved", format!("function_type={function_ty:?}"));
+                }
+                let (domain, body) = pi?;
                 let argument_ty = self.infer_exact_closure_in_context(
                     &argument, context, remaining, depth + 1,
-                )?;
+                );
+                #[cfg(feature = "diagnostics")]
+                if argument_ty.is_none() {
+                    note("argument-child-unresolved", format!("child={argument:?}"));
+                }
+                let argument_ty = argument_ty?;
                 let domain_check = crate::convert::convert_with_policy_in_context(
                     self, &argument_ty, &domain, (*remaining).min(512),
                     crate::convert::DeltaPolicy::PreferredOnly,
                     context.len(), context,
                 );
+                #[cfg(feature = "diagnostics")]
+                if !domain_check.is_proven() {
+                    let guarded = crate::convert::convert_with_policy_in_context(
+                        self, &argument_ty, &domain, (*remaining).min(512),
+                        crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                        context.len(), context,
+                    );
+                    note(
+                        "argument-domain-unresolved",
+                        format!(
+                            "argument={argument:?}:actual_type={argument_ty:?}:expected={domain:?}:preferred={domain_check:?}:guarded={guarded:?}"
+                        ),
+                    );
+                }
                 if !domain_check.is_proven() || !take_step(remaining) {
                     return None;
                 }
