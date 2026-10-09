@@ -874,8 +874,33 @@ impl<'a> TypeChecker<'a> {
         let Some(right_normal) = self.normalize_type_value(&right_ty, budget) else {
             return false;
         };
-        left_normal == right_normal
+        if left_normal == right_normal
             && self.normalized_type_is_proposition(&left_normal, context, budget, 0)
+        {
+            return true;
+        }
+        // A strict bounded second look only at independently inferred
+        // proposition types: full delta is lawful, but the values must
+        // normalize to exactly the same value and inhabit Prop. This
+        // cannot equate data indices, a symbolic recursor, or distinct Props.
+        let (TypeValue::Term(l), TypeValue::Term(r)) = (&left_ty, &right_ty) else {
+            return false;
+        };
+        let probe = budget.min(128);
+        let machine = self.machine();
+        let (Some(a), Some(b)) = (
+            machine.expose(l.clone(), Transparency::Full, probe).proven_value().cloned(),
+            machine.expose(r.clone(), Transparency::Full, probe).proven_value().cloned(),
+        ) else {
+            return false;
+        };
+        if a != b || !self.normalized_type_is_proposition(&a, context, probe, 0) {
+            return false;
+        }
+        if std::env::var_os("NUCLEUS_TRACE_FULL_PROOF_NORMAL").is_some() {
+            eprintln!("NUCLEUS_FULL_PROOF_NORMAL_PROVEN:budget={probe}");
+        }
+        true
     }
 
     fn normalize_type_value(&self, ty: &TypeValue, budget: usize) -> Option<Value> {
