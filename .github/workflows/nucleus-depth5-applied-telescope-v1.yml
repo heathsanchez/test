@@ -1,8 +1,8 @@
-name: Nucleus cross-projection reduction separator
+name: Nucleus HAdd to Add source projection chain
 
 on:
   push:
-    branches: [nucleus-mulpos-cross-projection-separator-v1]
+    branches: [nucleus-hadd-add-projection-chain-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -153,6 +153,7 @@ jobs:
                    'projection_failure':[x for x in lines if 'NUCLEUS_PROJECTION_FIELD_PROBE:' in x][-8:],
                    'projection_exact_gap':[x for x in lines if 'NUCLEUS_POST_IOTA_PROJECTION_GAP:' in x][-8:],
                    'cross_projection':[x for x in lines if 'NUCLEUS_CROSS_PROJECTION_OTHER:' in x][-6:],
+                   'hadd_add_chain':[x for x in lines if 'NUCLEUS_HADD_ADD_CHAIN:' in x][-6:],
                    'actual_head':[x for x in lines if 'NUCLEUS_PROJECTION_ACTUAL_HEAD:' in x][-8:],
                    'recursor_major':[x for x in lines if 'NUCLEUS_PROJECTION_REC_MAJOR:' in x][-6:],
                    'recursor_arg_obligations':[x for x in lines if 'NUCLEUS_MULPOS_REC_ARG_OBLIGATIONS:' in x][-8:],
@@ -179,6 +180,7 @@ jobs:
                   assert row['recursor_arg_obligations'], ('no comparable Nat.rec receiver obligations',name)
                   assert any('shape=single_' in x and 'other=' in x for x in row['projection_exact_gap']), ('missing opposite operand',name)
                   assert row['cross_projection'], ('missing cross projection result',name)
+                  assert row['hadd_add_chain'], ('missing Add field chain',name)
 
               if name in ('init-prelude','perf/grind-ring-5'):
                   import re
@@ -236,7 +238,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-mulpos-cross-projection-${{ github.sha }}
+          name: nucleus-hadd-add-chain-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -249,7 +251,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="mulpos cross-projection: ${{ job.status }}; no complete replay"
+          description="hadd add chain: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -260,6 +262,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/mulpos-cross-projection" \
+            -f context="nucleus/hadd-add-chain" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
