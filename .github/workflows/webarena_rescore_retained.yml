@@ -3,7 +3,9 @@ on:
   workflow_dispatch:
   push:
     branches: [webarena-verified-capability-compiler-v1]
-    paths: [".github/workflows/webarena_rescore_retained.yml"]
+    paths:
+      - ".github/workflows/webarena_rescore_retained.yml"
+      - "scripts/webarena_rescore_retained.py"
 permissions:
   contents: read
   actions: read
