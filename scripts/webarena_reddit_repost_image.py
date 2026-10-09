@@ -10,30 +10,56 @@ from webarena_reddit_submit_v3 import AUTH, clean, forum_slug
 def norm(s): return re.sub(r"[^a-z0-9]+","",str(s).casefold())
 def sim(a,b): return SequenceMatcher(None,norm(a),norm(b)).ratio()
 
+def candidate_evidence(needle, rows):
+    """Rank observed sources without consulting benchmark or expected output.
+
+    An ambiguous top score is UNKNOWN, never permission to submit a mutation.
+    """
+    candidates=[]
+    for row in rows:
+        title=clean(row["title"])
+        score=sim(needle,title)
+        if needle.casefold() in title.casefold():
+            score+=2
+        if row.get("forum_verified"):
+            score+=1
+        candidates.append({**row,"score":score})
+    candidates.sort(key=lambda row:(-row["score"],row["href"]))
+    if not candidates or candidates[0]["score"]<1:
+        raise RuntimeError("no supported source image observed")
+    if len(candidates)>1 and abs(candidates[0]["score"]-candidates[1]["score"])<0.15:
+        raise RuntimeError("source image identity ambiguous; refusing mutation")
+    return candidates[0],candidates
+
+
 async def find_source(page,base,needle):
     urls=[f"{base}/f/pics",f"{base}/search?q={quote(needle)}"]
-    best=None
+    rows={}
     for url in urls:
-        r=await page.goto(url,wait_until="networkidle",timeout=120000)
-        if r is None or r.status!=200: continue
+        response=await page.goto(url,wait_until="networkidle",timeout=120000)
+        if response is None or response.status!=200:
+            continue
         posts=page.locator(".submission")
         for i in range(await posts.count()):
             post=posts.nth(i)
-            title_link=post.locator("a.submission__link").first
-            if await title_link.count()==0: continue
-            title=clean(await title_link.inner_text())
-            href=await title_link.get_attribute("href")
+            link=post.locator("a.submission__link").first
+            if await link.count()==0:
+                continue
+            title=clean(await link.inner_text())
+            href=await link.get_attribute("href")
             forum=post.locator("a.submission__forum").first
             forum_text=clean(await forum.inner_text()) if await forum.count() else ""
-            score=sim(needle,title)
-            if needle.casefold() in title.casefold(): score+=2
-            if "pics" in forum_text.casefold() or "/f/pics" in (await forum.get_attribute("href") if await forum.count() else ""):
-                score+=1
-            if href and (best is None or score>best["score"]):
-                best={"score":score,"title":title,"href":urljoin(base,href),"forum":forum_text}
-    if best is None or best["score"]<1:
-        raise RuntimeError(f"source image post not found for {needle!r}")
-    return best
+            forum_href=(await forum.get_attribute("href")) if await forum.count() else ""
+            if not href:
+                continue
+            absolute=urljoin(base,href)
+            # Source identity is the observed media URL, not a repeated search hit.
+            rows[absolute]={"title":title,"href":absolute,"forum":forum_text,
+                            "forum_verified":("pics" in forum_text.casefold() or
+                                              "/f/pics" in (forum_href or "").casefold())}
+    selected,candidates=candidate_evidence(needle,list(rows.values()))
+    return {**selected,"candidate_count":len(candidates),
+            "candidate_evidence":candidates[:20]}
 
 async def submit_url(page,base,forum,title,url):
     slug=forum_slug(forum)
