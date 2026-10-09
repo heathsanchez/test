@@ -24,13 +24,9 @@ theorem deep_F_collision_3391 (q : Nat) :
     rw [hfb, hfc] at h
     have heq : 6113 + 3 ^ 9 * (3 * q) = 6113 + 59049 * q := by omega
     simpa only [show 2 ^ 15 = 32768 from rfl, heq] using h
-  calc
-    iter shortcut 15 (3391 + 32768 * q) =
-        6113 + 59049 * q := hleft
-    _ = iter shortcut 15 (10175 + 32768 * (3 * q)) := hright.symm
-    _ = iter shortcut 15 (3 * (3391 + 32768 * q) + 2) := by
-      congr 1
-      omega
+  have harg : 10175 + 32768 * (3 * q) =
+      3 * (3391 + 32768 * q) + 2 := by omega
+  exact hleft.trans (hright.symm.trans (congrArg (iter shortcut 15) harg))
 
 /-- Reuse the V118 source-45 lawful OEOEOOOOO word and the deeper
     exact F collision to obtain genuine smaller ORIGINAL-source merger.
@@ -45,40 +41,28 @@ theorem deep_F_new_lower_merge (z : Nat) :
   let p := 13419551 + 16777216 * z
   have hp : 0 < p := by dsimp [p]; omega
   have hlt : p < n := by dsimp [p,n]; omega
-  have hsource :
-      n = 3391 + 32768 * (583 + 729 * z) := by
+  have hsource : n = 3391 + 32768 * (583 + 729 * z) := by
     dsimp [n]
     omega
-  have hcollision :
-      iter shortcut 15 n = iter shortcut 15 (3 * n + 2) := by
-    calc
-      iter shortcut 15 n =
-          iter shortcut 15 (3391 + 32768 * (583 + 729 * z)) := by
-        rw [hsource]
-      _ = iter shortcut 15
-          (3 * (3391 + 32768 * (583 + 729 * z)) + 2) :=
-        deep_F_collision_3391 (583 + 729 * z)
-      _ = iter shortcut 15 (3 * n + 2) := by
-        rw [← hsource]
-  have hreverse :
-      iter shortcut 9 p = 3 * n + 2 := by
-    calc
-      iter shortcut 9 p =
-          iter shortcut 9 (31 + 512 * (26210 + 32768 * z)) := by
-        congr 1
-        dsimp [p]
-        omega
-      _ = 3 * (45 + 729 * (26210 + 32768 * z)) + 2 :=
-        source_45_reverse_all_offsets (26210 + 32768 * z)
-      _ = 3 * n + 2 := by
-        dsimp [n]
-        omega
+  have hcollision : iter shortcut 15 n = iter shortcut 15 (3 * n + 2) := by
+    have h := deep_F_collision_3391 (583 + 729 * z)
+    rw [← hsource] at h
+    exact h
+  have hpform : p = 31 + 512 * (26210 + 32768 * z) := by
+    dsimp [p]
+    omega
+  have hnform : 3 * (45 + 729 * (26210 + 32768 * z)) + 2 =
+      3 * n + 2 := by
+    dsimp [n]
+    omega
+  have hreverse : iter shortcut 9 p = 3 * n + 2 := by
+    exact (congrArg (iter shortcut 9) hpform).trans
+      ((source_45_reverse_all_offsets (26210 + 32768 * z)).trans hnform)
   refine ⟨hp, hlt, 15, 24, ?_⟩
   calc
-    iter shortcut 15 n =
-        iter shortcut 15 (3 * n + 2) := hcollision
-    _ = iter shortcut 15 (iter shortcut 9 p) := by
-      rw [hreverse]
+    iter shortcut 15 n = iter shortcut 15 (3 * n + 2) := hcollision
+    _ = iter shortcut 15 (iter shortcut 9 p) :=
+      congrArg (iter shortcut 15) hreverse.symm
     _ = iter shortcut 24 p := by
       simpa using (iter_add shortcut 9 15 p).symm
 
