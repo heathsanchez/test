@@ -410,6 +410,22 @@ impl<'a> TypeChecker<'a> {
                                 note("second-pi-domain-body",format!(
                                     "second_binder={second_binder:?}:second_domain={second_domain:?}:second_body={second_body:?}:actual={second_inferred_domain:?}:expected={second_expected_domain:?}"
                                 ));
+                                if second_domain.is_proven()
+                                    && second_binder.0 == one_context.len() as u64
+                                    && let TypeValue::Term(actual_final) = second_inferred_body.as_ref()
+                                {
+                                    let expected_final = second_expected_body.under_free(*second_binder);
+                                    let actual_full = self.machine().expose(
+                                        actual_final.clone(), Transparency::Full, 256,
+                                    );
+                                    let expected_full = self.machine().expose(
+                                        expected_final.clone(), Transparency::Full, 256,
+                                    );
+                                    note("second-pi-terminal-codomain",format!(
+                                        "actual={actual_final:?}:expected={expected_final:?}:actual_full={actual_full:?}:expected_full={expected_full:?}"
+                                    ));
+                                }
+
                             } else {
                                 note("second-pi-exposure",format!(
                                     "expected={opened_expected:?}:exposure={second_expected:?}:actual_body={inferred_body:?}"
