@@ -1,4 +1,6 @@
 use std::collections::{HashMap, HashSet};
+#[cfg(feature = "diagnostics")]
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::id::ExprId;
 use crate::judgment::Judgment;
@@ -9,6 +11,12 @@ use crate::typecheck::{RuleKAttempt, TypeChecker, TypeValue};
 use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
 
 type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
+/// Diagnostic A/B only. The production key is unchanged unless the controlled
+/// NUCLEUS_USE_CONTEXT_KEY experiment is explicitly enabled in a diagnostics build.
+#[cfg(feature = "diagnostics")]
+type ContextVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue, usize, Vec<TypeValue>);
+#[cfg(feature = "diagnostics")]
+static VISIT_CONTEXT_COLLISION_LOG_COUNT: AtomicUsize = AtomicUsize::new(0);
 const INLINE_CONVERSION_VISIT_CAPACITY: usize = 8;
 const CHEAP_PROJECTION_CONGRUENCE_BUDGET: usize = 64;
 
@@ -149,6 +157,18 @@ fn convert_in_context_with_congruence(
     let mut remaining = budget;
     let mut work = vec![(left.clone(), right.clone(), initial_depth, context.to_vec())];
     let mut visited = ConversionVisitSet::new();
+    // Evidence-only A/B experiment: retain the original production behavior by
+    // default and compare it to a depth-and-context-sensitive cycle key.
+    // Identical TypeValue pairs can have different judgments under different
+    // dependent contexts; this flag is not an independent conversion warrant.
+    #[cfg(feature = "diagnostics")]
+    let context_key_enabled = std::env::var_os("NUCLEUS_USE_CONTEXT_KEY").is_some();
+    #[cfg(feature = "diagnostics")]
+    let trace_visit_context = std::env::var_os("NUCLEUS_TRACE_VISIT_CONTEXT").is_some();
+    #[cfg(feature = "diagnostics")]
+    let mut contextual_visited = HashSet::<ContextVisitKey>::new();
+    #[cfg(feature = "diagnostics")]
+    let mut first_visit_contexts = HashMap::<ConversionVisitKey, (usize, Vec<TypeValue>)>::new();
     let mut unit_like_frees = HashMap::new();
     let mut proposition_frees = HashSet::new();
     let mut proof_frees = HashMap::new();
@@ -164,7 +184,34 @@ fn convert_in_context_with_congruence(
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
-        if !visited.insert((checker.authority(), left.clone(), right.clone())) {
+        let visit_key = (checker.authority(), left.clone(), right.clone());
+        #[cfg(feature = "diagnostics")]
+        if trace_visit_context {
+            if let Some((first_depth, first_context)) = first_visit_contexts.get(&visit_key) {
+                if *first_depth != depth || first_context != &local_context {
+                    let count = VISIT_CONTEXT_COLLISION_LOG_COUNT.fetch_add(1, Ordering::Relaxed);
+                    if count < 48 {
+                        eprintln!(
+                            "NUCLEUS_VISIT_CONTEXT_COLLISION:mode={}:first_depth={first_depth}:current_depth={depth}:first_context={first_context:?}:current_context={local_context:?}:left={left:?}:right={right:?}",
+                            if context_key_enabled { "context" } else { "legacy" }
+                        );
+                    }
+                }
+            } else {
+                first_visit_contexts.insert(visit_key.clone(), (depth, local_context.clone()));
+            }
+        }
+        #[cfg(feature = "diagnostics")]
+        let newly_visited = if context_key_enabled {
+            contextual_visited.insert((
+                visit_key.0, visit_key.1, visit_key.2, depth, local_context.clone(),
+            ))
+        } else {
+            visited.insert(visit_key)
+        };
+        #[cfg(not(feature = "diagnostics"))]
+        let newly_visited = visited.insert(visit_key);
+        if !newly_visited {
             continue;
         }
 
