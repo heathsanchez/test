@@ -68,6 +68,13 @@ async def resolve_forum(page,base,description,max_pages=12):
             rows.append({"score":score(description,label,slug,context),"label":label,"slug":slug,"context":context})
     if not rows:
         raise RuntimeError("forum index returned no forums")
+    # Resolve explicit names by normalized exact match before semantic scoring.
+    # This handles display aliases such as "explain like im 5" without
+    # changing the policy for semantically chosen forums.
+    wanted = re.sub(r"[^a-z0-9]+", "", clean(description).casefold())
+    exact = [row for row in rows if wanted and (re.sub(r"[^a-z0-9]+", "", row["slug"].casefold()) == wanted or re.sub(r"[^a-z0-9]+", "", row["label"].casefold()) == wanted)]
+    if len(exact) == 1:
+        return {**exact[0], "candidates": [exact[0]]}
     rows.sort(key=lambda x:(-x["score"],x["slug"]))
     if rows[0]["score"]<=0:
         raise RuntimeError(f"no semantically relevant forum: {rows[:10]}")
