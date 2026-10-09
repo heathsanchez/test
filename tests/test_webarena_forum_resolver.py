@@ -53,6 +53,14 @@ class ForumDiscoveryTests(unittest.IsolatedAsyncioTestCase):
             score("DIY toolkit recommendations","/f/Art Art","Art"),
         )
 
+    def test_requested_lowercase_compound_outweighs_broad_topic(self):
+        from webarena_reddit_forum_resolver import score
+        intent="the effectiveness of deep learning"
+        specific=score(intent,"/f/deeplearning deeplearning","deeplearning")
+        broad=score(intent,"/f/MachineLearning MachineLearning","MachineLearning")
+        self.assertGreater(specific,broad)
+        self.assertGreater(specific,0)
+
     def test_other_forums_not_rewritten_as_aliases(self):
         self.assertIn("deeplearning", candidate_forum_slugs("deep learning"))
         self.assertIn("books", candidate_forum_slugs("books"))
