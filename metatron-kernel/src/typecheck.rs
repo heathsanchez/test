@@ -593,6 +593,22 @@ impl<'a> TypeChecker<'a> {
                         "NUCLEUS_CHECK_CONVERSION:expression={expression:?}:depth={}:frame={}:remaining={}:inferred={value:?}:expected={expected:?}:result={conversion:?}",
                         context.len(), frame.id(), *remaining,
                     );
+                    // Trace only the exact Bool.rec/Nat.beq witness in the
+                    // frozen magma-list-pair-n7 export; this installs no rule.
+                    if let TypeValue::Term(ref t) = value {
+                        if t.expr == ExprId(1308) {
+                            for id in [1307u64, 1306, 1305, 1304] {
+                                let probe = t.sibling(ExprId(id), t.env.clone());
+                                let normal = self.machine().expose(
+                                    probe, Transparency::Full, (*remaining).min(4096),
+                                );
+                                eprintln!("NUCLEUS_BOOL_MAJOR_PROBE:id={id}:normal={normal:?}");
+                            }
+                            for id in 0..10 {
+                                eprintln!("NUCLEUS_BOOL_MAJOR_BINDING:{id}={:?}", t.env.lookup(id));
+                            }
+                        }
+                    }
                     for (label, ty) in [("inferred", &value), ("expected", expected)] {
                         if let TypeValue::Term(closure) = ty {
                             let full = self.machine().expose(
