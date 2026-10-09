@@ -40,7 +40,7 @@ jobs:
           python3 - <<'PY'
           import os,json,time,subprocess,pathlib,hashlib,copy
           root=pathlib.Path('/tmp/tests')
-          out=pathlib.Path('metatron-kernel/evidence-out/sub-succ-checked-v1')
+          out=pathlib.Path('metatron-kernel/evidence-out/post-subsucc-frontier-v1')
           rows=[]
           def runner(name,body,expected=None):
             t=time.monotonic()
@@ -73,7 +73,7 @@ jobs:
                 break
             body=b''.join(prefix)
             (out/(name.replace('/','__')+'-suble.ndjson')).write_bytes(body)
-            runner(name+'-through-suble',body,0)
+            runner(name+'-through-modcore',body,0)
           for name in ['init-prelude','perf/grind-ring-5','perf/magma-list-deep-n21',
               'perf/magma-list-deep-n36','perf/magma-list-pair-n21','perf/magma-list-pair-n7']:
             runner(name+'-full',(root/'good'/(name+'.ndjson')).read_bytes(),0)
@@ -110,5 +110,5 @@ jobs:
         if: always()
         with:
           name: nucleus-post-subsucc-frontier-${{ github.sha }}
-          path: metatron-kernel/evidence-out/sub-succ-checked-v1
+          path: metatron-kernel/evidence-out/post-subsucc-frontier-v1
           if-no-files-found: warn
