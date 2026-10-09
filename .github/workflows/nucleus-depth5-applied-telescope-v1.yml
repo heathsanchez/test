@@ -1,8 +1,8 @@
-name: Nucleus captured dependent function Pi requalification
+name: Nucleus DecidableBall dependent Pi domain separator
 
 on:
   push:
-    branches: [nucleus-typed-function-spine-recovery-v1]
+    branches: [nucleus-decball-pi-domain-separator-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -127,6 +127,7 @@ jobs:
               if 'magma-list-pair' in name:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
                   extra['NUCLEUS_TRACE_RECURSOR_MAJOR']='1'
+                  extra['NUCLEUS_TRACE_DEC_BALL_PI_SEPARATION']='1'
                   extra['NUCLEUS_TRACE_EXACT_APP_OBLIGATION']='1'
                   extra['NUCLEUS_TRACE_CAPTURED_FUNCTION_RECOVERY']='1'
                   extra['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE']='1'
@@ -226,7 +227,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-captured-function-pi-${{ github.sha }}
+          name: nucleus-decball-pi-domain-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -239,7 +240,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="captured function pi: ${{ job.status }}; no complete replay"
+          description="decball pi domain: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -250,6 +251,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/captured-function-pi" \
+            -f context="nucleus/decball-pi-domain" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
