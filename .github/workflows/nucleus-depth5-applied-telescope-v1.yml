@@ -1,8 +1,8 @@
-name: Nucleus depth5 instantiated telescope census
+name: Nucleus depth5 dependent domain census
 
 on:
   push:
-    branches: [nucleus-depth5-applied-telescope-v1]
+    branches: [nucleus-depth5-typed-domain-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -102,7 +102,7 @@ jobs:
           print('NEGATIVES='+json.dumps({'false_index':neg.returncode,'malformed':malformed.returncode}),flush=True)
           assert neg.returncode in (1,2) and malformed.returncode==1
           assert all(r.get('depth5_telescope') for r in rows),'Depth5 witness missing'
-          print('DIAGNOSTIC_ONLY_DEPTH5_NOT_A_PROOF',flush=True)
+          print('DIAGNOSTIC_ONLY_TYPED_DOMAIN_NOT_A_PROOF',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
