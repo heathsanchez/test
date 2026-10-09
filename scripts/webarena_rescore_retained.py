@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""Officially rescore preserved blind Hard evidence; never rerun site mutations."""
+from __future__ import annotations
+
+import argparse
+import collections
+import json
+from pathlib import Path
+
+from webarena_verified.api import WebArenaVerified
+from webarena_verified.types.config import WebArenaVerifiedConfig
+from webarena_verified.types.tracing import NetworkTrace
+
+UPSTREAM = "6473f72db5dcefc97b5725b59e734504edc28a21"
+
+
+def score(root: Path, output: Path):
+    tasks = json.loads((root / "hard.json").read_text())
+    manifest = json.loads((root / "execution_manifest.json").read_text())
+    if len(tasks) != 258 or len(manifest) != 258:
+        raise RuntimeError("Hard-258 evidence incomplete")
+    wa = WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root / "config.json"))
+    empty = NetworkTrace.model_construct(
+        is_playwright=False,
+        src_file=Path("<no-network-events-captured>"),
+        events=(),
+    )
+    results = {}
+    failed = collections.Counter()
+    success_by_site = collections.Counter()
+    completed_by_site = collections.Counter()
+    for task_record in tasks:
+        ident = int(task_record["task_id"])
+        key = str(ident)
+        record = manifest[key]
+        output_dir = root / "output" / record["opaque_slot"]
+        site = "+".join(task_record.get("sites") or [])
+        completed = (
+            record["execution_class"] == "agent_executed"
+            and (output_dir / "agent_response.json").is_file()
+        )
+        entry = {
+            "score": 0.0,
+            "site": site,
+            "agent_completed": completed,
+            "execution_class": record["execution_class"],
+        }
+        if completed:
+            completed_by_site[site] += 1
+        try:
+            official = wa.get_task(ident)
+            protected = any(
+                criterion.evaluator == "NetworkEventEvaluator"
+                for criterion in official.eval
+            )
+            trace_path = output_dir / "network.har"
+            trace = (
+                NetworkTrace.from_har(trace_path)
+                if protected and completed and trace_path.is_file()
+                else empty
+            )
+            evaluation = wa.evaluate_task(
+                task_id=ident,
+                agent_response=output_dir / "agent_response.json",
+                network_trace=trace,
+            )
+            entry["official_score"] = float(evaluation.score)
+            entry["official_status"] = evaluation.status.value
+            if completed and entry["official_score"] == 1.0 and entry["official_status"] == "success":
+                entry["score"] = 1.0
+                success_by_site[site] += 1
+            else:
+                failed[record["execution_class"]] += 1
+        except Exception as exc:
+            entry["evaluation_error"] = repr(exc)
+            failed["official_evaluation_error"] += 1
+        results[key] = entry
+
+    wins = sum(row["score"] for row in results.values())
+    report = {
+        "epistemic_state": "WARRANTED_BOUNDED_RETAINED_BLIND_DIAGNOSTIC",
+        "boundary": "Rescore of unchanged 258-task Hard agent outputs; four site environments only, shared state, no Map/Wikipedia servers",
+        "upstream_commit": UPSTREAM,
+        "original_action_run": 37891173089,
+        "original_artifact": 11599635564,
+        "total": 258,
+        "presented": len(manifest),
+        "agent_completed": sum(row["agent_completed"] for row in results.values()),
+        "official_success_count": int(wins),
+        "score_fraction": wins / 258,
+        "by_site": dict(success_by_site),
+        "agent_completed_by_site": dict(completed_by_site),
+        "failed_by_class": dict(failed),
+        "results": results,
+    }
+    output.mkdir(parents=True, exist_ok=True)
+    (output / "qualification.json").write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps({key: val for key, val in report.items() if key != "results"}, indent=2))
+    return report
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", required=True)
+    parser.add_argument("--output", required=True)
+    args = parser.parse_args()
+    score(Path(args.input), Path(args.output))
+
+
+if __name__ == "__main__":
+    main()
