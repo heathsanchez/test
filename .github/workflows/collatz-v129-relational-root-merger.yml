@@ -1,0 +1,144 @@
+name: Collatz V129 relational odd-three-root merger
+on:
+  push:
+    branches: [collatz-v129-relational-root-merger-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-relational:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact affine all-offset source and earlier-root replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v129_relational_root_merger > evidence/v129-exact.json
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          path=pathlib.Path('evidence/v129-exact.json')
+          j=json.loads(path.read_text())
+          assert j['schema']=='COLLATZ_V129_RELATIONAL_ODD_THREE_ROOT_LOWER_MERGER'
+          assert j['real_source_clock']==3 and j['real_predecessor_clock']==2
+          assert j['source_affine_prefix']==[[21,72],[32,108],[16,54],[8,27]]
+          assert j['predecessor_affine_prefix']==[[3,12],[5,18],[8,27]]
+          assert len(j['samples'])==7
+          assert j['global_collatz']=='UNKNOWN' and j['qed'] is False
+          assert not j['universal_odd_root_event_production']
+          result={'schema':'COLLATZ_V129_EXACT_AFFINE_FAMILY',
+                  'status':'WARRANTED_BOUNDED_EXACT_SYMBOLIC',
+                  'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                  'exact_evidence_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+                  'complete_for_declared_affine_family':True,
+                  'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v129-exact-seal.json').write_text(
+                  json.dumps(result,sort_keys=True,indent=2)+'\n')
+          print('V129_ALL_OFFSET_RELATIONAL_ROOT_AFFINE_REPLAY_PASS_GLOBAL_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v129-exact
+          path: evidence/
+          if-no-files-found: error
+  lean-relational:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check source-indexed odd-three-root parametric merger
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/LawfulFutureJoin.olean formal/Collatz/LawfulFutureJoin.lean > evidence/v123-import.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/v95-import.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CylinderCoalescence.olean formal/Collatz/CylinderCoalescence.lean > evidence/v108-import.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/RelationalRootMerger.lean 2>&1 | tee evidence/v129-lean.log
+          python3 - <<'PY'
+          import re,json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v129-lean.log')
+          raw=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',raw)
+          axioms={}
+          for name,txt in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",raw,re.S):
+            v=[s.strip() for s in txt.split(',') if s.strip()]
+            assert set(v)<={'propext','Quot.sound','Classical.choice'},(name,v)
+            axioms[name]=v
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",raw):
+            axioms[name]=[]
+          needed=['root21_family_forward','root3_family_forward',
+              'root21_family_join','root21_family_odd_three_root_certificate',
+              'root21_family_lower_source_join','root21_family_not_minimal_bad']
+          assert all('CollatzFinal.'+x in axioms for x in needed),axioms
+          seal={'schema':'COLLATZ_V129_FORMAL_RELATIONAL_ROOT_FAMILY',
+             'status':'WARRANTED_FORMAL_ALL_OFFSETS_RELATIONAL_ROOT_LOWER_JOIN',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'new_axioms':axioms,
+             'lean_log_sha256':hashlib.sha256(raw.encode()).hexdigest(),
+             'universal_odd_root_completeness':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v129-formal-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          print('V129_RELATIONAL_ROOT_PARAMETRIC_LEAN_PASS_GLOBAL_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v129-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-relational,lean-relational]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v129-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v129-formal
+          path: evidence/formal
+      - name: Ensure parametric merger is not misreported as universal root closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v129-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v129-formal-seal.json').read_text())
+          commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==commit
+          assert a['complete_for_declared_affine_family']
+          assert b['status']=='WARRANTED_FORMAL_ALL_OFFSETS_RELATIONAL_ROOT_LOWER_JOIN'
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V129_RELATIONAL_ROOT_SEMANTIC_CONSTRUCTOR',
+              'status':'WARRANTED_FORMAL_ONE_INFINITE_ODD_ROOT_FAMILY',
+              'source_commit':commit,
+              'parametric_source':'21+72*t',
+              'strictly_earlier_odd_root':'3+12*t',
+              'source_clock':3,'earlier_clock':2,
+              'generic_root_coverage':'UNKNOWN',
+              'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v129-final-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          print('V129_RELATIONAL_ODD_ROOT_WARRANTED_SCOPED_NOT_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v129-final
+          path: evidence/v129-final-seal.json
+          if-no-files-found: error
