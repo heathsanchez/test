@@ -108,7 +108,9 @@ class SourceChartTypedProofTests(unittest.TestCase):
         true_but_wrong_origin=make_join(9,3,9,1,GENERIC_ID,CHART_ORIGIN)
         with self.assertRaises(ValueError):
             self.c.add(true_but_wrong_origin)
-        no_premises=make_join(15,3,8,1,CHART_EXACT_ID,CHART_ORIGIN)
+        # A TRUE but previously unseen t=1 join cannot borrow the cached
+        # t=0 generic chart evidence; its own precise premise record is needed.
+        no_premises=make_join(783,165,8,1,CHART_EXACT_ID,CHART_ORIGIN)
         with self.assertRaises(ValueError):
             self.c.add(no_premises)
         self.c.audit()
