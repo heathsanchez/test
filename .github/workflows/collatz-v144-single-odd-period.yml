@@ -1,0 +1,193 @@
+name: Collatz V144 eliminate all nonterminal positive cycles with fewer than two odd visits
+on:
+  push:
+    branches: [collatz-v144-single-odd-period-exclusion]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-period-words:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact affine-bias audit of single odd visit periods and negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v144_one_odd_cycle_exact > evidence/v144-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v144-exact.json')
+          a=json.loads(p.read_text())
+          assert a['schema']=='COLLATZ_V144_EXACT_ONE_ODD_POSITIVE_PERIOD'
+          assert a['finite_affine_prefixes_checked']==24000
+          assert a['finite_integer_period_word_horizon']==64
+          assert a['only_one_odd_periodic_examples']==[
+            {'n':1,'k':2,'odd_clock':0},
+            {'n':2,'k':2,'odd_clock':1}]
+          assert a['real_shortcut_cycle_1_2_preserved']
+          assert a['different_minus_variant_nonterminal_example']==[5,7,10,5]
+          assert a['arbitrary_clock_cycle_exclusion_requires_lean']
+          assert not a['cycles_with_two_or_more_odds_excluded']
+          assert not a['unbounded_no_merge_orbits_excluded']
+          assert a['global_collatz']=='UNKNOWN' and a['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          q={'schema':'COLLATZ_V144_FINITE_AFFINE_PERIOD_AUDIT',
+             'status':'WARRANTED_FINITE_EXACT_ONE_ODD_CONTROLS',
+             'source_commit':head,'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'cannot_promote_from_finite_period_census':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v144-exact-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v144-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-single-odd:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Qualify arbitrary-period odd-count exclusion in pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/ParityCycleResidual.lean)" = c6ff15b2a5aac17754ea315cb5c90507eae394b0
+          test "$(git hash-object formal/Collatz/ActualOrbitDichotomy.lean)" = e5f90f9ae369a3704f609ac776b3cbbbe16ce4ca
+          test "$(git hash-object formal/Collatz/PerpetualOddNaturalExclusion.lean)" = f8889bfe73567b5a4a7383a7a9223be32da342be
+          test "$(git hash-object formal/Collatz/SourceProductAffine.lean)" = 97a32acc490465c3bb0cd528e42100a6bbfd2f61
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/PerpetualOddNaturalExclusion.olean formal/Collatz/PerpetualOddNaturalExclusion.lean > evidence/v140.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ParityCycleResidual.olean formal/Collatz/ParityCycleResidual.lean > evidence/v141.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/OneOddCycleObstruction.lean 2>&1 | tee evidence/v144-lean.log
+          python3 - <<'PY'
+          import json,pathlib,re,subprocess,hashlib
+          p=pathlib.Path('evidence/v144-lean.log')
+          s=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s),s[-5000:]
+          axioms={}
+          for name,v in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",s,re.S):
+            xs=[x.strip() for x in v.split(',') if x.strip()]
+            assert set(xs)<={'propext','Classical.choice','Quot.sound'},(name,xs)
+            axioms[name]=xs
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",s):
+            axioms[name]=[]
+          targets=['zero_odd_prefix_has_zero_bias','one_odd_prefix_bias_is_power_two',
+                   'odd_factor_in_power_two_is_one',
+                   'positive_period_cannot_have_zero_odd_visits',
+                   'positive_period_one_odd_visit_is_terminal',
+                   'nonterminal_positive_period_requires_two_odd_visits']
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          result={'schema':'COLLATZ_V144_FORMAL_UNBOUNDED_PERIOD_LENGTH_ONE_ODD_EXCLUSION',
+            'status':'WARRANTED_FORMAL_ZERO_OR_ONE_ODD_PERIOD_NOT_NONTERMINAL',
+            'source_commit':head,'axioms':axioms,
+            'lean_log_sha256':hashlib.sha256(s.encode()).hexdigest(),
+            'arbitrary_period_k':True,
+            'no_positive_period_with_zero_odd':True,
+            'one_odd_period_only_terminal_1_or_2':True,
+            'nonterminal_period_odd_count_at_least_two':True,
+            'cycles_with_at_least_two_odds_excluded':False,
+            'unbounded_source_no_merge_orbit_excluded':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v144-formal-seal.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v144-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-period-words,formal-single-odd]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v144-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v144-formal
+          path: evidence/formal
+      - name: Independently seal arbitrary positive-cycle class exclusion at same SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v144-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v144-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['cannot_promote_from_finite_period_census']
+          assert b['status']=='WARRANTED_FORMAL_ZERO_OR_ONE_ODD_PERIOD_NOT_NONTERMINAL'
+          assert b['arbitrary_period_k']
+          assert b['nonterminal_period_odd_count_at_least_two']
+          assert not b['cycles_with_at_least_two_odds_excluded']
+          assert not b['unbounded_source_no_merge_orbit_excluded']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          result={'schema':'COLLATZ_V144_SOURCE_PERIOD_CLASS_SEAL',
+            'status':'WARRANTED_FORMAL_NO_NONTERMINAL_ZERO_OR_ONE_ODD_PERIOD',
+            'source_commit':head,
+            'new_exclusion':'any actual nonterminal positive cycle with <2 odd steps per period',
+            'protected_period_scope':'ALL POSITIVE NATURALS AND ALL NATURAL PERIOD LENGTHS',
+            'remaining':['cycles with >=2 odd visits per period','unbounded source-attached no-merge orbits'],
+            'core_controller':'V134_UNCHANGED',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v144-final-seal.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v144-final
+          path: evidence/v144-final-seal.json
+          if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-period-words,formal-single-odd,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Save V144 exact pinned CI receipt even on proof failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={exact:'${{ needs.exact-period-words.result }}',
+                          formal:'${{ needs.formal-single-odd.result }}',
+                          final:'${{ needs.final-seal.result }}'};
+            const qualified=Object.values(stages).every(x=>x==='success');
+            const record={schema:'COLLATZ_V144_CI_RECEIPT',source_commit:context.sha,
+              run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_ONE_ODD_PERIOD_EXCLUSION':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false};
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v144-single-odd-period-exclusion',
+              path:'research/ci_seals/collatz_v144_'+context.sha+'.json',
+              message:'CI receipt: V144 single odd period exclusion '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(record,null,2)+'\n').toString('base64')
+            });
