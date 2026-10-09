@@ -1,0 +1,32 @@
+name: WebArena source snapshot for local verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths: [".github/workflows/webarena_source_snapshot.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export tracked source and evidence identity
+        run: |
+          mkdir -p artifacts/source
+          git rev-parse HEAD > artifacts/source/commit.txt
+          git archive --format=tar HEAD scripts tests .github/workflows > artifacts/source/source.tar
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          p=Path('artifacts/source/source.tar')
+          (p.parent/'manifest.json').write_text(json.dumps({'commit':(p.parent/'commit.txt').read_text().strip(),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'boundary':'tracked repository source snapshot; not a benchmark score'},indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webarena-source-snapshot
+          path: artifacts/source
