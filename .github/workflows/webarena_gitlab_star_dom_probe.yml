@@ -1,0 +1,104 @@
+name: WebArena GitLab star DOM discovery (read-only)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_gitlab_star_dom_probe.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start GitLab fixture
+        run: |
+          mkdir -p artifacts/webarena_gitlab_star_dom_probe
+          docker pull am1n3e/webarena-verified-gitlab
+          docker image inspect am1n3e/webarena-verified-gitlab --format '{{index .RepoDigests 0}}' > artifacts/webarena_gitlab_star_dom_probe/gitlab_digest.txt
+          docker run -d --name gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 180); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8023/users/sign_in || true)
+            if [ "$status" = 200 ]; then break; fi
+            if [ "$i" = 180 ]; then exit 1; fi
+            sleep 3
+          done
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install browser
+        run: |
+          python -m pip install playwright
+          playwright install --with-deps chromium
+      - name: Inspect authenticated project star control without writing
+        run: |
+          python - <<'PY'
+          import asyncio,json
+          from pathlib import Path
+          from playwright.async_api import async_playwright
+          from scripts.webarena_gitlab_commit_counts import sign_in
+          ROOT=Path("artifacts/webarena_gitlab_star_dom_probe")
+          async def main():
+              async with async_playwright() as playwright:
+                  browser=await playwright.chromium.launch(headless=True)
+                  context=await browser.new_context()
+                  page=await context.new_page()
+                  await sign_in(page)
+                  status=await page.evaluate("""async () => {
+                    const r=await fetch('/api/v4/user',{credentials:'same-origin'});
+                    return r.status;
+                  }""")
+                  projects=await page.evaluate("""async () => {
+                    const r=await fetch('/api/v4/projects?per_page=100&page=1',{credentials:'same-origin'});
+                    return {status:r.status,data:r.status===200?await r.json():[]};
+                  }""")
+                  if projects["status"]!=200 or not isinstance(projects["data"],list) or not projects["data"]:
+                      raise RuntimeError(f"Could not observe project listing: {projects['status']}")
+                  chosen=max(projects["data"],key=lambda p:int(p.get("star_count") or 0))
+                  project_path=str(chosen.get("path_with_namespace",""))
+                  if project_path.count("/")!=1:
+                      raise RuntimeError("Cannot resolve project path from observed listing")
+                  reply=await page.goto("http://localhost:8023/"+project_path,wait_until="networkidle",timeout=120000)
+                  dom=await page.evaluate("""() => ({
+                    title:document.title,
+                    has_csrf_meta:!!document.querySelector('meta[name="csrf-token"]'),
+                    controls:Array.from(document.querySelectorAll('button,a,form,input')).map(el=>({
+                      tag:el.tagName.toLowerCase(),
+                      label:(el.innerText||el.value||'').trim().slice(0,100),
+                      title:el.getAttribute('title'),
+                      aria:el.getAttribute('aria-label'),
+                      testid:el.getAttribute('data-testid'),
+                      cls:typeof el.className==='string'?el.className.slice(0,170):'',
+                      method:el.getAttribute('method'),
+                      action:el.getAttribute('action'),
+                      href:el.getAttribute('href'),
+                    })).filter(x=>[x.label,x.title,x.aria,x.testid,x.cls,x.action,x.href].some(
+                        y=>typeof y==='string'&&/star|toggle/i.test(y)
+                    )).slice(0,60)
+                  })""")
+                  evidence={
+                      "api_user_status":status,
+                      "project_list_status":projects["status"],
+                      "sample_first_page_count":len(projects["data"]),
+                      "observed_project":project_path,
+                      "observed_project_star_count":chosen["star_count"],
+                      "project_status":None if reply is None else reply.status,
+                      "page_url":page.url,
+                      "cookie_names":sorted({c["name"] for c in await context.cookies()}),
+                      **dom,
+                  }
+                  (ROOT/"observations.json").write_text(json.dumps(evidence,indent=2)+"\n")
+                  print(json.dumps(evidence,indent=2),flush=True)
+                  await browser.close()
+          asyncio.run(main())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-gitlab-star-dom-probe
+          path: artifacts/webarena_gitlab_star_dom_probe
