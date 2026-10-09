@@ -827,6 +827,61 @@ impl<'a> Machine<'a> {
         let first = pending[pending.len() - 1].clone();
         let second = pending[pending.len() - 2].clone();
 
+        // Lean's checked Nat.ble constructor equations: 0 <= n,
+        // succ n !<= 0, and (succ n <= succ m) reduces to (n <= m).
+        // Do not assign a truth value to a stuck symbolic comparison.
+        if matches!(operation, Operation::Ble) {
+            let bools = self.bool_primitives.as_ref()?;
+            let lhs = self.expose_internal(
+                first.clone(), transparency, budget.saturating_sub(1), false, false,
+            ).proven_value()?.value.clone();
+            let rhs = self.expose_internal(
+                second.clone(), transparency, budget.saturating_sub(1), false, false,
+            ).proven_value()?.value.clone();
+
+            let nat_zero = |v: &Value| match v {
+                Value::NatLit(n) => n.is_zero(),
+                Value::Neutral(Neutral {
+                    head: NeutralHead::Const { name, levels }, spine,
+                }) => *name == primitives.zero && levels.is_empty() && spine.is_empty(),
+                _ => false,
+            };
+            let nat_succ = |v: &Value| match v {
+                Value::Neutral(Neutral {
+                    head: NeutralHead::Const { name, levels }, spine,
+                }) if *name == primitives.succ && levels.is_empty() && spine.len() == 1 =>
+                    Some(spine[0].clone()),
+                _ => None,
+            };
+            let constructor_bool = |truth: bool| Value::Neutral(Neutral {
+                head: NeutralHead::Const {
+                    name: if truth { bools.true_ctor } else { bools.false_ctor },
+                    levels: Vec::new(),
+                },
+                spine: Vec::new(),
+            });
+            let lhs_zero = nat_zero(&lhs);
+            let rhs_zero = nat_zero(&rhs);
+            let lhs_succ = nat_succ(&lhs);
+            let rhs_succ = nat_succ(&rhs);
+
+            if lhs_zero {
+                pending.clear();
+                return Some(constructor_bool(true));
+            }
+            if rhs_zero && lhs_succ.is_some() {
+                pending.clear();
+                return Some(constructor_bool(false));
+            }
+            if let (Some(a), Some(b)) = (lhs_succ, rhs_succ) {
+                pending.clear();
+                return Some(Value::Neutral(Neutral {
+                    head: NeutralHead::Const { name, levels: Vec::new() },
+                    spine: vec![a, b],
+                }));
+            }
+        }
+
         if matches!(operation, Operation::Beq) {
             let bools = self.bool_primitives.as_ref()?;
             let first_value = self
