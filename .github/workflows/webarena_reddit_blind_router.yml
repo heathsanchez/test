@@ -1,0 +1,126 @@
+name: WebArena blind Reddit router qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_reddit_blind_router.yml"
+      - "scripts/webarena_reddit_blind_router.py"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert blind-agent source boundary
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          src=Path("scripts/webarena_reddit_blind_router.py").read_text()
+          forbidden=("task_id","intent_template_id","instantiation_dict","evaluator","expected")
+          hits=[x for x in forbidden if x in src]
+          if hits:
+              raise SystemExit(f"blind router references forbidden benchmark metadata: {hits}")
+          print("blind source boundary passed")
+          PY
+
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Start Reddit once
+        run: |
+          mkdir -p artifacts/webarena_reddit_blind_router
+          docker pull am1n3e/webarena-verified-reddit
+          docker image inspect am1n3e/webarena-verified-reddit --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_reddit_blind_router/reddit_image_digest.txt
+          docker run -d --name webarena-verified-reddit -p 9999:80 -p 9998:8877 am1n3e/webarena-verified-reddit
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9999 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+
+      - name: Execute blind router from intent and start URL only
+        run: |
+          ROOT=artifacts/webarena_reddit_blind_router
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__REDDIT__":{"urls":["http://localhost:9999"],"active_url_idx":0}}}
+          JSON
+          python - <<'PY'
+          import json, subprocess, sys
+          from pathlib import Path
+          root=Path("artifacts/webarena_reddit_blind_router")
+          tasks=json.loads((root/"hard.json").read_text())
+          by_id={int(t["task_id"]):t for t in tasks}
+          ids=(634,640,645,646,647,399,400,401,580,581,584,596,597,598,409,410,651,733,734,735,407,408,721,724,730,636,624,625,644,603,610)
+          for ident in ids:
+              t=by_id[ident]
+              start=(t.get("start_urls") or ["__REDDIT__"])[0]
+              out=root/"output"/str(ident)
+              cmd=[
+                  sys.executable,"scripts/webarena_reddit_blind_router.py",
+                  "--intent",t["intent"],
+                  "--start-url",start,
+                  "--base-url","http://localhost:9999",
+                  "--output-dir",str(out),
+              ]
+              print("BLIND",ident,t["intent"],flush=True)
+              subprocess.run(cmd,check=True)
+          PY
+
+      - name: Officially score blind outputs
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_reddit_blind_router")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          ids=(634,640,645,646,647,399,400,401,580,581,584,596,597,598,409,410,651,733,734,735,407,408,721,724,730,636,624,625,644,603,610)
+          results={}; failures=[]
+          for ident in ids:
+              out=root/"output"/str(ident)
+              trace=NetworkTrace.from_har(out/"network.har")
+              result=wa.evaluate_task(task_id=ident,agent_response=out/"agent_response.json",network_trace=trace)
+              dumped=result.model_dump(mode="json",exclude_none=True)
+              (out/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+              row={"score":float(result.score),"status":result.status.value,"evaluation_events":len(trace.evaluation_events)}
+              results[str(ident)]=row
+              if row["score"]!=1.0 or row["status"]!="success": failures.append(ident)
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED" if not failures else "REJECTED",
+              "boundary":"31-task Reddit action router receiving only natural-language intent and start URL",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "agent_forbidden_metadata":["task_id","intent_template_id","instantiation_dict","eval","expected"],
+              "results":results,
+              "failures":failures,
+          }
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+          if failures:
+              raise SystemExit(f"blind router residuals: {failures}")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-reddit-blind-router
+          path: artifacts/webarena_reddit_blind_router
