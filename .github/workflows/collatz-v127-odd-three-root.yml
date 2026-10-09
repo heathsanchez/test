@@ -1,0 +1,143 @@
+name: Collatz V127 odd 3-root protected future quotient
+on:
+  push:
+    branches: [collatz-v127-odd-three-root-quotient]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-odd-root:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check bounded two-clock odd-root presentation and stutter controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v127_odd_three_root_replay > evidence/v127-exact.json
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          p=pathlib.Path('evidence/v127-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V127_ODD_THREE_ROOT_TWO_CLOCK_CLASS_NORMALIZATION'
+          assert d['verified_finite_n']==15000
+          assert d['canonical_odd_root_stutter_checks']==2000
+          assert d['positive_sources_with_larger_root']>0
+          assert d['negative_control_root_of_one']['odd_three_root']==21
+          assert d['negative_control_root_of_seven']['odd_three_root']==9
+          assert not d['strict_lower_source_claim']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          r={'schema':'COLLATZ_V127_ODD_ROOT_BOUNDED_CHECK',
+             'status':'WARRANTED_BOUNDED_EXACT',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'class_transport_not_progress':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v127-exact-seal.json').write_text(json.dumps(r,sort_keys=True,indent=2)+'\n')
+          print('V127_BOUNDED_TWO_CLOCK_CLASS_PRESENTATIONS_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v127-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-odd-root:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel check odd three-root sufficiency and quotient transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin SourceThreeReverseRoot ThreeRootConsequenceNormalForm; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/OddThreeRootQuotient.lean 2>&1 | tee evidence/v127-lean.log
+          python3 - <<'PY'
+          import re,json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v127-lean.log')
+          s=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s)
+          a={}
+          for name,txt in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",s,re.S):
+            vals=[x.strip() for x in txt.split(',') if x.strip()]
+            assert set(vals)<={'propext','Quot.sound','Classical.choice'},(name,vals)
+            a[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",s):
+            a[name]=[]
+          required=['three_even_half','every_three_root_reaches_odd_three_root',
+                    'every_positive_meets_odd_three_root',
+                    'odd_three_root_mod_six',
+                    'collatz_iff_odd_three_roots_terminate',
+                    'odd_three_root_first_step_normalization_stutters']
+          assert all('CollatzFinal.'+x in a for x in required),a
+          d={'schema':'COLLATZ_V127_FORMAL_ODD_THREE_ROOT_REDUCTION',
+             'status':'WARRANTED_FORMAL_CLASS_DOMAIN_EQUIVALENCE',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'axioms':a,'lean_log_sha256':hashlib.sha256(s.encode()).hexdigest(),
+             'source_smaller_than_root_NOT_assumed':True,
+             'universal_root_convergence':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v127-formal-seal.json').write_text(json.dumps(d,sort_keys=True,indent=2)+'\n')
+          print('V127_ODD_THREE_ROOT_QUOTIENT_LEAN_PASS_NOT_COLLATZ_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v127-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-odd-root,formal-odd-root]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v127-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v127-formal
+          path: evidence/formal
+      - name: Seal class equivalence with explicit nonprogress boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v127-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v127-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['class_transport_not_progress'] and b['source_smaller_than_root_NOT_assumed']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          d={'schema':'COLLATZ_V127_PROTECTED_FUTURE_ODD_THREE_ROOT',
+             'status':'WARRANTED_FORMAL_ROOT_QUOTIENT_NORMAL_FORM',
+             'source_commit':h,
+             'protected_representatives':'positive integers congruent 3 mod 6',
+             'all_positive_future_classes_represented':True,
+             'two_clocks_preserved':True,
+             'universal_odd_three_root_termination':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v127-final-seal.json').write_text(json.dumps(d,sort_keys=True,indent=2)+'\n')
+          print('V127_ROOTED_QUOTIENT_WARRANTED_NO_GLOBAL_COLLATZ_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v127-final
+          path: evidence/v127-final-seal.json
+          if-no-files-found: error
