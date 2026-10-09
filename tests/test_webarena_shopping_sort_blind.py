@@ -28,7 +28,7 @@ class MagentoSearchSortContract(unittest.TestCase):
         from webarena_shopping_sort_blind import build_url
         url = build_url({'query':'iphone 12 phone case', 'field':'name', 'direction':'asc'})
         parsed = urlparse(url)
-        self.assertEqual(parsed.path, '/catalogsearch/result/')
+        self.assertEqual(parsed.path, '/catalogsearch/result/index')
         self.assertEqual(parsed.netloc, 'localhost:7770')
         self.assertEqual(parse_qs(parsed.query), {
             'q':['iphone 12 phone case'],

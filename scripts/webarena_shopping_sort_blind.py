@@ -46,7 +46,7 @@ def validate_start(start_url: str):
 
 
 def build_url(spec: dict[str, str]) -> str:
-    return BASE + "/catalogsearch/result/?" + urlencode({
+    return BASE + "/catalogsearch/result/index?" + urlencode({
         "q": spec["query"],
         "product_list_order": spec["field"],
         "product_list_dir": spec["direction"],
