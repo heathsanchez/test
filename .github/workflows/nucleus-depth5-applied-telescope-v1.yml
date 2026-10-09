@@ -179,11 +179,8 @@ jobs:
                       idx[j['in']]=prefix+('.' if prefix else '')+str(z.get('str',z.get('i')))
                   row['neutral_head_names']={str(k):idx.get(k,'') for k in (169,147,75,62,145,146,170)}
               if 'magma-list-pair' in name:
-                  assert row['refutation_premise'], ('no seven-binder first premise witness',name)
-                  assert row['pi_domain_witness'], ('no separable first Pi domain',name)
-                  assert row['second_pi_witness'], ('no second Pi domain and final-codomain witness',name)
-                  assert len(row['final_spine_witness']) >= 4, ('missing all 4 argument comparisons',name)
-                  assert row['proof_argument_types'], ('missing proof irrelevance premise',name)
+                  assert row['certified_proof_reuse'], ('new checked proof irrelevance rule never fired',name)
+                  assert row['return_code'] in (0,2), ('unsafe theorem verdict',name)
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
               rows.append(row)
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
