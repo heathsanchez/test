@@ -722,6 +722,45 @@ impl<'a> TypeChecker<'a> {
                                     left_summary.chars().take(2400).collect::<String>(),
                                     right_summary.chars().take(2400).collect::<String>(),
                                 );
+                                if transparency == Transparency::Reducible {
+                                    if let (
+                                        Some(Value::StuckProjection {
+                                            type_name: left_type,
+                                            index: left_index,
+                                            structure: left_structure,
+                                            spine: left_spine,
+                                        }),
+                                        Some(Value::StuckProjection {
+                                            type_name: right_type,
+                                            index: right_index,
+                                            structure: right_structure,
+                                            spine: right_spine,
+                                        }),
+                                    ) = (left.proven_value(), right.proven_value()) {
+                                        let probe = budget.min(128);
+                                        let result = |a: &Closure, b: &Closure| {
+                                            crate::convert::convert_with_policy_in_context(
+                                                self,
+                                                &TypeValue::Term(a.clone()),
+                                                &TypeValue::Term(b.clone()),
+                                                probe,
+                                                crate::convert::DeltaPolicy::PreferredOnly,
+                                                context.len() + 1,
+                                                &extended,
+                                            )
+                                        };
+                                        let receiver = result(left_structure, right_structure);
+                                        let arguments = left_spine.iter().zip(right_spine)
+                                            .map(|(a,b)| format!("{:?}", result(a,b)))
+                                            .collect::<Vec<_>>();
+                                        eprintln!(
+                                            "NUCLEUS_MIXED_PI_PIECES:expr={expression:?}:type_equal={}:index_equal={}:spines={}/{}:receiver={receiver:?}:args={arguments:?}",
+                                            left_type == right_type,
+                                            left_index == right_index,
+                                            left_spine.len(), right_spine.len(),
+                                        );
+                                    }
+                                }
                             }
                         }
                         } else {
