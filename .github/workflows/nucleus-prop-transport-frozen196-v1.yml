@@ -53,7 +53,7 @@ jobs:
           unzip -q /tmp/arena.zip -d /tmp/arena-artifact
           tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
 
-      - name: Require new contextual proof with exact negative controls
+      - name: Qualify checked Prop transport with exact negative controls
         run: |
           set -euo pipefail
           mkdir -p metatron-kernel/evidence-out/contextual-rigid
