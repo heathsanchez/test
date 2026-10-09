@@ -1,0 +1,65 @@
+name: Collatz V95 source modulus factorization
+on:
+  push:
+    branches: [collatz-v94-source-modulus-factor-v95]
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 4
+      - name: Verify V94 source authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 05f85afbb2052aa76e6483b3bfa8db13067373df^{commit}
+          git diff --exit-code 05f85afbb2052aa76e6483b3bfa8db13067373df HEAD -- formal/Collatz/EpisodePrecisionSeparator.lean
+          echo V94_SOURCE_PROTECTED
+      - name: Kernel-check source modulus factorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/dyadic.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeDeterminism.olean formal/Collatz/EpisodeDeterminism.lean > evidence/determinism.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisode.olean formal/Collatz/ActualEpisode.lean > evidence/actual.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeBridge.olean formal/Collatz/EpisodeBridge.lean > evidence/bridge.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodePrecisionGain.olean formal/Collatz/EpisodePrecisionGain.lean > evidence/v93.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodePrecisionSeparator.olean formal/Collatz/EpisodePrecisionSeparator.lean > evidence/v94.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeSourcePrecision.olean formal/Collatz/EpisodeSourcePrecision.lean > evidence/v86.log
+          lake env lean -DautoImplicit=false formal/Collatz/SourceModulusFactorization.lean | tee evidence/v95.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v95.log
+          grep -q 'source_modulus_iff_endpoint_anchor' evidence/v95.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal exact logical factorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            "schema":"COLLATZ_V94_SOURCE_MODULUS_FACTOR_V95",
+            "status":"WARRANTED_FORMAL_OBSERVATION_FACTORIZATION",
+            "parent_v94_head":"05f85afbb2052aa76e6483b3bfa8db13067373df",
+            "source_side_modulus_iff_endpoint_anchor":True,
+            "single_state_congruence_adds_independent_information":False,
+            "global_collatz":"UNKNOWN","qed":False,
+            "residual":"Find a genuine source-coherent future separator across independently admitted macro returns, not repeat exact endpoint divisibility in source-side notation."
+          }
+          result["certificate_sha256"]=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v95-source-modulus-factor
+          path: evidence/
+          if-no-files-found: error
