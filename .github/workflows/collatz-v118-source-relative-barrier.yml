@@ -1,0 +1,58 @@
+name: Collatz V118 source-capped reduction and minimal-bad barrier
+on:
+  push:
+    branches: [collatz-v117-source-capped-repair-v118]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lean-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for file in SourceProductAffine CylinderCoalescence ReverseAffineMerger Q7SourceMerger ScaledReverseMerger ThreeCongruenceMerger NineCongruenceMerger ParityCollisionBridge; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${file}.olean" "formal/Collatz/${file}.lean" > "evidence/${file}.log" 2>&1
+          done
+      - name: Check source-capped reduction and original-source barrier
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCappedTernaryBar.olean formal/Collatz/SourceCappedTernaryBar.lean 2>&1 | tee evidence/v118-reduction.log
+          lake env lean -DautoImplicit=false formal/Collatz/MinimalBadTernaryBarrier.lean 2>&1 | tee evidence/v118-barrier.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v118-reduction.log evidence/v118-barrier.log
+          grep -q 'collatz_iff_source_capped_ternary_bar.*depends on axioms' evidence/v118-reduction.log
+          grep -q 'minimal_bad_ternary_endpoint_lower_bound.*depends on axioms' evidence/v118-barrier.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal strictly conditional verdict
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          verdict={
+            "schema":"COLLATZ_V118_SOURCE_RELATIVE_BARRIER",
+            "status":"WARRANTED_FORMAL_CONDITIONAL_REDUCTION_AND_BARRIER",
+            "source_capped_universal_bar_proved":False,
+            "nonterminal_cycles_excluded":False,
+            "global_collatz":"UNKNOWN",
+            "qed":False}
+          verdict["certificate_sha256"]=hashlib.sha256(json.dumps(verdict,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(verdict,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v118-source-relative-conditional-barrier
+          path: evidence/
+          if-no-files-found: error
