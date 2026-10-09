@@ -34,7 +34,11 @@ def audit():
     assert old["admission_schema"]=="COLLATZ_ROS_V124_TYPED_WARRANT_ADMISSION"
     assert len(old["joins"])==7 and old["global_collatz"]=="UNKNOWN"
     before=hashlib.sha256(v124).hexdigest()
-    assert before=="bb8ccf524dffff9b4bad973d3bf09f60114b114240d77cd59b331a0f2366f16e"
+    # The source-controlled checkpoint is pretty printed. The qualified
+    # bb8... digest is the V124 canonical *semantic* JSON digest, not
+    # the SHA-256 of the raw indented bytes.
+    from research.collatz_ros_future_controller_v123 import digest
+    assert digest(old)=="bb8ccf524dffff9b4bad973d3bf09f60114b114240d77cd59b331a0f2366f16e"
     roots=[
         class_witness(8,3,0,2,"V127_ODD_ROOT_QUOTIENT"),
         class_witness(8,21,0,3,"V128_MULTI_ROOT_SEPARATOR"),
