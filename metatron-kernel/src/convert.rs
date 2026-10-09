@@ -333,13 +333,38 @@ fn convert_in_context_with_congruence(
                 }
                 if delta_policy == DeltaPolicy::GuardedSemanticFallback
                     && let Some((rigid_head, congruence)) =
-                        rigid_application_head_congruence(checker, &left, &right, remaining)
+                        rigid_application_head_congruence(
+                            checker, &left, &right, remaining, depth, context,
+                        )
                 {
                     if congruence.is_proven() {
                         continue;
                     }
-                    if congruence.is_refuted() && checker.is_certified_constructor(rigid_head) {
-                        return Judgment::refuted("certified-constructor-argument-mismatch");
+                    if let Judgment::Refuted { obstruction } = &congruence
+                        && checker.is_certified_constructor(rigid_head)
+                    {
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_CONSTRUCTOR_ARGUMENT").is_some() {
+                            eprintln!(
+                                "NUCLEUS_CONTEXTUAL_CONSTRUCTOR:depth={depth}:context={}:head={rigid_head:?}:obstruction={obstruction:?}:left={left:?}:right={right:?}",
+                                context.len(),
+                            );
+                        }
+                        // A restricted, context-free argument probe cannot
+                        // establish a constructor mismatch under open binders.
+                        // Even for closed applications, only a definitive
+                        // canonical obstruction may authorize REJECT.
+                        if depth == 0 && context.is_empty()
+                            && matches!(
+                                obstruction.0,
+                                "distinct-Nat-literals"
+                                    | "rigid-value-constructor-mismatch"
+                                    | "distinct-canonical-universes"
+                            )
+                        {
+                            return Judgment::refuted("certified-constructor-argument-mismatch");
+                        }
+                        return Judgment::unknown("unresolved-constructor-argument-mismatch");
                     }
                     if !congruence.is_refuted()
                         && !lazy_head_delta_used
@@ -1157,11 +1182,15 @@ fn compare_values(
                     left_structure,
                     right_structure,
                     current_budget,
+                    depth,
+                    context,
                 ) && same_closure_spine_congruence(
                     checker,
                     left_spine,
                     right_spine,
                     current_budget,
+                    depth,
+                    context,
                 ) {
                     return Judgment::proven((), "stuck-projection-rigid-application-congruence");
                 }
@@ -1411,17 +1440,21 @@ fn same_closure_spine_congruence(
     left: &[Closure],
     right: &[Closure],
     budget: usize,
+    depth: usize,
+    context: &[TypeValue],
 ) -> bool {
     let budget = budget.min(CHEAP_PROJECTION_CONGRUENCE_BUDGET);
     left.len() == right.len()
         && left.iter().zip(right).all(|(left, right)| {
             matches!(
-                convert_with_policy(
+                convert_with_policy_in_context(
                     checker,
                     &TypeValue::Term(left.clone()),
                     &TypeValue::Term(right.clone()),
                     budget.saturating_sub(1),
                     DeltaPolicy::PreferredOnly,
+                    depth,
+                    context,
                 ),
                 Judgment::Proven { .. }
             )
@@ -1433,8 +1466,10 @@ fn same_rigid_application_congruence(
     left: &Closure,
     right: &Closure,
     budget: usize,
+    depth: usize,
+    context: &[TypeValue],
 ) -> bool {
-    rigid_application_head_congruence(checker, left, right, budget)
+    rigid_application_head_congruence(checker, left, right, budget, depth, context)
         .is_some_and(|(_, judgment)| judgment.is_proven())
 }
 
@@ -1443,6 +1478,8 @@ fn rigid_application_head_congruence(
     left: &Closure,
     right: &Closure,
     budget: usize,
+    depth: usize,
+    context: &[TypeValue],
 ) -> Option<(crate::id::NameId, Judgment<()>)> {
     let budget = budget.min(CHEAP_PROJECTION_CONGRUENCE_BUDGET);
     if budget == 0 {
@@ -1492,12 +1529,14 @@ fn rigid_application_head_congruence(
     };
 
     for (left, right) in left_args.iter().zip(&right_args) {
-        match convert_with_policy(
+        match convert_with_policy_in_context(
             checker,
             &TypeValue::Term(left.clone()),
             &TypeValue::Term(right.clone()),
             budget.saturating_sub(1),
             DeltaPolicy::PreferredOnly,
+            depth,
+            context,
         ) {
             Judgment::Proven { .. } => {}
             Judgment::Refuted { obstruction } => {
