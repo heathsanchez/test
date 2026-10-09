@@ -1,0 +1,72 @@
+name: WebArena Reddit forum discovery evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_reddit_forum_discovery_probe.yml"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start pinned Reddit environment
+        run: |
+          docker pull am1n3e/webarena-verified-reddit
+          docker image inspect am1n3e/webarena-verified-reddit --format '{{index .RepoDigests 0}}' > reddit_image_digest.txt
+          docker run -d --name reddit -p 9999:80 am1n3e/webarena-verified-reddit
+          for i in $(seq 1 120); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9999 || true)
+            if [ "$code" = 200 ] || [ "$code" = 302 ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: |
+          pip install playwright
+          playwright install --with-deps chromium
+      - name: Observe forum identifiers and pagination
+        run: |
+          mkdir -p artifacts/forum_discovery
+          cp reddit_image_digest.txt artifacts/forum_discovery/
+          python - <<'PY'
+          import asyncio,json,re
+          from urllib.parse import quote,urlparse
+          from pathlib import Path
+          from playwright.async_api import async_playwright
+          BASE="http://localhost:9999"
+          queries=["explain like im 5","explainlikeimfive","eli5"]
+          async def main():
+            out={"queries":{},"index":[],"matching_forums":[]}
+            async with async_playwright() as p:
+              browser=await p.chromium.launch(headless=True)
+              page=await browser.new_page()
+              for q in queries:
+                for path in ["/f/"+quote(q),"/forums/search?q="+quote(q),"/search?q="+quote(q)]:
+                  r=await page.goto(BASE+path,wait_until="domcontentloaded",timeout=60000)
+                  links=await page.locator('a[href]').evaluate_all("(els)=>els.map(e=>({href:e.getAttribute('href'),text:(e.innerText||'').slice(0,120)})).slice(0,250)")
+                  out["queries"][path]={"status":r.status if r else None,"url":page.url,"title":await page.title(),"links":links}
+              for n in range(1,101):
+                r=await page.goto(f"{BASE}/forums/by_name/{n}",wait_until="domcontentloaded",timeout=60000)
+                links=await page.locator('a[href]').evaluate_all("(els)=>els.map(e=>({href:e.getAttribute('href'),text:(e.innerText||'').slice(0,120)}))")
+                forums=[x for x in links if (x["href"] or "").startswith("/f/")]
+                pagination=[x for x in links if "/forums/by_name/" in (x["href"] or "")]
+                matches=[x for x in forums if re.search(r"explain|eli5",x["href"]+" "+x["text"],re.I)]
+                out["index"].append({"page":n,"status":r.status if r else None,"count":len(forums),"pagination":pagination[:20],"matches":matches})
+                out["matching_forums"].extend(matches)
+                if n>2 and len(forums)==0: break
+              await browser.close()
+            Path("artifacts/forum_discovery/observations.json").write_text(json.dumps(out,indent=2))
+            print(json.dumps({"index_pages":len(out["index"]),"matches":out["matching_forums"],"query_summary":{k:{"status":v["status"],"url":v["url"],"title":v["title"]} for k,v in out["queries"].items()}},indent=2))
+          asyncio.run(main())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-reddit-forum-discovery
+          path: artifacts/forum_discovery
