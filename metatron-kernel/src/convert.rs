@@ -1345,7 +1345,7 @@ fn compare_values(
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_PROJECTION_LAST_FAILURE").is_some() {
                         eprintln!(
-                            "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=pair:depth={depth}:budget={current_budget}:left_type={left_type:?}:left_index={left_index}:left_structure={left_structure:?}:left_exposed={left_value:?}:right_type={right_type:?}:right_index={right_index}:right_structure={right_structure:?}:right_exposed={right_value:?}"
+                            "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=pair:depth={depth}:budget={current_budget}:left_type={left_type:?}:left_index={left_index}:left_structure={left_structure:?}:left_spine={left_spine:?}:left_exposed={left_value:?}:right_type={right_type:?}:right_index={right_index}:right_structure={right_structure:?}:right_spine={right_spine:?}:right_exposed={right_value:?}"
                         );
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
@@ -1378,7 +1378,7 @@ fn compare_values(
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_PROJECTION_LAST_FAILURE").is_some() {
                         eprintln!(
-                            "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=single:depth={depth}:budget={current_budget}:projection_type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}"
+                            "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=single_left:depth={depth}:budget={current_budget}:projection_type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}:other={current_right:?}"
                         );
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
@@ -1410,7 +1410,7 @@ fn compare_values(
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_PROJECTION_LAST_FAILURE").is_some() {
                         eprintln!(
-                            "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=single:depth={depth}:budget={current_budget}:projection_type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}"
+                            "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=single_right:depth={depth}:budget={current_budget}:projection_type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}:other={current_left:?}"
                         );
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
