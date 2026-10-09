@@ -135,10 +135,11 @@ jobs:
                 stderr=subprocess.PIPE,timeout=45,env=os.environ|{'NUCLEUS_TRACE_DEPENDENCY_GAP':'1','NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1'})
               lines=p.stderr.decode(errors='replace').splitlines()
               gaps=[s for s in lines if s.startswith('NUCLEUS_DEPENDENCY_GAP:')]
+              bindings=[s for s in lines if s.startswith('NUCLEUS_SUBLE_BINDING:')]
               apps=[s for s in lines if s.startswith('NUCLEUS_APPLICATION_FUNCTION_TYPE:')]
               terminal=[s for s in lines if s.startswith('NUCLEUS_DOWNSTREAM:')][-2:]
               print('NEW_TYPE_GAP='+json.dumps({'case':name,'rc':p.returncode,
-                'gaps':gaps[:4],'app':apps[:3],'terminal':terminal}),flush=True)
+                'gaps':gaps[:4],'bindings':bindings[:14],'app':apps[:3],'terminal':terminal}),flush=True)
           PY
 
       - name: Run exact positive and negative causal witnesses
