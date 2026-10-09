@@ -80,7 +80,7 @@ def run_lane(dataset: Path, lane: str, output: Path, timeout=600):
         dest = output/'output'/slot
         dest.mkdir(parents=True)
         start = (task.get('start_urls') or [''])[0]
-        command = [sys.executable, 'scripts/webarena_blind_retrieval_bridge.py',
+        command = [sys.executable, 'scripts/webarena_blind_proven_additions.py',
                    '--intent', task['intent'], '--start-url', start, '--output-dir', str(dest)]
         code = invoke_agent(command, dest, timeout)
         row = {'task_id':ident, 'opaque_slot':slot, 'exit_code':code, 'score':0.0,
