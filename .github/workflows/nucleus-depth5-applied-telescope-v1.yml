@@ -1,8 +1,8 @@
-name: Nucleus source-certified HAdd Add PProd projection normal form
+name: Nucleus Substring.Raw exact inductive admission census
 
 on:
   push:
-    branches: [nucleus-heterogeneous-projection-normalform-v1]
+    branches: [nucleus-substring-raw-admission-census-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -58,6 +58,56 @@ jobs:
           gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
           unzip -q /tmp/arena.zip -d /tmp/arena-artifact
           tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+
+      - name: Fingerprint the exact Substring.Raw inductive contract in both positives
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('/tmp/arena-tests/good')
+          all_rows=[]
+          for name in ('init-prelude','perf/grind-ring-5'):
+              names={0:''}
+              found=[]
+              for raw in (root/(name+'.ndjson')).read_bytes().splitlines():
+                  j=json.loads(raw)
+                  if 'in' in j:
+                      z=j.get('str',j.get('num'))
+                      parent=names.get(z['pre'],'')
+                      names[j['in']]=parent+('.' if parent else '')+str(z.get('str',z.get('i')))
+                  if 'inductive' in j:
+                      block=j['inductive']
+                      types=block.get('types',[])
+                      if any(names.get(t.get('name'))=='Substring.Raw' for t in types):
+                          found.append({
+                              'case':name,
+                              'types':[{
+                                  'name':names.get(t.get('name')), 'params':t.get('numParams'),
+                                  'indices':t.get('numIndices'), 'nested':t.get('numNested'),
+                                  'recursive':t.get('isRec'), 'reflexive':t.get('isReflexive'),
+                                  'unsafe':t.get('isUnsafe'), 'levels':t.get('levelParams'),
+                                  'type_expr':t.get('type'), 'constructors':t.get('ctors')
+                              } for t in types],
+                              'constructors':[{
+                                  'name':names.get(c.get('name')),'numParams':c.get('numParams'),
+                                  'numFields':c.get('numFields'),'unsafe':c.get('isUnsafe'),
+                                  'levelParams':c.get('levelParams'),'type':c.get('type')
+                              } for c in block.get('ctors',[])],
+                              'recursors':[{
+                                  'name':names.get(r.get('name')),'numParams':r.get('numParams'),
+                                  'numIndices':r.get('numIndices'),'numMotives':r.get('numMotives'),
+                                  'numMinors':r.get('numMinors'),'unsafe':r.get('isUnsafe'),
+                                  'levelParams':r.get('levelParams'),'k':r.get('k'),
+                                  'type':r.get('type'),'rules':r.get('rules')
+                              } for r in block.get('recs',[])]
+                          })
+              print('NUCLEUS_SUBSTRING_RAW_CONTRACT='+json.dumps(found),flush=True)
+              assert len(found)==1,(name,found)
+              all_rows+=found
+          out=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/substring-raw-contract.json')
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(all_rows,indent=2))
+          PY
 
       - name: Require new contextual proof with exact negative controls
         run: |
@@ -183,7 +233,7 @@ jobs:
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
           PY
 
-      - name: Requalify complete 196-case protected corpus with strict ACCEPT gain
+      - name: Preserve all frozen196 verdicts during inductive census
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -221,14 +271,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
-          print('NATREC_PROJECTION_CONGRUENCE_196_GAIN',flush=True)
+          assert accepted==118 and unknown==7, 'INDUCTIVE_CENSUS_CHANGED_FROZEN196'
+          print('SUBSTRING_RAW_DIAGNOSTIC_ONLY',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-projection-normalform-${{ github.sha }}
+          name: nucleus-substring-raw-census-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -241,7 +291,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="projection normalform: ${{ job.status }}; no complete replay"
+          description="substring raw census: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -252,6 +302,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/projection-normalform" \
+            -f context="nucleus/substring-raw-census" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
