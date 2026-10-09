@@ -1,0 +1,191 @@
+name: Collatz V132 typed two-clock chart closure
+on:
+  push:
+    branches: [collatz-v132-chart-overlap-stateful-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  typed-chart-state:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Qualify four generations of controller tests and exact chart premises
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m unittest -v             research.test_collatz_ros_future_controller_v123             research.test_collatz_ros_future_controller_v124             research.test_collatz_ros_relational_root_v130             research.test_collatz_ros_chart_overlap_v132             2>&1 | tee evidence/v132-unit.log
+          python3 -m research.collatz_ros_chart_overlap_v132             --bootstrap --input research/collatz_ros_state_v130.json             --output evidence/v132-state.json | tee evidence/v132-bootstrap.log
+          python3 -m research.collatz_ros_chart_overlap_v132             --input evidence/v132-state.json --output evidence/v132-restart.json             | tee evidence/v132-restart.log
+          cmp evidence/v132-state.json evidence/v132-restart.json
+          if [ -f research/collatz_ros_state_v132.json ]; then
+            cmp research/collatz_ros_state_v132.json evidence/v132-state.json
+          fi
+          python3 -m research.collatz_ros_chart_overlap_v132             --input evidence/v132-state.json             --revoke-support v131_chart_overlap_generic             --output evidence/v132-revoked.json | tee evidence/v132-revoked.log
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          old=pathlib.Path('research/collatz_ros_state_v130.json')
+          root=pathlib.Path('evidence')
+          state_path=root/'v132-state.json'
+          s=json.loads(state_path.read_text())
+          x=json.loads((root/'v132-revoked.json').read_text())
+          assert s['admission_schema']=='COLLATZ_ROS_V132_SOURCE_CHART_CONSEQUENCE_AUTHORITY'
+          assert s['controller_revision']==4
+          assert s['grammar']['revision']==3
+          assert len(s['joins'])==13
+          assert len(s['parametric_laws'])==2
+          assert len(s['conditional_compilers'])==1
+          assert len(s['chart_instances'])==1
+          assert s['support']['v131_chart_overlap_generic']['run']==37986167263
+          assert s['support']['v131_root9_formal_family']['status']=='WARRANTED_FORMAL'
+          assert s['support']['v132_exact_affine_chart_hypotheses']['status']=='BOUNDED_EXACT'
+          assert len(x['joins'])==9
+          assert len(x['archived_joins'])==4
+          assert s['negative_controls'][2]['changing_source']==2**80-1
+          assert s['residuals'][1]['remaining_classes']==159938
+          assert s['global_collatz']=='UNKNOWN' and s['qed'] is False
+          assert s['universal_event_producer_proved'] is False
+          joins={(j['source'],j['earlier']):j for j in s['joins']}
+          assert set(joins)=={(27,23),(11,3),(3,2),(11,2),(7,5),(5,4),
+              (7,4),(21,3),(21,2),(9,3),(9,2),(15,3),(15,2)}
+          assert (joins[9,3]['source_clock'],joins[9,3]['earlier_clock'])==(9,1)
+          assert (joins[15,3]['source_clock'],joins[15,3]['earlier_clock'])==(8,1)
+          assert joins[9,2]['parents']==[joins[9,3]['id'],joins[3,2]['id']]
+          assert joins[15,2]['parents']==[joins[15,3]['id'],joins[3,2]['id']]
+          raw=old.read_bytes()
+          assert b'1208925819614629174706175' in raw
+          assert b'1208925819614629174706175' in state_path.read_bytes()
+          q={'schema':'COLLATZ_V132_TYPED_GENERIC_CHART_PREMISE_REPLAY',
+             'status':'WARRANTED_BOUNDED_EXACT_TYPED_STATE',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'parent_v130_sha256':hashlib.sha256(raw).hexdigest(),
+             'new_v132_sha256':hashlib.sha256(state_path.read_bytes()).hexdigest(),
+             'live_witness_count':13,
+             'unconditional_formal_family_count':2,
+             'conditional_generic_formal_compilers':1,
+             'generic_premise_instances_only_bounded_exact':1,
+             'live_support_revocation_fully_reopens':True,
+             'universal_event_producer':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          (root/'v132-exact-seal.json').write_text(json.dumps(q,sort_keys=True,indent=2)+'\n')
+          print('V132_TYPED_STATE_GENERIC_HYPOTHESIS_REPLAY_PASS_GLOBAL_UNKNOWN')
+          PY
+          echo V132_CHECKPOINT_BEGIN
+          cat evidence/v132-state.json
+          echo V132_CHECKPOINT_END
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v132-typed-state
+          path: evidence/
+          if-no-files-found: error
+  pinned-formal-chart:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact V131 theorem source and pinned Lean checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          expected_blob=c35bde45d11aad51f46e6e8beced5322acd43e9b
+          test "$(git hash-object formal/Collatz/RootChartOverlapCompiler.lean)" = "$expected_blob"
+          git hash-object formal/Collatz/RootChartOverlapCompiler.lean > evidence/v131-theorem-blob.txt
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin RelationalRootMerger; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/RootChartOverlapCompiler.lean 2>&1 | tee evidence/v132-chart-lean.log
+          python3 - <<'PY'
+          import re,hashlib,json,pathlib,subprocess
+          src=pathlib.Path('evidence/v132-chart-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',src)
+          axioms={}
+          for name,s in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",src,re.S):
+              a=[v.strip() for v in s.split(',') if v.strip()]
+              assert set(a)<={'propext','Quot.sound','Classical.choice'},(name,a)
+              axioms[name]=a
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",src):
+              axioms[name]=[]
+          need=['chartOverlapJoin','chart_overlap_compiles_lower_source','root21ViaChart',
+              'root9ViaChart','root9_chart_source','root9_chart_earlier',
+              'root9_all_offset_odd_three_merger','root9_family_not_minimal_bad']
+          assert all('CollatzFinal.'+v in axioms for v in need),axioms
+          q={'schema':'COLLATZ_V132_FORMAL_TWO_CLOCK_CHART_COMPILER',
+             'status':'WARRANTED_FORMAL_CONDITIONAL_COMPILER_AND_ROOT9_SPECIFIC_FAMILY',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'v131_proof_run':37986167263,
+             'v131_proof_blob':pathlib.Path('evidence/v131-theorem-blob.txt').read_text().strip(),
+             'named_axioms':axioms,
+             'log_sha256':hashlib.sha256(src.encode()).hexdigest(),
+             'generic_automated_premises_are_NOT_individually_Lean':True,
+             'universal_Collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v132-formal-seal.json').write_text(json.dumps(q,sort_keys=True,indent=2)+'\n')
+          print('V132_PINNED_ROOT_CHART_GENERIC_AND_EXACT_ROOT9_LEAN_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v132-formal-chart
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [typed-chart-state,pinned-formal-chart]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v132-typed-state
+          path: evidence/state
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v132-formal-chart
+          path: evidence/formal
+      - name: Seal the difference between formal soundness and executable premises
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,json,subprocess,hashlib
+          root=pathlib.Path('evidence/state')
+          p=json.loads((root/'v132-exact-seal.json').read_text())
+          f=json.loads(pathlib.Path('evidence/formal/v132-formal-seal.json').read_text())
+          state=json.loads((root/'v132-state.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert head==p['source_commit']==f['source_commit']
+          assert p['new_v132_sha256']==hashlib.sha256((root/'v132-state.json').read_bytes()).hexdigest()
+          if pathlib.Path('research/collatz_ros_state_v132.json').exists():
+              assert pathlib.Path('research/collatz_ros_state_v132.json').read_bytes()==(root/'v132-state.json').read_bytes()
+          assert f['status']=='WARRANTED_FORMAL_CONDITIONAL_COMPILER_AND_ROOT9_SPECIFIC_FAMILY'
+          assert p['generic_premise_instances_only_bounded_exact']==1
+          assert state['global_collatz']==p['global_collatz']==f['universal_Collatz']=='UNKNOWN'
+          assert state['qed'] is p['qed'] is f['qed'] is False
+          result={'schema':'COLLATZ_V132_FINAL_PROTECTED_FUTURE_CHART_CONTROLLER',
+              'status':'WARRANTED_BOUNDED_TYPED_ADMISSION_WITH_FORMAL_GENERIC_CHART_SOUNDNESS',
+              'source_commit':head,
+              'state_sha256':p['new_v132_sha256'],
+              'protected_concrete_joins':13,
+              'unconditional_formal_parametric_root_laws':2,
+              'generic_conditional_chart_compilers':1,
+              'new_generic_chart_instantiations_formal':False,
+              'source_relative_earlier_positive':True,
+              'two_actual_clocks_preserved':True,
+              'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v132-final-seal.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+          print('V132_STATEFUL_PROTECTED_CHART_OVERLAP_QUALIFIED_NOT_UNIVERSAL')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v132-final
+          path: evidence/v132-final-seal.json
+          if-no-files-found: error
