@@ -1727,7 +1727,15 @@ fn certified_local_proof_irrelevance(
             eprintln!("NUCLEUS_LOCAL_PROOF_PREMISES:depth={depth}:left={left_free:?}:right={right_free:?}:left_type={left_type:?}:right_type={right_type:?}:left_proposition={left_proposition:?}:right_proposition={right_proposition:?}:type_relation={relation:?}");
         }
     }
-    if !left_proposition.is_proven() || !right_proposition.is_proven() {
+    // Sort preservation under definitional equality: if P : Prop and
+    // P is demonstrably convertible to Q under the checked telescope,
+    // Q is also a proposition. A second incomplete Q : Prop check is
+    // not an obstruction. A definite failure on either side remains
+    // an obstruction and NEVER licenses proof irrelevance.
+    if left_proposition.is_refuted()
+        || right_proposition.is_refuted()
+        || (!left_proposition.is_proven() && !right_proposition.is_proven())
+    {
         return false;
     }
     convert_with_policy_in_context(
