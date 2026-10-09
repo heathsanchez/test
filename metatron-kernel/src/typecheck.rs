@@ -1577,9 +1577,9 @@ impl<'a> TypeChecker<'a> {
     /// context, their actual dependent types must be definitionally
     /// convertible, and each type must independently be checked as Prop.
     ///
-    /// The current verified residual uses nine open binders. Restricting
-    /// to that context depth and one-argument theorem applications prevents
-    /// needless speculative proof searches on unrelated large workloads.
+    /// A verified nine-binder example motivates bounded reuse through
+    /// twelve binders; each application must still satisfy all exact
+    /// independent Prop and type-conversion proof premises.
     pub(crate) fn checked_proof_vs_local_in_context(
         &self,
         left: &Closure,
@@ -1587,7 +1587,7 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         budget: usize,
     ) -> bool {
-        if context.len() != 9 || budget < 256 {
+        if !(9..=12).contains(&context.len()) || budget < 256 {
             return false;
         }
         let probe=budget.min(2048);
@@ -1653,7 +1653,8 @@ impl<'a> TypeChecker<'a> {
             static PRINTED: AtomicUsize = AtomicUsize::new(0);
             if PRINTED.fetch_add(1,Ordering::Relaxed)<24 {
                 eprintln!(
-                    "NUCLEUS_CERTIFIED_PROOF_VS_LOCAL:proved:context=9:left_type={left_type:?}:right_type={right_type:?}:type_relation={converted:?}"
+                    "NUCLEUS_CERTIFIED_PROOF_VS_LOCAL:proved:context={}:left_type={left_type:?}:right_type={right_type:?}:type_relation={converted:?}",
+                    context.len()
                 );
             }
         }
