@@ -1,0 +1,154 @@
+name: Collatz V136 reduced three-power source charts
+on:
+  push:
+    branches: [collatz-v136-reduced-three-power-charts]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-cancellation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact 3-power cancellation, all-offset chart soundness and subfamily preservation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v136_reduced_three_power > evidence/v136-exact.json
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          p=pathlib.Path('evidence/v136-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V136_REDUCED_THREE_POWER_SOURCE_CHARTS'
+          assert d['checked_all_offset_chart_count']==6
+          assert d['strictly_broader_charts']==5
+          assert d['unaffected_zero_min_chart']==1
+          assert d['new_source45_earlier7_meeting_at_3_2']
+          assert d['source45_is_odd_three_root'] and d['predecessor7_is_not_three_root']
+          assert d['results'][0]['old_to_reduced_parameter_dilation']==3
+          assert d['results'][5]['old_to_reduced_parameter_dilation']==1
+          assert d['universal_base_meeting_existence'] is False
+          assert d['universal_weighted_clock_orientation'] is False
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          q={'schema':'COLLATZ_V136_EXACT_REDUCED_CHART_QUALIFICATION',
+             'status':'WARRANTED_EXACT_ALL_OFFSET_CHART_REDUCTION',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'source_file_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'old_law_subfamily_preserved':True,'strict_new_root21_family':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v136-exact-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          print('V136_EXACT_REDUCED_THREE_POWER_CHARTS_PASS_NOT_COLLATZ_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v136-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-reduced:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check general primitive three-power chart and widened source21 and root9 families
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/RootChartOverlapCompiler.lean)" = c35bde45d11aad51f46e6e8beced5322acd43e9b
+          test "$(git hash-object formal/Collatz/Root23LateJoinReclosure.lean)" = b2aea7066186caf01a6be6743579ad27894edb75
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin RelationalRootMerger RootChartOverlapCompiler FirstResidualRefinement Root23LateJoinReclosure CanonicalCrossPowerChart; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/ReducedThreePowerCharts.lean 2>&1 | tee evidence/v136-lean.log
+          python3 - <<'PY'
+          import hashlib,json,pathlib,re,subprocess
+          log=pathlib.Path('evidence/v136-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          axioms={}
+          for name,text in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            vals=[x.strip() for x in text.split(',') if x.strip()]
+            assert set(vals)<={'propext','Quot.sound','Classical.choice'},(name,vals)
+            axioms[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          targets=['reduced_odd_power_endpoint_balance','reducedCrossPowerJoin',
+            'reduced_chart_compiles_lower_source','reducedRoot21',
+            'reducedRoot21_source','reducedRoot21_earlier',
+            'reducedRoot21_all_offsets','reducedRoot21_new_source45',
+            'old_root21_is_reduced_subfamily','reducedRoot9',
+            'reducedRoot9_source','reducedRoot9_earlier',
+            'reducedRoot9_lower_merge','old_root9_is_reduced_subfamily']
+          assert all('CollatzFinal.'+x in axioms for x in targets),axioms
+          q={'schema':'COLLATZ_V136_FORMAL_REDUCED_THREE_POWER',
+             'status':'WARRANTED_FORMAL_REDUCED_CROSS_POWER_CHART_COMPILER',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'named_axioms':axioms,
+             'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+             'previous_charts_are_subfamilies':True,
+             'formal_source45_to7':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v136-formal-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          print('V136_WARRANTED_FORMAL_THREE_ADIC_REDUCED_CHARTS_NOT_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v136-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-cancellation,formal-reduced]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v136-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v136-formal
+          path: evidence/formal
+      - name: Reconcile exact cancellation and formal all-offset qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v136-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v136-formal-seal.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==sha
+          assert b['status']=='WARRANTED_FORMAL_REDUCED_CROSS_POWER_CHART_COMPILER'
+          assert a['old_law_subfamily_preserved'] and b['previous_charts_are_subfamilies']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V136_CANONICAL_COEFFICIENT_REDUCTION',
+             'status':'WARRANTED_FORMAL_WIDER_SOURCE_CHARTS',
+             'source_commit':sha,
+             'general_formal_rule':'u=3^(beta-alpha),v=3^(alpha-beta)',
+             'old_cross_power_families_subsumed':True,
+             'source21_old_slope':72,'source21_new_slope':24,
+             'earlier21_old_slope':12,'earlier21_new_slope':4,
+             'new_source45_to7_clocks':[3,2],
+             'earlier_predecessor_must_be_root_of_three':False,
+             'universal_event_producer':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v136-final-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          print('V136_SMALLEST_VALID_CHART_COORDINATES_WARRANTED_NOT_GLOBAL_COLLATZ')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v136-final
+          path: evidence/v136-final-seal.json
+          if-no-files-found: error
