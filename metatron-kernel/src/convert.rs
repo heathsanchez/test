@@ -1704,12 +1704,42 @@ fn certified_local_proof_irrelevance(
         return false;
     }
     let probe = budget.min(1024);
-    let left_proposition = checker.is_proposition_in_context(
+    let mut left_proposition = checker.is_proposition_in_context(
         left_type.expr, context, &left_type.env, probe,
     );
-    let right_proposition = checker.is_proposition_in_context(
+    let mut right_proposition = checker.is_proposition_in_context(
         right_type.expr, context, &right_type.env, probe,
     );
+    // Replay exactly the captured dependent application when the ordinary
+    // proposition checker cannot resolve either side. The replay checks
+    // BOTH arguments against the instantiated Pi domains. A codomain
+    // inspection alone must never authorize proof irrelevance.
+    //
+    // Keep this confined to the independently observed depth-5 residual:
+    // widening it without a full-corpus qualification adds no warrant.
+    if depth == 5 && left_proposition.is_unknown() && right_proposition.is_unknown() {
+        let left_certificate = checker.certify_applied_proposition_in_context(
+            left_type, context, probe,
+        );
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_LOCAL_PROOF_IRREL").is_some() {
+            eprintln!("NUCLEUS_TYPED_TELESCOPE:depth={depth}:side=left:judgment={left_certificate:?}");
+        }
+        if left_certificate.is_proven() {
+            left_proposition = left_certificate;
+        } else {
+            let right_certificate = checker.certify_applied_proposition_in_context(
+                right_type, context, probe,
+            );
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_LOCAL_PROOF_IRREL").is_some() {
+                eprintln!("NUCLEUS_TYPED_TELESCOPE:depth={depth}:side=right:judgment={right_certificate:?}");
+            }
+            if right_certificate.is_proven() {
+                right_proposition = right_certificate;
+            }
+        }
+    }
     #[cfg(feature = "diagnostics")]
     if std::env::var_os("NUCLEUS_TRACE_LOCAL_PROOF_IRREL").is_some() {
         use std::sync::atomic::{AtomicUsize, Ordering};
