@@ -1,0 +1,106 @@
+name: Nucleus mixed dependent Pi exact separator
+on:
+  push:
+    branches: [nucleus-modcore-mixed-pi-separator-v1]
+    paths: [".github/workflows/nucleus-modcore-mixed-pi-separator-v1.yml","metatron-kernel/**"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  separate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: "11505862349"
+      ARENA_COMMIT: "b83254de5146ef34147ab82a48edbe1856b0edcc"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Rust tests and diagnostic Nucleus build
+        run: |
+          set -euo pipefail
+          echo "qualification_commit=$GITHUB_SHA"
+          echo "source_tree=$(git rev-parse HEAD:metatron-kernel)"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Download October 7 current public Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena /tmp/tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" >/tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/arena
+          tar --no-same-owner -xzf /tmp/arena/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Separate exact dependent Pi domain versus body residuals
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/mixed-pi-modcore
+          python3 - <<'PY'
+          import os,json,pathlib,hashlib,subprocess,time,sys
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/tests')
+          positives=[
+            ('init-prelude--modcore','init-prelude','Nat.modCore_lt'),
+            ('perf/magma-list-pair-n7--modcore','perf/magma-list-pair-n7','Nat.modCore_lt'),
+            ('perf/fueled-chain--full','perf/fueled-chain',None),
+            ('perf/magma-list-deep-n21--full','perf/magma-list-deep-n21',None),
+          ]
+          cases=[]
+          for label,name,target in positives:
+            raw=(root/'good'/(name+'.ndjson')).read_bytes()
+            if target:
+              names={0:''};prefix=[];found=False
+              for line in raw.splitlines(keepends=True):
+                j=json.loads(line);prefix.append(line)
+                if 'in' in j:
+                  v=j.get('str',j.get('num'));pre=names.get(v['pre'],'')
+                  names[j['in']]=pre+('.' if pre else '')+str(v.get('str',v.get('i')))
+                if 'thm' in j and names.get(j['thm']['name'])==target:
+                  found=True;break
+              assert found,(name,target)
+              raw=b''.join(prefix)
+            cases.append((label,raw,0))
+          raw=(root/'good/init-prelude.ndjson').read_bytes()
+          mutant=false_index(extract(raw))
+          assert hashlib.sha256(mutant).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          cases.append(('false-index',mutant,-1))
+          cases.append(('nested-unused-param',(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),1))
+          rows=[]
+          for label,body,expected in cases:
+            t=time.monotonic()
+            run=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+               input=body,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=60,
+               env=os.environ|{'NUCLEUS_TRACE_MIXED_PI':'1',
+                 'NUCLEUS_TRACE_DEPENDENCY_GAP':'1',
+                 'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+            log=run.stderr.decode(errors='replace').splitlines()
+            def traces(prefix,limit):
+              return [s[:1900] for s in log if s.startswith(prefix)][:limit]
+            row={
+              'name':label,'expected':expected,'rc':run.returncode,
+              'seconds':round(time.monotonic()-t,3),
+              'sha256':hashlib.sha256(body).hexdigest(),
+              'mixed_pi':traces('NUCLEUS_MIXED_PI:',20),
+              'dependent_gap':traces('NUCLEUS_DEPENDENCY_GAP:',4),
+              'terminal':[s for s in log if s.startswith('NUCLEUS_DOWNSTREAM:')][-2:]}
+            rows.append(row)
+            print('MIXED_PI_SEPARATION='+json.dumps(row,sort_keys=True),flush=True)
+            assert run.returncode in ((0,2) if expected==0 else ((1,2) if expected==-1 else (1,))),row
+          report={'schema':'nucleus-modcore-mixed-pi-boundary-v1',
+            'checker_commit':os.environ['GITHUB_SHA'],
+            'arena_commit':os.environ['ARENA_COMMIT'],
+            'arena_artifact':int(os.environ['ARENA_ARTIFACT']),
+            'experiment':'diagnostic only; no semantics modified; split inferred Pi/expected Term conversion at exact first failure',
+            'rows':rows}
+          path=pathlib.Path('metatron-kernel/evidence-out/mixed-pi-modcore/report.json')
+          path.write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-modcore-mixed-pi-${{ github.sha }}
+          path: metatron-kernel/evidence-out/mixed-pi-modcore
+          if-no-files-found: warn
