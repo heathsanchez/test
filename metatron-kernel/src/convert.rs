@@ -1122,7 +1122,7 @@ fn compare_values(
                 // an unresolved structure, and do not merge proof indices.
                 // A smaller preferred-only budget makes this evidence
                 // strictly cheaper than the obligation it discharges.
-                let probe = (current_budget / 2).min(128);
+                let probe = (current_budget / 2).min(512);
                 if probe >= 8
                     && left_spine.len() == right_spine.len()
                     && convert_with_policy_in_context(
@@ -1130,7 +1130,7 @@ fn compare_values(
                         &TypeValue::Term(left_structure.clone()),
                         &TypeValue::Term(right_structure.clone()),
                         probe,
-                        DeltaPolicy::PreferredOnly,
+                        DeltaPolicy::GuardedSemanticFallback,
                         depth,
                         context,
                     ).is_proven()
@@ -1140,7 +1140,7 @@ fn compare_values(
                             &TypeValue::Term(left.clone()),
                             &TypeValue::Term(right.clone()),
                             probe,
-                            DeltaPolicy::PreferredOnly,
+                            DeltaPolicy::GuardedSemanticFallback,
                             depth,
                             context,
                         ).is_proven()
