@@ -1,0 +1,90 @@
+name: Collatz V106 actual signed-return separator
+on:
+  push:
+    branches: [collatz-v105-actual-return-sign-separator-v106]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v105-source-capped-return
+          run-id: 37881489171
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v105
+      - name: Verify V105 immutable authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib
+          q=json.load(open("parent-v105/qualification.json"))
+          claimed=q.pop("certificate_sha256")
+          computed=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          assert claimed==computed=="63b5a4909a50158f76e73fa5ec346ab273425f7ff08a425da778d4645d63e97f"
+          assert q["status"]=="WARRANTED_FORMAL_SOURCE_CAPPED_RETURN_ASCENT"
+          print("V105_PARENT_VERIFIED")
+          PY
+      - name: Kernel-check actual admissible returns of both owner signs
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/dyadic.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SameCentreMacro.olean formal/Collatz/SameCentreMacro.lean > evidence/same.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/DistinctCentreSwitch.olean formal/Collatz/DistinctCentreSwitch.lean > evidence/distinct.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeDeterminism.olean formal/Collatz/EpisodeDeterminism.lean > evidence/determinism.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisode.olean formal/Collatz/ActualEpisode.lean > evidence/actual.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeBridge.olean formal/Collatz/EpisodeBridge.lean > evidence/bridge.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisodeChain.olean formal/Collatz/ActualEpisodeChain.lean > evidence/chain.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualReturnAdmission.olean formal/Collatz/ActualReturnAdmission.lean > evidence/admission.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisodeHorizon.olean formal/Collatz/ActualEpisodeHorizon.lean > evidence/horizon.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CoherentEpisodeStream.olean formal/Collatz/CoherentEpisodeStream.lean > evidence/stream.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ShiftedActualReturn.olean formal/Collatz/ShiftedActualReturn.lean > evidence/v101.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/FreshAnchorBoundary.olean formal/Collatz/FreshAnchorBoundary.lean > evidence/v102.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/RealCycleReturnFrontier.olean formal/Collatz/RealCycleReturnFrontier.lean > evidence/v103.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/PositiveSourceThreeWay.olean formal/Collatz/PositiveSourceThreeWay.lean > evidence/v104.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCappedReturn.olean formal/Collatz/SourceCappedReturn.lean > evidence/v105.log
+          lake env lean -DautoImplicit=false formal/Collatz/ReturnSignSeparator.lean | tee evidence/v106.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v106.log
+          grep -q 'universal_admitted_actual_return_descent_false' evidence/v106.log
+          grep -q 'universal_admitted_actual_return_ascent_false' evidence/v106.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal two-sign actual-return separator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            "schema":"COLLATZ_V105_ACTUAL_RETURN_SIGN_SEPARATOR_V106",
+            "status":"WARRANTED_FORMAL_TWO_SIGN_ACTUAL_RETURN_SEPARATOR",
+            "parent_v105_qualification_sha256":"63b5a4909a50158f76e73fa5ec346ab273425f7ff08a425da778d4645d63e97f",
+            "actual_admitted_return_descends_five_to_one":True,
+            "actual_admitted_return_ascends_nine_to_thirteen":True,
+            "uniform_admitted_return_sign_monotonicity_refuted":True,
+            "actual_nonterminal_positive_cycles_excluded":False,
+            "return_nonzero_progress_universally_proved":False,
+            "unbounded_fresh_anchor_impossible":False,
+            "global_collatz":"UNKNOWN",
+            "qed":False,
+            "residual":"Both directions occur for real admitted returns. Universal rank must depend on lawful source-coupled context beyond bare return sign. Minimal-bad source cap excludes descent only where the earlier endpoint is no larger than the protected source. Global no-exit progress remains unknown."
+          }
+          result["certificate_sha256"]=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(result,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v106-actual-return-sign-separator
+          path: evidence/
+          if-no-files-found: error
