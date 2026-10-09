@@ -1116,6 +1116,38 @@ fn compare_values(
                     spine: right_spine,
                 },
             ) if left_type == right_type && left_index == right_index => {
+                // Projection congruence is admissible only when the checked
+                // structure operands and every applied field argument are
+                // themselves convertible.  Do not infer the constructor of
+                // an unresolved structure, and do not merge proof indices.
+                // A smaller preferred-only budget makes this evidence
+                // strictly cheaper than the obligation it discharges.
+                let probe = (current_budget / 2).min(128);
+                if probe >= 8
+                    && left_spine.len() == right_spine.len()
+                    && convert_with_policy_in_context(
+                        checker,
+                        &TypeValue::Term(left_structure.clone()),
+                        &TypeValue::Term(right_structure.clone()),
+                        probe,
+                        DeltaPolicy::PreferredOnly,
+                        depth,
+                        context,
+                    ).is_proven()
+                    && left_spine.iter().zip(right_spine).all(|(left, right)| {
+                        convert_with_policy_in_context(
+                            checker,
+                            &TypeValue::Term(left.clone()),
+                            &TypeValue::Term(right.clone()),
+                            probe,
+                            DeltaPolicy::PreferredOnly,
+                            depth,
+                            context,
+                        ).is_proven()
+                    })
+                {
+                    return Judgment::proven((), "certified-projection-congruence");
+                }
                 if same_rigid_application_congruence(
                     checker,
                     left_structure,
