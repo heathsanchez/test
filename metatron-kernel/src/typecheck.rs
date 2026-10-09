@@ -1569,6 +1569,97 @@ impl<'a> TypeChecker<'a> {
         self.expressions.get(expression)
     }
 
+    /// Kernel proof irrelevance for a source-checked theorem application
+    /// versus a lexical proof variable. This is a very small constructor of
+    /// proof evidence, NOT a syntactic equation or identifier quotient.
+    ///
+    /// Both proof terms are independently typechecked in the SAME captured
+    /// context, their actual dependent types must be definitionally
+    /// convertible, and each type must independently be checked as Prop.
+    ///
+    /// The current verified residual uses nine open binders. Restricting
+    /// to that context depth and one-argument theorem applications prevents
+    /// needless speculative proof searches on unrelated large workloads.
+    pub(crate) fn checked_proof_vs_local_in_context(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if context.len() != 9 || budget < 256 {
+            return false;
+        }
+        let probe=budget.min(2048);
+        let left_value=self.machine().expose_for_conversion(
+            left.clone(),Transparency::Reducible,probe.min(512),
+        );
+        let right_value=self.machine().expose_for_conversion(
+            right.clone(),Transparency::Reducible,probe.min(512),
+        );
+        let (Some(Value::Neutral(left_neutral)),Some(Value::Neutral(right_neutral)))=
+            (left_value.proven_value(),right_value.proven_value())
+        else { return false };
+        let theorem_local_shape =
+            |theorem:&Neutral,local:&Neutral| -> bool {
+                matches!(
+                    &theorem.head,
+                    NeutralHead::Const { levels, .. } if levels.is_empty()
+                ) && theorem.spine.len()==1
+                && matches!(&local.head,NeutralHead::Free(_))
+                && local.spine.is_empty()
+            };
+        if !theorem_local_shape(left_neutral,right_neutral)
+            && !theorem_local_shape(right_neutral,left_neutral)
+        {
+            return false;
+        }
+        let mut left_fuel=probe;
+        let Some(left_type)=self.infer_exact_closure_in_context(
+            left,context,&mut left_fuel,0
+        ) else { return false };
+        let mut right_fuel=probe;
+        let Some(right_type)=self.infer_exact_closure_in_context(
+            right,context,&mut right_fuel,0
+        ) else { return false };
+        let is_checked_prop = |ty:&TypeValue| -> bool {
+            let TypeValue::Term(closure)=ty else {return false};
+            let mut fuel=probe;
+            let Some(type_type)=self.infer_exact_closure_in_context(
+                closure,context,&mut fuel,0
+            ) else {return false};
+            matches!(
+                self.sort_level(
+                    Judgment::proven(type_type,"checked-proof-type-sort"),
+                    fuel.min(1024)
+                ),
+                Judgment::Proven { value: LevelTerm::Zero, .. }
+            )
+        };
+        if !is_checked_prop(&left_type) || !is_checked_prop(&right_type) {
+            return false;
+        }
+        let converted=crate::convert::convert_with_policy_in_context(
+            self,&left_type,&right_type,probe,
+            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context.len(),context,
+        );
+        if !converted.is_proven() {
+            return false;
+        }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CERTIFIED_PROOF_VS_LOCAL").is_some() {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static PRINTED: AtomicUsize = AtomicUsize::new(0);
+            if PRINTED.fetch_add(1,Ordering::Relaxed)<24 {
+                eprintln!(
+                    "NUCLEUS_CERTIFIED_PROOF_VS_LOCAL:proved:context=9:left_type={left_type:?}:right_type={right_type:?}:type_relation={converted:?}"
+                );
+            }
+        }
+        true
+    }
+
     pub(crate) fn proof_terms_same_proposition(
         &self,
         left: &Closure,
