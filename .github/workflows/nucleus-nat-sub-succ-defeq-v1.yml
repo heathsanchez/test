@@ -1,0 +1,95 @@
+name: Nucleus source-backed Nat.sub successor definitional equality
+on:
+  push:
+    branches: [nucleus-nat-sub-succ-defeq-v1]
+    paths:
+      - ".github/workflows/nucleus-nat-sub-succ-defeq-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact-positive-and-negatives:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build and test exact source
+        run: |
+          set -euo pipefail
+          printf 'source=%s subtree=%s\n' "$GITHUB_SHA" "$(git rev-parse HEAD:metatron-kernel)"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Recover immutable Arena test authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/a /tmp/tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Test both Nat.sub_le positives and protected negatives
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/nat-sub-succ
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/tests')
+          source=[('init-prelude','eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5'),
+                  ('perf/magma-list-pair-n7','abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35')]
+          checks=[]
+          for name,digest in source:
+              raw=(root/'good'/(name+'.ndjson')).read_bytes()
+              assert hashlib.sha256(raw).hexdigest()==digest,(name,'source mismatch')
+              names={0:''}; prefix=[]
+              for line in raw.splitlines(keepends=True):
+                  j=json.loads(line); prefix.append(line)
+                  if 'in' in j:
+                      obj=j.get('str',j.get('num'))
+                      pre=names.get(obj['pre'],'')
+                      names[j['in']]=pre+('.' if pre else '')+str(obj.get('str',obj.get('i')))
+                  if 'thm' in j and names.get(j['thm']['name'])=='Nat.sub_le':
+                      break
+              else:
+                  raise AssertionError('Nat.sub_le absent in '+name)
+              checks.append((name+'--Nat.sub_le',b''.join(prefix),0))
+          base=(root/'good/init-prelude.ndjson').read_bytes()
+          negative=false_index(extract(base))
+          assert hashlib.sha256(negative).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          checks.append(('false-index',negative,-1))
+          checks.append(('nested-unused-param',(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),1))
+          result=[]
+          for name,data,expected in checks:
+              p=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+                  input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                  timeout=45,env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                    'NUCLEUS_TRACE_SUB_SUCC':'1','NUCLEUS_TRACE_NAT_SUBSUCC':'1',
+                    'NUCLEUS_TRACE_DEPENDENCY_GAP':'1',
+                    'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1'})
+              lines=p.stderr.decode(errors='replace').splitlines()
+              row={'name':name,'actual':p.returncode,'expected':expected,
+                   'sha256':hashlib.sha256(data).hexdigest(),
+                   'semantic_rewrites':sum('NUCLEUS_NAT_SUBSUCC:' in x for x in lines),
+                   'last':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-3:],
+                   'gaps':[x for x in lines if 'NUCLEUS_DEPENDENCY_GAP:' in x][:2]}
+              print('SUBSUCC_VERDICT='+json.dumps(row,sort_keys=True),flush=True)
+              result.append(row)
+          report={'commit':os.environ['GITHUB_SHA'],'cases':result}
+          pathlib.Path('metatron-kernel/evidence-out/nat-sub-succ/verdicts.json').write_text(json.dumps(report,indent=2))
+          assert all(r['actual']==0 for r in result if r['expected']==0), 'no new positive Nat.sub_le acceptance'
+          assert all(r['actual']!=0 for r in result if r['expected']==-1), 'false-index accepted'
+          assert all(r['actual']==1 for r in result if r['expected']==1), 'malformed recursor not rejected'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-nat-sub-succ-${{ github.sha }}
+          path: metatron-kernel/evidence-out/nat-sub-succ
+          if-no-files-found: warn
