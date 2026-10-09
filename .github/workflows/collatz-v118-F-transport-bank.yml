@@ -19,6 +19,8 @@ jobs:
           python3 research/collatz_F_transport_bank.py > evidence/v118-exact.json
           python3 research/collatz_v118_deep_F_critical_pair.py > evidence/v118-deep-F.json
           python3 -m research.collatz_v118_source11_frontier > evidence/v118-source11.json
+          python3 -m unittest -v research.test_collatz_F_swap_grammar 2>&1 | tee evidence/F-swap-tests.log
+          python3 -m research.collatz_F_swap_grammar > evidence/F-swap-exact.json
           python3 - <<'PY'
           import json
           r=json.load(open("evidence/v118-exact.json"))
@@ -50,7 +52,16 @@ jobs:
           assert len(c["newly_covered_old_CRT_classes"])==93
           assert len(c["exact_prefix"])==4
           assert c["global_collatz"]=="UNKNOWN" and c["qed"] is False
-          print("V118_SOURCE_GUARDED_CONDITIONAL_F_BANK_REPLAY_PASS_GLOBAL_UNKNOWN")
+          s=json.load(open("evidence/F-swap-exact.json"))
+          assert s["schema"]=="COLLATZ_SOURCE_INDEXED_F_SWAP_GRAMMAR"
+          assert len(s["family_grid"])==36
+          assert s["certificate"]["clock"]==15
+          assert s["certificate"]["source"]==22652991
+          assert s["smaller_source"]==15909919
+          assert s["common_endpoint"]==40821428
+          assert s["universal_grammar_coverage"] is False
+          assert s["global_collatz"]=="UNKNOWN" and s["qed"] is False
+          print("V118_AND_F_SWAP_EXACT_REPLAY_PASS_GLOBAL_UNKNOWN")
           PY
           git rev-parse HEAD > evidence/commit.txt
       - uses: actions/upload-artifact@v4
@@ -64,7 +75,7 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Kernel-check affine F transport schema and source-45 witness
+      - name: Kernel-check source-indexed affine F transport and swap grammar
         shell: bash
         run: |
           set -euo pipefail
@@ -84,7 +95,8 @@ jobs:
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/AffineFTransportBank.olean formal/Collatz/AffineFTransportBank.lean | tee evidence/v118-lean.log
           lake env lean -DautoImplicit=false formal/Collatz/DeepFCollision.lean | tee evidence/v118-deep-lean.log
           lake env lean -DautoImplicit=false formal/Collatz/Source11Mod16Merger.lean | tee evidence/v118-source11-lean.log
-          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v118-lean.log evidence/v118-deep-lean.log evidence/v118-source11-lean.log
+          lake env lean -DautoImplicit=false formal/Collatz/FSwapGrammar.lean | tee evidence/F-swap-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v118-lean.log evidence/v118-deep-lean.log evidence/v118-source11-lean.log evidence/F-swap-lean.log
           grep -q 'source_11_mod16_parity_collision' evidence/v118-source11-lean.log
           grep -q 'source_11_mod16_45_mod729_lower_merge' evidence/v118-source11-lean.log
           grep -q 'deep_F_collision_3391' evidence/v118-deep-lean.log
@@ -93,6 +105,23 @@ jobs:
           grep -q 'source_45_reverse_word' evidence/v118-lean.log
           grep -q 'source_45_lower_merge_of_odd_run_even_odd' evidence/v118-lean.log
           git rev-parse HEAD > evidence/commit.txt
+          python3 - <<'PY'
+          import hashlib,json,re
+          from pathlib import Path
+          names=["F_swap_source_trace","F_swap_partner_trace","F_collision_certificate_sound","F_certificate_lower_merge","source_45_merge_of_F_certificate","F_two_swap_example","F_swap_example_certificate","F_swap_example_lower_merge","source_three_has_no_synchronous_F_collision"]
+          text=Path("evidence/F-swap-lean.log").read_text()
+          axioms={}
+          for name in names:
+              full="CollatzFinal.SourceProduct."+name
+              match=re.search("'"+re.escape(full)+"' (?:depends on axioms: \\[([^\\]]*)\\]|does not depend on any axioms)",text)
+              assert match is not None,name
+              vals=[] if match.group(1) is None else [x.strip() for x in match.group(1).split(',') if x.strip()]
+              assert set(vals)<= {"propext","Quot.sound","Classical.choice"},(name,vals)
+              axioms[name]=vals
+          cert={"schema":"COLLATZ_F_SWAP_GRAMMAR_QUALIFICATION","commit":Path("evidence/commit.txt").read_text().strip(),"theorem_axioms":axioms,"universal_grammar_coverage":False,"global_collatz":"UNKNOWN","qed":False,"log_sha256":hashlib.sha256(text.encode()).hexdigest()}
+          Path("evidence/F-swap-qualification.json").write_text(json.dumps(cert,sort_keys=True,indent=2)+"\n")
+          print("NINE_F_SWAP_THEOREMS_KERNEL_CHECKED_GLOBAL_UNKNOWN")
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
