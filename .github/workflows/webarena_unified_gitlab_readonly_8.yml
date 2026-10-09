@@ -1,0 +1,134 @@
+name: WebArena unified GitLab blind retrieval expansion
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_unified_gitlab_readonly_8.yml"
+      - "scripts/webarena_unified_gitlab_readonly_expansion.py"
+      - "tests/test_webarena_unified_gitlab_readonly_expansion.py"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned official authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start GitLab once
+        run: |
+          mkdir -p artifacts/webarena_gitlab_blind_expansion
+          docker pull am1n3e/webarena-verified-gitlab
+          docker image inspect am1n3e/webarena-verified-gitlab --format '{{index .RepoDigests 0}}' > artifacts/webarena_gitlab_blind_expansion/gitlab_digest.txt
+          docker run -d --name webarena-gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 180); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8023/users/sign_in || true)
+            if [ "$code" = "200" ]; then break; fi
+            if [ "$i" = 180 ]; then exit 1; fi
+            sleep 3
+          done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Verify intent-only compiler
+        run: |
+          python -m unittest discover -s tests -p 'test_webarena_unified_gitlab_readonly_expansion.py' -v
+          python -m unittest discover -s tests -p 'test_webarena_unified_blind_agent.py' -v
+      - name: Execute eight opaque GitLab retrievals
+        run: |
+          ROOT=artifacts/webarena_gitlab_blind_expansion
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0,
+          "credentials":{"username":"byteblaze","password":"hello1234"}}}}
+          JSON
+          python - <<'PY'
+          import json,subprocess,sys,uuid
+          from pathlib import Path
+          root=Path("artifacts/webarena_gitlab_blind_expansion")
+          tasks=json.loads((root/"hard.json").read_text())
+          by_id={int(t["task_id"]):t for t in tasks}
+          ids=(293,296,297,349,350,786,788,316)
+          ledger={}
+          for ident in ids:
+              task=by_id[ident]
+              slot=uuid.uuid4().hex
+              out=root/"output"/slot
+              out.mkdir(parents=True,exist_ok=True)
+              cmd=[sys.executable,"scripts/webarena_unified_gitlab_readonly_expansion.py",
+                  "--intent",task["intent"],
+                  "--start-url",(task.get("start_urls") or [""])[0],
+                  "--output-dir",str(out)]
+              attempt=subprocess.run(cmd,capture_output=True,text=True,timeout=240,check=False)
+              (out/"stdout.txt").write_text(attempt.stdout[-20000:])
+              (out/"stderr.txt").write_text(attempt.stderr[-30000:])
+              ledger[str(ident)]={"slot":slot,"exit_code":attempt.returncode}
+              print("BLIND",ident,"EXIT",attempt.returncode,attempt.stderr[-1200:],flush=True)
+          (root/"execution_manifest.json").write_text(json.dumps(ledger,indent=2)+"\n")
+          PY
+      - name: Score against official response evaluator
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_gitlab_blind_expansion")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          empty=NetworkTrace.model_construct(is_playwright=False,
+              src_file=Path("<response-only>"),events=())
+          ledger=json.loads((root/"execution_manifest.json").read_text())
+          results={};failures=[]
+          for key,record in ledger.items():
+              task_id=int(key);out=root/"output"/record["slot"]
+              if record["exit_code"]!=0 or not (out/"agent_response.json").is_file():
+                  results[key]={"score":0.0,"status":"execution_failed",
+                                "exit_code":record["exit_code"]}
+                  failures.append(task_id);continue
+              try:
+                  task=wa.get_task(task_id)
+                  if any(e.evaluator=="NetworkEventEvaluator" for e in task.eval):
+                      raise RuntimeError("expected response-only GitLab family")
+                  official=wa.evaluate_task(task_id=task_id,
+                      agent_response=out/"agent_response.json",network_trace=empty)
+                  dumped=official.model_dump(mode="json",exclude_none=True)
+                  (out/"official.json").write_text(json.dumps(dumped,indent=2)+"\n")
+                  row={"score":float(official.score),"status":official.status.value}
+                  results[key]=row
+                  if row["score"]!=1.0 or row["status"]!="success":failures.append(task_id)
+              except Exception as exc:
+                  results[key]={"score":0.0,"status":"evaluation_error","error":repr(exc)}
+                  failures.append(task_id)
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED" if not failures else "CANDIDATE_WITH_RESIDUALS",
+              "boundary":"eight GitLab retrievals routed solely from intent and initial URL; no task-id dispatch",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "total":len(ledger),
+              "official_successes":sum(x["score"]==1.0 and x["status"]=="success" for x in results.values()),
+              "results":results,"failures":failures
+          }
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2),flush=True)
+          if failures or len(ledger)!=8:
+              raise SystemExit(f"unified GitLab retrieval residuals: {failures}")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-unified-gitlab-blind-readonly-8
+          path: artifacts/webarena_gitlab_blind_expansion
