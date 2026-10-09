@@ -335,6 +335,19 @@ impl<'a> Machine<'a> {
                 );
             }
         }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CLASS_PROJECTION_RECEIVER").is_some()
+            && spec.num_params == 3 && spec.field_types.len() == 1 && index == 0
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static PRINTED: AtomicUsize = AtomicUsize::new(0);
+            if PRINTED.fetch_add(1, Ordering::Relaxed) < 80 {
+                eprintln!(
+                    "NUCLEUS_CLASS_PROJECTION_RECEIVER:type={type_name:?}:expected_ctor={:?}:captured={structure:?}:full_exposed={exposed:?}:budget={budget}",
+                    spec.constructor
+                );
+            }
+        }
         let Some(Value::Neutral(neutral)) = exposed.proven_value().map(|value| &value.value) else {
             return Judgment::unknown("projection-structure-stuck");
         };
