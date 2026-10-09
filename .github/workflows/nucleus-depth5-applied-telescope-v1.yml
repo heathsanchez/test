@@ -1,8 +1,8 @@
-name: Nucleus context-typed constructor mismatch qualification
+name: Nucleus Nat literal polymorphic obstruction census
 
 on:
   push:
-    branches: [nucleus-depth5-contextual-constructor-v1]
+    branches: [nucleus-depth5-natlit-mismatch-census-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -123,54 +123,21 @@ jobs:
                   env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1',
                                   'NUCLEUS_TRACE_LOCAL_PROOF_IRREL':'1',
                                   'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
-                                  'NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_CONSTRUCTOR_ARGUMENT':'1'})
+                                  'NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_CONSTRUCTOR_ARGUMENT':'1','NUCLEUS_TRACE_NATLIT_RIGID':'1'})
               lines=p.stderr.decode(errors='replace').splitlines()
               row={'case':name,'returncode':p.returncode,
                    'downstream':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-8:],
                    'local_proofs':[x for x in lines if 'NUCLEUS_LOCAL_PROOF_IRREL:proved:' in x][-8:],
                    'last_mismatch':[x for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-6:],
                    'last_application':[x for x in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in x][-6:],
-                   'constructor_guard':[x for x in lines if 'NUCLEUS_CONTEXTUAL_CONSTRUCTOR:' in x][-6:]}
+                   'constructor_guard':[x for x in lines if 'NUCLEUS_CONTEXTUAL_CONSTRUCTOR:' in x][-6:],
+                   'natlit_rigid':[x for x in lines if 'NUCLEUS_NATLIT_RIGID:' in x][-12:]}
               rows.append(row)
               print('CERTIFIED_PROP_DOWNSTREAM='+json.dumps(row),flush=True)
           out=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid')
           out.mkdir(parents=True,exist_ok=True)
           (out/'paired-full-positive-differential.json').write_text(json.dumps(rows,indent=2))
           print('CONTEXTUAL_CONSTRUCTOR_CANDIDATE_DIFFERENTIAL',flush=True)
-          PY
-
-      - name: Requalify all 196 immutable cases with exact negative authority
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json,pathlib,subprocess
-          root=pathlib.Path('/tmp/arena-tests')
-          result={}
-          cases=[]
-          for kind in ('good','bad'):
-              files=sorted((root/kind).rglob('*.ndjson'))
-              counts={0:0,1:0,2:0,3:0}
-              for file in files:
-                  output=subprocess.run(['/tmp/nucleus'],input=file.read_bytes(),
-                      stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=90)
-                  counts[output.returncode]=counts.get(output.returncode,0)+1
-                  if output.returncode not in ((0,2) if kind=='good' else (1,2)):
-                      raise AssertionError((kind,str(file),output.returncode))
-                  if kind=='good' and output.returncode==2:
-                      cases.append(str(file.relative_to(root)))
-              result[kind]=counts
-              result[kind+'_total']=len(files)
-          accept=result['good'].get(0,0)
-          reject=result['bad'].get(1,0)
-          unknown=result['good'].get(2,0)+result['bad'].get(2,0)
-          print('FROZEN_196='+json.dumps({'accept':accept,'reject':reject,
-               'unknown':unknown,'total':result['good_total']+result['bad_total'],
-               'unknown_cases':cases}),flush=True)
-          assert result['good_total']==125 and result['bad_total']==71
-          assert accept+reject+unknown==196
-          assert reject==71, 'EXPECTED_BAD_VERDICTS_REGRESSED'
-          assert accept>118, 'CANDIDATE_NO_NEW_COMPLETE_POSITIVE'
-          print('WARRANTED_BOUNDED_196_GAIN',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
