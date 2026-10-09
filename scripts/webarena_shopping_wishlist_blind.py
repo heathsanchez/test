@@ -8,7 +8,7 @@ import json
 import re
 from pathlib import Path
 from urllib.parse import urlparse
-from playwright.async_api import async_playwright, Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError, Error as PlaywrightError
+from playwright.async_api import async_playwright, Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 from webarena_shopping_order_history_probe import AUTH_HEADER
 
 BASE="http://localhost:7770"
@@ -53,11 +53,34 @@ async def readback_wishlist(page,url):
     raise RuntimeError(f"wishlist GET repeatedly aborted after submitted action: {last_error}")
 
 
+def php_session(cookies):
+    return next((c.get("value") for c in cookies if c.get("name")=="PHPSESSID" and c.get("value")),None)
+
+
+async def establish_stable_session(page):
+    """Establish the authenticated customer session before collecting form keys."""
+    for path in ("/customer/account/","/wishlist/index/index/"):
+        response=await page.goto(BASE+path,wait_until="networkidle",timeout=120000)
+        if response is None or response.status!=200:
+            continue
+        prior=php_session(await page.context.cookies(BASE))
+        if not prior:
+            continue
+        await page.reload(wait_until="networkidle",timeout=120000)
+        current=php_session(await page.context.cookies(BASE))
+        if current and current==prior:
+            return current
+    raise RuntimeError("authenticated Magento session could not be stabilized before product form")
+
+
 async def add_current_product(page, start_url):
     target=verify_start_url(start_url)
+    stable_session=await establish_stable_session(page)
     result=await page.goto(target,wait_until="networkidle",timeout=120000)
     if result is None or result.status!=200:
         raise RuntimeError("product detail page unavailable")
+    if php_session(await page.context.cookies(BASE))!=stable_session:
+        raise RuntimeError("Magento session rotated before form submission")
     title=page.locator("h1.page-title, h1.product-name").first
     if await title.count()==0:
         raise RuntimeError("product heading missing")
@@ -116,6 +139,7 @@ async def add_current_product(page, start_url):
         "wishlist_readback_url":page.url,
         "readback_match":True,
         "click_navigation_observed":navigation_observed,
+        "session_stabilized_before_write":True,
     }
 
 
