@@ -124,14 +124,20 @@ class FormalRoot23CausalClosureTests(unittest.TestCase):
         self.assertEqual(self.c.revoke(ROOT23_ID),0)
         self.c.audit()
 
-    def test_revoking_generic_chart_legacy_keeps_root23_formal(self):
+    def test_revoking_generic_chart_reopens_v133_and_v132_dependents(self):
+        # V133 imports RootChartOverlapCompiler and is not valid if its
+        # imported generic V131 theorem is withdrawn.
         count=self.c.revoke("v131_chart_overlap_generic")
-        self.assertEqual(count,4)
-        self.assertEqual(len(self.c.state["joins"]),13)
-        self.assertEqual(self.c.status(23)["earlier"],3)
+        self.assertEqual(count,8)
+        self.assertEqual(len(self.c.state["joins"]),9)
+        self.assertEqual(len(self.c.state["archived_joins"]),8)
+        self.assertEqual(self.c.status(23)["status"],"UNKNOWN_UNDER_CURRENT_WARRANTS")
         self.assertEqual(self.c.status(27)["earlier"],23)
+        self.assertEqual(self.c.status(27)["source_clock"],59)
         self.assertEqual(self.c.status(9)["status"],"UNKNOWN_UNDER_CURRENT_WARRANTS")
         self.assertEqual(self.c.status(15)["status"],"UNKNOWN_UNDER_CURRENT_WARRANTS")
+        self.assertEqual(self.c.status(21)["earlier"],3)
+        self.assertEqual(self.c.revoke("v131_chart_overlap_generic"),0)
         self.c.audit()
 
     def test_corrupt_source_slope_endpoint_clock_and_formal_pin(self):
