@@ -74,6 +74,25 @@ theorem cylinder_inverse_odd_all_offsets (r k q p0 c : Nat)
   refine ⟨hlt, k, 1, ?_⟩
   simpa [iter] using (exact_inverse_odd_step _ _ hinverse).symm
 
+/-- An arbitrary shorter prefix of a deeper dyadic cylinder retains its
+    exact affine slope. This is the form V109's compiler actually uses:
+    the source modulus is 2^(j+h), not necessarily 2^j. -/
+theorem parity_prefix_shift (r j h q : Nat) :
+    iter shortcut j (r + 2 ^ (j + h) * q) =
+      iter shortcut j r +
+        (2 ^ h * 3 ^ oddCount r j) * q := by
+  have hfactor : 2 ^ (j + h) * q = 2 ^ j * (2 ^ h * q) := by
+    simp [pow_add, Nat.mul_assoc]
+  calc
+    iter shortcut j (r + 2 ^ (j + h) * q) =
+        iter shortcut j (r + 2 ^ j * (2 ^ h * q)) := by rw [hfactor]
+    _ = iter shortcut j r + 3 ^ oddCount r j * (2 ^ h * q) :=
+      parity_cylinder_shift r j (2 ^ h * q)
+    _ = _ := by
+      simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+
+#print axioms parity_prefix_shift
+
 #print axioms parity_cylinder_shift
 #print axioms cylinder_direct_all_offsets
 #print axioms exact_inverse_odd_step
