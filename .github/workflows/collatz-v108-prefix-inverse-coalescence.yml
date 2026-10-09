@@ -1,0 +1,75 @@
+name: Collatz V108 exact prefix and inverse coalescence
+on:
+  push:
+    branches: [collatz-v107-prefix-inverse-coalescence-v108]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and check all-offset Lean certificates
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/lean-build.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log
+          lake env lean -DautoImplicit=false formal/Collatz/CylinderCoalescence.lean | tee evidence/v108-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v108-lean.log
+          grep -q 'parity_cylinder_shift' evidence/v108-lean.log
+          grep -q 'cylinder_direct_all_offsets' evidence/v108-lean.log
+          grep -q 'cylinder_inverse_odd_all_offsets' evidence/v108-lean.log
+      - name: Compile bounded source-merger families
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v108_reclosure.py > evidence/v108-result.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open("evidence/v108-result.json"))
+          c=r["counts"]
+          assert r["qed"] is False and r["global_collatz"]=="UNKNOWN"
+          assert c["certified_cylinders_n_gt_1"]==3904
+          assert c["direct_cylinders"]==3870
+          assert c["inverse_odd_cylinders"]==34
+          assert c["unknown_cylinders"]==192
+          assert c["zero_or_terminal_exception_cylinders"]==2
+          assert c["certified_cylinders_n_gt_1"]+c["unknown_cylinders"]==4096
+          print("EXACT_BOUNDED_MERGER_PARTITION_VERIFIED_GLOBAL_UNKNOWN")
+          PY
+      - name: Seal bounded result without global QED
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > evidence/commit.txt
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          path="evidence/v108-result.json"
+          out={
+            "schema":"COLLATZ_V108_BOUNDED_COALESCENCE_QUALIFICATION",
+            "status":"WARRANTED_FORMAL_LAWS_AND_BOUNDED_SYMBOLIC_CERTIFICATES",
+            "source_partition_sha256":hashlib.sha256(open(path,"rb").read()).hexdigest(),
+            "depth":12,
+            "certified_source_cylinders_n_gt_1":3904,
+            "unknown_cylinders":192,
+            "universal_natural_source_bar":False,
+            "global_collatz":"UNKNOWN",
+            "qed":False
+          }
+          out["certificate_sha256"]=hashlib.sha256(json.dumps(out,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(out,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v108-prefix-inverse-coalescence
+          path: evidence/
+          if-no-files-found: error
