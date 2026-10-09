@@ -23,6 +23,12 @@ def select_route(intent: str, start_url: str) -> str | None:
             return 'shopping_reddit_review'
         if text.startswith('pull up the page with all "') and ' listings sorted by ' in text:
             return 'shopping_sort'
+    if start_url == '__GITLAB__' and text.startswith('fork '):
+        # Validate the actual authorized request before selecting a mutation.
+        # The source collector will revalidate against observed GitLab state.
+        from webarena_gitlab_fork_blind import parse_fork_intent
+        parse_fork_intent(intent)
+        return 'gitlab_fork'
     if start_url == '__GITLAB__' and text == 'go to the merge requests requiring my review':
         return 'navigation_transfer'
     if start_url == '__SHOPPING_ADMIN__' and text.startswith('show the tax report for'):
@@ -34,6 +40,8 @@ async def run(intent: str, start_url: str, output_dir: Path):
     route = select_route(intent, start_url)
     if route == 'shopping_reddit_review':
         from webarena_shopping_reddit_review_compound import run as execute
+    elif route == 'gitlab_fork':
+        from webarena_gitlab_fork_blind import run as execute
     elif route == 'shopping_sort':
         from webarena_shopping_sort_blind import run as execute
     elif route == 'navigation_transfer':
