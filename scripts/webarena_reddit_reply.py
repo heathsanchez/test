@@ -27,22 +27,13 @@ async def submit_form(field,content):
     await field.fill(content)
     form=field.locator("xpath=ancestor::form[1]")
     if await form.count()==0: raise RuntimeError("reply form missing")
-    buttons=form.get_by_role("button")
-    btn=None
-    for i in range(await buttons.count()):
-        b=buttons.nth(i)
-        try:
-            if await b.is_visible():
-                txt=clean(await b.inner_text()).casefold()
-                if any(k in txt for k in ("comment","reply","submit","save")):
-                    btn=b; break
-        except Exception:
-            pass
-    if btn is None:
-        btn=await visible_first(form.locator('button[type="submit"], input[type="submit"]'))
-    if btn is None: raise RuntimeError("reply submit control missing")
-    await btn.click()
-    await field.page.wait_for_load_state("networkidle",timeout=120000)
+    page=field.page
+    try:
+        async with page.expect_navigation(wait_until="networkidle",timeout=30000):
+            await form.evaluate("(f)=>f.requestSubmit()")
+    except Exception:
+        await form.evaluate("(f)=>f.requestSubmit()")
+        await page.wait_for_load_state("networkidle",timeout=120000)
 
 async def reply_to_submission(page,content):
     field=await visible_first(page.locator('textarea[name^="reply_to_submission_"], input[name^="reply_to_submission_"]'))
