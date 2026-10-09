@@ -1364,6 +1364,48 @@ impl<'a> TypeChecker<'a> {
                                                 self.machine().expose(a.clone(),Transparency::Full,512),
                                                 self.machine().expose(b.clone(),Transparency::Full,512),
                                             );
+                                            if index>=1 {
+                                                let la=self.machine().expose(
+                                                    a.clone(),Transparency::Full,512,
+                                                );
+                                                let rb=self.machine().expose(
+                                                    b.clone(),Transparency::Full,512,
+                                                );
+                                                if let (Some(Value::Neutral(lhs)),Some(Value::Neutral(rhs)))=
+                                                    (la.proven_value(),rb.proven_value())
+                                                {
+                                                    if lhs.head==rhs.head
+                                                        && lhs.spine.len()==4
+                                                        && rhs.spine.len()==4
+                                                    {
+                                                        for k in 0..4 {
+                                                            let xl=&lhs.spine[k];
+                                                            let xr=&rhs.spine[k];
+                                                            let preferred=crate::convert::convert_with_policy_in_context(
+                                                                self,&TypeValue::Term(xl.clone()),
+                                                                &TypeValue::Term(xr.clone()),512,
+                                                                crate::convert::DeltaPolicy::PreferredOnly,
+                                                                ext.len(),&ext,
+                                                            );
+                                                            let guarded=if preferred.is_proven() {
+                                                                preferred.clone()
+                                                            }else{
+                                                                crate::convert::convert_with_policy_in_context(
+                                                                    self,&TypeValue::Term(xl.clone()),
+                                                                    &TypeValue::Term(xr.clone()),512,
+                                                                    crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                                    ext.len(),&ext,
+                                                                )
+                                                            };
+                                                            eprintln!(
+                                                                "NUCLEUS_CHAIN6_SUBSPINE:expr={expression:?}:context={}:outer_index={index}:inner_index={k}:head={:?}:lhs={xl:?}:rhs={xr:?}:preferred={preferred:?}:guarded={guarded:?}",
+                                                                ext.len(),lhs.head,
+                                                            );
+                                                        }
+                                                    }
+                                                }
+                                            }
+
                                         }
                                     }
                                 }
