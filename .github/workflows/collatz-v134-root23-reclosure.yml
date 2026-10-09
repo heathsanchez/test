@@ -20,9 +20,9 @@ jobs:
           python3 -m research.collatz_ros_root23_reclosure_v134             --bootstrap --input research/collatz_ros_state_v132.json             --output evidence/v134-state.json | tee evidence/v134-bootstrap.log
           python3 -m research.collatz_ros_root23_reclosure_v134             --input evidence/v134-state.json --output evidence/v134-restart.json             | tee evidence/v134-restart.log
           cmp evidence/v134-state.json evidence/v134-restart.json
-          if [ -f research/collatz_ros_state_v134.json ]; then
-            cmp research/collatz_ros_state_v134.json evidence/v134-state.json
-          fi
+          cmp research/collatz_ros_state_v134.json evidence/v134-state.json
+          python3 -m research.collatz_ros_root23_reclosure_v134             --input research/collatz_ros_state_v134.json             --output evidence/v134-committed-restart.json             | tee evidence/v134-committed-restart.log
+          cmp research/collatz_ros_state_v134.json evidence/v134-committed-restart.json
           python3 -m research.collatz_ros_root23_reclosure_v134             --input evidence/v134-state.json --revoke-support v133_root23_formal_family             --output evidence/v134-revoked-v133.json             | tee evidence/v134-revoke-v133.log
           python3 -m research.collatz_ros_root23_reclosure_v134             --input evidence/v134-state.json --revoke-support v131_chart_overlap_generic             --output evidence/v134-revoked-import.yaml.json             | tee evidence/v134-revoke-generic.log
           python3 - <<'PY'
@@ -173,8 +173,7 @@ jobs:
           head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           assert x['source_commit']==y['source_commit']==head
           assert x['new_v134_file_sha256']==hashlib.sha256((a/'v134-state.json').read_bytes()).hexdigest()
-          if pathlib.Path('research/collatz_ros_state_v134.json').exists():
-            assert (a/'v134-state.json').read_bytes()==pathlib.Path('research/collatz_ros_state_v134.json').read_bytes()
+          assert (a/'v134-state.json').read_bytes()==pathlib.Path('research/collatz_ros_state_v134.json').read_bytes()
           assert y['status']=='WARRANTED_FORMAL_ALL_OFFSET_ROOT23_AND_SPECIFIC_27_COMPOSITION'
           assert x['source27_first_lower_clock_remains_59']
           assert y['formal_source27_entire_2adic_family'] is False
