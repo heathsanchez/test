@@ -123,7 +123,13 @@ jobs:
           head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           assert a['source_commit']==b['source_commit']==head
           assert b['class_identity_never_promoted_to_smaller_source']
-          assert a['parent_v124_raw_sha256']=='bb8ccf524dffff9b4bad973d3bf09f60114b114240d77cd59b331a0f2366f16e'
+          from research.collatz_ros_future_controller_v123 import digest
+          import hashlib
+          parent=pathlib.Path('research/collatz_ros_state_v124.json')
+          parent_bytes=parent.read_bytes()
+          assert digest(json.loads(parent_bytes))=='bb8ccf524dffff9b4bad973d3bf09f60114b114240d77cd59b331a0f2366f16e'
+          assert a['parent_v124_raw_sha256']==hashlib.sha256(parent_bytes).hexdigest()
+          assert b['status']=='WARRANTED_FORMAL_RELATIONAL_TWO_CLOCK_IDENTITY_ONLY'
           assert a['global_collatz']==b['universal_Collatz_termination']=='UNKNOWN'
           assert a['qed'] is b['qed'] is False
           out={'schema':'COLLATZ_V129_COMPILED_RELATIONAL_ROOT_INTERFACE',
