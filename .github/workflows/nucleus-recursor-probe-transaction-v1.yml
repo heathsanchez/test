@@ -2,7 +2,7 @@ name: Nucleus transactional recursor probe
 on:
   push:
     branches: [nucleus-recursor-probe-transaction-v1]
-    paths: ["metatron-kernel/**", ".github/workflows/nucleus-recursor-probe-transaction-v1.yml"]
+    paths: ["metatron-kernel/**", ".github/workflows/nucleus-recursor-probe-transaction-v1.yml", ".github/scripts/nucleus_transactional_recursor_patch.py"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,14 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Run regression and complete release tests
+      - name: Apply exact source transformation
         run: |
           set -euo pipefail
           mkdir -p evidence-transaction
-          git rev-parse HEAD:metatron-kernel > evidence-transaction/source-tree.txt
+          git rev-parse HEAD:metatron-kernel > evidence-transaction/base-source-tree.txt
+          python3 .github/scripts/nucleus_transactional_recursor_patch.py
+          git diff -- metatron-kernel/src > evidence-transaction/applied.patch
+      - name: Run regression and complete release tests
+        run: |
+          set -euo pipefail
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test recursor_probe_transaction 2>&1 | tee evidence-transaction/regression.txt
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml 2>&1 | tee evidence-transaction/release.txt
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > evidence-transaction/binary.sha256
       - name: Fetch immutable corpus
         env:
           GH_TOKEN: ${{ github.token }}
