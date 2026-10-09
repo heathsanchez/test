@@ -38,6 +38,16 @@ class VerifiedPromotionRouting(unittest.TestCase):
         for intent in ('Fork everything.', 'Fork two/levels/deep.', 'Fork all repos from ..'):
             self.assertIsNone(select_route(intent, '__GITLAB__'))
 
+    def test_gitlab_star_route_requires_proven_grammar_and_site(self):
+        for intent in ('Star the top three most stared repos in Gitlab',
+                       'Star the top 4 most starred repos in Gitlab.'):
+            self.assertEqual(select_route(intent, '__GITLAB__'), 'gitlab_star')
+            self.assertEqual(select_route(intent, 'http://localhost:8023'), 'gitlab_star')
+            self.assertIsNone(select_route(intent, '__SHOPPING__'))
+        for intent in ('Star the top eleven most starred repos in Gitlab',
+                       'Star all GitLab projects', 'Star the top 99 most starred repos in Gitlab'):
+            self.assertIsNone(select_route(intent, '__GITLAB__'))
+
     def test_admin_tax_navigation(self):
         query = 'Show the tax report for for this year (today is March 15, 2023).'
         self.assertEqual(select_route(query, '__SHOPPING_ADMIN__'), 'navigation_transfer')
@@ -67,6 +77,8 @@ class PromotionDispatch(unittest.IsolatedAsyncioTestCase):
              'webarena_shopping_reddit_review_compound'),
             ('__GITLAB__', 'Fork example-repo.',
              'webarena_gitlab_fork_blind'),
+            ('__GITLAB__', 'Star the top three most stared repos in Gitlab.',
+             'webarena_gitlab_star_blind'),
             ('__GITLAB__', 'Go to the merge requests requiring my review',
              'webarena_blind_navigation_transfer'),
             ('__SHOPPING_ADMIN__', 'Show the tax report for this year (today is March 15, 2023).',
@@ -80,6 +92,8 @@ class PromotionDispatch(unittest.IsolatedAsyncioTestCase):
                 stub.run = AsyncMock(return_value={'result': 'observed'})
                 if module_name == 'webarena_gitlab_fork_blind':
                     stub.parse_fork_intent = lambda value: ('single', value)
+                if module_name == 'webarena_gitlab_star_blind':
+                    stub.parse_intent = lambda value: 3
                 out = Path('/tmp/opaque-observation')
                 with patch.dict(sys.modules, {module_name: stub}):
                     result = await run(intent, site, out)
@@ -97,6 +111,20 @@ class PromotionDispatch(unittest.IsolatedAsyncioTestCase):
                                       'webarena_blind_retrieval_bridge': fallback}):
             with self.assertRaisesRegex(RuntimeError, 'ambiguous write result'):
                 await run(query, '__SHOPPING__', Path('/tmp/test'))
+        chosen.run.assert_awaited_once()
+        fallback.run.assert_not_awaited()
+
+    async def test_ambiguous_star_write_is_not_replayed(self):
+        chosen = ModuleType('webarena_gitlab_star_blind')
+        chosen.run = AsyncMock(side_effect=RuntimeError('star post outcome unknown'))
+        chosen.parse_intent = lambda value: 3
+        fallback = ModuleType('webarena_blind_retrieval_bridge')
+        fallback.run = AsyncMock()
+        with patch.dict(sys.modules, {'webarena_gitlab_star_blind': chosen,
+                                      'webarena_blind_retrieval_bridge': fallback}):
+            with self.assertRaisesRegex(RuntimeError, 'star post outcome unknown'):
+                await run('Star the top three most stared repos in Gitlab.',
+                          '__GITLAB__', Path('/tmp/star-evidence'))
         chosen.run.assert_awaited_once()
         fallback.run.assert_not_awaited()
 
