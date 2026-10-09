@@ -162,8 +162,10 @@ theorem least_positive_bad_source_three_mod_four
       rw [hs]
       omega
     have htwo : iter shortcut 2 n = (shortcut n) / 2 := by
-      change shortcut (shortcut n) = (shortcut n) / 2
-      simp [shortcut, hevenNext]
+      change (if (shortcut n) % 2 = 0 then
+          (shortcut n) / 2 else
+          (3 * (shortcut n) + 1) / 2) = (shortcut n) / 2
+      rw [if_pos hevenNext]
     have hdec : iter shortcut 2 n < n := by
       rw [htwo, hs]
       omega
