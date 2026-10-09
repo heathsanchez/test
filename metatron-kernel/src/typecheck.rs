@@ -759,6 +759,32 @@ impl<'a> TypeChecker<'a> {
                                             left_index == right_index,
                                             left_spine.len(), right_spine.len(),
                                         );
+                                        if let (Some(a), Some(b)) = (left_spine.first(), right_spine.first()) {
+                                            let machine = self.machine();
+                                            let left_value = machine.expose_for_conversion(
+                                                a.clone(), Transparency::Full, budget,
+                                            );
+                                            let right_value = machine.expose_for_conversion(
+                                                b.clone(), Transparency::Full, budget,
+                                            );
+                                            let la = format!("{left_value:?}");
+                                            let rb = format!("{right_value:?}");
+                                            eprintln!(
+                                                "NUCLEUS_MIXED_PI_ARG0:expr={expression:?}:left_expr={:?}:right_expr={:?}:left={}:right={}",
+                                                a.expr,b.expr,
+                                                la.chars().take(1800).collect::<String>(),
+                                                rb.chars().take(1800).collect::<String>(),
+                                            );
+                                            for slot in 0..5u64 {
+                                                let left = format!("{:?}", a.env.lookup(slot));
+                                                let right = format!("{:?}", b.env.lookup(slot));
+                                                eprintln!(
+                                                    "NUCLEUS_MIXED_PI_ARG0_BINDING:expr={expression:?}:slot={slot}:left={}:right={}",
+                                                    left.chars().take(450).collect::<String>(),
+                                                    right.chars().take(450).collect::<String>(),
+                                                );
+                                            }
+                                        }
                                     }
                                 }
                             }
