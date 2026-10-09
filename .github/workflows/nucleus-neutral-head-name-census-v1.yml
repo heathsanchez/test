@@ -1,0 +1,99 @@
+name: Nucleus neutral head source-name census
+on:
+  push:
+    branches: [nucleus-neutral-head-name-census-v1]
+    paths: ["metatron-kernel/**", ".github/workflows/nucleus-neutral-head-name-census-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  separate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_COMMIT: 287da5c005ef80278c170c627a36d475cadf6fa0
+      SOURCE_SUBTREE: f29a05f12234ff67e5488b0a60f7c70948201ad6
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind checker and run release tests
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch frozen Arena input authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/a /tmp/tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Expose first and terminal neutral split for small remaining family
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/neutral-head-names-v1
+          python3 - <<'PY'
+          import os,json,pathlib,hashlib,subprocess,time
+          root=pathlib.Path('/tmp/tests')
+          names=[('good','perf/shared-subterm',2),
+                 ('good','perf/folded-constant-first',2),
+                 ('good','perf/folded-constant-last',2),
+                 ('bad','bugs/nested-unused-param',1)]
+          rows=[]
+          for bucket,name,expected in names:
+            path=root/bucket/(name+'.ndjson')
+            start=time.monotonic()
+            p=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+              input=path.read_bytes(),stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+              timeout=65,env=os.environ|{'NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_RECURSOR_MAJOR':'1'})
+            lines=p.stderr.decode(errors='replace').splitlines()
+            # Decode exported Lean names, never compare anonymous NameId values
+            # across different independent fixtures.
+            id_to_name={0:''}
+            defs={}
+            for record in path.read_bytes().splitlines():
+              obj=json.loads(record)
+              if 'in' in obj:
+                name=obj.get('str',obj.get('num'))
+                prefix=id_to_name.get(name['pre'],'')
+                id_to_name[obj['in']]=prefix+('.' if prefix else '')+str(name.get('str',name.get('i')))
+              if 'def' in obj:
+                defs[obj['def']['name']]=obj['def']
+            import re
+            mapped=[]
+            for line in lines:
+              if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in line:
+                ids=[int(s) for s in re.findall(r'NameId\\((\\d+)\\)',line)]
+                mapped.append([{'id':n,'name':id_to_name.get(n,'UNKNOWN_NAME'),
+                                'delta_present':n in defs,
+                                'delta_hint':defs.get(n,{}).get('hint')} for n in ids[:3]])
+
+            mismatches=[x for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x]
+            row={'case':name,'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+                 'rc':p.returncode,'expected':expected,
+                 'elapsed_sec':round(time.monotonic()-start,3),
+                 'mismatch_count':len(mismatches),
+                 'source_names':mapped[:8],
+                 'first_mismatch':mismatches[:3],
+                 'last_mismatch':mismatches[-3:],
+                 'major_values':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR_VALUE:' in x][:4],
+                 'terminal':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-4:]}
+            rows.append(row)
+            pathlib.Path('metatron-kernel/evidence-out/neutral-head-names-v1',name.replace('/','__')+'.txt').write_text('\n'.join(lines))
+            print(json.dumps(row,sort_keys=True))
+            assert p.returncode==expected,row
+          report={'source':os.environ['SOURCE_COMMIT'],'source_subtree':os.environ['SOURCE_SUBTREE'],
+                  'qualification':os.environ['GITHUB_SHA'],'rows':rows}
+          pathlib.Path('metatron-kernel/evidence-out/neutral-head-names-v1/report.json').write_text(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-neutral-head-names-${{ github.sha }}
+          path: metatron-kernel/evidence-out/neutral-head-names-v1
+          if-no-files-found: warn
