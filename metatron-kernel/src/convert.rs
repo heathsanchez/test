@@ -195,6 +195,17 @@ fn convert_in_context_with_congruence(
         }
 
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && checker.proof_terms_different_propositions_before_whnf(
+                left_term,
+                right_term,
+                context,
+                remaining,
+            )
+        {
+            return Judgment::refuted("proof-proposition-types-not-defeq");
+        }
+
+        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
             && checker.proof_terms_same_proposition(left_term, right_term, context, remaining)
         {
             continue;
