@@ -1,0 +1,80 @@
+name: Collatz V110 q7 x dyadic source coalescence
+on:
+  push:
+    branches: [collatz-v109-q7-crt-reclosure-v110]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and inspect all-offset reverse and q7 theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CylinderCoalescence.olean formal/Collatz/CylinderCoalescence.lean | tee evidence/v108-lean.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ReverseAffineMerger.olean formal/Collatz/ReverseAffineMerger.lean | tee evidence/v109-lean.log
+          lake env lean -DautoImplicit=false formal/Collatz/Q7SourceMerger.lean | tee evidence/v110-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v108-lean.log evidence/v109-lean.log evidence/v110-lean.log
+          grep -q 'parity_prefix_shift' evidence/v108-lean.log
+          grep -q 'affine_reverse_lower_merge_prefix_all_offsets' evidence/v109-lean.log
+          grep -q 'q7_source_lower_merge' evidence/v110-lean.log
+      - name: Exact finite three-way replay and CRT partition
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v108_reclosure.py > evidence/v108-results.json
+          python3 -m research.collatz_v109_reverse_reclosure > evidence/v109-results.json
+          python3 -m research.collatz_v110_q7_crt_reclosure > evidence/v110-results.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open("evidence/v110-results.json"))
+          assert r["status"]=="BOUNDED_EXACT_ONLY"
+          assert r["global_collatz"]=="UNKNOWN" and r["qed"] is False
+          assert r["q7_covered_ternary"]==1013
+          assert len(r["predecessor_word_types"])==13
+          assert r["v109_unknown_dyadic"]==144
+          assert r["additional_crt_source_families"]==145872
+          assert r["total_covered_crt_source_families"]==8788896
+          assert r["remaining_unknown_crt_source_families"]==169056
+          assert r["combined_modulus"]==8957952
+          assert (r["total_covered_crt_source_families"]+
+              r["remaining_unknown_crt_source_families"]==r["combined_modulus"])
+          print("EXACT_CRT_SOURCE_FAMILY_REPLAY_PASSED_GLOBAL_COLLATZ_UNKNOWN")
+          PY
+      - name: Preserve verification boundary and digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > evidence/commit.txt
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          data={
+            "schema":"COLLATZ_V110_Q7_CRT_COALESCENCE",
+            "status":"WARRANTED_FORMAL_GENERAL_LAWS_AND_BOUNDED_EXECUTABLE_CRT_REPLAY",
+            "v110_results_sha256":hashlib.sha256(open("evidence/v110-results.json","rb").read()).hexdigest(),
+            "merged_crt_classes":8788896,
+            "unresolved_crt_classes":169056,
+            "exhaustive_individual_lean_witness_reification":False,
+            "universal_natural_source_bar":False,
+            "global_collatz":"UNKNOWN",
+            "qed":False}
+          data["certificate_sha256"]=hashlib.sha256(json.dumps(data,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(data,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v110-q7-crt-source-mergers
+          path: evidence/
+          if-no-files-found: error
