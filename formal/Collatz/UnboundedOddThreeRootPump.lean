@@ -128,8 +128,8 @@ theorem odd_three_class_has_arbitrarily_large_roots
   have hsroot : s % 6 = 3 :=
     rootPumpIter_preserves_odd_three r hr k
   have hlarge : B < s := by
-    have hx := rootPumpIter_at_least_index r k
-    dsimp [k, s]
+    have hx := rootPumpIter_at_least_index r (B + 1)
+    change B < rootPumpIter r (B + 1)
     omega
   have hmerge :=
     (rootPumpIter_actual_future_join r hr k).symm
@@ -148,8 +148,8 @@ theorem every_positive_class_has_unbounded_odd_three_witnesses
     rootPumpIter_preserves_odd_three w.root w.residue k
   have hpositive : 0 < largerRoot := by omega
   have hgrowth : B < largerRoot := by
-    have hx := rootPumpIter_at_least_index w.root k
-    dsimp [largerRoot,k]
+    have hx := rootPumpIter_at_least_index w.root (B + 1)
+    change B < rootPumpIter w.root (B + 1)
     omega
   have hbridge :
       iter shortcut 1 w.root =
