@@ -331,6 +331,25 @@ impl<'a> TypeChecker<'a> {
                     };
                 }
                 let Some((domain, body)) = self.pi_view(function_type.clone(), *remaining) else {
+                    // Reconstruct a source-literal lambda telescope under the
+                    // actual checked argument closures when intermediate
+                    // function-type inference cannot exhibit a Pi.  This is
+                    // not a conversion shortcut: the helper checks every
+                    // supplied argument against its declared domain before
+                    // it can return a Proven judgment.
+                    if function_type.is_unknown()
+                        && let Some(recovered) = self.infer_literal_beta_spine(
+                            expression, context, frame, remaining, cache,
+                        )
+                    {
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_PI_RECOVERY").is_some() {
+                            eprintln!(
+                                "NUCLEUS_PI_RECOVERY:application={expression:?}:result={recovered:?}"
+                            );
+                        }
+                        return recovered;
+                    }
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
                         let mut reducible = None;
