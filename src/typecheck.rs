@@ -1581,8 +1581,8 @@ impl<'a> TypeChecker<'a> {
     /// to that context depth and one-argument theorem applications prevents
     /// needless speculative proof searches on unrelated large workloads.
     /// Independently typed proof irrelevance for the second argument of
-    /// a source-certified dependent predicate application at context depth
-    /// thirteen. This method never assumes any two captured terms equal:
+    /// a source-certified dependent predicate application under a
+    /// bounded lexical context. This method never assumes any two captured terms equal:
     /// each is typechecked in the same lexical context; each resulting
     /// type must independently be shown to inhabit Sort 0; and their
     /// dependent types must convert with the kernel-backed algorithm.
@@ -1590,7 +1590,7 @@ impl<'a> TypeChecker<'a> {
     /// Calls are made only after the SAME rigid predicate and its preceding
     /// argument have already been proved equal. If a premise is UNKNOWN,
     /// no new conversion is licensed.
-    pub(crate) fn checked_proof_pair_at_context13(
+    pub(crate) fn checked_proof_pair_in_bounded_context(
         &self,
         left: &Closure,
         right: &Closure,
