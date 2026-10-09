@@ -594,8 +594,19 @@ impl<'a> TypeChecker<'a> {
                         "NUCLEUS_TYPED_PROJECTION_CHECK:expression={expression:?}:frame={}:context_len={}:result={conversion:?}:inferred={value:?}:expected={expected:?}",
                         frame.id(), context.len(),
                     );
-                    if let TypeValue::Term(c) = &value {
-                        eprintln!("NUCLEUS_INFERRED_WHNF:{:?}", self.machine().expose(c.clone(), Transparency::Full, 512));
+                    for (side, typ) in [("inferred", &value), ("expected", expected)] {
+                        if let TypeValue::Term(c) = typ {
+                            let whnf = self.machine().expose(c.clone(), Transparency::Full, 512);
+                            eprintln!("NUCLEUS_LE_TYPE_WHNF:{side}:{whnf:?}");
+                            if let Some(Value::Neutral(n)) = whnf.proven_value() {
+                                for (i, arg) in n.spine.iter().enumerate().take(2) {
+                                    eprintln!(
+                                        "NUCLEUS_LE_INDEX_WHNF:{side}:{i}:{:?}",
+                                        self.machine().expose(arg.clone(), Transparency::Full, 512),
+                                    );
+                                }
+                            }
+                        }
                     }
                 }
                 match conversion {
