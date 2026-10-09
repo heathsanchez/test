@@ -1,0 +1,83 @@
+name: Collatz V113 three congruence merger laws
+on:
+  push:
+    branches: [collatz-v112-three-congruence-laws-v113]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-bounded-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact independent CRT/reverse audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v113_three_laws_audit | tee evidence/v113-audit.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open("evidence/v113-audit.json"))
+          assert r["status"]=="BOUNDED_EXECUTABLE_EXACT_GENERIC_LAWS"
+          assert r["source_modulus"]==8957952
+          assert r["v112_recovered_crt"]==1701
+          assert r["recovered_by_law"]=={"a":432,"b":432,"c":837}
+          assert r["remaining_unknown_crt"]==167355
+          assert r["total_covered_crt"]==8790597
+          assert r["global_collatz"]=="UNKNOWN" and r["qed"] is False
+          print("V113_THREE_EXACT_SOURCE_CYLINDERS_AND_CRT_REPLAY_PASS")
+          PY
+      - name: Seal exact bounded audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > evidence/commit.txt
+          python3 - <<'PY' | tee evidence/bounded-qualification.json
+          import json,hashlib
+          r=json.load(open("evidence/v113-audit.json"))
+          obj={"status":"BOUNDED_EXECUTABLE_EXACT","schema":"COLLATZ_V113_THREE_LAWS",
+            "witness_digest_sha256":r["witness_digest_sha256"],
+            "new_crt_families":1701,"unknown_crt_families":167355,
+            "global_collatz":"UNKNOWN","qed":False}
+          obj["certificate_sha256"]=hashlib.sha256(json.dumps(obj,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(obj,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v113-independent-bounded-evidence
+          path: evidence/
+          if-no-files-found: error
+  lean-three-universal-laws:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check three parametric source-merger laws
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/v-base.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CylinderCoalescence.olean formal/Collatz/CylinderCoalescence.lean > evidence/v108.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ReverseAffineMerger.olean formal/Collatz/ReverseAffineMerger.lean > evidence/v109.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/Q7SourceMerger.olean formal/Collatz/Q7SourceMerger.lean > evidence/v110.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ScaledReverseMerger.olean formal/Collatz/ScaledReverseMerger.lean > evidence/v112.log
+          lake env lean -DautoImplicit=false formal/Collatz/ThreeCongruenceMerger.lean | tee evidence/v113.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v113.log
+          for theorem in v113_a_source_merge v113_b_source_merge v113_c_source_merge; do
+            grep -q "${theorem}" evidence/v113.log
+          done
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v113-lean-three-laws
+          path: evidence/
+          if-no-files-found: error
