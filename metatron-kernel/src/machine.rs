@@ -992,11 +992,33 @@ impl<'a> Machine<'a> {
         if transparency != Transparency::Full {
             return None;
         }
+        // Allocate extra constructor exposure only for the certified
+        // Bool.rec over a checked, fully applied Nat.beq.  This does not
+        // infer the major constructor: exposure must produce the registered
+        // Bool.false/Bool.true constructor and exact arity below.
+        let bool_rules = self.bool_primitives.as_ref().is_some_and(|bools| {
+            reduction.rules.len() == 2
+                && reduction.rules.iter().any(|r| r.constructor == bools.false_ctor)
+                && reduction.rules.iter().any(|r| r.constructor == bools.true_ctor)
+        });
+        let mut head = target.expr;
+        let mut arity = 0usize;
+        while let Some(Expr::App { fun, .. }) = self.expressions.get(head) {
+            arity += 1;
+            if arity > 2 { break; }
+            head = *fun;
+        }
+        let nat_beq_major = arity == 2 && self.nat_primitives.as_ref().is_some_and(|nat| {
+            matches!(self.expressions.get(head),
+                Some(Expr::Const { name, levels })
+                    if Some(*name) == nat.beq && levels.is_empty())
+        });
+        let major_cap = if bool_rules && nat_beq_major { 256 } else { 16 };
         let exposed = self
             .expose_internal(
                 target.clone(),
                 Transparency::Full,
-                budget.saturating_sub(1).min(16),
+                budget.saturating_sub(1).min(major_cap),
                 false,
                 false,
             )
