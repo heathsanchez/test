@@ -366,6 +366,57 @@ impl<'a> TypeChecker<'a> {
                                 "binder={inferred_binder:?}:inferred_domain={inferred_domain:?}:expected_domain={expected_domain:?}:domain_preferred={domain_premise:?}:domain_guarded={domain_guarded:?}:body_after_valid_domain={body_premise:?}"
                             ),
                         );
+
+                        if domain_premise.is_proven()
+                            && inferred_binder.0 == context.len() as u64
+                            && let TypeValue::Pi {
+                                domain: second_inferred_domain,
+                                body: second_inferred_body,
+                                binder: second_binder,
+                            } = inferred_body.as_ref()
+                        {
+                            let mut one_context = context.to_vec();
+                            one_context.push((**inferred_domain).clone());
+                            let opened_expected = expected_body.under_free(*inferred_binder);
+                            let second_expected = self.machine().expose(
+                                opened_expected.clone(),
+                                Transparency::Full, (*remaining).min(256),
+                            );
+                            if let Some(Value::Pi {
+                                domain: second_expected_domain,
+                                body: second_expected_body,
+                            }) = second_expected.proven_value()
+                            {
+                                let second_domain = crate::convert::convert_with_policy_in_context(
+                                    self, second_inferred_domain,
+                                    &TypeValue::Term(second_expected_domain.clone()),
+                                    128, crate::convert::DeltaPolicy::PreferredOnly,
+                                    one_context.len(), &one_context,
+                                );
+                                let second_body = if second_domain.is_proven()
+                                    && second_binder.0 == one_context.len() as u64
+                                {
+                                    let mut ctx = one_context.clone();
+                                    ctx.push((**second_inferred_domain).clone());
+                                    Some(crate::convert::convert_with_policy_in_context(
+                                        self, second_inferred_body,
+                                        &TypeValue::Term(second_expected_body.under_free(*second_binder)),
+                                        128, crate::convert::DeltaPolicy::PreferredOnly,
+                                        ctx.len(), &ctx,
+                                    ))
+                                } else {
+                                    None
+                                };
+                                note("second-pi-domain-body",format!(
+                                    "second_binder={second_binder:?}:second_domain={second_domain:?}:second_body={second_body:?}:actual={second_inferred_domain:?}:expected={second_expected_domain:?}"
+                                ));
+                            } else {
+                                note("second-pi-exposure",format!(
+                                    "expected={opened_expected:?}:exposure={second_expected:?}:actual_body={inferred_body:?}"
+                                ));
+                            }
+                        }
+
                     }
 
                 }
