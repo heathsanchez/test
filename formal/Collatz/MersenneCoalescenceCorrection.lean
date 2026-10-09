@@ -23,7 +23,6 @@ theorem power_residue (t : Nat) :
   | succ t ih =>
       have he : 20 + 486 * (t + 1) = (20 + 486 * t) + 486 := by omega
       rw [he, Nat.pow_add, Nat.mul_mod, ih]
-      decide
 
 theorem source_residue (t : Nat) : source t % 1458 = 273 := by
   have hd := Nat.mod_add_div (2 ^ (20 + 486 * t)) 1458
