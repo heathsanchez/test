@@ -57,7 +57,7 @@ theorem never_one_prefix_multiplicative_bound
               rw [ha, iter_succ_last]
               simp only [Nat.pow_succ]
               dsimp [x]
-              ring
+              simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
         _ = 3 ^ oddCount n k * 2 ^ k *
             iter shortcut k n := by
               rw [hstep]
@@ -82,17 +82,17 @@ theorem never_one_prefix_multiplicative_bound
               rw [ha, iter_succ_last]
               simp only [Nat.pow_succ]
               dsimp [x]
-              ring
+              simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
         _ ≤ (3 ^ oddCount n k * 2 ^ k) * (10 * x) := hmult
         _ = 10 * (3 ^ oddCount n k * 2 ^ k *
             iter shortcut k n) := by
               dsimp [x]
-              ring
+              simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
         _ ≤ 10 * (10 ^ oddCount n k * n) :=
           Nat.mul_le_mul_left 10 ih
         _ = 10 ^ (oddCount n k + 1) * n := by
           simp [Nat.pow_succ]
-          ring
+          simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
         _ = 10 ^ oddCount n (k + 1) * n := by rw [ha]
 
 /-- A real positive period, with an actual no-1 future, has the
