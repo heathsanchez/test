@@ -1,0 +1,183 @@
+name: Collatz V130 persistent relational root law
+on:
+  push:
+    branches: [collatz-v130-relational-root-stateful-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stateful-law:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test old state invariants and new source-indexed law admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m unittest -v             research.test_collatz_ros_future_controller_v123             research.test_collatz_ros_future_controller_v124             research.test_collatz_ros_relational_root_v130             2>&1 | tee evidence/v130-all-tests.log
+          python3 -m research.collatz_ros_relational_root_v130             --bootstrap --input research/collatz_ros_state_v124.json             --output evidence/v130-state.json | tee evidence/v130-bootstrap.log
+          python3 -m research.collatz_ros_relational_root_v130             --input evidence/v130-state.json --output evidence/v130-restart.json             | tee evidence/v130-restart.log
+          cmp evidence/v130-state.json evidence/v130-restart.json
+          python3 -m research.collatz_ros_relational_root_v130             --input evidence/v130-state.json             --revoke-support v129_odd_three_root_family             --output evidence/v130-revoked.json             | tee evidence/v130-revoke.log
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          source=pathlib.Path('research/collatz_ros_state_v124.json').read_bytes()
+          assert b'1208925819614629174706175' in source
+          statefile=pathlib.Path('evidence/v130-state.json')
+          s=json.loads(statefile.read_text())
+          revoked=json.loads(pathlib.Path('evidence/v130-revoked.json').read_text())
+          assert s['admission_schema']=='COLLATZ_ROS_V130_RELATIONAL_ODD_ROOT_AUTHORITY'
+          assert s['controller_revision']==3 and s['grammar']['revision']==2
+          assert s['grammar']['active']=='SOURCE_INDEXED_TWO_CLOCK'
+          assert 'PREFERRED_ROOT_SELECTOR' in s['grammar']['rejected_as_complete']
+          assert s['support']['v128_preferred_root_incomplete']['run']==37983621550
+          assert s['support']['v129_odd_three_root_family']['run']==37984356667
+          assert len(s['parametric_laws'])==1
+          assert len(s['joins'])==9
+          assert len(revoked['joins'])==7
+          assert len(revoked['archived_joins'])==2
+          witness={(x['source'],x['earlier']):x for x in s['joins']}
+          assert witness[21,3]['source_clock']==3 and witness[21,3]['earlier_clock']==2
+          assert witness[21,2]['source_clock']==7 and witness[21,2]['earlier_clock']==2
+          assert witness[21,2]['parents']==[
+              witness[21,3]['id'],witness[3,2]['id']]
+          assert s['negative_controls'][2]['changing_source']==2**80-1
+          assert s['residuals'][1]['remaining_classes']==159938
+          assert s['global_collatz']=='UNKNOWN' and s['qed'] is False
+          assert s['universal_event_producer_proved'] is False
+          result={'schema':'COLLATZ_V130_TYPED_RELATIONAL_STATE',
+             'status':'WARRANTED_BOUNDED_STATEFUL_PROOF_SCOPE',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'prior_v124_snapshot_sha256':hashlib.sha256(source).hexdigest(),
+             'new_v130_snapshot_sha256':hashlib.sha256(statefile.read_bytes()).hexdigest(),
+             'parametric_law_count':1,
+             'protected_live_join_count':len(s['joins']),
+             'restored_byte_identical':True,
+             'revocation_archived_dependent':True,
+             'universal_event_producer':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v130-exact-seal.json').write_text(
+              json.dumps(result,sort_keys=True,indent=2)+'\n')
+          print('V130_RELATIONAL_ROOT_TYPED_STATE_RESTART_REVOCATION_PASS_GLOBAL_UNKNOWN')
+          PY
+          echo V130_CHECKPOINT_BEGIN
+          cat evidence/v130-state.json
+          echo V130_CHECKPOINT_END
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v130-stateful
+          path: evidence/
+          if-no-files-found: error
+  formal-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Match V129 theorem blob and recheck exact symbolic Lean proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          expected_blob=c850b4e0631475931d028fcc1574eab13e9422d1
+          current_blob="$(git hash-object formal/Collatz/RelationalRootMerger.lean)"
+          test "$current_blob" = "$expected_blob"
+          printf '%s\n' "$current_blob" > evidence/pinned-v129-theorem-blob.txt
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CylinderCoalescence.olean formal/Collatz/CylinderCoalescence.lean > evidence/cylinder.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/LawfulFutureJoin.olean formal/Collatz/LawfulFutureJoin.lean > evidence/join.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/RelationalRootMerger.lean 2>&1 | tee evidence/v130-lean.log
+          python3 - <<'PY'
+          import re,json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v130-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          axioms={}
+          for name,s in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            vals=[t.strip() for t in s.split(',') if t.strip()]
+            assert set(vals)<={'propext','Classical.choice','Quot.sound'},(name,vals)
+            axioms[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          for k in ['root21_family_forward','root3_family_forward',
+                    'root21_family_join','root21_family_odd_three_root_certificate',
+                    'root21_family_lower_source_join','root21_family_not_minimal_bad']:
+            assert 'CollatzFinal.'+k in axioms,k
+          q={'schema':'COLLATZ_V130_FORMAL_RELATIONAL_ROOT_REPLAY',
+             'status':'WARRANTED_FORMAL_SCOPED_V129_THEOREM_REPLAY',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'upstream_formal_run':37984356667,
+             'theorem_blob':pathlib.Path('evidence/pinned-v129-theorem-blob.txt').read_text().strip(),
+             'axioms':axioms,
+             'lean_sha256':hashlib.sha256(log.encode()).hexdigest(),
+             'universal_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v130-formal-seal.json').write_text(
+              json.dumps(q,sort_keys=True,indent=2)+'\n')
+          print('V130_PINNED_ALL_OFFSET_RELATIONAL_ROOT_THEOREM_LEAN_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v130-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [stateful-law,formal-qualification]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v130-stateful
+          path: evidence/state
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v130-formal
+          path: evidence/formal
+      - name: Preserve one exact source-attached proof-carrying research state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/state')
+          q=pathlib.Path('evidence/formal')
+          a=json.loads((p/'v130-exact-seal.json').read_text())
+          b=json.loads((q/'v130-formal-seal.json').read_text())
+          s=json.loads((p/'v130-state.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['new_v130_snapshot_sha256']==hashlib.sha256((p/'v130-state.json').read_bytes()).hexdigest()
+          assert b['status']=='WARRANTED_FORMAL_SCOPED_V129_THEOREM_REPLAY'
+          assert a['parametric_law_count']==1 and a['protected_live_join_count']==9
+          assert s['global_collatz']==a['global_collatz']==b['universal_collatz']=='UNKNOWN'
+          assert s['qed'] is a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V130_FINAL_RELATIONAL_ROOT_CONTROLLER',
+             'status':'WARRANTED_BOUNDED_TYPED_CONTROLLER_PLUS_FORMAL_LAW',
+             'source_commit':head,
+             'live_proof_witnesses':len(s['joins']),
+             'qualified_parametric_relational_laws':1,
+             'v128_preferred_root_counterexample_preserved':True,
+             'v129_formal_all_offset_binding_preserved':True,
+             'source_relative_two_clock_semantics_preserved':True,
+             'snapshot_sha256':a['new_v130_snapshot_sha256'],
+             'universal_event_producer':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v130-final-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          print('V130_STATEFUL_RELATIONAL_ROS_REFINEMENT_QUALIFIED_NOT_COLLATZ_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v130-final
+          path: evidence/v130-final-seal.json
+          if-no-files-found: error
