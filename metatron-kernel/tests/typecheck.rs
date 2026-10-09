@@ -240,3 +240,55 @@ fn dependent_let_wrapped_lambda_substitutes_proposition_binder() {
         "a proposition expression must not be accepted as a proof of itself"
     );
 }
+
+
+/// Verify the new local-proof proposition warrant from the declaration
+/// telescope AND its exact typed application arguments, not just Sort 1.
+#[test]
+fn captured_two_argument_relation_requires_checked_domains() {
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(0), Level::Zero).unwrap();
+    let mut exprs = IdTable::default();
+    let nodes = [
+        (0, Expr::Sort(LevelId(0))),                    // Prop
+        (1, Expr::Const { name: NameId(1), levels: vec![] }), // A : Prop
+        (2, Expr::Pi { domain: ExprId(1), body: ExprId(0) }),
+        (3, Expr::Pi { domain: ExprId(1), body: ExprId(2) }),
+        (4, Expr::Const { name: NameId(3), levels: vec![] }), // R : A -> A -> Prop
+        (5, Expr::Const { name: NameId(2), levels: vec![] }), // p : A
+        (6, Expr::App { fun: ExprId(4), arg: ExprId(5) }),
+        (7, Expr::App { fun: ExprId(6), arg: ExprId(5) }), // R p p
+        (8, Expr::App { fun: ExprId(4), arg: ExprId(1) }),
+        (9, Expr::App { fun: ExprId(8), arg: ExprId(5) }), // R A p, invalid
+        (10, Expr::Lam { domain: ExprId(1), body: ExprId(4) }),
+        (11, Expr::App { fun: ExprId(10), arg: ExprId(1) }),
+        (12, Expr::App { fun: ExprId(11), arg: ExprId(5) }),
+        (13, Expr::App { fun: ExprId(12), arg: ExprId(5) }), // beta normalizes to R p p,
+                                                               // but the discarded argument A : Prop
+                                                               // is not a proof of A
+    ];
+    for (id, expr) in nodes {
+        exprs.insert(ExprId(id), expr).unwrap();
+    }
+    let environment = Environment::empty()
+        .extend(NameId(1), ConstantDecl::axiom(vec![], ExprId(0))).unwrap()
+        .extend(NameId(2), ConstantDecl::axiom(vec![], ExprId(1))).unwrap()
+        .extend(NameId(3), ConstantDecl::axiom(vec![], ExprId(3))).unwrap();
+    let checker = TypeChecker::new(&exprs, &levels, &environment);
+    let certify = |id| checker.certify_applied_proposition_in_context(
+        &Closure::new(ExprId(id), EnvFrame::empty()), &[], 4096,
+    );
+    assert!(
+        certify(7).is_proven(),
+        "a well-typed R p p must give a checked proposition certificate: {:?}",
+        certify(7),
+    );
+    assert!(
+        !certify(9).is_proven(),
+        "an ill-typed first argument must never certify a proposition",
+    );
+    assert!(
+        !certify(13).is_proven(),
+        "an ill-typed beta-redex discarded during normalization is not a typed application",
+    );
+}
