@@ -1,8 +1,8 @@
-name: Nucleus bounded universal checked proposition-spine reuse
+name: Nucleus Fin.eq_of_val_eq exact free-local type census
 
 on:
   push:
-    branches: [nucleus-general-typed-proof-spine-v1]
+    branches: [nucleus-fin-local-proof-census-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -154,6 +154,7 @@ jobs:
               row={'case':name,'return_code':p.returncode,'downstream_last':downstream[-8:],
                    'typed_proofs':local[-4:],'app_errors':app[-4:],'major_census':major[-4:],
                    'neutral_mismatch':[x for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-6:],
+                   'fin_local':[x for x in lines if 'NUCLEUS_FIN_LOCAL_PAIR:' in x][-6:],
                    'recursor_major':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR:' in x][-8:],
                    'recursor_major_value':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR_VALUE:' in x][-8:],
                    'captured_major_chain':[x for x in lines if 'NUCLEUS_DECIDABLE_MAJOR_CHAIN:' in x][-8:],
@@ -183,13 +184,14 @@ jobs:
               if 'magma-list-pair' in name:
                   assert row['certified_proof_reuse'] or row['contextual_proof_spine'], ('no certified proof irrelevance ever fired',name)
                   assert row['contextual_proof_spine'], ('general checked proof-spine rule never fired',name)
+                  assert row['fin_local'], ('missing exact Fin local proposition witness',name)
                   assert row['return_code'] in (0,2), ('unsafe theorem verdict',name)
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
               rows.append(row)
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
           PY
 
-      - name: Requalify frozen196 zero-wrong strict complete-case gain
+      - name: Preserve frozen196 while checking Fin local proof types
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -227,14 +229,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
-          print('PROOF_VS_LOCAL_196_GAIN',flush=True)
+          assert accepted==118 and unknown==7, 'FIN_LOCAL_DIAGNOSTIC_CHANGED_FROZEN196'
+          print('FIN_LOCAL_TYPES_DIAGNOSTIC_ONLY',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-general-typed-proof-spine-${{ github.sha }}
+          name: nucleus-fin-local-types-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -247,7 +249,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="general typed proof spine: ${{ job.status }}; no complete replay"
+          description="Fin local types: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -258,6 +260,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/general-typed-proof-spine" \
+            -f context="nucleus/fin-local-types" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
