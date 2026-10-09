@@ -46,30 +46,15 @@ def validate_start(start_url: str):
 
 
 def build_url(spec: dict[str, str]) -> str:
-    return BASE + "/catalogsearch/result/index?" + urlencode({
-        "q": spec["query"],
-        "product_list_order": spec["field"],
-        "product_list_dir": spec["direction"],
-    })
+    params = {"q": spec["query"], "product_list_order": spec["field"]}
+    # The observed Magento price-sort default is descending. Omitting
+    # product_list_dir preserves the canonical URL and sort-desc UI state.
+    if not (spec["field"] == "price" and spec["direction"] == "desc"):
+        params["product_list_dir"] = spec["direction"]
+    return BASE + "/catalogsearch/result/index?" + urlencode(params)
 
 
 async def navigate(page, spec: dict[str, str]) -> dict:
-    # Navigate through the observed default price-sort results before applying
-    # an explicit descending direction. This preserves the user-requested
-    # final sort while recording the natural search-result navigation.
-    initial_sort_url = None
-    if spec["field"] == "price" and spec["direction"] == "desc":
-        initial_sort_url = BASE + "/catalogsearch/result/index?" + urlencode({
-            "q": spec["query"],
-            "product_list_order": spec["field"],
-        })
-        initial_reply = await page.goto(
-            initial_sort_url, wait_until="networkidle", timeout=120000
-        )
-        if initial_reply is None or initial_reply.status != 200:
-            raise RuntimeError(
-                f"initial sorted catalog search HTTP {getattr(initial_reply, 'status', None)}"
-            )
     target = build_url(spec)
     reply = await page.goto(target, wait_until="networkidle", timeout=120000)
     if reply is None or reply.status != 200:
@@ -78,17 +63,24 @@ async def navigate(page, spec: dict[str, str]) -> dict:
     expected = {
         "q": [spec["query"]],
         "product_list_order": [spec["field"]],
-        "product_list_dir": [spec["direction"]],
     }
+    if spec["field"] == "price" and spec["direction"] == "desc":
+        # The live document, not the URL alone, proves descending order.
+        direction = page.locator('a.sorter-action.sort-desc[data-role="direction-switcher"]')
+        if await direction.count() == 0:
+            raise RuntimeError("Magento did not establish descending price order")
+    else:
+        expected["product_list_dir"] = [spec["direction"]]
     if any(observed.get(key) != value for key, value in expected.items()):
         raise RuntimeError("sorted search URL did not preserve instruction-derived query and order")
+    if any(key not in expected for key in observed):
+        raise RuntimeError("sorted search URL unexpectedly changed the query")
     return {
         "capability": "catalog_search_sorted",
         "requested_query": spec["query"],
         "sort_field": spec["field"],
         "sort_direction": spec["direction"],
         "requested_url": target,
-        "initial_sort_url": initial_sort_url,
         "observed_url": page.url,
         "observed_title": await page.title(),
     }

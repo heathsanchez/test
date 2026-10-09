@@ -53,36 +53,41 @@ class MagentoSearchSortContract(unittest.TestCase):
             self.assertNotIn(forbidden, source)
 
 class MagentoSortNavigation(unittest.IsolatedAsyncioTestCase):
-    async def test_descending_price_preserves_canonical_search_and_final_direction(self):
+    async def test_descending_price_default_is_verified_by_actual_ui(self):
         from webarena_shopping_sort_blind import navigate
-        class Response:
+        class Reply:
             status=200
+        class Marker:
+            async def count(self):return 1
         class FakePage:
-            def __init__(self):
-                self.calls=[]
-                self.url=""
+            def __init__(self):self.url='';self.visits=[]
             async def goto(self,url,**kwargs):
-                self.calls.append(url)
-                self.url=url
-                return Response()
-            async def title(self):
-                return "Search results"
+                self.url=url;self.visits.append(url);return Reply()
+            async def title(self):return 'Search results'
+            def locator(self,selector):
+                self.seen_selector=selector
+                return Marker()
         page=FakePage()
-        evidence=await navigate(page, {
-            "query":"mouth night guard","field":"price","direction":"desc"
-        })
-        self.assertEqual(len(page.calls),2)
-        first=parse_qs(urlparse(page.calls[0]).query)
-        last=parse_qs(urlparse(page.calls[1]).query)
-        self.assertEqual(first,{
-            "q":["mouth night guard"],"product_list_order":["price"]
-        })
-        self.assertEqual(last,{
-            "q":["mouth night guard"],"product_list_order":["price"],
-            "product_list_dir":["desc"]
-        })
-        self.assertEqual(evidence["observed_url"],page.calls[-1])
-        self.assertEqual(evidence["initial_sort_url"],page.calls[0])
+        result=await navigate(page, {'query':'mouth night guard','field':'price','direction':'desc'})
+        self.assertEqual(len(page.visits),1,
+                         'last-navigation-only evaluation requires canonical final URL')
+        self.assertEqual(parse_qs(urlparse(page.visits[0]).query),
+                         {'q':['mouth night guard'],'product_list_order':['price']})
+        self.assertIn('sort-desc',page.seen_selector)
+        self.assertEqual(result['observed_url'],page.visits[0])
+
+    async def test_missing_descending_ui_state_fails_closed(self):
+        from webarena_shopping_sort_blind import navigate
+        class Reply:status=200
+        class Marker:
+            async def count(self):return 0
+        class FakePage:
+            url=''
+            async def goto(self,url,**kwargs):self.url=url;return Reply()
+            async def title(self):return 'Search results'
+            def locator(self,selector):return Marker()
+        with self.assertRaises(RuntimeError):
+            await navigate(FakePage(),{'query':'mouth night guard','field':'price','direction':'desc'})
 
     async def test_read_only_navigation_uses_compiled_search_url(self):
         from webarena_shopping_sort_blind import navigate
