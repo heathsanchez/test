@@ -1208,6 +1208,75 @@ fn compare_values(
                         }
                     }
                 }
+                // Source-authorized recursor congruence beneath a certified
+                // projection. When two stuck receivers expose the SAME
+                // independently registered Nat.rec with identical universes
+                // and full arity, prove every actual motive/minor/major
+                // argument convertible in the current lexical context.
+                //
+                // Neither receiver is assumed to reduce to a constructor:
+                // this is congruence of two stuck terms followed by
+                // congruence of the SAME projection field.
+                if depth == context.len() && (5..=8).contains(&depth)
+                    && current_budget >= 64
+                    && left_spine.len() == right_spine.len()
+                    && let (Some(nat), Some(spec)) =
+                        (checker.nat_primitives(), checker.projection_spec(*left_type))
+                    && *left_index < spec.field_types.len()
+                    && let (Some(Value::Neutral(left_rec)), Some(Value::Neutral(right_rec))) = (
+                        checker.machine()
+                            .expose(left_structure.clone(), Transparency::Full, current_budget.min(256))
+                            .proven_value().cloned(),
+                        checker.machine()
+                            .expose(right_structure.clone(), Transparency::Full, current_budget.min(256))
+                            .proven_value().cloned(),
+                    )
+                    && matches!(
+                        (&left_rec.head, &right_rec.head),
+                        (
+                            NeutralHead::Const { name: a, levels: al },
+                            NeutralHead::Const { name: b, levels: bl }
+                        ) if *a == nat.recursor && *b == nat.recursor && al == bl
+                    )
+                    && left_rec.spine.len() == 4
+                    && right_rec.spine.len() == 4
+                {
+                    let probe_budget = (current_budget / 2).min(128);
+                    let checked_rec_args = left_rec.spine.iter().zip(&right_rec.spine).all(
+                        |(lhs, rhs)| convert_with_policy_in_context(
+                            checker,
+                            &TypeValue::Term(lhs.clone()),
+                            &TypeValue::Term(rhs.clone()),
+                            probe_budget,
+                            DeltaPolicy::PreferredOnly,
+                            depth,
+                            context,
+                        ).is_proven()
+                    );
+                    if checked_rec_args {
+                        let checked_pending = left_spine.iter().zip(right_spine).all(
+                            |(lhs, rhs)| convert_with_policy_in_context(
+                                checker,
+                                &TypeValue::Term(lhs.clone()),
+                                &TypeValue::Term(rhs.clone()),
+                                probe_budget,
+                                DeltaPolicy::PreferredOnly,
+                                depth,
+                                context,
+                            ).is_proven()
+                        );
+                        if checked_pending {
+                            #[cfg(feature = "diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_MULPOS_REC_CONGRUENCE").is_some() {
+                                eprintln!(
+                                    "NUCLEUS_MULPOS_REC_CONGRUENCE:proved:depth={depth}:index={left_index}:recursor={:?}:args=4:pending={}",
+                                    nat.recursor,left_spine.len()
+                                );
+                            }
+                            return Judgment::proven((), "certified-recursion-projection-congruence");
+                        }
+                    }
+                }
                 let probe = (current_budget / 2).min(128);
                 if probe >= 8
                     && left_spine.len() == right_spine.len()
