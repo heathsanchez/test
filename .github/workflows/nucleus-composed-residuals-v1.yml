@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      SOURCE_COMMIT: da8ca7d22816de1270452b7301f3e94df90e9e2d
-      SOURCE_SUBTREE: 472b55815657ae940bf1ad868c9834855cebf607
+      SOURCE_COMMIT: 46d1b597496f4d3ce141c893e94b4b0996a7be38
+      SOURCE_SUBTREE: ed73e23b929da6f3614832947a4a0e1914cb5708
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +66,7 @@ jobs:
                  "downstream":[x for x in lines if "NUCLEUS_DOWNSTREAM:" in x][-2:],
                  "application":[x[:900] for x in lines if "NUCLEUS_APPLICATION_FUNCTION_TYPE:" in x][:2],
                  "typed":[x[:1900] for x in lines if "NUCLEUS_TYPED_PROJECTION_CHECK:" in x][:4],
+                 "whnf":[x[:1200] for x in lines if "NUCLEUS_INFERRED_WHNF:" in x][:3],
                  "split":[x[:1900] for x in lines if "NUCLEUS_TYPED_PROJECTION_SPLIT:" in x][:4]}
             rows.append(row)
             assert run.returncode in (0,1,2),row
