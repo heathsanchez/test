@@ -187,10 +187,8 @@ theorem positive_period_one_odd_visit_is_terminal
   rcases hs12 with h0 | h1
   · left
     rw [hn2, h0]
-    decide
   · right
     rw [hn2, h1]
-    decide
 
 /-- A genuine nonterminal positive shortcut period has at least
     TWO actual odd visits, regardless of how large its period is. -/
