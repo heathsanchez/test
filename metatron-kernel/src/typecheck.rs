@@ -149,6 +149,211 @@ impl<'a> TypeChecker<'a> {
         )
     }
 
+    /// Independently reconstruct the type of a two-argument relation in its
+    /// captured lexical environment. A raw Pi telescope/codomain alone is
+    /// NOT a proposition certificate: both arguments must be checked.
+    ///
+    /// This deliberately does not trust equivalence of expression IDs or
+    /// equality of evaluation frames. Every bvar follows its actual closure
+    /// binding, and every application checks its argument against the
+    /// instantiated dependent domain. Unsupported cases stay UNKNOWN.
+    pub(crate) fn certify_applied_proposition_in_context(
+        &self,
+        expression: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> Judgment<()> {
+        let mut remaining = budget.min(2048);
+        let exposed = self.machine().expose(
+            expression.clone(), Transparency::Reducible, remaining.min(1024),
+        );
+        let is_relation = matches!(
+            exposed.proven_value(),
+            Some(Value::Neutral(Neutral {
+                head: NeutralHead::Const { .. },
+                spine,
+            })) if spine.len() == 2
+        );
+        if !is_relation {
+            return Judgment::unknown("typed-telescope-not-two-argument-relation");
+        }
+        let Some(inferred) =
+            self.infer_exact_closure_in_context(expression, context, &mut remaining, 0)
+        else {
+            return Judgment::unknown("typed-telescope-argument-obligation");
+        };
+        match self.sort_level(
+            Judgment::proven(inferred, "typed-telescope-argument-checks"),
+            remaining,
+        ) {
+            Judgment::Proven { value: LevelTerm::Zero, .. } => {
+                Judgment::proven((), "checked-dependent-relation-proposition")
+            }
+            Judgment::Proven { .. } => {
+                Judgment::unknown("typed-telescope-codomain-not-certified-Prop")
+            }
+            Judgment::Refuted { .. } | Judgment::Unknown { .. } => {
+                Judgment::unknown("typed-telescope-codomain-obligation")
+            }
+        }
+    }
+
+    /// A deliberately partial *typing derivation* for evaluated closures.
+    /// In contrast to inferring just the normalized neutral head, this
+    /// reconstructs the original expression's typing through its capture
+    /// environment. In particular, beta reduction of an ill-typed App
+    /// cannot serve as a substitute for checking the argument.
+    fn infer_exact_closure_in_context(
+        &self,
+        term: &Closure,
+        context: &[TypeValue],
+        remaining: &mut usize,
+        depth: usize,
+    ) -> Option<TypeValue> {
+        if depth >= 48 || !take_step(remaining) {
+            return None;
+        }
+        match self.expressions.get(term.expr)? {
+            Expr::BVar(index) => match term.env.lookup(*index)? {
+                EnvBinding::Free(free) => {
+                    context.get(usize::try_from(free.0).ok()?).cloned()
+                }
+                EnvBinding::Neutral(Neutral {
+                    head: NeutralHead::Free(free),
+                    spine,
+                }) if spine.is_empty() => {
+                    context.get(usize::try_from(free.0).ok()?).cloned()
+                }
+                EnvBinding::Closure(value) => {
+                    self.infer_exact_closure_in_context(
+                        &value, context, remaining, depth + 1,
+                    )
+                }
+                EnvBinding::Neutral(_) => None,
+            },
+            Expr::Sort(level) => Some(TypeValue::Sort(succ(
+                instantiate_level(self.levels, *level, &term.levels, *remaining).ok()?,
+            ))),
+            Expr::Const { name, levels } => {
+                let declaration = self.environment.get(*name)?;
+                if declaration.level_params.len() != levels.len() {
+                    return None;
+                }
+                let mut substitution = Vec::with_capacity(levels.len());
+                for (param, level) in declaration.level_params.iter().zip(levels) {
+                    let value = instantiate_level(
+                        self.levels, *level, &term.levels, *remaining,
+                    ).ok()?;
+                    substitution.push((*param, value));
+                }
+                Some(TypeValue::Term(Closure::with_levels(
+                    declaration.ty, EnvFrame::empty(),
+                    LevelSubstitution::new(substitution),
+                )))
+            }
+            Expr::App { fun, arg } => {
+                let function = term.sibling(*fun, term.env.clone());
+                let argument = term.sibling(*arg, term.env.clone());
+                let function_ty = self.infer_exact_closure_in_context(
+                    &function, context, remaining, depth + 1,
+                )?;
+                let (domain, body) = self.pi_view(
+                    Judgment::proven(function_ty, "exact-captured-function-type"),
+                    (*remaining).min(512),
+                )?;
+                let argument_ty = self.infer_exact_closure_in_context(
+                    &argument, context, remaining, depth + 1,
+                )?;
+                let domain_check = crate::convert::convert_with_policy_in_context(
+                    self, &argument_ty, &domain, (*remaining).min(512),
+                    crate::convert::DeltaPolicy::PreferredOnly,
+                    context.len(), context,
+                );
+                if !domain_check.is_proven() || !take_step(remaining) {
+                    return None;
+                }
+                match body {
+                    PiBody::Fixed(binder, inferred_body) => {
+                        self.instantiate_fixed_pi_body(
+                            &inferred_body, binder, &argument, remaining,
+                        )
+                    }
+                    PiBody::Closure(body) => Some(TypeValue::Term(
+                        Closure::with_levels(
+                            body.expr, body.env.extend(argument), body.levels,
+                        ),
+                    )),
+                }
+            }
+            Expr::NatLit(_) => self.infer_in(
+                term.expr, context, &term.env, remaining,
+                &mut HashMap::new(),
+            ).proven_value().cloned(),
+            Expr::Let { ty, value, body } => {
+                let declared = term.sibling(*ty, term.env.clone());
+                let declared_sort = self.infer_exact_closure_in_context(
+                    &declared, context, remaining, depth + 1,
+                )?;
+                if !self.sort_level(
+                    Judgment::proven(declared_sort, "captured-let-annotation"),
+                    (*remaining).min(512),
+                ).is_proven() {
+                    return None;
+                }
+                let value = term.sibling(*value, term.env.clone());
+                let value_ty = self.infer_exact_closure_in_context(
+                    &value, context, remaining, depth + 1,
+                )?;
+                if !crate::convert::convert_with_policy_in_context(
+                    self, &value_ty, &TypeValue::Term(declared),
+                    (*remaining).min(512),
+                    crate::convert::DeltaPolicy::PreferredOnly,
+                    context.len(), context,
+                ).is_proven() {
+                    return None;
+                }
+                let body = term.sibling(*body, term.env.extend(value));
+                self.infer_exact_closure_in_context(
+                    &body, context, remaining, depth + 1,
+                )
+            }
+            Expr::Pi { domain, body } | Expr::Lam { domain, body } => {
+                let is_pi = matches!(
+                    self.expressions.get(term.expr), Some(Expr::Pi { .. })
+                );
+                let domain = term.sibling(*domain, term.env.clone());
+                let domain_ty = self.infer_exact_closure_in_context(
+                    &domain, context, remaining, depth + 1,
+                )?;
+                let domain_sort = self.sort_level(
+                    Judgment::proven(domain_ty, "captured-binder-domain"),
+                    (*remaining).min(512),
+                ).proven_value()?.clone();
+                let binder = FreeId(u64::try_from(context.len()).ok()?);
+                let mut extended = context.to_vec();
+                extended.push(TypeValue::Term(domain.clone()));
+                let body = term.sibling(*body, term.env.extend_free(binder));
+                let body_ty = self.infer_exact_closure_in_context(
+                    &body, &extended, remaining, depth + 1,
+                )?;
+                if is_pi {
+                    let body_sort = self.sort_level(
+                        Judgment::proven(body_ty, "captured-pi-body"),
+                        (*remaining).min(512),
+                    ).proven_value()?.clone();
+                    Some(TypeValue::Sort(imax(domain_sort, body_sort)))
+                } else {
+                    Some(TypeValue::Pi {
+                        domain: Box::new(TypeValue::Term(domain)),
+                        body: Box::new(body_ty),
+                        binder,
+                    })
+                }
+            }
+            Expr::Proj { .. } | Expr::StrLit(_) => None,
+        }
+    }
+
     /// Diagnostic only: instantiate a declaration's dependent Pi telescope
     /// with the actual application closures, never authorizing acceptance.
     #[cfg(feature = "diagnostics")]
