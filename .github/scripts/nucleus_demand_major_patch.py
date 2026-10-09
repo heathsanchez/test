@@ -110,7 +110,7 @@ method='''    /// Normalize the dependency chain needed for a certified iota ste
                             return Judgment::unknown("demand-numeral-predecessor");
                         };
                         let Some(id) = self.expressions.iter_raw().find_map(|(id,e)| {
-                            matches!(e, Expr::NatLit(n) if *n == pred).then_some(id)
+                            matches!(e, Expr::NatLit(n) if *n == pred).then_some(ExprId(id))
                         }) else {
                             return Judgment::unknown("demand-missing-predecessor-expression");
                         };
