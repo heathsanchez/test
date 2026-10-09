@@ -1,0 +1,25 @@
+name: Nucleus pinned Nat.sub successor definitional witness
+on:
+  push:
+    branches: [nucleus-sub-succ-defeq-v1]
+    paths:
+      - "metatron-kernel/evidence/nat_sub_successor_rfl.lean"
+      - ".github/workflows/nucleus-sub-succ-defeq-v1.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lean-defeq:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean 4.34.1
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh             | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          "$HOME/.elan/bin/lean" --version
+      - name: Kernel check Nat.sub successor and false-index separator
+        run: |
+          set -euo pipefail
+          "$HOME/.elan/bin/lean" metatron-kernel/evidence/nat_sub_successor_rfl.lean
