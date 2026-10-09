@@ -120,6 +120,7 @@ theorem positive_source_real_three_way_frontier_v104
       obtain ⟨j, hb, hdiv⟩ := hfresh B
       refine ⟨j, hb, ?_⟩
       rw [htrace j]
+      rw [← episode_stream_matches_actual_shortcut a j]
       exact hdiv
 
 /-- The source-product unresolved ZeroTailLive state inherits the three-way
