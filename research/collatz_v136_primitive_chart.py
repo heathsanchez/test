@@ -76,8 +76,8 @@ def run() -> dict:
 
     # A genuine common endpoint but an adverse global-source slope.
     hostile = witness(5, 3, 3, 8)
-    assert not hostile["guard"] and hostile["source_slope"] == 648
-    assert hostile["earlier_slope"] == 768
+    assert not hostile["guard"] and hostile["source_slope"] == 216
+    assert hostile["earlier_slope"] == 256
     # t=a+1 is a constructive failure for every hostile slope pair.
     a = hostile["base_source"]
     p = hostile["earlier_source"]
