@@ -1,0 +1,73 @@
+name: Collatz V112 alternative reverse source-merger audit
+on:
+  push:
+    branches: [collatz-v111-alternative-reverse-v112]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded-executable:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact all-offset CRT witness compiler and verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v112_alternative_reclosure > evidence/v112-exact-witnesses.json
+          python3 - <<'PY'
+          import json,hashlib
+          path='evidence/v112-exact-witnesses.json'
+          r=json.load(open(path))
+          assert r['status']=='BOUNDED_EXECUTABLE_EXACT'
+          assert r['source_modulus']==8957952
+          assert r['previously_unresolved_crt']==169056
+          assert r['newly_merged_crt']==1701
+          assert r['still_unresolved_crt']==167355
+          assert r['total_covered_crt']==8790597
+          assert r['reverse_word_counts']=={
+            'EEOEOOOOOO':432,'EEOOEOOOOO':432,'EEOOOEOOOO':837}
+          assert len(r['records'])==1701
+          assert len({v['dyadic_residue'] for v in r['records']})==144
+          assert r['qed'] is False and r['global_collatz']=='UNKNOWN'
+          print('BOUNDED_EXACT_1701_ALTERNATIVE_REVERSE_MERGERS')
+          print('SHA256',hashlib.sha256(open(path,'rb').read()).hexdigest())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v112-bounded-exact-reverse-witnesses
+          path: evidence/
+          if-no-files-found: error
+  formal-generic-and-example:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check CRT-scaled prefix and reverse merger theorems
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CylinderCoalescence.olean formal/Collatz/CylinderCoalescence.lean | tee evidence/v108-lean.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ReverseAffineMerger.olean formal/Collatz/ReverseAffineMerger.lean | tee evidence/v109-lean.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/Q7SourceMerger.olean formal/Collatz/Q7SourceMerger.lean | tee evidence/v110-lean.log
+          lake env lean -DautoImplicit=false formal/Collatz/ScaledReverseMerger.lean | tee evidence/v112-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v108-lean.log evidence/v109-lean.log evidence/v110-lean.log evidence/v112-lean.log
+          grep -q 'parity_scaled_prefix_shift' evidence/v112-lean.log
+          grep -q 'scaled_reverse_lower_merge' evidence/v112-lean.log
+          grep -q 'v112_example_all_offsets' evidence/v112-lean.log
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v112-lean-generic-example-evidence
+          path: evidence/
+          if-no-files-found: error
