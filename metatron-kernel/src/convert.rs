@@ -194,6 +194,24 @@ fn convert_in_context_with_congruence(
             }
         }
 
+        // A kernel-rfl consequence for checked Nat.pred/Nat.sub:
+        // sub a (succ b) is definitionally pred (sub a b).
+        // Only enqueue equivalence of the two original operands after
+        // independently exposing their checked application/instance spines.
+        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && let Some(obligations) = checked_nat_sub_succ_obligations(
+                checker, left_term, right_term, remaining,
+            )
+        {
+            if std::env::var_os("NUCLEUS_TRACE_NAT_SUB_SUCC_DEFEQ").is_some() {
+                eprintln!("NUCLEUS_NAT_SUB_SUCC_DEFEQ:matching-checked-symbolic-computation");
+            }
+            work.extend(obligations.into_iter().map(|(a, b)| (
+                TypeValue::Term(a), TypeValue::Term(b), depth, local_context.clone(),
+            )));
+            continue;
+        }
+
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
             && checker.proof_terms_same_proposition(left_term, right_term, context, remaining)
         {
@@ -1356,6 +1374,122 @@ fn compare_values(
         break;
     }
     Judgment::proven((), "rigid-value-comparison")
+}
+
+// Stop unfolding as soon as a registered native head is found. The
+// intervening beta/zeta/delta/projection steps are all licensed by checked
+// declarations, not by source spelling. This is intentionally bounded and
+// never returns an equality judgment by itself.
+fn checked_native_spine(
+    checker: &TypeChecker<'_>,
+    source: &Closure,
+    stop_head: crate::id::NameId,
+    wanted_arity: usize,
+    budget: usize,
+) -> Option<Vec<Closure>> {
+    let mut current = source.clone();
+    let mut pending: Vec<Closure> = Vec::new();
+    for _ in 0..budget.min(128) {
+        match checker.expression(current.expr)? {
+            Expr::App { fun, arg } => {
+                if pending.len() >= 16 { return None; }
+                pending.push(current.sibling(*arg, current.env.clone()));
+                current = current.sibling(*fun, current.env.clone());
+            }
+            Expr::BVar(index) => {
+                let EnvBinding::Closure(bound) = current.env.lookup(*index)? else {
+                    return None;
+                };
+                current = bound;
+            }
+            Expr::Let { value, body, .. } => {
+                let term = current.sibling(*value, current.env.clone());
+                current = current.sibling(*body, current.env.extend(term));
+            }
+            Expr::Lam { body, .. } => {
+                let arg = pending.pop()?;
+                current = current.sibling(*body, current.env.extend(arg));
+            }
+            Expr::Const { name, levels } if *name == stop_head => {
+                if levels.is_empty() && pending.len() == wanted_arity {
+                    pending.reverse();
+                    return Some(pending);
+                }
+                return None;
+            }
+            Expr::Const { name, levels } => {
+                current = checker.checked_definition_closure(
+                    *name, levels, &current, budget.saturating_div(2),
+                )?;
+            }
+            Expr::Proj { type_name, index, structure } => {
+                let index = usize::try_from(*index).ok()?;
+                let target = current.sibling(*structure, current.env.clone());
+                current = checker.machine().projection_field_for_conversion(
+                    target, *type_name, index, budget.saturating_div(2),
+                ).proven_value()?.clone();
+            }
+            _ => return None,
+        }
+    }
+    None
+}
+
+// Fast syntactic gate: almost all conversion pairs must never pay for
+// definition normalization. A local binder may point to the exact pred term.
+fn has_local_pred_head(
+    checker: &TypeChecker<'_>, closure: &Closure, pred: crate::id::NameId,
+) -> bool {
+    let Some(mut current) = resolve_local_closure(checker, closure) else {
+        return false;
+    };
+    for _ in 0..12 {
+        match checker.expression(current.expr) {
+            Some(Expr::App { fun, .. }) => {
+                current = current.sibling(*fun, current.env.clone());
+                let Some(resolved) = resolve_local_closure(checker, &current) else {
+                    return false;
+                };
+                current = resolved;
+            }
+            Some(Expr::Const { name, levels }) =>
+                return *name == pred && levels.is_empty(),
+            _ => return false,
+        }
+    }
+    false
+}
+
+// The 4.34.1 kernel checks this equation by rfl (separate immutable
+// witness). The source and destination are not merged by expression ID:
+// each corresponding Nat operand remains an independent conversion goal.
+fn checked_nat_sub_succ_obligations(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    budget: usize,
+) -> Option<[(Closure, Closure); 2]> {
+    let nat = checker.nat_primitives()?;
+    let sub = nat.sub?;
+    let pred = nat.pred?;
+    if budget < 128 {
+        return None;
+    }
+    let (pred_side, sub_side) = if has_local_pred_head(checker, left, pred) {
+        (left, right)
+    } else if has_local_pred_head(checker, right, pred) {
+        (right, left)
+    } else {
+        return None;
+    };
+    let pred_args = checked_native_spine(checker, pred_side, pred, 1, 96)?;
+    let inner_sub = checked_native_spine(checker, &pred_args[0], sub, 2, 96)?;
+    let outer_sub = checked_native_spine(checker, sub_side, sub, 2, 96)?;
+    let succ_args = checked_native_spine(checker, &outer_sub[1], nat.succ, 1, 40)?;
+    Some([
+        (inner_sub[0].clone(), outer_sub[0].clone()),
+        (inner_sub[1].clone(), succ_args[0].clone()),
+    ])
 }
 
 fn same_closure_spine_congruence(
