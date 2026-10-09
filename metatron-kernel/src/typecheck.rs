@@ -461,7 +461,8 @@ impl<'a> TypeChecker<'a> {
             current = match value {
                 Some(Value::Neutral(Neutral {
                     head: NeutralHead::Const { name: inner, .. }, spine,
-                })) if *inner == *name && !spine.is_empty() => spine.last().cloned(),
+                })) if self.environment.recursor_reduction(*inner).is_some()
+                        && !spine.is_empty() => spine.last().cloned(),
                 _ => None,
             };
             if current.as_ref() == Some(&closure) {
