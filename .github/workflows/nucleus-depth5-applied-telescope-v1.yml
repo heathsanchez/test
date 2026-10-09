@@ -216,12 +216,14 @@ jobs:
                    'neutral':[v for v in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in v][-8:],
                    'typed_gaps':[v for v in lines if 'NUCLEUS_DEPENDENCY_GAP:' in v][-5:],
                    'local_proofs':[v for v in lines if 'NUCLEUS_LOCAL_PROOF_IRREL:' in v][-5:],
-                   'chain6_pi':[v for v in lines if 'NUCLEUS_CHAIN6_PI_DOMAIN:' in v][-8:]}
+                   'chain6_pi':[v for v in lines if 'NUCLEUS_CHAIN6_PI_DOMAIN:' in v][-8:],
+                   'chain6_args':[v for v in lines if 'NUCLEUS_CHAIN6_SPINE_ARG:' in v][-6:]}
               print('NUCLEUS_THREE_RESIDUALS='+json.dumps(row),flush=True)
               rows.append(row)
               assert trial.returncode==2 and row['downstream'],row
               if case=='perf/fueled-chain':
                   assert row['chain6_pi'], ('missing 11-binder domain witness',case)
+                  assert len(row['chain6_args'])>=3, ('missing three body-argument judgments',case)
           path=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/three-residuals.json')
           path.parent.mkdir(parents=True,exist_ok=True)
           path.write_text(json.dumps(rows,indent=2))
