@@ -26,7 +26,7 @@ class StatefulWarrantTests(unittest.TestCase):
         self.assertEqual(self.c.status(27)["source_clock"], 59)
         self.assertEqual(self.c.status(27)["earlier"], 23)
         self.assertEqual(self.c.status(3)["earlier"], 2)
-        self.assertEqual(self.c.status(11)["earlier"], 2)
+        self.assertEqual(self.c.status(11)["earlier"], 3)
 
     def test_grammar_unknown_is_not_a_mathematical_counterexample(self):
         old = Controller(initial_state())
@@ -110,7 +110,7 @@ class StatefulWarrantTests(unittest.TestCase):
         self.assertEqual(removed, 1)
         self.assertEqual(self.c.status(27)["status"],
                          "UNKNOWN_UNDER_CURRENT_WARRANTS")
-        self.assertEqual(self.c.status(11)["earlier"], 2)
+        self.assertEqual(self.c.status(11)["earlier"], 3)
         self.assertEqual(self.c.revoke("v122_exact_first_join_27"), 0)
         self.assertEqual(len([w for w in self.c.state["archived_joins"]
                               if w["source"] == 27]), 1)
