@@ -1198,7 +1198,12 @@ impl<'a> TypeChecker<'a> {
             current = match body {
                 PiBody::Fixed(binder, body) => {
                     let mut fuel = budget;
-                    self.instantiate_fixed_pi_body(&body, binder, argument, &mut fuel)?
+                    let Some(instantiated) = self.instantiate_fixed_pi_body(
+                        &body, binder, argument, &mut fuel,
+                    ) else {
+                        return RuleKAttempt::NotApplicable;
+                    };
+                    instantiated
                 },
                 PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
                     body.expr,
