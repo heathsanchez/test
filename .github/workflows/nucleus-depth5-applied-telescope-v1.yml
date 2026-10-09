@@ -127,6 +127,7 @@ jobs:
               if 'magma-list-pair' in name:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
                   extra['NUCLEUS_TRACE_RECURSOR_MAJOR']='1'
+                  extra['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE']='1'
                   extra['NUCLEUS_TRACE_NESTED_REC_RHS']='1'
                   extra['NUCLEUS_TRACE_CAPTURED_REC_CHAIN']='1'
                   extra['NUCLEUS_TRACE_CAPTURED_BOOL_REC']='1'
@@ -214,7 +215,7 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_FROZEN196_ACCEPT__CANDIDATE_REJECTED'
+          assert accepted==118 and unknown==7, 'DIAGNOSTIC_CHANGED_FROZEN196'
           print('BOOL_REC_GENUINE_196_GAIN',flush=True)
           PY
 
