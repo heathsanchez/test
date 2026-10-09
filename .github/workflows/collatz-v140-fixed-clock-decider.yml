@@ -25,18 +25,21 @@ jobs:
           fi
           python3 - <<'PY'
           import json,hashlib,pathlib,subprocess
+          from research.collatz_ros_fixed_clock_v140 import digest,PARENT_GIT_BLOB_SHA
           p=pathlib.Path('research/collatz_ros_state_v134.json')
           raw=p.read_bytes()
           expected='586c5a0bd52757b29abffdc5785c752fbf8faaf4962229a5cea065de3d95d3b0'
-          assert hashlib.sha256(raw).hexdigest()==expected
           assert b'1208925819614629174706175' in raw
           state=json.loads(raw)
+          assert digest(state)==expected
+          assert subprocess.check_output(['git','hash-object',str(p)],text=True).strip()==PARENT_GIT_BLOB_SHA
           assert len(state['joins'])==17 and state['global_collatz']=='UNKNOWN'
           fp=pathlib.Path('evidence/v140-decisions.json')
           d=json.loads(fp.read_text())
           assert d['schema']=='COLLATZ_ROS_V140_FIXED_CLOCK_DECISION'
           assert len(d['tracked_cases'])==11
-          assert d['parent']['file_sha256']==expected and d['parent']['mutated'] is False
+          assert d['parent']['canonical_state_sha256']==expected and d['parent']['git_blob_sha1']==PARENT_GIT_BLOB_SHA and d['parent']['mutated'] is False
+          assert d['parent']['raw_file_sha256']==hashlib.sha256(raw).hexdigest()
           assert d['proof_authorities']['V137_MULTIPLIER_IFF']['run']==37995061222
           assert d['proof_authorities']['V139_SUFFIX_INVARIANCE']['run']==37995933736
           assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
@@ -51,7 +54,9 @@ jobs:
           q={'schema':'COLLATZ_V140_STATEFUL_FIXED_CLOCK_CLASSIFICATION',
              'status':'WARRANTED_BOUNDED_EXACT_DECISION_REPLAY',
              'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
-             'parent_file_sha256':expected,
+             'parent_file_sha256':hashlib.sha256(raw).hexdigest(),
+             'parent_canonical_sha256':expected,
+             'parent_git_blob_sha1':PARENT_GIT_BLOB_SHA,
              'decision_snapshot_sha256':hashlib.sha256(fp.read_bytes()).hexdigest(),
              'parent_original_source_joins_unchanged':17,
              'proof_scope_checked':True,
@@ -158,6 +163,8 @@ jobs:
             assert pathlib.Path('research/collatz_ros_clock_decisions_v140.json').read_bytes()==(a/'v140-decisions.json').read_bytes()
           assert f['status']=='WARRANTED_FORMAL_FIXED_CLOCK_IFF_AND_SUFFIX_INVARIANCE'
           assert e['parent_original_source_joins_unchanged']==17
+          assert e['parent_canonical_sha256']=='586c5a0bd52757b29abffdc5785c752fbf8faaf4962229a5cea065de3d95d3b0'
+          assert e['parent_git_blob_sha1']=='d035f4a639b3e026681d432b3e3ceebe173c9c09'
           assert f['raw_generic_chart_premises_not_individually_Lean_reified']
           assert state['global_collatz']==e['global_collatz']==f['global_collatz']=='UNKNOWN'
           assert state['qed'] is e['qed'] is f['qed'] is False
