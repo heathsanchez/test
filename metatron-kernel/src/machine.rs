@@ -1512,7 +1512,18 @@ impl<'a> Machine<'a> {
                 matches!(target.env.lookup(*index), Some(EnvBinding::Closure(_))),
             _ => false,
         };
+        // A second certified two-case, unary-field recursor can be
+        // nested outside the Bool.rec. Evaluate the *actual* captured
+        // major until it exposes a registered constructor; no outcome
+        // is guessed from a result-type shape or desired Bool value.
+        let qualified_two_case_major = captured_bool_major
+            && reduction.rules.len() == 2
+            && reduction.rules.iter().all(|r| {
+                r.num_params == 1 && r.num_fields == 1
+            });
         let major_cap = if bool_rules && nat_beq_major {
+            256
+        } else if qualified_two_case_major {
             256
         } else if bool_rules && captured_bool_major {
             128
@@ -1521,6 +1532,19 @@ impl<'a> Machine<'a> {
         } else {
             16
         };
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CAPTURED_REC_CHAIN").is_some()
+            && qualified_two_case_major
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static TRACES: AtomicUsize = AtomicUsize::new(0);
+            if TRACES.fetch_add(1, Ordering::Relaxed) < 32 {
+                eprintln!(
+                    "NUCLEUS_CAPTURED_REC_CHAIN:major={target:?}:cap={major_cap}:rules={}:budget={budget}",
+                    reduction.rules.len()
+                );
+            }
+        }
         #[cfg(feature = "diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_CAPTURED_BOOL_REC").is_some()
             && bool_rules && captured_bool_major
