@@ -1,4 +1,4 @@
-name: WebArena blind Shopping and Admin admission
+name: WebArena blind Shopping and Admin network navigation admission
 
 on:
   workflow_dispatch:
@@ -8,6 +8,8 @@ on:
       - ".github/workflows/webarena_blind_shopping_admin_admission.yml"
       - "scripts/webarena_unified_blind_four_site.py"
       - "tests/test_webarena_unified_blind_four_site.py"
+      - "scripts/webarena_shopping_admin_blind_report.py"
+      - "tests/test_webarena_shopping_admin_blind_report.py"
 
 jobs:
   qualify:
@@ -52,7 +54,8 @@ jobs:
       - name: Verify blind admission scope
         run: |
           python -m unittest discover -s tests -p 'test_webarena_unified_blind_four_site.py' -v
-      - name: Execute six opaque-site tasks
+          python -m unittest discover -s tests -p 'test_webarena_shopping_admin_blind_report.py' -v
+      - name: Execute eight opaque-site tasks
         run: |
           ROOT=artifacts/webarena_blind_shopping_admin
           cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
@@ -67,7 +70,7 @@ jobs:
           from pathlib import Path
           root=Path("artifacts/webarena_blind_shopping_admin")
           by_id={int(row["task_id"]):row for row in json.loads((root/"hard.json").read_text())}
-          chosen=(108,110,111,163,165,166)
+          chosen=(108,110,111,163,165,166,707,709)
           runs={}
           for ident in chosen:
               task=by_id[ident]
@@ -83,7 +86,7 @@ jobs:
               print("BLIND",ident,proc.returncode,flush=True)
           (root/"execution_manifest.json").write_text(json.dumps(runs,indent=2)+"\n")
           PY
-      - name: Score all six against pinned official evaluator
+      - name: Score all eight against pinned official evaluator
         run: |
           python - <<'PY'
           import json
@@ -102,7 +105,10 @@ jobs:
                   results[key]={"score":0.0,"status":"execution_failed","exit_code":record["exit_code"]}
                   failures.append(ident);continue
               try:
-                  result=wa.evaluate_task(task_id=ident,agent_response=out/"agent_response.json",network_trace=empty)
+                  task=wa.get_task(ident)
+                  protected=any(ev.evaluator=="NetworkEventEvaluator" for ev in task.eval)
+                  trace=NetworkTrace.from_har(out/"network.har") if protected else empty
+                  result=wa.evaluate_task(task_id=ident,agent_response=out/"agent_response.json",network_trace=trace)
                   row={"score":float(result.score),"status":result.status.value}
                   (out/"eval_result.json").write_text(json.dumps(result.model_dump(mode="json",exclude_none=True),indent=2)+"\n")
                   results[key]=row
@@ -113,7 +119,7 @@ jobs:
               print("OFFICIAL",ident,results[key],flush=True)
           seal={
               "epistemic_state":"WARRANTED_BOUNDED" if not failures else "CANDIDATE_WITH_RESIDUALS",
-              "boundary":"six official response-only Hard tasks via task-ID-blind four-site agent",
+              "boundary":"eight official Hard tasks, including two network-protected Admin reports, via task-ID-blind four-site agent",
               "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
               "attempted":len(runs),
               "successes":sum(x.get("score")==1.0 and x.get("status")=="success" for x in results.values()),
@@ -121,7 +127,7 @@ jobs:
           }
           (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
           print(json.dumps(seal,indent=2),flush=True)
-          if len(runs)!=6 or failures:
+          if len(runs)!=8 or failures:
               raise SystemExit(f"blind four-site admission residuals: {failures}")
           PY
       - uses: actions/upload-artifact@v4

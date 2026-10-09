@@ -48,6 +48,17 @@ class FourSiteBlindTests(unittest.TestCase):
         self.assertEqual(actual_start("__SHOPPING_ADMIN__"),
                          "http://localhost:7780/admin")
 
+    def test_admin_report_navigation_intents(self):
+        cases=(
+            "Show the sales order report for for last year (today is March 15, 2023).",
+            "Show the orders report from May 1, 2021 to March 31, 2022.",
+        )
+        for intent in cases:
+            self.assertEqual(
+                classify_readonly_intent("shopping_admin",intent),
+                "admin_orders_report_navigation",
+            )
+
     def test_unwarranted_scope_fails_closed(self):
         with self.assertRaises(ValueError):
             classify_readonly_intent("shopping","Submit a purchase")
