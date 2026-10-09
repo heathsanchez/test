@@ -2583,6 +2583,19 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         && constructor.num_params == 0
         && constructor.num_fields == 1;
 
+    // Nonrecursive closed dependent pairs: a data field followed by a
+    // field whose type mentions that data. This merely selects a candidate.
+    // Full constructor and recursor typing still go through the checked
+    // derivation below, including positivity and dependency obligations.
+    let closed_dependent_pair = inductive.num_params == 0
+        && constructor.num_params == 0
+        && constructor.num_fields == 2
+        && pi_spine(export, constructor.ty, 2).is_some_and(|(fields, _)| {
+            expression_contains_bvar(export, fields[1], 0)
+                && !expression_contains_constant(export, fields[0], inductive.name)
+                && !expression_contains_constant(export, fields[1], inductive.name)
+        });
+
     let relation_proof_structure = generic_relation_proof_record_candidate(export, block);
     let closed_pair_structure = closed_pair_record_candidate(export, block);
     let unary_type_constructor_operations =
@@ -2590,6 +2603,7 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
 
     if !dependent_pair
         && !scalar_structure
+        && !closed_dependent_pair
         && !relation_proof_structure
         && !closed_pair_structure
         && !unary_type_constructor_operations
