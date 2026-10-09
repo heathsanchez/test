@@ -4,7 +4,7 @@ namespace CollatzFinal
 namespace SourceProduct
 
 /-!
-V147 — EXACT MINIMUM WARRANTED RATIONAL SOURCE-CENTRE QUOTIENT.
+V147 — OBSERVATION-LAWFUL RATIONAL SOURCE-CENTRE QUOTIENT.
 
 V146 rejected collapsing arbitrary actual source centres to finitely
 many nonpositive INTEGERS, even under mod4=3 and three true steps of
@@ -52,7 +52,7 @@ theorem odd_factor_cancel_dyadic_divisibility
       obtain ⟨q, hq⟩ := hdiv
       have hevenProduct : (a * m) % 2 = 0 := by
         rw [hq, Nat.pow_succ]
-        simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+        simp [Nat.mul_mod, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
       have hevenM : m % 2 = 0 := by
         rw [Nat.mul_mod, ha] at hevenProduct
         omega
@@ -168,9 +168,9 @@ theorem v147_centre_equivalent_trans
 
 def v147RationalCentreSetoid : Setoid RationalSourceCentreV147 where
   r := v147CentreEquivalent
-  iseqv := ⟨v147_centre_equivalent_refl,
-    v147_centre_equivalent_symm,
-    v147_centre_equivalent_trans⟩
+  iseqv := ⟨(fun x => v147_centre_equivalent_refl x),
+    (fun x y h => v147_centre_equivalent_symm x y h),
+    (fun x y z hxy hyz => v147_centre_equivalent_trans x y z hxy hyz)⟩
 
 def V147RationalCentreClass : Type :=
   Quotient v147RationalCentreSetoid
