@@ -1,0 +1,63 @@
+name: Collatz V112 source-guarded CRT mixed reverse
+on:
+  push:
+    branches: [collatz-v111-crt-guarded-mixed-v112]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-crt-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reproduce every source-guarded V112 CRT witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v112_crt_guarded_mixed > evidence/v112-results.json
+          python3 - <<'PY'
+          import json
+          p = json.load(open("evidence/v112-results.json"))
+          assert p["schema"] == "COLLATZ_V112_CRT_GUARDED_MIXED_REVERSE"
+          assert p["status"] == "BOUNDED_EXACT_ONLY"
+          assert p["global_collatz"] == "UNKNOWN" and p["qed"] is False
+          assert p["individually_lean_reified"] is False
+          assert p["source_modulus"] == 8957952
+          assert p["examined_original_unknown"] == 169056
+          assert p["new_source_relative_mergers"] == 4617
+          assert p["covered_after_v112"] == 8793513
+          assert p["remaining_unknown"] == 164439
+          assert len(p["qualified_word_templates"]) == 14
+          assert len(p["new_witness_records"]) == 4617
+          row = next(w for w in p["new_witness_records"] if w["crt_source"] == 111)
+          assert row["predecessor_intercept"] == 103
+          assert row["predecessor_slope"] == 8388608
+          print("V112_BOUNDED_CRT_GUARDED_SOURCE_MERGERS_PASS_GLOBAL_UNKNOWN")
+          PY
+      - name: Seal bounded executable evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > evidence/commit.txt
+          python3 - <<'PY'
+          import hashlib, json
+          data = open("evidence/v112-results.json","rb").read()
+          seal = {
+            "schema":"COLLATZ_V112_EXECUTABLE_QUALIFICATION",
+            "status":"BOUNDED_EXACT_ONLY",
+            "result_sha256":hashlib.sha256(data).hexdigest(),
+            "individual_witnesses_lean_reified":False,
+            "global_collatz":"UNKNOWN",
+            "qed":False,
+          }
+          open("evidence/qualification.json","w").write(
+              json.dumps(seal,sort_keys=True,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v112-crt-guarded-mixed
+          path: evidence/
+          if-no-files-found: error
