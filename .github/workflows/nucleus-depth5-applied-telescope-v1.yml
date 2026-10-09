@@ -1,8 +1,8 @@
-name: Nucleus DecidableBall second-argument proposition certificate census
+name: Nucleus certified captured proof irrelevance full qualification
 
 on:
   push:
-    branches: [nucleus-decball-second-proof-census-v1]
+    branches: [nucleus-certified-captured-proof-irrel-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -127,6 +127,7 @@ jobs:
               if 'magma-list-pair' in name:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
                   extra['NUCLEUS_TRACE_RECURSOR_MAJOR']='1'
+                  extra['NUCLEUS_TRACE_CAPTURED_PROOF_PAIR']='1'
                   extra['NUCLEUS_TRACE_DEC_BALL_PI_SEPARATION']='1'
                   extra['NUCLEUS_TRACE_EXACT_APP_OBLIGATION']='1'
                   extra['NUCLEUS_TRACE_CAPTURED_FUNCTION_RECOVERY']='1'
@@ -154,6 +155,7 @@ jobs:
               row={'case':name,'return_code':p.returncode,'downstream_last':downstream[-8:],
                    'typed_proofs':local[-4:],'app_errors':app[-4:],
                    'function_recovery':[x for x in lines if 'NUCLEUS_CAPTURED_FUNCTION_RECOVERY:' in x][-16:],
+                   'captured_proof_warrants':[x for x in lines if 'NUCLEUS_CAPTURED_PROOF_PAIR:' in x][-24:],
                    'exact_app_obligations':[x for x in lines if 'NUCLEUS_EXACT_APP_OBLIGATION:' in x][-35:],'major_census':major[-4:],
                    'neutral_mismatch':[x for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-6:],
                    'recursor_major':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR:' in x][-8:],
@@ -220,14 +222,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted==118 and unknown==7, 'DIAGNOSTIC_CHANGED_FROZEN196'
+          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
           print('CAPTURED_FUNCTION_FIRST_RESIDUAL_DIAGNOSTIC',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-decball-second-proof-${{ github.sha }}
+          name: nucleus-captured-proof-irrel-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -240,7 +242,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="decball second proof: ${{ job.status }}; no complete replay"
+          description="captured proof irrel: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -251,6 +253,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/decball-second-proof" \
+            -f context="nucleus/captured-proof-irrel" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
