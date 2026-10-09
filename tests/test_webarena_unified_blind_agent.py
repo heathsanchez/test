@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
 
 from webarena_unified_blind_agent import (
-    gitlab_intent,site_from_start,actual_start,cross_site_intent,
+    gitlab_intent,site_from_start,actual_start,cross_site_intent,gitlab_navigation_target,
 )
 
 
@@ -21,6 +21,27 @@ class UnifiedBlindRouterTests(unittest.TestCase):
             site_from_start("__SHOPPING__")
         with self.assertRaises(ValueError):
             site_from_start("https://github.com")
+
+    def test_gitlab_navigation_compiles_from_intent(self):
+        cases={
+            "Open my todos page":
+                "http://localhost:8023/dashboard/todos",
+            "Go to the merge requests assigned to me":
+                "http://localhost:8023/dashboard/merge_requests?assignee_username=byteblaze",
+            "Navigate to the page showing the list of not yet closed issues in the OpenAPITools/openapi-generator repository that have labels related to OpenAPI Generator CLI":
+                "http://localhost:8023/OpenAPITools/openapi-generator/-/issues?state=opened&label_name%5B%5D=OpenAPI+Generator+CLI",
+        }
+        for intent,target in cases.items():
+            self.assertEqual(gitlab_navigation_target(intent),target)
+            self.assertEqual(gitlab_intent(intent),("navigate",{"target":target}))
+
+    def test_negative_label_navigation_fails_closed(self):
+        with self.assertRaises(ValueError):
+            gitlab_navigation_target(
+                "Navigate to the page showing the list of open issues in the "
+                "umano/AndroidSlidingUpPanel repository that have labels related "
+                "to all except BUG"
+            )
 
     def test_gitlab_rss(self):
         self.assertEqual(gitlab_intent("Get me my RSS feed token"),("rss",{}))
