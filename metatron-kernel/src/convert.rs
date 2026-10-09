@@ -1117,6 +1117,20 @@ fn compare_values(
                 },
             ) if left_type == right_type && left_index == right_index => {
                 if std::env::var_os("NUCLEUS_TRACE_LIVE_BINDINGS").is_some() { eprintln!("NUCLEUS_LIVE_BINDINGS:lhs={:?}:rhs={:?}", left_structure, right_structure); }
+                if left_spine.len() == right_spine.len()
+                    && same_live_closure(
+                        checker, left_structure, right_structure,
+                        current_budget / 4, depth, context,
+                    )
+                    && left_spine.iter().zip(right_spine).all(|(a,b)| {
+                        same_live_closure(checker, a, b, current_budget / 4, depth, context)
+                    })
+                {
+                    if std::env::var_os("NUCLEUS_TRACE_LIVE_BINDINGS").is_some() {
+                        eprintln!("NUCLEUS_LIVE_BINDING_PROVEN:type={left_type:?}:field={left_index}");
+                    }
+                    return Judgment::proven((), "live-environment-congruence");
+                }
                 if same_rigid_application_congruence(
                     checker,
                     left_structure,
