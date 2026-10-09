@@ -1116,6 +1116,7 @@ fn compare_values(
                     spine: right_spine,
                 },
             ) if left_type == right_type && left_index == right_index => {
+                if std::env::var_os("NUCLEUS_TRACE_LIVE_BINDINGS").is_some() { eprintln!("NUCLEUS_LIVE_BINDINGS:lhs={:?}:rhs={:?}", left_structure, right_structure); }
                 if same_rigid_application_congruence(
                     checker,
                     left_structure,
