@@ -1326,11 +1326,11 @@ fn compare_values(
                 }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_PROJECTION_RESIDUAL_PREMISES").is_some()
-                    && depth >= 5 && depth <= 8
+                    && depth == 8 && current_budget >= 120
                 {
                     use std::sync::atomic::{AtomicUsize, Ordering};
                     static EVENTS: AtomicUsize = AtomicUsize::new(0);
-                    if EVENTS.fetch_add(1, Ordering::Relaxed) < 60 {
+                    if EVENTS.fetch_add(1, Ordering::Relaxed) < 30 {
                         let machine = checker.machine();
                         let left_exp = machine.expose(
                             left_structure.clone(), Transparency::Full, 256,
