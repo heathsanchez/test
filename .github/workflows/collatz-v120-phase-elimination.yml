@@ -89,36 +89,31 @@ jobs:
           lake env lean -DautoImplicit=false formal/Collatz/FirstResidualRefinement.lean 2>&1 | tee evidence/v120-first-residual.log
           python3 - <<'PY'
           import re,json,hashlib,pathlib,subprocess
-          s=pathlib.Path('evidence/v120-lean.log').read_text()
-          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s)
-          axs={}
-          for name,ax in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",s,re.S):
-            vals=[v.strip() for v in ax.split(',') if v.strip()]
-            assert set(vals)<=set(['propext','Quot.sound','Classical.choice']),(name,vals)
-            axs[name]=vals
-          for name in re.findall(r"'([^']+)' does not depend on any axioms",s):
-            axs[name]=[]
-          for name in ['affine_phase_family_lower_merge','affine_phase_family_all_offsets']:
-            assert 'CollatzFinal.SourceProduct.'+name in axs,name
-          for name,ax in re.findall(r"'([^']+)' depends on axioms:\\s*\\[([^\\]]*)\\]",t,re.S):
-            vals=[v.strip() for v in ax.split(',') if v.strip()]
-            assert set(vals)<=set(['propext','Quot.sound','Classical.choice']),(name,vals)
-            axs[name]=vals
-          for name in re.findall(r"'([^']+)' does not depend on any axioms",t):
-            axs[name]=[]
-          for name in ['source27_refined_all_offsets','source27_odd_count_59']:
-            assert ('CollatzFinal.SourceProduct.'+name) in axs,name
+          first=pathlib.Path('evidence/v120-lean.log').read_text()
+          second=pathlib.Path('evidence/v120-first-residual.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:', first+second)
+          axioms={}
+          for log in (first,second):
+            for name,ax in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+              vals=[v.strip() for v in ax.split(',') if v.strip()]
+              assert set(vals)<={'propext','Quot.sound','Classical.choice'},(name,vals)
+              axioms[name]=vals
+            for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+              axioms[name]=[]
+          for name in ['affine_phase_family_lower_merge','affine_phase_family_all_offsets',
+                       'source27_refined_all_offsets','source27_odd_count_59']:
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
           out=dict(schema='COLLATZ_V120_FORMAL_GENERIC_PHASE_MERGER',
-            status='WARRANTED_FORMAL_CONDITIONAL_SCHEMA',
-            axioms=axs,
+            status='WARRANTED_FORMAL_CONDITIONAL_SCHEMA_AND_REFINED_SOURCE27_FAMILY',
+            axioms=axioms,
             source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
-            lean_log_sha256=hashlib.sha256(s.encode()).hexdigest(),
+            lean_log_sha256=hashlib.sha256((first+second).encode()).hexdigest(),
             individual_rules_lean_reified=False,
             universal_event_producer=False,
             global_collatz='UNKNOWN',qed=False)
           out['certificate_sha256']=hashlib.sha256(json.dumps(out,sort_keys=True,separators=(',',':')).encode()).hexdigest()
           pathlib.Path('evidence/v120-formal-qualification.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
-          print('V120_FORMAL_SCHEMA_PASS_NOT_QED')
+          print('V120_FORMAL_SCHEMA_AND_FIRST_RESIDUAL_PASS_NOT_QED')
           PY
           git rev-parse HEAD > evidence/commit.txt
       - uses: actions/upload-artifact@v4
