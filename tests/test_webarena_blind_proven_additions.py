@@ -30,6 +30,14 @@ class VerifiedPromotionRouting(unittest.TestCase):
         self.assertEqual(select_route(query, '__GITLAB__'), 'navigation_transfer')
         self.assertIsNone(select_route(query, '__SHOPPING_ADMIN__'))
 
+    def test_gitlab_forks_require_exact_instruction_and_site(self):
+        for intent in ('Fork some-project.', 'Fork all repos from Taylor Smith.'):
+            self.assertEqual(select_route(intent, '__GITLAB__'), 'gitlab_fork')
+            self.assertEqual(select_route(intent, 'http://localhost:8023'), 'gitlab_fork')
+            self.assertIsNone(select_route(intent, '__REDDIT__'))
+        for intent in ('Fork everything.', 'Fork two/levels/deep.', 'Fork all repos from ..'):
+            self.assertIsNone(select_route(intent, '__GITLAB__'))
+
     def test_admin_tax_navigation(self):
         query = 'Show the tax report for for this year (today is March 15, 2023).'
         self.assertEqual(select_route(query, '__SHOPPING_ADMIN__'), 'navigation_transfer')
@@ -57,6 +65,8 @@ class PromotionDispatch(unittest.IsolatedAsyncioTestCase):
              'Create a post in the game related discussion forum about a Game Console '
              'to report customer reviews with 2 stars rating from the OneStopShop',
              'webarena_shopping_reddit_review_compound'),
+            ('__GITLAB__', 'Fork example-repo.',
+             'webarena_gitlab_fork_blind'),
             ('__GITLAB__', 'Go to the merge requests requiring my review',
              'webarena_blind_navigation_transfer'),
             ('__SHOPPING_ADMIN__', 'Show the tax report for this year (today is March 15, 2023).',
@@ -85,6 +95,18 @@ class PromotionDispatch(unittest.IsolatedAsyncioTestCase):
                                       'webarena_blind_retrieval_bridge': fallback}):
             with self.assertRaisesRegex(RuntimeError, 'ambiguous write result'):
                 await run(query, '__SHOPPING__', Path('/tmp/test'))
+        chosen.run.assert_awaited_once()
+        fallback.run.assert_not_awaited()
+
+    async def test_ambiguous_fork_write_is_never_retried_through_fallback(self):
+        chosen = ModuleType('webarena_gitlab_fork_blind')
+        chosen.run = AsyncMock(side_effect=RuntimeError('unknown fork commit result'))
+        fallback = ModuleType('webarena_blind_retrieval_bridge')
+        fallback.run = AsyncMock()
+        with patch.dict(sys.modules, {'webarena_gitlab_fork_blind': chosen,
+                                      'webarena_blind_retrieval_bridge': fallback}):
+            with self.assertRaisesRegex(RuntimeError, 'unknown fork commit result'):
+                await run('Fork example-repo.', '__GITLAB__', Path('/tmp/fork-evidence'))
         chosen.run.assert_awaited_once()
         fallback.run.assert_not_awaited()
 
