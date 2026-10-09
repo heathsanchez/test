@@ -27,7 +27,7 @@ jobs:
 
       - name: Fetch immutable Arena fixtures and generate protected witnesses
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/arena-artifact /tmp/arena-tests /tmp/nucleus-causality
@@ -133,6 +133,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-dependent-app-causality-\${{ github.sha }}
+          name: nucleus-dependent-app-causality-${{ github.sha }}
           path: /tmp/nucleus-causality
           if-no-files-found: warn
