@@ -1212,6 +1212,58 @@ impl<'a> Machine<'a> {
                     return Some(first_value);
                 }
             }
+            // Nat.sub (succ a) (succ zero) = a, obtained by two
+            // checked Nat.sub clauses and Nat.pred (succ a) = a.
+            // Both constructor witnesses are required. A symbolic second
+            // predecessor is deliberately NOT eliminated.
+            if primitives.pred.is_some()
+                && let Some(Value::Neutral(Neutral {
+                    head: NeutralHead::Const { name: second_ctor, levels: second_levels },
+                    spine: second_spine,
+                })) = second_value.proven_value().map(|e| &e.value)
+                && *second_ctor == primitives.succ
+                && second_levels.is_empty()
+                && second_spine.len() == 1
+            {
+                let predecessor = self.expose_internal(
+                    second_spine[0].clone(), transparency,
+                    budget.saturating_sub(1), false, false,
+                );
+                let is_zero = matches!(predecessor.proven_value().map(|e| &e.value),
+                    Some(Value::NatLit(n)) if n.is_zero())
+                    || matches!(predecessor.proven_value().map(|e| &e.value),
+                        Some(Value::Neutral(Neutral {
+                            head: NeutralHead::Const { name: zero, levels },
+                            spine,
+                        })) if *zero == primitives.zero && levels.is_empty() && spine.is_empty());
+                if is_zero {
+                    let first_value = self.expose_internal(
+                        first.clone(), transparency, budget.saturating_sub(1), false, false,
+                    );
+                    if let Some(Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name: first_ctor, levels: first_levels },
+                        spine: first_spine,
+                    })) = first_value.proven_value().map(|e| &e.value)
+                        && *first_ctor == primitives.succ
+                        && first_levels.is_empty()
+                        && first_spine.len() == 1
+                    {
+                        let result = self.expose_internal(
+                            first_spine[0].clone(), transparency,
+                            budget.saturating_sub(1), false, false,
+                        );
+                        if let Some(established) = result.proven_value() {
+                            pending.clear();
+                            #[cfg(feature = "diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_NAT_SUBSUCC_ZERO").is_some() {
+                                eprintln!("NUCLEUS_NAT_SUBSUCC_ZERO:certified-double-constructor");
+                            }
+                            return Some(established.value.clone());
+                        }
+                    }
+                }
+            }
+
             // Exact Lean v4.34.1 Nat.sub definition:
             //   Nat.sub a (Nat.succ b) = Nat.pred (Nat.sub a b).
             // Retain both source argument closures; a new opaque binder
