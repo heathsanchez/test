@@ -11,7 +11,7 @@ theorem parity_cylinder_shift (r k q : Nat) :
   | zero => simp [iter, oddCount]
   | succ k ih =>
       have hpow : 2 ^ (k + 1) * q = 2 ^ k * (2 * q) := by
-        simp [pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+        simp [Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
       calc
         iter shortcut (k + 1) (r + 2 ^ (k + 1) * q) =
             shortcut (iter shortcut k (r + 2 ^ k * (2 * q))) := by
@@ -28,7 +28,7 @@ theorem parity_cylinder_shift (r k q : Nat) :
               rw [iter_succ_last]
               by_cases h : iter shortcut k r % 2 = 0
               · simp [oddCount, h]
-              · simp [oddCount, h, pow_succ, Nat.mul_assoc,
+              · simp [oddCount, h, Nat.pow_succ, Nat.mul_assoc,
                   Nat.mul_comm, Nat.mul_left_comm]
 
 /-- A descending base point and nonexpanding exact cylinder coefficient
@@ -82,7 +82,7 @@ theorem parity_prefix_shift (r j h q : Nat) :
       iter shortcut j r +
         (2 ^ h * 3 ^ oddCount r j) * q := by
   have hfactor : 2 ^ (j + h) * q = 2 ^ j * (2 ^ h * q) := by
-    simp [pow_add, Nat.mul_assoc]
+    simp [Nat.pow_add, Nat.mul_assoc]
   calc
     iter shortcut j (r + 2 ^ (j + h) * q) =
         iter shortcut j (r + 2 ^ j * (2 ^ h * q)) := by rw [hfactor]
