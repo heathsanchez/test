@@ -1756,6 +1756,20 @@ fn compare_neutral_heads(
                 );
             }
             if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR").is_some() { eprintln!("NUCLEUS_RECURSOR_MAJOR:left={:?}:right={:?}", left.spine.last(), right.spine.last()); if let Some(c) = right.spine.last() { eprintln!("NUCLEUS_RECURSOR_MAJOR_VALUE:{:?}", checker.machine().expose(c.clone(), Transparency::Full, budget.min(64))); } }
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_DECIDABLE_MAJOR_CHAIN").is_some()
+                && matches!(&right.head, NeutralHead::Const { .. })
+                && right.spine.len() == 5
+            {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                if PRINTED.fetch_add(1, Ordering::Relaxed) < 8 {
+                    eprintln!(
+                        "NUCLEUS_DECIDABLE_MAJOR_CHAIN:{}",
+                        checker.diagnostic_captured_recursor_major_chain(right, budget),
+                    );
+                }
+            }
             Judgment::refuted("distinct-neutral-heads")
         }
     }
