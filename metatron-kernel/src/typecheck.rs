@@ -1073,6 +1073,64 @@ impl<'a> TypeChecker<'a> {
                                 expected_body_head=Some(self.machine().expose(
                                     rhs,Transparency::Full,512
                                 ));
+                                if let (
+                                    Some(Value::Neutral(actual)),
+                                    Some(Value::Neutral(expected)),
+                                ) = (
+                                    actual_body_head.as_ref().and_then(|j|j.proven_value()),
+                                    expected_body_head.as_ref().and_then(|j|j.proven_value()),
+                                ) {
+                                    if actual.head==expected.head
+                                        && actual.spine.len()==2
+                                        && expected.spine.len()==2
+                                    {
+                                        let first=crate::convert::convert_with_policy_in_context(
+                                            self,
+                                            &TypeValue::Term(actual.spine[0].clone()),
+                                            &TypeValue::Term(expected.spine[0].clone()),
+                                            512,crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                            ext.len(),&ext,
+                                        );
+                                        let lhs_proof=&actual.spine[1];
+                                        let rhs_proof=&expected.spine[1];
+                                        let mut lf=2048;
+                                        let mut rf=2048;
+                                        let lhs_ty=self.infer_exact_closure_in_context(
+                                            lhs_proof,&ext,&mut lf,0
+                                        );
+                                        let rhs_ty=self.infer_exact_closure_in_context(
+                                            rhs_proof,&ext,&mut rf,0
+                                        );
+                                        let type_relation=match (&lhs_ty,&rhs_ty){
+                                            (Some(a),Some(b))=>Some(
+                                                crate::convert::convert_with_policy_in_context(
+                                                    self,a,b,512,
+                                                    crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                    ext.len(),&ext,
+                                                )
+                                            ),
+                                            _=>None,
+                                        };
+                                        let prop_sort=|ty:&Option<TypeValue>|->Option<Judgment<LevelTerm>>{
+                                            let TypeValue::Term(term)=ty.as_ref()? else {return None};
+                                            let mut fuel=2048;
+                                            let type_ty=self.infer_exact_closure_in_context(
+                                                term,&ext,&mut fuel,0
+                                            )?;
+                                            Some(self.sort_level(
+                                                Judgment::proven(type_ty,"captured-proof-type-sort"),
+                                                fuel.min(1024),
+                                            ))
+                                        };
+                                        let lhs_prop=prop_sort(&lhs_ty);
+                                        let rhs_prop=prop_sort(&rhs_ty);
+                                        eprintln!(
+                                            "NUCLEUS_DEC_F_PROOF_ARG:expr={expression:?}:context={}:first={first:?}:head={:?}:lhs_proof={lhs_proof:?}:rhs_proof={rhs_proof:?}:lhs_type={lhs_ty:?}:rhs_type={rhs_ty:?}:type_relation={type_relation:?}:lhs_sort={lhs_prop:?}:rhs_sort={rhs_prop:?}",
+                                            ext.len(),actual.head,
+                                        );
+                                    }
+                                }
+
                             }
                             eprintln!(
                                 "NUCLEUS_DEC_F_DEPTH12_PI:expr={expression:?}:context={}:domain_relation={domain_relation:?}:body_relation={body_relation:?}:actual_domain={actual_domain:?}:expected_domain={expected_domain:?}:actual_body_whnf={actual_body_head:?}:expected_body_whnf={expected_body_head:?}",
