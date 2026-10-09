@@ -1611,6 +1611,7 @@ fn compare_neutral_heads(
                     left.head, left.spine, right.head, right.spine, budget
                 );
             }
+            if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR").is_some() { eprintln!("NUCLEUS_RECURSOR_MAJOR:left={:?}:right={:?}", left.spine.last(), right.spine.last()); }
             Judgment::refuted("distinct-neutral-heads")
         }
     }
