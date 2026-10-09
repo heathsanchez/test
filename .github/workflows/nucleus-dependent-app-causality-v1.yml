@@ -1,0 +1,138 @@
+name: Nucleus dependent App causality - diagnostic only
+on:
+  push:
+    branches: [nucleus-dependent-app-causality-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_SUBTREE: dbbf1270bef5b25662116ce9f6c72d6614e33f13
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Bind source and verify original release tests
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$EXPECTED_SUBTREE"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-original
+
+      - name: Fetch immutable Arena fixtures and generate protected witnesses
+        env:
+          GH_TOKEN: \${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests /tmp/nucleus-causality
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" >/tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+          python3 - <<'PY'
+          import hashlib, json, pathlib, sys
+          sys.path.insert(0, '.github/scripts')
+          from nucleus_succle_separator import extract, false_index
+          root=pathlib.Path('/tmp/arena-tests')
+          out=pathlib.Path('/tmp/nucleus-causality')
+          expected={
+            'init-prelude':'eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5',
+            'perf/magma-list-pair-n7':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'}
+          for name,digest in expected.items():
+            data=(root/'good'/(name+'.ndjson')).read_bytes()
+            assert hashlib.sha256(data).hexdigest()==digest,(name,'fixture changed')
+            names={0:''};prefix=[];found=False
+            for line in data.splitlines(keepends=True):
+              o=json.loads(line);prefix.append(line)
+              if 'in' in o:
+                v=o.get('str',o.get('num'))
+                parent=names.get(v['pre'],'')
+                names[o['in']]=parent+('.' if parent else '')+str(v.get('str',v.get('i')))
+              if 'thm' in o and names.get(o['thm']['name'])=='Nat.sub_le':
+                found=True;break
+            assert found,name
+            (out/(name.replace('/','__')+'.ndjson')).write_bytes(b''.join(prefix))
+            if name=='init-prelude':
+              negative=false_index(extract(data))
+              assert hashlib.sha256(negative).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+              (out/'false-index.ndjson').write_bytes(negative)
+          (out/'nested-unused-param.ndjson').write_bytes((root/'bad/bugs/nested-unused-param.ndjson').read_bytes())
+          PY
+
+      - name: Collect original checker witness verdicts
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/nucleus-causality')
+          baseline={}
+          for f in sorted(root.glob('*.ndjson')):
+            p=subprocess.run(['/tmp/nucleus-original'],input=f.read_bytes(),
+              stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45,
+              env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+            last=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_DOWNSTREAM:')]
+            baseline[f.stem]={'rc':p.returncode,'terminal':last[-2:]}
+            print('ORIGINAL '+f.stem+' '+json.dumps(baseline[f.stem]),flush=True)
+          assert baseline['init-prelude']['rc']==2
+          assert baseline['perf__magma-list-pair-n7']['rc']==2
+          assert baseline['false-index']['rc']==2
+          assert baseline['nested-unused-param']['rc']==1
+          (root/'baseline.json').write_text(json.dumps(baseline,indent=2))
+          PY
+
+      - name: Create ephemeral deliberately UNSOUND causality build
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          f=pathlib.Path('metatron-kernel/src/typecheck.rs')
+          s=f.read_text()
+          old='match self.check_in(*arg, &domain, context, frame, remaining, true, cache) {'
+          new='match Judgment::<()>::proven((), "UNSOUND_DIAGNOSTIC_SKIP_APP_ARGUMENT") {'
+          assert s.count(old)==1, s.count(old)
+          f.write_text(s.replace(old,new))
+          print('UNSOUND_DIAGNOSTIC_ONLY: modified one App argument-check call; never release or submit',flush=True)
+          PY
+          git diff --stat -- metatron-kernel/src/typecheck.rs
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-unsound-probe
+          git checkout -- metatron-kernel/src/typecheck.rs
+          test "$(git status --porcelain -- metatron-kernel/src/typecheck.rs)" = ""
+
+      - name: Compare first obstruction and protected negatives
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/nucleus-causality')
+          baseline=json.loads((root/'baseline.json').read_text())
+          diagnostic={}
+          for f in sorted(root.glob('*.ndjson')):
+            p=subprocess.run(['/tmp/nucleus-unsound-probe'],input=f.read_bytes(),
+              stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45,
+              env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+            last=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_DOWNSTREAM:')]
+            diagnostic[f.stem]={'rc':p.returncode,'terminal':last[-2:]}
+            print('UNSOUND_DIAGNOSTIC '+f.stem+' '+json.dumps(diagnostic[f.stem]),flush=True)
+          rows=[{'name':k,'baseline':v,'unsound_diagnostic':diagnostic[k]} for k,v in baseline.items()]
+          report={
+             'status':'BOUNDED_CAUSAL_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE_AUTHORITY',
+             'checker_source_tree':os.environ['EXPECTED_SUBTREE'],
+             'fixture_artifact':int(os.environ['ARENA_ARTIFACT']),
+             'hypothesis':'Eager nested App argument checking causes first dependent Pi UNKNOWN',
+             'positive_new_accepts':[r['name'] for r in rows if r['name'] in ('init-prelude','perf__magma-list-pair-n7') and r['unsound_diagnostic']['rc']==0],
+             'negative_wrong_accepts':[r['name'] for r in rows if r['name'] in ('false-index','nested-unused-param') and r['unsound_diagnostic']['rc']==0],
+             'rows':rows}
+          (root/'diagnosis.json').write_text(json.dumps(report,indent=2))
+          print('CAUSAL_RESULT '+json.dumps({k:v for k,v in report.items() if k!='rows'}),flush=True)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-dependent-app-causality-\${{ github.sha }}
+          path: /tmp/nucleus-causality
+          if-no-files-found: warn
