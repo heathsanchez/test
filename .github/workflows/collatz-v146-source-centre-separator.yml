@@ -1,0 +1,216 @@
+name: Collatz V146 fixed-source centre realizability and guarded shadow separator
+on:
+  push:
+    branches: [collatz-v146-source-centre-separator]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-separators:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test source27 shadow, finite integer centres, preserved two-clock coalescence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v146_source_centre_separator > evidence/v146-exact.json
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          p=pathlib.Path('evidence/v146-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V146_EXACT_SOURCE_CENTRE_TRANSPORT_SEPARATOR'
+          x=d['different_true_coalescent_source_centres']
+          assert x['meeting_endpoint']==8 and x['clocks']==[3,2]
+          assert x['centres']==['-3','-1']
+          assert x['future_class_does_not_force_source_centre_identity']
+          assert len(d['fixed_source_terminal_class_changing_centres'])==5
+          assert d['new_exact_source_centre']=='-13/9'
+          fam=d['new_source27_root_odd_mod4_three_prefixes']
+          assert len(fam)==9 and fam[0]['n']==27
+          assert all(v['positive_original_source_mod_four']==3 for v in fam)
+          assert all(v['actual_three_step_prefix_nondescending'] for v in fam)
+          assert all(v['eventual_no_exit_claimed'] is False for v in fam)
+          sets=d['predeclared_finite_nonpositive_integer_centres']
+          assert len(sets)==12
+          assert all(v['no_predeclared_negative_integer_centre_matches'] for v in sets)
+          assert all(v['infinite_no_exit_premise_asserted'] is False for v in sets)
+          assert all(v['source_mod4']==1 for v in d['old_v115_sources_mod4_one'])
+          assert d['finite_prefix_is_not_least_bad_source_proof']
+          assert d['universal_finite_centre_original_source_no_exit_bridge_proven'] is False
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={
+            'schema':'COLLATZ_V146_EXACT_FINITE_CENTRE_SEPARATOR_SEAL',
+            'source_commit':head,
+            'status':'WARRANTED_INDEPENDENT_FINITE_EXACT_ADVERSARIAL_CONTROLS',
+            'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'finite_positive_source_variation_explicit':True,
+            'universal_no_exit_bridge_proven':False,
+            'global_collatz':'UNKNOWN','qed':False
+          }
+          pathlib.Path('evidence/v146-exact-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v146-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-source-transport:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-verify source cocycle, finite-centre conditional, and parametric true-origin falsifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/SourceProductAffine.lean)" = 97a32acc490465c3bb0cd528e42100a6bbfd2f61
+          test "$(git hash-object formal/Collatz/SourceProduct.lean)" = 9c65ed7a67eded1ad7e9c68ba086f584dbce5f87
+          test "$(git hash-object formal/Collatz/FinalKernel.lean)" = 8358b5fe590f107539d9e1ca3959c01961d250db
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/SourceCentreTransportSeparator.lean 2>&1 | tee evidence/v146-lean.log
+          python3 - <<'PY'
+          import re,hashlib,json,pathlib,subprocess
+          p=pathlib.Path('evidence/v146-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-5000:]
+          axs={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            vals=[v.strip() for v in inside.split(',') if v.strip()]
+            assert set(vals)<={'propext','Quot.sound','Classical.choice'},(name,vals)
+            axs[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axs[name]=[]
+          targets=[
+            'endpoint_precision_pulls_back_to_source_affine',
+            'listed_centre_magnitude_le_max',
+            'pow_two_exceeds_its_index',
+            'fixed_positive_source_cannot_match_finite_negative_centres',
+            'collatz_of_universal_minimal_bad_finite_centre_bar',
+            'shadow_source_affine_identity',
+            'shadow_actual_endpoint',
+            'shadow_actual_prefix_nondescending',
+            'shadow_high_endpoint_precision',
+            'shadow_excludes_one_integer_centre',
+            'no_finite_integer_centres_for_rising_shadow_family',
+            'coalescent_sources_require_distinct_source_centres']
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in axs,name
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          result={
+            'schema':'COLLATZ_V146_FORMAL_SOURCE_REALIZABILITY_SEPARATOR',
+            'source_commit':head,
+            'status':'WARRANTED_FORMAL_EXACT_TRANSPORT_AND_NONEXIT_PREMISE_SEPARATOR',
+            'named_axioms':axs,
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'universal_source_affine_pullback_warranted':True,
+            'positive_fixed_source_finite_negative_centre_bar_impossible':True,
+            'source27_family_mod4_three_prefix_no_descent_and_no_fixed_integer_centre':True,
+            'coalescent_same_future_may_have_distinct_affine_centres':True,
+            'universal_no_exit_source_centre_bridge_proven':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v146-formal-seal.json').write_text(
+            json.dumps(result,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v146-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-separators,formal-source-transport]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v146-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v146-formal
+          path: evidence/formal
+      - name: Independently seal true transport and semantic no-exit separator at same commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v146-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v146-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert b['status']=='WARRANTED_FORMAL_EXACT_TRANSPORT_AND_NONEXIT_PREMISE_SEPARATOR'
+          assert a['finite_positive_source_variation_explicit']
+          assert b['universal_source_affine_pullback_warranted']
+          assert b['coalescent_same_future_may_have_distinct_affine_centres']
+          assert b['source27_family_mod4_three_prefix_no_descent_and_no_fixed_integer_centre']
+          assert b['positive_fixed_source_finite_negative_centre_bar_impossible']
+          assert not b['universal_no_exit_source_centre_bridge_proven']
+          assert not a['universal_no_exit_bridge_proven']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          data={
+            'schema':'COLLATZ_V146_INDEPENDENT_SOURCE_CENTRE_BOUNDARY',
+            'source_commit':head,
+            'status':'WARRANTED_FORMAL_RATIONAL_CENTRE_SEPARATOR_NOT_QED',
+            'new_exact_separator':'source27 root 3mod4 genuine rising prefix; rational -13/9 source centre',
+            'no_longer_admissible':['coalescence implies affine source-centre equality',
+               'high endpoint precision plus mod4=3 and short non-descent implies any fixed finite negative integer source centres'],
+            'missing_independent_bridge':'all-depth actual least-bad NoExit source fixed-centre finite cover OR alternate source-class forcing contradiction',
+            'protected_state':'V134_UNCHANGED',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v146-final-seal.json').write_text(
+            json.dumps(data,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v146-final
+          path: evidence/v146-final-seal.json
+          if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-separators,formal-source-transport,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Record exact theorem SHA qualification or failed attempt
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={exact:'${{ needs.exact-separators.result }}',
+              formal:'${{ needs.formal-source-transport.result }}',
+              final:'${{ needs.final-seal.result }}'};
+            const qualified=Object.values(stages).every(x=>x==='success');
+            const r={
+              schema:'COLLATZ_V146_CI_RECEIPT',
+              source_commit:context.sha,run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_SOURCE_CENTRE_SEMANTIC_SEPARATOR':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false};
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v146-source-centre-separator',
+              path:'research/ci_seals/collatz_v146_'+context.sha+'.json',
+              message:'CI receipt: V146 source-centre transport separator '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(r,null,2)+'\n').toString('base64')
+            });
