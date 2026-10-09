@@ -1729,7 +1729,7 @@ fn certified_local_proof_irrelevance(
                 if let Some(Value::Neutral(neutral)) = lhs.proven_value() {
                     if let NeutralHead::Const { name, .. } = neutral.head {
                         let declaration = checker.diagnostic_applied_telescope(
-                            name, &neutral.spine, probe,
+                            name, &neutral.spine, context, probe,
                         );
                         eprintln!("NUCLEUS_DEPTH5_APPLIED_TELESCOPE:{declaration}");
                     }
