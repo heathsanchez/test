@@ -2,7 +2,7 @@ name: Nucleus Lean.Syntax nested separator v1
 
 on:
   push:
-    branches: [nucleus-lean-syntax-nested-v1]
+    branches: [nucleus-checked-beq-major-exposure-v1]
     paths:
       - ".github/workflows/nucleus-fueled-inductives-v1.yml"
       - "metatron-kernel/**"
@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      SOURCE_COMMIT: 0c89185e231b80325532aada627b7baef40a583d
-      SOURCE_SUBTREE: 39940e74d3ad6d133824fa3f6c5105f71bb611ec
+      SOURCE_COMMIT: 7e9d1a5cb14c9b47dea0d9b07e215f4aafc75e33
+      SOURCE_SUBTREE: d1f6bf92ffb4f954c7b880ca35425328f843e0d6
       ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
       ARENA_ARTIFACT: "11272848230"
       MATHLIB_ARENA_SHA: 4c30c4ac4f14a3a899116beb3ea6131880e79a98
