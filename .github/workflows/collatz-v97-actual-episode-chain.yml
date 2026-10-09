@@ -1,0 +1,78 @@
+name: Collatz V97 actual episode word certificates
+on:
+  push:
+    branches: [collatz-v96-actual-episode-chain-v97]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v96-corrected-deep-switch
+          run-id: 37873768429
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v96
+      - name: Verify V96 qualification authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib
+          q=json.load(open("parent-v96/qualification.json"))
+          claimed=q.pop("certificate_sha256")
+          computed=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          assert claimed==computed=="ec255a6586055e780d0226e773c443d0f1320048729149abf4f400b0c3b4e6f6"
+          assert q["status"]=="WARRANTED_FORMAL_CORRECTED_SWITCH_DICHOTOMY"
+          print("V96_PARENT_VERIFIED")
+          PY
+      - name: Kernel-check arbitrary actual episode word
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/dyadic.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeDeterminism.olean formal/Collatz/EpisodeDeterminism.lean > evidence/determinism.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisode.olean formal/Collatz/ActualEpisode.lean > evidence/actual.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeBridge.olean formal/Collatz/EpisodeBridge.lean > evidence/bridge.log
+          lake env lean -DautoImplicit=false formal/Collatz/ActualEpisodeChain.lean | tee evidence/v97.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v97.log
+          grep -q 'actual_episode_chain_affine' evidence/v97.log
+          grep -q 'actual_episode_chain_shortcut' evidence/v97.log
+          grep -q 'actual_same_anchor_return_certificate' evidence/v97.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal exact chain qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            "schema":"COLLATZ_V96_ACTUAL_EPISODE_CHAIN_V97",
+            "status":"WARRANTED_FORMAL_FINITE_ACTUAL_RETURN_CERTIFICATE",
+            "parent_v96_qualification_sha256":"ec255a6586055e780d0226e773c443d0f1320048729149abf4f400b0c3b4e6f6",
+            "finite_actual_episode_chain_affine":True,
+            "finite_actual_episode_chain_shortcut":True,
+            "same_anchor_positive_time_return_certificate":True,
+            "same_anchor_recurrence_universally_proved":False,
+            "global_collatz":"UNKNOWN",
+            "qed":False,
+            "residual":"Prove every relevant infinite no-exit episode continuation yields adequate source-admitted return or genuinely new protected source progress, and separately exclude nontrivial periodic points."
+          }
+          result["certificate_sha256"]=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v97-actual-episode-chain
+          path: evidence/
+          if-no-files-found: error
