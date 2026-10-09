@@ -1,7 +1,7 @@
 name: Nucleus combined ten residual census
 on:
   push:
-    branches: [nucleus-le-dependent-conversion-trace-v1]
+    branches: [nucleus-ble-major-exposure-separator-v1]
     paths: [".github/workflows/nucleus-composed-residuals-v1.yml"]
   workflow_dispatch:
 permissions:
@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      SOURCE_COMMIT: 5ea485d8594b90e28b880e6fff036df87146ba1c
-      SOURCE_SUBTREE: 5e732b98a2733d444b9e82559af221488a1fcf98
+      SOURCE_COMMIT: 653d7444ede9bb1db444a129e2c953a06ae3e191
+      SOURCE_SUBTREE: 75b2eb57a6355516ae6ee1e47a7a2b48dc0d29cb
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +65,9 @@ jobs:
                  "rc":run.returncode,"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
                  "downstream":[x for x in lines if "NUCLEUS_DOWNSTREAM:" in x][-2:],
                  "application":[x[:900] for x in lines if "NUCLEUS_APPLICATION_FUNCTION_TYPE:" in x][:3],
-                 "conversion":[x[:1800] for x in lines if "NUCLEUS_CHECK_CONVERSION:" in x][:3]}
+                 "conversion":[x[:1800] for x in lines if "NUCLEUS_CHECK_CONVERSION:" in x][:3],
+                 "major":[x[:1700] for x in lines if "NUCLEUS_BOOL_MAJOR_PROBE:" in x][:8],
+                 "bindings":[x[:1000] for x in lines if "NUCLEUS_BOOL_MAJOR_BINDING:" in x][:10]}
             rows.append(row)
             assert run.returncode in (0,1,2),row
             assert run.returncode != (1 if bucket=="good" else 0),row
