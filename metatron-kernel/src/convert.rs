@@ -1309,6 +1309,58 @@ fn compare_values(
                     }
                     return Judgment::proven((), "checked-local-proof-irrelevance");
                 }
+                // Two neutral recursors can conceal an independently
+                // registered constructor computation. This restricted
+                // Boolean-constructor comparison first replays the exact
+                // source iota RHS through its *actual* captured major chain.
+                // A failed replay or refuted partial comparison grants no
+                // verdict: only a PROVEN result is promoted here.
+                if checker.is_registered_bool_constructor(left) {
+                    let replay = checker.machine().certified_nested_two_case_recursor_result(
+                        right, current_budget.min(2048), 0,
+                    );
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_NESTED_REC_RHS").is_some() {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                        if PRINTED.fetch_add(1,Ordering::Relaxed) < 32 {
+                            eprintln!("NUCLEUS_NESTED_REC_RHS:side=right:depth={depth}:replay={replay:?}");
+                        }
+                    }
+                    if let Some(value) = replay.proven_value()
+                        && *value != Value::Neutral(right.clone())
+                        && compare_values(
+                            checker, &Value::Neutral(left.clone()), value,
+                            current_budget.saturating_sub(1), depth, context,
+                            work, proof_function_frees,
+                        ).is_proven()
+                    {
+                        return Judgment::proven((), "certified-nested-recursor-rhs-conversion");
+                    }
+                }
+                if checker.is_registered_bool_constructor(right) {
+                    let replay = checker.machine().certified_nested_two_case_recursor_result(
+                        left, current_budget.min(2048), 0,
+                    );
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_NESTED_REC_RHS").is_some() {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                        if PRINTED.fetch_add(1,Ordering::Relaxed) < 32 {
+                            eprintln!("NUCLEUS_NESTED_REC_RHS:side=left:depth={depth}:replay={replay:?}");
+                        }
+                    }
+                    if let Some(value) = replay.proven_value()
+                        && *value != Value::Neutral(left.clone())
+                        && compare_values(
+                            checker, value, &Value::Neutral(right.clone()),
+                            current_budget.saturating_sub(1), depth, context,
+                            work, proof_function_frees,
+                        ).is_proven()
+                    {
+                        return Judgment::proven((), "certified-nested-recursor-rhs-conversion");
+                    }
+                }
                 if certified_structure_eta(
                     checker,
                     left,
