@@ -636,6 +636,34 @@ impl<'a> TypeChecker<'a> {
                         }
                     }
                 }
+                // Diagnostics only: the guarded converter can return a
+                // provisional rigid-head refutation which the checker must
+                // conservatively downgrade to UNKNOWN. Record the exact
+                // inferred/expected types before that transition. Never
+                // promote a mismatch to a proof or suppress argument checks.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_REFUTED_CONVERSION").is_some() {
+                    if let Judgment::Refuted { obstruction } = &conversion {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static REFUTATIONS: AtomicUsize = AtomicUsize::new(0);
+                        if REFUTATIONS.fetch_add(1, Ordering::Relaxed) < 24 {
+                            eprintln!(
+                                "NUCLEUS_CONVERSION_REFUTATION:expr={expression:?}:context_len={}:frame={}:obstruction={:?}:inferred_type={:?}:expected_type={:?}",
+                                context.len(), frame.id(), obstruction, value, expected,
+                            );
+                            if let (TypeValue::Term(actual), TypeValue::Term(wanted)) =
+                                (&value, expected)
+                            {
+                                for slot in 0..4u64 {
+                                    eprintln!(
+                                        "NUCLEUS_REFUTATION_BINDING:expr={expression:?}:slot={slot}:inferred={:?}:expected={:?}",
+                                        actual.env.lookup(slot), wanted.env.lookup(slot),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
