@@ -24,8 +24,8 @@ theorem affine_reverse_sound {x a p c t : Nat}
     (h : AffineReverse x a p c t) (q : Nat) :
     iter shortcut t (p + c * q) = x + a * q := by
   induction h with
-  | seed x a => rfl
-  | @even x a p c t h ih =>
+  | seed => rfl
+  | @even p c t h ih =>
       have heq : 2 * p + 2 * c * q = 2 * (p + c * q) := by
         simp [Nat.mul_add, Nat.mul_assoc]
       calc
@@ -35,7 +35,7 @@ theorem affine_reverse_sound {x a p c t : Nat}
               rfl
         _ = iter shortcut t (p + c * q) := by rw [shortcut_double_predecessor]
         _ = x + a * q := ih
-  | @odd x a p c t h p' c' hp hc ih =>
+  | @odd p c t h p' c' hp hc ih =>
       have hcq := congrArg (fun z : Nat => z * q) hc
       have hscaled : 2 * (c * q) = 3 * (c' * q) := by
         simpa [Nat.mul_assoc] using hcq
