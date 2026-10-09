@@ -879,6 +879,7 @@ impl<'a> Machine<'a> {
         enum Operation {
             Add,
             Sub,
+            Pred,
             Ble,
             Beq,
         }
@@ -886,6 +887,8 @@ impl<'a> Machine<'a> {
             Operation::Add
         } else if primitives.sub == Some(name) {
             Operation::Sub
+        } else if primitives.pred == Some(name) {
+            Operation::Pred
         } else if primitives.ble == Some(name) {
             Operation::Ble
         } else if primitives.beq == Some(name) {
@@ -893,6 +896,58 @@ impl<'a> Machine<'a> {
         } else {
             return None;
         };
+        // Nat.pred (Nat.succ n) reduces to n; on neutral n, preserve the
+        // typed source application rather than forcing a recursively stuck
+        // matcher. Full transparency may still inspect its definition.
+        if matches!(operation, Operation::Pred) {
+            if !levels.is_empty() || pending.len() != 1 {
+                return None;
+            }
+            let argument = pending[0].clone();
+            let exposed = self.expose_internal(
+                argument.clone(), transparency, budget.saturating_sub(1), false, false,
+            );
+            if let Some(exposed) = exposed.proven_value() {
+                match &exposed.value {
+                    Value::NatLit(n) => {
+                        pending.clear();
+                        return Some(Value::NatLit(n.pred().unwrap_or_else(|| n.clone())));
+                    }
+                    Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name: ctor, levels },
+                        spine,
+                    }) if levels.is_empty() && *ctor == primitives.succ && spine.len() == 1 => {
+                        let result = self.expose_internal(
+                            spine[0].clone(), transparency, budget.saturating_sub(1),
+                            false, false,
+                        );
+                        if let Some(value) = result.proven_value() {
+                            pending.clear();
+                            return Some(value.value.clone());
+                        }
+                    }
+                    Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name: ctor, levels },
+                        spine,
+                    }) if levels.is_empty() && *ctor == primitives.zero && spine.is_empty() => {
+                        pending.clear();
+                        return Some(Value::Neutral(Neutral {
+                            head: NeutralHead::Const { name: *ctor, levels: vec![] },
+                            spine: vec![],
+                        }));
+                    }
+                    _ => {}
+                }
+            }
+            if transparency != Transparency::Full {
+                pending.clear();
+                return Some(Value::Neutral(Neutral {
+                    head: NeutralHead::Const { name, levels: vec![] },
+                    spine: vec![argument],
+                }));
+            }
+            return None;
+        }
         if !levels.is_empty() || pending.len() != 2 {
             return None;
         }
@@ -1081,6 +1136,48 @@ impl<'a> Machine<'a> {
                     return Some(first_value);
                 }
             }
+            // Exact Lean v4.34.1 Nat.sub definition:
+            //   Nat.sub a (Nat.succ b) = Nat.pred (Nat.sub a b).
+            // Retain both source argument closures; a new opaque binder
+            // holds the already-evaluated, typed inner native application.
+            // It never equates two different b values or indexes.
+            if let Some(Value::Neutral(Neutral {
+                head: NeutralHead::Const { name: ctor, levels },
+                spine,
+            })) = second_value.proven_value().map(|e| &e.value)
+                && *ctor == primitives.succ && levels.is_empty() && spine.len() == 1
+                && let (Some(pred), Some(bvar0)) =
+                    (primitives.pred, primitives.virtual_bvar_zero)
+            {
+                let sub_thunk = Closure::new(
+                    bvar0,
+                    EnvFrame::empty().extend_neutral(Neutral {
+                        head: NeutralHead::Const { name, levels: vec![] },
+                        spine: vec![first.clone(), spine[0].clone()],
+                    }),
+                );
+                pending.clear();
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_NAT_SUBSUCC").is_some() {
+                    eprintln!("NUCLEUS_NAT_SUBSUCC:checked-source-successor:pred={:?}", pred);
+                }
+                return Some(Value::Neutral(Neutral {
+                    head: NeutralHead::Const { name: pred, levels: vec![] },
+                    spine: vec![sub_thunk],
+                }));
+            }
+            // No constructor evidence for the major: keep the expression
+            // neutral on the cheap path; Full transparency retains the
+            // definitional fallback. No equality is asserted here.
+            if transparency != Transparency::Full
+                && !matches!(second_value.proven_value().map(|e| &e.value), Some(Value::NatLit(_)))
+            {
+                pending.clear();
+                return Some(Value::Neutral(Neutral {
+                    head: NeutralHead::Const { name, levels: vec![] },
+                    spine: vec![first, second],
+                }));
+            }
         }
 
         let first_value = self
@@ -1098,6 +1195,7 @@ impl<'a> Machine<'a> {
         };
         pending.clear();
         Some(match operation {
+            Operation::Pred => unreachable!("unary Nat.pred handled above"),
             Operation::Add => Value::NatLit(first.add(&second)),
             Operation::Sub => Value::NatLit(first.sub_trunc(&second)),
             Operation::Ble => {

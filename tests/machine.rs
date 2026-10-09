@@ -505,7 +505,7 @@ fn symbolic_nat_ble_respects_pinned_constructor_equations() {
         .with_nat_primitives(Some(NatPrimitives {
             type_name: NameId(65), type_expr: ExprId(0),
             zero, succ, recursor: NameId(66),
-            add: None, sub: None, ble: Some(ble), beq: None,
+            add: None, sub: None, pred: None, virtual_bvar_zero: None, ble: Some(ble), beq: None,
         }))
         .with_bool_primitives(Some(BoolPrimitives { true_ctor, false_ctor }));
     let env = EnvFrame::empty().extend_free(FreeId(73)).extend_free(FreeId(74));
@@ -527,4 +527,53 @@ fn symbolic_nat_ble_respects_pinned_constructor_equations() {
     // No constructor evidence: ordinary neutral comparison remains pending.
     let Value::Neutral(term) = exposed(12) else { panic!("symbolic ble must remain neutral"); };
     assert_eq!(term.head, NeutralHead::Const { name: ble, levels: vec![] });
+}
+
+#[test]
+fn symbolic_nat_sub_successor_is_exact_predicate_computation() {
+    let mut exprs = IdTable::default();
+    let put_const = |exprs: &mut IdTable<ExprId, Expr>, id, name| {
+        exprs.insert(ExprId(id), Expr::Const { name: NameId(name), levels: vec![] }).unwrap();
+    };
+    put_const(&mut exprs, 0, 65); // Nat
+    exprs.insert(ExprId(1), Expr::BVar(0)).unwrap();
+    put_const(&mut exprs, 2, 11); // Nat.succ
+    exprs.insert(ExprId(3), Expr::App { fun: ExprId(2), arg: ExprId(1) }).unwrap();
+    put_const(&mut exprs, 4, 12); // Nat.sub
+    exprs.insert(ExprId(5), Expr::App { fun: ExprId(4), arg: ExprId(1) }).unwrap();
+    exprs.insert(ExprId(6), Expr::App { fun: ExprId(5), arg: ExprId(3) }).unwrap();
+    exprs.insert(ExprId(7), Expr::App { fun: ExprId(5), arg: ExprId(1) }).unwrap();
+    put_const(&mut exprs, 8, 13); // Nat.pred
+    exprs.insert(ExprId(9), Expr::App { fun: ExprId(8), arg: ExprId(3) }).unwrap();
+
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(7), &exprs, &levels, HashMap::new())
+        .with_nat_primitives(Some(NatPrimitives {
+            type_name: NameId(65), type_expr: ExprId(0),
+            zero: NameId(10), succ: NameId(11), recursor: NameId(66),
+            add: None, sub: Some(NameId(12)), pred: Some(NameId(13)),
+            virtual_bvar_zero: Some(ExprId(1)),
+            ble: None, beq: None,
+        }));
+    let frame = EnvFrame::empty().extend_free(FreeId(7));
+    let left = machine.expose(Closure::new(ExprId(6), frame.clone()), Transparency::Reducible, 128);
+    let Some(Value::Neutral(outer)) = left.proven_value() else {
+        panic!("symbolic sub-successor should normalize to Nat.pred");
+    };
+    assert_eq!(outer.head, NeutralHead::Const { name: NameId(13), levels: vec![] });
+    assert_eq!(outer.spine.len(), 1);
+    let inside = machine.expose(outer.spine[0].clone(), Transparency::Opaque, 64);
+    let Some(Value::Neutral(inner)) = inside.proven_value() else {
+        panic!("symbolic Nat.sub inner closure was not preserved");
+    };
+    assert_eq!(inner.head, NeutralHead::Const { name: NameId(12), levels: vec![] });
+    assert_eq!(inner.spine.len(), 2);
+    let variable = machine.expose(Closure::new(ExprId(7), frame.clone()), Transparency::Reducible, 64);
+    assert!(matches!(variable.proven_value(),
+        Some(Value::Neutral(neutral)) if neutral.head == NeutralHead::Const { name: NameId(12), levels: vec![] }
+    ));
+    let pred_succ = machine.expose(Closure::new(ExprId(9), frame), Transparency::Reducible, 64);
+    assert!(matches!(pred_succ.proven_value(),
+        Some(Value::Neutral(neutral)) if neutral.head == NeutralHead::Free(FreeId(7))
+    ));
 }
