@@ -57,6 +57,8 @@ jobs:
           export PATH="$HOME/.elan/bin:$PATH"
           lake env lean --version | tee evidence/toolchain.txt
           lake build CollatzFinal > evidence/spine.log 2>&1
+          mkdir -p .lake/build/lib/lean/Collatz
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/LawfulFutureJoin.olean formal/Collatz/LawfulFutureJoin.lean > evidence/v124-import-authority.log 2>&1
           lake env lean -DautoImplicit=false formal/Collatz/SourceThreeReverseRoot.lean 2>&1 | tee evidence/v125-lean.log
           python3 - <<'PY'
           import re,json,hashlib,pathlib,subprocess
