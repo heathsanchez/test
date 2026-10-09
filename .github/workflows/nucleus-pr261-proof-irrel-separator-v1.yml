@@ -1,0 +1,105 @@
+name: Nucleus PR261 proof-irrelevance separator v1
+
+on:
+  push:
+    branches: [nucleus-pr261-proof-irrel-separator-v1]
+    paths:
+      - ".github/workflows/nucleus-pr261-proof-irrel-separator-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_PR_HEAD: 8a0674357fbae0fd1960c17eafc23555949acfb9
+      ARENA_PR_RUN: "37522588295"
+      ARENA_TEST_ARTIFACT: "11440969096"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build warranted Nucleus candidate
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo test --release --locked strict_json_tests
+          cargo build --release --locked
+          cp target/release/metatron-kernel /tmp/nucleus
+          sha256sum /tmp/nucleus
+
+      - name: Fetch exact Arena PR261 test artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pr261-artifact /tmp/pr261-tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_TEST_ARTIFACT/zip" > /tmp/pr261.zip
+          unzip -q /tmp/pr261.zip -d /tmp/pr261-artifact
+          tar --no-same-owner -xzf /tmp/pr261-artifact/lean-arena-tests.tar.gz -C /tmp/pr261-tests
+          test -f /tmp/pr261-tests/good/perf/irrelevance-refutes.ndjson
+          sha256sum /tmp/pr261-tests/good/perf/irrelevance-refutes.ndjson
+
+      - name: Run CANDIDATE proof-irrelevance separator
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/pr261-proof-irrel-separator-v1
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, time
+
+          fixture=pathlib.Path("/tmp/pr261-tests/good/perf/irrelevance-refutes.ndjson")
+          binary=pathlib.Path("/tmp/nucleus")
+          data=fixture.read_bytes()
+          started=time.monotonic()
+          try:
+              p=subprocess.run(
+                  [str(binary)],
+                  input=data,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  timeout=50,
+                  env=os.environ | {
+                      "NUCLEUS_TRACE_DOWNSTREAM":"1",
+                      "NUCLEUS_TRACE_LOCAL_PROOF_IRREL":"1",
+                  },
+              )
+              timed_out=False
+              rc=p.returncode
+              stderr=p.stderr.decode(errors="replace")
+          except subprocess.TimeoutExpired as e:
+              timed_out=True
+              rc=None
+              stderr=(e.stderr or b"").decode(errors="replace") if isinstance(e.stderr,(bytes,bytearray)) else str(e.stderr or "")
+          seconds=time.monotonic()-started
+
+          report={
+              "schema":"nucleus-pr261-proof-irrel-separator-v1",
+              "epistemic_state":"CANDIDATE",
+              "candidate_sha":os.environ["GITHUB_SHA"],
+              "arena_pr_head":os.environ["ARENA_PR_HEAD"],
+              "arena_pr_run":os.environ["ARENA_PR_RUN"],
+              "arena_test_artifact":os.environ["ARENA_TEST_ARTIFACT"],
+              "fixture":"perf/irrelevance-refutes",
+              "fixture_sha256":hashlib.sha256(data).hexdigest(),
+              "returncode":rc,
+              "timed_out":timed_out,
+              "seconds":seconds,
+              "stderr_tail":stderr.splitlines()[-100:],
+          }
+          out=pathlib.Path("metatron-kernel/evidence-out/pr261-proof-irrel-separator-v1/result.json")
+          out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,sort_keys=True))
+          assert not timed_out, report
+          assert rc==0, report
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-pr261-proof-irrel-${{ github.sha }}
+          path: metatron-kernel/evidence-out/pr261-proof-irrel-separator-v1
+          if-no-files-found: warn
