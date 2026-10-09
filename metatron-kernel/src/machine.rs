@@ -297,6 +297,16 @@ impl<'a> Machine<'a> {
         if index >= spec.field_types.len() {
             return Judgment::unknown("projection-index-out-of-range");
         }
+        if std::env::var_os("NUCLEUS_TRACE_PROJECTION_BINDINGS").is_some()
+            && budget > 64_000
+        {
+            eprintln!(
+                "NUCLEUS_PROJECTION_BINDINGS:owner={}:field={}:expr={:?}:level={:?}:slot0={:?}:slot1={:?}:slot2={:?}:slot3={:?}:budget={}",
+                type_name.0, index, structure.expr, structure.levels,
+                structure.env.lookup(0), structure.env.lookup(1),
+                structure.env.lookup(2), structure.env.lookup(3), budget,
+            );
+        }
         let exposed = self.expose_internal(
             structure,
             Transparency::Full,
