@@ -1359,6 +1359,63 @@ fn compare_values(
     Judgment::proven((), "rigid-value-comparison")
 }
 
+// Congruence for identical syntax instantiated by different environments.
+// Only de Bruijn slots reachable from the expression influence its value.
+fn same_live_closure(
+    checker: &TypeChecker<'_>, left: &Closure, right: &Closure,
+    budget: usize, depth: usize, context: &[TypeValue],
+) -> bool {
+    if left == right { return true; }
+    if left.expr != right.expr || left.levels != right.levels || budget < 16 {
+        return false;
+    }
+    let mut todo = vec![(left.expr, 0u64)];
+    let mut seen = HashSet::new();
+    let mut slots = HashSet::new();
+    while let Some((expr, bound)) = todo.pop() {
+        if !seen.insert((expr, bound)) { continue; }
+        if seen.len() > 512 { return false; }
+        match checker.expression(expr) {
+            Some(Expr::BVar(i)) if *i >= bound => {
+                slots.insert(*i - bound);
+                if slots.len() > 8 { return false; }
+            }
+            Some(Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_)
+                | Expr::Sort(_) | Expr::Const { .. }) => {}
+            Some(Expr::App { fun, arg }) => {
+                todo.push((*fun, bound)); todo.push((*arg, bound));
+            }
+            Some(Expr::Lam { domain, body } | Expr::Pi { domain, body }) => {
+                todo.push((*domain, bound));
+                let Some(next) = bound.checked_add(1) else { return false };
+                todo.push((*body, next));
+            }
+            Some(Expr::Let { ty, value, body }) => {
+                todo.push((*ty, bound)); todo.push((*value, bound));
+                let Some(next) = bound.checked_add(1) else { return false };
+                todo.push((*body, next));
+            }
+            Some(Expr::Proj { structure, .. }) => todo.push((*structure, bound)),
+            None => return false,
+        }
+    }
+    let each_budget = (budget / slots.len().max(1)).min(64);
+    slots.into_iter().all(|slot| {
+        match (left.env.lookup(slot), right.env.lookup(slot)) {
+            (Some(EnvBinding::Free(a)), Some(EnvBinding::Free(b))) => a == b,
+            (Some(EnvBinding::Neutral(a)), Some(EnvBinding::Neutral(b))) => a == b,
+            (Some(EnvBinding::Closure(a)), Some(EnvBinding::Closure(b))) => {
+                a == b || (each_budget >= 8 &&
+                    convert_with_policy_in_context(
+                        checker, &TypeValue::Term(a), &TypeValue::Term(b),
+                        each_budget, DeltaPolicy::PreferredOnly, depth, context,
+                    ).is_proven())
+            }
+            _ => false,
+        }
+    })
+}
+
 fn same_closure_spine_congruence(
     checker: &TypeChecker<'_>,
     left: &[Closure],
