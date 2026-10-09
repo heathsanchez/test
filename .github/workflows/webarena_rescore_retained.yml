@@ -1,0 +1,36 @@
+name: WebArena retained Hard diagnostic rescore
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths: [".github/workflows/webarena_rescore_retained.yml"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  rescore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned official evaluator
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream && git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install "./upstream"
+      - uses: actions/download-artifact@v4
+        with:
+          name: webarena-blind-full-hard-258
+          run-id: 37891173089
+          github-token: ${{ github.token }}
+          path: artifacts/original
+      - name: Score existing agent evidence
+        run: python scripts/webarena_rescore_retained.py --input artifacts/original --output artifacts/rescore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-rescore-retained-258
+          path: artifacts/rescore
