@@ -11,7 +11,7 @@ import asyncio
 import json
 import re
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
 
 from playwright.async_api import async_playwright
 
@@ -48,8 +48,38 @@ def site_from_start(start_url: str) -> str:
     raise ValueError(f"unsupported initial site: {start_url!r}")
 
 
+def gitlab_navigation_target(intent: str):
+    text=clean(intent)
+    if text.casefold()=="open my todos page":
+        return GITLAB_ROOT+"/dashboard/todos"
+    if text.casefold()=="go to the merge requests assigned to me":
+        return GITLAB_ROOT+"/dashboard/merge_requests?"+urlencode(
+            {"assignee_username":"byteblaze"}
+        )
+    m=re.fullmatch(
+        r"Navigate to the page showing the list of (.+?) issues in the "
+        r"([^ ]+) repository that have labels related to (.+)",
+        text,re.I,
+    )
+    if m:
+        state,repo,label=m.groups()
+        repo=repo.strip("/")
+        if repo.count("/")!=1 or any(segment in ("",".","..") for segment in repo.split("/")):
+            raise ValueError("invalid repository path")
+        if state.casefold() not in ("open","not yet closed","not closed"):
+            raise ValueError(f"unsupported issue-state filter: {state!r}")
+        if label.casefold().startswith("all except "):
+            raise ValueError("negative label filter not yet warranted")
+        query=urlencode({"state":"opened","label_name[]":label},doseq=True)
+        return f"{GITLAB_ROOT}/{repo}/-/issues?{query}"
+    return None
+
+
 def gitlab_intent(intent: str):
     text = clean(intent)
+    navigation=gitlab_navigation_target(text)
+    if navigation:
+        return "navigate", {"target":navigation}
     if text.casefold() == "get me my rss feed token":
         return "rss", {}
     m = re.fullmatch(
@@ -108,6 +138,18 @@ def actual_start(start_url: str) -> str:
 
 async def execute_gitlab(page, intent: str, start_url: str):
     capability, args = gitlab_intent(intent)
+    if capability == "navigate":
+        await sign_in(page)
+        response=await page.goto(args["target"],wait_until="networkidle",timeout=120000)
+        if response is None or response.status!=200:
+            raise RuntimeError(f"GitLab navigation HTTP {getattr(response,'status',None)}")
+        return (
+            {"task_type":"NAVIGATE","status":"SUCCESS",
+             "retrieved_data":None,"error_details":None},
+            {"capability":capability,"target":args["target"],
+             "observed_url":page.url,"observed_status":response.status},
+        )
+
     if capability == "rss":
         await sign_in(page)
         token, links = await find_feed_token(page)
@@ -156,11 +198,13 @@ async def run(intent: str, start_url: str, output_dir: Path):
         raise ValueError("GitLab-to-Reddit composition requires a Reddit starting site")
     output_dir.mkdir(parents=True,exist_ok=True)
     har=output_dir/"network.har"
+    protected_navigation=(site=="gitlab" and not cross_site and
+        gitlab_intent(intent)[0]=="navigate")
     async with async_playwright() as playwright:
         browser=await playwright.chromium.launch(headless=True)
         context=await browser.new_context(
             extra_http_headers=REDDIT_AUTH if site=="reddit" else {},
-            record_har_path=str(har) if site=="reddit" else None,
+            record_har_path=str(har) if site=="reddit" or protected_navigation else None,
             record_har_mode="full",
         )
         page=await context.new_page()
