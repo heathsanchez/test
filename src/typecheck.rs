@@ -1095,6 +1095,67 @@ impl<'a> TypeChecker<'a> {
                                         &ext,
                                     ),
                                 );
+                                let next_expected = anticipated_body.under_free(*binder);
+                                let next_expected_whnf = self.machine().expose(
+                                    next_expected, Transparency::Full, (*remaining).min(1024),
+                                );
+                                if let (
+                                    TypeValue::Pi {
+                                        domain: inner_actual_domain,
+                                        body: inner_actual_body,
+                                        binder: inner_binder,
+                                    },
+                                    Some(Value::Pi {
+                                        domain: inner_expected_domain,
+                                        body: inner_expected_body,
+                                    }),
+                                ) = (actual_body.as_ref(), next_expected_whnf.proven_value())
+                                {
+                                    let inner_domain_relation =
+                                        crate::convert::convert_with_policy_in_context(
+                                            self,
+                                            inner_actual_domain,
+                                            &TypeValue::Term(inner_expected_domain.clone()),
+                                            (*remaining).min(512),
+                                            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                            ext.len(),
+                                            &ext,
+                                        );
+                                    let mut last_relation = None;
+                                    let mut actual_final_whnf = None;
+                                    let mut expected_final_whnf = None;
+                                    if inner_domain_relation.is_proven()
+                                        && *inner_binder == FreeId(ext.len() as u64)
+                                    {
+                                        let mut inner_context = ext.clone();
+                                        inner_context.push(inner_actual_domain.as_ref().clone());
+                                        let expected_final = inner_expected_body.under_free(*inner_binder);
+                                        last_relation = Some(
+                                            crate::convert::convert_with_policy_in_context(
+                                                self,
+                                                inner_actual_body.as_ref(),
+                                                &TypeValue::Term(expected_final.clone()),
+                                                (*remaining).min(512),
+                                                crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                inner_context.len(),
+                                                &inner_context,
+                                            ),
+                                        );
+                                        actual_final_whnf = match inner_actual_body.as_ref() {
+                                            TypeValue::Term(c) => Some(self.machine().expose(
+                                                c.clone(), Transparency::Full, 512,
+                                            )),
+                                            _ => None,
+                                        };
+                                        expected_final_whnf = Some(self.machine().expose(
+                                            expected_final, Transparency::Full, 512,
+                                        ));
+                                    }
+                                    eprintln!(
+                                        "NUCLEUS_SECOND_PI_DOMAIN:expr={expression:?}:domain={inner_actual_domain:?}:expected_domain={inner_expected_domain:?}:domain_relation={inner_domain_relation:?}:last_relation={last_relation:?}:actual_final_whnf={actual_final_whnf:?}:expected_final_whnf={expected_final_whnf:?}",
+                                    );
+                                }
+
                             }
                         }
                         eprintln!(
