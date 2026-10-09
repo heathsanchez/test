@@ -36,6 +36,35 @@ def score(description,label,slug,context=""):
     return exact*10.0+total
 
 async def resolve_forum(page,base,description,max_pages=12):
+    # First resolve explicitly named forums through the site's own search.
+    # Do not guess a forum slug from the user's wording.
+    query=clean(description)
+    if query and len(query.split()) <= 7:
+        from urllib.parse import quote
+        normalized=lambda value: re.sub(r"[^a-z0-9]+","",clean(value).casefold())
+        wanted=normalized(query)
+        for url in (
+            f"{base.rstrip('/')}/forums/search?q={quote(query)}",
+            f"{base.rstrip('/')}/search?q={quote(query)}",
+        ):
+            response=await page.goto(url,wait_until="networkidle",timeout=120000)
+            if response is None or response.status!=200:
+                continue
+            links=page.locator('a[href^="/f/"]')
+            matches={}
+            for i in range(min(await links.count(),300)):
+                link=links.nth(i)
+                href=await link.get_attribute("href") or ""
+                parts=[p for p in urlparse(href).path.split("/") if p]
+                if len(parts)<2 or parts[0]!="f":
+                    continue
+                slug=parts[1]
+                label=clean(await link.inner_text())
+                if normalized(slug)==wanted or normalized(label)==wanted:
+                    matches[slug]={"score":100.0,"label":label,"slug":slug,"context":"forum search"}
+            if len(matches)==1:
+                row=next(iter(matches.values()))
+                return {**row,"candidates":[row]}
     rows=[]; seen=set(); empty=0
     for n in range(1,max_pages+1):
         r=await page.goto(f"{base.rstrip('/')}/forums/by_name/{n}",wait_until="networkidle",timeout=120000)
