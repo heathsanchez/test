@@ -1,0 +1,92 @@
+name: Nucleus Nat.le constructor-head separator
+on:
+  push:
+    branches: [nucleus-succle-constructor-field-trace-v1]
+    paths: [".github/workflows/nucleus-succle-head-separator-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  certificate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_COMMIT: 9e63b8b0b7c4ee10c87b4fb9a55f31a53f87f862
+      SOURCE_SUBTREE: d7fc57b929914c9733ef60eed0c824618fcc6da5
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind source and build release kernel
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch frozen independent Arena fixtures
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena /tmp/tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena
+          tar -xzf /tmp/arena/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Reclose two positives and one false-index negative
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/succle-head-v1
+          python3 - <<'PY'
+          import os,sys,pathlib,hashlib,subprocess,json,re
+          sys.path.insert(0,"metatron-kernel/evidence")
+          from succle_prefix_separator import extract, false_index
+          root=pathlib.Path('/tmp/tests')
+          out=pathlib.Path('metatron-kernel/evidence-out/succle-head-v1')
+          pairs=[
+            ('init-prelude','eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5',
+             '5a4964190480cea9be1e17bc5f611394fcea1c523fb52fdf205ff0d8c220400b'),
+            ('perf/magma-list-pair-n7','abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
+             'ca63a82309e2e8fa16b447714d9183c945b0ddc0d3c59ef7aaac8b1951f218e2')]
+          cases=[]
+          for name,source_hash,prefix_hash in pairs:
+            data=(root/'good'/(name+'.ndjson')).read_bytes()
+            assert hashlib.sha256(data).hexdigest()==source_hash,name
+            prefix=extract(data)
+            assert hashlib.sha256(prefix).hexdigest()==prefix_hash,name
+            cases.append((name,prefix,2))
+            if name=='init-prelude':
+              mutant=false_index(prefix)
+              assert hashlib.sha256(mutant).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+              cases.append(('false-index',mutant,None))
+          bad=(root/'bad/bugs/nested-unused-param.ndjson').read_bytes()
+          cases.append(('nested-unused-param',bad,1))
+          rows=[]
+          for name,data,expected in cases:
+            env=os.environ|{'NUCLEUS_TRACE_PROJECTION_CONSTRUCTOR':'1','NUCLEUS_TRACE_DOWNSTREAM':'1'}
+            result=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+              input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=30,env=env)
+            log=result.stderr.decode(errors='replace')
+            (out/(name.replace('/','__')+'.stderr.txt')).write_text(log)
+            heads=[x for x in log.splitlines() if 'NUCLEUS_PROJ_FIELD:' in x]
+            heads_unique=list(dict.fromkeys(heads))
+            downstream=[x for x in log.splitlines() if 'NUCLEUS_DOWNSTREAM:' in x][-3:]
+            row={'name':name,'returncode':result.returncode,'sha256':hashlib.sha256(data).hexdigest(),
+                 'mismatch_count':len(heads),'mismatch_examples':heads_unique[:16],
+                 'last':downstream}
+            rows.append(row)
+            print(json.dumps(row,sort_keys=True))
+            if expected is not None: assert result.returncode==expected,row
+            else: assert result.returncode in (1,2),row
+            if name in ('init-prelude','perf/magma-list-pair-n7'):
+              assert downstream and 'name=Nat.succ_le_succ' in downstream[-1],row
+          report={'source':os.environ['SOURCE_COMMIT'],'subtree':os.environ['SOURCE_SUBTREE'],
+                  'qualification':os.environ['GITHUB_SHA'],'cases':rows}
+          (out/'report.json').write_text(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-succle-head-${{ github.sha }}
+          path: metatron-kernel/evidence-out/succle-head-v1
+          if-no-files-found: warn
