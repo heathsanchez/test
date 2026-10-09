@@ -304,10 +304,16 @@ impl<'a> TypeChecker<'a> {
                         crate::convert::DeltaPolicy::GuardedSemanticFallback,
                         context.len(), context,
                     );
+                    let expected_exposure = match &domain {
+                        TypeValue::Term(c) => self.machine().expose(
+                            c.clone(), Transparency::Full, (*remaining).min(256),
+                        ).map(|v| format!("{v:?}")),
+                        other => Judgment::proven(format!("{other:?}"), "already-value-type"),
+                    };
                     note(
                         "argument-domain-unresolved",
                         format!(
-                            "argument={argument:?}:actual_type={argument_ty:?}:expected={domain:?}:preferred={domain_check:?}:guarded={guarded:?}"
+                            "argument={argument:?}:actual_type={argument_ty:?}:expected={domain:?}:expected_full={expected_exposure:?}:preferred={domain_check:?}:guarded={guarded:?}"
                         ),
                     );
                 }
