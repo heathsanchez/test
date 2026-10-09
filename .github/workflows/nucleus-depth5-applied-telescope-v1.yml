@@ -112,6 +112,34 @@ jobs:
           print('TYPED_TELESCOPE_CANDIDATE_AWAITS_FULL_REPLAY',flush=True)
           PY
 
+      - name: Locate first post-telescope rejection in positive exports
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests/good')
+          rows=[]
+          for name in ['perf/magma-list-pair-n7','perf/magma-list-pair-n21',
+                       'init-prelude','perf/grind-ring-5']:
+              p=subprocess.run(
+                  ['/tmp/nucleus'],
+                  input=(root/(name+'.ndjson')).read_bytes(),
+                  stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                  timeout=120,
+                  env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                                  'NUCLEUS_TRACE_LOCAL_PROOF_IRREL':'1',
+                                  'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1'})
+              lines=p.stderr.decode(errors='replace').splitlines()
+              downstream=[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x]
+              local=[x for x in lines if 'NUCLEUS_TYPED_TELESCOPE:' in x]
+              app=[x for x in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in x]
+              row={'case':name,'return_code':p.returncode,'downstream_last':downstream[-12:],
+                   'typed_proofs':local[-8:],'app_errors':app[-6:]}
+              print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
+              rows.append(row)
+          pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
+          PY
+
       - name: Qualify complete 196-case corpus; only promote genuine gain
         run: |
           set -euo pipefail
