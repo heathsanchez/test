@@ -8,7 +8,7 @@ import json
 import re
 from pathlib import Path
 from urllib.parse import urlparse
-from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError, Error as PlaywrightError
+from playwright.async_api import async_playwright, Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError, Error as PlaywrightError
 from webarena_shopping_order_history_probe import AUTH_HEADER
 
 BASE="http://localhost:7770"
@@ -30,6 +30,27 @@ def verify_start_url(start_url):
     if not path.startswith("/") or not path.endswith(".html"):
         raise ValueError("wishlist requires the current product page")
     return BASE+path
+
+
+async def readback_wishlist(page,url):
+    """Retry only the safe read-only GET if an earlier click's navigation aborts it."""
+    last_error=None
+    for attempt in range(4):
+        try:
+            try:
+                await page.wait_for_load_state("networkidle",timeout=20000)
+            except PlaywrightError:
+                pass
+            response=await page.goto(url,wait_until="networkidle",timeout=120000)
+            if response is None or response.status!=200:
+                raise RuntimeError(f"wishlist readback HTTP {getattr(response,'status',None)}")
+            return response
+        except PlaywrightError as exc:
+            if "ERR_ABORTED" not in str(exc):
+                raise
+            last_error=exc
+            await page.wait_for_timeout(500*(attempt+1))
+    raise RuntimeError(f"wishlist GET repeatedly aborted after submitted action: {last_error}")
 
 
 async def add_current_product(page, start_url):
@@ -82,9 +103,7 @@ async def add_current_product(page, start_url):
         # A GET-only readback may be retried after a racing navigation.
         # No mutation is reissued.
         await page.wait_for_load_state("domcontentloaded",timeout=120000)
-        confirmation=await page.goto(target_wishlist,wait_until="networkidle",timeout=120000)
-    if confirmation is None or confirmation.status!=200:
-        raise RuntimeError("wishlist confirmation page unavailable")
+        await readback_wishlist(page,target_wishlist)
     body=normalize(await page.locator("body").inner_text())
     if product not in body:
         raise RuntimeError(f"product absent from wishlist readback: {product[:120]!r}")
