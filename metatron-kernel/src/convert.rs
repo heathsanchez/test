@@ -1474,6 +1474,25 @@ fn compare_values(
                 // Narrow boundary from chain6_datF: one receiver argument
                 // and one pending argument. Each probe has at most one quarter
                 // the caller's remaining budget, so it cannot self-license.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_CHAIN6_PROJECTION_CONGRUENCE").is_some()
+                    && let (
+                        NeutralHead::Projection {type_name:lt,index:li,structure:ls},
+                        NeutralHead::Projection {type_name:rt,index:ri,structure:rs},
+                    )=(&left.head,&right.head)
+                    && lt==rt && li==ri
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static C:AtomicUsize=AtomicUsize::new(0);
+                    if C.fetch_add(1,Ordering::Relaxed)<60 {
+                        eprintln!(
+                            "NUCLEUS_CHAIN6_CANDIDATE:depth={depth}:context_len={}:budget={current_budget}:type={lt:?}:field={li}:certified={}:left_receiver={:?}:right_receiver={:?}:left_outer_arity={}:right_outer_arity={}",
+                            context.len(),
+                            checker.has_certified_projection_signature(*lt),
+                            ls,rs,left.spine.len(),right.spine.len(),
+                        );
+                    }
+                }
                 if depth==context.len() && current_budget>=32
                     && let (
                         NeutralHead::Projection {
