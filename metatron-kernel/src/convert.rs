@@ -1268,10 +1268,14 @@ fn compare_values(
                         if checked_pending {
                             #[cfg(feature = "diagnostics")]
                             if std::env::var_os("NUCLEUS_TRACE_MULPOS_REC_CONGRUENCE").is_some() {
-                                eprintln!(
-                                    "NUCLEUS_MULPOS_REC_CONGRUENCE:proved:depth={depth}:index={left_index}:recursor={:?}:args=4:pending={}",
-                                    nat.recursor,left_spine.len()
-                                );
+                                use std::sync::atomic::{AtomicUsize, Ordering};
+                                static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                                if PRINTED.fetch_add(1, Ordering::Relaxed) < 40 {
+                                    eprintln!(
+                                        "NUCLEUS_MULPOS_REC_CONGRUENCE:proved:depth={depth}:index={left_index}:recursor={:?}:args=4:pending={}",
+                                        nat.recursor,left_spine.len()
+                                    );
+                                }
                             }
                             return Judgment::proven((), "certified-recursion-projection-congruence");
                         }
