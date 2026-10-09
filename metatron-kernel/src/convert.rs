@@ -1603,6 +1603,49 @@ fn compare_nat_literal_neutral(
             );
         }
     }
+    // Nat.rec zero-iota with canonical, source-certified major. The registered
+    // recursor rule reduces Nat.rec motive zero_case step Nat.zero to zero_case.
+    // Merely observing Nat.rec or matching an expression ID never licenses
+    // equality with a numeral: recompare the *actual* zero minor afterward.
+    if budget >= 32
+        && checker.certified_nat_rec_zero_rule(*name, levels.len(), neutral.spine.len())
+    {
+        let machine = checker.machine();
+        let major = machine.expose(
+            neutral.spine[3].clone(),
+            Transparency::Full,
+            budget.min(128),
+        );
+        if let Some(Value::NatLit(number)) = major.proven_value()
+            && number.is_zero()
+        {
+            let minor = machine.expose(
+                neutral.spine[1].clone(),
+                Transparency::Full,
+                budget.min(128),
+            );
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_NATREC_ZERO_IOTA").is_some() {
+                eprintln!(
+                    "NUCLEUS_CERTIFIED_NATREC_ZERO_IOTA:level_arity={}:depth={depth}:context={}:major={major:?}:zero_minor={minor:?}:literal={literal:?}",
+                    levels.len(), context.len(),
+                );
+            }
+            let Some(minor_value) = minor.proven_value() else {
+                return Judgment::unknown("certified-Nat-rec-zero-minor-unavailable");
+            };
+            return compare_values(
+                checker,
+                &Value::NatLit(literal.clone()),
+                minor_value,
+                budget.saturating_sub(1),
+                depth,
+                context,
+                work,
+                proof_function_frees,
+            );
+        }
+    }
     if !levels.is_empty() {
         return Judgment::refuted("Nat-literal-constructor-levels");
     }
