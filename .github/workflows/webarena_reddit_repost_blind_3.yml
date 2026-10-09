@@ -1,0 +1,131 @@
+name: WebArena blind Reddit image repost qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_reddit_repost_blind_3.yml"
+      - "scripts/webarena_reddit_repost_blind.py"
+      - "tests/test_webarena_reddit_repost_blind.py"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned official evaluator
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          git -C upstream checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start Reddit benchmark fixture
+        run: |
+          mkdir -p artifacts/webarena_reddit_blind_repost
+          image=am1n3e/webarena-verified-reddit@sha256:0594908059a03e5f610005689440a95c05e776e734006197c7b1eba12734cb46
+          docker pull "$image"
+          printf '%s\n' "$image" > artifacts/webarena_reddit_blind_repost/reddit_image_digest.txt
+          docker run -d --name reddit -p 9999:80 -p 9998:8877 "$image"
+          for i in $(seq 1 120); do
+            code=$(curl --max-time 4 -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9999 || true)
+            if [ "$code" = 200 ] || [ "$code" = 302 ]; then break; fi
+            if [ "$i" = 120 ]; then docker logs reddit --tail 120; exit 1; fi
+            sleep 2
+          done
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install pinned evaluator and Chromium
+        run: |
+          python -m pip install './upstream[examples]' playwright
+          python -m playwright install --with-deps chromium
+      - name: Test task-ID-blind admission
+        run: |
+          python -m unittest discover -s tests -p 'test_webarena_reddit_repost_blind.py' -v
+          python -m py_compile scripts/webarena_reddit_repost_blind.py
+      - name: Execute three intent-only image reposts
+        run: |
+          root=artifacts/webarena_reddit_blind_repost
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$root/hard.json"
+          cat > "$root/config.json" <<'JSON'
+          {"environments":{"__REDDIT__":{"urls":["http://localhost:9999"],"active_url_idx":0}}}
+          JSON
+          python - <<'PY'
+          import json,subprocess,sys,uuid
+          from pathlib import Path
+          root=Path('artifacts/webarena_reddit_blind_repost')
+          rows=json.loads((root/'hard.json').read_text())
+          by_id={int(row['task_id']):row for row in rows}
+          ledger={}
+          for ident in (615,617,618):
+              task=by_id[ident]
+              slot=uuid.uuid4().hex
+              out=root/'output'/slot
+              out.mkdir(parents=True,exist_ok=True)
+              args=[sys.executable,'scripts/webarena_reddit_repost_blind.py',
+                    '--intent',task['intent'],
+                    '--start-url',task['start_urls'][0],
+                    '--output-dir',str(out)]
+              try:
+                  done=subprocess.run(args,capture_output=True,text=True,timeout=200,check=False)
+                  exit_code=done.returncode
+                  (out/'stdout.txt').write_text(done.stdout[-20000:])
+                  (out/'stderr.txt').write_text(done.stderr[-30000:])
+              except subprocess.TimeoutExpired as exc:
+                  exit_code=124
+                  (out/'stderr.txt').write_text(str(exc))
+              ledger[str(ident)]={'slot':slot,'exit_code':exit_code}
+              print('BLIND',ident,'exit',exit_code,flush=True)
+          (root/'manifest.json').write_text(json.dumps(ledger,indent=2)+'\n')
+          PY
+      - name: Officially evaluate all three network consequences
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path('artifacts/webarena_reddit_blind_repost')
+          authority=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/'config.json'))
+          manifest=json.loads((root/'manifest.json').read_text())
+          results={}; failures=[]
+          for key,record in manifest.items():
+              ident=int(key)
+              out=root/'output'/record['slot']
+              if record['exit_code'] or not (out/'network.har').is_file() or not (out/'agent_response.json').is_file():
+                  results[key]={'score':0.0,'status':'execution_incomplete','exit_code':record['exit_code']}
+                  failures.append(ident)
+                  continue
+              try:
+                  trace=NetworkTrace.from_har(out/'network.har')
+                  evaluated=authority.evaluate_task(task_id=ident,
+                      agent_response=out/'agent_response.json',network_trace=trace)
+                  (out/'official.json').write_text(json.dumps(evaluated.model_dump(mode='json',exclude_none=True),indent=2)+'\n')
+                  row={'score':float(evaluated.score),'status':evaluated.status.value,
+                       'network_events':len(trace.evaluation_events)}
+                  results[key]=row
+                  if row['score']!=1.0 or row['status']!='success':failures.append(ident)
+              except Exception as exc:
+                  results[key]={'score':0.0,'status':'evaluation_error','error':repr(exc)}
+                  failures.append(ident)
+              print('OFFICIAL',ident,results[key],flush=True)
+          seal={
+              'epistemic_state':'WARRANTED_BOUNDED' if not failures and len(manifest)==3 else 'CANDIDATE_WITH_RESIDUALS',
+              'boundary':'three Reddit image URL reposts, task-ID-blind intent and start URL, one submitted mutation per instruction',
+              'upstream_commit':'6473f72db5dcefc97b5725b59e734504edc28a21',
+              'success_count':sum(r.get('score')==1.0 and r.get('status')=='success' for r in results.values()),
+              'results':results,'failures':failures,
+          }
+          (root/'qualification.json').write_text(json.dumps(seal,indent=2)+'\n')
+          print(json.dumps(seal,indent=2),flush=True)
+          if failures or len(manifest)!=3:raise SystemExit(f'blind Reddit repost residuals: {failures}')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-reddit-blind-repost-3
+          path: artifacts/webarena_reddit_blind_repost
