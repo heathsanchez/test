@@ -186,3 +186,56 @@ fn dependent_application_instantiates_the_pi_body_with_the_argument_closure() {
             .is_proven()
     );
 }
+
+
+/// Regression: an inferred Pi from a lambda wrapped in a legal let must
+/// instantiate its captured binder even though the App head is not a literal
+/// lambda expression. The binder is introduced inside the let context and
+/// therefore does not have the caller's local depth.
+#[test]
+fn dependent_let_wrapped_lambda_substitutes_proposition_binder() {
+    let mut fixture = Fixture::dependent_core();
+    // The inner term is (fun proof : P => proof), with P = BVar(0).
+    fixture.expressions.insert(ExprId(11), Expr::Lam {
+        domain: ExprId(1), body: ExprId(1),
+    }).unwrap();
+    // (fun P : Prop => fun proof : P => proof)
+    fixture.expressions.insert(ExprId(12), Expr::Lam {
+        domain: ExprId(0), body: ExprId(11),
+    }).unwrap();
+    // (let ignored : Prop := A; fun P : Prop => fun proof : P => proof).
+    fixture.expressions.insert(ExprId(13), Expr::Let {
+        ty: ExprId(0), value: ExprId(4), body: ExprId(12),
+    }).unwrap();
+    // The result of applying the let-wrapped lambda to A is a function A -> A.
+    fixture.expressions.insert(ExprId(14), Expr::App {
+        fun: ExprId(13), arg: ExprId(4),
+    }).unwrap();
+    // Existing f : (P : Prop) -> P supplies a well-typed proof of A.
+    fixture.expressions.insert(ExprId(15), Expr::App {
+        fun: ExprId(14), arg: ExprId(10),
+    }).unwrap();
+    // Deliberately wrong second argument: A is a proposition, not a proof of A.
+    fixture.expressions.insert(ExprId(16), Expr::App {
+        fun: ExprId(14), arg: ExprId(4),
+    }).unwrap();
+
+    let checker = fixture.checker();
+    let accepted = checker.infer(ExprId(15), 4096);
+    assert!(
+        accepted.is_proven(),
+        "let-wrapped dependent lambda must accept checked proof: {accepted:?}"
+    );
+    assert!(
+        checker.convert(
+            accepted.proven_value().unwrap(),
+            &TypeValue::Term(Closure::new(ExprId(4), EnvFrame::empty())),
+            4096,
+        ).is_proven(),
+        "instantiated result must still inhabit the original proposition A"
+    );
+    assert!(
+        !checker.infer(ExprId(16), 4096).is_proven(),
+        "a proposition expression must not be accepted as a proof of itself"
+    );
+}
