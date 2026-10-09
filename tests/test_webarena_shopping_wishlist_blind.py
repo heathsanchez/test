@@ -2,7 +2,7 @@ import sys,unittest
 from pathlib import Path
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
-from webarena_shopping_wishlist_blind import authorize_intent,verify_start_url,readback_wishlist
+from webarena_shopping_wishlist_blind import authorize_intent,verify_start_url,readback_wishlist,php_session,establish_stable_session
 from playwright.async_api import Error as PlaywrightError
 
 
@@ -28,6 +28,38 @@ class WishlistAdmission(unittest.TestCase):
 
 
 class ReadbackNavigationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_authenticated_session_is_stable_before_write(self):
+        class Response:
+            status=200
+        class Context:
+            async def cookies(self,*args,**kwargs):
+                return [{"name":"PHPSESSID","value":"test-session"}]
+        class Page:
+            context=Context()
+            navigations=[]
+            async def goto(self,url,**kwargs):
+                self.navigations.append(url)
+                return Response()
+            async def reload(self,**kwargs):
+                return Response()
+        page=Page()
+        result=await establish_stable_session(page)
+        self.assertEqual(result,"test-session")
+        self.assertTrue(page.navigations[0].endswith("/customer/account/"))
+
+    async def test_absent_authenticated_session_fails_closed(self):
+        class Response:
+            status=200
+        class Context:
+            async def cookies(self,*args,**kwargs):
+                return [{"name":"form_key","value":"fake-form-key"}]
+        class Page:
+            context=Context()
+            async def goto(self,*args,**kwargs):
+                return Response()
+        with self.assertRaises(RuntimeError):
+            await establish_stable_session(Page())
+
     async def test_aborted_get_retry_does_not_repeat_mutation(self):
         class Response:
             status=200
