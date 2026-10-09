@@ -53,6 +53,25 @@ jobs:
           unzip -q /tmp/arena.zip -d /tmp/arena-artifact
           tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
 
+      - name: Diagnose beta ladder and succ-sub against baseline reasons
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, subprocess, json
+          root=pathlib.Path('/tmp/arena-tests/good')
+          for name in ('perf/beta-ladder','init-prelude','perf/magma-list-pair-n7'):
+              p=subprocess.run(['/tmp/nucleus'],input=(root/(name+'.ndjson')).read_bytes(),
+                  stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=35,
+                  env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                                  'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
+                                  'NUCLEUS_TRACE_DEPENDENCY_GAP':'1'})
+              logs=p.stderr.decode(errors='replace').splitlines()
+              trace={t:[s[:1400] for s in logs if s.startswith(t+':')][:4]
+                  for t in ('NUCLEUS_DOWNSTREAM','NUCLEUS_APPLICATION_FUNCTION_TYPE',
+                             'NUCLEUS_DEPENDENCY_GAP')}
+              print('BINDER_DIAG='+json.dumps({'case':name,'rc':p.returncode,'trace':trace}),flush=True)
+          PY
+
       - name: Reclose corrected 196-case frontier
         run: |
           set -euo pipefail
