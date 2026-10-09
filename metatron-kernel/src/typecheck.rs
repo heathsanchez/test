@@ -1,4 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::cell::RefCell;
+use std::rc::Rc;
 use crate::machine::{ExposureCache, new_exposure_cache};
 
 use crate::environment::Environment;
@@ -37,6 +39,9 @@ pub struct TypeChecker<'a> {
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
     exposure_cache: ExposureCache,
+    // Positive judgments only. Shared by nested conversions under this
+    // immutable environment/universe-substitution checker snapshot.
+    certified_conversions: Rc<RefCell<HashSet<crate::convert::CertifiedConversionKey>>>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -52,6 +57,7 @@ impl<'a> TypeChecker<'a> {
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
             exposure_cache: new_exposure_cache(),
+            certified_conversions: Rc::new(RefCell::new(HashSet::new())),
         }
     }
 
@@ -68,12 +74,31 @@ impl<'a> TypeChecker<'a> {
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
             exposure_cache: new_exposure_cache(),
+            certified_conversions: Rc::new(RefCell::new(HashSet::new())),
         }
     }
 
     pub fn with_delta_policy(mut self, policy: crate::convert::DeltaPolicy) -> Self {
         self.delta_policy = policy;
         self
+    }
+
+    pub(crate) fn recall_certified_conversion(
+        &self,
+        key: &crate::convert::CertifiedConversionKey,
+    ) -> bool {
+        self.certified_conversions.borrow().contains(key)
+    }
+
+    pub(crate) fn retain_certified_conversion(
+        &self,
+        key: crate::convert::CertifiedConversionKey,
+    ) {
+        let mut proven = self.certified_conversions.borrow_mut();
+        if proven.len() >= 16_384 {
+            proven.clear(); // Eviction only affects performance, never truth.
+        }
+        proven.insert(key);
     }
 
     pub fn infer(&self, expression: ExprId, budget: usize) -> Judgment<TypeValue> {
