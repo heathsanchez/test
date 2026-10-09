@@ -4,6 +4,20 @@ import Collatz.EpisodeSourcePrecision
 namespace CollatzFinal
 namespace SourceProduct
 
+/-- Core arithmetic: a zero remainder is precisely a divisibility
+certificate, including the zero-divisor case. -/
+theorem natural_mod_zero_iff_divisible (a b : Nat) :
+    a % b = 0 ↔ b ∣ a := by
+  constructor
+  · intro h
+    refine ⟨a / b, ?_⟩
+    have hd := Nat.mod_add_div a b
+    omega
+  · intro h
+    obtain ⟨c, hc⟩ := h
+    rw [hc]
+    simp
+
 /-- Multiplying both a modulus and an observed value by the same positive
 factor does not change the divisibility observation. -/
 theorem scaled_dvd_iff
@@ -51,7 +65,7 @@ theorem source_modulus_iff_endpoint_anchor
       _ = 2 ^ s.depth * (endpoint s + 1) := by
           simp [Nat.mul_add]
   rw [heq, Nat.pow_add]
-  simp only [Nat.mod_eq_zero]
+  simp only [natural_mod_zero_iff_divisible]
   exact scaled_dvd_iff (2 ^ s.depth) (2 ^ r)
     (endpoint s + 1) (Nat.pow_pos (by decide))
 
@@ -74,6 +88,7 @@ theorem endpoint_anchor_of_source_modulus
     (endpoint s + 1) % 2 ^ r = 0 :=
   (source_modulus_iff_endpoint_anchor s hs r).mp h
 
+#print axioms natural_mod_zero_iff_divisible
 #print axioms scaled_dvd_iff
 #print axioms source_modulus_iff_endpoint_anchor
 #print axioms source_modulus_of_endpoint_anchor
