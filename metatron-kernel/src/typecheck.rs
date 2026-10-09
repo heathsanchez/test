@@ -149,6 +149,36 @@ impl<'a> TypeChecker<'a> {
         )
     }
 
+    /// Diagnostic-only inspection of a constant declaration's checked type.
+    /// This is evidence about the declaration, not an ACCEPT rule.
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_constant_telescope(
+        &self,
+        name: NameId,
+        budget: usize,
+    ) -> String {
+        let Some(declaration) = self.environment.get(name) else {
+            return "missing-declaration".to_string();
+        };
+        let mut remaining = budget;
+        let inferred = self.infer_in(
+            declaration.ty,
+            &[],
+            &EnvFrame::empty(),
+            &mut remaining,
+            &mut HashMap::new(),
+        );
+        let exposed = self.machine().expose(
+            Closure::new(declaration.ty, EnvFrame::empty()),
+            Transparency::Reducible,
+            budget,
+        );
+        format!(
+            "name={name:?}:type_expr={:?}:level_params={:?}:type_sort={inferred:?}:type_whnf={exposed:?}",
+            declaration.ty, declaration.level_params
+        )
+    }
+
     pub(crate) fn is_proposition_in_context(
         &self,
         expression: ExprId,
