@@ -24,7 +24,7 @@ jobs:
           import hashlib,json
           from pathlib import Path
           p=Path('artifacts/source/source.tar')
-          (p.parent/'manifest.json').write_text(json.dumps({'commit':(p.parent/'commit.txt').read_text().strip(),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'boundary':'tracked repository source snapshot; not a benchmark score'},indent=2)+'\n')
+          (p.parent/'manifest.json').write_text(json.dumps({'commit':(p.parent/'commit.txt').read_text().strip(),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'boundary':'tracked source snapshot including reconciled parallel integrations; not a benchmark score'},indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
