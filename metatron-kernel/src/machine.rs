@@ -311,7 +311,12 @@ impl<'a> Machine<'a> {
             return Judgment::unknown("projection-structure-neutral");
         };
         if name != spec.constructor {
-            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONSTRUCTOR").is_some() { eprintln!("NUCLEUS_PROJ_FIELD:expected={:?}:actual={:?}", spec.constructor, name); }
+            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONSTRUCTOR").is_some() { eprintln!("NUCLEUS_PROJ_FIELD:expected={:?}:actual={:?}", spec.constructor, name);
+                eprintln!("NUCLEUS_PROJ_SPINE:head={name:?}:args={:?}", neutral.spine);
+                if let Some(major) = neutral.spine.last() {
+                    let normal = self.expose_internal(major.clone(), Transparency::Full, budget.min(128), false, false);
+                    eprintln!("NUCLEUS_PROJ_MAJOR:normal={normal:?}:raw={major:?}");
+                } }
             return Judgment::unknown("projection-constructor-mismatch");
         }
         let field_offset = spec.num_params + index;
