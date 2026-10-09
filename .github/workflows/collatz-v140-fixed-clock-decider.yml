@@ -1,0 +1,182 @@
+name: Collatz V140 protected fixed-clock decision controller
+on:
+  push:
+    branches: [collatz-v140-fixed-clock-decision-layer]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stateful-decider:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay five generations and proof-scoped fixed-clock decisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m unittest -v             research.test_collatz_ros_future_controller_v123             research.test_collatz_ros_future_controller_v124             research.test_collatz_ros_relational_root_v130             research.test_collatz_ros_chart_overlap_v132             research.test_collatz_ros_root23_reclosure_v134             research.test_collatz_ros_fixed_clock_v140             2>&1 | tee evidence/v140-tests.log
+          python3 -m research.collatz_ros_fixed_clock_v140             --bootstrap --output evidence/v140-decisions.json             | tee evidence/v140-bootstrap.log
+          python3 -m research.collatz_ros_fixed_clock_v140             --input evidence/v140-decisions.json --output evidence/v140-restart.json             | tee evidence/v140-restart.log
+          cmp evidence/v140-decisions.json evidence/v140-restart.json
+          if [ -f research/collatz_ros_clock_decisions_v140.json ]; then
+            cmp research/collatz_ros_clock_decisions_v140.json evidence/v140-decisions.json
+          fi
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          p=pathlib.Path('research/collatz_ros_state_v134.json')
+          raw=p.read_bytes()
+          expected='586c5a0bd52757b29abffdc5785c752fbf8faaf4962229a5cea065de3d95d3b0'
+          assert hashlib.sha256(raw).hexdigest()==expected
+          assert b'1208925819614629174706175' in raw
+          state=json.loads(raw)
+          assert len(state['joins'])==17 and state['global_collatz']=='UNKNOWN'
+          fp=pathlib.Path('evidence/v140-decisions.json')
+          d=json.loads(fp.read_text())
+          assert d['schema']=='COLLATZ_ROS_V140_FIXED_CLOCK_DECISION'
+          assert len(d['tracked_cases'])==11
+          assert d['parent']['file_sha256']==expected and d['parent']['mutated'] is False
+          assert d['proof_authorities']['V137_MULTIPLIER_IFF']['run']==37995061222
+          assert d['proof_authorities']['V139_SUFFIX_INVARIANCE']['run']==37995933736
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          categories={}
+          for e in d['tracked_cases']:
+            categories[e['status']]=categories.get(e['status'],0)+1
+          assert categories=={
+             'ADMISSIBLE_PRIMITIVE_FULL_OFFSET_CHART':8,
+             'FIXED_CLOCK_MATCHED_COEFFICIENT_GRAMMAR_IMPOSSIBLE':1,
+             'BASE_ENDPOINT_MISMATCH_AT_SUPPLIED_CLOCKS':2,
+          }
+          q={'schema':'COLLATZ_V140_STATEFUL_FIXED_CLOCK_CLASSIFICATION',
+             'status':'WARRANTED_BOUNDED_EXACT_DECISION_REPLAY',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'parent_file_sha256':expected,
+             'decision_snapshot_sha256':hashlib.sha256(fp.read_bytes()).hexdigest(),
+             'parent_original_source_joins_unchanged':17,
+             'proof_scope_checked':True,
+             'no_universal_event_production_assumed':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v140-exact-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          print('V140_EXACT_DECISION_STATE_NO_LAUNDERED_AXIOMS_PASS_GLOBAL_UNKNOWN')
+          PY
+          echo V140_CHECKPOINT_BEGIN
+          cat evidence/v140-decisions.json
+          echo V140_CHECKPOINT_END
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v140-stateful
+          path: evidence/
+          if-no-files-found: error
+  formal-pins:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recheck V137/V139 conditional decision theorems and V138 concrete root scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/RootChartOverlapCompiler.lean)" = c35bde45d11aad51f46e6e8beced5322acd43e9b
+          test "$(git hash-object formal/Collatz/Root23LateJoinReclosure.lean)" = b2aea7066186caf01a6be6743579ad27894edb75
+          test "$(git hash-object formal/Collatz/ReducedThreePowerCharts.lean)" = bd0b07d7079f3a328b0ed9331d235c76701dbaf7
+          test "$(git hash-object formal/Collatz/ChartMultiplierCompleteness.lean)" = 1e0515d6714f1bb0cad744cb242f66bc4705aace
+          test "$(git hash-object formal/Collatz/SynchronousClockOrientation.lean)" = 0f8c227ab373256eb9caa795fbc2515d27bcbebd
+          test "$(git hash-object formal/Collatz/Source27PrimitiveRootLift.lean)" = 8a25c969a529f46590d1363058fabeb04e401d6b
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin RelationalRootMerger RootChartOverlapCompiler FirstResidualRefinement Root23LateJoinReclosure CanonicalCrossPowerChart ReducedThreePowerCharts ChartMultiplierCompleteness SynchronousClockOrientation; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/Source27PrimitiveRootLift.lean 2>&1 | tee evidence/v140-root-lean.log
+          python3 - <<'PY'
+          import re,hashlib,json,pathlib,subprocess
+          modules={
+            'v137':'evidence/ChartMultiplierCompleteness.log',
+            'v139':'evidence/SynchronousClockOrientation.log',
+            'v138':'evidence/v140-root-lean.log',
+          }
+          results={}
+          for module,path in modules.items():
+            s=pathlib.Path(path).read_text()
+            assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s),(module,s[-2000:])
+            results[module]=hashlib.sha256(s.encode()).hexdigest()
+          q={'schema':'COLLATZ_V140_PINNED_FORMAL_CLOCK_DECISION',
+            'status':'WARRANTED_FORMAL_FIXED_CLOCK_IFF_AND_SUFFIX_INVARIANCE',
+            'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'lean_logs_sha256':results,
+            'v137_proof_run':37995061222,
+            'v139_proof_run':37995933736,
+            'v138_proof_run':37995985702,
+            'raw_generic_chart_premises_not_individually_Lean_reified':True,
+            'no_global_termination_proof':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v140-formal-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          print('V140_PINNED_V137_V139_V138_FORMAL_DECIDER_PASS_NOT_COLLATZ_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v140-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [stateful-decider,formal-pins]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v140-stateful
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v140-formal
+          path: evidence/formal
+      - name: Preserve source snapshot authority and local-only no-go decision
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,json,hashlib,subprocess
+          a=pathlib.Path('evidence/exact')
+          b=pathlib.Path('evidence/formal')
+          e=json.loads((a/'v140-exact-seal.json').read_text())
+          f=json.loads((b/'v140-formal-seal.json').read_text())
+          state=json.loads((a/'v140-decisions.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert e['source_commit']==f['source_commit']==h
+          assert e['decision_snapshot_sha256']==hashlib.sha256((a/'v140-decisions.json').read_bytes()).hexdigest()
+          if pathlib.Path('research/collatz_ros_clock_decisions_v140.json').exists():
+            assert pathlib.Path('research/collatz_ros_clock_decisions_v140.json').read_bytes()==(a/'v140-decisions.json').read_bytes()
+          assert f['status']=='WARRANTED_FORMAL_FIXED_CLOCK_IFF_AND_SUFFIX_INVARIANCE'
+          assert e['parent_original_source_joins_unchanged']==17
+          assert f['raw_generic_chart_premises_not_individually_Lean_reified']
+          assert state['global_collatz']==e['global_collatz']==f['global_collatz']=='UNKNOWN'
+          assert state['qed'] is e['qed'] is f['qed'] is False
+          result={'schema':'COLLATZ_V140_STATEFUL_FIXED_CLOCK_DECIDER',
+            'status':'WARRANTED_BOUNDED_READ_ONLY_DECIDER_PLUS_FORMAL_NO_GO',
+            'source_commit':h,
+            'parent_v134_sha256':e['parent_file_sha256'],
+            'decision_sha256':e['decision_snapshot_sha256'],
+            'protected_join_ledger_untouched':True,
+            'closed_multiplier_search_at_fixed_clocks':True,
+            'closed_synchronous_wait_search_after_failed_guard':True,
+            'base_mismatch_not_a_nonconvergence_claim':True,
+            'universal_event_producer':'UNKNOWN',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v140-final-seal.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('V140_PROOF_TYPED_GRAMMAR_DECIDER_WARRANTED_NO_UNIVERSAL_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v140-final
+          path: evidence/v140-final-seal.json
+          if-no-files-found: error
