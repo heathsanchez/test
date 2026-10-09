@@ -1116,6 +1116,30 @@ fn compare_values(
                     spine: right_spine,
                 },
             ) if left_type == right_type && left_index == right_index => {
+                // Requalify independently verified projection congruence
+                // only when both structures share syntax and universe levels.
+                // Every operand must already convert under preferred-only delta;
+                // matching expression IDs alone never establish equality.
+                let probe = (current_budget / 2).min(128);
+                if probe >= 8
+                    && left_structure.expr == right_structure.expr
+                    && left_structure.levels == right_structure.levels
+                    && left_spine.len() == right_spine.len()
+                    && convert_with_policy_in_context(
+                        checker, &TypeValue::Term(left_structure.clone()),
+                        &TypeValue::Term(right_structure.clone()),
+                        probe, DeltaPolicy::PreferredOnly, depth, context,
+                    ).is_proven()
+                    && left_spine.iter().zip(right_spine).all(|(a,b)| {
+                        convert_with_policy_in_context(
+                            checker, &TypeValue::Term(a.clone()),
+                            &TypeValue::Term(b.clone()),
+                            probe, DeltaPolicy::PreferredOnly, depth, context,
+                        ).is_proven()
+                    })
+                {
+                    return Judgment::proven((), "proved-projection-operand-congruence");
+                }
                 if same_rigid_application_congruence(
                     checker,
                     left_structure,
