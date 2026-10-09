@@ -3184,7 +3184,16 @@ fn generic_nonrecursive_recursor_shape(
         let Some((ctor_domains,_))=pi_spine(export,ctor.ty,p+f) else{return false;};
         let Some((minor_fields,minor_result))=pi_spine(export,domains[p+1+j],f) else{return false;};
         for (k,(cd,md)) in ctor_domains[p..].iter().zip(&minor_fields).enumerate(){
-            if !expr_eq_with_bvar_shift(export,*cd,*md,k as u64,(1+j) as u64){return false;}
+            if !expr_eq_with_bvar_shift(export,*cd,*md,k as u64,(1+j) as u64)
+                && !certified_ignored_second_argument_alias_matches(
+                    export, environment, *cd, *md, k as u64, (1+j) as u64,
+                )
+                && !certified_ignored_second_argument_alias_matches(
+                    export, environment, *md, *cd, k as u64, (1+j) as u64,
+                )
+            {
+                return false;
+            }
         }
         let Some(Expr::App{fun:mm,arg:constructed})=export.exprs.get(minor_result) else{return false;};
         if !is_bvar(export,*mm,(f+j) as u64){return false;}
@@ -3215,6 +3224,56 @@ fn generic_nonrecursive_recursor_shape(
         let (h,args)=application_spine(export,rr);
         if !is_bvar(export,h,(f+(c-1-j)) as u64) || args.len()!=f
            || !args.iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f-1-k) as u64)){return false;}
+    }
+    true
+}
+
+// A source-certified definition with the shape (fun x y => x) is
+// definitionally equal to its first argument once applied to two arguments.
+// Compare that argument with the recursor field under the already-derived
+// binder shift. The source definition must have been admitted into the
+// checked environment; mere shape, name, or expression ID never warrants it.
+fn certified_ignored_second_argument_alias_matches(
+    export: &ResolvedExport,
+    environment: &Environment,
+    wrapped: ExprId,
+    plain: ExprId,
+    cutoff: u64,
+    shift: u64,
+) -> bool {
+    let (head, args) = application_spine(export, wrapped);
+    if args.len() != 2
+        || !expr_eq_with_bvar_shift(export, args[0], plain, cutoff, shift)
+    {
+        return false;
+    }
+    let Some(Expr::Const { name, levels }) = export.exprs.get(head) else {
+        return false;
+    };
+    let Some(declaration) = environment.get(*name) else {
+        return false;
+    };
+    if declaration.level_params.len() != levels.len() {
+        return false;
+    }
+    let Some(value) = declaration.value else {
+        return false;
+    };
+    let Some(Expr::Lam { body: second_lambda, .. }) = export.exprs.get(value) else {
+        return false;
+    };
+    let Some(Expr::Lam { body: result, .. }) = export.exprs.get(*second_lambda) else {
+        return false;
+    };
+    if !is_bvar(export, *result, 1) {
+        return false;
+    }
+    #[cfg(feature = "diagnostics")]
+    if std::env::var_os("NUCLEUS_TRACE_THREE_CTOR_REC_SHAPE").is_some() {
+        eprintln!(
+            "NUCLEUS_CHECKED_SECOND_ARG_ERASURE:head={name:?}:wrapped={wrapped:?}:plain={plain:?}:universe_arity={}",
+            levels.len()
+        );
     }
     true
 }
