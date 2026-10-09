@@ -94,7 +94,7 @@ jobs:
           result={'source':os.environ['SOURCE_COMMIT'],'subtree':os.environ['SOURCE_SUBTREE'],
                   'qualification':os.environ['GITHUB_SHA'],'counts':count,'frozen':rows,'mutants':mutants}
           (out/'report.json').write_text(json.dumps(result,indent=2))
-          print(json.dumps({'counts':count,'deep':[r for r in rows if r['case'].endswith(('magma-list-deep-n21.ndjson','magma-list-deep-n36.ndjson'))],'mutants':mutants]},sort_keys=True))
+          print(json.dumps({'counts':count,'deep':[r for r in rows if r['case'].endswith(('magma-list-deep-n21.ndjson','magma-list-deep-n36.ndjson'))],'mutants':mutants},sort_keys=True))
           PY
       - uses: actions/upload-artifact@v4
         if: always()
