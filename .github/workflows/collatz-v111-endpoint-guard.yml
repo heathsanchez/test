@@ -1,0 +1,55 @@
+name: Collatz V111 endpoint q7 source-guard audit
+on:
+  push:
+    branches: [collatz-v110-endpoint-q7-guard-audit-v111]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-negative-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact source-coupled residual replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v111_endpoint_guard_audit > evidence/v111-results.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open("evidence/v111-results.json"))
+          assert r["status"]=="REJECTED_NO_NEW_SOURCE_MERGERS"
+          assert r["residual_crt_families"]==169056
+          assert r["endpoint_q7_presentations"]==2028672
+          assert r["exact_presentation_categories"]=={
+            "eq/eq":231278,"gt/gt":1797394}
+          assert r["lower_original_source_presentations"]==0
+          assert r["global_collatz"]=="UNKNOWN" and r["qed"] is False
+          print("ALL_ENDPOINT_Q7_TRANSFERS_NONPROGRESSIVE_EXACT_BOUNDED")
+          PY
+      - name: Seal bounded negative result
+        shell: bash
+        run: |
+          git rev-parse HEAD > evidence/commit.txt
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          out={
+            "schema":"COLLATZ_V111_ENDPOINT_Q7_NONPROGRESSIVE",
+            "status":"REJECTED_BOUNDED_ENDPOINT_TRANSFER",
+            "results_sha256":hashlib.sha256(open("evidence/v111-results.json","rb").read()).hexdigest(),
+            "endpoint_q7_presentations":2028672,
+            "lower_original_source_presentations":0,
+            "residual_crt_families":169056,
+            "global_collatz":"UNKNOWN",
+            "qed":False}
+          out["certificate_sha256"]=hashlib.sha256(json.dumps(out,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(out,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v111-endpoint-q7-nonprogress
+          path: evidence/
+          if-no-files-found: error
