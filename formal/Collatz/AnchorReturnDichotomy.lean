@@ -72,7 +72,8 @@ theorem bounded_actual_stream_repeats_anchor
       (episodeStream a i).anchor =
         (episodeStream a j).anchor := by
   classical
-  by_contra hnone
+  apply Classical.byContradiction
+  intro hnone
   let f : Nat → Nat := fun k => (episodeStream a k).anchor
   have hfinite : ∀ k, f k ≤ B := hbound
   have hinj : Function.Injective f := by
@@ -173,10 +174,12 @@ theorem admitted_return_or_unbounded_anchors
     exact Or.inl (bounded_actual_stream_has_admitted_return a B hb)
   · right
     intro B
-    by_contra hnot
+    apply Classical.byContradiction
+    intro hnot
     have hle : ∀ k, (episodeStream a k).anchor ≤ B := by
       intro k
-      by_contra hk
+      apply Classical.byContradiction
+      intro hk
       have hgt : B < (episodeStream a k).anchor := by omega
       exact hnot ⟨k, hgt⟩
     exact hbounded ⟨B, hle⟩
