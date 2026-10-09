@@ -20,9 +20,9 @@ jobs:
           python3 -m research.collatz_ros_fixed_clock_v140             --bootstrap --output evidence/v140-decisions.json             | tee evidence/v140-bootstrap.log
           python3 -m research.collatz_ros_fixed_clock_v140             --input evidence/v140-decisions.json --output evidence/v140-restart.json             | tee evidence/v140-restart.log
           cmp evidence/v140-decisions.json evidence/v140-restart.json
-          if [ -f research/collatz_ros_clock_decisions_v140.json ]; then
-            cmp research/collatz_ros_clock_decisions_v140.json evidence/v140-decisions.json
-          fi
+          cmp research/collatz_ros_clock_decisions_v140.json evidence/v140-decisions.json
+          python3 -m research.collatz_ros_fixed_clock_v140             --input research/collatz_ros_clock_decisions_v140.json             --output evidence/v140-source-restart.json             | tee evidence/v140-source-restart.log
+          cmp research/collatz_ros_clock_decisions_v140.json evidence/v140-source-restart.json
           python3 - <<'PY'
           import json,hashlib,pathlib,subprocess
           from research.collatz_ros_fixed_clock_v140 import digest,PARENT_GIT_BLOB_SHA
@@ -159,8 +159,7 @@ jobs:
           h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           assert e['source_commit']==f['source_commit']==h
           assert e['decision_snapshot_sha256']==hashlib.sha256((a/'v140-decisions.json').read_bytes()).hexdigest()
-          if pathlib.Path('research/collatz_ros_clock_decisions_v140.json').exists():
-            assert pathlib.Path('research/collatz_ros_clock_decisions_v140.json').read_bytes()==(a/'v140-decisions.json').read_bytes()
+          assert pathlib.Path('research/collatz_ros_clock_decisions_v140.json').read_bytes()==(a/'v140-decisions.json').read_bytes()
           assert f['status']=='WARRANTED_FORMAL_FIXED_CLOCK_IFF_AND_SUFFIX_INVARIANCE'
           assert e['parent_original_source_joins_unchanged']==17
           assert e['parent_canonical_sha256']=='586c5a0bd52757b29abffdc5785c752fbf8faaf4962229a5cea065de3d95d3b0'
