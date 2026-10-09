@@ -25,6 +25,10 @@ from webarena_gitlab_commit_counts import (
     BASE as GITLAB_BASE, sign_in, period_bounds, count_commits,
 )
 from webarena_gitlab_to_reddit_promote import fetch_project, submit_url_post
+from webarena_gitlab_excluded_label_blind import (
+    parse_intent as parse_excluded_label_intent,
+    filtered_target as excluded_label_target,
+)
 
 
 REDDIT_BASE = "http://localhost:9999"
@@ -56,6 +60,8 @@ def gitlab_navigation_target(intent: str):
         return GITLAB_ROOT+"/dashboard/merge_requests?"+urlencode(
             {"assignee_username":"byteblaze"}
         )
+    if "labels related to all except " in text.casefold():
+        return excluded_label_target(parse_excluded_label_intent(text))
     m=re.fullmatch(
         r"Navigate to the page showing the list of (.+?) issues in the "
         r"([^ ]+) repository that have labels related to (.+)",

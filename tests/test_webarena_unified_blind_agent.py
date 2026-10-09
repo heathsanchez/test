@@ -35,13 +35,18 @@ class UnifiedBlindRouterTests(unittest.TestCase):
             self.assertEqual(gitlab_navigation_target(intent),target)
             self.assertEqual(gitlab_intent(intent),("navigate",{"target":target}))
 
-    def test_negative_label_navigation_fails_closed(self):
+    def test_negative_label_navigation_is_reused(self):
+        intent=(
+            "Navigate to the page showing the list of open issues in the "
+            "umano/AndroidSlidingUpPanel repository that have labels related "
+            "to all except BUG"
+        )
+        self.assertEqual(
+            gitlab_navigation_target(intent),
+            "http://localhost:8023/umano/AndroidSlidingUpPanel/-/issues?state=opened&not%5Blabel_name%5D%5B%5D=BUG",
+        )
         with self.assertRaises(ValueError):
-            gitlab_navigation_target(
-                "Navigate to the page showing the list of open issues in the "
-                "umano/AndroidSlidingUpPanel repository that have labels related "
-                "to all except BUG"
-            )
+            gitlab_navigation_target(intent.replace("umano/AndroidSlidingUpPanel","../private"))
 
     def test_gitlab_rss(self):
         self.assertEqual(gitlab_intent("Get me my RSS feed token"),("rss",{}))

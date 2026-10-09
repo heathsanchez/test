@@ -33,6 +33,11 @@ class FourSiteBlindTests(unittest.TestCase):
         self.assertEqual(actual_start("__SHOPPING__/product.html"),
                          "http://localhost:7770/product.html")
 
+    def test_shopping_price_category_navigation_intent(self):
+        for name,cap in (("women shoes","25"),("makeup remover","46.99"),("furniture with accent","199")):
+            text=f'Open the "{name}" category page filtered to under ${cap}'
+            self.assertEqual(classify_readonly_intent("shopping",text),"shopping_category_price_filter")
+
     def test_admin_month_range_from_instruction(self):
         for period in (
             "from January 2023 through May 2023",

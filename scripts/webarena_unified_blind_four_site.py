@@ -20,6 +20,10 @@ from webarena_shopping_admin_monthly_complete import (
     parse_period, month_sequence, magento_filter_url, extract_month_counts,
 )
 from webarena_shopping_admin_blind_report import parse_report_range, navigate_report
+from webarena_shopping_price_filter_blind import (
+    parse_intent as parse_price_filter_intent,
+    navigate as navigate_price_filter,
+)
 
 SHOPPING_BASE="http://localhost:7770"
 ADMIN_BASE="http://localhost:7780/admin"
@@ -52,6 +56,9 @@ def classify_readonly_intent(site: str,intent: str) -> str:
     text=re.sub(r"\s+"," ",intent).strip()
     if site=="shopping" and text.casefold()=="get all review titles with 2 stars or below for the product on the current page.":
         return "shopping_low_reviews"
+    if site=="shopping" and text.casefold().startswith('open the "') and "category page filtered to under" in text.casefold():
+        parse_price_filter_intent(text)
+        return "shopping_category_price_filter"
     if site=="shopping_admin" and text.casefold().startswith("get the monthly count of completed orders "):
         parse_period(text)
         return "admin_monthly_complete_orders"
@@ -64,19 +71,26 @@ def classify_readonly_intent(site: str,intent: str) -> str:
 async def execute_readonly(site: str,intent: str,start_url: str,output_dir: Path):
     capability=classify_readonly_intent(site,intent)
     target=actual_start(start_url)
-    if site=="shopping" and urlparse(target).path in ("","/"):
+    if capability=="shopping_low_reviews" and urlparse(target).path in ("","/"):
         raise ValueError("shopping review retrieval requires the current product URL")
     async with async_playwright() as playwright:
         browser=await playwright.chromium.launch(headless=True)
         context_options={
             "extra_http_headers":ADMIN_AUTH if site=="shopping_admin" else {}
         }
-        if capability=="admin_orders_report_navigation":
+        if capability in ("admin_orders_report_navigation","shopping_category_price_filter"):
             context_options["record_har_path"]=str(output_dir/"network.har")
             context_options["record_har_mode"]="full"
         context=await browser.new_context(**context_options)
         page=await context.new_page()
         try:
+            if capability=="shopping_category_price_filter":
+                navigation=await navigate_price_filter(page,parse_price_filter_intent(intent))
+                return {
+                    "task_type":"NAVIGATE","status":"SUCCESS",
+                    "retrieved_data":None,"error_details":None,
+                },navigation
+
             if capability=="shopping_low_reviews":
                 response=await page.goto(target,wait_until="networkidle",timeout=120000)
                 if response is None or response.status!=200:
