@@ -1,0 +1,46 @@
+name: Collatz V116 finite-horizon source bar audit
+on:
+  push:
+    branches: [collatz-v116-finite-horizon-separator]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-and-formal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact independent finite-horizon arithmetic replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v116_finite_horizon.py | tee evidence/v116-results.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open("evidence/v116-results.json"))
+          assert r["status"]=="BOUNDED_EXACT_EXECUTABLE"
+          assert r["all_checks_passed"] and r["checks"]==160
+          assert r["max_horizon"]==60 and r["max_precision_target"]==80
+          assert r["global_collatz"]=="UNKNOWN" and r["qed"] is False
+          print("FINITE_HORIZON_COUNTERSEPARATOR_160_CHECKS_PASS")
+          PY
+      - name: Lean kernel check of the genuine 110 block separator
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false formal/Collatz/FiniteHorizonSourceBarrier.lean | tee evidence/v116-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v116-lean.log
+          grep -q 'triple_110_no_capped_ternary_prefix' evidence/v116-lean.log
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v116-finite-horizon-source-bar
+          path: evidence/
+          if-no-files-found: error
