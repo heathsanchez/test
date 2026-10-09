@@ -1063,8 +1063,8 @@ impl<'a> Machine<'a> {
             let second_value = self.expose_internal(
                 second.clone(), transparency, budget.saturating_sub(1), false, false,
             );
-            let zero_major = matches!(second_value.proven_value(), Some(Value::NatLit(n)) if n.is_zero())
-                || matches!(second_value.proven_value(),
+            let zero_major = matches!(second_value.proven_value().map(|e| &e.value), Some(Value::NatLit(n)) if n.is_zero())
+                || matches!(second_value.proven_value().map(|e| &e.value),
                     Some(Value::Neutral(Neutral {
                         head: NeutralHead::Const { name: ctor, levels },
                         spine,
@@ -1072,7 +1072,7 @@ impl<'a> Machine<'a> {
             if zero_major {
                 if let Some(first_value) = self.expose_internal(
                     first.clone(), transparency, budget.saturating_sub(1), false, false,
-                ).proven_value().cloned() {
+                ).proven_value().map(|e| e.value.clone()) {
                     pending.clear();
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_NAT_SUBZERO").is_some() {
