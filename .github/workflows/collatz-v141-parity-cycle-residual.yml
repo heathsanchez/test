@@ -1,0 +1,191 @@
+name: Collatz V141 true parity recurrence and positive cycle imbalance
+on:
+  push:
+    branches: [collatz-v141-parity-cycle-residual]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay finite parity cases and unbounded odd corridor clocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v141_parity_cycle_exact > evidence/v141-exact.json
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          p=pathlib.Path('evidence/v141-exact.json')
+          x=json.loads(p.read_text())
+          assert x['schema']=='COLLATZ_V141_PARITY_PERIOD_NECESSITY_EXACT'
+          assert x['finite_positive_sources']==5000
+          assert x['terminal_period']==2 and x['terminal_odd_count']==1
+          assert x['terminal_multiplier_2power']==4
+          assert x['terminal_multiplier_3power']==3
+          assert len(x['mersenne_adverse_corridors'])==8
+          assert x['mersenne_adverse_corridors'][-1]['odd_prefix_steps']==256
+          assert x['no_source_uniform_even_clock_bound']
+          assert x['infinite_parity_recurrence_proved_by_samples'] is False
+          assert not x['positive_nonterminal_cycles_excluded']
+          assert not x['unbounded_positive_mixed_parity_orbits_excluded']
+          assert x['universal_collatz']=='UNKNOWN' and x['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V141_EXACT_NEGATIVE_CONTROLS',
+             'source_commit':head,'status':'WARRANTED_FINITE_EXACT_PARITY_CONTROLS',
+             'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'infinite_scope_from_exact_samples':False,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v141-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v141-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check pinned V139 and V140 predecessors then V141
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/ActualOrbitDichotomy.lean)" = e5f90f9ae369a3704f609ac776b3cbbbe16ce4ca
+          test "$(git hash-object formal/Collatz/PerpetualOddNaturalExclusion.lean)" = f8889bfe73567b5a4a7383a7a9223be32da342be
+          test "$(git hash-object formal/Collatz/SourceProductAffine.lean)" = 97a32acc490465c3bb0cd528e42100a6bbfd2f61
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/PerpetualOddNaturalExclusion.olean formal/Collatz/PerpetualOddNaturalExclusion.lean > evidence/v140.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/ParityCycleResidual.lean 2>&1 | tee evidence/v141-lean.log
+          python3 - <<'PY'
+          import re,hashlib,json,pathlib,subprocess
+          p=pathlib.Path('evidence/v141-lean.log')
+          s=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s),s[-4000:]
+          axs={}
+          for name,values in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",s,re.S):
+            vals=[v.strip() for v in values.split(',') if v.strip()]
+            assert set(vals)<={'propext','Quot.sound','Classical.choice'},(name,vals)
+            axs[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",s):
+            axs[name]=[]
+          targets=['positive_shortcut_orbit_not_all_even',
+            'no_eventually_all_even_positive_tail',
+            'every_positive_source_revisits_both_parities',
+            'positive_shortcut_cycle_strict_multiplier_defect',
+            'least_positive_bad_source_three_mod_four']
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in axs,name
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V141_FORMAL_PARITY_CYCLE_RESIDUAL',
+            'status':'WARRANTED_FORMAL_SOURCE_PARITY_AND_PERIOD_BOUNDARY',
+            'source_commit':head,'axioms':axs,
+            'lean_log_sha256':hashlib.sha256(s.encode()).hexdigest(),
+            'all_positive_orbits_infinitely_both_parities':True,
+            'all_positive_cycles_3powodds_strictly_less_2powsteps':True,
+            'minimal_bad_source_congruent_three_mod_four':True,
+            'excludes_all_nonterminal_positive_cycles':False,
+            'excludes_all_unbounded_positive_orbits':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v141-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v141-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-controls,formal-boundary]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v141-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v141-formal
+          path: evidence/formal
+      - name: Seal source-attached actual parity residual without false global promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          x=json.loads(pathlib.Path('evidence/exact/v141-exact-seal.json').read_text())
+          f=json.loads(pathlib.Path('evidence/formal/v141-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert x['source_commit']==f['source_commit']==h
+          assert f['status']=='WARRANTED_FORMAL_SOURCE_PARITY_AND_PERIOD_BOUNDARY'
+          assert x['infinite_scope_from_exact_samples'] is False
+          assert f['all_positive_orbits_infinitely_both_parities']
+          assert not f['excludes_all_nonterminal_positive_cycles']
+          assert not f['excludes_all_unbounded_positive_orbits']
+          assert f['global_collatz']==x['global_collatz']=='UNKNOWN'
+          assert f['qed'] is x['qed'] is False
+          s={'schema':'COLLATZ_V141_FINAL_SOURCE_PARITY_RESIDUAL',
+            'source_commit':h,
+            'status':'WARRANTED_FORMAL_CONDITIONAL_PARITY_AND_PERIOD_NECESSITY',
+            'reusable':['infinitely_both_parities_for_all_positive_sources',
+                        'strict_cycle_2_3_multiplier_orientation',
+                        'least_bad_source_mod4_is3'],
+            'still_unknown':['nonterminal_positive_cycle_exclusion',
+                             'unbounded_positive_no_merge_source_exclusion'],
+            'operational_controller':'V134_UNCHANGED',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v141-final-seal.json').write_text(json.dumps(s,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v141-final
+          path: evidence/v141-final-seal.json
+          if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-controls,formal-boundary,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Retain exact source-SHA success or failure receipt
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={exact:'${{ needs.exact-controls.result }}',
+                          formal:'${{ needs.formal-boundary.result }}',
+                          final:'${{ needs.final-seal.result }}'};
+            const qualified=Object.values(stages).every(v=>v==='success');
+            const receipt={schema:'COLLATZ_V141_CI_RECEIPT',source_commit:context.sha,
+              run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_PARITY_CYCLE_BOUNDARY':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false};
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v141-parity-cycle-residual',
+              path:'research/ci_seals/collatz_v141_'+context.sha+'.json',
+              message:'CI receipt: V141 parity/cycle boundary '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(receipt,null,2)+'\n').toString('base64')
+            });
