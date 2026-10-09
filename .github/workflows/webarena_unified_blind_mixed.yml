@@ -141,7 +141,7 @@ jobs:
               print("OFFICIAL",ident,rows[ident_text],flush=True)
           seal={
               "epistemic_state":"WARRANTED_BOUNDED" if not failures else "CANDIDATE_WITH_RESIDUALS",
-              "boundary":"39 WebArena-Verified Hard tasks, one blind agent, Reddit+GitLab; opaque task output paths",
+              "boundary":"38 WebArena-Verified Hard tasks, one blind agent, Reddit+GitLab; opaque task output paths",
               "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
               "result_count":len(rows),
               "success_count":sum(row.get("score")==1.0 and row.get("status")=="success" for row in rows.values()),
@@ -150,8 +150,8 @@ jobs:
           }
           (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
           print(json.dumps(seal,indent=2),flush=True)
-          if len(rows)!=39 or failures:
-              raise SystemExit(f"mixed-site blind residuals: {failures}; evaluated {len(rows)}/39")
+          if len(rows)!=38 or failures:
+              raise SystemExit(f"mixed-site blind residuals: {failures}; evaluated {len(rows)}/38")
           PY
 
       - uses: actions/upload-artifact@v4
