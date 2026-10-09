@@ -13,11 +13,19 @@ class Response:
         self.status = status
 
 
+class EmptyLinks:
+    async def count(self):
+        return 0
+
+
 class FakePage:
     def __init__(self, valid):
         self.valid = valid
         self.url = ""
         self.visited = []
+
+    def locator(self, selector):
+        return EmptyLinks()
 
     async def goto(self, url, **kwargs):
         self.url = url
@@ -46,9 +54,8 @@ class ForumDiscoveryTests(unittest.IsolatedAsyncioTestCase):
     async def test_unrelated_successful_page_not_accepted(self):
         page = FakePage({"http://localhost:9999/f/unrelated"})
         # Unlike a legitimate canonical forum match, this is not a source-derived path.
-        # All generated candidates return 404; the remaining index is intentionally
-        # not emulated, so the expected outcome is a transparent exception.
-        with self.assertRaises(Exception):
+        # No candidate resolves and no index links exist: fail closed.
+        with self.assertRaises(RuntimeError):
             await resolve_forum(page, "http://localhost:9999", "explain like im 5", max_pages=1)
 
 
