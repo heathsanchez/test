@@ -354,6 +354,57 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    /// Diagnostic-only: distinguish a qualified Nat recursor stuck on its
+    /// actual major from an unrelated polymorphic constructor. No verdict is
+    /// derived from the apparent four-argument shape.
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_natrec_major_authority(
+        &self,
+        neutral: &Neutral,
+        budget: usize,
+    ) -> String {
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return "not-constant-head".into();
+        };
+        let Some(reduction) = self.environment.recursor_reduction(*name) else {
+            return format!("head={name:?}:qualified_recursor=false");
+        };
+        let required = reduction.num_params
+            .saturating_add(1)
+            .saturating_add(reduction.rules.len())
+            .saturating_add(reduction.num_indices)
+            .saturating_add(1);
+        let nat_rules = self.environment.nat_primitives().is_some_and(|nat| {
+            reduction.rules.len() == 2
+                && reduction.rules.iter().any(|r| r.constructor == nat.zero)
+                && reduction.rules.iter().any(|r| r.constructor == nat.succ)
+        });
+        let exact_interface = neutral.spine.len() == required
+            && reduction.level_params.len() == levels.len();
+        let Some(major) = neutral.spine.get(required.saturating_sub(1)) else {
+            return format!(
+                "head={name:?}:levels={levels:?}:qualified_recursor=true:nat_rules={nat_rules}:required={required}:actual={}:major=missing",
+                neutral.spine.len()
+            );
+        };
+        let syntax = self.expressions.get(major.expr);
+        let binding = match syntax {
+            Some(Expr::BVar(index)) => major.env.lookup(*index),
+            _ => None,
+        };
+        let whnf = self.machine().expose(
+            major.clone(), Transparency::Reducible, budget.min(256),
+        );
+        let full = self.machine().expose(
+            major.clone(), Transparency::Full, budget.min(256),
+        );
+        format!(
+            "head={name:?}:levels={levels:?}:qualified_recursor=true:nat_rules={nat_rules}:exact_interface={exact_interface}:params={}:indices={}:rules={}:required={required}:actual={}:major={major:?}:syntax={syntax:?}:binding={binding:?}:major_whnf={whnf:?}:major_full={full:?}",
+            reduction.num_params, reduction.num_indices, reduction.rules.len(),
+            neutral.spine.len()
+        )
+    }
+
     /// Diagnostic only: instantiate a declaration's dependent Pi telescope
     /// with the actual application closures, never authorizing acceptance.
     #[cfg(feature = "diagnostics")]
