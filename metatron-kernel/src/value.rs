@@ -196,3 +196,133 @@ pub enum NeutralHead {
         structure: Box<Neutral>,
     },
 }
+
+
+/// Substitute a checked argument for one lexical FreeId captured by type
+/// inference. This only rewrites immutable environment bindings: expression
+/// syntax, universe substitutions, and all other local names are preserved.
+/// Unsupported neutral applications refuse substitution rather than assuming
+/// any equality.
+impl Closure {
+    pub(crate) fn substitute_local_free(
+        &self,
+        source: FreeId,
+        actual: &Closure,
+        remaining: &mut usize,
+    ) -> Option<Self> {
+        struct Subst<'a> {
+            source: FreeId,
+            actual: &'a Closure,
+            remaining: &'a mut usize,
+            frames: std::collections::HashMap<u64, (EnvFrame, bool)>,
+        }
+        impl Subst<'_> {
+            fn tick(&mut self) -> Option<()> {
+                if *self.remaining == 0 {
+                    return None;
+                }
+                *self.remaining -= 1;
+                Some(())
+            }
+            fn closure(&mut self, c: &Closure) -> Option<(Closure, bool)> {
+                self.tick()?;
+                let (env, changed) = self.frame(&c.env)?;
+                Some((
+                    if changed {
+                        Closure::with_levels(c.expr, env, c.levels.clone())
+                    } else {
+                        c.clone()
+                    },
+                    changed,
+                ))
+            }
+            fn neutral(&mut self, n: &Neutral) -> Option<(Neutral, bool)> {
+                self.tick()?;
+                let (head, head_changed) = match &n.head {
+                    NeutralHead::Free(f) if *f == self.source => {
+                        // A neutral head applied to arguments cannot be
+                        // replaced by an arbitrary syntax closure here.
+                        return None;
+                    }
+                    NeutralHead::Free(f) => (NeutralHead::Free(*f), false),
+                    NeutralHead::Const { name, levels } => (
+                        NeutralHead::Const { name: *name, levels: levels.clone() },
+                        false,
+                    ),
+                    NeutralHead::Projection { type_name, index, structure } => {
+                        let (structure, changed) = self.neutral(structure)?;
+                        (NeutralHead::Projection {
+                            type_name: *type_name,
+                            index: *index,
+                            structure: Box::new(structure),
+                        }, changed)
+                    }
+                };
+                let mut changed = head_changed;
+                let mut spine = Vec::with_capacity(n.spine.len());
+                for c in &n.spine {
+                    let (c, did_change) = self.closure(c)?;
+                    changed |= did_change;
+                    spine.push(c);
+                }
+                Some((
+                    if changed { Neutral { head, spine } } else { n.clone() },
+                    changed,
+                ))
+            }
+            fn binding(&mut self, b: &EnvBinding) -> Option<(EnvBinding, bool)> {
+                self.tick()?;
+                match b {
+                    EnvBinding::Free(f) if *f == self.source =>
+                        Some((EnvBinding::Closure(self.actual.clone()), true)),
+                    EnvBinding::Free(f) => Some((EnvBinding::Free(*f), false)),
+                    EnvBinding::Closure(c) => {
+                        let (c, changed) = self.closure(c)?;
+                        Some((EnvBinding::Closure(c), changed))
+                    }
+                    EnvBinding::Neutral(n) => {
+                        if let NeutralHead::Free(f) = n.head {
+                            if f == self.source {
+                                if n.spine.is_empty() {
+                                    return Some((
+                                        EnvBinding::Closure(self.actual.clone()),
+                                        true,
+                                    ));
+                                }
+                                return None;
+                            }
+                        }
+                        let (n, changed) = self.neutral(n)?;
+                        Some((EnvBinding::Neutral(n), changed))
+                    }
+                }
+            }
+            fn frame(&mut self, f: &EnvFrame) -> Option<(EnvFrame, bool)> {
+                self.tick()?;
+                if let Some(found) = self.frames.get(&f.id()) {
+                    return Some(found.clone());
+                }
+                let result = match f.0.as_ref() {
+                    EnvNode::Empty => (f.clone(), false),
+                    EnvNode::Extend { parent, value, .. } => {
+                        let (parent_new, parent_changed) = self.frame(parent)?;
+                        let (value_new, value_changed) = self.binding(value)?;
+                        if parent_changed || value_changed {
+                            (parent_new.extend_binding(value_new), true)
+                        } else {
+                            (f.clone(), false)
+                        }
+                    }
+                };
+                self.frames.insert(f.id(), result.clone());
+                Some(result)
+            }
+        }
+
+        let mut s = Subst {
+            source, actual, remaining,
+            frames: std::collections::HashMap::new(),
+        };
+        s.closure(self).map(|(c, _)| c)
+    }
+}
