@@ -1055,6 +1055,34 @@ impl<'a> Machine<'a> {
             return None;
         }
 
+        // Verified source equation (Lean v4.34.1 Init.Prelude):
+        // Nat.sub a 0 = a, including an arbitrary symbolic a.
+        // No predecessor is synthesized and no unsupported succ rule is
+        // inferred. The receiver's established WHNF is reused directly.
+        if matches!(operation, Operation::Sub) {
+            let second_value = self.expose_internal(
+                second.clone(), transparency, budget.saturating_sub(1), false, false,
+            );
+            let zero_major = matches!(second_value.proven_value(), Some(Value::NatLit(n)) if n.is_zero())
+                || matches!(second_value.proven_value(),
+                    Some(Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name: ctor, levels },
+                        spine,
+                    })) if *ctor == primitives.zero && levels.is_empty() && spine.is_empty());
+            if zero_major {
+                if let Some(first_value) = self.expose_internal(
+                    first.clone(), transparency, budget.saturating_sub(1), false, false,
+                ).proven_value().cloned() {
+                    pending.clear();
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_NAT_SUBZERO").is_some() {
+                        eprintln!("NUCLEUS_NAT_SUBZERO:certified-zero-right");
+                    }
+                    return Some(first_value);
+                }
+            }
+        }
+
         let first_value = self
             .expose_internal(first, transparency, budget.saturating_sub(1), false, false)
             .proven_value()?
