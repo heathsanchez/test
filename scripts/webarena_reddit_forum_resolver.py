@@ -66,7 +66,13 @@ def score(description,label,slug,context=""):
         best=max((sim(term,o) for term in equivalences for o in observed),default=0.0)
         if best>=0.99: exact+=1
         if best>=0.68: total+=best
-    return exact*10.0+total
+    # A lowercase forum slug can concatenate two *adjacent requested words*,
+    # e.g. "deep learning" -> "deeplearning". Those two observations together
+    # are stronger than a broader category matching only "learning".
+    # This is derived from the user's terms; no hardcoded forum alias.
+    joined={wanted[i]+wanted[i+1] for i in range(len(wanted)-1)}
+    compound=sum(1 for o in toks(slug) if o in joined)
+    return exact*10.0+total+24.0*compound
 
 async def resolve_forum(page,base,description,max_pages=12):
     # First resolve explicitly named forums through the site's own search.
