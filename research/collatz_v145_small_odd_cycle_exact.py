@@ -44,7 +44,7 @@ def main():
         ]
     assert not possible_odd_counts[2] and not possible_odd_counts[4]
     assert possible_odd_counts[3]==[5]
-    assert 2 in possible_odd_counts[1]==[] if False else True
+    assert possible_odd_counts[1] == []
     terminal_cycle=[1,2,1]
     assert [T(1),T(2)] == [2,1]
     # Critical control: terminal states contain 1, so the no-one bound
