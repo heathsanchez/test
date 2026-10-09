@@ -240,3 +240,32 @@ fn dependent_let_wrapped_lambda_substitutes_proposition_binder() {
         "a proposition expression must not be accepted as a proof of itself"
     );
 }
+
+
+#[test]
+fn alpha_equivalent_pi_bodies_use_declared_binder_not_unrelated_free_ids() {
+    // Only the two declared Pi binders may be identified. Distinct external
+    // free variables remain distinguishable under the exact same contract.
+    use metatron_kernel::value::FreeId;
+    let fixture = Fixture::dependent_core();
+    let checker = fixture.checker();
+    let domain = TypeValue::Term(Closure::new(ExprId(0), EnvFrame::empty()));
+    let make_pi = |binder: u64, body_free: u64| TypeValue::Pi {
+        domain: Box::new(domain.clone()),
+        body: Box::new(TypeValue::Term(Closure::new(
+            ExprId(1), EnvFrame::empty().extend_free(FreeId(body_free)),
+        ))),
+        binder: FreeId(binder),
+    };
+    let alpha_left = make_pi(2, 2);
+    let alpha_right = make_pi(3, 3);
+    assert!(
+        checker.convert(&alpha_left, &alpha_right, 1024).is_proven(),
+        "declared Pi-bound variables must convert modulo verified alpha-renaming"
+    );
+    let unrelated = make_pi(3, 9);
+    assert!(
+        !checker.convert(&alpha_left, &unrelated, 1024).is_proven(),
+        "alpha-renaming a Pi binder must not identify unrelated free variables"
+    );
+}
