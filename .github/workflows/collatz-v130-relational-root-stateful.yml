@@ -18,6 +18,9 @@ jobs:
           mkdir -p evidence
           python3 -m unittest -v             research.test_collatz_ros_future_controller_v123             research.test_collatz_ros_future_controller_v124             research.test_collatz_ros_relational_root_v130             2>&1 | tee evidence/v130-all-tests.log
           python3 -m research.collatz_ros_relational_root_v130             --bootstrap --input research/collatz_ros_state_v124.json             --output evidence/v130-state.json | tee evidence/v130-bootstrap.log
+          cmp research/collatz_ros_state_v130.json evidence/v130-state.json
+          python3 -m research.collatz_ros_relational_root_v130             --input research/collatz_ros_state_v130.json             --output evidence/v130-committed-restart.json             | tee evidence/v130-committed-restart.log
+          cmp research/collatz_ros_state_v130.json evidence/v130-committed-restart.json
           python3 -m research.collatz_ros_relational_root_v130             --input evidence/v130-state.json --output evidence/v130-restart.json             | tee evidence/v130-restart.log
           cmp evidence/v130-state.json evidence/v130-restart.json
           python3 -m research.collatz_ros_relational_root_v130             --input evidence/v130-state.json             --revoke-support v129_odd_three_root_family             --output evidence/v130-revoked.json             | tee evidence/v130-revoke.log
@@ -157,6 +160,8 @@ jobs:
           head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           assert a['source_commit']==b['source_commit']==head
           assert a['new_v130_snapshot_sha256']==hashlib.sha256((p/'v130-state.json').read_bytes()).hexdigest()
+          assert (p/'v130-state.json').read_bytes()==pathlib.Path(
+              'research/collatz_ros_state_v130.json').read_bytes()
           assert b['status']=='WARRANTED_FORMAL_SCOPED_V129_THEOREM_REPLAY'
           assert a['parametric_law_count']==1 and a['protected_live_join_count']==9
           assert s['global_collatz']==a['global_collatz']==b['universal_collatz']=='UNKNOWN'
