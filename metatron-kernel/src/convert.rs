@@ -1477,10 +1477,14 @@ fn compare_values(
                 ) {
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_CERTIFIED_NEUTRAL_PROJECTION").is_some() {
-                        eprintln!(
-                            "NUCLEUS_CERTIFIED_NEUTRAL_PROJECTION:depth={depth}:budget={current_budget}:left={:?}:right={:?}",
-                            left.head, right.head
-                        );
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static REPORTED: AtomicUsize = AtomicUsize::new(0);
+                        if REPORTED.fetch_add(1, Ordering::Relaxed) < 48 {
+                            eprintln!(
+                                "NUCLEUS_CERTIFIED_NEUTRAL_PROJECTION:depth={depth}:budget={current_budget}:left={:?}:right={:?}",
+                                left.head, right.head
+                            );
+                        }
                     }
                     return Judgment::proven((), "certified-projected-neutral-congruence");
                 }
