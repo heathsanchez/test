@@ -505,7 +505,7 @@ fn symbolic_nat_ble_respects_pinned_constructor_equations() {
         .with_nat_primitives(Some(NatPrimitives {
             type_name: NameId(65), type_expr: ExprId(0),
             zero, succ, recursor: NameId(66),
-            add: None, sub: None, ble: Some(ble), beq: None,
+            add: None, sub: None, pred: None, ble: Some(ble), beq: None,
         }))
         .with_bool_primitives(Some(BoolPrimitives { true_ctor, false_ctor }));
     let env = EnvFrame::empty().extend_free(FreeId(73)).extend_free(FreeId(74));
