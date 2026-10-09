@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      SOURCE_COMMIT: 6d64effdc69ca49b1abfff4d219c438cb0feb79f
-      SOURCE_SUBTREE: 5513580e19b63f98480fcee1f9231b2b3702fc0d
+      SOURCE_COMMIT: 6f6386a316c9acfdef44fbe14714d419fd008c97
+      SOURCE_SUBTREE: a8c52e869621226c802854c2ae46f314fbc6a4b7
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
