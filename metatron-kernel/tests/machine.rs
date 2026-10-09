@@ -603,3 +603,40 @@ fn nat_add_symbolic_right_successor_zero_is_succ_without_index_assumption() {
     let arg=machine.expose(s.spine[0].clone(),Transparency::Opaque,16);
     assert!(matches!(arg.proven_value(),Some(Value::Neutral(n)) if n.head==NeutralHead::Free(FreeId(17))));
 }
+
+
+#[test]
+fn symbolic_nat_sub_succ_zero_is_exact_source_equation() {
+    // The checked Nat.sub and Nat.pred equations imply
+    //   Nat.sub (Nat.succ x) (Nat.succ Nat.zero) = x.
+    // A general symbolic second predecessor y is NOT interchangeable with zero.
+    let mut exprs = IdTable::default();
+    exprs.insert(ExprId(0), Expr::BVar(0)).unwrap(); // arbitrary x
+    exprs.insert(ExprId(1), Expr::Const { name: NameId(10), levels: vec![] }).unwrap();
+    exprs.insert(ExprId(2), Expr::Const { name: NameId(11), levels: vec![] }).unwrap();
+    exprs.insert(ExprId(3), Expr::App { fun: ExprId(2), arg: ExprId(0) }).unwrap(); // succ x
+    exprs.insert(ExprId(4), Expr::App { fun: ExprId(2), arg: ExprId(1) }).unwrap(); // succ zero
+    exprs.insert(ExprId(5), Expr::Const { name: NameId(12), levels: vec![] }).unwrap();
+    exprs.insert(ExprId(6), Expr::App { fun: ExprId(5), arg: ExprId(3) }).unwrap();
+    exprs.insert(ExprId(7), Expr::App { fun: ExprId(6), arg: ExprId(4) }).unwrap();
+    exprs.insert(ExprId(8), Expr::BVar(1)).unwrap(); // arbitrary y
+    exprs.insert(ExprId(9), Expr::App { fun: ExprId(2), arg: ExprId(8) }).unwrap();
+    exprs.insert(ExprId(10), Expr::App { fun: ExprId(6), arg: ExprId(9) }).unwrap();
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(4242), &exprs, &levels, HashMap::new())
+        .with_nat_primitives(Some(NatPrimitives {
+            type_name: NameId(65), type_expr: ExprId(1),
+            zero: NameId(10), succ: NameId(11), recursor: NameId(66),
+            add: None, sub: Some(NameId(12)), pred: Some(NameId(13)),
+            virtual_bvar_zero: Some(ExprId(0)), ble: None, beq: None,
+        }));
+    let env = EnvFrame::empty().extend_free(FreeId(18)).extend_free(FreeId(17));
+    let positive = machine.expose(Closure::new(ExprId(7), env.clone()), Transparency::Reducible, 128);
+    assert!(matches!(positive.proven_value(),
+        Some(Value::Neutral(v)) if v.head == NeutralHead::Free(FreeId(17)) && v.spine.is_empty()
+    ), "sub (succ x) (succ zero) must reduce to x without assuming x is concrete: {positive:?}");
+    let negative = machine.expose(Closure::new(ExprId(10), env), Transparency::Reducible, 128);
+    assert!(matches!(negative.proven_value(),
+        Some(Value::Neutral(v)) if v.head == NeutralHead::Const { name: NameId(13), levels: vec![] }
+    ), "sub (succ x) (succ y) must not be rewritten to x for unknown y: {negative:?}");
+}
