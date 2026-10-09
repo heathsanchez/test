@@ -1,0 +1,34 @@
+name: WebArena evidence regression guard
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - '.github/workflows/webarena_evidence_regressions.yml'
+      - 'scripts/webarena_reddit_forum_resolver.py'
+      - 'scripts/webarena_rescore_retained.py'
+      - 'tests/test_webarena_forum_compound_names.py'
+      - 'tests/test_webarena_rescore_validity.py'
+      - 'tests/fixtures/webarena_observed_forums.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check preserved forum distinctions
+        run: python -m unittest discover -s tests -p 'test_webarena_forum_compound_names.py' -v
+      - name: Reject invalid aggregate scores
+        run: python -m unittest discover -s tests -p 'test_webarena_rescore_validity.py' -v

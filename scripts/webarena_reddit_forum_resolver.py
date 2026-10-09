@@ -55,6 +55,29 @@ SEMANTIC_EQUIVALENTS={
     "forever":("permanent","lifetime","life"),
 }
 
+def compound_name_match(description,slug):
+    """Count meaningful words in a contiguous phrase spelling an observed slug.
+
+    Whole query words may be joined, but substrings inside a word may not.
+    This restores the same literal evidence for camel-case and lowercase
+    compound names, without introducing a table of forum aliases.
+    """
+    words=re.findall(r"[a-z0-9]+",clean(description).casefold())
+    target=compact(slug)
+    best=0
+    for start in range(len(words)):
+        joined=""
+        meaningful=0
+        for word in words[start:]:
+            joined+=word
+            meaningful+=int(len(word)>=3 and word not in STOP)
+            if len(joined)>len(target):
+                break
+            if joined==target and meaningful>=2:
+                best=max(best,meaningful)
+                break
+    return best
+
 def score(description,label,slug,context=""):
     wanted=toks(description)
     observed=toks(" ".join([label,slug,context]))
@@ -66,13 +89,10 @@ def score(description,label,slug,context=""):
         best=max((sim(term,o) for term in equivalences for o in observed),default=0.0)
         if best>=0.99: exact+=1
         if best>=0.68: total+=best
-    # A lowercase forum slug can concatenate two *adjacent requested words*,
-    # e.g. "deep learning" -> "deeplearning". Those two observations together
-    # are stronger than a broader category matching only "learning".
-    # This is derived from the user's terms; no hardcoded forum alias.
-    joined={wanted[i]+wanted[i+1] for i in range(len(wanted)-1)}
-    compound=sum(1 for o in toks(slug) if o in joined)
-    return exact*10.0+total+24.0*compound
+    # The fallback score is at most 11 * len(wanted). Literal compound
+    # identity therefore outranks token resemblance, regardless of casing.
+    literal=compound_name_match(description,slug)
+    return exact*10.0+total+literal*(11.0*len(wanted)+1.0)
 
 async def resolve_forum(page,base,description,max_pages=12):
     # First resolve explicitly named forums through the site's own search.
