@@ -323,7 +323,7 @@ fn convert_in_context_with_congruence(
                         && definition_arguments_used(checker, *left_name, lhs.spine.len())
                         && !lhs.spine.is_empty()
                         && lhs.spine.len() == rhs.spine.len()
-                        && compare_neutral_heads(checker, lhs, rhs, probe_budget).is_proven()
+                        && compare_neutral_heads(checker, lhs, rhs, probe_budget, depth, context).is_proven()
                         && lhs.spine.iter().zip(&rhs.spine).rev().all(|(left_arg, right_arg)| {
                             convert_in_context_with_congruence(
                                 checker,
@@ -1464,7 +1464,7 @@ fn compare_values(
                         }
                     }
                 }
-                match compare_neutral_heads(checker, left, right, current_budget) {
+                match compare_neutral_heads(checker, left, right, current_budget, depth, context) {
                     Judgment::Proven { .. } => {}
                     other => return other,
                 }
@@ -1744,6 +1744,8 @@ fn compare_neutral_heads(
     left: &Neutral,
     right: &Neutral,
     budget: usize,
+    depth: usize,
+    context: &[TypeValue],
 ) -> Judgment<()> {
     match (&left.head, &right.head) {
         (NeutralHead::Free(left), NeutralHead::Free(right)) if left == right => {
@@ -1826,9 +1828,35 @@ fn compare_neutral_heads(
         _ => {
             if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
                 eprintln!(
-                    "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
-                    left.head, left.spine, right.head, right.spine, budget
+                    "NUCLEUS_NEUTRAL_HEAD_MISMATCH:depth={depth}:context_len={}:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
+                    context.len(),left.head,left.spine,right.head,right.spine,budget,
                 );
+                let l=format!("{:?}",left.head);
+                let r=format!("{:?}",right.head);
+                if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+                    (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+                {
+                    let a=context.get(6);
+                    let b=context.get(5);
+                    let prop=|ty:Option<&TypeValue>| {
+                        if let Some(TypeValue::Term(c))=ty {
+                            Some(checker.is_proposition_in_context(
+                                c.expr,context,&c.env,budget.min(1024),
+                            ))
+                        }else{None}
+                    };
+                    let relation=match(a,b){
+                        (Some(x),Some(y))=>Some(convert_with_policy_in_context(
+                            checker,x,y,budget.min(256),
+                            DeltaPolicy::GuardedSemanticFallback,depth,context,
+                        )),
+                        _=>None,
+                    };
+                    eprintln!(
+                        "NUCLEUS_FIN_LOCAL_PAIR:depth={depth}:context_len={}:free6_type={a:?}:free5_type={b:?}:prop6={:?}:prop5={:?}:type_relation={relation:?}",
+                        context.len(),prop(a),prop(b),
+                    );
+                }
             }
             if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR").is_some() { eprintln!("NUCLEUS_RECURSOR_MAJOR:left={:?}:right={:?}", left.spine.last(), right.spine.last()); if let Some(c) = right.spine.last() { eprintln!("NUCLEUS_RECURSOR_MAJOR_VALUE:{:?}", checker.machine().expose(c.clone(), Transparency::Full, budget.min(64))); } }
             #[cfg(feature = "diagnostics")]
