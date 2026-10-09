@@ -231,6 +231,18 @@ impl<'a> TypeChecker<'a> {
         budget: usize,
         depth: usize,
     ) -> Option<TypeValue> {
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CAPTURED_TYPE").is_some() && depth < 12 {
+            let binding = match self.expressions.get(term.expr) {
+                Some(Expr::BVar(index)) => term.env.lookup(*index),
+                _ => None,
+            };
+            eprintln!(
+                "NUCLEUS_CAPTURED_ENTER:depth={depth}:expr={:?}:syntax={:?}:frame={}:binding={binding:?}:context={}:fuel={budget}:levels_default={}",
+                term.expr, self.expressions.get(term.expr), term.env.id(),
+                context.len(), term.levels == LevelSubstitution::default(),
+            );
+        }
         if depth >= 40 || budget < 32
             || term.levels != LevelSubstitution::default()
         {
@@ -280,7 +292,7 @@ impl<'a> TypeChecker<'a> {
                 // Type-check the unnormalized argument against the *exact*
                 // current dependent domain before substituting it into the
                 // next binder. Never infer typing solely from its WHNF.
-                if !crate::convert::convert_with_policy_in_context(
+                let argument_relation = crate::convert::convert_with_policy_in_context(
                     self,
                     &argument_type,
                     &domain,
@@ -288,7 +300,15 @@ impl<'a> TypeChecker<'a> {
                     crate::convert::DeltaPolicy::PreferredOnly,
                     context.len(),
                     context,
-                ).is_proven() {
+                );
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_CAPTURED_TYPE").is_some() {
+                    eprintln!(
+                        "NUCLEUS_CAPTURED_APPLY:depth={depth}:expr={:?}:arg={:?}:argument_type={argument_type:?}:required_domain={domain:?}:relation={argument_relation:?}",
+                        term.expr, argument.expr,
+                    );
+                }
+                if !argument_relation.is_proven() {
                     return None;
                 }
                 match body {
@@ -328,9 +348,17 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         budget: usize,
     ) -> bool {
-        let Some(result_type) = self.certified_captured_type(
+        let result = self.certified_captured_type(
             term, context, budget.min(2048), 0,
-        ) else {
+        );
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CAPTURED_TYPE").is_some() {
+            eprintln!(
+                "NUCLEUS_CAPTURED_ROOT:expr={:?}:syntax={:?}:context={}:typed={result:?}",
+                term.expr, self.expressions.get(term.expr), context.len(),
+            );
+        }
+        let Some(result_type) = result else {
             return false;
         };
         matches!(
