@@ -7,6 +7,8 @@ on:
     paths:
       - ".github/workflows/webarena_reddit_blind_router.yml"
       - "scripts/webarena_reddit_blind_router.py"
+      - "scripts/webarena_reddit_forum_resolver.py"
+      - "scripts/webarena_reddit_vote.py"
 
 jobs:
   qualify:
