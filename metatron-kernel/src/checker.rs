@@ -2615,6 +2615,24 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
             })
         });
 
+    // A fully declared closed, nonrecursive three-field record has the
+    // same verified constructor/recursor obligations as the existing
+    // four-parameter three-field family. This merely selects the generic
+    // derived-signature validator. It never authorizes acceptance by
+    // source name or constructor shape alone.
+    let closed_three_field_record = inductive.num_params == 0
+        && constructor.num_params == 0
+        && constructor.num_fields == 3
+        && recursor.num_params == 0
+        && recursor.num_indices == 0
+        && recursor.num_minors == 1
+        && recursor.num_motives == 1
+        && pi_spine(export, constructor.ty, 3).is_some_and(|(fields, _)| {
+            fields.iter().all(|field| {
+                !expression_contains_constant(export, *field, inductive.name)
+            })
+        });
+
     let relation_proof_structure = generic_relation_proof_record_candidate(export, block);
     let closed_pair_structure = closed_pair_record_candidate(export, block);
     let unary_type_constructor_operations =
@@ -2624,6 +2642,7 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         && !scalar_structure
         && !closed_dependent_pair
         && !four_parameter_three_field_record
+        && !closed_three_field_record
         && !relation_proof_structure
         && !closed_pair_structure
         && !unary_type_constructor_operations
