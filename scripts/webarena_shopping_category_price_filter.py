@@ -12,13 +12,15 @@ def tokens(s):
 
 def score(wanted,label,href):
     wt=tokens(wanted)
-    hay=tokens(label+" "+urlparse(href).path.replace("-"," "))
-    overlap=sum(1 for w in wt if w in hay)
-    exact=sum(1 for w in wt if any(w==h for h in hay))
     path=urlparse(href).path
+    path_tokens=tokens(path.replace("-"," "))
+    hay=tokens(label+" "+path.replace("-"," "))
+    overlap=sum(1 for w in wt if w in hay)
+    exact=sum(1 for w in wt if w in hay)
+    path_exact=sum(1 for w in wt if w in path_tokens)
     depth=len([x for x in path.split("/") if x])
     category_bonus=2 if path.endswith(".html") and depth>=2 else 0
-    return overlap*5+exact*2+category_bonus
+    return overlap*5+exact*2+path_exact*8+category_bonus
 
 def ceiling(spec):
     m=re.search(r"under\s*\$?([0-9]+(?:\.[0-9]+)?)",clean(spec),re.I)
@@ -41,7 +43,7 @@ async def resolve_category(page,base,wanted):
         label=clean(await a.inner_text())
         sc=score(wanted,label,href)
         if sc>0: rows.append({"score":sc,"label":label,"href":href})
-    rows.sort(key=lambda x:(-x["score"],len(urlparse(x["href"]).path),x["href"]))
+    rows.sort(key=lambda x:(-x["score"],-len([p for p in urlparse(x["href"]).path.split("/") if p]),x["href"]))
     if not rows or rows[0]["score"]<7:
         raise RuntimeError(f"no category candidate for {wanted!r}: {rows[:10]}")
     return rows[0],rows[:10]
