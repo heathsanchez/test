@@ -1,8 +1,8 @@
-name: Nucleus qualified Nat recursor major diagnostic
+name: Nucleus guarded full iota fallback qualification
 
 on:
   push:
-    branches: [nucleus-depth5-natrec-major-authority-v1]
+    branches: [nucleus-nat-modlt-full-iota-fallback-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -180,14 +180,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted==118 and unknown==7, 'DIAGNOSTIC_ALTERED_FROZEN_VERDICTS'
-          print('DIAGNOSTIC_NATREC_MAJOR_NO_VERDICT_PROMOTION',flush=True)
+          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
+          print('CANDIDATE_FULL_IOTA_196_GAIN',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-depth5-natrec-major-${{ github.sha }}
+          name: nucleus-full-iota-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -200,7 +200,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="natrec major: ${{ job.status }}; no complete replay"
+          description="full iota: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -211,6 +211,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/depth5-natrec-major" \
+            -f context="nucleus/depth5-full-iota-fallback" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
