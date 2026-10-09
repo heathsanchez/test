@@ -1,0 +1,78 @@
+name: Nucleus transactional recursor probe
+on:
+  push:
+    branches: [nucleus-recursor-probe-transaction-v1]
+    paths: ["metatron-kernel/**", ".github/workflows/nucleus-recursor-probe-transaction-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run regression and complete release tests
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-transaction
+          git rev-parse HEAD:metatron-kernel > evidence-transaction/source-tree.txt
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test recursor_probe_transaction 2>&1 | tee evidence-transaction/regression.txt
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml 2>&1 | tee evidence-transaction/release.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch immutable corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/archive /tmp/frozen
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/corpus.zip
+          unzip -q /tmp/corpus.zip -d /tmp/archive
+          tar --no-same-owner -xzf /tmp/archive/lean-arena-tests.tar.gz -C /tmp/frozen
+      - name: Reclose exact corpus and false-index control
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time
+          out=pathlib.Path('evidence-transaction');root=pathlib.Path('/tmp/frozen')
+          binary='metatron-kernel/target/release/metatron-kernel';rows=[]
+          for bucket,expected in [('good',0),('bad',1)]:
+              for path in sorted((root/bucket).rglob('*.ndjson')):
+                  data=path.read_bytes();start=time.monotonic()
+                  try:
+                      p=subprocess.run([binary],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                          timeout=20,env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+                      rc=p.returncode;err=p.stderr.decode(errors='replace')
+                  except subprocess.TimeoutExpired as e:
+                      rc='TIMEOUT';err=(e.stderr or b'').decode(errors='replace')
+                  row={'case':str(path.relative_to(root)),'expected':expected,'rc':rc,
+                       'seconds':round(time.monotonic()-start,6),'sha256':hashlib.sha256(data).hexdigest(),
+                       'terminal':[x for x in err.splitlines() if 'NUCLEUS_DOWNSTREAM:' in x][-3:]}
+                  rows.append(row);print(json.dumps(row,sort_keys=True),flush=True)
+                  (out/'rows.json').write_text(json.dumps(rows,indent=2))
+          summary={'accept':sum(r['rc']==0 for r in rows),'reject':sum(r['rc']==1 for r in rows),
+                   'unknown':sum(r['rc']==2 for r in rows),
+                   'wrong':sum(r['rc'] in (0,1) and r['rc']!=r['expected'] for r in rows),
+                   'errors':sum(r['rc'] not in (0,1,2) for r in rows)}
+          print('SUMMARY '+json.dumps(summary,sort_keys=True),flush=True)
+          (out/'summary.json').write_text(json.dumps({'commit':os.environ['GITHUB_SHA'],'counts':summary,
+              'unknowns':[r for r in rows if r['rc']==2]},indent=2))
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          data=false_index(extract((root/'good/init-prelude.ndjson').read_bytes()))
+          assert hashlib.sha256(data).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          p=subprocess.run([binary],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=20)
+          print('FALSE_INDEX '+str(p.returncode),flush=True)
+          (out/'false-index.json').write_text(json.dumps({'rc':p.returncode}))
+          assert p.returncode in (1,2),p.returncode
+          assert len(rows)==196
+          assert summary['wrong']==0 and summary['errors']==0,summary
+          assert summary['accept']>=115 and summary['reject']>=71 and summary['unknown']<=10,summary
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-recursor-transaction-${{ github.sha }}
+          path: evidence-transaction
+          if-no-files-found: error
