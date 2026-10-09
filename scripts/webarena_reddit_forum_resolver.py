@@ -65,6 +65,24 @@ async def resolve_forum(page,base,description,max_pages=12):
             if len(matches)==1:
                 row=next(iter(matches.values()))
                 return {**row,"candidates":[row]}
+    # Explicit names may be stored as compact slugs; test candidate paths
+    # and verify the page's canonical forum link before accepting one.
+    if query and len(query.split()) <= 7:
+        from urllib.parse import quote
+        variants=[query, re.sub(r"[^a-z0-9]+","",query.casefold()),
+                  re.sub(r"[^a-z0-9]+","-",query.casefold()).strip("-")]
+        for variant in dict.fromkeys(v for v in variants if v):
+            response=await page.goto(f"{base.rstrip('/')}/f/{quote(variant)}",wait_until="networkidle",timeout=120000)
+            if response is None or response.status!=200:
+                continue
+            canonical=urlparse(page.url).path.strip("/").split("/")
+            if len(canonical)<2 or canonical[0]!="f":
+                continue
+            slug=canonical[1]
+            if re.sub(r"[^a-z0-9]+","",slug.casefold()) != re.sub(r"[^a-z0-9]+","",query.casefold()):
+                continue
+            row={"score":100.0,"label":slug,"slug":slug,"context":"verified direct forum URL"}
+            return {**row,"candidates":[row]}
     rows=[]; seen=set(); empty=0
     for n in range(1,max_pages+1):
         r=await page.goto(f"{base.rstrip('/')}/forums/by_name/{n}",wait_until="networkidle",timeout=120000)
