@@ -1,0 +1,86 @@
+name: Nucleus current Arena 196 exact-source transport
+on:
+  push:
+    branches: [nucleus-current-196-lineage-v1]
+    paths: [".github/workflows/nucleus-current-196-lineage-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  proof-transport:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      SOURCE_SHA: "46862af34af7d20c79b9eda68fc0a3a668463e68"
+      SOURCE_SUBTREE: "f57cc71595fd3fb577bf1bb36ca1cf7dd26eb543"
+      VERIFIED_RUN: "37977986892"
+      PREVIOUS_ARENA_COMMIT: "b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42"
+      CURRENT_ARENA_COMMIT: "b83254de5146ef34147ab82a48edbe1856b0edcc"
+      OLD_ARTIFACT: "11272848230"
+      NEW_ARTIFACT: "11505862349"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prove byte-identical Nucleus source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          echo "reused_checker=$SOURCE_SHA source_subtree=$SOURCE_SUBTREE"
+      - name: Fetch immutable official Arena export artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/old /tmp/new /tmp/packs
+          for entry in "old:$OLD_ARTIFACT" "new:$NEW_ARTIFACT"; do
+            IFS=: read -r label artifact <<< "$entry"
+            gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$artifact/zip" >"/tmp/packs/$label.zip"
+            mkdir -p "/tmp/packs/$label"
+            unzip -q "/tmp/packs/$label.zip" -d "/tmp/packs/$label"
+            tar --no-same-owner -xzf "/tmp/packs/$label/lean-arena-tests.tar.gz" -C "/tmp/$label"
+          done
+      - name: Check exact proof-preserving corpus transport
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/current-arena-196-lineage-v1
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          roots={'previous':pathlib.Path('/tmp/old'),'current':pathlib.Path('/tmp/new')}
+          def manifest(root):
+            result={}
+            for bucket in ('good','bad'):
+              for path in sorted((root/bucket).rglob('*.ndjson')):
+                key=str(path.relative_to(root))
+                result[key]={'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'size':path.stat().st_size}
+            return result
+          old,current=map(manifest,roots.values())
+          added=sorted(current.keys()-old.keys())
+          removed=sorted(old.keys()-current.keys())
+          changed=sorted(k for k in old.keys()&current.keys() if old[k]!=current[k])
+          counts={bucket:sum(x.startswith(bucket+'/') for x in current) for bucket in ('good','bad')}
+          serialized=json.dumps(current,sort_keys=True,separators=(',',':')).encode()
+          report={'schema':'nucleus-current-arena-frozen196-exact-transport-v1',
+            'source_sha':os.environ['SOURCE_SHA'],
+            'source_subtree':os.environ['SOURCE_SUBTREE'],
+            'previous_qualification_run':int(os.environ['VERIFIED_RUN']),
+            'previous_arena_commit':os.environ['PREVIOUS_ARENA_COMMIT'],
+            'current_arena_commit':os.environ['CURRENT_ARENA_COMMIT'],
+            'previous_artifact':int(os.environ['OLD_ARTIFACT']),
+            'current_artifact':int(os.environ['NEW_ARTIFACT']),
+            'counts':counts,'previous_total':len(old),'current_total':len(current),
+            'added':added,'removed':removed,'changed':changed,
+            'manifest_digest':hashlib.sha256(serialized).hexdigest(),
+            'warrant':'transfer of exact 196-case outcomes by source and input byte identity only; does not cover larger exclusions or Mathlib timing'}
+          out=pathlib.Path('metatron-kernel/evidence-out/current-arena-196-lineage-v1/report.json')
+          out.write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          print('EXACT_CURRENT_TRANSPORT='+json.dumps(report,sort_keys=True),flush=True)
+          assert len(old)==len(current)==196,(len(old),len(current))
+          assert counts=={'good':125,'bad':71},counts
+          assert not (added or removed or changed),'Current Arena export differs; replay required'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-current-196-transport-${{ github.sha }}
+          path: metatron-kernel/evidence-out/current-arena-196-lineage-v1
+          if-no-files-found: warn
