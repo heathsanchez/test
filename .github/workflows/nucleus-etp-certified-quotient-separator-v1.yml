@@ -159,6 +159,21 @@ jobs:
             'witnesses':rows},indent=2))
           PY
 
+      - name: Require explicit ETP quotient separation for non-Prop locals
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('metatron-kernel/evidence-out/etp-quotient-separator/obligations.json')
+          d=json.loads(p.read_text())
+          assert d['state']=='CANDIDATE_DIAGNOSTIC_ONLY'
+          assert len(d['witnesses'])==2
+          for w in d['witnesses']:
+            pairs=w['distinct_neutral_head_pairs']
+            assert ['Free(FreeId(3))','Free(FreeId(2))'] in pairs, w
+            assert w['verdict']==2, 'A failed quotient cannot be promoted'
+          print('ETP_QUOTIENT_SEPARATOR=UNKNOWN_PROTECTED',flush=True)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
