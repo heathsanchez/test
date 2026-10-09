@@ -1,0 +1,145 @@
+name: Collatz V126 bounded three-root quotient normal form
+on:
+  push:
+    branches: [collatz-v126-three-root-consequence-normal-form]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source-to-3-root six affine consequence laws
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v126_three_root_normal_form > evidence/v126-exact.json
+          python3 - <<'PY'
+          import json,hashlib,subprocess,pathlib
+          p=pathlib.Path('evidence/v126-exact.json')
+          j=json.loads(p.read_text())
+          assert j['schema']=='COLLATZ_V126_THREE_ROOT_CLASS_NORMALIZATION'
+          assert j['rule_count']==6
+          assert j['positive_integer_replays']==20000
+          assert j['negative_control_root_of_1']==21
+          assert j['non_smaller_root_replays']>0
+          assert j['ROOT_TRANSPORT_IS_NOT_A_LOWER_SOURCE_MERGER']
+          assert j['odd_three_root_stutters_under_canonical_normalization']
+          assert j['global_collatz']=='UNKNOWN' and j['qed'] is False
+          cert={'schema':'COLLATZ_V126_BOUNDED_EXACT_ROOT_SECTION',
+             'status':'WARRANTED_BOUNDED_EXACT',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'class_preserving_not_progress':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v126-exact-seal.json').write_text(json.dumps(cert,sort_keys=True,indent=2)+'\n')
+          print('V126_SIX_ROOT_LAWS_EXACT_ALL_OFFSET_AUDIT_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v126-exact-root-section
+          path: evidence/
+          if-no-files-found: error
+  formal-three-root:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel check full-positive to positive-three-root reduction
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for file in SourceProductAffine CylinderCoalescence LawfulFutureJoin SourceThreeReverseRoot; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${file}.olean" "formal/Collatz/${file}.lean" > "evidence/${file}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/ThreeRootConsequenceNormalForm.lean 2>&1 | tee evidence/v126-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v126-lean.log')
+          s=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s)
+          ax={}
+          for name,vals in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",s,re.S):
+            v=[z.strip() for z in vals.split(',') if z.strip()]
+            assert set(v)<={'propext','Quot.sound','Classical.choice'},(name,v)
+            ax[name]=v
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",s):
+            ax[name]=[]
+          names=['root_represents_mod9_one','root_represents_mod9_two',
+           'root_represents_mod9_four','root_represents_mod9_five',
+           'root_represents_mod9_seven','root_represents_mod9_eight',
+           'every_positive_has_bounded_three_root',
+           'collatz_iff_terminates_on_three_roots']
+          assert all('CollatzFinal.'+name in ax for name in names),ax
+          q={'schema':'COLLATZ_V126_FORMAL_THREE_ROOT_QUOTIENT',
+             'status':'WARRANTED_FORMAL_EXACT_DOMAIN_EQUIVALENCE',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'axioms':ax,
+             'lean_log_sha256':hashlib.sha256(s.encode()).hexdigest(),
+             'no_reverse_completeness_claim':True,
+             'not_a_universal_Collatz_proof':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v126-formal-seal.json').write_text(json.dumps(q,sort_keys=True,indent=2)+'\n')
+          print('V126_ALL_NATURALS_ROOT_NORMAL_FORM_KERNEL_CHECKED_NOT_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v126-formal-root-section
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-quotient,formal-three-root]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v126-exact-root-section
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v126-formal-root-section
+          path: evidence/formal
+      - name: Protect class normalization against false descent promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v126-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v126-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['class_preserving_not_progress']
+          assert b['status']=='WARRANTED_FORMAL_EXACT_DOMAIN_EQUIVALENCE'
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          o={'schema':'COLLATZ_V126_COMPILED_THREE_ROOT_NORMAL_FORM',
+             'status':'WARRANTED_FORMAL_CLASS_REPRESENTATION_ONLY',
+             'source_commit':head,
+             'positive_root_representative_exists_at_clock_at_most6':True,
+             'every_three_root_inverse_ray_pure_doubling':True,
+             'root_normalizer_may_increase_original_source':True,
+             'universal_termination_of_roots':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v126-final-seal.json').write_text(json.dumps(o,sort_keys=True,indent=2)+'\n')
+          print('V126_WARRANTED_ROOT_QUOTIENT_NO_UNIVERSAL_COLLATZ_PROOF')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v126-final-normal-form
+          path: evidence/v126-final-seal.json
+          if-no-files-found: error
