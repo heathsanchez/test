@@ -645,6 +645,69 @@ impl<'a> TypeChecker<'a> {
                         }
                     }
                 }
+                // Exact diagnostic only: separate the domain and dependent body
+                // obligations when an inferred Pi is compared with a term that
+                // must expose to a Pi. Never change an ACCEPT/REJECT/UNKNOWN.
+                #[cfg(feature = "diagnostics")]
+                if conversion.is_unknown()
+                    && std::env::var_os("NUCLEUS_TRACE_MIXED_PI").is_some()
+                    && let (
+                        TypeValue::Pi {
+                            domain: inferred_domain,
+                            body: inferred_body,
+                            binder: opened_free,
+                        },
+                        TypeValue::Term(_),
+                    ) = (&value, expected)
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static MIXED_PROBES: AtomicUsize = AtomicUsize::new(0);
+                    if MIXED_PROBES.fetch_add(1, Ordering::Relaxed) < 12 {
+                        let budget = (*remaining).min(512);
+                        let exposed = self.pi_view(
+                            Judgment::proven(expected.clone(), "mixed-pi-expected"),
+                            budget,
+                        );
+                        let Some((expected_domain, expected_body)) = exposed else {
+                            eprintln!(
+                                "NUCLEUS_MIXED_PI:expr={expression:?}:context={}:binder={:?}:expected_pi=not-exposed",
+                                context.len(), opened_free,
+                            );
+                            // Diagnostic observation must never alter the proof result.
+                        };
+                        let domain_result = crate::convert::convert_with_policy_in_context(
+                            self,
+                            inferred_domain,
+                            &expected_domain,
+                            budget,
+                            self.delta_policy,
+                            context.len(),
+                            context,
+                        );
+                        let normalized_expected_body = match expected_body {
+                            PiBody::Fixed(_other_binder, value) => value,
+                            PiBody::Closure(closure) => TypeValue::Term(
+                                closure.under_free(*opened_free),
+                            ),
+                        };
+                        let mut extended = context.to_vec();
+                        extended.push((**inferred_domain).clone());
+                        let body_result = crate::convert::convert_with_policy_in_context(
+                            self,
+                            inferred_body,
+                            &normalized_expected_body,
+                            budget,
+                            self.delta_policy,
+                            context.len() + 1,
+                            &extended,
+                        );
+                        eprintln!(
+                            "NUCLEUS_MIXED_PI:expr={expression:?}:context={}:binder={:?}:expected_pi=present:domain={domain_result:?}:body={body_result:?}:original={conversion:?}",
+                            context.len(), opened_free,
+                        );
+                    }
+                }
+
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
