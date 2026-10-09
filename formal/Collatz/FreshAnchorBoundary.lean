@@ -74,22 +74,26 @@ theorem fresh_episode_anchors_unbounded
         (episodeStream a i).anchor) :
     ∀ B, ∃ n, B < (episodeStream a n).anchor := by
   intro B
-  by_contra hnone
-  have hbound : ∀ n, (episodeStream a n).anchor ≤ B := by
-    intro n
-    by_contra hn
-    exact hnone ⟨n, by omega⟩
-  obtain ⟨i, j, hij, heq⟩ :=
-    bounded_nat_sequence_repeats B
-      (fun k => (episodeStream a k).anchor) hbound
-  have hk : 0 < j - i := by omega
-  have hsum : i + (j - i) = j := by omega
-  have hsame :
-      (episodeStream a (i + (j - i))).anchor =
-        (episodeStream a i).anchor := by
-    rw [hsum]
-    exact heq.symm
-  exact hfresh i (j - i) hk hsame
+  by_cases hex : ∃ n, B < (episodeStream a n).anchor
+  · exact hex
+  · exfalso
+    have hbound : ∀ n, (episodeStream a n).anchor ≤ B := by
+      intro n
+      have hn : ¬ B < (episodeStream a n).anchor := by
+        intro hgt
+        exact hex ⟨n, hgt⟩
+      omega
+    obtain ⟨i, j, hij, heq⟩ :=
+      bounded_nat_sequence_repeats B
+        (fun k => (episodeStream a k).anchor) hbound
+    have hk : 0 < j - i := by omega
+    have hsum : i + (j - i) = j := by omega
+    have hsame :
+        (episodeStream a (i + (j - i))).anchor =
+          (episodeStream a i).anchor := by
+      rw [hsum]
+      exact heq.symm
+    exact hfresh i (j - i) hk hsame
 
 /-- Visiting a high anchor means an actual endpoint is divisible by
 the corresponding dyadic modulus *after adding one*. This is a
