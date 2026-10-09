@@ -1,8 +1,8 @@
-name: Nucleus checked ignored-argument beta-delta field qualification
+name: Nucleus Lean.Name first inductive-contract audit
 
 on:
   push:
-    branches: [nucleus-checked-erased-argument-alias-v1]
+    branches: [nucleus-lean-name-inductive-contract-census-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -222,6 +222,88 @@ jobs:
               print('NUCLEUS_SYNTHETIC_FIELD_ALIAS='+json.dumps({'case':case,'constructor_field':left,'minor_field':right},separators=(',',':')),flush=True)
           PY
 
+      - name: Identify exact next Lean.Name inductive contract after SourceInfo
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests/good')
+          results=[]
+          for case in ('init-prelude','perf/grind-ring-5'):
+              names={0:''};exprs={};prefix=[];found=None
+              for raw in (root/(case+'.ndjson')).read_bytes().splitlines(keepends=True):
+                  row=json.loads(raw);prefix.append(raw)
+                  if 'in' in row:
+                      n=row.get('str',row.get('num'))
+                      parent=names.get(n['pre'],'')
+                      names[row['in']]=parent+('.' if parent else '')+str(n.get('str',n.get('i')))
+                  if 'ie' in row:
+                      exprs[row['ie']]=row
+                  if 'inductive' in row and any(
+                      names.get(t['name'])=='Lean.Name'
+                      for t in row['inductive'].get('types',[])
+                  ):
+                      found=row
+                      break
+              assert found is not None,('Lean.Name not found',case)
+              def source_name(n):return names.get(n,str(n))
+              def term(i,d=0):
+                  if d>4:return {'expr':i,'more':True}
+                  obj=exprs.get(i,{})
+                  if 'const' in obj:
+                      z=obj['const'];return {'const':source_name(z['name']),'us':z.get('us',[])}
+                  if 'app' in obj:
+                      z=obj['app'];return {'app':[term(z['fn'],d+1),term(z['arg'],d+1)]}
+                  if 'forallE' in obj:
+                      z=obj['forallE'];return {'Pi':[term(z['type'],d+1),term(z['body'],d+1)]}
+                  if 'bvar' in obj:return {'bvar':obj['bvar']}
+                  if 'sort' in obj:return {'sort':obj['sort']}
+                  return {'expr':i,'keys':list(obj.keys())}
+              def pi_type(i,count):
+                  domains=[]
+                  for _ in range(min(16,count)):
+                      z=exprs.get(i,{})
+                      if 'forallE' not in z:break
+                      domains.append(z['forallE']['type'])
+                      i=z['forallE']['body']
+                  return domains,i
+              block=found['inductive']
+              ctor_records=[]
+              for c in block.get('ctors',[]):
+                  p=c.get('numParams',0);fields=c.get('numFields',0)
+                  domains,result=pi_type(c['type'],p+fields)
+                  ctor_records.append({
+                      'name':source_name(c['name']),'num_params':p,'num_fields':fields,
+                      'declared_type':c['type'],'domain_count':len(domains),
+                      'fields':[term(x) for x in domains[p:]],
+                      'result':term(result),'metadata':{k:v for k,v in c.items() if k not in ('type','name')}
+                  })
+              rec_records=[]
+              for rec in block.get('recs',[]):
+                  domains,result=pi_type(rec['type'],16)
+                  rec_records.append({
+                      'name':source_name(rec['name']),'signature_binders_at_most_16':len(domains),
+                      'rules':[{'constructor':source_name(z.get('ctor',z.get('constructor'))),'nfields':z.get('nfields'),'rhs':z.get('rhs')} for z in rec.get('rules',[])],
+                      'metadata':{k:v for k,v in rec.items() if k not in ('type','name','rules')}
+                  })
+              payload=b''.join(prefix)
+              run=subprocess.run(['/tmp/nucleus'],input=payload,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90)
+              downstream=[x for x in run.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_DOWNSTREAM:' in x][-3:]
+              record={
+                  'case':case,'prefix_sha256':hashlib.sha256(payload).hexdigest(),
+                  'verdict':run.returncode,'last':downstream,
+                  'types':[{'name':source_name(t['name']), 'metadata':t} for t in block['types']],
+                  'constructors':ctor_records,'recursors':rec_records
+              }
+              print('NUCLEUS_LEAN_NAME_CONTRACT='+json.dumps(record,separators=(',',':')),flush=True)
+              assert run.returncode==2, ('Lean.Name unexpected verdict',record)
+              assert any('name=Lean.Name:' in x for x in downstream),('unexpected first residual',record)
+              results.append(record)
+          out=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/lean-name-contract-census.json')
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(results,indent=2))
+          PY
+
       - name: Require new contextual proof with exact negative controls
         run: |
           set -euo pipefail
@@ -384,8 +466,8 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__INTERNAL_RULE_NOT_PROMOTED'
-          print('CHECKED_ERASURE_PROMOTED_ONLY_AFTER_COMPLETE_ACCEPT',flush=True)
+          assert accepted==118 and unknown==7, 'LEAN_NAME_DIAGNOSTIC_CHANGED_FROZEN196'
+          print('LEAN_NAME_FIRST_CONTRACT_DIAGNOSTIC_ONLY',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
