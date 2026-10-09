@@ -1,0 +1,204 @@
+name: Collatz V134 typed source23 and 27 proof-reuse controller
+on:
+  push:
+    branches: [collatz-v134-root23-stateful-reclosure]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-typed-state:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify all controller generations, exact V133 source contract and transitive revocation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m unittest -v             research.test_collatz_ros_future_controller_v123             research.test_collatz_ros_future_controller_v124             research.test_collatz_ros_relational_root_v130             research.test_collatz_ros_chart_overlap_v132             research.test_collatz_ros_root23_reclosure_v134             2>&1 | tee evidence/v134-tests.log
+          python3 -m research.collatz_ros_root23_reclosure_v134             --bootstrap --input research/collatz_ros_state_v132.json             --output evidence/v134-state.json | tee evidence/v134-bootstrap.log
+          python3 -m research.collatz_ros_root23_reclosure_v134             --input evidence/v134-state.json --output evidence/v134-restart.json             | tee evidence/v134-restart.log
+          cmp evidence/v134-state.json evidence/v134-restart.json
+          if [ -f research/collatz_ros_state_v134.json ]; then
+            cmp research/collatz_ros_state_v134.json evidence/v134-state.json
+          fi
+          python3 -m research.collatz_ros_root23_reclosure_v134             --input evidence/v134-state.json --revoke-support v133_root23_formal_family             --output evidence/v134-revoked-v133.json             | tee evidence/v134-revoke-v133.log
+          python3 -m research.collatz_ros_root23_reclosure_v134             --input evidence/v134-state.json --revoke-support v131_chart_overlap_generic             --output evidence/v134-revoked-import.yaml.json             | tee evidence/v134-revoke-generic.log
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          root=pathlib.Path('evidence')
+          parent=pathlib.Path('research/collatz_ros_state_v132.json')
+          sfile=root/'v134-state.json'
+          s=json.loads(sfile.read_text())
+          rm=json.loads((root/'v134-revoked-v133.json').read_text())
+          all_rm=json.loads((root/'v134-revoked-import.yaml.json').read_text())
+          assert s['admission_schema']=='COLLATZ_ROS_V134_LATE_ROOT_REUSE_AUTHORITY'
+          assert s['controller_revision']==5 and s['grammar']['revision']==4
+          assert len(s['joins'])==17
+          assert len(s['parametric_laws'])==3
+          assert len(s['conditional_compilers'])==1
+          assert len(s['chart_instances'])==1
+          assert s['support']['v133_root23_formal_family']['run']==37988274186
+          assert s['support']['v131_chart_overlap_generic']['run']==37986167263
+          assert len(rm['joins'])==13 and len(rm['archived_joins'])==4
+          assert len(all_rm['joins'])==9 and len(all_rm['archived_joins'])==8
+          assert s['negative_controls'][2]['changing_source']==2**80-1
+          assert s['residuals'][1]['remaining_classes']==159938
+          assert s['global_collatz']=='UNKNOWN' and s['qed'] is False
+          assert s['universal_event_producer_proved'] is False
+          pairs={(q['source'],q['earlier']):q for q in s['joins']}
+          assert len(pairs)==17
+          assert {(q['source'],q['earlier']) for q in s['joins'] if q['source']==27}=={
+              (27,23),(27,3),(27,2)}
+          assert (pairs[27,23]['source_clock'],pairs[27,23]['earlier_clock'])==(59,0)
+          assert (pairs[23,3]['source_clock'],pairs[23,3]['earlier_clock'])==(7,1)
+          assert (pairs[27,3]['source_clock'],pairs[27,3]['earlier_clock'])==(66,1)
+          assert (pairs[27,2]['source_clock'],pairs[27,2]['earlier_clock'])==(70,1)
+          assert pairs[27,3]['parents']==[pairs[27,23]['id'],pairs[23,3]['id']]
+          assert pairs[23,2]['parents']==[pairs[23,3]['id'],pairs[3,2]['id']]
+          assert pairs[27,2]['support']=='v123_composition_theorem'
+          assert len(s['history'])>len(json.loads(parent.read_text())['history'])
+          assert b'1208925819614629174706175' in sfile.read_bytes()
+          result={'schema':'COLLATZ_V134_SOURCE23_TYPED_REUSE_EXACT',
+              'status':'WARRANTED_BOUNDED_STATEFUL_TYPED_CONTROLLER',
+              'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'parent_v132_file_sha256':hashlib.sha256(parent.read_bytes()).hexdigest(),
+              'new_v134_file_sha256':hashlib.sha256(sfile.read_bytes()).hexdigest(),
+              'verified_concrete_join_count':len(s['joins']),
+              'proved_parametric_root_families':len(s['parametric_laws']),
+              'generic_formal_conditional_compilers':1,
+              'source27_first_lower_clock_remains_59':True,
+              'source27_to_odd_three_root_clocks':[66,1],
+              'source27_to_terminal_phase_clocks':[70,1],
+              'revoke_root23_archived':4,
+              'revoke_upstream_v131_archived':8,
+              'universal_Collatz':'UNKNOWN','qed':False}
+          (root/'v134-exact-seal.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('V134_TYPED_ROOT23_REUSE_AND_PROOF_GRAPH_REVOCATION_PASS_GLOBAL_UNKNOWN')
+          PY
+          echo V134_CHECKPOINT_BEGIN
+          cat evidence/v134-state.json
+          echo V134_CHECKPOINT_END
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v134-typed-state
+          path: evidence/
+          if-no-files-found: error
+  pinned-root23-Lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel recheck exact V131/V133 theorem modules and source27 late joining
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/RootChartOverlapCompiler.lean)" = c35bde45d11aad51f46e6e8beced5322acd43e9b
+          test "$(git hash-object formal/Collatz/Root23LateJoinReclosure.lean)" = b2aea7066186caf01a6be6743579ad27894edb75
+          git hash-object formal/Collatz/Root23LateJoinReclosure.lean > evidence/v133-import-theorem-blob.txt
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin RelationalRootMerger RootChartOverlapCompiler FirstResidualRefinement; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/Root23LateJoinReclosure.lean 2>&1 | tee evidence/v134-Lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v134-Lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          ax={}
+          for name,s in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            a=[v.strip() for v in s.split(',') if v.strip()]
+            assert set(a)<={'propext','Quot.sound','Classical.choice'},(name,a)
+            ax[name]=a
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          needed=['root23ViaChart','root23_chart_source','root23_chart_earlier',
+               'root23_all_offset_law','source27To23','source27To3ByReclosure',
+               'source27_real_root3_meeting','source27To2ByReclosure',
+               'source27_real_root2_meeting',
+               'source27_has_certified_smaller_odd_root',
+               'root23_family_not_minimal_bad']
+          assert all('CollatzFinal.'+n in ax for n in needed),ax
+          result={'schema':'COLLATZ_V134_PINNED_SOURCE23_FORMAL_REUSE',
+             'status':'WARRANTED_FORMAL_ALL_OFFSET_ROOT23_AND_SPECIFIC_27_COMPOSITION',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'upstream_formal_v133_run':37988274186,
+             'upstream_generic_v131_run':37986167263,
+             'v133_theorem_blob':'b2aea7066186caf01a6be6743579ad27894edb75',
+             'axioms':ax,'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+             'formal_source27_entire_2adic_family':False,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v134-formal-seal.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('V134_PINNED_ROOT23_SOURCE27_FORMAL_COMPOSITION_PASS_GLOBAL_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v134-lean
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-typed-state,pinned-root23-Lean]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v134-typed-state
+          path: evidence/state
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v134-lean
+          path: evidence/formal
+      - name: Reconcile original-source two-clock consequences, theorem scope and same SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          a=pathlib.Path('evidence/state')
+          b=pathlib.Path('evidence/formal')
+          x=json.loads((a/'v134-exact-seal.json').read_text())
+          y=json.loads((b/'v134-formal-seal.json').read_text())
+          s=json.loads((a/'v134-state.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert x['source_commit']==y['source_commit']==head
+          assert x['new_v134_file_sha256']==hashlib.sha256((a/'v134-state.json').read_bytes()).hexdigest()
+          if pathlib.Path('research/collatz_ros_state_v134.json').exists():
+            assert (a/'v134-state.json').read_bytes()==pathlib.Path('research/collatz_ros_state_v134.json').read_bytes()
+          assert y['status']=='WARRANTED_FORMAL_ALL_OFFSET_ROOT23_AND_SPECIFIC_27_COMPOSITION'
+          assert x['source27_first_lower_clock_remains_59']
+          assert y['formal_source27_entire_2adic_family'] is False
+          assert x['revoke_upstream_v131_archived']==8
+          assert x['revoke_root23_archived']==4
+          assert x['universal_Collatz']==y['global_collatz']==s['global_collatz']=='UNKNOWN'
+          assert x['qed'] is y['qed'] is s['qed'] is False
+          result={'schema':'COLLATZ_V134_SOURCE27_PROTECTED_LATE_CLASS_CLOSURE',
+             'status':'WARRANTED_BOUNDED_TYPED_ENGINE_PLUS_FORMAL_ROOT23_LAW',
+             'source_commit':head,'state_sha256':x['new_v134_file_sha256'],
+             'all_offset_source23_formal':True,
+             'one_fixed_source27_to_odd_root3_clocks':[66,1],
+             'one_fixed_source27_to2_clocks':[70,1],
+             'protected_first_lower_source_clock':59,
+             'additional_live_source_class_mergers':4,
+             'live_proof_dag_witnesses':17,
+             'proposition_entire_source27_parity_cylinder_closed':False,
+             'universal_event_producer':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v134-final-seal.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('V134_PERSISTENT_ROOT23_REUSABLE_CONSEQUENCE_WARRANTED_NOT_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v134-final
+          path: evidence/v134-final-seal.json
+          if-no-files-found: error
