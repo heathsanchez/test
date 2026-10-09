@@ -214,6 +214,7 @@ theorem v147_positive_rational_equivalence :
     v147CentreEquivalent
       v147CentreNineThirteen
       v147CentreTwentySevenThirtyNine := by
+  change 27 * 13 = 9 * 39
   decide
 
 /-- The V146 family uses ONE exact rational centre-class for
@@ -258,7 +259,11 @@ theorem v147_coalescence_does_not_identify_source_centre :
       ¬ v147CentreEquivalent
         (⟨3, 9, by decide⟩ : RationalSourceCentreV147)
         (⟨9, 9, by decide⟩ : RationalSourceCentreV147) := by
-  decide
+  constructor
+  · decide
+  · intro h
+    change 9 * 9 = 3 * 9 at h
+    omega
 
 #print axioms odd_factor_cancel_dyadic_divisibility
 #print axioms v147_cross_equal_transports_source_observation
