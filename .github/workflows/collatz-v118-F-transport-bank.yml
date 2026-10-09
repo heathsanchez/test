@@ -17,6 +17,7 @@ jobs:
           set -euo pipefail
           mkdir -p evidence
           python3 research/collatz_F_transport_bank.py > evidence/v118-exact.json
+          python3 research/collatz_v118_deep_F_critical_pair.py > evidence/v118-deep-F.json
           python3 - <<'PY'
           import json
           r=json.load(open("evidence/v118-exact.json"))
@@ -32,6 +33,14 @@ jobs:
           assert r["sample"]["p"]==7199
           assert r["sample"]["common_endpoint"]==17300
           assert r["global_collatz"]=="UNKNOWN" and r["qed"] is False
+          q=json.load(open("evidence/v118-deep-F.json"))
+          assert q["schema"]=="COLLATZ_DEEP_F_15_STEP_SOURCE_COHERENT_MERGER"
+          assert q["source_clock"]==15 and q["predecessor_clock"]==24
+          assert q["no_direct_descent_prefix_length"]==15
+          assert q["no_source_capped_hit_prefix_length"]==15
+          assert len(q["exact_prefix_records"])==15
+          assert len(q["regressions"])==5
+          assert q["global_collatz"]=="UNKNOWN" and q["qed"] is False
           print("V118_SOURCE_GUARDED_CONDITIONAL_F_BANK_REPLAY_PASS_GLOBAL_UNKNOWN")
           PY
           git rev-parse HEAD > evidence/commit.txt
@@ -63,8 +72,11 @@ jobs:
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ThreeCongruenceMerger.olean formal/Collatz/ThreeCongruenceMerger.lean > evidence/v113.log
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/NineCongruenceMerger.olean formal/Collatz/NineCongruenceMerger.lean > evidence/v114.log
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ParityCollisionBridge.olean formal/Collatz/ParityCollisionBridge.lean > evidence/v115.log
-          lake env lean -DautoImplicit=false formal/Collatz/AffineFTransportBank.lean | tee evidence/v118-lean.log
-          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v118-lean.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/AffineFTransportBank.olean formal/Collatz/AffineFTransportBank.lean | tee evidence/v118-lean.log
+          lake env lean -DautoImplicit=false formal/Collatz/DeepFCollision.lean | tee evidence/v118-deep-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v118-lean.log evidence/v118-deep-lean.log
+          grep -q 'deep_F_collision_3391' evidence/v118-deep-lean.log
+          grep -q 'deep_F_new_lower_merge' evidence/v118-deep-lean.log
           grep -q 'affine_F_transport_lower_merge' evidence/v118-lean.log
           grep -q 'source_45_reverse_word' evidence/v118-lean.log
           grep -q 'source_45_lower_merge_of_odd_run_even_odd' evidence/v118-lean.log
