@@ -30,6 +30,12 @@ class VerifiedPromotionRouting(unittest.TestCase):
         self.assertEqual(select_route(query, '__GITLAB__'), 'navigation_transfer')
         self.assertIsNone(select_route(query, '__SHOPPING_ADMIN__'))
 
+    def test_gitlab_star_family_requires_exact_intent_and_site(self):
+        self.assertEqual(select_route('Star the top three most starred repos in Gitlab', '__GITLAB__'), 'gitlab_star')
+        self.assertEqual(select_route('Star the top 5 most stared repos in Gitlab', 'http://localhost:8023'), 'gitlab_star')
+        self.assertIsNone(select_route('Star the top 100 most starred repos in Gitlab', '__GITLAB__'))
+        self.assertIsNone(select_route('Star the top three most starred repos in Gitlab', '__REDDIT__'))
+
     def test_gitlab_forks_require_exact_instruction_and_site(self):
         for intent in ('Fork some-project.', 'Fork all repos from Taylor Smith.'):
             self.assertEqual(select_route(intent, '__GITLAB__'), 'gitlab_fork')
@@ -65,6 +71,8 @@ class PromotionDispatch(unittest.IsolatedAsyncioTestCase):
              'Create a post in the game related discussion forum about a Game Console '
              'to report customer reviews with 2 stars rating from the OneStopShop',
              'webarena_shopping_reddit_review_compound'),
+            ('__GITLAB__', 'Star the top three most starred repos in Gitlab',
+             'webarena_gitlab_star_blind'),
             ('__GITLAB__', 'Fork example-repo.',
              'webarena_gitlab_fork_blind'),
             ('__GITLAB__', 'Go to the merge requests requiring my review',
@@ -80,6 +88,8 @@ class PromotionDispatch(unittest.IsolatedAsyncioTestCase):
                 stub.run = AsyncMock(return_value={'result': 'observed'})
                 if module_name == 'webarena_gitlab_fork_blind':
                     stub.parse_fork_intent = lambda value: ('single', value)
+                if module_name == 'webarena_gitlab_star_blind':
+                    stub.parse_intent = lambda value: 3
                 out = Path('/tmp/opaque-observation')
                 with patch.dict(sys.modules, {module_name: stub}):
                     result = await run(intent, site, out)
