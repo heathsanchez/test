@@ -144,8 +144,9 @@ def three_lift_earlier (t : Nat) : Nat :=
 
 theorem three_lift_is_source27_dyadic (t : Nat) :
     three_lift_source t = 27 + 2 ^ 59 * (3 * t + 1) := by
+  have hpow : (2 : Nat) ^ 59 = 576460752303423488 := by decide
+  rw [hpow]
   unfold three_lift_source
-  norm_num
   omega
 
 theorem three_lift_is_ternary_two (t : Nat) :
