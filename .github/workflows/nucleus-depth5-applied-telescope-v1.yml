@@ -1,8 +1,8 @@
-name: Nucleus certified Nat recursor major census
+name: Nucleus Nat recursor zero minor census
 
 on:
   push:
-    branches: [nucleus-depth5-rec-major-inspect-v1]
+    branches: [nucleus-depth5-rec-zero-branch-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
