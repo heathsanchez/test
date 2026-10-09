@@ -1997,6 +1997,19 @@ impl<'a> TypeChecker<'a> {
         self.environment.get(name)?.value
     }
 
+    /// Recognize only a validated Boolean nullary constructor.
+    pub(crate) fn is_registered_bool_constructor(&self, neutral: &Neutral) -> bool {
+        if !neutral.spine.is_empty() {
+            return false;
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return false;
+        };
+        levels.is_empty() && self.environment.bool_primitives().is_some_and(|b| {
+            *name == b.true_ctor || *name == b.false_ctor
+        })
+    }
+
     pub(crate) fn distinct_bool_constructors(&self, left: NameId, right: NameId) -> bool {
         if left == right {
             return false;
