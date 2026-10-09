@@ -23,7 +23,7 @@ private theorem three_pow_odd (u : Nat) : (3 ^ u) % 2 = 1 := by
   induction u with
   | zero => decide
   | succ u ih =>
-      simp [pow_succ, Nat.mul_mod, ih]
+      simp [Nat.pow_succ, Nat.mul_mod, ih]
 
 /-- Every equality 2^i*3^u = 2^j*3^v preserves the 2-adic exponent. -/
 theorem two_power_exponent_rigid :
@@ -37,7 +37,7 @@ theorem two_power_exponent_rigid :
       | succ j =>
           have hmod := congrArg (fun x : Nat => x % 2) h
           have heven : (3 ^ u) % 2 = 0 := by
-            simpa [pow_succ, Nat.mul_mod, Nat.mul_assoc,
+            simpa [Nat.pow_succ, Nat.mul_mod, Nat.mul_assoc,
                    Nat.mul_comm, Nat.mul_left_comm] using hmod
           have hodd := three_pow_odd u
           omega
@@ -47,14 +47,14 @@ theorem two_power_exponent_rigid :
       | zero =>
           have hmod := congrArg (fun x : Nat => x % 2) h.symm
           have heven : (3 ^ v) % 2 = 0 := by
-            simpa [pow_succ, Nat.mul_mod, Nat.mul_assoc,
+            simpa [Nat.pow_succ, Nat.mul_mod, Nat.mul_assoc,
                    Nat.mul_comm, Nat.mul_left_comm] using hmod
           have hodd := three_pow_odd v
           omega
       | succ j =>
           have hscaled :
               2 * (2 ^ i * 3 ^ u) = 2 * (2 ^ j * 3 ^ v) := by
-            simpa [pow_succ, Nat.mul_assoc, Nat.mul_comm,
+            simpa [Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm,
                    Nat.mul_left_comm] using h
           have heq : 2 ^ i * 3 ^ u = 2 ^ j * 3 ^ v := by omega
           have he := ih j u v heq
