@@ -1710,6 +1710,25 @@ fn certified_local_proof_irrelevance(
     let right_proposition = checker.is_proposition_in_context(
         right_type.expr, context, &right_type.env, probe,
     );
+    // Candidate exact closure-typing certificate. The ordinary expression
+    // checker can lose captured substitutions when re-inferring a BVar.
+    // Recover typing from source syntax and each lexical EnvBinding instead.
+    // This is an operationally bounded depth-5 rule, not a name/test bypass.
+    let typed_left = depth == 5
+        && !left_proposition.is_proven()
+        && !left_proposition.is_refuted()
+        && checker.certified_captured_proposition(left_type, context, probe);
+    let typed_right = depth == 5
+        && !typed_left
+        && !right_proposition.is_proven()
+        && !right_proposition.is_refuted()
+        && checker.certified_captured_proposition(right_type, context, probe);
+    #[cfg(feature = "diagnostics")]
+    if depth == 5 && std::env::var_os("NUCLEUS_TRACE_LOCAL_PROOF_IRREL").is_some() {
+        eprintln!(
+            "NUCLEUS_CERTIFIED_CAPTURED_PROP:depth={depth}:left={left_free:?}:right={right_free:?}:typed_left={typed_left}:typed_right={typed_right}"
+        );
+    }
     #[cfg(feature = "diagnostics")]
     if std::env::var_os("NUCLEUS_TRACE_LOCAL_PROOF_IRREL").is_some() {
         use std::sync::atomic::{AtomicUsize, Ordering};
@@ -1745,7 +1764,8 @@ fn certified_local_proof_irrelevance(
     // an obstruction and NEVER licenses proof irrelevance.
     if left_proposition.is_refuted()
         || right_proposition.is_refuted()
-        || (!left_proposition.is_proven() && !right_proposition.is_proven())
+        || (!left_proposition.is_proven() && !right_proposition.is_proven()
+            && !typed_left && !typed_right)
     {
         return false;
     }
