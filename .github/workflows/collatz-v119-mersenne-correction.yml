@@ -1,0 +1,57 @@
+name: Collatz V119 persistent Mersenne merger correction
+on:
+  push:
+    branches: [collatz-v118-mersenne-merger-correction-v119]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kernel-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned proof dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/base-build.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence ReverseAffineMerger Q7SourceMerger ScaledReverseMerger ThreeCongruenceMerger; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+      - name: Check all-parameter theorem and axioms
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/MersenneCoalescenceCorrection.olean formal/Collatz/MersenneCoalescenceCorrection.lean 2>&1 | tee evidence/v119-lean.log
+          python3 - <<'PY'
+          import json,re,hashlib,subprocess,pathlib
+          p=pathlib.Path('evidence/v119-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          results={}
+          for name,ax in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+              axioms=[s.strip() for s in ax.split(',') if s.strip()]
+              assert set(axioms)<= {'propext','Classical.choice','Quot.sound'},(name,axioms)
+              results[name]=axioms
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+              results[name]=[]
+          expected=['power_residue','source_lower_merge','source_meeting_clocks','persistent_ordinary_exit','not_live_after_first_step','not_minimal_bad','no_capped_hit_in_corridor','arbitrary_delay_with_certified_exit']
+          for name in expected:
+              assert 'CollatzFinal.SourceProduct.MersenneCorrection.'+name in results,name
+          result={'schema':'COLLATZ_V119_MERSENNE_CORRECTION','status':'WARRANTED_FORMAL_FAMILY_AND_NO_CAP_PROXY_SEPARATOR','commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'parent_authority':'8c67f7f3e6eabaadbd693aeb9eb6a70f1dd1222e','new_theorem_axioms':results,'log_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'all_positive_sources_covered':False,'global_collatz':'UNKNOWN','qed':False}
+          result['certificate_sha256']=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          pathlib.Path('evidence/qualification.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+          print(json.dumps(result,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v119-mersenne-correction
+          path: evidence/
+          if-no-files-found: error
