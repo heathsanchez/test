@@ -244,12 +244,12 @@ fn convert_in_context_with_congruence(
                 TypeValue::Pi {
                     domain: left_domain,
                     body: left_body,
-                    binder: _left_binder,
+                    binder: left_binder,
                 },
                 TypeValue::Pi {
                     domain: right_domain,
                     body: right_body,
-                    binder: _right_binder,
+                    binder: right_binder,
                 },
             ) => {
                 if let Some(free) = fresh_local(depth) {
@@ -286,9 +286,33 @@ fn convert_in_context_with_congruence(
                 if body_context.len() == depth {
                     body_context.push((*left_domain).clone());
                 }
+                // Alpha equivalence is justified by two checked Pi
+                // binders, not by guessed equality of unrelated variables.
+                // Rebind both lexical closures to the same fresh local.
+                // On exhausted/substitution-unsupported input keep the old
+                // conservative comparison rather than accepting anything.
+                let mut lhs = *left_body;
+                let mut rhs = *right_body;
+                if left_binder != right_binder {
+                    if let Some(canonical) = fresh_local(depth) {
+                        let mut rename_budget = remaining.min(2048);
+                        let rebound_l = checker.rename_pi_bound_type(
+                            &lhs, left_binder, canonical, &mut rename_budget);
+                        let rebound_r = checker.rename_pi_bound_type(
+                            &rhs, right_binder, canonical, &mut rename_budget);
+                        if let (Some(a), Some(b)) = (rebound_l, rebound_r) {
+                            lhs = a;
+                            rhs = b;
+                            #[cfg(feature = "diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_ALPHA_PI").is_some() {
+                                eprintln!("NUCLEUS_ALPHA_PI:certified-binder-rebound:depth={depth}");
+                            }
+                        }
+                    }
+                }
                 work.push((
-                    *left_body,
-                    *right_body,
+                    lhs,
+                    rhs,
                     depth.saturating_add(1),
                     body_context,
                 ));
