@@ -204,6 +204,7 @@ jobs:
                   'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
                   'NUCLEUS_TRACE_DEPENDENCY_GAP':'1',
                   'NUCLEUS_TRACE_LOCAL_PROOF_IRREL':'1',
+                  'NUCLEUS_TRACE_CHAIN6_PROJECTION_CONGRUENCE':'1',
               }
               trial=subprocess.run(['/tmp/nucleus'],input=p.read_bytes(),
                   stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
