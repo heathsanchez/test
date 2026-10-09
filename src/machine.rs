@@ -986,6 +986,75 @@ impl<'a> Machine<'a> {
             };
         }
 
+        // Pinned Lean v4.34.1 Init.Prelude defines:
+        //   Nat.ble zero _ = true
+        //   Nat.ble (succ _) zero = false
+        //   Nat.ble (succ n) (succ m) = Nat.ble n m
+        // The existing native extension only handled two numerals. Preserve
+        // this exact source-defined one-step symbolic computation without
+        // claiming the predecessor variables or proof indices are equal.
+        if matches!(operation, Operation::Ble) {
+            let bools = self.bool_primitives.as_ref()?;
+            let as_constructor = |v: &Value| -> Option<(bool, Option<Closure>)> {
+                match v {
+                    Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name, levels },
+                        spine,
+                    }) if levels.is_empty()
+                        && *name == primitives.zero
+                        && spine.is_empty() => Some((false, None)),
+                    Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name, levels },
+                        spine,
+                    }) if levels.is_empty()
+                        && *name == primitives.succ
+                        && spine.len() == 1 => Some((true, Some(spine[0].clone()))),
+                    Value::NatLit(n) if n.is_zero() => Some((false, None)),
+                    _ => None,
+                }
+            };
+            let boolean = |truth: bool| Value::Neutral(Neutral {
+                head: NeutralHead::Const {
+                    name: if truth { bools.true_ctor } else { bools.false_ctor },
+                    levels: Vec::new(),
+                },
+                spine: Vec::new(),
+            });
+            let left = self.expose_internal(
+                first.clone(), transparency, budget.saturating_sub(1), false, false,
+            ).proven_value()?.value.clone();
+            if let Some((false, None)) = as_constructor(&left) {
+                pending.clear();
+                return Some(boolean(true));
+            }
+            let right = self.expose_internal(
+                second.clone(), transparency, budget.saturating_sub(1), false, false,
+            ).proven_value()?.value.clone();
+            if let (Value::NatLit(n), Value::NatLit(m)) = (&left, &right) {
+                pending.clear();
+                return Some(boolean(n.compare(m) != std::cmp::Ordering::Greater));
+            }
+            match (as_constructor(&left), as_constructor(&right)) {
+                (Some((true, Some(_))), Some((false, None))) => {
+                    pending.clear();
+                    return Some(boolean(false));
+                }
+                (Some((true, Some(n))), Some((true, Some(m)))) => {
+                    pending.clear();
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_BLE_SYMBOLIC").is_some() {
+                        eprintln!("NUCLEUS_BLE_SYMBOLIC:succ-succ:head={name:?}");
+                    }
+                    return Some(Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name, levels: Vec::new() },
+                        spine: vec![n, m],
+                    }));
+                }
+                _ => {}
+            }
+            return None;
+        }
+
         let first_value = self
             .expose_internal(first, transparency, budget.saturating_sub(1), false, false)
             .proven_value()?
