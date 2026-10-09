@@ -1157,11 +1157,11 @@ fn compare_values(
                 // identifying unrelated binder environments or Nat indices.
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_REC_ARG_OBLIGATIONS").is_some()
-                    && depth >= 5 && depth <= 8 && depth == context.len()
+                    && (depth == 5 || depth == 8)
                 {
                     use std::sync::atomic::{AtomicUsize, Ordering};
                     static COUNT: AtomicUsize = AtomicUsize::new(0);
-                    if COUNT.fetch_add(1, Ordering::Relaxed) < 8 {
+                    if COUNT.fetch_add(1, Ordering::Relaxed) < 256 {
                         let machine = checker.machine();
                         let left_normal = machine.expose(
                             left_structure.clone(), Transparency::Full, current_budget.min(256),
@@ -1200,8 +1200,8 @@ fn compare_values(
                                         ));
                                     }
                                     eprintln!(
-                                        "NUCLEUS_MULPOS_REC_ARG_OBLIGATIONS:depth={depth}:type={left_type:?}:index={left_index}:recursor={ln:?}:levels={ll:?}:left_frame={}:right_frame={}:obligations={obligations:?}",
-                                        left_structure.env.id(), right_structure.env.id(),
+                                        "NUCLEUS_MULPOS_REC_ARG_OBLIGATIONS:depth={depth}:type={left_type:?}:index={left_index}:recursor={ln:?}:levels={ll:?}:left_frame={}:right_frame={}:context_len={}:obligations={obligations:?}",
+                                        left_structure.env.id(), right_structure.env.id(), context.len(),
                                     );
                                 }
                             }
