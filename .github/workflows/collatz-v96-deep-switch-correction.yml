@@ -1,0 +1,64 @@
+name: Collatz V96 corrected deep switch
+on:
+  push:
+    branches: [collatz-v95-deep-switch-correction-v96]
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 4
+      - name: Verify V95 parent source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 4455a3e782b844ab9c7139def7e3b6974f142611^{commit}
+          git diff --exit-code 4455a3e782b844ab9c7139def7e3b6974f142611 HEAD -- formal/Collatz/SourceModulusFactorization.lean
+          echo V95_SOURCE_PROTECTED
+      - name: Kernel-check corrected switch residual
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/dyadic.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SameCentreMacro.olean formal/Collatz/SameCentreMacro.lean > evidence/same.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/DistinctCentreSwitch.olean formal/Collatz/DistinctCentreSwitch.lean > evidence/distinct.log
+          lake env lean -DautoImplicit=false formal/Collatz/DeepSwitchCorrection.lean | tee evidence/v96.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v96.log
+          grep -q 'deep_switch_zero_or_high_order' evidence/v96.log
+          grep -q 'admitted_switch_gain_or_zero_or_high' evidence/v96.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal switch residual qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          result={
+            "schema":"COLLATZ_V95_DEEP_SWITCH_CORRECTION_V96",
+            "status":"WARRANTED_FORMAL_CORRECTED_SWITCH_DICHOTOMY",
+            "parent_v95_head":"4455a3e782b844ab9c7139def7e3b6974f142611",
+            "low_order_separation_implies_precision_gain":True,
+            "deep_switch_old_defect_zero_or_high_order":True,
+            "no_finite_order_assigned_to_zero":True,
+            "original_v89_unqualified":True,
+            "global_collatz":"UNKNOWN","qed":False,
+            "residual":"Prove source-admitted return-event completeness and show high-order cancellation on the actual source trajectory eventually yields progress or a true periodic obstruction."
+          }
+          result["certificate_sha256"]=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v96-corrected-deep-switch
+          path: evidence/
+          if-no-files-found: error
