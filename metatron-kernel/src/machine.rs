@@ -342,6 +342,17 @@ impl<'a> Machine<'a> {
             return Judgment::unknown("projection-structure-neutral");
         };
         if name != spec.constructor {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_ACTUAL_HEAD").is_some() {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                if PRINTED.fetch_add(1, Ordering::Relaxed) < 256 {
+                    eprintln!(
+                        "NUCLEUS_PROJECTION_ACTUAL_HEAD:structure_type={type_name:?}:index={index}:expected_ctor={:?}:actual_head={name:?}:actual_spine={:?}:captured_structure={structure:?}:budget={budget}",
+                        spec.constructor, neutral.spine,
+                    );
+                }
+            }
             return Judgment::unknown("projection-constructor-mismatch");
         }
         let field_offset = spec.num_params + index;
