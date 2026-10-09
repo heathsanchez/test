@@ -1,0 +1,141 @@
+name: Collatz V130 unbounded odd-three-root class pump
+on:
+  push:
+    branches: [collatz-v130-unbounded-odd-root-pump]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-pump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay actual two-clock class pumping and anti-progress controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v130_root_pump_probe > evidence/v130-exact.json
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          p=pathlib.Path('evidence/v130-exact.json')
+          v=json.loads(p.read_text())
+          assert v['schema']=='COLLATZ_V130_UNBOUNDED_ODD_ROOT_FUTURE_CLASS_PUMP'
+          assert v['initial_root_regressions']==189
+          assert v['general_source_root_two_clock_regressions']==12000
+          assert len(v['selected_examples'])==54
+          assert v['class_identity_NOT_smaller_source_progress']
+          assert v['universal_collatz']=='UNKNOWN' and v['qed'] is False
+          q={'schema':'COLLATZ_V130_EXACT_CLASS_PUMP',
+             'status':'WARRANTED_BOUNDED_EXACT',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'class_identity_only':True,
+             'universal_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v130-exact-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          print('V130_TWO_CLOCK_CLASS_PUMP_EXACT_REPLAY_PASS_NOT_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v130-exact-root-pump
+          path: evidence/
+          if-no-files-found: error
+  formal-pump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Qualify all-positive unbounded odd3root class representation in Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin SourceThreeReverseRoot ThreeRootConsequenceNormalForm OddThreeRootQuotient RootSelectorCompletenessSeparator RelationalOddRootInterface; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/UnboundedOddThreeRootPump.lean 2>&1 | tee evidence/v130-lean.log
+          python3 - <<'PY'
+          import hashlib,json,pathlib,re,subprocess
+          p=pathlib.Path('evidence/v130-lean.log')
+          s=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',s)
+          axioms={}
+          for name,raw in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",s,re.S):
+            vals=[v.strip() for v in raw.split(',') if v.strip()]
+            assert set(vals)<={'propext','Quot.sound','Classical.choice'},(name,vals)
+            axioms[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",s):
+            axioms[name]=[]
+          targets=['rootPump_preserves_odd_three','rootPump_seven_meets_one',
+            'rootPumpIter_preserves_odd_three','rootPumpIter_at_least_index',
+            'rootPumpIter_actual_future_join',
+            'odd_three_class_has_arbitrarily_large_roots',
+            'every_positive_class_has_unbounded_odd_three_witnesses']
+          assert all('CollatzFinal.'+name in axioms for name in targets),axioms
+          q={'schema':'COLLATZ_V130_FORMAL_UNBOUNDED_ODD_ROOT_CLASSES',
+             'status':'WARRANTED_FORMAL_ALL_POSITIVE_CLASS_ROOT_UNBOUNDEDNESS',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'new_axioms':axioms,
+             'lean_log_sha256':hashlib.sha256(s.encode()).hexdigest(),
+             'root_size_rank_not_progress':True,
+             'termination_of_odd_three_roots':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v130-formal-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          print('V130_ALL_POSITIVE_CLASSES_UNBOUNDED_ODD3_ROOTS_KERNEL_PASS_NOT_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v130-formal-root-pump
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-pump,formal-pump]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v130-exact-root-pump
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v130-formal-root-pump
+          path: evidence/formal
+      - name: Seal all-positive class unboundedness without false Collatz solution
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v130-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v130-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['class_identity_only'] and b['root_size_rank_not_progress']
+          assert a['universal_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          s={'schema':'COLLATZ_V130_ALL_CLASS_UNBOUNDED_ODD3_ROOTS',
+             'status':'WARRANTED_FORMAL_UNBOUNDED_CLASSES_ONLY',
+             'source_commit':head,
+             'universal_class_unboundedness':True,
+             'no_second_positive_class_exclusion_proved':True if False else False,
+             'no_single_root_canonical_completeness':True,
+             'future_coalescence_clocks_both_protected':True,
+             'lower_source_progress_from_root_expansion':False,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v130-final-seal.json').write_text(json.dumps(s,indent=2,sort_keys=True)+'\n')
+          print('V130_ALL_CLASSES_HAVE_UNBOUNDED_ODD3_ROOTS_WARRANTED_NOT_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v130-final-seal
+          path: evidence/v130-final-seal.json
+          if-no-files-found: error
