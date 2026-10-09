@@ -612,6 +612,21 @@ impl<'a> TypeChecker<'a> {
                                 context.len(), frame.id(), residual, value, expected
                             );
                             if let (TypeValue::Term(inferred), TypeValue::Term(anticipated)) = (&value, expected) {
+                                if std::env::var_os("NUCLEUS_TRACE_SUB_SUCC").is_some() {
+                                    let m = self.machine();
+                                    for (label, closure) in [("actual", inferred), ("expected", anticipated)] {
+                                        for transparency in [Transparency::Opaque, Transparency::Reducible, Transparency::Full] {
+                                            let r = m.expose_for_conversion(closure.clone(), transparency, 96);
+                                            eprintln!("NUCLEUS_SUB_SUCC_TOP:{label}:{transparency:?}:value={r:?}");
+                                            if let Some(Value::Neutral(head)) = r.proven_value() {
+                                                for (i, arg) in head.spine.iter().enumerate().take(5) {
+                                                    let ar = m.expose_for_conversion(arg.clone(), Transparency::Opaque, 48);
+                                                    eprintln!("NUCLEUS_SUB_SUCC_ARG:{label}:{transparency:?}:arg={i}:expr={:?}:frame={}:opaque={ar:?}", arg.expr,arg.env.id());
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                                 for slot in 0..6u64 {
                                     eprintln!(
                                         "NUCLEUS_SUBLE_BINDING:expr={expression:?}:slot={slot}:actual={:?}:expected={:?}",
