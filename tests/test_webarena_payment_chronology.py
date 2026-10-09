@@ -76,6 +76,52 @@ class PaymentChronology(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(amount,Decimal("182.40"))
         self.assertEqual([x["id"] for x in evidence["selected"]],["new-a","new-b"])
 
+    async def test_solve_rewinds_persisted_grid_before_collecting(self):
+        from webarena_shopping_admin_payment_fold_v2 import solve
+        events = []
+
+        class Reply:
+            status = 200
+
+        class FakePage:
+            url = "http://localhost:7780/admin/sales/order/"
+            async def goto(self,*args,**kwargs): return Reply()
+            async def title(self): return "Orders / Magento Admin"
+
+        class FakeContext:
+            async def new_page(self): return FakePage()
+
+        class FakeBrowser:
+            async def new_context(self,**kwargs): return FakeContext()
+            async def close(self): pass
+
+        class Chromium:
+            async def launch(self,**kwargs): return FakeBrowser()
+
+        class Playwright:
+            chromium = Chromium()
+
+        class Factory:
+            async def __aenter__(self): return Playwright()
+            async def __aexit__(self,*args): pass
+
+        async def rewind(page): events.append("rewind")
+
+        async def collect(page,need):
+            events.append("collect")
+            return [
+                {"id":"new-a","purchase_date":"May 19, 2023 8:11:51 AM","payment":Decimal("93.40"),"status_class":"completed"},
+                {"id":"new-b","purchase_date":"May 14, 2023 1:22:46 AM","payment":Decimal("89.00"),"status_class":"completed"},
+            ]
+
+        with patch("webarena_shopping_admin_payment_fold_v2.async_playwright",return_value=Factory()), \
+             patch("webarena_shopping_admin_payment_fold_v2.rewind_first",new=rewind), \
+             patch("webarena_shopping_admin_payment_fold_v2.collect_rows",new=collect):
+            result,_=await solve("http://localhost:7780/admin",
+                "Get the total payment amount of the last 2 completed orders")
+        self.assertEqual(result,Decimal("182.40"))
+        self.assertEqual(events,["rewind","collect"])
+
     async def test_scan_next_page_even_after_first_page_matches(self):
         pages=[
             [["old-a","Jun 11, 2022 8:29:39 PM","$163.00","Complete"],

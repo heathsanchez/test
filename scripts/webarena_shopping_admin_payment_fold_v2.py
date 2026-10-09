@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 from playwright.async_api import async_playwright
+from webarena_shopping_admin_visible_order_selector import rewind_first
 
 ORDER_GRID = "/sales/order/"
 
@@ -254,6 +255,9 @@ async def solve(base_url: str, intent: str) -> tuple[Decimal, dict]:
         response = await page.goto(base_url.rstrip("/") + ORDER_GRID, wait_until="networkidle", timeout=120_000)
         if response is None or response.status != 200:
             raise RuntimeError(f"order grid navigation failed: {getattr(response, 'status', None)}")
+        # Magento saves the current grid page across separate browser runs.
+        # Restore page 1 before completing a chronologically ordered scan.
+        await rewind_first(page)
         rows = await collect_rows(page, need)
         value, evidence = compute(query, rows)
         evidence.update(
