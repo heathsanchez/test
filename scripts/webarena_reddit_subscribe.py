@@ -12,7 +12,7 @@ async def ranked_detail(page, base, slug, selector):
     if "controversial" in s:
         routes=[f"/f/{slug}/controversial", f"/f/{slug}"]
     elif "commented" in s:
-        routes=[f"/f/{slug}/top?sort=comments&t=all", f"/f/{slug}/top?t=all", f"/f/{slug}"]
+        routes=[f"/f/{slug}/most_commented?t=all", f"/f/{slug}/most_commented", f"/f/{slug}"]
     else:
         routes=[f"/f/{slug}/top?t=all", f"/f/{slug}/top", f"/f/{slug}"]
     for route in routes:
@@ -43,9 +43,14 @@ async def subscribe(page, slug):
     label=(await btn.inner_text()).strip()
     if "unsubscribe" in label.casefold():
         return {"already_subscribed":True,"label":label,"final_url":page.url}
-    await btn.click()
-    await page.wait_for_load_state("networkidle",timeout=120000)
-    return {"already_subscribed":False,"label":label,"final_url":page.url}
+    async with page.expect_response(lambda r: r.request.method=="POST" and r.url.endswith(f"/f/{slug}/subscribe.json"), timeout=30000) as info:
+        await btn.click()
+    response=await info.value
+    await response.finished()
+    body=await response.text()
+    if response.status!=200:
+        raise RuntimeError(f"subscribe request failed: {response.status} {body[:200]}")
+    return {"already_subscribed":False,"label":label,"response_status":response.status,"response_body":body,"final_url":page.url}
 
 async def main():
     ap=argparse.ArgumentParser()
