@@ -30,7 +30,7 @@ theorem capped_ternary_return_earns_lower_merge
   have heq : 2 * y = 3 * p + 1 := by omega
   have hp : 0 < p := by omega
   have hlt : p < n := by
-    dsimp [y] at hcap
+    change 2 * y - 1 < 3 * n at hcap
     omega
   have hstep : shortcut p = y := exact_inverse_odd_step y p heq
   refine ⟨p, hp, ⟨hlt, k, 1, ?_⟩⟩
@@ -47,16 +47,18 @@ theorem collatz_of_source_capped_ternary_bar
     apply no_bad_of_no_minimal PositiveBad
     intro n hmin
     have hn : 1 < n := by
-      by_contra hnot
-      have hone : n = 1 := by omega
-      subst n
-      have hgood : CollatzGood 1 := ⟨0, by simp [iter, Terminal]⟩
-      exact hmin.1.2 hgood
+      by_cases hgt : 1 < n
+      · exact hgt
+      · have hone : n = 1 := by omega
+        subst n
+        have hgood : CollatzGood 1 := ⟨0, by simp [iter, Terminal]⟩
+        exact False.elim (hmin.1.2 hgood)
     obtain ⟨p, hp, hm⟩ :=
       capped_ternary_return_earns_lower_merge hn (hbar n hn)
     exact positive_minimal_no_lower_merge hmin p hp hm
   intro n hn
-  by_contra hbad
+  apply Classical.byContradiction
+  intro hbad
   exact hnone n ⟨hn, hbad⟩
 
 /-- If Collatz termination already holds, y=2 on the actual
@@ -69,7 +71,6 @@ theorem source_capped_ternary_bar_of_collatz
     collatzGood_eventually_one (hcollatz n (by omega))
   refine ⟨k + 1, ?_, ?_⟩
   · rw [iter_succ_last, hk, shortcut_one]
-    decide
   · rw [iter_succ_last, hk, shortcut_one]
     omega
 
