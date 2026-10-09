@@ -1,0 +1,187 @@
+{
+  "archived_joins": [],
+  "global_collatz": "UNKNOWN",
+  "grammar": {
+    "active": "SOURCE_INDEXED_TWO_CLOCK",
+    "constructors": [
+      "actual_source_to_earlier_two_clock_join",
+      "monotone_warranted_join_composition",
+      "finite_negative_2adic_naturalness_guard"
+    ],
+    "rejected_as_complete": [
+      "FIXED_F_SOURCE"
+    ],
+    "revision": 1
+  },
+  "history": [
+    {
+      "new_grammar": "SOURCE_INDEXED_TWO_CLOCK",
+      "old_grammar": "FIXED_F_SOURCE",
+      "op": "REFINE_FROM_PROTECTED_SEPARATOR",
+      "proof_run": 37975109424,
+      "separator": "V121_SOURCE_27_F83_NO_SMALLER_PREIMAGE"
+    },
+    {
+      "join_id": "f3e9c9c973dc0e3fc81d",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 27,
+      "support": "v122_exact_first_join_27"
+    },
+    {
+      "join_id": "9f681ec8d201194cb3ec",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 11,
+      "support": "v123_bounded_arithmetic"
+    },
+    {
+      "join_id": "332ca0faa63137a9797c",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 3,
+      "support": "v123_bounded_arithmetic"
+    },
+    {
+      "join_id": "0ebb2d0bb5ec541cccf3",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 11,
+      "support": "v123_bounded_arithmetic"
+    }
+  ],
+  "joins": [
+    {
+      "common": 23,
+      "earlier": 23,
+      "earlier_clock": 0,
+      "id": "f3e9c9c973dc0e3fc81d",
+      "origin": "LEAN_FORMAL_SOURCE27_EXACT_FIRST_CLOCK",
+      "parents": [],
+      "source": 27,
+      "source_clock": 59,
+      "support": "v122_exact_first_join_27"
+    },
+    {
+      "common": 5,
+      "earlier": 3,
+      "earlier_clock": 1,
+      "id": "9f681ec8d201194cb3ec",
+      "origin": "EXACT_ASYNCHRONOUS_ORBIT",
+      "parents": [],
+      "source": 11,
+      "source_clock": 6,
+      "support": "v123_bounded_arithmetic"
+    },
+    {
+      "common": 2,
+      "earlier": 2,
+      "earlier_clock": 0,
+      "id": "332ca0faa63137a9797c",
+      "origin": "EXACT_SMALLER_SOURCE",
+      "parents": [],
+      "source": 3,
+      "source_clock": 4,
+      "support": "v123_bounded_arithmetic"
+    },
+    {
+      "common": 1,
+      "earlier": 2,
+      "earlier_clock": 1,
+      "id": "0ebb2d0bb5ec541cccf3",
+      "origin": "CERTIFIED_RECOMPOSITION",
+      "parents": [
+        "9f681ec8d201194cb3ec",
+        "332ca0faa63137a9797c"
+      ],
+      "source": 11,
+      "source_clock": 10,
+      "support": "v123_bounded_arithmetic"
+    }
+  ],
+  "negative_controls": [
+    {
+      "F_n": 11,
+      "assertion": "no_equal_clock_collision; asymmetric two-clock join exists",
+      "n": 3,
+      "support": "v66_future_quotient",
+      "type": "opposite_phase"
+    },
+    {
+      "cannot_infer_positive_infinite_survivor": true,
+      "changing_source": 16777215,
+      "fixed_natural_nondivisibility_witness_exponent": 26,
+      "horizon": 24,
+      "type": "FINITE_POSITIVE_SHADOW_OF_NEGATIVE_2ADIC_FIXED_POINT"
+    },
+    {
+      "cannot_infer_positive_infinite_survivor": true,
+      "changing_source": 1.2089258196146292e+24,
+      "fixed_natural_nondivisibility_witness_exponent": 82,
+      "horizon": 80,
+      "type": "FINITE_POSITIVE_SHADOW_OF_NEGATIVE_2ADIC_FIXED_POINT"
+    }
+  ],
+  "objective": "exclude_second_positive_future_coalescence_class",
+  "qed": false,
+  "rejected_candidates": [
+    {
+      "closed_set_size": 34,
+      "grammar": "FIXED_F_SOURCE",
+      "max_reachable_from_any_smaller_source": 80,
+      "source": 27,
+      "support": "v121_no_fixed_F27",
+      "target": 83,
+      "verdict": "EXCLUDED_ONLY_FOR_THIS_FIXED_ENDPOINT"
+    }
+  ],
+  "residuals": [
+    {
+      "grammar": "FIXED_F_SOURCE",
+      "reason": "all-clock fixed F impossibility, not a nonconvergent integer",
+      "source": 27,
+      "status": "REFINED_GRAMMAR_SEPARATED"
+    },
+    {
+      "reason": "grammar-relative remainder; not 159938 counterexamples",
+      "remaining_classes": 159938,
+      "source_family": "V120_old_CRT_partition",
+      "status": "UNKNOWN_IN_GRAMMAR"
+    }
+  ],
+  "retired_hypotheses": [
+    "fixed_f_target_complete",
+    "fixed_bounded_delay_implies_nonconvergence",
+    "finite_2adic_shadow_is_natural_bad_source"
+  ],
+  "schema": "COLLATZ_ROS_LAWFUL_FUTURE_V123",
+  "support": {
+    "v120_phase_schema": {
+      "run": 37974704309,
+      "scope": "generic guarded phase merger, refined source27 family",
+      "sha": "11f8742f2f84e686845beb080fafb2d113bd183a",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v121_no_fixed_F27": {
+      "run": 37975109424,
+      "scope": "no positive p<27 reaches F(27)=83 at any clock",
+      "sha": "1973d853a3b6d2e50ce59888dd39fcdf5767d43e",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v122_exact_first_join_27": {
+      "run": 37975443683,
+      "scope": "27 first joins any smaller positive future at source clock 59",
+      "sha": "f6dec5d5ae9ae681868e1f0f29bbd494267c8bfd",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v123_bounded_arithmetic": {
+      "run": null,
+      "scope": "exact arithmetic replay of 11->3 and 3->2 and composition",
+      "sha": null,
+      "status": "BOUNDED_EXACT"
+    },
+    "v66_future_quotient": {
+      "run": 36840670599,
+      "scope": "future-coalescence equivalence, quotient stationarity",
+      "sha": "1d23ed2a87465fd968db7b333103b6f558d0a433",
+      "status": "WARRANTED_FORMAL"
+    }
+  },
+  "universal_event_producer_proved": false
+}
