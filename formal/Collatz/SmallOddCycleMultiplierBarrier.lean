@@ -71,7 +71,7 @@ theorem never_one_prefix_multiplicative_bound
               simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
         _ = 3 ^ oddCount n k * 2 ^ k *
             iter shortcut k n := by
-              simpa only [hstep]
+              rw [hstep]
         _ ≤ 10 ^ oddCount n k * n := ih
         _ = 10 ^ oddCount n (k + 1) * n := by rw [ha]
     · have ha : oddCount n (k + 1) = oddCount n k + 1 := by
