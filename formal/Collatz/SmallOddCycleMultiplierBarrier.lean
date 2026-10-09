@@ -47,8 +47,7 @@ theorem never_one_prefix_multiplicative_bound
     let x := iter shortcut k n
     by_cases he : x % 2 = 0
     · have ha : oddCount n (k + 1) = oddCount n k := by
-        simpa only [oddCount, he, ite_true] using
-          (rfl : oddCount n (k + 1) = oddCount n k)
+        simp [oddCount, x, he]
       have hstep : 2 * shortcut x = x := by
         simpa [he] using double_shortcut x
       calc
@@ -119,13 +118,13 @@ theorem power_two_above_nine_at_least_sixteen
   · have hc : k = 0 ∨ k = 1 ∨ k = 2 ∨ k = 3 := by omega
     rcases hc with h0 | h1 | h2 | h3
     · subst k
-      norm_num at h
+      simp at h
     · subst k
-      norm_num at h
+      simp at h
     · subst k
-      norm_num at h
+      simp at h
     · subst k
-      norm_num at h
+      simp at h
   · have hsum : (k - 4) + 4 = k := by omega
     have heq : (2 : Nat) ^ k = (2 : Nat) ^ (k - 4) * 16 := by
       calc
@@ -146,19 +145,19 @@ theorem power_two_above_eighty_one_at_least_128
       k = 4 ∨ k = 5 ∨ k = 6 := by omega
     rcases hc with h0 | h1 | h2 | h3 | h4 | h5 | h6
     · subst k
-      norm_num at h
+      simp at h
     · subst k
-      norm_num at h
+      simp at h
     · subst k
-      norm_num at h
+      simp at h
     · subst k
-      norm_num at h
+      simp at h
     · subst k
-      norm_num at h
+      simp at h
     · subst k
-      norm_num at h
+      simp at h
     · subst k
-      norm_num at h
+      simp at h
   · have hsum : (k - 7) + 7 = k := by omega
     have heq : (2 : Nat) ^ k = (2 : Nat) ^ (k - 7) * 128 := by
       calc
