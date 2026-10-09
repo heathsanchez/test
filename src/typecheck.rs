@@ -18,6 +18,8 @@ pub enum TypeValue {
     Pi {
         domain: Box<TypeValue>,
         body: Box<TypeValue>,
+        /// The lexical local opened when checking the lambda body.
+        binder: FreeId,
     },
 }
 
@@ -325,6 +327,7 @@ impl<'a> TypeChecker<'a> {
                     .map(|body_type| TypeValue::Pi {
                         domain: Box::new(domain_type),
                         body: Box::new(body_type),
+                        binder: free,
                     })
             }
             Expr::App { fun, arg } => {
@@ -382,11 +385,11 @@ impl<'a> TypeChecker<'a> {
                         // the argument was checked against its domain. Re-infer a
                         // literal lambda body in the substituted environment:
                         // its inferred Pi body is open, not a constant codomain.
-                        if let PiBody::Fixed(inferred_body) = &body
+                        if let PiBody::Fixed(binder, inferred_body) = &body
                             && (!matches!(self.expressions.get(*fun), Some(Expr::Lam { .. }))
                                 || self.type_depends_on_free(
                                     inferred_body,
-                                    FreeId(context.len() as u64),
+                                    *binder,
                                     (*remaining).min(4096),
                                 ) != Some(false))
                             && let Some(instantiated) = self.infer_literal_beta_spine(
@@ -395,17 +398,23 @@ impl<'a> TypeChecker<'a> {
                         {
                             return instantiated;
                         }
-                        Judgment::proven(
-                            match body {
-                                PiBody::Fixed(body) => body,
-                                PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
-                                    body.expr,
-                                    body.env.extend(self.closure(*arg, frame.clone())),
-                                    body.levels,
-                                )),
-                            },
-                            "application-type-instantiation",
-                        )
+                        let result = match body {
+                            PiBody::Fixed(binder, inferred_body) => {
+                                let actual = self.closure(*arg, frame.clone());
+                                let Some(type_value) = self.instantiate_fixed_pi_body(
+                                    &inferred_body, binder, &actual, remaining,
+                                ) else {
+                                    return Judgment::unknown("fixed-pi-binder-substitution");
+                                };
+                                type_value
+                            }
+                            PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
+                                body.expr,
+                                body.env.extend(self.closure(*arg, frame.clone())),
+                                body.levels,
+                            )),
+                        };
+                        Judgment::proven(result, "application-type-instantiation")
                     }
                     Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
                     Judgment::Unknown { residual } => Judgment::Unknown { residual },
@@ -719,6 +728,53 @@ impl<'a> TypeChecker<'a> {
         Some(self.infer_in(head, &lexical_context, &lexical_frame, remaining, cache))
     }
 
+    /// Unlike a fixed codomain, the body of an inferred lambda Pi may refer
+    /// to its opened lexical local even when an outer Let hides the lambda
+    /// syntactically. Instantiate only that local, within immutable closures.
+    /// Unknown substitution shapes or exhausted fuel never justify acceptance.
+    fn instantiate_fixed_pi_body(
+        &self,
+        body: &TypeValue,
+        binder: FreeId,
+        actual: &Closure,
+        remaining: &mut usize,
+    ) -> Option<TypeValue> {
+        // A checked, bounded support result allows a literal transport.
+        // In particular, closed codomains of very deep beta ladders must
+        // not pay to rebuild irrelevant lexical environments.
+        if self.type_depends_on_free(body, binder, (*remaining).min(4096)) == Some(false) {
+            return Some(body.clone());
+        }
+        if *remaining == 0 {
+            return None;
+        }
+        *remaining -= 1;
+        match body {
+            TypeValue::Sort(level) => Some(TypeValue::Sort(level.clone())),
+            TypeValue::Term(term) => Some(TypeValue::Term(
+                term.substitute_local_free(binder, actual, remaining)?
+            )),
+            TypeValue::Pi { domain, body, binder: inner } => {
+                let domain = self.instantiate_fixed_pi_body(
+                    domain, binder, actual, remaining,
+                )?;
+                // An inner binder of the same identity shadows this one in
+                // its body. In Nucleus's level-indexed locals, such an alias
+                // is unusual but must not cause capture.
+                let body = if *inner == binder {
+                    (**body).clone()
+                } else {
+                    self.instantiate_fixed_pi_body(body, binder, actual, remaining)?
+                };
+                Some(TypeValue::Pi {
+                    domain: Box::new(domain),
+                    body: Box::new(body),
+                    binder: *inner,
+                })
+            }
+        }
+    }
+
     // Syntactic support of an inferred type, through its actual closures.
     // Only a proved absence skips substitution. Exhaustion remains conservative.
     fn type_depends_on_free(&self, ty: &TypeValue, free: FreeId, budget: usize) -> Option<bool> {
@@ -741,7 +797,7 @@ impl<'a> TypeChecker<'a> {
                 match ty {
                     TypeValue::Sort(_) => Some(false),
                     TypeValue::Term(c) => self.closure(c),
-                    TypeValue::Pi { domain, body } => Some(self.ty(domain)? || self.ty(body)?),
+                    TypeValue::Pi { domain, body, .. } => Some(self.ty(domain)? || self.ty(body)?),
                 }
             }
             fn closure(&mut self, c: &Closure) -> Option<bool> {
@@ -858,7 +914,7 @@ impl<'a> TypeChecker<'a> {
     fn pi_view(&self, ty: Judgment<TypeValue>, budget: usize) -> Option<(TypeValue, PiBody)> {
         let ty = ty.proven_value()?.clone();
         match ty {
-            TypeValue::Pi { domain, body } => Some((*domain, PiBody::Fixed(*body))),
+            TypeValue::Pi { domain, body, binder } => Some((*domain, PiBody::Fixed(binder, *body))),
             TypeValue::Term(closure) => {
                 let machine = self.machine();
                 let exposed = machine.expose(closure, Transparency::Reducible, budget);
@@ -1035,7 +1091,10 @@ impl<'a> TypeChecker<'a> {
                 self.pi_view(Judgment::proven(current, "proof-type-spine"), budget)?;
             let _ = domain;
             current = match body {
-                PiBody::Fixed(body) => body,
+                PiBody::Fixed(binder, body) => {
+                    let mut fuel = budget;
+                    self.instantiate_fixed_pi_body(&body, binder, argument, &mut fuel)?
+                },
                 PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
                     body.expr,
                     body.env.extend(argument.clone()),
@@ -1143,7 +1202,15 @@ impl<'a> TypeChecker<'a> {
                 return RuleKAttempt::NotApplicable;
             };
             current = match body {
-                PiBody::Fixed(body) => body,
+                PiBody::Fixed(binder, body) => {
+                    let mut fuel = budget;
+                    let Some(instantiated) = self.instantiate_fixed_pi_body(
+                        &body, binder, argument, &mut fuel,
+                    ) else {
+                        return RuleKAttempt::NotApplicable;
+                    };
+                    instantiated
+                },
                 PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
                     body.expr,
                     body.env.extend(argument.clone()),
@@ -1649,7 +1716,7 @@ fn definite_conversion_obstruction(obstruction: &str) -> bool {
 }
 
 enum PiBody {
-    Fixed(TypeValue),
+    Fixed(FreeId, TypeValue),
     Closure(Closure),
 }
 

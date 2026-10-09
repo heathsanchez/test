@@ -244,10 +244,12 @@ fn convert_in_context_with_congruence(
                 TypeValue::Pi {
                     domain: left_domain,
                     body: left_body,
+                    binder: _left_binder,
                 },
                 TypeValue::Pi {
                     domain: right_domain,
                     body: right_body,
+                    binder: _right_binder,
                 },
             ) => {
                 if let Some(free) = fresh_local(depth) {
@@ -1663,6 +1665,7 @@ fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {
             Some(TypeValue::Pi {
                 domain: Box::new(TypeValue::Term(domain.clone())),
                 body: Box::new(TypeValue::Term(body.under_free(free))),
+                binder: free,
             })
         }
         Value::NatLit(_)
