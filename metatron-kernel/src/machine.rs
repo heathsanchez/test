@@ -306,6 +306,17 @@ impl<'a> Machine<'a> {
                 structure.env.lookup(0), structure.env.lookup(1),
                 structure.env.lookup(2), structure.env.lookup(3), budget,
             );
+            if type_name.0 == 142 {
+                for i in 0..3 {
+                    if let Some(EnvBinding::Closure(child)) = structure.env.lookup(i) {
+                        eprintln!(
+                            "NUCLEUS_PROJECTION_CHILD:slot={i}:expr={:?}:env={}:sub0={:?}:sub1={:?}:sub2={:?}",
+                            child.expr, child.env.id(), child.env.lookup(0),
+                            child.env.lookup(1), child.env.lookup(2),
+                        );
+                    }
+                }
+            }
         }
         let exposed = self.expose_internal(
             structure,
