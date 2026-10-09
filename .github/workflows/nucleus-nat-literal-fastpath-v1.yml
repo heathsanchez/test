@@ -1,0 +1,70 @@
+name: Nat literal fastpath witnesses
+on:
+  push:
+    branches: [nucleus-nat-literal-predecessor-fastpath-v1]
+    paths: [".github/workflows/nucleus-nat-literal-fastpath-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  micro:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_COMMIT: ee11c2afb4a9a710dd0dfbbe51ec1b283efed2b7
+      SOURCE_SUBTREE: 632dd84fea12394eaf20d091d50e751289e2e835
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check exact source and Rust suite
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Download pinned arena
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/a /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Run positive and negative separator
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/fastpath-v1
+          python3 - <<'PY'
+          import os,sys,json,hashlib,subprocess,pathlib
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          good=pathlib.Path('/tmp/tests/good')
+          p=extract((good/'init-prelude.ndjson').read_bytes())
+          q=extract((good/'perf/magma-list-pair-n7.ndjson').read_bytes())
+          neg=false_index(p)
+          bad=pathlib.Path('/tmp/tests/bad/bugs/nested-unused-param.ndjson').read_bytes()
+          cases=[('init',p,0),('magma',q,0),('false-index',neg,2),('malformed',bad,1)]
+          rows=[]
+          for name,data,expected in cases:
+            x=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+             input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45,
+             env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+            row={'name':name,'actual':x.returncode,'expected':expected,
+              'hash':hashlib.sha256(data).hexdigest(),
+              'terminal':[s for s in x.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
+            rows.append(row)
+            assert x.returncode==expected,row
+          out=pathlib.Path('metatron-kernel/evidence-out/fastpath-v1/result.json')
+          out.write_text(json.dumps({'source':os.environ['SOURCE_COMMIT'],
+             'tree':os.environ['SOURCE_SUBTREE'],'qualification':os.environ['GITHUB_SHA'],
+             'rows':rows},indent=2))
+          print(json.dumps(rows,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-fastpath-${{ github.sha }}
+          path: metatron-kernel/evidence-out/fastpath-v1
+          if-no-files-found: warn
