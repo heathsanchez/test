@@ -1351,6 +1351,26 @@ fn compare_values(
                 {
                     return Judgment::refuted("certified-stuck-recursor-mismatch");
                 }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_FREE_RELEVANCE").is_some()
+                    && let (NeutralHead::Free(l), NeutralHead::Free(r)) = (&left.head, &right.head)
+                    && l != r
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                    if PRINTED.fetch_add(1, Ordering::Relaxed) < 56 {
+                        let lhs_type = usize::try_from(l.0).ok().and_then(|i| context.get(i));
+                        let rhs_type = usize::try_from(r.0).ok().and_then(|i| context.get(i));
+                        let lhs_proof = lhs_type.map(|t| checker.type_value_is_prop_sort(t, current_budget.min(512)));
+                        let rhs_proof = rhs_type.map(|t| checker.type_value_is_prop_sort(t, current_budget.min(512)));
+                        let domain_relation = lhs_type.zip(rhs_type).map(|(a,b)|
+                            convert_with_policy_in_context(checker,a,b,current_budget.min(512),
+                                DeltaPolicy::PreferredOnly,depth,context)
+                        );
+                        eprintln!("NUCLEUS_FREE_RELEVANCE:depth={depth}:local_count={}:left={l:?}:right={r:?}:left_type={lhs_type:?}:right_type={rhs_type:?}:left_is_prop={lhs_proof:?}:right_is_prop={rhs_proof:?}:type_relation={domain_relation:?}:left_spine={:?}:right_spine={:?}",
+                            context.len(),left.spine,right.spine);
+                    }
+                }
                 match compare_neutral_heads(checker, left, right, current_budget) {
                     Judgment::Proven { .. } => {}
                     other => return other,
