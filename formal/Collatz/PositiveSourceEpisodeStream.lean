@@ -31,6 +31,7 @@ theorem positive_odd_has_valid_episode
     | succ r =>
         omega
   refine ⟨⟨r, m, hrPos, hmPos, hmOdd⟩, ?_⟩
+  change x = 2 ^ r * m - 1
   omega
 
 /-- Every positive natural n reaches a positive odd episode start after
