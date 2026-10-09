@@ -1,0 +1,151 @@
+name: Collatz V137 fixed-clock coefficient completeness
+on:
+  push:
+    branches: [collatz-v137-primitive-chart-completeness]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integer-normal-form:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaustively verify normal form and both clock orientations
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v137_primitive_multiplier > evidence/v137-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v137-exact.json')
+          x=json.loads(p.read_text())
+          assert x['schema']=='COLLATZ_V137_EXHAUSTIVE_PRIMITIVE_MULTIPLIER_BOUNDARY'
+          assert x['fixed_clock_guard_cases_tested']==2401
+          assert x['all_matched_pairs_are_primitive_scalings']
+          assert x['positive_multiplier_existence_iff_weighted_clock']
+          assert x['favourable_source5_to3']['minimum_coefficients']==[3,1]
+          assert x['rejected_source5_to3']['minimum_coefficients']==[27,1]
+          assert x['rejected_source5_to3']['earlier_source_slope'] > x['rejected_source5_to3']['original_source_slope']
+          assert x['failure_means_ONLY_fixed_clock_coefficient_grammar_impossible']
+          assert x['global_collatz']=='UNKNOWN' and x['qed'] is False
+          seal={'schema':'COLLATZ_V137_EXACT_INTEGER_MULTIPLIER_SEAL',
+             'status':'WARRANTED_BOUNDED_INDEPENDENT_REPLAY',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'fixed_clock_multiplier_search_exactly_classified':True,
+             'universal_base_join_exists':False,'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v137-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          print('V137_EXACT_PRIMITIVE_INTEGER_NORMAL_FORM_REGRESSION_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v137-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-multiplier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prove necessity, sufficiency, integer normal form and nonrescuable bad clocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/RootChartOverlapCompiler.lean)" = c35bde45d11aad51f46e6e8beced5322acd43e9b
+          test "$(git hash-object formal/Collatz/Root23LateJoinReclosure.lean)" = b2aea7066186caf01a6be6743579ad27894edb75
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin RelationalRootMerger RootChartOverlapCompiler FirstResidualRefinement Root23LateJoinReclosure CanonicalCrossPowerChart ReducedThreePowerCharts; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/ChartMultiplierCompleteness.lean 2>&1 | tee evidence/v137-lean.log
+          python3 - <<'PY'
+          import json,hashlib,re,pathlib,subprocess
+          p=pathlib.Path('evidence/v137-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          axs={}
+          for name,t in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            a=[v.strip() for v in t.split(',') if v.strip()]
+            assert set(a)<={'propext','Quot.sound','Classical.choice'},(name,a)
+            axs[name]=a
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axs[name]=[]
+          for name in ['positive_three_power_matching_normal_form',
+                       'weighted_clock_guard_necessary',
+                       'matching_coefficients_exist_iff_weighted_clock',
+                       'actual_chart_coefficients_iff_weighted_clock',
+                       'source5_bad_clocks_have_no_chart_coefficients',
+                       'source5_good_clocks_admit_chart_coefficients']:
+            assert 'CollatzFinal.'+name in axs,name
+          seal={'schema':'COLLATZ_V137_FORMAL_MULTIPLIER_COMPLETENESS',
+             'status':'WARRANTED_FORMAL_FIXED_CLOCK_MULTIPLIER_NORMAL_FORM_IFF',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'axioms':axs,
+             'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+             'scope':'exact integer multiplier search at any FIXED pair of clocks',
+             'does_not_prove_suitable_source_clocks_exist':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v137-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          print('V137_WARRANTED_FORMAL_COEFFICIENT_EXHAUSTIVENESS_NOT_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v137-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [integer-normal-form,formal-multiplier]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v137-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v137-formal
+          path: evidence/formal
+      - name: Close multiplier search ONLY at fixed source clocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          x=json.loads(pathlib.Path('evidence/exact/v137-exact-seal.json').read_text())
+          y=json.loads(pathlib.Path('evidence/formal/v137-formal-seal.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert x['source_commit']==y['source_commit']==sha
+          assert x['fixed_clock_multiplier_search_exactly_classified']
+          assert y['status']=='WARRANTED_FORMAL_FIXED_CLOCK_MULTIPLIER_NORMAL_FORM_IFF'
+          assert y['does_not_prove_suitable_source_clocks_exist']
+          assert x['global_collatz']==y['global_collatz']=='UNKNOWN'
+          assert x['qed'] is y['qed'] is False
+          seal={'schema':'COLLATZ_V137_FIXED_CLOCK_MULTIPLIER_SEARCH_CLOSED',
+             'status':'WARRANTED_FORMAL_COMPLETE_INTEGER_COEFFICIENT_NORMAL_FORM',
+             'source_commit':sha,
+             'all_matched_positive_multiplier_pairs_are_primitive_scalings':True,
+             'admission_iff_weighted_clock_orientation':True,
+             'bad_clock5_3_has_no_matching_positive_multipliers':True,
+             'good_clock5_3_has_matching_positive_multipliers':True,
+             'next_residual':'produce suitable earlier positive base and weighted favourable pair of ACTUAL clocks universally',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v137-final-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          print('V137_CLOSE_ALL_FIXED_CLOCK_COEFFICIENT_SEARCH_NOT_UNIVERSAL_COLLATZ')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v137-final
+          path: evidence/v137-final-seal.json
+          if-no-files-found: error
