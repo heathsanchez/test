@@ -1,0 +1,86 @@
+name: WebArena GitLab file-title qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_gitlab_edit_title.yml"
+      - "scripts/webarena_gitlab_edit_title.py"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start GitLab
+        run: |
+          mkdir -p artifacts/webarena_gitlab_edit_title
+          docker pull am1n3e/webarena-verified-gitlab
+          docker image inspect am1n3e/webarena-verified-gitlab --format '{{index .RepoDigests 0}}' | tee artifacts/webarena_gitlab_edit_title/gitlab_image_digest.txt
+          docker run -d --name webarena-verified-gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 180); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 3
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Prepare authority and execute family
+        run: |
+          ROOT=artifacts/webarena_gitlab_edit_title
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0}}}
+          JSON
+          for id in 441 443 444; do
+            python scripts/webarena_gitlab_edit_title.py               --task-id "$id"               --task-file "$ROOT/hard.json"               --output-dir "$ROOT/output"
+          done
+      - name: Officially score network consequences
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_gitlab_edit_title")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          results={}; failures=[]
+          for task_id in (441,443,444):
+              out=root/"output"/str(task_id)
+              trace=NetworkTrace.from_har(out/"network.har")
+              result=wa.evaluate_task(task_id=task_id,agent_response=out/"agent_response.json",network_trace=trace)
+              dumped=result.model_dump(mode="json",exclude_none=True)
+              (out/"eval_result.json").write_text(json.dumps(dumped,indent=2)+"\n")
+              row={"score":float(result.score),"status":result.status.value,"evaluation_events":len(trace.evaluation_events)}
+              results[str(task_id)]=row
+              if row["score"]!=1.0 or row["status"]!="success": failures.append(task_id)
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED" if not failures else "REJECTED",
+              "boundary":"GitLab current-file read -> title-only transform -> branch-aware commit mutation",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "results":results,
+              "failures":failures,
+          }
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2))
+          if failures: raise SystemExit(f"file-title residuals: {failures}")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-gitlab-edit-title
+          path: artifacts/webarena_gitlab_edit_title
