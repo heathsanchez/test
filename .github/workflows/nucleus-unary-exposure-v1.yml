@@ -1,0 +1,84 @@
+name: Nucleus checked unary constructor exposure separator
+on:
+  push:
+    branches: [nucleus-unary-recursor-exposure-v1]
+    paths: ["metatron-kernel/**", ".github/workflows/nucleus-unary-exposure-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      SOURCE_COMMIT: fd0297cf42a860a758ac058f76240c4153e5d2d9
+      SOURCE_SUBTREE: f0576dc090d45f320df35178ca08988368c6710d
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Pin source and run release unit tests
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch verified frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/art /tmp/tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/pinned.zip
+          unzip -q /tmp/pinned.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Replay three exact positives and malformed negative
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/unary-exposure-v1
+          python3 - <<'PY'
+          import subprocess,pathlib,hashlib,json,os,time
+          root=pathlib.Path('/tmp/tests')
+          controls=[
+             ('good','perf/shared-subterm','dbc065108aa98512149c3f1a5bb6279630c53bdf64256516ba10ed256322883b',2),
+             ('good','perf/folded-constant-first','f11febc1959dd30a0c2b4f3491635b4d1279946d51286bd7dfec5fb19229d773',2),
+             ('good','perf/folded-constant-last','e1a9380283d3285a7242a45e79ce760056c34201089d21fdc3b25a22e4997494',2),
+             ('bad','bugs/nested-unused-param','25afcc9267523cfd26edf94ca01ebe34ca0e8a24954e4b4e3d397a61688b8778',1)]
+          rows=[]
+          for bucket,name,digest,base in controls:
+            fixture=root/bucket/(name+'.ndjson')
+            assert hashlib.sha256(fixture.read_bytes()).hexdigest()==digest,(name,'hash')
+            begin=time.monotonic()
+            try:
+              with fixture.open('rb') as src:
+                result=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+                  stdin=src,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=55,
+                  env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_NEUTRAL_HEADS':'1'})
+              rc=result.returncode
+              raw=result.stderr.decode(errors='replace')
+            except subprocess.TimeoutExpired:
+              rc=124;raw='TIMEOUT'
+            lines=raw.splitlines()
+            path=pathlib.Path('metatron-kernel/evidence-out/unary-exposure-v1')/(name.replace('/','__')+'.txt')
+            path.write_text(raw)
+            row={'name':name,'rc':rc,'expected_baseline':base,
+                 'elapsed':round(time.monotonic()-begin,3),
+                 'first_mismatch':[x[:650] for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][:2],
+                 'terminal':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-3:]}
+            rows.append(row);print(json.dumps(row,sort_keys=True))
+          outcome={'source':os.environ['SOURCE_COMMIT'],'subtree':os.environ['SOURCE_SUBTREE'],
+              'qualification':os.environ['GITHUB_SHA'],'rows':rows,
+              'earned':sum(r['rc']==0 for r in rows[:3])}
+          pathlib.Path('metatron-kernel/evidence-out/unary-exposure-v1/report.json').write_text(json.dumps(outcome,indent=2))
+          assert all(r['rc'] in (0,2) for r in rows[:3]),outcome
+          assert rows[3]['rc']==1,outcome
+          # This is a prospective-capability gate: merely passing tests does not promote a no-op.
+          assert outcome['earned']>0,outcome
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-unary-exposure-${{ github.sha }}
+          path: metatron-kernel/evidence-out/unary-exposure-v1
+          if-no-files-found: warn
