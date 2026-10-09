@@ -78,6 +78,8 @@ class PromotionDispatch(unittest.IsolatedAsyncioTestCase):
             with self.subTest(site=site, module=module_name):
                 stub = ModuleType(module_name)
                 stub.run = AsyncMock(return_value={'result': 'observed'})
+                if module_name == 'webarena_gitlab_fork_blind':
+                    stub.parse_fork_intent = lambda value: ('single', value)
                 out = Path('/tmp/opaque-observation')
                 with patch.dict(sys.modules, {module_name: stub}):
                     result = await run(intent, site, out)
@@ -101,6 +103,7 @@ class PromotionDispatch(unittest.IsolatedAsyncioTestCase):
     async def test_ambiguous_fork_write_is_never_retried_through_fallback(self):
         chosen = ModuleType('webarena_gitlab_fork_blind')
         chosen.run = AsyncMock(side_effect=RuntimeError('unknown fork commit result'))
+        chosen.parse_fork_intent = lambda value: ('single', value)
         fallback = ModuleType('webarena_blind_retrieval_bridge')
         fallback.run = AsyncMock()
         with patch.dict(sys.modules, {'webarena_gitlab_fork_blind': chosen,
