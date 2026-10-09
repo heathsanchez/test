@@ -1,0 +1,80 @@
+name: Nucleus pinned typed matcher source census
+on:
+  push:
+    branches: [nucleus-typed-matcher-census-v1]
+    paths: [".github/workflows/nucleus-typed-matcher-census-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover exact frozen export
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/sources /tmp/pinned evidence-type-census
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" >/tmp/frozen.zip
+          unzip -q /tmp/frozen.zip -d /tmp/pinned
+          tar --no-same-owner -xzf /tmp/pinned/lean-arena-tests.tar.gz -C /tmp/sources
+      - name: Decode first distinct dependent types and all source constructors
+        run: |
+          python3 - <<'PY'
+          import json,hashlib,pathlib,os
+          cfg=[('init-prelude',3207,3191,12,1014,2975),('perf/magma-list-pair-n7',1371,1355,6,744,828)]
+          rows=[]
+          for name,got,expected,arg,projection,field in cfg:
+            path=pathlib.Path('/tmp/sources/good')/(name+'.ndjson')
+            raw=path.read_bytes()
+            data=[json.loads(line) for line in raw.splitlines()]
+            names={0:''}
+            es={}
+            for ob in data:
+              if 'in' in ob:
+                part=ob.get('str',ob.get('num'))
+                prefix=names.get(part['pre'],'')
+                names[ob['in']]=prefix+('.' if prefix else '')+str(part.get('str',part.get('i')))
+              if 'ie' in ob: es[ob['ie']]={k:v for k,v in ob.items() if k!='ie'}
+            def render(e,depth=0,visited=None):
+              if visited is None: visited=set()
+              if depth>10 or e in visited: return f'#{e}'
+              n=es.get(e)
+              if n is None:return f'MISSING({e})'
+              v=visited|{e}
+              if 'bvar' in n:return f'bvar[{n["bvar"]}]'
+              if 'natVal' in n:return f'nat[{n["natVal"]}]'
+              if 'sort' in n:return f'sort[{n["sort"]}]'
+              if 'const' in n:return names.get(n['const']['name'],str(n['const']['name']))
+              if 'app' in n:
+                a=n['app'];return '('+render(a['fn'],depth+1,v)+' '+render(a['arg'],depth+1,v)+')'
+              if 'forallE' in n:
+                a=n['forallE'];return '(forall : '+render(a['type'],depth+1,v)+', '+render(a['body'],depth+1,v)+')'
+              if 'lam' in n:
+                a=n['lam'];return '(fun : '+render(a['type'],depth+1,v)+' => '+render(a['body'],depth+1,v)+')'
+              if 'proj' in n:
+                a=n['proj'];return f"(proj {names.get(a['typeName'])}[{a['idx']}] "+render(a['struct'],depth+1,v)+')'
+              if 'letE' in n:
+                a=n['letE'];return '(let := '+render(a['value'],depth+1,v)+'; '+render(a['body'],depth+1,v)+')'
+              return str(n)
+            row={'case':name,'sha256':hashlib.sha256(raw).hexdigest(),
+                 'tokens':len(data),'names_count':len(names),
+                 'exprs':{str(i):{'raw':es.get(i),'tree':render(i)[:4500]} for i in [got,expected,arg,projection,field]},
+                 'near_types':{str(i):{'raw':es.get(i),'tree':render(i)[:1200]} for i in range(min(got,expected)-6,max(got,expected)+6)},
+                 'name_matches':[{'name':n,'value':v} for n,v in names.items() if 'match_1_1' in v][:8]}
+            rows.append(row)
+            print("TYPE_CENSUS="+json.dumps({k:v for k,v in row.items() if k!='near_types'},sort_keys=True),flush=True)
+          pathlib.Path('evidence-type-census/report.json').write_text(json.dumps({'commit':os.environ['GITHUB_SHA'],'rows':rows},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-typed-matcher-${{ github.sha }}
+          path: evidence-type-census
+          if-no-files-found: warn
