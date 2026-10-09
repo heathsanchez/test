@@ -27,7 +27,14 @@ use verdict::Verdict;
 ///
 pub fn run<R: BufRead>(reader: R) -> Verdict {
     match parse(reader).and_then(|export| export.resolve()) {
-        Ok(export) => check_export(export, Limits::default()),
+        Ok(export) => {
+            let limits = if std::env::var_os("NUCLEUS_FOLDED_BUDGET_PROBE").is_some() {
+                Limits { judgment_steps: 2_000_000 }
+            } else {
+                Limits::default()
+            };
+            check_export(export, limits)
+        },
         Err(error) => {
             if std::env::var_os("NUCLEUS_TRACE_PARSE_ERROR").is_some() {
                 eprintln!("NUCLEUS_PARSE_ERROR: {error}");
