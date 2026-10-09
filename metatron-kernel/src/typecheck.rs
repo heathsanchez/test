@@ -664,23 +664,29 @@ impl<'a> TypeChecker<'a> {
         remaining: &mut usize,
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Option<Judgment<()>> {
+        let trace = std::env::var_os("NUCLEUS_TRACE_BIDIR_SUBLE").is_some()
+            && matches!(expression.0, 7146 | 5731);
         let Expr::Lam { domain, body } = self.expressions.get(expression)? else {
             return None;
         };
         let (expected_domain, PiBody::Closure(expected_body)) =
             self.pi_view(Judgment::proven(expected.clone(), "given-pi"), *remaining)?
         else {
+            if trace { eprintln!("NUCLEUS_MODCORE_BIDIR:expr={expression:?}:stage=expected-pi-missing"); }
             return None;
         };
         let domain_type = self.infer_in(*domain, context, frame, remaining, cache);
         if !self.sort_level(domain_type, *remaining).is_proven() {
+            if trace { eprintln!("NUCLEUS_MODCORE_BIDIR:expr={expression:?}:stage=domain-sort-missing"); }
             return None;
         }
         let actual_domain = TypeValue::Term(self.closure(*domain, frame.clone()));
-        if !crate::convert::convert_with_policy_in_context(
+        let domain_conversion = crate::convert::convert_with_policy_in_context(
             self, &actual_domain, &expected_domain, *remaining, self.delta_policy,
             context.len(), context,
-        ).is_proven() {
+        );
+        if !domain_conversion.is_proven() {
+            if trace { eprintln!("NUCLEUS_MODCORE_BIDIR:expr={expression:?}:stage=domain-conversion:verdict={domain_conversion:?}"); }
             return None;
         }
         let free = fresh_local(context.len())?;
@@ -698,6 +704,7 @@ impl<'a> TypeChecker<'a> {
             }
             Some(result)
         } else {
+            if trace { eprintln!("NUCLEUS_MODCORE_BIDIR:expr={expression:?}:stage=body-check:verdict={result:?}:remaining={}", *remaining); }
             None
         }
     }
