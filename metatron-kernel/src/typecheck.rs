@@ -1035,6 +1035,51 @@ impl<'a> TypeChecker<'a> {
                             "NUCLEUS_REFUTATION_AS_UNKNOWN:expr={expression:?}:context_len={}:frame={}:remaining={}:reason={obstruction:?}:actual={value:?}:expected={expected:?}:actual_whnf={source_normal:?}:expected_whnf={expected_normal:?}",
                             context.len(),frame.id(),remaining,
                         );
+                        if context.len()==12
+                            && let (
+                                Some(Value::Pi { domain: actual_domain, body: actual_body }),
+                                Some(Value::Pi { domain: expected_domain, body: expected_body }),
+                            )=(
+                                source_normal.as_ref().and_then(|j|j.proven_value()),
+                                expected_normal.as_ref().and_then(|j|j.proven_value()),
+                            )
+                        {
+                            let domain_relation=crate::convert::convert_with_policy_in_context(
+                                self,
+                                &TypeValue::Term(actual_domain.clone()),
+                                &TypeValue::Term(expected_domain.clone()),
+                                (*remaining).min(512),
+                                crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                context.len(),context,
+                            );
+                            let mut body_relation=None;
+                            let mut actual_body_head=None;
+                            let mut expected_body_head=None;
+                            if domain_relation.is_proven() {
+                                let free=FreeId(context.len() as u64);
+                                let mut ext=context.to_vec();
+                                ext.push(TypeValue::Term(actual_domain.clone()));
+                                let lhs=actual_body.under_free(free);
+                                let rhs=expected_body.under_free(free);
+                                body_relation=Some(crate::convert::convert_with_policy_in_context(
+                                    self,&TypeValue::Term(lhs.clone()),&TypeValue::Term(rhs.clone()),
+                                    (*remaining).min(512),
+                                    crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                    ext.len(),&ext,
+                                ));
+                                actual_body_head=Some(self.machine().expose(
+                                    lhs,Transparency::Full,512
+                                ));
+                                expected_body_head=Some(self.machine().expose(
+                                    rhs,Transparency::Full,512
+                                ));
+                            }
+                            eprintln!(
+                                "NUCLEUS_DEC_F_DEPTH12_PI:expr={expression:?}:context={}:domain_relation={domain_relation:?}:body_relation={body_relation:?}:actual_domain={actual_domain:?}:expected_domain={expected_domain:?}:actual_body_whnf={actual_body_head:?}:expected_body_whnf={expected_body_head:?}",
+                                context.len()
+                            );
+                        }
+
                     }
                 }
                 #[cfg(feature = "diagnostics")]
