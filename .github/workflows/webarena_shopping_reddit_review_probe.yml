@@ -9,6 +9,8 @@ on:
       - "scripts/webarena_product_name_match.py"
       - "tests/test_webarena_shopping_reddit_review_compound.py"
       - "tests/test_webarena_product_name_match.py"
+      - "scripts/webarena_review_ajax_pagination.py"
+      - "tests/test_webarena_review_ajax_pagination.py"
   workflow_dispatch:
 
 permissions:
@@ -39,6 +41,7 @@ jobs:
           python -m pip install playwright
           python -m unittest discover -s tests -p 'test_webarena_shopping_reddit_review_compound.py' -v
           python -m unittest discover -s tests -p 'test_webarena_product_name_match.py' -v
+          python -m unittest discover -s tests -p 'test_webarena_review_ajax_pagination.py' -v
           python -m compileall -q scripts tests
           git diff --check
 

@@ -42,6 +42,18 @@ class ReviewForumComposition(unittest.TestCase):
         self.assertEqual(list_body(chosen),'- "a poor headset"\n- "disappointing audio"')
         self.assertEqual([r["title"] for r in rating_filter(observed,1,"exact")],["a poor headset"])
 
+    def test_independent_duplicate_review_titles_preserve_multiplicity(self):
+        observed=[
+            {"title":"Repeated complaint","stars":2},
+            {"title":"five stars","stars":5},
+            {"title":"Repeated complaint","stars":2},
+        ]
+        chosen=rating_filter(observed,2,"at_most")
+        self.assertEqual([row["title"] for row in chosen],
+                         ["Repeated complaint","Repeated complaint"])
+        self.assertEqual(list_body(chosen),
+                         '- "Repeated complaint"\n- "Repeated complaint"')
+
     def test_no_unsupported_empty_post(self):
         with self.assertRaises(ValueError):
             list_body([])

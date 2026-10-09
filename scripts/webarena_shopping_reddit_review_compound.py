@@ -16,7 +16,8 @@ from pathlib import Path
 from urllib.parse import quote,urljoin,urlparse
 
 from playwright.async_api import async_playwright
-from webarena_shopping_low_reviews import collect_reviews,clean as normalize_space
+from webarena_shopping_low_reviews import collect_page,clean as normalize_space
+from webarena_review_ajax_pagination import collect_all_reviews
 from webarena_reddit_forum_resolver import resolve_forum
 from webarena_reddit_submit_v3 import AUTH,submit
 from webarena_product_name_match import select_observed_product
@@ -62,13 +63,14 @@ def rating_filter(reviews,threshold,predicate):
         raise ValueError(f"unsupported rating operator {predicate!r}")
     if threshold not in range(1,6):
         raise ValueError("rating threshold outside five-star scale")
-    seen=set();selected=[]
+    selected=[]
     for row in reviews:
         stars=float(row["stars"])
         title=normalize_space(str(row["title"]))
         qualifies=stars <= threshold if predicate=="at_most" else abs(stars-threshold)<1e-6
-        if qualifies and title and (title,stars) not in seen:
-            seen.add((title,stars))
+        # Repeated titles can be separate customer-review entries.
+        # Preserve source order and multiplicity; never deduplicate by title.
+        if qualifies and title:
             selected.append({"title":title,"stars":stars})
     return selected
 
@@ -119,8 +121,8 @@ async def read_reviews(page,product):
                 if normalize_space(await count_label.first.inner_text())=="0":
                     break
             await page.wait_for_timeout(100)
-    reviews=await collect_reviews(page)
-    return observed,reviews
+    reviews,pages=await collect_all_reviews(page,SHOP,collect_page)
+    return observed,reviews,pages
 
 
 async def run(intent,start_url,output_dir):
@@ -135,7 +137,7 @@ async def run(intent,start_url,output_dir):
         shopping_page=await context.new_page()
         reddit_page=await context.new_page()
         try:
-            product,reviews=await read_reviews(shopping_page,parsed["product"])
+            product,reviews,review_pages=await read_reviews(shopping_page,parsed["product"])
             selected=rating_filter(reviews,parsed["stars"],parsed["predicate"])
             body=list_body(selected)
             resolved=await resolve_forum(reddit_page,REDDIT,parsed["forum_description"])
@@ -153,6 +155,7 @@ async def run(intent,start_url,output_dir):
         "compiled_from_instruction":parsed,
         "observed_product":product,
         "reviews_seen":len(reviews),
+        "review_pages":review_pages,
         "qualifying_reviews":selected,
         "observed_forum":resolved,
         "submitted_body":body,
