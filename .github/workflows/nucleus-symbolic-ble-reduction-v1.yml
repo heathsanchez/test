@@ -111,6 +111,19 @@ jobs:
           assert by_test["bugs/nested-unused-param"]["actual"] == 1, by_test["bugs/nested-unused-param"]
           PY
 
+      - name: Name the next first obstruction in every frozen UNKNOWN
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          report=json.loads(pathlib.Path('metatron-kernel/evidence-out/final-qualification-v1/arena.json').read_text())
+          for row in report['rows']:
+              if row['actual']!=2:
+                  continue
+              traces=[x for x in row['stderr'].splitlines() if 'NUCLEUS_DOWNSTREAM:' in x]
+              print('NEXT_BLOCKER='+json.dumps({'test':row['test'],'sha256':row['fixture_sha256'],
+                  'last_trace':traces[-3:],'seconds':round(row['seconds'],5)}),flush=True)
+          PY
+
       - name: Run exact positive and negative causal witnesses
         run: |
           set -euo pipefail
