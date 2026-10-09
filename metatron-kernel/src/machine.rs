@@ -314,6 +314,10 @@ impl<'a> Machine<'a> {
                             child.expr, child.env.id(), child.env.lookup(0),
                             child.env.lookup(1), child.env.lookup(2),
                         );
+                        if i == 1 {
+                            let norm = self.expose_internal(child.clone(), Transparency::Opaque, budget.min(256), false, false);
+                            eprintln!("NUCLEUS_MAJOR_BINDING_NORMAL:slot={i}:value={norm:?}");
+                        }
                     }
                 }
             }
