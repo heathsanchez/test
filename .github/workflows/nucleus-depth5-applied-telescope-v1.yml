@@ -1,8 +1,8 @@
-name: Nucleus post-iota first residual census
+name: Nucleus post-iota failed projection census
 
 on:
   push:
-    branches: [nucleus-depth5-post-iota-first-residual-v1]
+    branches: [nucleus-post-iota-projection-gap-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -124,7 +124,7 @@ jobs:
                   env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1',
                                   'NUCLEUS_TRACE_LOCAL_PROOF_IRREL':'1',
                                   'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
-                                  'NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_CONSTRUCTOR_ARGUMENT':'1','NUCLEUS_TRACE_NATLIT_RIGID':'1','NUCLEUS_TRACE_NATREC_ZERO_IOTA':'1','NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE':'1','NUCLEUS_TRACE_VALUE_MISMATCH':'1'})
+                                  'NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_CONSTRUCTOR_ARGUMENT':'1','NUCLEUS_TRACE_NATLIT_RIGID':'1','NUCLEUS_TRACE_NATREC_ZERO_IOTA':'1','NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE':'1','NUCLEUS_TRACE_VALUE_MISMATCH':'1','NUCLEUS_TRACE_PROJECTION_GAP':'1'})
               lines=p.stderr.decode(errors='replace').splitlines()
               row={'case':name,'returncode':p.returncode,
                    'downstream':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-8:],
@@ -136,14 +136,16 @@ jobs:
                    'natrec_major':[x for x in lines if 'NUCLEUS_NATREC_MAJOR:' in x][-8:],
                    'zero_iota':[x for x in lines if 'NUCLEUS_CERTIFIED_NATREC_ZERO_IOTA:' in x][-12:],
                    'projection_fields':[x for x in lines if 'NUCLEUS_PROJECTION_FIELD_PROBE:' in x][-30:],
-                   'value_mismatches':[x for x in lines if 'NUCLEUS_VALUE_MISMATCH:' in x][-15:]}
+                   'value_mismatches':[x for x in lines if 'NUCLEUS_VALUE_MISMATCH:' in x][-15:],
+                   'projection_gaps':[x for x in lines if 'NUCLEUS_PROJECTION_GAP:' in x][-25:]}
               rows.append(row)
               print('CERTIFIED_PROP_DOWNSTREAM='+json.dumps(row),flush=True)
           out=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid')
           out.mkdir(parents=True,exist_ok=True)
           (out/'paired-full-positive-differential.json').write_text(json.dumps(rows,indent=2))
           assert all(row['returncode']==2 for row in rows),'Unexpected positive verdict'
-          print('POST_IOTA_FIRST_RESIDUAL_DIAGNOSTIC_ONLY',flush=True)
+          assert any(row['projection_gaps'] for row in rows if row['case'] in ('init-prelude','perf/grind-ring-5')),'Projection-gap trace missing'
+          print('FIRST_FAILED_PROJECTION_DIAGNOSTIC_ONLY',flush=True)
           assert all(any('NUCLEUS_CERTIFIED_NATREC_ZERO_IOTA:' in x for x in row['zero_iota']) for row in rows),'No candidate iota witness'
           PY
 
