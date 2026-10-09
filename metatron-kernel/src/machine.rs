@@ -359,10 +359,17 @@ impl<'a> Machine<'a> {
         spine: &[Closure],
         budget: usize,
     ) -> Judgment<Value> {
-        let field = self.projection_field_for_conversion(structure, type_name, index, budget);
-        let Some(field) = field.proven_value() else {
+        let field = self.projection_field_for_conversion(structure.clone(), type_name, index, budget);
+        let Some(field_value) = field.proven_value() else {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_GAP").is_some() {
+                eprintln!(
+                    "NUCLEUS_PROJECTION_GAP:type={type_name:?}:index={index}:structure={structure:?}:budget={budget}:field={field:?}"
+                );
+            }
             return Judgment::unknown("lazy-projection-field-exposure");
         };
+        let field = field_value;
         // Do not eagerly normalize a fully applied projection field through
         // every recursive definition. A proven preferred reduction is enough
         // to establish a legitimate rigid comparison; Full is the fallback
