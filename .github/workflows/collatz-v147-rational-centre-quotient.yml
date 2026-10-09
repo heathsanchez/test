@@ -1,0 +1,196 @@
+name: Collatz V147 lawful odd-rational source-centre observation quotient
+on:
+  push:
+    branches: [collatz-v147-rational-centre-observation-quotient]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-observation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit rational centre cross-products and protected coalescence countercontrols
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v147_rational_centre_quotient > evidence/v147-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v147-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V147_RATIONAL_CENTRE_OBSERVATION_QUOTIENT'
+          assert d['all_nB_sampled_congruence_comparisons']==132*22
+          assert d['finite_rational_pairs_checked']==21*80
+          assert d['canonical_reduced_pairs_seen']>500
+          assert d['unequal_coalescent_centre_test_differences']>0
+          assert len(d['positive_quotient_reuses_single_rational_centre_for_all_shadows'])==13
+          assert d['finite_integer_representative_for_minus_thirteen_ninths_exists'] is False
+          assert d['same_future_coalescence_implies_same_centre'] is False
+          assert d['quotient_is_declared_finite'] is False
+          assert d['source_identity_is_removed'] is False
+          assert d['independent_actual_two_clocks_are_removed'] is False
+          assert d['all_infinite_no_exit_source_centres_covered'] is False
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V147_EXACT_CENTRE_QUOTIENT_REPLAY',
+            'status':'WARRANTED_FINITE_EXACT_ODD_RATIONAL_CONTROLS',
+            'source_commit':head,'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'all_nB_infinite_observation_law_requires_Lean':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v147-exact-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v147-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-qualify rational centre Setoid and all-source dyadic observation congruence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/SourceCentreTransportSeparator.lean)" = b294ad6c7cba66895b94d084855c5e1f2ebc4c69
+          test "$(git hash-object formal/Collatz/SourceProductAffine.lean)" = 97a32acc490465c3bb0cd528e42100a6bbfd2f61
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine SourceCentreTransportSeparator; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/RationalCentreObservationQuotient.lean 2>&1 | tee evidence/v147-lean.log
+          python3 - <<'PY'
+          import json,pathlib,re,hashlib,subprocess
+          p=pathlib.Path('evidence/v147-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-6000:]
+          axioms={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            arr=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(arr)<={'propext','Quot.sound','Classical.choice'},(name,arr)
+            axioms[name]=arr
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          targets=[
+            'odd_factor_cancel_dyadic_divisibility',
+            'v147_cross_equal_transports_source_observation',
+            'v147_centre_equivalent_trans',
+            'v147_observation_iff_for_exact_centre_class',
+            'v147_exact_observation_factors_through_quotient',
+            'v147_positive_rational_equivalence',
+            'v147_source27_shadow_family_same_rational_observation',
+            'v147_equivalent_form_27_39_observes_same_sources',
+            'v147_nine_thirteen_no_integer_centre',
+            'v147_coalescence_does_not_identify_source_centre']
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V147_FORMAL_SOURCE_CONGRUENCE_QUOTIENT',
+            'status':'WARRANTED_FORMAL_ALL_SOURCE_ALL_PRECISION_ODD_RATIONAL_QUOTIENT',
+            'source_commit':head,'named_axioms':axioms,
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'cross_multiplication_preserves_all_dyadic_source_observations':True,
+            'observations_factor_through_true_setoid_quotient':True,
+            'rational_class_reused_by_entire_27_shadow_family':True,
+            'independent_source_and_clock_information_not_erased':True,
+            'quotient_finite_or_global_no_exit_complete_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v147-formal-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v147-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-observation, formal-quotient]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v147-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v147-formal
+          path: evidence/formal
+      - name: Independently bind rational-centre quotient and adversarial source evidence to one commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          x=json.loads(pathlib.Path('evidence/exact/v147-exact-seal.json').read_text())
+          y=json.loads(pathlib.Path('evidence/formal/v147-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert x['source_commit']==y['source_commit']==head
+          assert y['status']=='WARRANTED_FORMAL_ALL_SOURCE_ALL_PRECISION_ODD_RATIONAL_QUOTIENT'
+          assert x['all_nB_infinite_observation_law_requires_Lean']
+          assert y['cross_multiplication_preserves_all_dyadic_source_observations']
+          assert y['observations_factor_through_true_setoid_quotient']
+          assert y['independent_source_and_clock_information_not_erased']
+          assert not y['quotient_finite_or_global_no_exit_complete_proved']
+          assert x['global_collatz']==y['global_collatz']=='UNKNOWN'
+          assert x['qed'] is y['qed'] is False
+          out={'schema':'COLLATZ_V147_OBSERVATION_QUOTIENT_FINAL',
+            'status':'WARRANTED_FORMAL_SOURCE_RELATIVE_RATIONAL_QUOTIENT_NOT_QED',
+            'source_commit':head,
+            'retained_state':['original_positive_source','two_independent_actual_clocks','exact_odd_denominator','affine_offset'],
+            'safe_identification':'cross_product_equality of exact rational source centre',
+            'falsifier':'21 and3 coalesce but source centres -3,-1 unequal',
+            'compiled_family':'27-root shadow family at rational centre -13/9',
+            'not_proved':['finite index','all depth no exit coverage','universal event producer','Collatz'],
+            'active_v134':'UNCHANGED','global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v147-final-seal.json').write_text(json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v147-final
+          path: evidence/v147-final-seal.json
+          if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-observation,formal-quotient,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Commit source pinned status for proof and exhaustive negative controls
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={exact:'${{ needs.exact-observation.result }}',
+                          formal:'${{ needs.formal-quotient.result }}',
+                          final:'${{ needs.final-seal.result }}'};
+            const qualified=Object.values(stages).every(x=>x==='success');
+            const record={
+              schema:'COLLATZ_V147_CI_RECEIPT',source_commit:context.sha,
+              run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_RATIONAL_CENTRE_OBSERVATION_QUOTIENT':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false};
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v147-rational-centre-observation-quotient',
+              path:'research/ci_seals/collatz_v147_'+context.sha+'.json',
+              message:'CI receipt: V147 rational centre observation quotient '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(record,null,2)+'\n').toString('base64')
+            });
