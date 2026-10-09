@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      SOURCE_COMMIT: 6f6386a316c9acfdef44fbe14714d419fd008c97
-      SOURCE_SUBTREE: a8c52e869621226c802854c2ae46f314fbc6a4b7
+      SOURCE_COMMIT: 70305b761aaee001c2efb06fe7022a1086bc35e4
+      SOURCE_SUBTREE: d4c97dc8360da14aa60b9f588cd1675ce20a7d47
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +51,7 @@ jobs:
             item={'test':name,'rc':p.returncode,'elapsed':round(time.monotonic()-t,3),
               'sha256':hashlib.sha256(body).hexdigest(),
               'compiled_law_uses':sum('NUCLEUS_NAT_SUB_SUCC_DEFEQ:' in s for s in log),
+              'alias_uses':sum('NUCLEUS_NAT_SUB_ALIAS:' in s for s in log),
               'downstream':[s for s in log if 'NUCLEUS_DOWNSTREAM:' in s][-3:],
               'gaps':[s[:1800] for s in log if 'NUCLEUS_DEPENDENCY_GAP:' in s][:6],
               'apps':[s[:1500] for s in log if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in s][:6]}
