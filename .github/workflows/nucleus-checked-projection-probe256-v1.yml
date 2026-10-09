@@ -1,0 +1,255 @@
+name: Nucleus checked projection probe256 decisive microgate
+
+on:
+  push:
+    branches: [nucleus-checked-projection-probe256-v1]
+    paths:
+      - ".github/workflows/nucleus-checked-projection-probe256-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Bind exact certified-projection source tree
+        run: |
+          set -euo pipefail
+          printf 'checker_source_tree=%s\n' "$(git rev-parse HEAD:metatron-kernel)"
+          printf 'qualification_commit=%s\n' "$GITHUB_SHA"
+
+      - name: Qualify dependent let-wrapped lambda red-green regression
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test typecheck dependent_let_wrapped_lambda -- --nocapture
+
+      - name: Build and test corrected Nucleus
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+          sha256sum /tmp/nucleus
+
+      - name: Fetch immutable 196-case Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests metatron-kernel/evidence-out/final-qualification-v1
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+
+      - name: Diagnose beta ladder and succ-sub against baseline reasons
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, subprocess, json
+          root=pathlib.Path('/tmp/arena-tests/good')
+          for name in ('perf/beta-ladder','init-prelude','perf/magma-list-pair-n7'):
+              p=subprocess.run(['/tmp/nucleus'],input=(root/(name+'.ndjson')).read_bytes(),
+                  stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=35,
+                  env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                                  'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
+                                  'NUCLEUS_TRACE_DEPENDENCY_GAP':'1'})
+              logs=p.stderr.decode(errors='replace').splitlines()
+              trace={t:[s[:1400] for s in logs if s.startswith(t+':')][:4]
+                  for t in ('NUCLEUS_DOWNSTREAM','NUCLEUS_APPLICATION_FUNCTION_TYPE',
+                             'NUCLEUS_DEPENDENCY_GAP')}
+              print('BINDER_DIAG='+json.dumps({'case':name,'rc':p.returncode,'trace':trace}),flush=True)
+          PY
+
+      - name: Require complete acceptance of a new exact modCore witness
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,json,hashlib,os,subprocess,sys
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/arena-tests')
+          names=['init-prelude','perf/magma-list-pair-n7']
+          expected={
+            'init-prelude':'eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5',
+            'perf/magma-list-pair-n7':'abce636f6a7dd529c0dc6bbad8e7c08e78e3a4468d35' }
+          # Explicitly use immutable full-file digests, never case-name bypasses.
+          expected['perf/magma-list-pair-n7']='abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'
+          rows=[]
+          for name in names:
+            raw=(root/'good'/(name+'.ndjson')).read_bytes()
+            assert hashlib.sha256(raw).hexdigest()==expected[name]
+            known={0:''};parts=[];found=False
+            for line in raw.splitlines(keepends=True):
+              x=json.loads(line);parts.append(line)
+              if 'in' in x:
+                v=x.get('str',x.get('num')); pre=known.get(v['pre'],'')
+                known[x['in']]=pre+('.' if pre else '')+str(v.get('str',v.get('i')))
+              if 'thm' in x and known.get(x['thm']['name'])=='Nat.modCore_lt':
+                found=True;break
+            assert found,name
+            run=subprocess.run(['/tmp/nucleus'],input=b''.join(parts),
+                stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45,
+                env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+            trace=[s for s in run.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_DOWNSTREAM:')]
+            rows.append({'case':name,'rc':run.returncode,'last':trace[-2:]})
+            print('MODCORE_WITNESS='+json.dumps(rows[-1],sort_keys=True),flush=True)
+            assert run.returncode in (0,2)
+          bad=false_index(extract((root/'good/init-prelude.ndjson').read_bytes()))
+          assert hashlib.sha256(bad).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          rc=subprocess.run(['/tmp/nucleus'],input=bad,stdout=subprocess.DEVNULL,timeout=30).returncode
+          print('FALSE_INDEX_RC='+str(rc),flush=True)
+          assert rc in (1,2)
+          malformed=(root/'bad/bugs/nested-unused-param.ndjson').read_bytes()
+          neg=subprocess.run(['/tmp/nucleus'],input=malformed,stdout=subprocess.DEVNULL,timeout=30).returncode
+          assert neg==1,neg
+          earned=sum(r['rc']==0 for r in rows)
+          result={'experiment':'bounded checked projection budget 128 to 256','earned':earned,'rows':rows,'false_index_rc':rc,'malformed_rc':neg}
+          out=pathlib.Path('metatron-kernel/evidence-out/final-qualification-v1')
+          out.mkdir(parents=True,exist_ok=True)
+          (out/'projection-probe256.json').write_text(json.dumps(result,indent=2)+'\n')
+          print('PROJECTION_BUDGET_RESULT='+json.dumps(result,sort_keys=True),flush=True)
+          assert earned>=1,'No complete Nat.modCore_lt ACCEPT; reject 256-probe candidate'
+          PY
+
+      - name: Reclose corrected 196-case frontier
+        run: |
+          set -euo pipefail
+          ulimit -s 8192
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, time
+
+          rows = []
+          for bucket, expected in (("good", 0), ("bad", 1)):
+              root = pathlib.Path("/tmp/arena-tests") / bucket
+              for fixture in sorted(root.rglob("*.ndjson")):
+                  started = time.monotonic()
+                  with fixture.open("rb") as source:
+                      process = subprocess.run(
+                          ["/tmp/nucleus"],
+                          stdin=source,
+                          stdout=subprocess.DEVNULL,
+                          stderr=subprocess.PIPE,
+                          timeout=30,
+                          env=os.environ | {"NUCLEUS_TRACE_DOWNSTREAM": "1", "NUCLEUS_TRACE_NAT_SUBZERO": "1"},
+                      )
+                  rows.append({
+                      "test": str(fixture.relative_to(root)),
+                      "expected": expected,
+                      "actual": process.returncode,
+                      "seconds": time.monotonic() - started,
+                      "stderr": process.stderr.decode(errors="replace"),
+                      "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
+                  })
+
+          counts = {
+              "accept": sum(r["expected"] == 0 and r["actual"] == 0 for r in rows),
+              "reject": sum(r["expected"] == 1 and r["actual"] == 1 for r in rows),
+              "unknown": sum(r["actual"] == 2 for r in rows),
+          }
+          wrong = [r for r in rows if r["actual"] in (0, 1) and r["actual"] != r["expected"]]
+          errors = [r for r in rows if r["actual"] not in (0, 1, 2)]
+          unknowns = sorted(r["test"].removesuffix(".ndjson") for r in rows if r["actual"] == 2)
+          report = {
+              "schema": "nucleus-fueled-inductives-v1-arena",
+              "qualification_commit": os.environ["GITHUB_SHA"],
+              "source_commit": os.environ["GITHUB_SHA"],
+              "source_subtree": subprocess.check_output(["git", "rev-parse", "HEAD:metatron-kernel"], text=True).strip(),
+              "arena_sha": os.environ["ARENA_SHA"],
+              "artifact_id": int(os.environ["ARENA_ARTIFACT"]),
+              "counts": counts,
+              "wrong": wrong,
+              "errors": errors,
+              "unknowns": unknowns,
+              "rows": rows,
+          }
+          output = pathlib.Path("metatron-kernel/evidence-out/final-qualification-v1/arena.json")
+          output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+          print(json.dumps({k: v for k, v in report.items() if k != "rows"}, sort_keys=True))
+
+          assert len(rows) == 196, len(rows)
+          assert counts["accept"] >= 119 and counts["reject"] >= 71 and counts["unknown"] <= 6, counts
+          assert not wrong, wrong
+          assert not errors, errors
+          by_test = {r["test"].removesuffix(".ndjson"): r for r in rows}
+          assert by_test["bugs/nested-unused-param"]["actual"] == 1, by_test["bugs/nested-unused-param"]
+          PY
+
+
+      - name: Name every remaining obligation and negative control
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('metatron-kernel/evidence-out/final-qualification-v1/arena.json')
+          report=json.loads(p.read_text())
+          for r in report['rows']:
+            if r['actual']!=2: continue
+            trace=[t for t in r['stderr'].splitlines() if t.startswith('NUCLEUS_DOWNSTREAM:')]
+            print('CURRENT_UNKNOWN='+json.dumps({'case':r['test'],'terminal':trace[-2:],
+              'seconds':round(r['seconds'],5),'sha256':r['fixture_sha256']}),flush=True)
+          print('FULL_REPLAY='+json.dumps({k:v for k,v in report.items() if k not in ('rows',)}),flush=True)
+          PY
+
+      - name: Protect exact pinned false-index mutant
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,pathlib,subprocess,sys
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          path=pathlib.Path('/tmp/arena-tests/good/init-prelude.ndjson')
+          bad=false_index(extract(path.read_bytes()))
+          sha=hashlib.sha256(bad).hexdigest()
+          assert sha=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688',sha
+          p=subprocess.run(['/tmp/nucleus'],input=bad,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=30)
+          print('FALSE_INDEX_PROTECTED_RC='+str(p.returncode),flush=True)
+          assert p.returncode in (1,2),'False-index proof must never be ACCEPTed'
+          PY
+
+      - name: Protect certified GetElem record interface mutants
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,copy,pathlib,subprocess
+          path=pathlib.Path('/tmp/arena-tests/good/perf/magma-list-deep-n21.ndjson')
+          raw=path.read_bytes()
+          assert hashlib.sha256(raw).hexdigest()=='b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526'
+          lines=raw.splitlines(keepends=True)
+          k=next(i for i,line in enumerate(lines) if 'inductive' in (j:=json.loads(line))
+               and j['inductive']['types'][0]['name']==1070)
+          base=json.loads(lines[k])
+          assert base['inductive']['ctors'][0]['numFields']==3
+          for label,part,field,value in [
+              ('wrong-owner','ctor','induct',1071),
+              ('wrong-constructor-ordinal','ctor','cidx',3),
+              ('wrong-constructor-arity','ctor','numFields',4),
+              ('wrong-recursor-index-count','rec','numIndices',1)]:
+              obj=copy.deepcopy(base)
+              target=obj['inductive']['ctors'][0] if part=='ctor' else obj['inductive']['recs'][0]
+              target[field]=value
+              source=lines.copy()
+              source[k]=(json.dumps(obj,separators=(',',':'))+'\n').encode()
+              proc=subprocess.run(['/tmp/nucleus'],input=b''.join(source),
+                  stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45)
+              print('GETELEM_MUTANT='+json.dumps({'case':label,'rc':proc.returncode}),flush=True)
+              assert proc.returncode in (1,2),label
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-checked-projection-probe256-${{ github.sha }}
+          path: metatron-kernel/evidence-out/final-qualification-v1
+          if-no-files-found: warn
