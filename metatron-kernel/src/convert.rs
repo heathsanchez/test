@@ -1146,6 +1146,10 @@ fn compare_values(
                         ).is_proven()
                     })
                 {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONGRUENCE").is_some() {
+                        eprintln!("NUCLEUS_PROJECTION_CONGRUENCE:earned-certified-operands");
+                    }
                     return Judgment::proven((), "certified-projection-congruence");
                 }
                 if same_rigid_application_congruence(
