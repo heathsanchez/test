@@ -590,7 +590,7 @@ impl<'a> TypeChecker<'a> {
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
-        match inferred {
+        let baseline = match inferred {
             Judgment::Proven { value, .. } => {
                 let conversion = crate::convert::convert_with_policy_in_context(
                     self,
@@ -648,7 +648,88 @@ impl<'a> TypeChecker<'a> {
             }
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
             Judgment::Unknown { residual } => Judgment::Unknown { residual },
+        };
+        // Bidirectional Lambda/Pi checking is a *second checked derivation*,
+        // never a way to disregard a refuted or unknown premise. The original
+        // algorithm remains authoritative unless every annotation, domain,
+        // and dependent body check succeeds under the SAME opened local.
+        if baseline.is_unknown()
+            && let Judgment::Proven { .. } = self.check_lambda_against_expected_pi(
+                expression, expected, context, frame, remaining,
+                conversion_refutation_is_unknown,
+            )
+        {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_BIDIR_LAMBDA").is_some() {
+                eprintln!("NUCLEUS_BIDIR_LAMBDA:proved:expr={expression:?}:depth={}",context.len());
+            }
+            return Judgment::proven((), "checked-dependent-lambda-against-pi");
         }
+        baseline
+    }
+
+    // Do not assume that two inferred Pi closures are equal. Instead, when
+    // the expected type independently exposes a Pi, check the lambda's
+    // declared domain and its body with the *same* fresh lexical variable.
+    // Failed or exhausted probes have no effect on the original judgment.
+    fn check_lambda_against_expected_pi(
+        &self,
+        expression: ExprId,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        conversion_refutation_is_unknown: bool,
+    ) -> Judgment<()> {
+        let Some(Expr::Lam { domain, body }) = self.expressions.get(expression) else {
+            return Judgment::unknown("not-a-lambda");
+        };
+        if !matches!(expected, TypeValue::Term(_)) {
+            return Judgment::unknown("expected-not-a-term-pi");
+        }
+        let mut trial_remaining = (*remaining).min(16_384);
+        if !take_step(&mut trial_remaining) {
+            return Judgment::unknown("dependent-lambda-budget");
+        }
+        let Some((expected_domain, PiBody::Closure(expected_body))) =
+            self.pi_view(
+                Judgment::proven(expected.clone(), "inferred-expected-pi"),
+                trial_remaining,
+            )
+        else {
+            return Judgment::unknown("expected-pi-not-exposed");
+        };
+
+        // The syntax annotation is still typechecked; conversion to the
+        // recovered domain is an independent required premise.
+        let mut trial_cache = HashMap::new();
+        let annotation_sort = self.infer_in(
+            *domain, context, frame, &mut trial_remaining, &mut trial_cache,
+        );
+        if !self.sort_level(annotation_sort, trial_remaining).is_proven() {
+            return Judgment::unknown("lambda-annotation-not-proved-type");
+        }
+        let declared_domain = TypeValue::Term(self.closure(*domain, frame.clone()));
+        if !crate::convert::convert_with_policy_in_context(
+            self, &declared_domain, &expected_domain,
+            trial_remaining, self.delta_policy, context.len(), context,
+        ).is_proven() {
+            return Judgment::unknown("lambda-domain-not-verified");
+        }
+        let Some(free) = fresh_local(context.len()) else {
+            return Judgment::unknown("binder-depth-overflow");
+        };
+        let mut body_context = context.to_vec();
+        body_context.push(declared_domain);
+        let body_frame = frame.extend_free(free);
+        let body_type = TypeValue::Term(expected_body.under_free(free));
+        if !self.check_in(
+            *body, &body_type, &body_context, &body_frame,
+            &mut trial_remaining, conversion_refutation_is_unknown, &mut trial_cache,
+        ).is_proven() {
+            return Judgment::unknown("dependent-lambda-body-not-verified");
+        }
+        Judgment::proven((), "checked-lambda-pi-derivation")
     }
 
     // Whole-function inference has already succeeded. Reconstruct the
