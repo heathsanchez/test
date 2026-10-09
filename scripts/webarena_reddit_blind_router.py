@@ -79,7 +79,7 @@ async def route(page, base: str, intent: str, start_url: str):
         action=await edit_post(page,target,content)
         return {"route":"edit_post","wanted":wanted,"target":target,"candidates":ranked,"action":action}
 
-    m=re.fullmatch(r'Upvote the newest post in the (.+?) forum',text,re.I)
+    m=re.fullmatch(r'Upvote the newest post in (?:the )?(.+?) forum',text,re.I)
     if m:
         resolved=await resolve_forum(page,base,m.group(1))
         selected,events=await vote_ranked(page,base,resolved["slug"],f'/f/{resolved["slug"]}/new',1,1)
