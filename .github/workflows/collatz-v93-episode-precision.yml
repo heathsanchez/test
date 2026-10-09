@@ -1,0 +1,23 @@
+name: Collatz V93 episode precision
+on:
+  push:
+    branches: [collatz-v92-episode-precision-v93]
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Lean proof
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisode.olean formal/Collatz/ActualEpisode.lean
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeBridge.olean formal/Collatz/EpisodeBridge.lean
+          lake env lean -DautoImplicit=false formal/Collatz/EpisodePrecisionGain.lean | tee v93.log
+          ! grep -q sorryAx v93.log
+          grep -q actual_next_episode_precision_gain v93.log
