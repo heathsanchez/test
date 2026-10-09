@@ -24,6 +24,8 @@ from webarena_gitlab_personal_project_stars import (
 from webarena_gitlab_commit_counts import (
     BASE as GITLAB_BASE, sign_in, period_bounds, count_commits,
 )
+from webarena_gitlab_to_reddit_promote import fetch_project, submit_url_post
+
 
 REDDIT_BASE = "http://localhost:9999"
 GITLAB_ROOT = "http://localhost:8023"
@@ -65,6 +67,37 @@ def gitlab_intent(intent: str):
         period_bounds(m.group(2))
         return "commit_count", {"author": m.group(1), "period": m.group(2)}
     raise ValueError(f"unsupported GitLab intent: {text!r}")
+
+
+def cross_site_intent(intent: str):
+    text=clean(intent)
+    m=re.fullmatch(
+        r"Promote ([^\s]+/[^\s]+) in the discussion forum ([^\s]+) "
+        r"by creating a post with the project description as the title\.",
+        text,re.I,
+    )
+    if not m:
+        return None
+    repo,forum=m.groups()
+    if repo.count("/")!=1 or any(part in ("",".","..") for part in repo.split("/")):
+        raise ValueError("invalid GitLab project path")
+    return {"repo":repo,"forum":forum}
+
+
+async def execute_cross_site(page, context, parsed):
+    await sign_in(page)
+    project=await fetch_project(page,parsed["repo"])
+    post_url=f"{GITLAB_ROOT}/{project['path']}"
+    target=await context.new_page()
+    post=await submit_url_post(target,parsed["forum"],project["description"],post_url)
+    response={"task_type":"MUTATE","status":"SUCCESS",
+              "retrieved_data":None,"error_details":None}
+    evidence={
+        "capability":"gitlab_retrieve_to_reddit_post",
+        "project":project,"target_forum":parsed["forum"],
+        "posted_link":post_url,"network_post":post,
+    }
+    return response,evidence
 
 
 def actual_start(start_url: str) -> str:
@@ -118,6 +151,9 @@ async def execute_gitlab(page, intent: str, start_url: str):
 
 async def run(intent: str, start_url: str, output_dir: Path):
     site=site_from_start(start_url)
+    cross_site=cross_site_intent(intent)
+    if cross_site and site!="reddit":
+        raise ValueError("GitLab-to-Reddit composition requires a Reddit starting site")
     output_dir.mkdir(parents=True,exist_ok=True)
     har=output_dir/"network.har"
     async with async_playwright() as playwright:
@@ -129,7 +165,9 @@ async def run(intent: str, start_url: str, output_dir: Path):
         )
         page=await context.new_page()
         try:
-            if site=="reddit":
+            if cross_site:
+                response,evidence=await execute_cross_site(page,context,cross_site)
+            elif site=="reddit":
                 evidence=await reddit_route(page,REDDIT_BASE,intent,start_url)
                 response={"task_type":"MUTATE","status":"SUCCESS",
                           "retrieved_data":None,"error_details":None}
