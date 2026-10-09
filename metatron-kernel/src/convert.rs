@@ -56,10 +56,24 @@ impl ConversionVisitSet {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum DeltaPolicy {
     PreferredOnly,
     GuardedSemanticFallback,
+}
+
+/// A scoped, proof-carrying positive memo key. Every component that can
+/// change a conversion judgment is bound to the same checker snapshot.
+/// Budget is intentionally omitted: a completed proof stays true at all
+/// budgets, whereas UNKNOWN/REFUTED are NEVER retained as proof.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub(crate) struct CertifiedConversionKey {
+    authority: crate::machine::AuthorityId,
+    policy: DeltaPolicy,
+    left: TypeValue,
+    right: TypeValue,
+    depth: usize,
+    context: Vec<TypeValue>,
 }
 
 #[cfg(test)]
@@ -123,11 +137,42 @@ pub(crate) fn convert_with_policy_in_context(
     initial_depth: usize,
     context: &[TypeValue],
 ) -> Judgment<()> {
+    if left == right {
+        return Judgment::proven((), "reflexive-conversion");
+    }
+    // The scoped cache stores only independently completed conversion proofs.
+    // A cache miss cannot license anything, and neither inconclusive probes
+    // nor failed speculation are allowed to create a retained equality.
+    let key = CertifiedConversionKey {
+        authority: checker.authority(),
+        policy: delta_policy,
+        left: left.clone(),
+        right: right.clone(),
+        depth: initial_depth,
+        context: context.to_vec(),
+    };
+    if checker.recall_certified_conversion(&key) {
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_GROUNDED_REUSE").is_some() {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static REUSED: AtomicUsize = AtomicUsize::new(0);
+            if REUSED.fetch_add(1, Ordering::Relaxed) < 64 {
+                eprintln!(
+                    "NUCLEUS_GROUNDED_REUSE:depth={initial_depth}:policy={delta_policy:?}:left={left:?}:right={right:?}"
+                );
+            }
+        }
+        return Judgment::proven((), "retained-certified-conversion");
+    }
     let mut congruence_attempts = 32;
-    convert_in_context_with_congruence(
+    let result = convert_in_context_with_congruence(
         checker, left, right, budget, delta_policy, initial_depth, context, 0,
         &mut congruence_attempts,
-    )
+    );
+    if result.is_proven() {
+        checker.retain_certified_conversion(key);
+    }
+    result
 }
 
 fn convert_in_context_with_congruence(
