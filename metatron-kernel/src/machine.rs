@@ -996,7 +996,7 @@ impl<'a> Machine<'a> {
             .expose_internal(
                 target.clone(),
                 Transparency::Full,
-                budget.saturating_sub(1).min(16),
+                budget.saturating_sub(1).min(4096),
                 false,
                 false,
             )
