@@ -172,6 +172,8 @@ jobs:
                   for line in row['actual_head']:
                       ids.update(int(v) for v in re.findall(r'NameId\((\d+)\)',line))
                   row['actual_head_names']={str(k):idx.get(k,'') for k in sorted(ids)}
+              if name in ('init-prelude','perf/grind-ring-5'):
+                  assert row['recursor_arg_obligations'], ('no comparable Nat.rec receiver obligations',name)
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
               rows.append(row)
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
