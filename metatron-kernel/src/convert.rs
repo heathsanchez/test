@@ -1531,14 +1531,25 @@ fn rigid_application_head_congruence(
         return None;
     };
 
-    for (left, right) in left_args.iter().zip(&right_args) {
-        match convert_with_policy(
+    for (arg_index, (left, right)) in left_args.iter().zip(&right_args).enumerate() {
+        let argument_conversion = convert_with_policy(
             checker,
             &TypeValue::Term(left.clone()),
             &TypeValue::Term(right.clone()),
             budget.saturating_sub(1),
             DeltaPolicy::PreferredOnly,
-        ) {
+        );
+        #[cfg(feature = "diagnostics")]
+        if left_args.len() >= 4 && !argument_conversion.is_proven()
+            && std::env::var_os("NUCLEUS_TRACE_RIGID_ARG_GAP").is_some()
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static PRINTED: AtomicUsize = AtomicUsize::new(0);
+            if PRINTED.fetch_add(1, Ordering::Relaxed) < 90 {
+                eprintln!("NUCLEUS_RIGID_ARG_GAP:head={rigid_head:?}:arity={}:argument={arg_index}:budget={budget}:lhs={left:?}:rhs={right:?}:result={argument_conversion:?}", left_args.len());
+            }
+        }
+        match argument_conversion {
             Judgment::Proven { .. } => {}
             Judgment::Refuted { obstruction } => {
                 return Some((*rigid_head, Judgment::Refuted { obstruction }));
