@@ -291,7 +291,7 @@ theorem shadow_high_endpoint_precision (t : Nat) :
       rw [hend]
       omega
     rw [hsum]
-    exact dvd_refl _
+    exact ⟨1, by simp⟩
   · exact shadow_source_affine_identity t
 
 /-- If the dyadic precision q exceeds 13+9d, the correct affine
