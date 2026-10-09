@@ -1,0 +1,61 @@
+name: Collatz odd-affine critical pair uniqueness
+on:
+  push:
+    branches: [collatz-v119-affine-critical-pair-uniqueness]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kernel-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned proof dependencies and exact uniqueness lemma
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/base-build.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence ReverseAffineMerger Q7SourceMerger ScaledReverseMerger ThreeCongruenceMerger NineCongruenceMerger ParityCollisionBridge; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/AffineCriticalPairUniqueness.lean 2>&1 | tee evidence/critical-pair.log
+          python3 - <<'PY'
+          import re,json,subprocess,hashlib,pathlib
+          log=pathlib.Path('evidence/critical-pair.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          axioms={}
+          for name,a in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            items=[s.strip() for s in a.split(',') if s.strip()]
+            assert set(items)<={'propext','Quot.sound','Classical.choice'}
+            axioms[name]=items
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          expected=['odd_affine_collision_at_two_necessary',
+                    'odd_affine_collision_at_two_iff',
+                    'universal_two_step_odd_affine_transport_unique']
+          for n in expected:
+            assert 'CollatzFinal.SourceProduct.'+n in axioms,n
+          result=dict(schema='COLLATZ_AFFINE_TWO_STEP_UNIQUENESS',
+            status='WARRANTED_FORMAL_SCHEMA_ONLY',
+            scoped_to='Odd-positive affine F_a(n)=a*n+(a-1), two-step even-odd critical pair',
+            new_axioms=axioms,
+            universal_collatz=False,
+            global_collatz='UNKNOWN',
+            qed=False,
+            commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            log_sha256=hashlib.sha256(log.encode()).hexdigest())
+          pathlib.Path('evidence/qualification.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('CRITICAL_PAIR_UNIQUENESS_SCHEMA_KERNEL_PASSED_GLOBAL_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-affine-two-step-uniqueness
+          path: evidence/
+          if-no-files-found: error
