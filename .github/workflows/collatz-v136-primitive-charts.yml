@@ -158,3 +158,41 @@ jobs:
           name: collatz-v136-final
           path: evidence/v136-final-seal.json
           if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-primitive, formal-primitive, final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Commit source-pinned CI receipt, including failures
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages = {
+              exact: '${{ needs.exact-primitive.result }}',
+              formal: '${{ needs.formal-primitive.result }}',
+              final: '${{ needs.final-seal.result }}'
+            };
+            const qualified = Object.values(stages).every(x => x === 'success');
+            const receipt = {
+              schema: 'COLLATZ_V136_CI_STATUS_RECEIPT',
+              source_commit: context.sha,
+              run_id: context.runId,
+              run_url: context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId,
+              stages,
+              qualified,
+              status: qualified ? 'WARRANTED_FORMAL_CONDITIONAL_PRIMITIVE_CHART' : 'NOT_WARRANTED',
+              global_collatz: 'UNKNOWN',
+              qed: false
+            };
+            const path = 'research/ci_seals/collatz_v136_' + context.sha + '.json';
+            await github.rest.repos.createOrUpdateFileContents({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'collatz-v136-primitive-chart-saturation',
+              path,
+              message: 'CI receipt: V136 qualification for ' + context.sha.slice(0,12),
+              content: Buffer.from(JSON.stringify(receipt, null, 2) + '\n').toString('base64')
+            });
