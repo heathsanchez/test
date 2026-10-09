@@ -158,6 +158,7 @@ jobs:
                    'captured_major_chain':[x for x in lines if 'NUCLEUS_DECIDABLE_MAJOR_CHAIN:' in x][-8:],
                    'source_iota':[x for x in lines if 'NUCLEUS_NESTED_RECURSOR_IOTA:' in x][-6:],
                    'refutation_premise':[x for x in lines if 'NUCLEUS_REFUTATION_AS_UNKNOWN:' in x][-10:],
+                   'depth12_pi':[x for x in lines if 'NUCLEUS_DEC_F_DEPTH12_PI:' in x][-6:],
                    'pi_domain_witness':[x for x in lines if 'NUCLEUS_FIRST_PI_DOMAIN:' in x][-8:],
                    'second_pi_witness':[x for x in lines if 'NUCLEUS_SECOND_PI_DOMAIN:' in x][-8:],
                    'final_spine_witness':[x for x in lines if 'NUCLEUS_FINAL_SPINE_ARG:' in x][-12:],
@@ -181,6 +182,7 @@ jobs:
               if 'magma-list-pair' in name:
                   assert row['certified_proof_reuse'], ('new checked proof irrelevance rule never fired',name)
                   assert row['refutation_premise'] or row['app_errors'], ('missing typed first failure witness',name)
+                  assert row['depth12_pi'], ('no depth12 Pi domain/body witness',name)
                   assert row['return_code'] in (0,2), ('unsafe theorem verdict',name)
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
               rows.append(row)
