@@ -1,8 +1,8 @@
-name: Nucleus Nat literal polymorphic obstruction census
+name: Nucleus certified Nat recursor major census
 
 on:
   push:
-    branches: [nucleus-depth5-natlit-mismatch-census-v1]
+    branches: [nucleus-depth5-rec-major-inspect-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -131,13 +131,15 @@ jobs:
                    'last_mismatch':[x for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-6:],
                    'last_application':[x for x in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in x][-6:],
                    'constructor_guard':[x for x in lines if 'NUCLEUS_CONTEXTUAL_CONSTRUCTOR:' in x][-6:],
-                   'natlit_rigid':[x for x in lines if 'NUCLEUS_NATLIT_RIGID:' in x][-12:]}
+                   'natlit_rigid':[x for x in lines if 'NUCLEUS_NATLIT_RIGID:' in x][-12:],
+                   'natrec_major':[x for x in lines if 'NUCLEUS_NATREC_MAJOR:' in x][-8:]}
               rows.append(row)
               print('CERTIFIED_PROP_DOWNSTREAM='+json.dumps(row),flush=True)
           out=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid')
           out.mkdir(parents=True,exist_ok=True)
           (out/'paired-full-positive-differential.json').write_text(json.dumps(rows,indent=2))
-          print('CONTEXTUAL_CONSTRUCTOR_CANDIDATE_DIFFERENTIAL',flush=True)
+          print('NATREC_HEAD_MAJOR_DIAGNOSTIC_ONLY',flush=True)
+          assert all(any('NUCLEUS_NATREC_MAJOR:' in x for x in row['natrec_major']) for row in rows),'No depth5 major witness'
           PY
 
       - uses: actions/upload-artifact@v4
