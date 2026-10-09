@@ -699,6 +699,31 @@ impl<'a> TypeChecker<'a> {
                             "NUCLEUS_MIXED_PI:expr={expression:?}:context={}:binder={:?}:expected_pi=present:domain={domain_result:?}:body={body_result:?}:original={conversion:?}",
                             context.len(), opened_free,
                         );
+                        if let (
+                            TypeValue::Term(left_term),
+                            TypeValue::Term(right_term),
+                        ) = (inferred_body.as_ref(), &normalized_expected_body) {
+                            let machine = self.machine();
+                            for transparency in [
+                                Transparency::Opaque,
+                                Transparency::Reducible,
+                                Transparency::Full,
+                            ] {
+                                let left = machine.expose_for_conversion(
+                                    left_term.clone(), transparency, budget,
+                                );
+                                let right = machine.expose_for_conversion(
+                                    right_term.clone(), transparency, budget,
+                                );
+                                let left_summary = format!("{left:?}");
+                                let right_summary = format!("{right:?}");
+                                eprintln!(
+                                    "NUCLEUS_MIXED_PI_BODY_VALUES:expr={expression:?}:transparency={transparency:?}:left={}:right={}",
+                                    left_summary.chars().take(2400).collect::<String>(),
+                                    right_summary.chars().take(2400).collect::<String>(),
+                                );
+                            }
+                        }
                         } else {
                             eprintln!(
                                 "NUCLEUS_MIXED_PI:expr={expression:?}:context={}:binder={:?}:expected_pi=not-exposed",
