@@ -26,13 +26,12 @@ private theorem root_consequence_affine
     iter shortcut k (base + 3 * 2 ^ k * t) = r + 9 * t := by
   have h := SourceProduct.parity_cylinder_shift base k (3 * t)
   rw [ht, ho] at h
-  simp only [pow_one] at h
   have heq : base + 3 * 2 ^ k * t = base + 2 ^ k * (3 * t) := by
     simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
   calc
     iter shortcut k (base + 3 * 2 ^ k * t) =
       iter shortcut k (base + 2 ^ k * (3 * t)) := by rw [heq]
-    _ = r + 3 * (3 * t) := h
+    _ = r + 3 * (3 * t) := by simpa only [pow_one] using h
     _ = r + 9 * t := by omega
 
 /-- Residue 1 modulo 9. -/
@@ -41,7 +40,12 @@ theorem root_represents_mod9_one (t : Nat) :
   have h := root_consequence_affine 21 6 1 t (by decide) (by decide)
   have hp : (2 : Nat) ^ 6 = 64 := by decide
   rw [hp] at h
-  omega
+  have hs : 21 + 3 * 64 * t = 21 + 192 * t := by omega
+  calc
+    iter shortcut 6 (21 + 192 * t) =
+      iter shortcut 6 (21 + 3 * 64 * t) := by rw [hs]
+    _ = 1 + 9 * t := h
+    _ = 9 * t + 1 := by omega
 
 /-- Residue 2 modulo 9. -/
 theorem root_represents_mod9_two (t : Nat) :
@@ -49,7 +53,12 @@ theorem root_represents_mod9_two (t : Nat) :
   have h := root_consequence_affine 21 5 2 t (by decide) (by decide)
   have hp : (2 : Nat) ^ 5 = 32 := by decide
   rw [hp] at h
-  omega
+  have hs : 21 + 3 * 32 * t = 21 + 96 * t := by omega
+  calc
+    iter shortcut 5 (21 + 96 * t) =
+      iter shortcut 5 (21 + 3 * 32 * t) := by rw [hs]
+    _ = 2 + 9 * t := h
+    _ = 9 * t + 2 := by omega
 
 /-- Residue 4 modulo 9. -/
 theorem root_represents_mod9_four (t : Nat) :
@@ -57,7 +66,12 @@ theorem root_represents_mod9_four (t : Nat) :
   have h := root_consequence_affine 21 4 4 t (by decide) (by decide)
   have hp : (2 : Nat) ^ 4 = 16 := by decide
   rw [hp] at h
-  omega
+  have hs : 21 + 3 * 16 * t = 21 + 48 * t := by omega
+  calc
+    iter shortcut 4 (21 + 48 * t) =
+      iter shortcut 4 (21 + 3 * 16 * t) := by rw [hs]
+    _ = 4 + 9 * t := h
+    _ = 9 * t + 4 := by omega
 
 /-- Residue 5 modulo 9. -/
 theorem root_represents_mod9_five (t : Nat) :
@@ -65,7 +79,12 @@ theorem root_represents_mod9_five (t : Nat) :
   have h := root_consequence_affine 3 1 5 t (by decide) (by decide)
   have hp : (2 : Nat) ^ 1 = 2 := by decide
   rw [hp] at h
-  omega
+  have hs : 3 + 3 * 2 * t = 3 + 6 * t := by omega
+  calc
+    iter shortcut 1 (3 + 6 * t) =
+      iter shortcut 1 (3 + 3 * 2 * t) := by rw [hs]
+    _ = 5 + 9 * t := h
+    _ = 9 * t + 5 := by omega
 
 /-- Residue 7 modulo 9. -/
 theorem root_represents_mod9_seven (t : Nat) :
@@ -73,7 +92,12 @@ theorem root_represents_mod9_seven (t : Nat) :
   have h := root_consequence_affine 9 2 7 t (by decide) (by decide)
   have hp : (2 : Nat) ^ 2 = 4 := by decide
   rw [hp] at h
-  omega
+  have hs : 9 + 3 * 4 * t = 9 + 12 * t := by omega
+  calc
+    iter shortcut 2 (9 + 12 * t) =
+      iter shortcut 2 (9 + 3 * 4 * t) := by rw [hs]
+    _ = 7 + 9 * t := h
+    _ = 9 * t + 7 := by omega
 
 /-- Residue 8 modulo 9. -/
 theorem root_represents_mod9_eight (t : Nat) :
@@ -81,7 +105,12 @@ theorem root_represents_mod9_eight (t : Nat) :
   have h := root_consequence_affine 21 3 8 t (by decide) (by decide)
   have hp : (2 : Nat) ^ 3 = 8 := by decide
   rw [hp] at h
-  omega
+  have hs : 21 + 3 * 8 * t = 21 + 24 * t := by omega
+  calc
+    iter shortcut 3 (21 + 24 * t) =
+      iter shortcut 3 (21 + 3 * 8 * t) := by rw [hs]
+    _ = 8 + 9 * t := h
+    _ = 9 * t + 8 := by omega
 
 /-- Every positive natural has a positive 3-divisible ancestor
 whose REAL forward trajectory reaches it in at most six shortcut steps.
