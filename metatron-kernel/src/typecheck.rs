@@ -593,6 +593,14 @@ impl<'a> TypeChecker<'a> {
                         "NUCLEUS_CHECK_CONVERSION:expression={expression:?}:depth={}:frame={}:remaining={}:inferred={value:?}:expected={expected:?}:result={conversion:?}",
                         context.len(), frame.id(), *remaining,
                     );
+                    for (label, ty) in [("inferred", &value), ("expected", expected)] {
+                        if let TypeValue::Term(closure) = ty {
+                            let full = self.machine().expose(
+                                closure.clone(), Transparency::Full, (*remaining).min(2048),
+                            );
+                            eprintln!("NUCLEUS_CHECK_CONVERSION_FULL:{label}={full:?}");
+                        }
+                    }
                 }
                 match conversion {
                     Judgment::Refuted { obstruction }
