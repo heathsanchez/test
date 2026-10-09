@@ -64,7 +64,7 @@ theorem actual_episode_chain_affine
               rw [ih]
         _ = (3 ^ r * A) * m0 +
               (3 ^ r * B + (2 ^ s - 1) * P) := by
-              simp [Nat.mul_add, Nat.mul_assoc]
+              simp [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc]
 
 /-- The same compiled chain is an *actual* shortcut trace from the
 original anchored number to the final anchored number. -/
