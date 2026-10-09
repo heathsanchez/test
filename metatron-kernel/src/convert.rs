@@ -1307,6 +1307,16 @@ fn compare_values(
                 continue;
             }
             (Value::Neutral(left), Value::Neutral(right)) => {
+                if std::env::var_os("NUCLEUS_TRACE_DEEP_LOCAL_PAIR").is_some()
+                    && let (NeutralHead::Free(l),NeutralHead::Free(r))=
+                        (&left.head,&right.head)
+                    && ((l.0==2 && r.0==6) || (l.0==6 && r.0==2))
+                {
+                    eprintln!(
+                        "NUCLEUS_DEEP_LOCAL_ENTRY:depth={depth}:context_len={}:budget={current_budget}:lhs_head={l:?}:rhs_head={r:?}:left_spine={:?}:right_spine={:?}:free2_type={:?}:free6_type={:?}",
+                        context.len(),left.spine,right.spine,context.get(2),context.get(6),
+                    );
+                }
                 // Lean proof irrelevance: two checked proof terms of the same
                 // *independently verified* proposition are convertible.
                 // Do not quotient their FreeId values or closure frames.
