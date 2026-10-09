@@ -96,7 +96,6 @@ def root21ViaChart (t : Nat) : LawfulFutureJoin := by
       3 ^ SourceProduct.oddCount 21 3 * 9 =
       3 ^ SourceProduct.oddCount 3 2 * 3 := by
     rw [ho21, ho3]
-    decide
   exact chartOverlapJoin 21 3 3 2 9 3
     (by decide) (by decide) (by decide) hbase hcoef t
 
@@ -110,7 +109,6 @@ def root9ViaChart (t : Nat) : LawfulFutureJoin := by
       3 ^ SourceProduct.oddCount 9 9 * 3 =
       3 ^ SourceProduct.oddCount 3 1 * 243 := by
     rw [ho9, ho3]
-    decide
   exact chartOverlapJoin 9 3 9 1 3 243
     (by decide) (by decide) (by decide) hbase hcoef t
 
@@ -137,10 +135,14 @@ theorem root9_all_offset_odd_three_merger (t : Nat) :
     (3 + 486 * t) % 6 = 3 ∧
     LowerMerge shortcut (9 + 1536 * t) (3 + 486 * t) := by
   have w := root9ViaChart t
-  have hsource := root9_chart_source t
-  have hearlier := root9_chart_earlier t
+  have hsource : w.source = 9 + 1536 * t :=
+    root9_chart_source t
+  have hearlier : w.earlier = 3 + 486 * t :=
+    root9_chart_earlier t
   have hm : LowerMerge shortcut (9 + 1536 * t) (3 + 486 * t) := by
-    simpa only [hsource, hearlier] using w.toLowerMerge
+    have h := w.toLowerMerge
+    rw [hsource, hearlier] at h
+    exact h
   exact ⟨by omega, by omega, by omega, by omega, hm⟩
 
 /-- The second family also excludes a least positive bad source
@@ -150,9 +152,12 @@ theorem root9_family_not_minimal_bad
     (hbad : MinimalBad (fun n => ¬ CollatzGood n) (9 + 1536 * t)) :
     False := by
   have w := root9ViaChart t
-  have hsource := root9_chart_source t
-  apply w.refutes_minimal_bad
-  simpa only [hsource] using hbad
+  have hsource : w.source = 9 + 1536 * t :=
+    root9_chart_source t
+  have hmin : MinimalBad (fun n => ¬ CollatzGood n) w.source := by
+    rw [hsource]
+    exact hbad
+  exact w.refutes_minimal_bad hmin
 
 #print axioms chartOverlapJoin
 #print axioms chart_overlap_compiles_lower_source
