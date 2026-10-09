@@ -45,6 +45,7 @@ theorem collatz_of_all_source_capped_ternary_hits
     apply no_bad_of_no_minimal PositiveBad
     intro n hmin
     have hgt : 1 < n := by
+      have hp : 0 < n := hmin.1.1
       by_contra h
       have h1 : n = 1 := by omega
       subst n
