@@ -1,0 +1,83 @@
+name: Collatz V99 actual finite episode horizon
+on:
+  push:
+    branches: [collatz-v98-episode-horizon-v99]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v98-actual-return-admission
+          run-id: 37874602546
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v98
+      - name: Verify V98 qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, hashlib
+          q=json.load(open("parent-v98/qualification.json"))
+          claimed=q.pop("certificate_sha256")
+          computed=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          assert claimed==computed=="dae246f4744d1327baf576f06a578ffb7323043f17bc5db3ee5f25100f9878e6"
+          assert q["status"]=="WARRANTED_FORMAL_ACTUAL_RETURN_CYLINDER_ADMISSION"
+          print("V98_PARENT_VERIFIED")
+          PY
+      - name: Kernel check all finite episode horizon closeout
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/dyadic.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SameCentreMacro.olean formal/Collatz/SameCentreMacro.lean > evidence/same.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/DistinctCentreSwitch.olean formal/Collatz/DistinctCentreSwitch.lean > evidence/distinct.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeDeterminism.olean formal/Collatz/EpisodeDeterminism.lean > evidence/determinism.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisode.olean formal/Collatz/ActualEpisode.lean > evidence/actual.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeBridge.olean formal/Collatz/EpisodeBridge.lean > evidence/bridge.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisodeChain.olean formal/Collatz/ActualEpisodeChain.lean > evidence/chain.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualReturnAdmission.olean formal/Collatz/ActualReturnAdmission.lean > evidence/admission.log
+          lake env lean -DautoImplicit=false formal/Collatz/ActualEpisodeHorizon.lean | tee evidence/v99.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v99.log
+          grep -q 'actual_chains_exist_at_all_finite_horizons' evidence/v99.log
+          grep -q 'repeated_initial_anchor_yields_admitted_return' evidence/v99.log
+          grep -q 'actual_same_anchor_zero_defect_periodic' evidence/v99.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal finite horizon evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import json,hashlib
+          r={
+            "schema":"COLLATZ_V98_ACTUAL_EPISODE_HORIZON_V99",
+            "status":"WARRANTED_FORMAL_ALL_FINITE_EPISODE_HORIZONS",
+            "parent_v98_qualification_sha256":"dae246f4744d1327baf576f06a578ffb7323043f17bc5db3ee5f25100f9878e6",
+            "all_finite_horizons_actual_and_affine_certified":True,
+            "endpoint_anchor_owner_valid":True,
+            "repeated_initial_anchor_return_admission":True,
+            "actual_zero_defect_return_yields_periodic_shortcut":True,
+            "universal_anchor_recurrence":False,
+            "global_collatz":"UNKNOWN",
+            "qed":False,
+            "residual":"Turn all-finite-horizon source-coupled episodes into unavoidable consequential macro event; classify trajectories with no repeated anchor and exclude nonterminal genuine positive cycles."
+          }
+          r["certificate_sha256"]=hashlib.sha256(json.dumps(r,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(r,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v99-actual-episode-horizon
+          path: evidence/
+          if-no-files-found: error
