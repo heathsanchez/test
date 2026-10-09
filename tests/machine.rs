@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use metatron_kernel::environment::{BoolPrimitives, NatPrimitives};
 use metatron_kernel::id::{ExprId, IdTable, LevelId, NameId};
 use metatron_kernel::level::LevelTerm;
 use metatron_kernel::machine::{
@@ -475,4 +476,55 @@ fn recursor_output_constructor_does_not_identify_its_symbolic_major() {
     assert!(matches!(exposed.proven_value(), Some(Value::Neutral(neutral))
         if matches!(neutral.head, NeutralHead::Const { name: NameId(3), .. })
             && neutral.spine.len() == 4));
+}
+
+#[test]
+fn symbolic_nat_ble_respects_pinned_constructor_equations() {
+    let mut exprs = IdTable::default();
+    let zero = NameId(60);
+    let succ = NameId(61);
+    let ble = NameId(62);
+    let true_ctor = NameId(63);
+    let false_ctor = NameId(64);
+    for (id, name) in [(0, zero), (1, succ), (2, ble)] {
+        exprs.insert(ExprId(id), Expr::Const { name, levels: vec![] }).unwrap();
+    }
+    exprs.insert(ExprId(5), Expr::BVar(0)).unwrap();
+    exprs.insert(ExprId(6), Expr::BVar(1)).unwrap();
+    for (id, fun, arg) in [
+        (7,1,5), (8,1,6),
+        (9,2,7), (10,9,8),
+        (11,2,5), (12,11,6),
+        (13,2,0), (14,13,6),
+        (15,2,7), (16,15,0),
+    ] {
+        exprs.insert(ExprId(id), Expr::App { fun: ExprId(fun), arg: ExprId(arg) }).unwrap();
+    }
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(42), &exprs, &levels, HashMap::new())
+        .with_nat_primitives(Some(NatPrimitives {
+            type_name: NameId(65), type_expr: ExprId(0),
+            zero, succ, recursor: NameId(66),
+            add: None, sub: None, ble: Some(ble), beq: None,
+        }))
+        .with_bool_primitives(Some(BoolPrimitives { true_ctor, false_ctor }));
+    let env = EnvFrame::empty().extend_free(FreeId(73)).extend_free(FreeId(74));
+    let exposed = |id| machine.expose(
+        Closure::new(ExprId(id), env.clone()), Transparency::Reducible, 64
+    ).proven_value().cloned().expect("certified Nat.ble equation");
+    // Succ/succ cancels exactly once without equating its free predecessors.
+    let result = exposed(10);
+    let Value::Neutral(term) = result else { panic!("expected symbolic Nat.ble"); };
+    assert_eq!(term.head, NeutralHead::Const { name: ble, levels: vec![] });
+    assert_eq!(term.spine.len(), 2);
+    assert_eq!(term.spine[0].expr, ExprId(5));
+    assert_eq!(term.spine[1].expr, ExprId(6));
+    // The zero cases are definitionally computed independently of symbolic n.
+    let Value::Neutral(term) = exposed(14) else { panic!("ble zero must return true"); };
+    assert_eq!(term.head, NeutralHead::Const { name: true_ctor, levels: vec![] });
+    let Value::Neutral(term) = exposed(16) else { panic!("ble succ zero must return false"); };
+    assert_eq!(term.head, NeutralHead::Const { name: false_ctor, levels: vec![] });
+    // No constructor evidence: ordinary neutral comparison remains pending.
+    let Value::Neutral(term) = exposed(12) else { panic!("symbolic ble must remain neutral"); };
+    assert_eq!(term.head, NeutralHead::Const { name: ble, levels: vec![] });
 }
