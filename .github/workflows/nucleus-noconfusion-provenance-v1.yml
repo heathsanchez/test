@@ -1,7 +1,7 @@
 name: Nucleus noConfusion conversion provenance
 on:
   push:
-    branches: [nucleus-noconfusion-recursor-major-budget-v1]
+    branches: [nucleus-noconfusion-major-binding-trace-v1]
     paths:
       - "metatron-kernel/**"
       - ".github/workflows/nucleus-noconfusion-provenance-v1.yml"
@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      SOURCE_COMMIT: 9becca6a32b0e2aec601d9f475ba03aef10dd9e5
-      SOURCE_SUBTREE: 6553144aae3e81d27d5492d94c028b58d102e6d8
+      SOURCE_COMMIT: 74b29da67386d1a0a7a2bdc8e9180beacd6fe00a
+      SOURCE_SUBTREE: 5a41b2c5c7009c3b87b0a77178ed0380f88eca54
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +64,7 @@ jobs:
                   'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
                   'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
                   'NUCLEUS_TRACE_CHECK_CONVERSION':'1',
+                  'NUCLEUS_TRACE_PROJECTION_BINDINGS':'1',
                 },
               )
             raw = p.stderr.decode(errors='replace')
