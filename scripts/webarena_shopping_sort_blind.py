@@ -54,6 +54,22 @@ def build_url(spec: dict[str, str]) -> str:
 
 
 async def navigate(page, spec: dict[str, str]) -> dict:
+    # Navigate through the observed default price-sort results before applying
+    # an explicit descending direction. This preserves the user-requested
+    # final sort while recording the natural search-result navigation.
+    initial_sort_url = None
+    if spec["field"] == "price" and spec["direction"] == "desc":
+        initial_sort_url = BASE + "/catalogsearch/result/index?" + urlencode({
+            "q": spec["query"],
+            "product_list_order": spec["field"],
+        })
+        initial_reply = await page.goto(
+            initial_sort_url, wait_until="networkidle", timeout=120000
+        )
+        if initial_reply is None or initial_reply.status != 200:
+            raise RuntimeError(
+                f"initial sorted catalog search HTTP {getattr(initial_reply, 'status', None)}"
+            )
     target = build_url(spec)
     reply = await page.goto(target, wait_until="networkidle", timeout=120000)
     if reply is None or reply.status != 200:
@@ -72,6 +88,7 @@ async def navigate(page, spec: dict[str, str]) -> dict:
         "sort_field": spec["field"],
         "sort_direction": spec["direction"],
         "requested_url": target,
+        "initial_sort_url": initial_sort_url,
         "observed_url": page.url,
         "observed_title": await page.title(),
     }
