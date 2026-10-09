@@ -14,10 +14,7 @@ theorem positive_multiplier_order_reflection (x y q : Nat) (hq : 0 < q) :
     (x * q ≤ y * q) ↔ x ≤ y := by
   constructor
   · intro h
-    by_contra hn
-    have hlt : y < x := by omega
-    have hc : y * q < x * q := Nat.mul_lt_mul_of_pos_right hlt hq
-    omega
+    exact Nat.le_of_mul_le_mul_right h hq
   · intro h
     exact Nat.mul_le_mul_right q h
 
@@ -27,7 +24,7 @@ theorem split_three_power (e m : Nat) (hm : m ≤ e) :
   have he : e - m + m = e := Nat.sub_add_cancel hm
   calc
     3 ^ e = 3 ^ (e - m + m) := by rw [he]
-    _ = 3 ^ (e - m) * 3 ^ m := pow_add _ _ _
+    _ = 3 ^ (e - m) * 3 ^ m := Nat.pow_add _ _ _
 
 /-- The *primitive* coefficients are the cross-powers with their
     common factor 3^min(alpha,beta) removed. -/
@@ -36,7 +33,7 @@ theorem primitive_endpoint_slopes_match (alpha beta : Nat) :
     3 ^ beta * 3 ^ (alpha - min alpha beta) := by
   have h : alpha + (beta - min alpha beta) =
       beta + (alpha - min alpha beta) := by omega
-  simpa only [pow_add] using
+  simpa only [Nat.pow_add] using
     congrArg (fun k : Nat => (3 : Nat) ^ k) h
 
 /-- At least one primitive multiplier is 1; no extra common
@@ -46,10 +43,10 @@ theorem primitive_has_unit_multiplier (alpha beta : Nat) :
       3 ^ (alpha - min alpha beta) = 1 := by
   by_cases h : alpha ≤ beta
   · right
-    simp [min_eq_left h]
+    simp [Nat.min_eq_left h]
   · left
     have h' : beta ≤ alpha := by omega
-    simp [min_eq_right h']
+    simp [Nat.min_eq_right h']
 
 /-- The original weighted clock inequality is equivalent to its
     reduced primitive-coefficient version, not merely implied by it. -/
@@ -123,13 +120,14 @@ theorem all_offsets_strict_smaller_forces_slope
     (a p A B : Nat)
     (h : ∀ t : Nat, p + B * t < a + A * t) :
     B ≤ A := by
-  by_contra hn
-  have hg : A + 1 ≤ B := by omega
-  have hm : A * (a + 1) + (a + 1) ≤ B * (a + 1) := by
-    simpa only [Nat.add_mul, one_mul] using
-      (Nat.mul_le_mul_right (a + 1) hg)
-  have hs := h (a + 1)
-  omega
+  by_cases hguard : B ≤ A
+  · exact hguard
+  · have hg : A + 1 ≤ B := by omega
+    have hm : A * (a + 1) + (a + 1) ≤ B * (a + 1) := by
+      simpa only [Nat.add_mul, one_mul] using
+        (Nat.mul_le_mul_right (a + 1) hg)
+    have hs := h (a + 1)
+    omega
 
 /-- Given the strict base source guard, the slope inequality is
     exactly equivalent to being smaller at every offset. -/
@@ -186,13 +184,13 @@ theorem common_suffix_preserves_weighted_orientation
       (2 ^ j * 3 ^ SourceProduct.oddCount a i) *
         (2 ^ k * 3 ^ c) := by
     rw [ha]
-    simp [pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+    simp [Nat.pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
   have hr :
       2 ^ (i + k) * 3 ^ SourceProduct.oddCount p (j + k) =
       (2 ^ i * 3 ^ SourceProduct.oddCount p j) *
         (2 ^ k * 3 ^ c) := by
     rw [hb]
-    simp [pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+    simp [Nat.pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
   have h2 : 0 < (2 : Nat) ^ k := Nat.pow_pos (by decide)
   have h3 : 0 < (3 : Nat) ^ c := Nat.pow_pos (by decide)
   have hq : 0 < 2 ^ k * 3 ^ c := Nat.mul_pos h2 h3
