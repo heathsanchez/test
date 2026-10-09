@@ -44,12 +44,14 @@ async def submit_url(page,base,forum,title,url):
     await form.locator('[name="submission[title]"]').first.fill(title)
     await form.locator('[name="submission[url]"]').first.fill(url)
     forum_el=form.locator('[name="submission[forum]"]').first
-    if await forum_el.count()==0 or not await forum_el.input_value(): raise RuntimeError("destination forum not selected")
+    if await forum_el.count()==0: raise RuntimeError("destination forum not selected")
+    forum_value=await forum_el.input_value()
+    if not forum_value: raise RuntimeError("destination forum not selected")
     btn=form.get_by_role("button",name="Create submission").first
     if await btn.count()==0: raise RuntimeError("submit control missing")
     await btn.click()
     await page.wait_for_load_state("networkidle",timeout=120000)
-    return {"forum":slug,"forum_value":await forum_el.input_value(),"final_url":page.url}
+    return {"forum":slug,"forum_value":forum_value,"final_url":page.url}
 
 async def main():
     ap=argparse.ArgumentParser(); ap.add_argument("--task-id",type=int,required=True); ap.add_argument("--task-file",required=True); ap.add_argument("--base-url",default="http://localhost:9999"); ap.add_argument("--output-dir",required=True); a=ap.parse_args()
