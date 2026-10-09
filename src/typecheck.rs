@@ -157,7 +157,7 @@ impl<'a> TypeChecker<'a> {
     /// equality of evaluation frames. Every bvar follows its actual closure
     /// binding, and every application checks its argument against the
     /// instantiated dependent domain. Unsupported cases stay UNKNOWN.
-    pub(crate) fn certify_applied_proposition_in_context(
+    pub fn certify_applied_proposition_in_context(
         &self,
         expression: &Closure,
         context: &[TypeValue],
