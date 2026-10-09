@@ -1,0 +1,196 @@
+name: Collatz V139 actual least-bad orbit dichotomy (not global closeout)
+on:
+  push:
+    branches: [collatz-v139-positive-orbit-dichotomy]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-dichotomy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit source27, Mersenne prefixes and nonterminal-minus countercontrol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v139_actual_orbit_dichotomy > evidence/v139-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v139-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V139_ACTUAL_ORBIT_OBSTRUCTION_CONTROLS'
+          assert d['finite_positive_starts']==d['finite_sample_terminal_cycles']==2000
+          assert d['source27_first_below_clock']==59 and d['source27_at_59']==23
+          assert all(x['no_direct_descent_through_K'] and not x['general_merger_absence_claimed']
+                     for x in d['mersenne_corridors'])
+          assert d['alternate_3n_minus_1_nonterminal_cycle']==[5,7,10,5]
+          assert not d['positive_3n_plus_1_nonterminal_cycle_excluded_universally']
+          assert not d['positive_3n_plus_1_unbounded_orbit_excluded_universally']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          q={'schema':'COLLATZ_V139_EXACT_SOURCE_ORBIT_SEAL',
+             'status':'WARRANTED_FINITE_EXACT_NEGATIVE_CONTROLS',
+             'source_commit':head,
+             'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'sampled_positive_starts':2000,
+             'nonterminal_cycle_on_alternate_map_not_3n_plus_1':True,
+             'source27_first_lower_meeting_preserved':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v139-exact-seal.json').write_text(
+             json.dumps(q,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v139-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-dichotomy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild pinned V102 proof spine and kernel-check V139 least-positive-bad dichotomy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/SourceProduct.lean)" = 9c65ed7a67eded1ad7e9c68ba086f584dbce5f87
+          test "$(git hash-object formal/Collatz/FreshAnchorBoundary.lean)" = 9d2a5866976703b627aeee1877905d5fad8834aa
+          test "$(git hash-object formal/Collatz/FinalKernel.lean)" = 8358b5fe590f107539d9e1ca3959c01961d250db
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/ActualOrbitDichotomy.lean 2>&1 | tee evidence/v139-lean.log
+          python3 - <<'PY'
+          import json,pathlib,re,hashlib,subprocess
+          p=pathlib.Path('evidence/v139-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-2400:]
+          axs={}
+          for name,values in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            xs=[x.strip() for x in values.split(',') if x.strip()]
+            assert set(xs)<={'propext','Quot.sound','Classical.choice'},(name,xs)
+            axs[name]=xs
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axs[name]=[]
+          targets=['actual_orbit_eventually_periodic_or_unbounded',
+                   'actual_repeated_endpoint_gives_tail_period',
+                   'minimal_positive_bad_never_below_source',
+                   'minimal_positive_bad_no_earlier_source_meeting',
+                   'minimal_positive_bad_bounded_has_nonterminal_period',
+                   'least_positive_bad_nonterminal_cycle_or_unbounded_no_descent']
+          for t in targets:
+            assert 'CollatzFinal.SourceProduct.'+t in axs,t
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          q={'schema':'COLLATZ_V139_FORMAL_ACTUAL_ORBIT_DICHOTOMY',
+             'status':'WARRANTED_FORMAL_LEAST_POSITIVE_BAD_CYCLE_OR_UNBOUNDED',
+             'source_commit':head,
+             'axioms':axs,
+             'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+             'reuses_v102_bounded_sequence_repeats':True,
+             'reuses_v124_positive_minimal_no_lower_merge':True,
+             'third_v103_return_branch_is_not_third_global_dynamical_type':True,
+             'nonterminal_positive_cycles_excluded':False,
+             'unbounded_no_merge_positive_orbit_excluded':False,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v139-formal-seal.json').write_text(
+             json.dumps(q,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v139-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-dichotomy,formal-dichotomy]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v139-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v139-formal
+          path: evidence/formal
+      - name: Reconcile formal true future with bounded adversarial controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,subprocess,pathlib
+          a=json.loads(pathlib.Path('evidence/exact/v139-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v139-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert b['status']=='WARRANTED_FORMAL_LEAST_POSITIVE_BAD_CYCLE_OR_UNBOUNDED'
+          assert b['reuses_v102_bounded_sequence_repeats'] and b['reuses_v124_positive_minimal_no_lower_merge']
+          assert not b['nonterminal_positive_cycles_excluded']
+          assert not b['unbounded_no_merge_positive_orbit_excluded']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          q={'schema':'COLLATZ_V139_SOURCE_ATTACHED_RESIDUAL_CLASSIFICATION',
+             'status':'WARRANTED_FORMAL_CONDITIONAL_TWO_WAY_OBSTRUCTION',
+             'source_commit':head,
+             'residuals':['ACTUAL_NONTERMINAL_POSITIVE_CYCLE',
+                          'ACTUAL_UNBOUNDED_NO_DESCENT_NO_MERGE_ORBIT'],
+             'not_eliminated':['positive cycle','unbounded positive orbit'],
+             'operational_controller':'V134_UNCHANGED',
+             'universal_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v139-final-seal.json').write_text(
+             json.dumps(q,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v139-final
+          path: evidence/v139-final-seal.json
+          if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-dichotomy,formal-dichotomy,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Commit exact source pinned CI result, including failed proof attempts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={
+              exact:'${{ needs.exact-dichotomy.result }}',
+              formal:'${{ needs.formal-dichotomy.result }}',
+              final:'${{ needs.final-seal.result }}'
+            };
+            const qualified=Object.values(stages).every(x=>x==='success');
+            const result={
+              schema:'COLLATZ_V139_CI_RECEIPT',
+              source_commit:context.sha,
+              run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_CONDITIONAL_ORBIT_DICHOTOMY':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false
+            };
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v139-positive-orbit-dichotomy',
+              path:'research/ci_seals/collatz_v139_'+context.sha+'.json',
+              message:'CI receipt: V139 actual source orbit dichotomy '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(result,null,2)+'\n').toString('base64')
+            });
