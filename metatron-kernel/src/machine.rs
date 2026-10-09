@@ -1019,13 +1019,29 @@ impl<'a> Machine<'a> {
                 && matches_rule(nat.zero, 0)
                 && matches_rule(nat.succ, 1)
         });
+        // A separately admitted two-constructor unary recursive family may
+        // need a folded major's own beta/zeta/delta chain exposed before iota.
+        // Increase only this family's local exposure allowance; no constructor
+        // is inferred from output, and the existing registered rule/arity
+        // equality check below remains the sole authority to reduce.
+        let certified_unary_family = reduction.num_indices == 0
+            && reduction.rules.len() == 2
+            && reduction.rules.iter().all(|r| r.num_params == reduction.num_params)
+            && reduction.rules.iter().any(|r| r.num_fields == 0)
+            && reduction.rules.iter().any(|r| r.num_fields == 1);
         let major_cap = if bool_rules && nat_beq_major {
             256
         } else if certified_nat_rec {
             128
+        } else if certified_unary_family {
+            64
         } else {
             16
         };
+        #[cfg(feature = "diagnostics")]
+        if certified_unary_family && std::env::var_os("NUCLEUS_TRACE_UNARY_MAJOR").is_some() {
+            eprintln!("NUCLEUS_CERTIFIED_UNARY_MAJOR:cap={major_cap}:budget={budget}");
+        }
         let exposed = self
             .expose_internal(
                 target.clone(),
