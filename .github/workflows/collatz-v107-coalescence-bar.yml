@@ -1,0 +1,29 @@
+name: Collatz V107 coalescence bar probe
+on:
+  push:
+    branches: [collatz-v106-coalescence-bar-probe-v107]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact bounded cylinder verification
+        run: |
+          set -euo pipefail
+          python3 research/collatz_v107_probe.py | tee v107-results.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open("v107-results.json"))
+          assert r["status"]=="BOUNDED_EXACT_ONLY" and r["qed"] is False
+          assert len(r["rows"])==12
+          assert all(z["guarded"]+z["unknown"]==2**z["depth"] for z in r["rows"])
+          print("BOUNDED_EXACT_VERIFIED_GLOBAL_UNKNOWN")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v107-bounded-coalescence-probe
+          path: v107-results.json
