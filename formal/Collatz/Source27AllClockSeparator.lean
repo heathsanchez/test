@@ -1,5 +1,8 @@
 import Collatz.FirstResidualRefinement
 
+set_option maxRecDepth 16384
+set_option maxHeartbeats 2000000
+
 namespace CollatzFinal
 namespace SourceProduct
 
@@ -79,6 +82,52 @@ theorem source27_F_obstruction_and_late_join :
       iter shortcut k p = 83) ∧
     LowerMerge shortcut 27 23 :=
   ⟨F27_has_no_earlier_positive_preimage, source27_later_joins_23⟩
+
+
+/-- A stronger *all-source-clock* lower bound: before shortcut time 59
+    the source 27 has never entered the forward-invariant closure of
+    any smaller positive starting source. -/
+private theorem source27_no_smaller_orbit_contact_before59
+    (i : Nat) (hi : i < 59) :
+    iter shortcut i 27 ∉ orbitBelow27 := by
+  have hfinite :
+      ∀ k : Fin 59, iter shortcut k.val 27 ∉ orbitBelow27 := by
+    decide
+  exact hfinite ⟨i, hi⟩
+
+/-- Every earlier positive source and EVERY predecessor clock are
+    excluded until the 59th ACTUAL forward step of 27. This is
+    stronger than forbidding a reverse word into F(27)=83. -/
+theorem source27_no_positive_lower_meeting_before59
+    (p i j : Nat)
+    (hpos : 0 < p) (hsmall : p < 27) (hi : i < 59) :
+    iter shortcut i 27 ≠ iter shortcut j p := by
+  intro heq
+  have horbit : iter shortcut j p ∈ orbitBelow27 :=
+    orbitBelow27_iter p j
+      (orbitBelow27_contains_all_initial p hpos hsmall)
+  have hnot := source27_no_smaller_orbit_contact_before59 i hi
+  apply hnot
+  rw [heq]
+  exact horbit
+
+/-- The earliest possible original-source clock for a genuine smaller
+    future coalescence from 27 is EXACTLY 59, attained at p=23, j=0. -/
+theorem source27_first_lower_meeting_exactly59 :
+    (∀ p i j : Nat,
+      0 < p → p < 27 → i < 59 →
+      iter shortcut i 27 ≠ iter shortcut j p) ∧
+    (∃ p j : Nat,
+      0 < p ∧ p < 27 ∧
+      iter shortcut 59 27 = iter shortcut j p) := by
+  constructor
+  · intro p i j hp hsmall hi
+    exact source27_no_positive_lower_meeting_before59 p i j hp hsmall hi
+  · refine ⟨23, 0, by decide, by decide, ?_⟩
+    simpa [iter] using source27_first_below_at_59
+
+#print axioms source27_no_positive_lower_meeting_before59
+#print axioms source27_first_lower_meeting_exactly59
 
 #print axioms no_smaller_positive_source_hits_F27
 #print axioms F27_has_no_earlier_positive_preimage
