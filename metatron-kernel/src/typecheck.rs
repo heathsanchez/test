@@ -452,6 +452,61 @@ impl<'a> TypeChecker<'a> {
                                             obligations.push(format!(
                                                 "arg={i}:left={left_arg:?}:right={right_arg:?}:preferred={preferred:?}:guarded={guarded:?}"
                                             ));
+
+                                            if i == 1 {
+                                                let mut left_fuel = 1024;
+                                                let mut right_fuel = 1024;
+                                                let left_type = self.infer_exact_closure_in_context(
+                                                    left_arg, &ctx, &mut left_fuel, 0,
+                                                );
+                                                let right_type = self.infer_exact_closure_in_context(
+                                                    right_arg, &ctx, &mut right_fuel, 0,
+                                                );
+                                                let left_sort = match &left_type {
+                                                    Some(TypeValue::Term(c)) => {
+                                                        let mut remaining = 512;
+                                                        let inferred = self.infer_exact_closure_in_context(
+                                                            c, &ctx, &mut remaining, 0,
+                                                        );
+                                                        inferred.map(|t| self.sort_level(
+                                                            Judgment::proven(t, "checked-second-proof-type"),
+                                                            remaining,
+                                                        ))
+                                                    },
+                                                    other => other.clone().map(|ty| self.sort_level(
+                                                        Judgment::proven(ty,"checked-second-proof-type"),
+                                                        256,
+                                                    )),
+                                                };
+                                                let right_sort = match &right_type {
+                                                    Some(TypeValue::Term(c)) => {
+                                                        let mut remaining = 512;
+                                                        let inferred = self.infer_exact_closure_in_context(
+                                                            c, &ctx, &mut remaining, 0,
+                                                        );
+                                                        inferred.map(|t| self.sort_level(
+                                                            Judgment::proven(t,"checked-second-proof-type"),
+                                                            remaining,
+                                                        ))
+                                                    },
+                                                    other => other.clone().map(|ty| self.sort_level(
+                                                        Judgment::proven(ty,"checked-second-proof-type"),
+                                                        256,
+                                                    )),
+                                                };
+                                                let same_type = match (&left_type, &right_type) {
+                                                    (Some(lt),Some(rt)) => Some(crate::convert::convert_with_policy_in_context(
+                                                        self, lt, rt, 256,
+                                                        crate::convert::DeltaPolicy::PreferredOnly,
+                                                        ctx.len(), &ctx,
+                                                    )),
+                                                    _ => None,
+                                                };
+                                                note("second-argument-proof-premises",format!(
+                                                    "left_expr={left_arg:?}:right_expr={right_arg:?}:left_type={left_type:?}:right_type={right_type:?}:left_type_sort={left_sort:?}:right_type_sort={right_sort:?}:type_conversion={same_type:?}"
+                                                ));
+                                            }
+
                                         }
                                         note("terminal-neutral-spine-census",format!(
                                             "head_identical={equivalent_head}:lhs_arity={}:rhs_arity={}:context={}:obligations={obligations:?}",
