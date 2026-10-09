@@ -22,6 +22,13 @@ def parse_profile_website_intent(intent):
     return target
 
 
+def valid_form_website(value):
+    text=str(value).strip()
+    if re.match(r"^https?://",text,re.I):
+        return text
+    return "https://"+text
+
+
 def website_key(value):
     text=str(value or "").strip().rstrip("/")
     for prefix in ("https://","http://"):
@@ -60,7 +67,8 @@ async def set_website(page,intent):
     profile=await profile_page(page)
     field=profile["field"]
     prior=await field.input_value()
-    await field.fill(requested)
+    form_value=valid_form_website(requested)
+    await field.fill(form_value)
     form=field.locator("xpath=ancestor::form[1]")
     if await form.count()==0:
         raise RuntimeError("profile website field is not in a form")
@@ -74,13 +82,20 @@ async def set_website(page,intent):
     readback=await profile_page(page)
     observed=await readback["field"].input_value()
     if website_key(observed)!=website_key(requested):
+        errors=[]
+        for selector in (".flash-container",".flash-alert",".alert",".invalid-feedback",".field_with_errors"):
+            for idx in range(min(await page.locator(selector).count(),10)):
+                msg=" ".join((await page.locator(selector).nth(idx).inner_text()).split())
+                if msg and msg not in errors:
+                    errors.append(msg[:240])
         raise RuntimeError(
             "GitLab profile website readback differs: "
-            +json.dumps({"requested":requested,"observed":observed})
+            +json.dumps({"requested":requested,"submitted":form_value,
+                         "observed":observed,"visible_validation_errors":errors[:10]})
         )
     return {
         "capability":"gitlab_profile_website_mutation",
-        "requested":requested,"previous":prior,"observed":observed,
+        "requested":requested,"submitted":form_value,"previous":prior,"observed":observed,
         "form_url":profile["url"],"readback_url":readback["url"],
         "field_selector":profile["selector"],
     }
