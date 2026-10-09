@@ -1,0 +1,161 @@
+name: WebArena blind latest-order and customer-directory admission
+
+on:
+  push:
+    branches: [webarena-blind-navigation-retrieval-v1]
+    paths:
+      - ".github/workflows/webarena_blind_navigation_retrieval_admission.yml"
+      - "scripts/webarena_blind_retrieval_bridge.py"
+      - "tests/test_webarena_blind_nav_read_admission.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+
+      - name: Unit verification before heavyweight site startup
+        run: |
+          python -m pip install playwright
+          python -m unittest discover -s tests -p 'test_webarena_blind_nav_read_admission.py' -v
+          python -m compileall -q scripts tests
+          git diff --check
+
+      - name: Checkout pinned official evaluator
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Start Shopping and Admin benchmark fixtures
+        run: |
+          mkdir -p artifacts/webarena_blind_nav_read
+          docker pull am1n3e/webarena-verified-shopping
+          docker image inspect am1n3e/webarena-verified-shopping --format '{{index .RepoDigests 0}}' > artifacts/webarena_blind_nav_read/shopping_digest.txt
+          docker run -d --name shopping -p 7770:80 am1n3e/webarena-verified-shopping
+          for i in $(seq 1 120); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:7770 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then break; fi
+            if [ "$i" = 120 ]; then exit 1; fi
+            sleep 2
+          done
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}' > artifacts/webarena_blind_nav_read/admin_digest.txt
+          docker run -d --name admin -p 7780:80 -p 7781:8877 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then break; fi
+            if [ "$i" = 120 ]; then exit 1; fi
+            sleep 2
+          done
+
+      - name: Install official evaluator and Chromium
+        run: |
+          python -m pip install "./upstream[examples]"
+          playwright install --with-deps chromium
+
+      - name: Execute natural-language-only blind requests
+        run: |
+          ROOT=artifacts/webarena_blind_nav_read
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{
+            "__SHOPPING__":{"urls":["http://localhost:7770"],"active_url_idx":0},
+            "__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0}
+          }}
+          JSON
+          python - <<'PY'
+          import json,subprocess,sys,uuid
+          from pathlib import Path
+          root=Path("artifacts/webarena_blind_nav_read")
+          tasks=json.loads((root/"hard.json").read_text())
+          by_id={int(t["task_id"]):t for t in tasks}
+          executions={}
+          for ident in (96,157):
+              task=by_id[ident]
+              slot=uuid.uuid4().hex
+              out=root/"output"/slot
+              out.mkdir(parents=True,exist_ok=True)
+              result=subprocess.run([
+                  sys.executable,"scripts/webarena_blind_retrieval_bridge.py",
+                  "--intent",task["intent"],
+                  "--start-url",task["start_urls"][0],
+                  "--output-dir",str(out),
+              ],capture_output=True,text=True,timeout=240,check=False)
+              (out/"stdout.txt").write_text(result.stdout[-20000:])
+              (out/"stderr.txt").write_text(result.stderr[-30000:])
+              executions[str(ident)]={"slot":slot,"exit_code":result.returncode}
+              print("EXECUTION",ident,result.returncode,result.stderr[-1200:],flush=True)
+          (root/"execution_manifest.json").write_text(json.dumps(executions,indent=2)+"\n")
+          PY
+
+      - name: Score official response and network consequences
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/webarena_blind_nav_read")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          records=json.loads((root/"execution_manifest.json").read_text())
+          empty=NetworkTrace.model_construct(
+              is_playwright=False,src_file=Path("<response-only>"),events=()
+          )
+          results={};failures=[]
+          for key,record in records.items():
+              ident=int(key)
+              out=root/"output"/record["slot"]
+              if record["exit_code"] or not (out/"agent_response.json").is_file():
+                  results[key]={"score":0.0,"status":"execution_failed","exit_code":record["exit_code"]}
+                  failures.append(ident)
+                  continue
+              try:
+                  task=wa.get_task(ident)
+                  protected=any(ev.evaluator=="NetworkEventEvaluator" for ev in task.eval)
+                  trace=NetworkTrace.from_har(out/"network.har") if protected else empty
+                  official=wa.evaluate_task(task_id=ident,
+                      agent_response=out/"agent_response.json",network_trace=trace)
+                  dumped=official.model_dump(mode="json",exclude_none=True)
+                  (out/"official.json").write_text(json.dumps(dumped,indent=2)+"\n")
+                  row={"score":float(official.score),"status":official.status.value,
+                       "network_events":len(trace.evaluation_events) if protected else None}
+                  results[key]=row
+                  if row["score"]!=1.0 or row["status"]!="success":
+                      failures.append(ident)
+              except Exception as exc:
+                  results[key]={"score":0.0,"status":"evaluation_error","error":repr(exc)}
+                  failures.append(ident)
+              print("OFFICIAL",ident,results[key],flush=True)
+
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED" if not failures else "CANDIDATE_WITH_RESIDUALS",
+              "boundary":"two Hard tasks through natural-language blind four-site bridge, no task ID in agent",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "results":results,"failures":failures
+          }
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2),flush=True)
+          if len(records)!=2 or failures:
+              raise SystemExit(f"new blind admission residuals: {failures}")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-blind-nav-read-two
+          path: artifacts/webarena_blind_nav_read

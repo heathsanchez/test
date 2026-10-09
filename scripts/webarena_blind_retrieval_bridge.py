@@ -33,6 +33,8 @@ def parse_request(site: str, intent: str):
     text = clean(intent)
     low = text.casefold()
     if site == 'shopping_admin':
+        if low == 'view the details of all customers':
+            return 'admin_customer_directory', {}
         if re.match(r'Get (?:the total payment amount|the payment difference) ', text, re.I):
             from webarena_shopping_admin_payment_fold_v2 import parse_query
             parse_query(text)
@@ -80,6 +82,8 @@ def parse_request(site: str, intent: str):
                 raise ValueError('unknown review month')
             return 'admin_review_count', {'kind': 'month', 'month': months[m[1].casefold()], 'year': int(m[2])}
     elif site == 'shopping':
+        if low.startswith('get the status of my latest order and when will it arrive.'):
+            return 'shopping_order_summary', {'mode': 'latest_status'}
         m = re.fullmatch(r'Get name\(s\) of reviewer\(s\) who mention (.+?) for the product on the current page', text, re.I)
         if m:
             return 'shopping_reviewers', {'description': m[1]}
@@ -125,6 +129,14 @@ async def visit(page, url):
 async def execute(page, context, site, capability, args, start_url):
     base = BASES[site]
     evidence = {'capability': capability, 'parameters': args}
+    if capability == 'admin_customer_directory':
+        from webarena_shopping_admin_customer_lookup import CUSTOMERS, live_table
+        await visit(page, base + CUSTOMERS)
+        _, headers = await live_table(page)
+        return {
+            'task_type': 'NAVIGATE', 'status': 'SUCCESS',
+            'retrieved_data': None, 'error_details': None
+        }, {**evidence, 'observed_url': page.url, 'customer_headers': headers}
     if capability == 'admin_visible_order':
         import webarena_shopping_admin_visible_order_selector as f
         await visit(page, base + f.ORDER_GRID)
@@ -239,6 +251,12 @@ async def execute(page, context, site, capability, args, start_url):
     if capability == 'shopping_order_summary':
         import webarena_shopping_order_summary as f
         rows = await f.orders(page, base)
+        if args['mode'] == 'latest_status':
+            if not rows:
+                return response([], missing_if_empty=True), {**evidence, 'selected': None}
+            latest = rows[0]
+            data = [{'status': f.status_norm(latest['status']), 'arrival_date': None}]
+            return response(data), {**evidence, 'selected': latest}
         if args['mode'] == 'past_year':
             today = datetime.fromisoformat(args['today'])
             # Calendar-year interval; leap-day anniversaries use February 28.
@@ -313,7 +331,13 @@ async def run(intent: str, start_url: str, out: Path):
         headers = {'shopping': shopping_auth, 'reddit': reddit_auth, 'shopping_admin': ADMIN_AUTH}[site]
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context(extra_http_headers=headers)
+            context_options = {'extra_http_headers': headers}
+            if capability == 'admin_customer_directory':
+                context_options.update(
+                    record_har_path=str(out / 'network.har'),
+                    record_har_mode='full',
+                )
+            context = await browser.new_context(**context_options)
             try:
                 page = await context.new_page()
                 result, evidence = await execute(page, context, site, capability, args, start_url)
