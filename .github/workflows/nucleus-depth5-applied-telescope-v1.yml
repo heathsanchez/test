@@ -1,8 +1,8 @@
-name: Nucleus source-checked optional parameter erasure qualification
+name: Nucleus Lean.Name next inductive shape census
 
 on:
   push:
-    branches: [nucleus-source-checked-optparam-erasure-v1]
+    branches: [nucleus-lean-name-shape-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -221,6 +221,56 @@ jobs:
               print('NUCLEUS_SYNTHETIC_FIELD_ALIAS='+json.dumps({'case':case,'constructor_field':left,'minor_field':right},separators=(',',':')),flush=True)
           PY
 
+      - name: Fingerprint Lean.Name exact inductive shape after SourceInfo
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          root=pathlib.Path('/tmp/arena-tests/good')
+          for case in ('init-prelude','perf/grind-ring-5'):
+              names={0:''};prefix=[];found=None
+              for line in (root/(case+'.ndjson')).read_bytes().splitlines(keepends=True):
+                  d=json.loads(line);prefix.append(line)
+                  if 'in' in d:
+                      z=d.get('str',d.get('num'))
+                      p=names.get(z['pre'],'')
+                      names[d['in']]=p+('.' if p else '')+str(z.get('str',z.get('i')))
+                  if 'inductive' in d and any(
+                      names.get(t['name'])=='Lean.Name'
+                      for t in d['inductive'].get('types',[])
+                  ):
+                      found=d['inductive'];break
+              assert found is not None,case
+              def fmt_c(c):
+                  return {'name':names.get(c['name']),'numParams':c.get('numParams'),
+                      'numFields':c.get('numFields'),'levelParams':c.get('levelParams'),
+                      'cidx':c.get('cidx'),'type':c.get('type'),'isUnsafe':c.get('isUnsafe')}
+              row={'case':case,'sha256':hashlib.sha256(b''.join(prefix)).hexdigest(),
+                 'types':[{
+                     'name':names.get(t['name']), 'params':t.get('numParams'),
+                     'indices':t.get('numIndices'),'nested':t.get('numNested'),
+                     'recursive':t.get('isRec'),'reflexive':t.get('isReflexive'),
+                     'unsafe':t.get('isUnsafe'),'levelParams':t.get('levelParams'),
+                     'type':t.get('type'),
+                 } for t in found.get('types',[])],
+                 'constructors':[fmt_c(c) for c in found.get('ctors',[])],
+                 'recursors':[{
+                     'name':names.get(r['name']),'numParams':r.get('numParams'),
+                     'numIndices':r.get('numIndices'),'numMinors':r.get('numMinors'),
+                     'numMotives':r.get('numMotives'),'levelParams':r.get('levelParams'),
+                     'type':r.get('type'),'k':r.get('k'),
+                     'rules':[{
+                         'constructor':names.get(v['ctor']),
+                         'nfields':v['nfields'],'rhs':v['rhs']
+                     } for v in r.get('rules',[])]
+                 } for r in found.get('recs',[])]}
+              v=subprocess.run(['/tmp/nucleus'],input=b''.join(prefix),
+                               stdout=subprocess.DEVNULL,timeout=90).returncode
+              row['prefix_rc']=v
+              print('NUCLEUS_LEAN_NAME_SHAPE='+json.dumps(row),flush=True)
+              assert v==2,(case,v)
+          PY
+
       - name: Require new contextual proof with exact negative controls
         run: |
           set -euo pipefail
@@ -345,7 +395,7 @@ jobs:
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
           PY
 
-      - name: Requalify full196 with strict positive gain and zero wrong
+      - name: Preserve frozen196 while auditing Lean.Name
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -383,14 +433,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_COMPLETE_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
-          print('SOURCE_CHECKED_OPT_PARAM_196_GAIN',flush=True)
+          assert accepted==118 and unknown==7, 'LEAN_NAME_DIAGNOSTIC_CHANGED_FROZEN196'
+          print('LEAN_NAME_DIAGNOSTIC_ONLY',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-sourcechecked-erasure-${{ github.sha }}
+          name: nucleus-lean-name-census-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -403,7 +453,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="sourcechecked erasure: ${{ job.status }}; no complete replay"
+          description="lean name census: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -414,6 +464,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/sourcechecked-erasure" \
+            -f context="nucleus/lean-name-census" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
