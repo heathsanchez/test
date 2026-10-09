@@ -1,8 +1,8 @@
-name: Nucleus certified theorem-versus-local proof irrelevance
+name: Nucleus three remaining frozen positives causal census
 
 on:
   push:
-    branches: [nucleus-certified-proof-vs-local-v1]
+    branches: [nucleus-three-residuals-crosscheck-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -186,7 +186,43 @@ jobs:
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
           PY
 
-      - name: Requalify frozen196 zero-wrong strict complete-case gain
+      - name: Trace first authentic residuals on fueled chain and deep Magma twins
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,os,subprocess
+          root=pathlib.Path('/tmp/arena-tests/good')
+          cases=['perf/fueled-chain','perf/magma-list-deep-n21','perf/magma-list-deep-n36']
+          rows=[]
+          for case in cases:
+              p=root/(case+'.ndjson')
+              assert p.exists(),case
+              env=os.environ|{
+                  'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                  'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
+                  'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                  'NUCLEUS_TRACE_DEPENDENCY_GAP':'1',
+                  'NUCLEUS_TRACE_LOCAL_PROOF_IRREL':'1',
+              }
+              trial=subprocess.run(['/tmp/nucleus'],input=p.read_bytes(),
+                  stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                  timeout=150,env=env)
+              lines=trial.stderr.decode(errors='replace').splitlines()
+              row={'case':case,'rc':trial.returncode,
+                   'downstream':[v for v in lines if 'NUCLEUS_DOWNSTREAM:' in v][-8:],
+                   'app_type':[v for v in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in v][-9:],
+                   'neutral':[v for v in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in v][-8:],
+                   'typed_gaps':[v for v in lines if 'NUCLEUS_DEPENDENCY_GAP:' in v][-5:],
+                   'local_proofs':[v for v in lines if 'NUCLEUS_LOCAL_PROOF_IRREL:' in v][-5:]}
+              print('NUCLEUS_THREE_RESIDUALS='+json.dumps(row),flush=True)
+              rows.append(row)
+              assert trial.returncode==2 and row['downstream'],row
+          path=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/three-residuals.json')
+          path.parent.mkdir(parents=True,exist_ok=True)
+          path.write_text(json.dumps(rows,indent=2))
+          PY
+
+      - name: Preserve frozen196 verdicts during three-residual diagnosis
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -224,14 +260,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
-          print('PROOF_VS_LOCAL_196_GAIN',flush=True)
+          assert accepted==118 and unknown==7, 'THREE_RESIDUAL_DIAGNOSTIC_CHANGED_FROZEN196'
+          print('THREE_RESIDUAL_DIAGNOSTIC_ONLY',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-proof-vs-local-${{ github.sha }}
+          name: nucleus-three-residuals-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -244,7 +280,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="proof vs local: ${{ job.status }}; no complete replay"
+          description="three residual census: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -255,6 +291,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/proof-vs-local" \
+            -f context="nucleus/three-residual-census" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
