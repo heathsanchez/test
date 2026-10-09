@@ -668,13 +668,7 @@ impl<'a> TypeChecker<'a> {
                             Judgment::proven(expected.clone(), "mixed-pi-expected"),
                             budget,
                         );
-                        let Some((expected_domain, expected_body)) = exposed else {
-                            eprintln!(
-                                "NUCLEUS_MIXED_PI:expr={expression:?}:context={}:binder={:?}:expected_pi=not-exposed",
-                                context.len(), opened_free,
-                            );
-                            // Diagnostic observation must never alter the proof result.
-                        };
+                        if let Some((expected_domain, expected_body)) = exposed {
                         let domain_result = crate::convert::convert_with_policy_in_context(
                             self,
                             inferred_domain,
@@ -705,6 +699,12 @@ impl<'a> TypeChecker<'a> {
                             "NUCLEUS_MIXED_PI:expr={expression:?}:context={}:binder={:?}:expected_pi=present:domain={domain_result:?}:body={body_result:?}:original={conversion:?}",
                             context.len(), opened_free,
                         );
+                        } else {
+                            eprintln!(
+                                "NUCLEUS_MIXED_PI:expr={expression:?}:context={}:binder={:?}:expected_pi=not-exposed",
+                                context.len(), opened_free,
+                            );
+                        }
                     }
                 }
 
