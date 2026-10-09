@@ -1216,6 +1216,12 @@ fn compare_values(
                 let (Some(left_value), Some(right_value)) =
                     (left_value.proven_value(), right_value.proven_value())
                 else {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_PROJECTION_LAST_FAILURE").is_some() {
+                        eprintln!(
+                            "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=pair:depth={depth}:budget={current_budget}:left_type={left_type:?}:left_index={left_index}:left_structure={left_structure:?}:left_exposed={left_value:?}:right_type={right_type:?}:right_index={right_index}:right_structure={right_structure:?}:right_exposed={right_value:?}"
+                        );
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
@@ -1243,6 +1249,12 @@ fn compare_values(
                     current_budget,
                 );
                 let Some(exposed) = exposed.proven_value() else {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_PROJECTION_LAST_FAILURE").is_some() {
+                        eprintln!(
+                            "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=single:depth={depth}:budget={current_budget}:projection_type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}"
+                        );
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
@@ -1269,6 +1281,12 @@ fn compare_values(
                     current_budget,
                 );
                 let Some(exposed) = exposed.proven_value() else {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_PROJECTION_LAST_FAILURE").is_some() {
+                        eprintln!(
+                            "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=single:depth={depth}:budget={current_budget}:projection_type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}"
+                        );
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
