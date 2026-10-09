@@ -1,0 +1,160 @@
+name: Collatz V135 canonical cross-power chart coefficients
+on:
+  push:
+    branches: [collatz-v135-cross-power-canonical-charts]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-canonical:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate coefficient synthesis and source-clock negative control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v135_canonical_chart > evidence/v135-exact.json
+          python3 - <<'PY'
+          import pathlib,hashlib,json,subprocess
+          p=pathlib.Path('evidence/v135-exact.json')
+          q=json.loads(p.read_text())
+          assert q['schema']=='COLLATZ_V135_CROSS_POWER_SOURCE_CHART_CANONICALIZATION'
+          assert len(q['examples'])==6
+          assert all(w['strict_original_source_guard_for_all_offsets'] for w in q['examples'])
+          assert q['examples'][5]['base_source']==27
+          assert q['examples'][5]['earlier_slope']==3**37
+          assert q['adverse_clock_control']['source_slope']==648
+          assert q['adverse_clock_control']['earlier_slope']==768
+          assert q['adverse_clock_control']['strict_original_source_guard_for_all_offsets'] is False
+          assert q['explicit_multiplier_search_eliminated_for_canonical_sufficient_lift']
+          assert q['no_universal_favourable_clock_claim']
+          assert q['universal_collatz']=='UNKNOWN' and q['qed'] is False
+          r={'schema':'COLLATZ_V135_EXACT_CANONICAL_PARITY_CHART',
+             'status':'WARRANTED_EXACT_ALL_OFFSET_COEFFICIENT_REPLAY',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'canonical_constructor_sufficient_not_complete':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v135-exact-seal.json').write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
+          print('V135_CROSS_POWER_CHART_COEFFICIENT_EXACT_AND_NEGATIVE_CLOCK_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v135-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-canonical:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check cross-power canonical charts and the delayed source27 re-lift
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/RootChartOverlapCompiler.lean)" = c35bde45d11aad51f46e6e8beced5322acd43e9b
+          test "$(git hash-object formal/Collatz/Root23LateJoinReclosure.lean)" = b2aea7066186caf01a6be6743579ad27894edb75
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin RelationalRootMerger RootChartOverlapCompiler FirstResidualRefinement Root23LateJoinReclosure; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/CanonicalCrossPowerChart.lean 2>&1 | tee evidence/v135-lean.log
+          python3 - <<'PY'
+          import re,pathlib,hashlib,json,subprocess
+          path=pathlib.Path('evidence/v135-lean.log')
+          log=path.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          axs={}
+          for name,line in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            values=[v.strip() for v in line.split(',') if v.strip()]
+            assert set(values)<={'propext','Quot.sound','Classical.choice'},(name,values)
+            axs[name]=values
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axs[name]=[]
+          targets=['canonical_chart_endpoint_coefficients_equal','canonicalCrossPowerJoin',
+             'canonical_cross_power_compiles_lower_source','root21_cross_power_parameters',
+             'root9_cross_power_parameters','root15_cross_power_parameters',
+             'root23_cross_power_parameters','canonicalRoot23','canonicalRoot23_source',
+             'canonicalRoot23_earlier','two_clock_orientation_is_consequential',
+             'canonicalRoot5','canonicalRoot5_source','canonicalRoot5_earlier',
+             'canonicalRoot5_all_offsets','canonicalRoot27','canonicalRoot27_source',
+             'canonicalRoot27_earlier','canonicalRoot27_lower_merge']
+          for n in targets:
+             assert 'CollatzFinal.'+n in axs,n
+          q={'schema':'COLLATZ_V135_FORMAL_CANONICAL_CROSS_POWER',
+             'status':'WARRANTED_FORMAL_CROSS_ODD_POWER_SUFFICIENT_CHART_COMPILER',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'named_axioms':axs,
+             'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+             'source27_delay59_not_generalised_to_all_naturals':True,
+             'new_automatic_chart_multipliers':'u=3^oddCount(p,j),v=3^oddCount(a,i)',
+             'universal_base_collision':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v135-formal-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          print('V135_CANONICAL_CROSS_POWER_CHART_FORMALLY_WARRANTED_NOT_COLLATZ_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v135-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-canonical,formal-canonical]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v135-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v135-formal
+          path: evidence/formal
+      - name: Separate automatic chart parameters from universal event production
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v135-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v135-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['canonical_constructor_sufficient_not_complete']
+          assert b['status']=='WARRANTED_FORMAL_CROSS_ODD_POWER_SUFFICIENT_CHART_COMPILER'
+          assert b['universal_base_collision']=='UNKNOWN'
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          q={'schema':'COLLATZ_V135_PROTECTED_CLOCK_AWARE_CHART_COMPILER',
+             'status':'WARRANTED_FORMAL_AUTOMATIC_CROSS_POWER_SLOPE_MATCH',
+             'source_commit':head,
+             'eliminated_search_dimensions':['source_affine_offset_coefficient_u',
+                   'earlier_affine_offset_coefficient_v'],
+             'preserved_conditions':['real_source_relative_base_collision',
+                   'strict_earlier_positive_source',
+                   'weighted_clock_orientation'],
+             'new_source5_all_offset_family':True,
+             'reuses_source27_59_step_authority':True,
+             'universal_favourable_clock_exists':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v135-final-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          print('V135_CANONICAL_SOURCE_CLOCK_PARAMETER_ELIMINATION_WARRANTED_NOT_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v135-final
+          path: evidence/v135-final-seal.json
+          if-no-files-found: error
