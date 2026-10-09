@@ -1,0 +1,70 @@
+name: Collatz cap avoidance versus full coalescence
+on:
+  push:
+    branches: [collatz-cap-avoidance-coalescence]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned complete library and proof dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.35.0-rc2'
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/library.log 2>&1
+          for file in SourceProductAffine CylinderCoalescence ReverseAffineMerger Q7SourceMerger ScaledReverseMerger ThreeCongruenceMerger NineCongruenceMerger ParityCollisionBridge SourceCappedTernaryBar MinimalBadTernaryBarrier DeepAnchorCapSeparation EarlyCoalescenceRegression; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${file}.olean" "formal/Collatz/${file}.lean" > "evidence/${file}.log" 2>&1
+          done
+      - name: Verify constructive all-horizon theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean -DautoImplicit=false formal/Collatz/CapAvoidanceCoalescence.lean 2>&1 | tee evidence/guard-reclosure.log
+          python3 - <<'PY'
+          import hashlib,json,os,re
+          from pathlib import Path
+          text=Path('evidence/guard-reclosure.log').read_text()
+          allowed={'propext','Classical.choice','Quot.sound'}
+          names=['guard_reclosure_corridor','guard_reclosure_no_cap','guard_reclosure_no_cap_but_merged','arbitrary_cap_avoidance_with_lower_merge']
+          audits={}
+          for short in names:
+              name='CollatzFinal.SourceProduct.'+short
+              match=re.search("'"+re.escape(name)+"' depends on axioms: \\[([^\\]]*)\\]",text,re.S)
+              if match:
+                  axioms={v.strip() for v in match.group(1).split(',') if v.strip()}
+              else:
+                  assert "'"+name+"' does not depend on any axioms" in text, name
+                  axioms=set()
+              assert axioms<=allowed, (name,axioms)
+              audits[short]=sorted(axioms)
+          for path in Path('evidence').glob('*.log'):
+              log=path.read_text()
+              assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log), str(path)
+          result={'schema':'COLLATZ_CAP_AVOIDANCE_COALESCENCE',
+              'status':'WARRANTED_FORMAL_GUARD_SEPARATION',
+              'commit':os.environ['GITHUB_SHA'],
+              'universal_horizon_existential_family_proved':True,
+              'universal_collatz_proved':False,'global_collatz':'UNKNOWN',
+              'axioms':audits,
+              'source_sha256':hashlib.sha256(Path('formal/Collatz/CapAvoidanceCoalescence.lean').read_bytes()).hexdigest(),
+              'log_sha256':hashlib.sha256(text.encode()).hexdigest()}
+          result['certificate_sha256']=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          Path('evidence/qualification.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-cap-avoidance-coalescence
+          path: evidence/
+          if-no-files-found: error
