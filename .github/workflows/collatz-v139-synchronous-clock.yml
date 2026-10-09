@@ -1,0 +1,146 @@
+name: Collatz V139 synchronous clock gauge invariance
+on:
+  push:
+    branches: [collatz-v139-synchronous-clock-invariance]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-negative-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay true base meetings and prove no sampled common waiting changes guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v139_synchronous_suffix > evidence/v139-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v139-exact.json')
+          x=json.loads(p.read_text())
+          assert x['schema']=='COLLATZ_V139_SYNCHRONOUS_CLOCK_GAUGE_INVARIANCE'
+          assert x['exact_trace_pairs']==7
+          assert x['common_suffixes_per_pair']==151
+          assert x['orientation_unchanged_under_common_suffix']
+          assert x['rejected_5_to3_bad_clock_never_rescued']
+          assert x['alternate_5_to3_good_clock_admissible']
+          assert x['fixed_source_nonconvergence_NOT_implied']
+          assert x['universal_collatz']=='UNKNOWN' and x['qed'] is False
+          seal={'schema':'COLLATZ_V139_EXACT_GAUGE_REPLAY',
+            'status':'WARRANTED_BOUNDED_EXACT',
+            'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'evidence_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'negative_control_valid':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v139-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          print('V139_EXACT_SYNCHRONOUS_CLOCK_NEGATIVE_CONTROL_PASS')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v139-exact
+          path: evidence/
+          if-no-files-found: error
+  kernel-gauge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check natural shortcut oddCount cocycle and iff clock sign invariant
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/RootChartOverlapCompiler.lean)" = c35bde45d11aad51f46e6e8beced5322acd43e9b
+          test "$(git hash-object formal/Collatz/Root23LateJoinReclosure.lean)" = b2aea7066186caf01a6be6743579ad27894edb75
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin RelationalRootMerger RootChartOverlapCompiler FirstResidualRefinement Root23LateJoinReclosure CanonicalCrossPowerChart ReducedThreePowerCharts ChartMultiplierCompleteness; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/SynchronousClockOrientation.lean 2>&1 | tee evidence/v139-lean.log
+          python3 - <<'PY'
+          import hashlib,json,re,pathlib,subprocess
+          log=pathlib.Path('evidence/v139-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          ax={}
+          for n,v in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            a=[x.strip() for x in v.split(',') if x.strip()]
+            assert set(a)<={'propext','Quot.sound','Classical.choice'},(n,a)
+            ax[n]=a
+          for n in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[n]=[]
+          targets=['CollatzFinal.SourceProduct.oddCount_add',
+             'CollatzFinal.weighted_chart_guard_synchronous_suffix_iff',
+             'CollatzFinal.source5_bad_clocks_stay_bad_after_any_common_suffix',
+             'CollatzFinal.source5_no_synchronous_repair_by_any_multiplier']
+          assert all(n in ax for n in targets),ax
+          q={'schema':'COLLATZ_V139_FORMAL_CLOCK_INVARIANCE',
+             'status':'WARRANTED_FORMAL_SYNCHRONOUS_CLOCK_ADMISSIBILITY_INVARIANCE',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'named_axioms':ax,
+             'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+             'scope':'true base two-clock meeting with IDENTICAL common suffix length',
+             'asynchronous_clock_phase_changes_remain_possible':True,
+             'universal_Collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v139-formal-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          print('V139_LEAN_SYNCHRONOUS_CLOCK_INVARIANCE_QUALIFIED_NOT_COLLATZ_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v139-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-negative-control,kernel-gauge]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v139-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v139-formal
+          path: evidence/formal
+      - name: Seal one exact prohibited clock-refinement and preserve other proof grammars
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v139-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v139-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['negative_control_valid']
+          assert b['status']=='WARRANTED_FORMAL_SYNCHRONOUS_CLOCK_ADMISSIBILITY_INVARIANCE'
+          assert b['asynchronous_clock_phase_changes_remain_possible']
+          assert a['global_collatz']==b['universal_Collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V139_FIXED_CLOCK_SEARCH_FUTURE_GAUGE_CLOSED',
+             'status':'WARRANTED_FORMAL_NO_RESCUE_BY_SYNCHRONOUS_WAITING',
+             'source_commit':head,
+             'proven_suffix_invariance_for_all_true_base_coalescences':True,
+             'no_positive_coefficient_rescue_after_common_waiting':True,
+             'alternative_asynchronous_clocks_not_excluded':True,
+             'universal_source_event_producer':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v139-final-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          print('V139_FINITE_CLOCK_GAUGE_OBSTRUCTION_WARRANTED_GLOBAL_COLLATZ_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v139-final
+          path: evidence/v139-final-seal.json
+          if-no-files-found: error
