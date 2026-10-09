@@ -76,6 +76,7 @@ pub struct NatPrimitives {
     pub recursor: NameId,
     pub add: Option<NameId>,
     pub sub: Option<NameId>,
+    pub pred: Option<NameId>,
     pub ble: Option<NameId>,
     pub beq: Option<NameId>,
 }
@@ -347,6 +348,7 @@ impl Environment {
         let slot = match operation {
             NatOperation::Add => &mut primitives.add,
             NatOperation::Sub => &mut primitives.sub,
+            NatOperation::Pred => &mut primitives.pred,
             NatOperation::Ble => &mut primitives.ble,
             NatOperation::Beq => &mut primitives.beq,
         };
@@ -495,6 +497,7 @@ impl Default for Environment {
 pub enum NatOperation {
     Add,
     Sub,
+    Pred,
     Ble,
     Beq,
 }
