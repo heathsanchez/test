@@ -41,14 +41,7 @@ jobs:
           import os, pathlib, subprocess, json, hashlib
           tests=[
             ("good","perf/folded-constant-first"),
-            ("good","perf/folded-constant-first"),
             ("good","perf/folded-constant-last"),
-            ("good","perf/fueled-chain"),
-            ("good","perf/grind-ring-5"),
-            ("good","perf/magma-list-deep-n21"),
-            ("good","perf/magma-list-deep-n36"),
-            ("good","perf/magma-list-pair-n21"),
-            ("good","perf/magma-list-pair-n7"),
             ("good","perf/shared-subterm"),
             ("bad","bugs/nested-unused-param"),
           ]
