@@ -16,6 +16,8 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           export PATH="$HOME/.elan/bin:$PATH"
           lake build CollatzFinal
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeDeterminism.olean formal/Collatz/EpisodeDeterminism.lean
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisode.olean formal/Collatz/ActualEpisode.lean
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeBridge.olean formal/Collatz/EpisodeBridge.lean
           lake env lean -DautoImplicit=false formal/Collatz/EpisodePrecisionGain.lean | tee v93.log
