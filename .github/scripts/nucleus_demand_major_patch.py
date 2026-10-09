@@ -149,8 +149,18 @@ old='''                    let full_left = machine.expose_for_conversion(
                     let full_right = machine.expose_for_conversion(
                         right.clone(), Transparency::Full, remaining,
                     );'''
-new='''                    let full_left = machine.expose_demand_for_conversion(left.clone(), remaining);
-                    let full_right = machine.expose_demand_for_conversion(right.clone(), remaining);'''
+new='''                    let force = |term: Closure| {
+                        let candidate = machine.expose_demand_for_conversion(term.clone(), remaining);
+                        if candidate.is_proven() {
+                            candidate
+                        } else {
+                            // Unresolved normalization must not erase an
+                            // independently available K or rigid rejection.
+                            machine.expose_for_conversion(term, Transparency::Full, remaining)
+                        }
+                    };
+                    let full_left = force(left.clone());
+                    let full_right = force(right.clone());'''
 assert conv.count(old)==1
 newconv=conv.replace(old,new)
 (root/'convert.rs').write_text(newconv)
