@@ -3075,6 +3075,59 @@ fn generic_nonrecursive_recursor_shape(
 ) -> bool {
     let Ok(p) = usize::try_from(inductive.num_params) else { return false; };
     let c = constructors.len();
+    #[cfg(feature = "diagnostics")]
+    if c==3 && std::env::var_os("NUCLEUS_TRACE_THREE_CTOR_REC_SHAPE").is_some() {
+        let mut rows=Vec::new();
+        if let Some((domains,result))=pi_spine(export,recursor.ty,p+c+2) {
+            for (j,ctor) in constructors.iter().enumerate() {
+                let fields=usize::try_from(ctor.num_fields).unwrap_or(99);
+                let ctor_tel=pi_spine(export,ctor.ty,p+fields);
+                let minor_tel=pi_spine(export,domains[p+1+j],fields);
+                let field_checks=match (&ctor_tel,&minor_tel) {
+                    (Some((cd,_)),Some((md,_)))=>cd[p..].iter().zip(md).enumerate()
+                        .map(|(k,(a,b))|expr_eq_with_bvar_shift(
+                            export,*a,*b,k as u64,(1+j) as u64
+                        )).collect::<Vec<_>>(),
+                    _=>Vec::new(),
+                };
+                let minor_info=minor_tel.as_ref().map(|(_,minor_result)| {
+                    let outer=export.exprs.get(*minor_result);
+                    format!("{outer:?}")
+                });
+                let rule=recursor.rules.get(j);
+                let rule_tail=rule.and_then(|r|lam_spine(export,r.rhs,p+1+c+fields))
+                    .map(|(_,rhs)|{
+                        let (head,args)=application_spine(export,rhs);
+                        format!(
+                            "tail={rhs:?}:head={:?}:head_bvar_expected={}:is_expected={}:arg_len={}:expected_fields={}:args_bvar_ok={}",
+                            export.exprs.get(head),
+                            fields+c-1-j,
+                            is_bvar(export,head,(fields+c-1-j) as u64),
+                            args.len(),fields,
+                            args.iter().enumerate().all(|(k,a)|
+                                is_bvar(export,*a,(fields-1-k) as u64)
+                            )
+                        )
+                    });
+                rows.push(format!(
+                    "ctor={j}:fields={fields}:ctor_tel={}:minor_tel={}:field_checks={field_checks:?}:minor={minor_info:?}:rule_tail={rule_tail:?}",
+                    ctor_tel.is_some(),minor_tel.is_some()
+                ));
+            }
+            let target=domains[p+1+c];
+            let (head,args)=application_spine(export,target);
+            eprintln!(
+                "NUCLEUS_THREE_CTOR_REC_SHAPE:recursor={:?}:domains={}:result={result:?}:motive={:?}:target_head={:?}:target_args={args:?}:rows={rows:?}",
+                recursor.name,domains.len(),export.exprs.get(domains[p]),
+                export.exprs.get(head)
+            );
+        } else {
+            eprintln!(
+                "NUCLEUS_THREE_CTOR_REC_SHAPE:recursor={:?}:missing_recursor_Pi_spine:expected={}",
+                recursor.name,p+c+2
+            );
+        }
+    }
     let Some((ind_params,_)) = pi_spine(export,inductive.ty,p) else { return false; };
     let Some((domains,result)) = pi_spine(export,recursor.ty,p+c+2) else { return false; };
     if !domains[..p]
