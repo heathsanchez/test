@@ -20,7 +20,12 @@ def score(wanted,label,href):
     path_exact=sum(1 for w in wt if w in path_tokens)
     depth=len([x for x in path.split("/") if x])
     category_bonus=2 if path.endswith(".html") and depth>=2 else 0
-    return overlap*5+exact*2+path_exact*8+category_bonus
+    # Parent breadcrumbs are shared by siblings; prefer the actual leaf
+    # category's label or slug when both resolve to the same ancestor.
+    leaf=path.rsplit("/",1)[-1].removesuffix(".html").replace("-"," ")
+    direct=set(tokens(label+" "+leaf))
+    leaf_matches=sum(1 for word in wt if word in direct)
+    return overlap*5+exact*2+path_exact*8+category_bonus+leaf_matches*12
 
 def ceiling(spec):
     m=re.search(r"under\s*\$?([0-9]+(?:\.[0-9]+)?)",clean(spec),re.I)

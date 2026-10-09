@@ -8,6 +8,7 @@ on:
       - ".github/workflows/webarena_shopping_price_filter_blind.yml"
       - "scripts/webarena_shopping_price_filter_blind.py"
       - "tests/test_webarena_shopping_price_filter_blind.py"
+      - "scripts/webarena_shopping_category_price_filter.py"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

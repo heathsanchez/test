@@ -13,6 +13,18 @@ class BlindPriceFilter(unittest.TestCase):
         for intent,(category,cap) in examples.items():
             self.assertEqual(parse_intent(intent),{"category":category,"price_cap":cap})
 
+    def test_category_leaf_evidence_breaks_parent_path_ties(self):
+        from webarena_shopping_category_price_filter import score
+        root="http://localhost:7770/clothing-shoes-jewelry/women/"
+        ranked=[
+            ("Accessories",root+"accessories.html"),
+            ("Clothing",root+"clothing.html"),
+            ("Shoes",root+"shoes.html"),
+        ]
+        scores={name:score("women shoes",name,url) for name,url in ranked}
+        self.assertGreater(scores["Shoes"],scores["Accessories"])
+        self.assertGreater(scores["Shoes"],scores["Clothing"])
+
     def test_reject_unsupported_intents(self):
         with self.assertRaises(ValueError):
             parse_intent("Buy any product under $25")
