@@ -1997,6 +1997,12 @@ impl<'a> TypeChecker<'a> {
         self.environment.get(name)?.value
     }
 
+    pub(crate) fn is_certified_bool_constructor(&self, name: NameId) -> bool {
+        self.environment
+            .bool_primitives()
+            .is_some_and(|primitives| name == primitives.false_ctor || name == primitives.true_ctor)
+    }
+
     pub(crate) fn distinct_bool_constructors(&self, left: NameId, right: NameId) -> bool {
         if left == right {
             return false;
