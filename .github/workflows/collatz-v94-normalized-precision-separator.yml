@@ -1,0 +1,65 @@
+name: Collatz V94 normalized precision separator
+on:
+  push:
+    branches: [collatz-v93-normalized-precision-separator-v94]
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact V93 theorem lineage
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e aff59673f55e47fb44f3e75cd2a70c8a2c432d44^{commit}
+          git diff --exit-code aff59673f55e47fb44f3e75cd2a70c8a2c432d44 HEAD -- formal/Collatz/EpisodePrecisionGain.lean formal/Collatz/EpisodeBridge.lean formal/Collatz/ActualEpisode.lean
+          echo "V93_SOURCE_PROTECTED"
+      - name: Kernel-check V94 normalization and actual counterexample
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/dyadic.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeDeterminism.olean formal/Collatz/EpisodeDeterminism.lean > evidence/determinism.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisode.olean formal/Collatz/ActualEpisode.lean > evidence/actual.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeBridge.olean formal/Collatz/EpisodeBridge.lean > evidence/bridge.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodePrecisionGain.olean formal/Collatz/EpisodePrecisionGain.lean > evidence/v93.log
+          lake env lean -DautoImplicit=false formal/Collatz/EpisodePrecisionSeparator.lean | tee evidence/v94.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v94.log
+          grep -q 'episode_excess_monotonicity_false' evidence/v94.log
+          grep -q 'seven_to_thirteen_actual' evidence/v94.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal bounded logical separator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import json,hashlib
+          result={
+            "schema":"COLLATZ_V93_NORMALIZED_EPISODE_PRECISION_V94",
+            "status":"WARRANTED_FORMAL_NEGATIVE_SEPARATOR",
+            "parent_v93_head":"aff59673f55e47fb44f3e75cd2a70c8a2c432d44",
+            "actual_witness":{"x":7,"next_x":13,"anchor_before":3,"anchor_after":1,"odd_steps":3,"even_strip":1},
+            "total_precision_grows":True,
+            "normalized_precision_drops":True,
+            "universal_normalized_anchor_monotonicity":False,
+            "global_collatz":"UNKNOWN",
+            "qed":False,
+            "residual":"Find a source-coherent, consequence-bearing refinement; global depth or episode anchor alone cannot serve as a monotone source-progress rank."
+          }
+          result["certificate_sha256"]=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v94-normalized-precision-separator
+          path: evidence/
+          if-no-files-found: error
