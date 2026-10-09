@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
 
 from webarena_unified_blind_agent import (
-    gitlab_intent,site_from_start,actual_start,
+    gitlab_intent,site_from_start,actual_start,cross_site_intent,
 )
 
 
@@ -43,6 +43,25 @@ class UnifiedBlindRouterTests(unittest.TestCase):
             route,args=gitlab_intent(text)
             self.assertEqual(route,"commit_count")
             self.assertEqual(args,{"author":author,"period":period})
+
+    def test_gitlab_to_reddit_family_is_intent_driven(self):
+        examples=[
+            ("byteblaze/cloud-to-butt","LifeProTips"),
+            ("byteblaze/dotfiles","aww"),
+            ("auth0/angular-storage","technology"),
+            ("koush/AndroidAsync","funny"),
+            ("lahwaacz/arch-wiki-docs","science"),
+        ]
+        for repo,forum in examples:
+            intent=(f"Promote {repo} in the discussion forum {forum} "
+                    "by creating a post with the project description as the title.")
+            self.assertEqual(cross_site_intent(intent),{"repo":repo,"forum":forum})
+        self.assertIsNone(cross_site_intent("Create a post in books"))
+        with self.assertRaises(ValueError):
+            cross_site_intent(
+                "Promote ../private in the discussion forum aww "
+                "by creating a post with the project description as the title."
+            )
 
     def test_out_of_grammar_fails_closed(self):
         with self.assertRaises(ValueError):
