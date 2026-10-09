@@ -812,7 +812,32 @@ impl<'a> TypeChecker<'a> {
             TypeValue::Pi { domain, body } => Some((*domain, PiBody::Fixed(*body))),
             TypeValue::Term(closure) => {
                 let machine = self.machine();
-                let exposed = machine.expose(closure, Transparency::Reducible, budget);
+                let mut exposed =
+                    machine.expose(closure.clone(), Transparency::Reducible, budget);
+                // A proven Pi is reusable; an UNKNOWN or rigid result is not a
+                // proof that the function type is non-Pi.  Give the verified
+                // full-delta reducer one bounded chance before declining.
+                // Importantly, only the machine's *proven* Pi can advance
+                // application typing; an unresolved projection remains UNKNOWN.
+                if !matches!(
+                    exposed.proven_value().map(|value| &value.value),
+                    Some(Value::Pi { .. })
+                ) {
+                    exposed = machine.expose(
+                        closure,
+                        Transparency::Full,
+                        budget.min(256),
+                    );
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_PI_FULL_EXPOSURE").is_some()
+                        && matches!(
+                            exposed.proven_value().map(|value| &value.value),
+                            Some(Value::Pi { .. })
+                        )
+                    {
+                        eprintln!("NUCLEUS_PI_FULL_EXPOSURE:earned-certified-Pi");
+                    }
+                }
                 match exposed.proven_value()? {
                     Value::Pi { domain, body } => Some((
                         TypeValue::Term(domain.clone()),
