@@ -1456,6 +1456,108 @@ impl<'a> Machine<'a> {
         )
     }
 
+    /// Re-evaluate a nested, *independently registered* two-case recursor
+    /// whose major is itself a suspended recursor. The only successful path
+    /// observes a constructor with the correct universe/arity, then replays
+    /// the checked original iota RHS; neither constructor nor result is
+    /// predicted by the desired conversion.
+    pub(crate) fn certified_nested_two_case_recursor_result(
+        &self, neutral: &Neutral, budget: usize, depth: usize,
+    ) -> Judgment<Value> {
+        if depth >= 4 || budget < 64 {
+            return Judgment::unknown("nested-recursor-depth-or-budget");
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return Judgment::unknown("nested-recursor-not-constant");
+        };
+        let Some(reduction) = self.recursor_reductions.get(name) else {
+            return Judgment::unknown("nested-recursor-missing-source-rule");
+        };
+        if reduction.rules.len() != 2 || reduction.level_params.len() != levels.len() {
+            return Judgment::unknown("nested-recursor-unqualified-interface");
+        }
+        let required = reduction.num_params.saturating_add(1)
+            .saturating_add(reduction.rules.len())
+            .saturating_add(reduction.num_indices).saturating_add(1);
+        if neutral.spine.len() != required {
+            return Judgment::unknown("nested-recursor-argument-count");
+        }
+        let Some(major) = neutral.spine.last() else {
+            return Judgment::unknown("nested-recursor-major-missing");
+        };
+        let initial = self.expose(
+            major.clone(), Transparency::Full, budget.saturating_sub(1).min(384),
+        );
+        let Some(mut observed) = initial.proven_value().cloned() else {
+            return Judgment::unknown("nested-recursor-major-unknown");
+        };
+        for step in depth..4 {
+            let Value::Neutral(inner) = &observed else {
+                return Judgment::unknown("nested-recursor-major-not-constructor");
+            };
+            let NeutralHead::Const { name: inner_name, levels: inner_levels } = &inner.head else {
+                return Judgment::unknown("nested-recursor-major-not-constant");
+            };
+            if let Some(rule) = reduction.rules.iter().find(|rule| {
+                rule.constructor == *inner_name
+                    && inner.spine.len() == rule.num_params + rule.num_fields
+            }) {
+                let expected_ctor_levels = rule.constructor_level_params.iter()
+                    .map(|param| {
+                        reduction.level_params.iter().position(|p| p == param)
+                            .and_then(|i| levels.get(i))
+                            .cloned()
+                    }).collect::<Option<Vec<_>>>();
+                if expected_ctor_levels.as_ref() != Some(inner_levels) {
+                    return Judgment::unknown("nested-recursor-constructor-universe");
+                }
+                let substitutions = reduction.level_params.iter().copied()
+                    .zip(levels.iter().cloned()).collect::<Vec<_>>();
+                let mut rhs = Closure::with_levels(
+                    rule.rhs, EnvFrame::empty(), LevelSubstitution::new(substitutions),
+                );
+                let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+                for arg in neutral.spine[..prefix_len].iter()
+                    .chain(inner.spine[rule.num_params..].iter())
+                {
+                    let mut lets = 0usize;
+                    loop {
+                        match self.expressions.get(rhs.expr) {
+                            Some(Expr::Lam { body, .. }) => {
+                                rhs = rhs.sibling(*body, rhs.env.extend(arg.clone()));
+                                break;
+                            }
+                            Some(Expr::Let { value, body, .. }) if lets < 24 => {
+                                let bound = rhs.sibling(*value, rhs.env.clone());
+                                rhs = rhs.sibling(*body, rhs.env.extend(bound));
+                                lets += 1;
+                            }
+                            _ => return Judgment::unknown("nested-recursor-rhs-telescope"),
+                        }
+                    }
+                }
+                return self.expose(
+                    rhs, Transparency::Full, budget.saturating_sub(1).min(512),
+                );
+            }
+            if *inner_name == *name || self.recursor_reductions.contains_key(inner_name) {
+                let child = self.certified_nested_two_case_recursor_result(
+                    inner, budget / 2, step + 1,
+                );
+                let Some(child) = child.proven_value() else {
+                    return Judgment::unknown("nested-recursor-child-not-reduced");
+                };
+                if *child == observed {
+                    return Judgment::unknown("nested-recursor-child-nonprogress");
+                }
+                observed = child.clone();
+                continue;
+            }
+            return Judgment::unknown("nested-recursor-major-head-not-rule");
+        }
+        Judgment::unknown("nested-recursor-chain-exhausted")
+    }
+
     fn rule_constructor_application(
         &self,
         target: &Closure,
