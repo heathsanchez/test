@@ -1231,6 +1231,18 @@ fn compare_values(
                                         probe, DeltaPolicy::PreferredOnly,depth,context
                                     )
                                 );
+                                eprintln!(
+                                    "NUCLEUS_PROJECTION_SPINE_TYPES:slot={slot}:left_expr={:?}:right_expr={:?}:left_bind0={:?}:right_bind0={:?}:same_prop={}",
+                                    checker.expression(a.expr),
+                                    checker.expression(b.expr),
+                                    a.env.lookup(0), b.env.lookup(0),
+                                    checker.proof_terms_same_proposition(a,b,context,probe.min(64))
+                                );
+                                eprintln!(
+                                    "NUCLEUS_PROJECTION_SPINE_WHNF:slot={slot}:left={:?}:right={:?}",
+                                    checker.machine().expose_for_conversion(a.clone(),crate::machine::Transparency::Reducible,probe),
+                                    checker.machine().expose_for_conversion(b.clone(),crate::machine::Transparency::Reducible,probe)
+                                );
                             }
                         }
                     }
