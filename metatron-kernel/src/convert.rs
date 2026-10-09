@@ -1569,6 +1569,13 @@ fn compare_nat_literal_neutral(
     let NeutralHead::Const { name, levels } = &neutral.head else {
         return Judgment::refuted("Nat-literal-neutral-head");
     };
+    #[cfg(feature = "diagnostics")]
+    if std::env::var_os("NUCLEUS_TRACE_NATLIT_RIGID").is_some() {
+        eprintln!(
+            "NUCLEUS_NATLIT_RIGID:literal={literal:?}:head={name:?}:levels={levels:?}:spine={:?}:budget={budget}:depth={depth}:context={}",
+            neutral.spine, context.len(),
+        );
+    }
     if !levels.is_empty() {
         return Judgment::refuted("Nat-literal-constructor-levels");
     }
