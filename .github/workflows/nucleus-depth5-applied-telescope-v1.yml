@@ -1,8 +1,8 @@
-name: Nucleus Decidable recursor major exact census
+name: Nucleus Decidable recursor captured major source audit
 
 on:
   push:
-    branches: [nucleus-decidable-major-census-v1]
+    branches: [nucleus-decidable-source-major-probe-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -127,6 +127,7 @@ jobs:
               if 'magma-list-pair' in name:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
                   extra['NUCLEUS_TRACE_RECURSOR_MAJOR']='1'
+                  extra['NUCLEUS_TRACE_DECIDABLE_MAJOR_CHAIN']='1'
                   extra['NUCLEUS_TRACE_VALUE_MISMATCH']='1'
               else:
                   extra['NUCLEUS_TRACE_PROJECTION_LAST_FAILURE']='1'
@@ -148,6 +149,7 @@ jobs:
                    'neutral_mismatch':[x for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-6:],
                    'recursor_major':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR:' in x][-8:],
                    'recursor_major_value':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR_VALUE:' in x][-8:],
+                   'captured_major_chain':[x for x in lines if 'NUCLEUS_DECIDABLE_MAJOR_CHAIN:' in x][-8:],
                    'value_mismatch':[x for x in lines if 'NUCLEUS_VALUE_MISMATCH:' in x][-4:],
                    'projection_failure':[x for x in lines if 'NUCLEUS_PROJECTION_FIELD_PROBE:' in x][-8:],
                    'projection_exact_gap':[x for x in lines if 'NUCLEUS_POST_IOTA_PROJECTION_GAP:' in x][-12:],
@@ -213,7 +215,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-decidable-major-census-${{ github.sha }}
+          name: nucleus-decidable-source-major-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -226,7 +228,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="decidable major census: ${{ job.status }}; no complete replay"
+          description="decidable source major: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -237,6 +239,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/decidable-major-census" \
+            -f context="nucleus/decidable-source-major" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
