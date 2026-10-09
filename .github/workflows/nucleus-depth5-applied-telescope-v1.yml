@@ -1,8 +1,8 @@
-name: Nucleus nested Decidable Bool recursor iota qualification
+name: Nucleus nested Decidable Bool registered RHS requalification
 
 on:
   push:
-    branches: [nucleus-decidable-captured-outer-iota-v1]
+    branches: [nucleus-nested-decidable-source-rhs-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -127,6 +127,7 @@ jobs:
               if 'magma-list-pair' in name:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
                   extra['NUCLEUS_TRACE_RECURSOR_MAJOR']='1'
+                  extra['NUCLEUS_TRACE_NESTED_REC_RHS']='1'
                   extra['NUCLEUS_TRACE_CAPTURED_REC_CHAIN']='1'
                   extra['NUCLEUS_TRACE_CAPTURED_BOOL_REC']='1'
                   extra['NUCLEUS_TRACE_DECIDABLE_MAJOR_CHAIN']='1'
@@ -154,6 +155,7 @@ jobs:
                    'captured_major_chain':[x for x in lines if 'NUCLEUS_DECIDABLE_MAJOR_CHAIN:' in x][-8:],
                    'captured_bool_iota':[x for x in lines if 'NUCLEUS_CAPTURED_BOOL_REC:' in x][-12:],
                    'captured_rec_chain':[x for x in lines if 'NUCLEUS_CAPTURED_REC_CHAIN:' in x][-12:],
+                   'nested_rec_rhs':[x for x in lines if 'NUCLEUS_NESTED_REC_RHS:' in x][-12:],
                    'value_mismatch':[x for x in lines if 'NUCLEUS_VALUE_MISMATCH:' in x][-4:],
                    'projection_failure':[x for x in lines if 'NUCLEUS_PROJECTION_FIELD_PROBE:' in x][-8:],
                    'projection_exact_gap':[x for x in lines if 'NUCLEUS_POST_IOTA_PROJECTION_GAP:' in x][-12:],
@@ -219,7 +221,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-decidable-outer-iota-${{ github.sha }}
+          name: nucleus-decidable-source-rhs-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -232,7 +234,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="decidable outer iota: ${{ job.status }}; no complete replay"
+          description="decidable source rhs: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -243,6 +245,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/decidable-outer-iota" \
+            -f context="nucleus/decidable-source-rhs" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
