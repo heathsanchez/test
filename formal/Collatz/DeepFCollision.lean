@@ -20,20 +20,22 @@ theorem deep_F_collision_3391 (q : Nat) :
   have hright :
       iter shortcut 15 (10175 + 32768 * (3 * q)) =
         6113 + 59049 * q := by
-    simpa [hfb, hfc, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
-      using (parity_cylinder_shift 10175 15 (3 * q))
+    have h := parity_cylinder_shift 10175 15 (3 * q)
+    rw [hfb, hfc] at h
+    have heq : 6113 + 3 ^ 9 * (3 * q) = 6113 + 59049 * q := by omega
+    simpa only [show 2 ^ 15 = 32768 from rfl, heq] using h
   calc
     iter shortcut 15 (3391 + 32768 * q) =
         6113 + 59049 * q := hleft
     _ = iter shortcut 15 (10175 + 32768 * (3 * q)) := hright.symm
     _ = iter shortcut 15 (3 * (3391 + 32768 * q) + 2) := by
       congr 1
-      ring
+      omega
 
-/-- Reuse the V118 source-45 lawful OEOEOOOOO word and the NEW deeper
+/-- Reuse the V118 source-45 lawful OEOEOOOOO word and the deeper
     exact F collision to obtain genuine smaller ORIGINAL-source merger.
-    Source n(z)=19107135+23887872*z has an all-offset 15-step
-    non-descending prefix (separate finite-symbolic check). -/
+    This source family already has an older V109 certificate; it is an
+    alternative proof rule, not additional V112 residual coverage. -/
 theorem deep_F_new_lower_merge (z : Nat) :
     0 < 13419551 + 16777216 * z ∧
     LowerMerge shortcut
@@ -46,7 +48,7 @@ theorem deep_F_new_lower_merge (z : Nat) :
   have hsource :
       n = 3391 + 32768 * (583 + 729 * z) := by
     dsimp [n]
-    ring
+    omega
   have hcollision :
       iter shortcut 15 n = iter shortcut 15 (3 * n + 2) := by
     calc
@@ -65,12 +67,12 @@ theorem deep_F_new_lower_merge (z : Nat) :
           iter shortcut 9 (31 + 512 * (26210 + 32768 * z)) := by
         congr 1
         dsimp [p]
-        ring
+        omega
       _ = 3 * (45 + 729 * (26210 + 32768 * z)) + 2 :=
         source_45_reverse_all_offsets (26210 + 32768 * z)
       _ = 3 * n + 2 := by
         dsimp [n]
-        ring
+        omega
   refine ⟨hp, hlt, 15, 24, ?_⟩
   calc
     iter shortcut 15 n =
