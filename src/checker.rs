@@ -2598,6 +2598,23 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
                 && !expression_contains_constant(export, fields[1], inductive.name)
         });
 
+    // Extend the existing independently checked derived-signature procedure
+    // to closed nonrecursive four-parameter, three-field records. This only
+    // selects the proven metadata-validation path; no verdict is granted
+    // unless the constructor, recursor, and field types subsequently check.
+    let four_parameter_three_field_record = inductive.num_params == 4
+        && constructor.num_params == 4
+        && constructor.num_fields == 3
+        && recursor.num_params == 4
+        && recursor.num_indices == 0
+        && recursor.num_minors == 1
+        && recursor.num_motives == 1
+        && pi_spine(export, constructor.ty, 7).is_some_and(|(domains, _)| {
+            domains[4..].iter().all(|field| {
+                !expression_contains_constant(export, *field, inductive.name)
+            })
+        });
+
     let relation_proof_structure = generic_relation_proof_record_candidate(export, block);
     let closed_pair_structure = closed_pair_record_candidate(export, block);
     let unary_type_constructor_operations =
@@ -2606,6 +2623,7 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
     if !dependent_pair
         && !scalar_structure
         && !closed_dependent_pair
+        && !four_parameter_three_field_record
         && !relation_proof_structure
         && !closed_pair_structure
         && !unary_type_constructor_operations
