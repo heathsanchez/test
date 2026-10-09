@@ -1,0 +1,146 @@
+name: Collatz V131 two-clock affine chart overlap compiler
+on:
+  push:
+    branches: [collatz-v131-two-clock-chart-overlap]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-chart-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Symbolically verify two full-offset independent root charts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v131_chart_overlap_compiler > evidence/v131-exact.json
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v131-exact.json')
+          j=json.loads(p.read_text())
+          assert j['schema']=='COLLATZ_V131_TWO_CLOCK_AFFINE_CHART_OVERLAP'
+          assert j['chart_count']==2
+          assert j['prior_v129_root21_family']['source']['endpoint_slope']==27
+          assert j['new_root9_family']['source']['endpoint_intercept']==5
+          assert j['new_root9_family']['source']['endpoint_slope']==729
+          assert j['new_root9_family']['source']['original_source_slope']==1536
+          assert j['new_root9_family']['earlier']['original_source_slope']==486
+          assert j['two_independent_clocks_protected']
+          assert j['strict_smaller_source_required']
+          assert j['no_universal_root_coverage_claim']
+          assert j['global_collatz']=='UNKNOWN' and j['qed'] is False
+          result={'schema':'COLLATZ_V131_EXACT_CHART_OVERLAP',
+              'status':'WARRANTED_BOUNDED_EXACT_AFFINE_REPLAY',
+              'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+              'new_semantic_compiler_proof':'AWAIT_FORMAL_QUALIFICATION',
+              'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v131-exact-seal.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+          print('V131_TWO_CLOCK_AFFINE_CHART_EXACT_REPLAY_PASS_NOT_QED')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v131-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-chart-compiler:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel check universal chart constructor and root9 all-offset derivation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin RelationalRootMerger; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/RootChartOverlapCompiler.lean 2>&1 | tee evidence/v131-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v131-lean.log')
+          txt=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',txt)
+          axioms={}
+          for name,raw in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",txt,re.S):
+            vals=[z.strip() for z in raw.split(',') if z.strip()]
+            assert set(vals)<={'propext','Quot.sound','Classical.choice'},(name,vals)
+            axioms[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",txt):
+            axioms[name]=[]
+          required=['chartOverlapJoin','chart_overlap_compiles_lower_source',
+              'root21ViaChart','root9ViaChart','root9_chart_source',
+              'root9_chart_earlier','root9_all_offset_odd_three_merger',
+              'root9_family_not_minimal_bad']
+          for k in required:
+            assert 'CollatzFinal.'+k in axioms,k
+          q={'schema':'COLLATZ_V131_FORMAL_CHART_OVERLAP',
+            'status':'WARRANTED_FORMAL_GENERIC_CHART_COMPILER',
+            'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'axioms':axioms,
+            'lean_log_sha256':hashlib.sha256(txt.encode()).hexdigest(),
+            'scope':'two actual affine parity charts with equal base endpoints, equal endpoint slopes and strict source guard',
+            'universal_source_event_generation':'UNKNOWN',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v131-formal-seal.json').write_text(json.dumps(q,sort_keys=True,indent=2)+'\n')
+          print('V131_GENERIC_CHART_OVERLAP_AND_ROOT9_LEAN_PASS_GLOBAL_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v131-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-chart-audit,formal-chart-compiler]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v131-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v131-formal
+          path: evidence/formal
+      - name: Promote qualified semantic constructor not residue counts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v131-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v131-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert b['status']=='WARRANTED_FORMAL_GENERIC_CHART_COMPILER'
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          r={'schema':'COLLATZ_V131_ROOT_CHART_SEMANTIC_COMPILER',
+             'status':'WARRANTED_FORMAL_TWO_CLOCK_AFFINE_OVERLAP',
+             'source_commit':head,
+             'reused_v129_family':True,
+             'new_source9_family':'9+1536*t -> 3+486*t, clocks (9,1)',
+             'no_universal_coverage_claim':True,
+             'universal_Collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v131-final-seal.json').write_text(json.dumps(r,sort_keys=True,indent=2)+'\n')
+          print('V131_TWO_CLOCK_OVERLAP_COMPILER_WARRANTED_SCOPED_NOT_QED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v131-final
+          path: evidence/v131-final-seal.json
+          if-no-files-found: error
