@@ -89,7 +89,8 @@ jobs:
             trace=p.stderr.decode(errors='replace').splitlines()
             row={'name':name,'rc':p.returncode,'sha256':hashlib.sha256(body).hexdigest(),
                  'bidir_proven':sum('NUCLEUS_BIDIR_LAMBDA:proved' in s for s in trace),
-                 'bidir_attempts':[s for s in trace if 'NUCLEUS_BIDIR_LAMBDA:attempt' in s][-12:],
+                 'bidir_attempts':[s for s in trace if 'NUCLEUS_BIDIR_LAMBDA:attempt' in s][-10:],
+                 'bidir_bodies':[s[:1600] for s in trace if 'NUCLEUS_BIDIR_LAMBDA:body' in s][-12:],
                  'terminal':[s for s in trace if 'NUCLEUS_DOWNSTREAM:' in s][-3:]}
             print('MODCORE_TEST='+json.dumps(row),flush=True)
             rows.append(row)
