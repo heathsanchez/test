@@ -199,7 +199,8 @@ jobs:
                   "site":site,"agent_completed":attempted,
               }
               try:
-                  protected=any(ev.evaluator=="NetworkEventEvaluator" for ev in task.eval)
+                  official_task=wa.get_task(ident)
+                  protected=any(ev.evaluator=="NetworkEventEvaluator" for ev in official_task.eval)
                   if protected and attempted and (out/"network.har").is_file():
                       trace=NetworkTrace.from_har(out/"network.har")
                   else:
