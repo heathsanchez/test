@@ -1580,6 +1580,74 @@ impl<'a> TypeChecker<'a> {
     /// The current verified residual uses nine open binders. Restricting
     /// to that context depth and one-argument theorem applications prevents
     /// needless speculative proof searches on unrelated large workloads.
+    /// Independently typed proof irrelevance for the second argument of
+    /// a source-certified dependent predicate application at context depth
+    /// thirteen. This method never assumes any two captured terms equal:
+    /// each is typechecked in the same lexical context; each resulting
+    /// type must independently be shown to inhabit Sort 0; and their
+    /// dependent types must convert with the kernel-backed algorithm.
+    ///
+    /// Calls are made only after the SAME rigid predicate and its preceding
+    /// argument have already been proved equal. If a premise is UNKNOWN,
+    /// no new conversion is licensed.
+    pub(crate) fn checked_proof_pair_at_context13(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if context.len() != 13 || budget < 1024 {
+            return false;
+        }
+        let mut lf=2048;
+        let Some(left_type)=self.infer_exact_closure_in_context(
+            left,context,&mut lf,0
+        ) else {return false};
+        let mut rf=2048;
+        let Some(right_type)=self.infer_exact_closure_in_context(
+            right,context,&mut rf,0
+        ) else {return false};
+        let type_is_prop=|ty:&TypeValue|->bool{
+            let TypeValue::Term(closure)=ty else {return false};
+            let mut fuel=2048;
+            let Some(formation)=self.infer_exact_closure_in_context(
+                closure,context,&mut fuel,0
+            ) else {return false};
+            matches!(
+                self.sort_level(
+                    Judgment::proven(formation,"captured-proof-proposition-formation"),
+                    fuel.min(1024),
+                ),
+                Judgment::Proven { value: LevelTerm::Zero, .. }
+            )
+        };
+        if !type_is_prop(&left_type) || !type_is_prop(&right_type) {
+            return false;
+        }
+        // The nested converter gets at most 512 steps. The qualifying rule
+        // itself requires >=1024, preventing recursive self-licensing.
+        let relation=crate::convert::convert_with_policy_in_context(
+            self,&left_type,&right_type,512,
+            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context.len(),context,
+        );
+        if !relation.is_proven() {
+            return false;
+        }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CONTEXTUAL_PROOF_SPINE").is_some() {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static COUNT: AtomicUsize=AtomicUsize::new(0);
+            if COUNT.fetch_add(1,Ordering::Relaxed)<20 {
+                eprintln!(
+                    "NUCLEUS_CONTEXTUAL_PROOF_SPINE:checked:context=13:left_type={left_type:?}:right_type={right_type:?}:type_relation={relation:?}"
+                );
+            }
+        }
+        true
+    }
+
     pub(crate) fn checked_proof_vs_local_in_context(
         &self,
         left: &Closure,
