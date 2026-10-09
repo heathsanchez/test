@@ -1398,6 +1398,26 @@ fn compare_values(
                             eprintln!(
                                 "NUCLEUS_CROSS_PROJECTION_OTHER:depth={depth}:left_type={type_name:?}:left_index={index}:right_type={other_type:?}:right_index={other_index}:right_structure={other_structure:?}:right_pending={other_spine:?}:right_field={other_field:?}:right_value={other_value:?}"
                             );
+                            if let Some(Value::StuckProjection {
+                                type_name: third_type,
+                                index: third_index,
+                                structure: third_structure,
+                                spine: third_spine,
+                            }) = other_value.proven_value()
+                            {
+                                let next_field = checker.machine().projection_field_for_conversion(
+                                    third_structure.clone(), *third_type, *third_index,
+                                    current_budget.min(1024),
+                                );
+                                let next_value = checker.machine().projection_value_for_conversion(
+                                    third_structure.clone(), *third_type, *third_index,
+                                    third_spine, current_budget.min(1024),
+                                );
+                                eprintln!(
+                                    "NUCLEUS_HADD_ADD_CHAIN:depth={depth}:hadd_type={other_type:?}:add_type={third_type:?}:add_index={third_index}:add_field={next_field:?}:add_value={next_value:?}"
+                                );
+                            }
+
                         }
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
