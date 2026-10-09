@@ -157,8 +157,7 @@ divisible by 3. No artificial root-type requirement may discard it. -/
 theorem reducedRoot21_new_source45 :
     iter shortcut 3 45 = iter shortcut 2 7 ∧
     7 < 45 ∧ 45 % 6 = 3 ∧ 7 % 3 ≠ 0 := by
-  have h := reducedRoot21_all_offsets 1
-  norm_num at h ⊢
+  decide
 
 /-- The pre-existing V129 all-offset family is exactly the subfamily
 obtained by restricting the NEW reduced parameter to 3*t. -/
