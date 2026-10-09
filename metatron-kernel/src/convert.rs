@@ -1478,7 +1478,7 @@ fn compare_values(
                 // consists of two checked proofs of the same proposition.
                 //
                 // Do NOT permute arguments or identify unrelated locals.
-                if depth==13 && context.len()==13 && current_budget>=1024
+                if depth==context.len() && (4..=24).contains(&depth) && current_budget>=1024
                     && left.head==right.head
                     && matches!(&left.head,NeutralHead::Free(_))
                     && left.spine.len()==2
@@ -1488,7 +1488,7 @@ fn compare_values(
                         &TypeValue::Term(right.spine[0].clone()),
                         512,DeltaPolicy::PreferredOnly,depth,context,
                     ).is_proven()
-                    && checker.checked_proof_pair_at_context13(
+                    && checker.checked_proof_pair_in_bounded_context(
                         &left.spine[1],&right.spine[1],context,current_budget,
                     )
                 {
