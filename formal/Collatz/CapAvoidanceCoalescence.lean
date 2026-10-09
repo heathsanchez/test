@@ -37,7 +37,7 @@ theorem guard_reclosure_corridor (r q : Nat) (hq : 0 < q) :
     let u := 8 ^ r * q
     have hu : 0 < u := Nat.mul_pos (Nat.pow_pos (by decide)) hq
     have hstart : 8 ^ (r + 1) * q = 8 * u := by
-      simp [u, Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+      simp [u, Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm]
     have hnext : 9 * u = 8 ^ r * (9 * q) := by
       simp [u, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
     have htime : 3 * (r + 1) = 3 + 3 * r := by omega
@@ -83,7 +83,7 @@ theorem guard_reclosure_no_cap
     let u := 8 ^ r * q
     have hu : 0 < u := Nat.mul_pos (Nat.pow_pos (by decide)) hq
     have hstart : 8 ^ (r + 1) * q = 8 * u := by
-      simp [u, Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+      simp [u, Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm]
     have hnext : 9 * u = 8 ^ r * (9 * q) := by
       simp [u, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
     have hn0 : n ≤ 8 * u - 5 := by simpa only [hstart] using hn
@@ -132,30 +132,32 @@ theorem guard_reclosure_no_cap_but_merged
 #print axioms guard_reclosure_no_cap
 #print axioms guard_reclosure_no_cap_but_merged
 
-/-- An explicit lift keeps the source congruence while buying arbitrarily
-many 110 blocks. It is an existence proof, not a proposed search algorithm. -/
+/-- Use the short multiplicative period of 8 modulo 729. -/
 theorem guard_reclosure_lift_mod (r : Nat) :
-    ((8 ^ 486) ^ r) % 729 = 1 := by
-  have hperiod : (8 : Nat) ^ 486 % 729 = 1 := by decide
+    ((8 ^ 162) ^ r) % 729 = 1 := by
+  have hperiod : (8 : Nat) ^ 162 % 729 = 1 := by decide
   induction r with
   | zero => decide
   | succ r ih =>
     rw [Nat.pow_succ, Nat.mul_mod, ih, hperiod]
-    decide
 
-theorem guard_reclosure_lift_factor (r : Nat) :
-    8 ^ r * (278 * (8 ^ 485) ^ r) = 278 * (8 ^ 486) ^ r := by
-  have hstep : (8 : Nat) * 8 ^ 485 = 8 ^ 486 := by decide
+/-- Keep powers symbolic so simplification never unfolds a large fixed exponent. -/
+theorem guard_reclosure_power_product (a b r : Nat) :
+    (a * b) ^ r = a ^ r * b ^ r := by
   induction r with
   | zero => simp
   | succ r ih =>
-    calc
-      8 ^ (r + 1) * (278 * (8 ^ 485) ^ (r + 1)) =
-          (8 ^ r * (278 * (8 ^ 485) ^ r)) * (8 * 8 ^ 485) := by
-        simp [Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
-      _ = (278 * (8 ^ 486) ^ r) * (8 ^ 486) := by rw [ih, hstep]
-      _ = 278 * (8 ^ 486) ^ (r + 1) := by
-        simp [Nat.pow_succ, Nat.mul_assoc]
+    simp only [Nat.pow_succ, ih, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+
+theorem guard_reclosure_lift_factor (r : Nat) :
+    8 ^ r * (278 * (8 ^ 161) ^ r) = 278 * (8 ^ 162) ^ r := by
+  have hstep : (8 : Nat) * 8 ^ 161 = 8 ^ 162 := by decide
+  have hproduct := guard_reclosure_power_product 8 (8 ^ 161) r
+  rw [hstep] at hproduct
+  calc
+    8 ^ r * (278 * (8 ^ 161) ^ r) = 278 * (8 ^ r * (8 ^ 161) ^ r) := by
+      simp only [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+    _ = 278 * (8 ^ 162) ^ r := by rw [← hproduct]
 
 /-- EVERY finite horizon has a positive source with no capped ternary hit
 through that horizon, yet a known smaller positive coalescent. Finite cap
@@ -165,14 +167,14 @@ theorem arbitrary_cap_avoidance_with_lower_merge (H : Nat) :
     ∃ n p : Nat, 0 < p ∧ LowerMerge shortcut n p ∧
       (∀ k, k ≤ H → (iter shortcut k n) % 3 = 2 →
         3 * n ≤ 2 * iter shortcut k n - 1) := by
-  let q := 278 * (8 ^ 485) ^ H
+  let q := 278 * (8 ^ 161) ^ H
   let n := 8 ^ H * q - 5
   have hq : 0 < q := Nat.mul_pos (by decide) (Nat.pow_pos (by decide))
-  have hfactor : n = 278 * (8 ^ 486) ^ H - 5 := by
+  have hfactor : n = 278 * (8 ^ 162) ^ H - 5 := by
     dsimp [n, q]
     rw [guard_reclosure_lift_factor H]
   have hmod := guard_reclosure_lift_mod H
-  have hpower : 0 < (8 ^ 486) ^ H := Nat.pow_pos (by decide)
+  have hpower : 0 < (8 ^ 162) ^ H := Nat.pow_pos (by decide)
   have hnmod : n % 1458 = 273 := by rw [hfactor]; omega
   let t := (n - 273) / 1458
   have hnfamily : n = 273 + 1458 * t := by dsimp [t]; omega
