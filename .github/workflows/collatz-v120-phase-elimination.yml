@@ -100,8 +100,14 @@ jobs:
             axs[name]=[]
           for name in ['affine_phase_family_lower_merge','affine_phase_family_all_offsets']:
             assert 'CollatzFinal.SourceProduct.'+name in axs,name
+          for name,ax in re.findall(r"'([^']+)' depends on axioms:\\s*\\[([^\\]]*)\\]",t,re.S):
+            vals=[v.strip() for v in ax.split(',') if v.strip()]
+            assert set(vals)<=set(['propext','Quot.sound','Classical.choice']),(name,vals)
+            axs[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",t):
+            axs[name]=[]
           for name in ['source27_refined_all_offsets','source27_odd_count_59']:
-            assert ('CollatzFinal.SourceProduct.'+name) in t,name
+            assert ('CollatzFinal.SourceProduct.'+name) in axs,name
           out=dict(schema='COLLATZ_V120_FORMAL_GENERIC_PHASE_MERGER',
             status='WARRANTED_FORMAL_CONDITIONAL_SCHEMA',
             axioms=axs,
