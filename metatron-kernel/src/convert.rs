@@ -1724,6 +1724,19 @@ fn certified_local_proof_irrelevance(
                 depth,
                 context,
             );
+            if depth == 5 {
+                let shadow = [2048usize, 8192usize].map(|fuel| {
+                    let lp = checker.is_proposition_in_context(left_type.expr, context, &left_type.env, fuel);
+                    let rp = checker.is_proposition_in_context(right_type.expr, context, &right_type.env, fuel);
+                    let eq = convert_with_policy_in_context(
+                        checker, &TypeValue::Term(left_type.clone()),
+                        &TypeValue::Term(right_type.clone()), fuel,
+                        DeltaPolicy::PreferredOnly, depth, context,
+                    );
+                    (fuel, lp, rp, eq)
+                });
+                eprintln!("NUCLEUS_DEPTH5_PROP_SHADOW:depth={depth}:left={left_free:?}:right={right_free:?}:trials={shadow:?}");
+            }
             eprintln!("NUCLEUS_LOCAL_PROOF_PREMISES:depth={depth}:left={left_free:?}:right={right_free:?}:left_type={left_type:?}:right_type={right_type:?}:left_proposition={left_proposition:?}:right_proposition={right_proposition:?}:type_relation={relation:?}");
         }
     }
