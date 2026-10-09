@@ -134,7 +134,7 @@ theorem root9_all_offset_odd_three_merger (t : Nat) :
     (9 + 1536 * t) % 6 = 3 ∧
     (3 + 486 * t) % 6 = 3 ∧
     LowerMerge shortcut (9 + 1536 * t) (3 + 486 * t) := by
-  have w := root9ViaChart t
+  let w := root9ViaChart t
   have hsource : w.source = 9 + 1536 * t :=
     root9_chart_source t
   have hearlier : w.earlier = 3 + 486 * t :=
@@ -151,7 +151,7 @@ theorem root9_family_not_minimal_bad
     (t : Nat)
     (hbad : MinimalBad (fun n => ¬ CollatzGood n) (9 + 1536 * t)) :
     False := by
-  have w := root9ViaChart t
+  let w := root9ViaChart t
   have hsource : w.source = 9 + 1536 * t :=
     root9_chart_source t
   have hmin : MinimalBad (fun n => ¬ CollatzGood n) w.source := by
