@@ -1,8 +1,8 @@
-name: Nucleus three remaining frozen positives causal census
+name: Nucleus source-certified chain6 projection congruence qualifier
 
 on:
   push:
-    branches: [nucleus-three-residuals-crosscheck-v1]
+    branches: [nucleus-chain6-certified-projection-congruence-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -123,6 +123,7 @@ jobs:
                        'init-prelude','perf/grind-ring-5']:
               extra={'NUCLEUS_TRACE_DOWNSTREAM':'1',
                      'NUCLEUS_TRACE_LOCAL_PROOF_IRREL':'1',
+                  'NUCLEUS_TRACE_CHAIN6_PROJECTION_CONGRUENCE':'1',
                      'NUCLEUS_TRACE_DEPENDENCY_GAP':'1'}
               if 'magma-list-pair' in name:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
@@ -213,16 +214,18 @@ jobs:
                    'app_type':[v for v in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in v][-9:],
                    'neutral':[v for v in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in v][-8:],
                    'typed_gaps':[v for v in lines if 'NUCLEUS_DEPENDENCY_GAP:' in v][-5:],
-                   'local_proofs':[v for v in lines if 'NUCLEUS_LOCAL_PROOF_IRREL:' in v][-5:]}
+                   'local_proofs':[v for v in lines if 'NUCLEUS_LOCAL_PROOF_IRREL:' in v][-5:],
+                   'checked_projection':[v for v in lines if 'NUCLEUS_CHAIN6_PROJECTION_CONGRUENCE:' in v][-16:]}
               print('NUCLEUS_THREE_RESIDUALS='+json.dumps(row),flush=True)
               rows.append(row)
-              assert trial.returncode==2 and row['downstream'],row
+              assert trial.returncode in (0,2),('unexpected wrong positive verdict',row)
+              if trial.returncode==2:assert row['downstream'],row
           path=pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/three-residuals.json')
           path.parent.mkdir(parents=True,exist_ok=True)
           path.write_text(json.dumps(rows,indent=2))
           PY
 
-      - name: Preserve frozen196 verdicts during three-residual diagnosis
+      - name: Requalify all 196 with zero wrong and strict complete-case gain
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -260,14 +263,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted==118 and unknown==7, 'THREE_RESIDUAL_DIAGNOSTIC_CHANGED_FROZEN196'
-          print('THREE_RESIDUAL_DIAGNOSTIC_ONLY',flush=True)
+          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
+          print('CHAIN6_CONTEXTUAL_PROJECTION_196_GAIN',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-three-residuals-${{ github.sha }}
+          name: nucleus-chain6-congruence-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -280,7 +283,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="three residual census: ${{ job.status }}; no complete replay"
+          description="chain6 projection congruence: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -291,6 +294,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/three-residual-census" \
+            -f context="nucleus/chain6-projection-congruence" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
