@@ -1,8 +1,8 @@
-name: Nucleus depth5 instantiated telescope census
+name: Nucleus depth5 typed telescope requalification
 
 on:
   push:
-    branches: [nucleus-depth5-applied-telescope-v1]
+    branches: [nucleus-depth5-typed-telescope-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -28,6 +28,11 @@ jobs:
           set -euo pipefail
           printf 'checker_source_tree=%s\n' "$(git rev-parse HEAD:metatron-kernel)"
           printf 'qualification_commit=%s\n' "$GITHUB_SHA"
+
+      - name: Require typed telescope positive and adversarial negatives
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test typecheck captured_two_argument_relation_requires_checked_domains -- --nocapture
 
       - name: Qualify dependent let-wrapped lambda red-green regression
         run: |
@@ -89,7 +94,8 @@ jobs:
                  'last':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-3:],
                  'local_proofs':[x for x in lines if 'NUCLEUS_LOCAL_PROOF_IRREL:' in x][-8:],
                  'local_premises':[x for x in lines if 'NUCLEUS_LOCAL_PROOF_PREMISES:' in x][-45:],
-                 'depth5_telescope':[x for x in lines if 'NUCLEUS_DEPTH5_APPLIED_TELESCOPE:' in x][-8:]}
+                 'depth5_telescope':[x for x in lines if 'NUCLEUS_DEPTH5_APPLIED_TELESCOPE:' in x][-8:],
+                 'typed_certificate':[x for x in lines if 'NUCLEUS_TYPED_TELESCOPE:' in x][-8:]}
               rows.append(row)
               print('CONTEXTUAL_RIGID='+json.dumps({k:v for k,v in row.items() if k!='mismatches'}),flush=True)
               assert p.returncode in (0,2),row
@@ -102,12 +108,54 @@ jobs:
           print('NEGATIVES='+json.dumps({'false_index':neg.returncode,'malformed':malformed.returncode}),flush=True)
           assert neg.returncode in (1,2) and malformed.returncode==1
           assert all(r.get('depth5_telescope') for r in rows),'Depth5 witness missing'
-          print('DIAGNOSTIC_ONLY_DEPTH5_NOT_A_PROOF',flush=True)
+          print('TYPED_TELESCOPE_CANDIDATE_AWAITS_FULL_REPLAY',flush=True)
+          PY
+
+      - name: Qualify complete 196-case corpus; only promote genuine gain
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import concurrent.futures,collections,json,pathlib,subprocess,os
+          root=pathlib.Path('/tmp/arena-tests')
+          good=sorted((root/'good').rglob('*.ndjson'))
+          bad=sorted((root/'bad').rglob('*.ndjson'))
+          assert len(good)==125,(len(good),'good')
+          assert len(bad)==71,(len(bad),'bad')
+          def check(item):
+              expected,path=item
+              p=subprocess.run(
+                  ['/tmp/nucleus'], input=path.read_bytes(),
+                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                  timeout=120)
+              assert p.returncode in (0,1,2), (expected,str(path),p.returncode)
+              return {'expected':expected,'case':str(path.relative_to(root)),
+                      'rc':p.returncode,'verdict':{0:'ACCEPT',1:'REJECT',2:'UNKNOWN'}[p.returncode]}
+          rows=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+              for row in pool.map(check,[('good',p) for p in good]+[('bad',p) for p in bad]):
+                  rows.append(row)
+          counts=dict(collections.Counter((r['expected'],r['verdict']) for r in rows))
+          accepted=sum(r['expected']=='good' and r['rc']==0 for r in rows)
+          rejected=sum(r['expected']=='bad' and r['rc']==1 for r in rows)
+          unknown=sum(r['rc']==2 for r in rows)
+          wrong=[r for r in rows if (r['expected']=='good' and r['rc']==1) or
+                                    (r['expected']=='bad' and r['rc']==0)]
+          out={'commit':os.environ['GITHUB_SHA'],'corpus':'11272848230',
+               'arena_sha':'b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42',
+               'accepted':accepted,'rejected':rejected,'unknown':unknown,
+               'wrong':wrong,'rows':rows}
+          path=pathlib.Path('metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json')
+          path.write_text(json.dumps(out,indent=2))
+          print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
+          assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
+          assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
+          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
+          print('TYPED_TELESCOPE_PROMOTABLE_ON_FROZEN_196_ONLY',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-depth5-applied-${{ github.sha }}
+          name: nucleus-depth5-typed-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
