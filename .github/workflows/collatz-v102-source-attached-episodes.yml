@@ -1,0 +1,85 @@
+name: Collatz V102 source-attached episode dichotomy
+on:
+  push:
+    branches: [collatz-v101-positive-source-episode-v102]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v101-anchor-return-dichotomy
+          run-id: 37877205970
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent-v101
+      - name: Verify V101 qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib
+          q=json.load(open("parent-v101/qualification.json"))
+          claimed=q.pop("certificate_sha256")
+          computed=hashlib.sha256(json.dumps(q,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          assert claimed==computed=="0d478036c38372b369c9caa1fbb36d1e10b00483bc9c03135bbd045db4667074"
+          assert q["status"]=="WARRANTED_FORMAL_BOUNDED_ANCHOR_RETURN"
+          print("V101_PARENT_VERIFIED")
+          PY
+      - name: Kernel check source-attached exact episode stream
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/dyadic.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SameCentreMacro.olean formal/Collatz/SameCentreMacro.lean > evidence/same.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/DistinctCentreSwitch.olean formal/Collatz/DistinctCentreSwitch.lean > evidence/distinct.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeDeterminism.olean formal/Collatz/EpisodeDeterminism.lean > evidence/determinism.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisode.olean formal/Collatz/ActualEpisode.lean > evidence/actual.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/EpisodeBridge.olean formal/Collatz/EpisodeBridge.lean > evidence/bridge.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisodeChain.olean formal/Collatz/ActualEpisodeChain.lean > evidence/chain.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualReturnAdmission.olean formal/Collatz/ActualReturnAdmission.lean > evidence/admission.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ActualEpisodeHorizon.olean formal/Collatz/ActualEpisodeHorizon.lean > evidence/horizon.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CoherentEpisodeStream.olean formal/Collatz/CoherentEpisodeStream.lean > evidence/stream.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/AnchorReturnDichotomy.olean formal/Collatz/AnchorReturnDichotomy.lean > evidence/v101.log
+          lake env lean -DautoImplicit=false formal/Collatz/PositiveSourceEpisodeStream.lean | tee evidence/v102.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v102.log
+          grep -q 'positive_source_admitted_return_or_unbounded_anchors' evidence/v102.log
+          grep -q 'zero_tail_live_admitted_return_or_unbounded_anchors' evidence/v102.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal source-attached qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import json,hashlib
+          r={
+            "schema":"COLLATZ_V101_POSITIVE_SOURCE_EPISODE_DICHOTOMY_V102",
+            "status":"WARRANTED_FORMAL_SOURCE_ATTACHED_ANCHOR_DICHOTOMY",
+            "parent_v101_qualification_sha256":"0d478036c38372b369c9caa1fbb36d1e10b00483bc9c03135bbd045db4667074",
+            "all_positive_sources_reach_valid_episode_start":True,
+            "coherent_episode_stream_on_actual_original_source":True,
+            "zero_tail_live_source_dichotomy":True,
+            "nonterminal_cycle_excluded":False,
+            "all_admitted_returns_progress":False,
+            "unbounded_anchor_branch_excluded":False,
+            "global_collatz":"UNKNOWN","qed":False,
+            "residual":"Prove a consequence-bearing progress law for actual admitted repeated-anchor returns and exclude or constrain unbounded fresh anchors on an arbitrary ZeroTailLive source; separately exclude nonterminal positive periodic cycles."
+          }
+          r["certificate_sha256"]=hashlib.sha256(json.dumps(r,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(r,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v102-source-attached-episodes
+          path: evidence/
+          if-no-files-found: error
