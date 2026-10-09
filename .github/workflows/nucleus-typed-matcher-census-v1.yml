@@ -28,7 +28,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json,hashlib,pathlib,os
-          cfg=[('init-prelude',3207,3191,12,1014,2975),('perf/magma-list-pair-n7',1371,1355,6,744,828),('init-prelude',5891,4242,5940,0,0),('perf/magma-list-pair-n7',4290,2601,4339,0,0)]
+          cfg=[('init-prelude',3207,3191,12,1014,2975),('perf/magma-list-pair-n7',1371,1355,6,744,828),('init-prelude',5891,4242,5940,0,0),('perf/magma-list-pair-n7',4290,2601,4339,0,0),('init-prelude',5933,5936,10,4242,5891),('perf/magma-list-pair-n7',4332,4335,9,2601,4290)]
           rows=[]
           for name,got,expected,arg,projection,field in cfg:
             path=pathlib.Path('/tmp/sources/good')/(name+'.ndjson')
