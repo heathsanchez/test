@@ -534,6 +534,7 @@ impl<'a> Machine<'a> {
                         continue;
                     }
                     if let Some(reduction) = self.recursor_reductions.get(name) {
+                        if std::env::var_os("NUCLEUS_TRACE_NAT_IOTA").is_some() && self.nat_primitives.as_ref().is_some_and(|nat| nat.recursor == *name) { eprintln!("NUCLEUS_NAT_REC:pending={}:transparency={transparency:?}:rules={}", pending.len(), reduction.rules.len()); }
                         let required = reduction.num_params
                             + 1
                             + reduction.rules.len()
@@ -1037,6 +1038,7 @@ impl<'a> Machine<'a> {
             // no synthetic expression or rule is fabricated.
             Value::NatLit(number) => {
                 let nat = self.nat_primitives.as_ref()?;
+                if std::env::var_os("NUCLEUS_TRACE_NAT_IOTA").is_some() { eprintln!("NUCLEUS_NAT_LITERAL_IOTA:major={number:?}:zero_rule={}:succ_rule={}", matches_rule(nat.zero,0), matches_rule(nat.succ,1)); }
                 if number.is_zero() && matches_rule(nat.zero, 0) {
                     return Some((nat.zero, Vec::new()));
                 }
@@ -1050,6 +1052,7 @@ impl<'a> Machine<'a> {
                         _ => None,
                     }
                 })?;
+                if std::env::var_os("NUCLEUS_TRACE_NAT_IOTA").is_some() { eprintln!("NUCLEUS_NAT_LITERAL_IOTA:constructor_succ:pred_id={pred_id:?}"); }
                 Some((nat.succ, vec![Closure::new(pred_id, EnvFrame::empty())]))
             }
             _ => None,
