@@ -243,9 +243,7 @@ impl<'a> TypeChecker<'a> {
                 context.len(), term.levels == LevelSubstitution::default(),
             );
         }
-        if depth >= 40 || budget < 32
-            || term.levels != LevelSubstitution::default()
-        {
+        if depth >= 40 || budget < 32 {
             return None;
         }
         match self.expressions.get(term.expr)? {
@@ -265,15 +263,24 @@ impl<'a> TypeChecker<'a> {
                 }
             }
             Expr::Const { name, levels } => {
-                // Universe-polymorphic subjects are not yet admitted by this
-                // narrow certificate. Their exact substitutions must be
-                // independently reconstructed before generalization.
+                // Reuse the same checked universe arity and substitution law
+                // as ordinary Const inference, but use the CAPTURED closure's
+                // level environment, not an unrelated caller substitution.
                 let declaration = self.environment.get(*name)?;
-                if !levels.is_empty() || !declaration.level_params.is_empty() {
+                if levels.len() != declaration.level_params.len() {
                     return None;
                 }
-                Some(TypeValue::Term(Closure::new(
-                    declaration.ty, EnvFrame::empty(),
+                let mut substitutions = Vec::with_capacity(levels.len());
+                for (parameter, level) in declaration.level_params.iter().zip(levels) {
+                    let instantiated = instantiate_level(
+                        self.levels, *level, &term.levels, budget,
+                    ).ok()?;
+                    substitutions.push((*parameter, instantiated));
+                }
+                Some(TypeValue::Term(Closure::with_levels(
+                    declaration.ty,
+                    EnvFrame::empty(),
+                    LevelSubstitution::new(substitutions),
                 )))
             }
             Expr::App { fun, arg } => {
