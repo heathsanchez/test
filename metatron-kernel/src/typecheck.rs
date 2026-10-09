@@ -2120,6 +2120,12 @@ impl<'a> TypeChecker<'a> {
         self.environment.is_certified_constructor(name)
     }
 
+    /// Consult only projection signatures independently admitted by the
+    /// source-checked inductive validator.
+    pub(crate) fn has_certified_projection_signature(&self, name: NameId) -> bool {
+        self.environment.projection_specs().contains_key(&name)
+    }
+
     pub(crate) fn eta_projection_spec_for_constructor(
         &self,
         constructor: NameId,
