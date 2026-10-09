@@ -1549,6 +1549,28 @@ fn rigid_application_head_congruence(
                 eprintln!("NUCLEUS_RIGID_ARG_GAP:head={rigid_head:?}:arity={}:argument={arg_index}:budget={budget}:lhs={left:?}:rhs={right:?}:result={argument_conversion:?}", left_args.len());
             }
         }
+        #[cfg(feature = "diagnostics")]
+        if left_args.len() == 4 && arg_index == 2 && !argument_conversion.is_proven()
+            && std::env::var_os("NUCLEUS_TRACE_RIGID_ARG_SHADOW").is_some()
+        {
+            use std::sync::atomic::{AtomicBool, Ordering};
+            static SHADOW_BUSY: AtomicBool = AtomicBool::new(false);
+            if SHADOW_BUSY.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire).is_ok() {
+                let mut shadow_results = Vec::new();
+                for trial_budget in [128usize, 256usize] {
+                    let trial = convert_with_policy(
+                        checker,
+                        &TypeValue::Term(left.clone()),
+                        &TypeValue::Term(right.clone()),
+                        trial_budget,
+                        DeltaPolicy::PreferredOnly,
+                    );
+                    shadow_results.push((trial_budget, trial));
+                }
+                SHADOW_BUSY.store(false, Ordering::Release);
+                eprintln!("NUCLEUS_RIGID_SHADOW:head={rigid_head:?}:arity={}:argument={arg_index}:baseline={argument_conversion:?}:trials={shadow_results:?}", left_args.len());
+            }
+        }
         match argument_conversion {
             Judgment::Proven { .. } => {}
             Judgment::Refuted { obstruction } => {
