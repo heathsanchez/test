@@ -20,6 +20,12 @@ def toks(s):
         out.append(w)
     return out
 
+NUMBER_WORDS={"zero":"0","one":"1","two":"2","three":"3","four":"4","five":"5","six":"6","seven":"7","eight":"8","nine":"9"}
+
+def forum_key(value):
+    tokens=re.findall(r"[a-z0-9]+",clean(value).casefold())
+    return "".join(NUMBER_WORDS.get(token,token) for token in tokens)
+
 def sim(a,b):
     return SequenceMatcher(None,a,b).ratio()
 
@@ -41,7 +47,7 @@ async def resolve_forum(page,base,description,max_pages=12):
     query=clean(description)
     if query and len(query.split()) <= 7:
         from urllib.parse import quote
-        normalized=lambda value: re.sub(r"[^a-z0-9]+","",clean(value).casefold())
+        normalized=forum_key
         wanted=normalized(query)
         for url in (
             f"{base.rstrip('/')}/forums/search?q={quote(query)}",
@@ -79,7 +85,7 @@ async def resolve_forum(page,base,description,max_pages=12):
             if len(canonical)<2 or canonical[0]!="f":
                 continue
             slug=canonical[1]
-            if re.sub(r"[^a-z0-9]+","",slug.casefold()) != re.sub(r"[^a-z0-9]+","",query.casefold()):
+            if forum_key(slug) != forum_key(query):
                 continue
             row={"score":100.0,"label":slug,"slug":slug,"context":"verified direct forum URL"}
             return {**row,"candidates":[row]}
@@ -118,8 +124,8 @@ async def resolve_forum(page,base,description,max_pages=12):
     # Resolve explicit names by normalized exact match before semantic scoring.
     # This handles display aliases such as "explain like im 5" without
     # changing the policy for semantically chosen forums.
-    wanted = re.sub(r"[^a-z0-9]+", "", clean(description).casefold())
-    exact = [row for row in rows if wanted and (re.sub(r"[^a-z0-9]+", "", row["slug"].casefold()) == wanted or re.sub(r"[^a-z0-9]+", "", row["label"].casefold()) == wanted)]
+    wanted = forum_key(description)
+    exact = [row for row in rows if wanted and (forum_key(row["slug"]) == wanted or forum_key(row["label"]) == wanted)]
     if len(exact) == 1:
         return {**exact[0], "candidates": [exact[0]]}
     rows.sort(key=lambda x:(-x["score"],x["slug"]))
