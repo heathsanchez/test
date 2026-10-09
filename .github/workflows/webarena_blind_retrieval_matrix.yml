@@ -1,0 +1,110 @@
+name: WebArena blind retrieval reachability and full Hard diagnostic
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - .github/workflows/webarena_blind_retrieval_matrix.yml
+      - scripts/webarena_blind_retrieval_bridge.py
+      - scripts/webarena_blind_matrix.py
+      - tests/test_webarena_blind_retrieval_bridge.py
+      - tests/test_webarena_blind_matrix.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: webarena-retrieval-matrix-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -m pip install pytest playwright
+      - name: Verify repository tests before any site startup
+        run: |
+          python -m pytest -q tests
+          python -m compileall -q scripts tests
+          git diff --check
+  evaluate:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        lane: [reddit, gitlab, shopping, shopping_admin, crosssite]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install pinned evaluator source and browser
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          git -C upstream checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+          python -m pip install './upstream' playwright
+          python -m playwright install --with-deps chromium
+      - name: Start only lane fixtures at retained image digests
+        env:
+          LANE: ${{ matrix.lane }}
+        run: |
+          set -euo pipefail
+          start_site() {
+            name="$1"; image="$2"; ports="$3"; url="$4"
+            docker pull "$image"
+            docker run -d --name "$name" -p "$ports" "$image"
+            for i in $(seq 1 180); do
+              code=$(curl --max-time 5 -s -o /dev/null -w '%{http_code}' "$url" || true)
+              if [ "$code" = 200 ] || [ "$code" = 302 ]; then return 0; fi
+              sleep 3
+            done
+            docker logs "$name" --tail 100
+            return 1
+          }
+          if [ "$LANE" = reddit ] || [ "$LANE" = crosssite ]; then
+            start_site reddit am1n3e/webarena-verified-reddit@sha256:0594908059a03e5f610005689440a95c05e776e734006197c7b1eba12734cb46 9999:80 http://localhost:9999
+          fi
+          if [ "$LANE" = gitlab ] || [ "$LANE" = crosssite ]; then
+            start_site gitlab am1n3e/webarena-verified-gitlab@sha256:673ba94d757c5b3f4bb55751ad8b745a33bad2b987349322403cbc41035a92e0 8023:8023 http://localhost:8023/users/sign_in
+          fi
+          if [ "$LANE" = shopping ]; then
+            start_site shopping am1n3e/webarena-verified-shopping@sha256:3e8cb9b945ea9b1c94ab26dba53e8d12dd0406abbf4bf686fd3bb2b6a5908feb 7770:80 http://localhost:7770
+          fi
+          if [ "$LANE" = shopping_admin ]; then
+            start_site admin am1n3e/webarena-verified-shopping_admin@sha256:d0531dd27ed98d0c459ff9e88118bf2ed8b660b0ed99c38837db46c065a5be13 7780:80 http://localhost:7780/admin
+          fi
+      - name: Present and officially score every task assigned to this lane
+        run: python scripts/webarena_blind_matrix.py --dataset upstream/assets/dataset/webarna-verfied-hard.json --lane '${{ matrix.lane }}' --output artifacts/${{ matrix.lane }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-reachability-${{ matrix.lane }}
+          path: artifacts/${{ matrix.lane }}
+  aggregate:
+    needs: evaluate
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: webarena-reachability-*
+          path: artifacts/lanes
+      - name: Require exact 258-task accounting and zero scorer errors
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          git -C upstream checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+          python scripts/webarena_blind_matrix.py --dataset upstream/assets/dataset/webarna-verfied-hard.json --aggregate artifacts/lanes --output artifacts/aggregate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-reachability-full-258
+          path: artifacts/aggregate
