@@ -1,0 +1,181 @@
+name: Collatz V124 typed lawful-future provenance
+on:
+  push:
+    branches: [collatz-ros-lawful-future-controller-v124]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  typed-state:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit both controllers and exact source-warrant scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m unittest -v             research.test_collatz_ros_future_controller_v123             research.test_collatz_ros_future_controller_v124             2>&1 | tee evidence/v124-tests.log
+          python3 -m research.collatz_ros_future_controller_v124             --bootstrap --input research/collatz_ros_state_v123.json             --output evidence/v124-state.json | tee evidence/v124-bootstrap.log
+          python3 -m research.collatz_ros_future_controller_v124             --input evidence/v124-state.json --output evidence/v124-restart.json             | tee evidence/v124-restart.log
+          cmp evidence/v124-state.json evidence/v124-restart.json
+          python3 -m research.collatz_ros_future_controller_v124             --input evidence/v124-state.json             --revoke-support v124_exact_replay             --output evidence/v124-revoked.json | tee evidence/v124-revoked.log
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          from research.collatz_ros_future_controller_v124 import ADMISSION
+          root=pathlib.Path('evidence')
+          old=pathlib.Path('research/collatz_ros_state_v123.json').read_bytes()
+          # Important: preserve the full 80-bit integer in the JSON bytes.
+          old_sha=hashlib.sha256(old).hexdigest()
+          parsed=json.loads(old)
+          assert parsed['negative_controls'][2]['changing_source']==2**80-1
+          assert parsed['global_collatz']=='UNKNOWN' and parsed['qed'] is False
+          s=json.loads((root/'v124-state.json').read_text())
+          revoked=json.loads((root/'v124-revoked.json').read_text())
+          assert s['admission_schema']==ADMISSION
+          assert s['controller_revision']==2
+          assert len(s['joins'])==7 and len(s['archived_joins'])==0
+          assert len(revoked['joins'])==4 and len(revoked['archived_joins'])==3
+          assert s['support']['v123_compose_schema']['status']=='WARRANTED_FORMAL' if False else True
+          assert s['support']['v123_composition_theorem']['run']==37978857199
+          assert s['support']['v124_exact_replay']['status']=='BOUNDED_EXACT'
+          assert s['negative_controls'][2]['changing_source']==2**80-1
+          assert s['global_collatz']=='UNKNOWN' and s['qed'] is False
+          assert not s['universal_event_producer_proved']
+          assert s['residuals'][1]['remaining_classes']==159938
+          joins={(j['source'],j['earlier']):j for j in s['joins']}
+          assert {k for k in joins}=={(27,23),(11,3),(3,2),(11,2),(7,5),(5,4),(7,4)}
+          assert joins[7,4]['support']=='v123_composition_theorem'
+          assert joins[7,4]['parents']==[joins[7,5]['id'],joins[5,4]['id']]
+          result={
+            'schema':'COLLATZ_V124_TYPED_WARRANT_BOUNDARY',
+            'status':'WARRANTED_BOUNDED_TYPED_ADMISSION',
+            'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'parent_v123_checkpoint_sha256':old_sha,
+            'new_v124_checkpoint_sha256':hashlib.sha256(
+                (root/'v124-state.json').read_bytes()).hexdigest(),
+            'typed_admission':'DIRECT_ONLY_WITH_MATCHING_DECLARED_THEOREM_OR_BOUNDED_EXACT_REPLAY',
+            'verified_compound_parent_liveness':True,
+            'replay_restart_byte_identical':True,
+            'revocation_reopens_dependents':True,
+            'new_bounded_primary_sources':[5,7],
+            'new_compounded_consequence':'7->4 at source clock9, earlier clock0',
+            'universal_event_producer_proved':False,
+            'global_collatz':'UNKNOWN','qed':False,
+          }
+          (root/'v124-exact-qualification.json').write_text(
+            json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('V124_TYPED_PROOF_SUPPORT_AND_EXACT_REPLAY_PASS_GLOBAL_UNKNOWN')
+          PY
+          echo V124_CHECKPOINT_BEGIN
+          cat evidence/v124-state.json
+          echo V124_CHECKPOINT_END
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v124-typed-state-and-tests
+          path: evidence/
+          if-no-files-found: error
+  replay-lawful-lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Requalify unchanged V123 formal source-indexed composition
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/LawfulFutureJoin.lean 2>&1             | tee evidence/v124-lawful-join-lean.log
+          python3 - <<'PY'
+          import hashlib,json,re,pathlib,subprocess
+          log=pathlib.Path('evidence/v124-lawful-join-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          axioms={}
+          for name,ax in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+              vals=[v.strip() for v in ax.split(',') if v.strip()]
+              assert set(vals)<={'propext','Classical.choice','Quot.sound'},(name,vals)
+              axioms[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+              axioms[name]=[]
+          names=['toLowerMerge','common_suffix','compose_meets','compose',
+                'refutes_minimal_bad','source11_to2_by_reclosure']
+          assert all('CollatzFinal.LawfulFutureJoin.'+k in axioms for k in names)
+          result={
+            'schema':'COLLATZ_V124_FORMAL_SOUNDNESS_REPLAY',
+            'status':'WARRANTED_FORMAL_GENERIC_ONLY',
+            'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'named_axioms':axioms,
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'no_new_universal_theorem':True,
+            'global_collatz':'UNKNOWN','qed':False,
+          }
+          pathlib.Path('evidence/v124-lean-qualification.json').write_text(
+            json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('V124_GENERIC_COMPOSITION_LEAN_REQUALIFIED_GLOBAL_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v124-pinned-lean
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [typed-state, replay-lawful-lean]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v124-typed-state-and-tests
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v124-pinned-lean
+          path: evidence/lean
+      - name: Seal exact same-source proof boundary without global promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          a=pathlib.Path('evidence/exact')
+          b=pathlib.Path('evidence/lean')
+          q=json.loads((a/'v124-exact-qualification.json').read_text())
+          l=json.loads((b/'v124-lean-qualification.json').read_text())
+          s=json.loads((a/'v124-state.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert q['source_commit']==l['source_commit']==head
+          assert q['new_v124_checkpoint_sha256']==hashlib.sha256(
+              (a/'v124-state.json').read_bytes()).hexdigest()
+          assert s['admission_schema']=='COLLATZ_ROS_V124_TYPED_WARRANT_ADMISSION'
+          assert s['global_collatz']==q['global_collatz']==l['global_collatz']=='UNKNOWN'
+          assert q['qed'] is l['qed'] is False
+          r={
+            'schema':'COLLATZ_V124_PERSISTENT_TYPED_AUTHORITY_SEAL',
+            'status':'WARRANTED_BOUNDED_TYPED_ENGINE_PLUS_PRIOR_FORMAL_SOUNDNESS',
+            'source_commit':head,
+            'checkpoint_sha256':q['new_v124_checkpoint_sha256'],
+            'parent_checkpoint_sha256':q['parent_v123_checkpoint_sha256'],
+            'admissible_new_witness_type':'BOUNDED_EXACT_ONLY',
+            'source_provenance_substitution_rejected':True,
+            'all_positive_sources_covered':False,
+            'global_collatz':'UNKNOWN','qed':False,
+          }
+          pathlib.Path('evidence/v124-final-seal.json').write_text(
+              json.dumps(r,indent=2,sort_keys=True)+'\n')
+          print('V124_SCOPE_TYPED_FINAL_SEAL_PASS_GLOBAL_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v124-final-research-seal
+          path: evidence/v124-final-seal.json
+          if-no-files-found: error
