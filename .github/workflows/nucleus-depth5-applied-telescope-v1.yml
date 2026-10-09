@@ -128,6 +128,7 @@ jobs:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
                   extra['NUCLEUS_TRACE_VALUE_MISMATCH']='1'
               else:
+                  extra['NUCLEUS_TRACE_CLASS_PROJECTION_RECEIVER']='1'
                   extra['NUCLEUS_TRACE_PROJECTION_OTHER']='1'
                   extra['NUCLEUS_TRACE_MULPOS_REC_CONGRUENCE']='1'
                   extra['NUCLEUS_TRACE_REC_ARG_OBLIGATIONS']='1'
@@ -158,6 +159,7 @@ jobs:
                    'recursor_arg_obligations':[x for x in lines if 'NUCLEUS_MULPOS_REC_ARG_OBLIGATIONS:' in x][-8:],
                    'recursor_congruence':[x for x in lines if 'NUCLEUS_MULPOS_REC_CONGRUENCE:' in x][-24:],
                    'projection_other':[x for x in lines if 'NUCLEUS_PROJECTION_OTHER:' in x][-15:],
+                   'class_receiver':[x for x in lines if 'NUCLEUS_CLASS_PROJECTION_RECEIVER:' in x][-20:],
                    'projection_cheap':[x for x in lines if 'NUCLEUS_PROJECTION_CHEAP:' in x][-6:],
                    'dependency_gap':[x for x in lines if 'NUCLEUS_DEPENDENCY_GAP:' in x][-6:]}
               idx={0:''}
