@@ -2,7 +2,112 @@ use std::error::Error;
 use std::fmt;
 use std::io::BufRead;
 
-use serde_json::{Map, Value};
+use serde::de::{self, Deserialize, Deserializer, MapAccess, SeqAccess, Visitor};
+use serde_json::{Map, Number, Value};
+
+struct StrictValue(Value);
+
+impl<'de> Deserialize<'de> for StrictValue {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(StrictValueVisitor)
+    }
+}
+
+struct StrictValueVisitor;
+
+impl<'de> Visitor<'de> for StrictValueVisitor {
+    type Value = StrictValue;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("a JSON value without duplicate object keys")
+    }
+
+    fn visit_unit<E>(self) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(StrictValue(Value::Null))
+    }
+
+    fn visit_none<E>(self) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(StrictValue(Value::Null))
+    }
+
+    fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(StrictValue(Value::Bool(value)))
+    }
+
+    fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(StrictValue(Value::Number(Number::from(value))))
+    }
+
+    fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(StrictValue(Value::Number(Number::from(value))))
+    }
+
+    fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        let number = Number::from_f64(value).ok_or_else(|| E::custom("non-finite JSON number"))?;
+        Ok(StrictValue(Value::Number(number)))
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(StrictValue(Value::String(value.to_owned())))
+    }
+
+    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(StrictValue(Value::String(value)))
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut values = Vec::new();
+        while let Some(StrictValue(value)) = seq.next_element::<StrictValue>()? {
+            values.push(value);
+        }
+        Ok(StrictValue(Value::Array(values)))
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: MapAccess<'de>,
+    {
+        let mut object = Map::new();
+        while let Some(key) = map.next_key::<String>()? {
+            if object.contains_key(&key) {
+                return Err(de::Error::custom(format!("duplicate object key {key:?}")));
+            }
+            let StrictValue(value) = map.next_value::<StrictValue>()?;
+            object.insert(key, value);
+        }
+        Ok(StrictValue(Value::Object(object)))
+    }
+}
 
 use crate::id::{DuplicateId, ExprId, IdTable, LevelId, NameId};
 use crate::syntax::{
@@ -150,10 +255,12 @@ impl ParsedExport {
 }
 
 fn parse_json(line: &str, line_number: usize) -> Result<Value, ParseError> {
-    serde_json::from_str(line).map_err(|error| ParseError::Json {
-        line: line_number,
-        message: error.to_string(),
-    })
+    serde_json::from_str::<StrictValue>(line)
+        .map(|value| value.0)
+        .map_err(|error| ParseError::Json {
+            line: line_number,
+            message: error.to_string(),
+        })
 }
 
 fn parse_meta(value: Value) -> Result<Meta, ParseError> {
@@ -227,6 +334,9 @@ fn parse_name(
     line: usize,
 ) -> Result<(), ParseError> {
     let id = NameId(number(object, "in", line)?);
+    if id.0 == 0 {
+        return Err(malformed(line, "name id 0 is reserved"));
+    }
     let name = match (object.get("str"), object.get("num")) {
         (Some(value), None) => Name::Str {
             prefix: NameId(nested_number(value, "pre", line)?),
@@ -719,5 +829,59 @@ fn malformed(line: usize, message: &str) -> ParseError {
     ParseError::Malformed {
         line,
         message: message.to_owned(),
+    }
+}
+
+
+#[cfg(test)]
+mod strict_json_tests {
+    use super::*;
+    use std::io::Cursor;
+
+    const META: &str = r#"{"meta":{"format":{"version":"3.1.0"}}}"#;
+
+    fn parse_lines(lines: &[&str]) -> Result<ParsedExport, ParseError> {
+        let mut input = String::from(META);
+        input.push('\n');
+        for line in lines {
+            input.push_str(line);
+            input.push('\n');
+        }
+        parse(Cursor::new(input.into_bytes()))
+    }
+
+    #[test]
+    fn rejects_trailing_bytes_after_record() {
+        let result = parse_lines(&[r#"{"in":1,"str":{"pre":0,"str":"a"}} x"#]);
+        assert!(matches!(result, Err(ParseError::Json { .. })));
+    }
+
+    #[test]
+    fn rejects_duplicate_top_level_object_key() {
+        let result = parse_lines(&[r#"{"in":1,"in":2,"str":{"pre":0,"str":"a"}}"#]);
+        assert!(matches!(result, Err(ParseError::Json { .. })));
+    }
+
+    #[test]
+    fn rejects_duplicate_nested_object_key() {
+        let result = parse_lines(&[r#"{"in":1,"str":{"pre":0,"pre":1,"str":"a"}}"#]);
+        assert!(matches!(result, Err(ParseError::Json { .. })));
+    }
+
+    #[test]
+    fn rejects_duplicate_key_after_unescaping() {
+        let result = parse_lines(&[r#"{"in":1,"str":{"pre":0,"\u0070re":1,"str":"a"}}"#]);
+        assert!(matches!(result, Err(ParseError::Json { .. })));
+    }
+
+    #[test]
+    fn rejects_reserved_anonymous_name_index_zero() {
+        let result = parse_lines(&[r#"{"in":0,"str":{"pre":0,"str":"a"}}"#]);
+        assert!(matches!(result, Err(ParseError::Malformed { .. })));
+    }
+
+    #[test]
+    fn accepts_minimal_valid_export() {
+        assert!(parse_lines(&[]).is_ok());
     }
 }
