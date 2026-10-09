@@ -1,0 +1,120 @@
+name: WebArena GitLab blind profile website qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_gitlab_profile_website_blind.yml"
+      - "scripts/webarena_gitlab_profile_website_blind.py"
+      - "tests/test_webarena_gitlab_profile_website_blind.py"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned evaluator
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start GitLab
+        run: |
+          mkdir -p artifacts/webarena_gitlab_profile_blind
+          docker pull am1n3e/webarena-verified-gitlab
+          docker image inspect am1n3e/webarena-verified-gitlab --format '{{index .RepoDigests 0}}' > artifacts/webarena_gitlab_profile_blind/gitlab_image_digest.txt
+          docker run -d --name gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 180); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if [ "$code" = 200 ]; then exit 0; fi
+            sleep 3
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install browser and evaluator
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Verify task-ID-blind intent grammar
+        run: |
+          python -m unittest discover -s tests -p 'test_webarena_gitlab_profile_website_blind.py' -v
+      - name: Execute two blind profile mutations
+        run: |
+          ROOT=artifacts/webarena_gitlab_profile_blind
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0,
+          "credentials":{"username":"byteblaze","password":"hello1234"}}}}
+          JSON
+          python - <<'PY'
+          import json,sys,subprocess,uuid
+          from pathlib import Path
+          root=Path("artifacts/webarena_gitlab_profile_blind")
+          tasks=json.loads((root/"hard.json").read_text())
+          by_id={int(t["task_id"]):t for t in tasks}
+          records={}
+          for ident in (449,451):
+              task=by_id[ident]
+              slot=uuid.uuid4().hex
+              out=root/"output"/slot
+              out.mkdir(parents=True,exist_ok=True)
+              cmd=[sys.executable,"scripts/webarena_gitlab_profile_website_blind.py",
+                  "--intent",task["intent"],"--start-url",task["start_urls"][0],
+                  "--output-dir",str(out)]
+              result=subprocess.run(cmd,capture_output=True,text=True,timeout=200,check=False)
+              (out/"stdout.txt").write_text(result.stdout[-20000:])
+              (out/"stderr.txt").write_text(result.stderr[-30000:])
+              records[str(ident)]={"slot":slot,"exit_code":result.returncode}
+              print("TASK",ident,"EXIT",result.returncode,result.stderr[-1200:],flush=True)
+          (root/"manifest.json").write_text(json.dumps(records,indent=2)+"\n")
+          PY
+      - name: Officially score observed mutation network traces
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_gitlab_profile_blind")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          runs=json.loads((root/"manifest.json").read_text())
+          rows={};failures=[]
+          for key,record in runs.items():
+              ident=int(key);out=root/"output"/record["slot"]
+              if record["exit_code"]!=0 or not (out/"agent_response.json").is_file() or not (out/"network.har").is_file():
+                  rows[key]={"score":0.0,"status":"execution_failed","exit_code":record["exit_code"]}
+                  failures.append(ident);continue
+              try:
+                  trace=NetworkTrace.from_har(out/"network.har")
+                  outcome=wa.evaluate_task(task_id=ident,agent_response=out/"agent_response.json",network_trace=trace)
+                  row={"score":float(outcome.score),"status":outcome.status.value,
+                       "network_events":len(trace.evaluation_events)}
+                  (out/"official.json").write_text(json.dumps(outcome.model_dump(mode="json",exclude_none=True),indent=2)+"\n")
+                  rows[key]=row
+                  if row["score"]!=1.0 or row["status"]!="success":failures.append(ident)
+              except Exception as exc:
+                  rows[key]={"score":0.0,"status":"evaluation_error","error":repr(exc)}
+                  failures.append(ident)
+          seal={"epistemic_state":"WARRANTED_BOUNDED" if not failures else "CANDIDATE_WITH_RESIDUALS",
+              "boundary":"two task-ID-blind GitLab profile website mutations with independent readback and official network evaluator",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "results":rows,"failures":failures}
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2),flush=True)
+          if failures:raise SystemExit(f"profile mutation residuals: {failures}")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-gitlab-profile-website-blind
+          path: artifacts/webarena_gitlab_profile_blind
