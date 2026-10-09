@@ -46,12 +46,16 @@ class StarObservation(unittest.IsolatedAsyncioTestCase):
         async def observed(page,method,path):
             calls.append((method,path))
             if method=='GET' and 'starred=true' not in path and '&page=1' in path:return api_rows
-            if method=='POST' and path.endswith('/star'):return {'status':201}
             if method=='GET' and 'starred=true' in path:return api_rows
             raise AssertionError((method,path))
-        with patch('webarena_gitlab_star_blind.api_request',side_effect=observed):
+        async def click(page,project):
+            calls.append(('UI_STAR',project['id']))
+            return {'id':project['id'],'before':'Star','after':'Unstar'}
+        with patch('webarena_gitlab_star_blind.api_request',side_effect=observed), patch(
+            'webarena_gitlab_star_blind.star_project_once',side_effect=click):
             evidence=await perform(None,2)
-        self.assertEqual(len([x for x in calls if x[0]=='POST']),2)
+        self.assertEqual([x for x in calls if x[0]=='UI_STAR'],[('UI_STAR',8),('UI_STAR',17)])
+        self.assertFalse(any(x[0]=='POST' for x in calls))
         self.assertEqual(evidence['verified_project_ids'],[8,17])
 
 if __name__=='__main__':unittest.main()
@@ -79,14 +83,16 @@ class LocalStarRankingTests(unittest.IsolatedAsyncioTestCase):
                 return early
             if method=='GET' and '&page=2' in path:
                 return late
-            if method=='POST' and path.endswith('/star'):
-                return {'status':201}
             raise AssertionError((method,path))
-        with patch('webarena_gitlab_star_blind.api_request',side_effect=request):
+        async def click(page,project):
+            observed.append(('UI_STAR',project['id']))
+            return {'id':project['id'],'before':'Star','after':'Unstar'}
+        with patch('webarena_gitlab_star_blind.api_request',side_effect=request), patch(
+            'webarena_gitlab_star_blind.star_project_once',side_effect=click):
             evidence=await perform(None,3)
         self.assertEqual(evidence['verified_project_ids'],[101,102,103])
         self.assertEqual(evidence['observed_project_count'],103)
         self.assertEqual(evidence['observed_pages'],2)
-        self.assertEqual(len([call for call in observed if call[0]=='POST']),3)
+        self.assertEqual(len([call for call in observed if call[0]=='UI_STAR']),3)
         self.assertLess(observed.index(next(c for c in observed if c[0]=='GET' and '&page=2' in c[1])),
-                        observed.index(next(c for c in observed if c[0]=='POST')))
+                        observed.index(next(c for c in observed if c[0]=='UI_STAR')))

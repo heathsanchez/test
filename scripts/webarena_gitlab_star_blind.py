@@ -15,6 +15,7 @@ from pathlib import Path
 
 from playwright.async_api import async_playwright
 from webarena_gitlab_commit_counts import sign_in
+from webarena_gitlab_star_dom_action import star_project_once
 
 BASE='http://localhost:8023'
 NUMBER_WORDS={'one':1,'two':2,'three':3,'four':4,'five':5,
@@ -65,15 +66,13 @@ def choose_projects(rows:list[dict],count:int)->list[dict]:
 
 
 async def api_request(page,method:str,path:str):
-    if method not in ('GET','POST') or not path.startswith('/api/v4/projects'):
-        raise ValueError('request must stay inside the authenticated GitLab project API')
+    if method != 'GET' or not path.startswith('/api/v4/projects'):
+        raise ValueError('star write must use observed UI action; API helper is read-only')
     result=await page.evaluate('''async ({url,method}) => {
       const r=await fetch(url,{method,credentials:'same-origin',
         headers:{'Accept':'application/json'}});
       return {status:r.status,text:await r.text()};
     }''',{'url':BASE+path,'method':method})
-    if method=='POST':
-        return {'status':result['status'], 'body':result.get('text','')[:400]}
     if result['status']!=200:
         raise RuntimeError(f'GitLab project GET failed {result["status"]}: {result.get("text","")[:400]}')
     return json.loads(result['text'])
@@ -118,11 +117,7 @@ async def perform(page,count:int)->dict:
     chosen=choose_projects(ranked,count)
     receipt=[]
     for project in chosen:
-        response=await api_request(page,'POST',f'/api/v4/projects/{project["id"]}/star')
-        if response['status'] not in (200,201,304):
-            raise RuntimeError(f'GitLab star write for project {project["id"]} returned HTTP {response["status"]}')
-        receipt.append({'project':project['path_with_namespace'],
-                        'id':project['id'],'status':response['status']})
+        receipt.append(await star_project_once(page,project))
     # Readback is safe to repeat; never repeat a write after an ambiguous POST.
     starred=set()
     for index in range(1,31):

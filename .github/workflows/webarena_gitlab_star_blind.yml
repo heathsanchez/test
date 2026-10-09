@@ -8,6 +8,8 @@ on:
       - ".github/workflows/webarena_gitlab_star_blind.yml"
       - "scripts/webarena_gitlab_star_blind.py"
       - "tests/test_webarena_gitlab_star_blind.py"
+      - "scripts/webarena_gitlab_star_dom_action.py"
+      - "tests/test_webarena_gitlab_star_dom_action.py"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -50,6 +52,7 @@ jobs:
       - name: Verify source-boundary controls
         run: |
           python -m unittest discover -s tests -p 'test_webarena_gitlab_star_blind.py' -v
+          python -m unittest discover -s tests -p 'test_webarena_gitlab_star_dom_action.py' -v
       - name: Execute one user-intent starred-project mutation
         run: |
           ROOT=artifacts/webarena_gitlab_star
