@@ -1155,6 +1155,59 @@ fn compare_values(
                 // after proving the receiver and all applied arguments equal.
                 // The existing source-level Nat computation never licenses
                 // identifying unrelated binder environments or Nat indices.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_REC_ARG_OBLIGATIONS").is_some()
+                    && depth >= 5 && depth <= 8 && depth == context.len()
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static COUNT: AtomicUsize = AtomicUsize::new(0);
+                    if COUNT.fetch_add(1, Ordering::Relaxed) < 8 {
+                        let machine = checker.machine();
+                        let left_normal = machine.expose(
+                            left_structure.clone(), Transparency::Full, current_budget.min(256),
+                        );
+                        let right_normal = machine.expose(
+                            right_structure.clone(), Transparency::Full, current_budget.min(256),
+                        );
+                        if let (Some(Value::Neutral(lhs)), Some(Value::Neutral(rhs))) =
+                            (left_normal.proven_value(), right_normal.proven_value())
+                        {
+                            if let (
+                                NeutralHead::Const { name: ln, levels: ll },
+                                NeutralHead::Const { name: rn, levels: rl },
+                            ) = (&lhs.head, &rhs.head)
+                            {
+                                if ln == rn && ll == rl
+                                    && checker.nat_primitives().is_some_and(|nat| nat.recursor == *ln)
+                                    && lhs.spine.len() == 4 && rhs.spine.len() == 4
+                                {
+                                    let mut obligations = Vec::new();
+                                    for (index, (a, b)) in lhs.spine.iter().zip(&rhs.spine).enumerate() {
+                                        let preferred = convert_with_policy_in_context(
+                                            checker, &TypeValue::Term(a.clone()), &TypeValue::Term(b.clone()),
+                                            128, DeltaPolicy::PreferredOnly, depth, context,
+                                        );
+                                        let guarded = if preferred.is_proven() {
+                                            preferred.clone()
+                                        } else {
+                                            convert_with_policy_in_context(
+                                                checker, &TypeValue::Term(a.clone()), &TypeValue::Term(b.clone()),
+                                                128, DeltaPolicy::GuardedSemanticFallback, depth, context,
+                                            )
+                                        };
+                                        obligations.push(format!(
+                                            "arg={index}:left={a:?}:right={b:?}:preferred={preferred:?}:guarded={guarded:?}"
+                                        ));
+                                    }
+                                    eprintln!(
+                                        "NUCLEUS_MULPOS_REC_ARG_OBLIGATIONS:depth={depth}:type={left_type:?}:index={left_index}:recursor={ln:?}:levels={ll:?}:left_frame={}:right_frame={}:obligations={obligations:?}",
+                                        left_structure.env.id(), right_structure.env.id(),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
                 let probe = (current_budget / 2).min(128);
                 if probe >= 8
                     && left_spine.len() == right_spine.len()
