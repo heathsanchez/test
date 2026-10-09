@@ -124,7 +124,7 @@ theorem all_offsets_strict_smaller_forces_slope
   · exact hguard
   · have hg : A + 1 ≤ B := by omega
     have hm : A * (a + 1) + (a + 1) ≤ B * (a + 1) := by
-      simpa only [Nat.add_mul, one_mul] using
+      simpa only [Nat.add_mul, Nat.one_mul] using
         (Nat.mul_le_mul_right (a + 1) hg)
     have hs := h (a + 1)
     omega
@@ -184,13 +184,13 @@ theorem common_suffix_preserves_weighted_orientation
       (2 ^ j * 3 ^ SourceProduct.oddCount a i) *
         (2 ^ k * 3 ^ c) := by
     rw [ha]
-    simp [Nat.pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+    simp [Nat.pow_add, Nat.mul_assoc, Nat.mul_left_comm]
   have hr :
       2 ^ (i + k) * 3 ^ SourceProduct.oddCount p (j + k) =
       (2 ^ i * 3 ^ SourceProduct.oddCount p j) *
         (2 ^ k * 3 ^ c) := by
     rw [hb]
-    simp [Nat.pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+    simp [Nat.pow_add, Nat.mul_assoc, Nat.mul_left_comm]
   have h2 : 0 < (2 : Nat) ^ k := Nat.pow_pos (by decide)
   have h3 : 0 < (3 : Nat) ^ c := Nat.pow_pos (by decide)
   have hq : 0 < 2 ^ k * 3 ^ c := Nat.mul_pos h2 h3
