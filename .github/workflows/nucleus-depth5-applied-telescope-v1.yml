@@ -164,7 +164,7 @@ jobs:
                       z=j.get('str',j.get('num'))
                       prefix=idx.get(z['pre'],'')
                       idx[j['in']]=prefix+('.' if prefix else '')+str(z.get('str',z.get('i')))
-                  row['neutral_head_names']={str(k):idx.get(k,'') for k in (169,147,75,62)}
+                  row['neutral_head_names']={str(k):idx.get(k,'') for k in (169,147,75,62,145,146,170)}
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
               rows.append(row)
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
