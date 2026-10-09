@@ -97,6 +97,39 @@ jobs:
           assert all(r['actual']!=0 for r in result if r['expected']==-1), 'false-index accepted'
           assert all(r['actual']==1 for r in result if r['expected']==1), 'malformed recursor not rejected'
           PY
+      - name: Prove Nat.succ_sub_succ_eq_sub in independent pinned exports
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,os,subprocess,hashlib
+          root=pathlib.Path('/tmp/tests/good')
+          rows=[]
+          for name in ['init-prelude','perf/magma-list-pair-n7']:
+              names={0:''};prefix=[]
+              for line in (root/(name+'.ndjson')).read_bytes().splitlines(keepends=True):
+                  j=json.loads(line);prefix.append(line)
+                  if 'in' in j:
+                      item=j.get('str',j.get('num'));base=names.get(item['pre'],'')
+                      names[j['in']]=base+('.' if base else '')+str(item.get('str',item.get('i')))
+                  if 'thm' in j and names.get(j['thm']['name'])=='Nat.succ_sub_succ_eq_sub':
+                      break
+              else:
+                  raise AssertionError('missing named theorem '+name)
+              raw=b''.join(prefix)
+              p=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=raw,
+                stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45,
+                env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_NAT_ADDONE':'1',
+                                'NUCLEUS_TRACE_NAT_SUBSUCC':'1'})
+              lines=p.stderr.decode(errors='replace').splitlines()
+              row={'name':name,'actual':p.returncode,'sha256':hashlib.sha256(raw).hexdigest(),
+                   'nat_add_one':sum('NUCLEUS_NAT_ADDONE:checked-one' in t for t in lines),
+                   'last':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-4:]}
+              rows.append(row)
+              print('SUCC_SUB_SUCC='+json.dumps(row,sort_keys=True),flush=True)
+          out=pathlib.Path('metatron-kernel/evidence-out/nat-sub-succ')
+          (out/'successor-subtraction.json').write_text(json.dumps(rows,indent=2))
+          assert all(row['actual']==0 for row in rows),'successor proof not yet verified'
+          PY
       - name: Requalify immutable 196-case corpus with no wrong verdicts
         run: |
           set -euo pipefail
