@@ -1464,6 +1464,38 @@ fn compare_values(
                         }
                     }
                 }
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_DEEP_LOCAL_PAIR").is_some()
+                    && left.spine.is_empty() && right.spine.is_empty()
+                    && matches!((&left.head,&right.head),
+                        (NeutralHead::Free(FreeId(2)),NeutralHead::Free(FreeId(6))) |
+                        (NeutralHead::Free(FreeId(6)),NeutralHead::Free(FreeId(2))))
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static COUNT:AtomicUsize=AtomicUsize::new(0);
+                    if COUNT.fetch_add(1,Ordering::Relaxed)<24 {
+                        let lhs=context.get(2);
+                        let rhs=context.get(6);
+                        let proposition=|ty:Option<&TypeValue>|{
+                            if let Some(TypeValue::Term(cl))=ty {
+                                Some(checker.is_proposition_in_context(
+                                    cl.expr,context,&cl.env,current_budget.min(2048)
+                                ))
+                            } else {None}
+                        };
+                        let types_convert=match (lhs,rhs) {
+                            (Some(a),Some(b))=>Some(convert_with_policy_in_context(
+                                checker,a,b,current_budget.min(1024),
+                                DeltaPolicy::GuardedSemanticFallback,depth,context
+                            )),
+                            _=>None,
+                        };
+                        eprintln!(
+                            "NUCLEUS_DEEP_LOCAL_PAIR:depth={depth}:context_len={}:lhs={lhs:?}:rhs={rhs:?}:lhs_prop={:?}:rhs_prop={:?}:type_relation={types_convert:?}",
+                            context.len(),proposition(lhs),proposition(rhs)
+                        );
+                    }
+                }
                 match compare_neutral_heads(checker, left, right, current_budget) {
                     Judgment::Proven { .. } => {}
                     other => return other,
