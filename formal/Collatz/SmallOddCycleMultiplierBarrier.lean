@@ -33,6 +33,17 @@ No claim about periods with 3,5,6... odd visits, and no exclusion of
 unbounded no-merge orbits. GLOBAL COLLATZ UNKNOWN.
 -/
 
+/-- Exact rearrangement of the four actual factors in an odd step. -/
+private theorem odd_step_factors (a b c : Nat) :
+    (a * 3) * (b * 2) * c = (a * b) * (3 * (2 * c)) := by
+  calc
+    (a * 3) * (b * 2) * c = a * (3 * (b * (2 * c))) := by
+      simp only [Nat.mul_assoc]
+    _ = a * (b * (3 * (2 * c))) := by
+      rw [Nat.mul_left_comm 3 b]
+    _ = (a * b) * (3 * (2 * c)) := by
+      simp only [Nat.mul_assoc]
+
 /-- A parity-exact multiplier upper bound for every genuine prefix
     whose actual orbit never hits the terminal odd source 1. -/
 theorem never_one_prefix_multiplicative_bound
@@ -60,8 +71,7 @@ theorem never_one_prefix_multiplicative_bound
               simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
         _ = 3 ^ oddCount n k * 2 ^ k *
             iter shortcut k n := by
-              rw [hstep]
-              rfl
+              simpa only [hstep]
         _ ≤ 10 ^ oddCount n k * n := ih
         _ = 10 ^ oddCount n (k + 1) * n := by rw [ha]
     · have ha : oddCount n (k + 1) = oddCount n k + 1 := by
@@ -80,9 +90,8 @@ theorem never_one_prefix_multiplicative_bound
             (3 ^ oddCount n k * 2 ^ k) *
               (3 * (2 * shortcut x)) := by
               rw [ha, iter_succ_last]
-              simp only [Nat.pow_succ]
-              dsimp [x]
-              simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+              simpa only [Nat.pow_succ] using
+                odd_step_factors (3 ^ oddCount n k) (2 ^ k) (shortcut x)
         _ ≤ (3 ^ oddCount n k * 2 ^ k) * (10 * x) := hmult
         _ = 10 * (3 ^ oddCount n k * 2 ^ k *
             iter shortcut k n) := by
@@ -91,8 +100,7 @@ theorem never_one_prefix_multiplicative_bound
         _ ≤ 10 * (10 ^ oddCount n k * n) :=
           Nat.mul_le_mul_left 10 ih
         _ = 10 ^ (oddCount n k + 1) * n := by
-          simp [Nat.pow_succ]
-          simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+          simp [Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
         _ = 10 ^ oddCount n (k + 1) * n := by rw [ha]
 
 /-- A real positive period, with an actual no-1 future, has the
@@ -130,7 +138,7 @@ theorem power_two_above_nine_at_least_sixteen
       calc
         (2 : Nat) ^ k = 2 ^ ((k - 4) + 4) := by rw [hsum]
         _ = 2 ^ (k - 4) * 2 ^ 4 := Nat.pow_add _ _ _
-        _ = 2 ^ (k - 4) * 16 := by decide
+        _ = 2 ^ (k - 4) * 16 := by simp
     have hp : 0 < (2 : Nat) ^ (k - 4) :=
       Nat.pow_pos (by decide)
     rw [heq]
@@ -163,7 +171,7 @@ theorem power_two_above_eighty_one_at_least_128
       calc
         (2 : Nat) ^ k = 2 ^ ((k - 7) + 7) := by rw [hsum]
         _ = 2 ^ (k - 7) * 2 ^ 7 := Nat.pow_add _ _ _
-        _ = 2 ^ (k - 7) * 128 := by decide
+        _ = 2 ^ (k - 7) * 128 := by simp
     have hp : 0 < (2 : Nat) ^ (k - 7) :=
       Nat.pow_pos (by decide)
     rw [heq]
