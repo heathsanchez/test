@@ -479,21 +479,37 @@ impl<'a> TypeChecker<'a> {
                         // exact telescope.  Earlier fields of a neutral
                         // structure stay neutral projections rather than
                         // becoming UNKNOWN.
-                        let structure_value = self.machine().expose(
-                            self.closure(*structure, frame.clone()),
-                            Transparency::Reducible,
-                            *remaining,
-                        );
-                        let Some(Value::Neutral(structure_value)) = structure_value.proven_value()
-                        else {
-                            return Judgment::unknown("projection-dependent-structure-value");
+                        // The type of field zero depends only on the
+                        // checked parameters and constructor declaration.
+                        // There is no previous field to substitute, so do
+                        // not force the receiver. This mirrors the official
+                        // kernel's constructor-telescope inference boundary.
+                        let structure_value = if index == 0 {
+                            None
+                        } else {
+                            let exposed = self.machine().expose(
+                                self.closure(*structure, frame.clone()),
+                                Transparency::Reducible,
+                                *remaining,
+                            );
+                            let Some(Value::Neutral(receiver)) = exposed.proven_value() else {
+                                return Judgment::unknown("projection-dependent-structure-value");
+                            };
+                            Some(receiver.clone())
                         };
+                        #[cfg(feature = "diagnostics")]
+                        if index == 0 && std::env::var_os("NUCLEUS_TRACE_FIELDZERO").is_some() {
+                            eprintln!("NUCLEUS_FIELDZERO:certified-telescope:structure={structure:?}:field={index}");
+                        }
 
                         let mut field_frame = EnvFrame::empty();
                         for parameter in neutral.spine.iter().take(spec.num_params) {
                             field_frame = field_frame.extend(parameter.clone());
                         }
                         for prior_index in 0..index {
+                            let Some(structure_value) = structure_value.as_ref() else {
+                                return Judgment::unknown("projection-prior-field-receiver");
+                            };
                             match &structure_value.head {
                                 NeutralHead::Const { name, .. } if *name == spec.constructor => {
                                     let field_offset = spec.num_params + prior_index;
