@@ -74,13 +74,15 @@ jobs:
                     'NUCLEUS_TRACE_DEPENDENCY_GAP':'1',
                     'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
                     'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
-                    'NUCLEUS_TRACE_VALUE_MISMATCH':'1'})
+                    'NUCLEUS_TRACE_VALUE_MISMATCH':'1',
+                    'NUCLEUS_TRACE_DEPENDENCY_VALUES':'1'})
               lines=p.stderr.decode(errors='replace').splitlines()
               row={'name':name,'actual':p.returncode,'expected':expected,
                    'sha256':hashlib.sha256(data).hexdigest(),
                    'semantic_rewrites':sum('NUCLEUS_NAT_SUBSUCC:' in x for x in lines),
                    'last':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-3:],
                    'gaps':[x for x in lines if 'NUCLEUS_DEPENDENCY_GAP:' in x][:2],
+                   'dep_values':[x[:6000] for x in lines if 'NUCLEUS_DEP_VALUES:' in x][-4:],
                    'neutral_first':[x[:1700] for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][:10],
                    'neutral_last':[x[:1700] for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-4:],
                    'value_first':[x[:2000] for x in lines if 'NUCLEUS_VALUE_MISMATCH:' in x][:4],
