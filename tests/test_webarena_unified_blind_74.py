@@ -20,6 +20,26 @@ class ComposedBlindRouting(unittest.TestCase):
         for intent,kind in examples:
             self.assertEqual(new_capability(intent,"__REDDIT__"),kind)
 
+    def test_verified_shopping_search_sort_is_reused(self):
+        self.assertEqual(
+            new_capability(
+                'Pull up the page with all "mouth night guard" listings sorted by descending price.',
+                "__SHOPPING__",
+            ),
+            "shopping_sort",
+        )
+        self.assertEqual(
+            new_capability(
+                'Pull up the page with all "iphone 12 phone case" listings sorted by name alphabetically.',
+                "__SHOPPING__",
+            ),
+            "shopping_sort",
+        )
+        self.assertIsNone(new_capability(
+            'Pull up the page with all "mouth night guard" listings sorted by descending price.',
+            "__REDDIT__",
+        ))
+
     def test_mutations_and_other_sites_delegate(self):
         self.assertIsNone(new_capability(
             'Post in books forum with title "A test post"',"__REDDIT__"

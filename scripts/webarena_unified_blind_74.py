@@ -14,10 +14,21 @@ from webarena_reddit_blind_retrieval_expansion import (
     parse_intent as parse_reddit_read_intent,
     run as run_reddit_read,
 )
+from webarena_shopping_sort_blind import (
+    parse_intent as parse_shopping_sort_intent,
+    run as run_shopping_sort,
+)
 
 
 def new_capability(intent: str,start_url: str) -> str | None:
-    if site_from_start(start_url)!="reddit":
+    site=site_from_start(start_url)
+    if site=="shopping":
+        try:
+            parse_shopping_sort_intent(intent)
+            return "shopping_sort"
+        except ValueError:
+            return None
+    if site!="reddit":
         return None
     try:
         kind,_=parse_reddit_read_intent(intent)
@@ -27,7 +38,10 @@ def new_capability(intent: str,start_url: str) -> str | None:
 
 
 async def run(intent: str,start_url: str,out: Path):
-    if new_capability(intent,start_url) is not None:
+    kind=new_capability(intent,start_url)
+    if kind=="shopping_sort":
+        return await run_shopping_sort(intent,start_url,out)
+    if kind is not None:
         return await run_reddit_read(intent,start_url,out)
     return await run_prior(intent,start_url,out)
 

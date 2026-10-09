@@ -16,6 +16,10 @@ on:
       - tests/test_webarena_payment_chronology.py
       - tests/test_webarena_spend_periods.py
       - tests/test_webarena_crosssite_post_timeout.py
+      - scripts/webarena_unified_blind_74.py
+      - tests/test_webarena_unified_blind_74.py
+      - scripts/webarena_shopping_sort_blind.py
+      - tests/test_webarena_shopping_sort_blind.py
 
 permissions:
   contents: read
