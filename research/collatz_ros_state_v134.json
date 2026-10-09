@@ -1,0 +1,660 @@
+{
+  "admission_schema": "COLLATZ_ROS_V134_LATE_ROOT_REUSE_AUTHORITY",
+  "archived_joins": [],
+  "chart_instances": {
+    "67b1c336f4e49d1d2e98": {
+      "all_offset_symbolic_equality": true,
+      "concrete_premises_individually_Lean_reified": false,
+      "derived_earlier": 3,
+      "derived_endpoint": 5,
+      "derived_source": 15,
+      "earlier_chart": {
+        "base": 3,
+        "clock": 1,
+        "endpoint": 5,
+        "endpoint_slope": 243,
+        "odd_count": 1,
+        "source_slope": 162,
+        "u": 81
+      },
+      "global_collatz": "UNKNOWN",
+      "parameters": {
+        "a": 15,
+        "i": 8,
+        "j": 1,
+        "p": 3,
+        "t": 0,
+        "u": 3,
+        "v": 81
+      },
+      "premise_authority": "v132_exact_affine_chart_hypotheses",
+      "schema": "COLLATZ_V132_CHART_PREMISE_CERTIFICATE",
+      "source_chart": {
+        "base": 15,
+        "clock": 8,
+        "endpoint": 5,
+        "endpoint_slope": 243,
+        "odd_count": 4,
+        "source_slope": 768,
+        "u": 3
+      },
+      "theorem_support": "v131_chart_overlap_generic"
+    }
+  },
+  "conditional_compilers": [
+    {
+      "compiler_id": "V131_GENERIC_TWO_CLOCK_AFFINE_PARITY_CHART_OVERLAP",
+      "conclusion": "LawfulFutureJoin(a+2^i*u*t,p+2^j*v*t,i,j)",
+      "evidence_boundary": "new chart hypotheses are exact-symbolic-executable until separately Lean reified",
+      "input": "a,p,i,j,u,v : Nat; t : Nat",
+      "premises": [
+        "0<p<a",
+        "2^j*v <= 2^i*u",
+        "T^i(a)=T^j(p)",
+        "3^oddCount(a,i)*u=3^oddCount(p,j)*v"
+      ],
+      "status": "WARRANTED_FORMAL_CONDITIONAL_SOUNDNESS",
+      "support": "v131_chart_overlap_generic",
+      "theorem": "CollatzFinal.chartOverlapJoin",
+      "universally_available_applicable_charts": "UNKNOWN"
+    }
+  ],
+  "controller_revision": 5,
+  "global_collatz": "UNKNOWN",
+  "grammar": {
+    "active": "SOURCE_INDEXED_TWO_CLOCK",
+    "constructors": [
+      "actual_source_to_earlier_two_clock_join",
+      "monotone_warranted_join_composition",
+      "finite_negative_2adic_naturalness_guard",
+      "RELATIONAL_ODD_THREE_ROOT_JOIN",
+      "FORMAL_ROOT9_TWO_CLOCK_JOIN",
+      "TWO_CLOCK_CHART_OVERLAP_CONDITIONAL",
+      "FORMAL_ROOT23_TO_ODD_THREE_ROOT_JOIN"
+    ],
+    "rejected_as_complete": [
+      "FIXED_F_SOURCE",
+      "PREFERRED_ROOT_SELECTOR"
+    ],
+    "revision": 4
+  },
+  "history": [
+    {
+      "new_grammar": "SOURCE_INDEXED_TWO_CLOCK",
+      "old_grammar": "FIXED_F_SOURCE",
+      "op": "REFINE_FROM_PROTECTED_SEPARATOR",
+      "proof_run": 37975109424,
+      "separator": "V121_SOURCE_27_F83_NO_SMALLER_PREIMAGE"
+    },
+    {
+      "join_id": "f3e9c9c973dc0e3fc81d",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 27,
+      "support": "v122_exact_first_join_27"
+    },
+    {
+      "join_id": "9f681ec8d201194cb3ec",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 11,
+      "support": "v123_bounded_arithmetic"
+    },
+    {
+      "join_id": "332ca0faa63137a9797c",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 3,
+      "support": "v123_bounded_arithmetic"
+    },
+    {
+      "join_id": "0ebb2d0bb5ec541cccf3",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 11,
+      "support": "v123_bounded_arithmetic"
+    },
+    {
+      "from_revision": 1,
+      "op": "MIGRATE_PROTECTED_PROVENANCE_ADMISSION",
+      "prior_qualified_head": "e44442266792ae2a072c4b320316021a5fd8bb3a",
+      "to_revision": 2,
+      "trigger": "V123 true but unrelated theorem can be falsely attached to a witness",
+      "universal_collatz": "UNKNOWN"
+    },
+    {
+      "join_id": "20f402caf4175fafa442",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 7,
+      "support": "v124_exact_replay"
+    },
+    {
+      "join_id": "3e66429c41b37d12f932",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 5,
+      "support": "v124_exact_replay"
+    },
+    {
+      "join_id": "729c84b8f4ce6cc7a473",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 7,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "both_clocks_preserved": true,
+      "global_collatz": "UNKNOWN",
+      "law_run": 37984356667,
+      "law_scope": "all natural t in source 21+72*t ONLY",
+      "new_constructor": "V129_ODD_THREE_ROOT_RELATIONAL_JOIN",
+      "op": "REFINE_GRAMMAR_FROM_FORMAL_ALL_CLOCK_SEPARATOR",
+      "original_source_preserved": true,
+      "proof_run": 37983621550,
+      "separator": "V128_SOURCE21_CHOSEN_ROOT_STUTTERS_FOR_EVERY_CLOCK"
+    },
+    {
+      "join_id": "2eccfd2433f9163694a5",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 21,
+      "support": "v129_odd_three_root_family"
+    },
+    {
+      "join_id": "6f5f98f04eab6b125713",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 21,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "formal_root9_theorem": "CollatzFinal.root9ViaChart",
+      "generic_theorem_blob": "c35bde45d11aad51f46e6e8beced5322acd43e9b",
+      "generic_theorem_run": 37986167263,
+      "global_collatz": "UNKNOWN",
+      "op": "ADMIT_FORMAL_CONDITIONAL_CHART_COMPILER_AND_EXACT_ROOT9_SCOPE",
+      "protect_two_independent_clocks": true,
+      "separate_exact_chart_premise_authority": true,
+      "universal_source_event_production": "UNKNOWN"
+    },
+    {
+      "join_id": "b2bb6d874b28a2bb80c2",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 9,
+      "support": "v131_root9_formal_family"
+    },
+    {
+      "join_id": "67b1c336f4e49d1d2e98",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 15,
+      "support": "v132_exact_affine_chart_hypotheses"
+    },
+    {
+      "join_id": "aa592f18cc5136afe027",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 9,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "join_id": "d49177c9b1851c61e03a",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 15,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "derive_source27_to2_without_new_trajectory": true,
+      "derive_source27_to3_by_parent_DAG": true,
+      "global_collatz": "UNKNOWN",
+      "new_formal_root23_typed_family": "23+384*t\u21923+54*t, clocks(7,1)",
+      "no_all_offset_source27_claim": true,
+      "old_qualified_predecessor": 23,
+      "op": "REFINE_FROM_V122_27_FIRST_LOWER_SOURCE_SEAM",
+      "preserved_v131_chart_compiler_run": 37986167263,
+      "previous_exact_source": 27,
+      "qualified_v133_run": 37988274186,
+      "source27_to23_clocks": [
+        59,
+        0
+      ],
+      "universal_event_producer": "UNKNOWN"
+    },
+    {
+      "join_id": "c15a5694cc350d84c7fb",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 23,
+      "support": "v133_root23_formal_family"
+    },
+    {
+      "join_id": "725c4a9642e61e83b33b",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 27,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "join_id": "3d536ec765d2c9a5453a",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 23,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "join_id": "deef3edf5737f8dc5775",
+      "op": "WARRANTED_BOUNDED_CONSEQUENCE",
+      "source": 27,
+      "support": "v123_composition_theorem"
+    }
+  ],
+  "joins": [
+    {
+      "common": 23,
+      "earlier": 23,
+      "earlier_clock": 0,
+      "id": "f3e9c9c973dc0e3fc81d",
+      "origin": "LEAN_FORMAL_SOURCE27_EXACT_FIRST_CLOCK",
+      "parents": [],
+      "source": 27,
+      "source_clock": 59,
+      "support": "v122_exact_first_join_27"
+    },
+    {
+      "common": 5,
+      "earlier": 3,
+      "earlier_clock": 1,
+      "id": "9f681ec8d201194cb3ec",
+      "origin": "EXACT_ASYNCHRONOUS_ORBIT",
+      "parents": [],
+      "source": 11,
+      "source_clock": 6,
+      "support": "v123_bounded_arithmetic"
+    },
+    {
+      "common": 2,
+      "earlier": 2,
+      "earlier_clock": 0,
+      "id": "332ca0faa63137a9797c",
+      "origin": "EXACT_SMALLER_SOURCE",
+      "parents": [],
+      "source": 3,
+      "source_clock": 4,
+      "support": "v123_bounded_arithmetic"
+    },
+    {
+      "common": 1,
+      "earlier": 2,
+      "earlier_clock": 1,
+      "id": "0ebb2d0bb5ec541cccf3",
+      "origin": "CERTIFIED_RECOMPOSITION",
+      "parents": [
+        "9f681ec8d201194cb3ec",
+        "332ca0faa63137a9797c"
+      ],
+      "source": 11,
+      "source_clock": 10,
+      "support": "v123_bounded_arithmetic"
+    },
+    {
+      "common": 5,
+      "earlier": 5,
+      "earlier_clock": 0,
+      "id": "20f402caf4175fafa442",
+      "origin": "DIRECT_CHECKED_FINITE_PROOF",
+      "parents": [],
+      "source": 7,
+      "source_clock": 7,
+      "support": "v124_exact_replay"
+    },
+    {
+      "common": 4,
+      "earlier": 4,
+      "earlier_clock": 0,
+      "id": "3e66429c41b37d12f932",
+      "origin": "DIRECT_CHECKED_FINITE_PROOF",
+      "parents": [],
+      "source": 5,
+      "source_clock": 2,
+      "support": "v124_exact_replay"
+    },
+    {
+      "common": 4,
+      "earlier": 4,
+      "earlier_clock": 0,
+      "id": "729c84b8f4ce6cc7a473",
+      "origin": "CERTIFIED_RECOMPOSITION",
+      "parents": [
+        "20f402caf4175fafa442",
+        "3e66429c41b37d12f932"
+      ],
+      "source": 7,
+      "source_clock": 9,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "common": 8,
+      "earlier": 3,
+      "earlier_clock": 2,
+      "id": "2eccfd2433f9163694a5",
+      "origin": "V129_FORMAL_ODD_THREE_ROOT_PARAMETRIC_JOIN",
+      "parents": [],
+      "source": 21,
+      "source_clock": 3,
+      "support": "v129_odd_three_root_family"
+    },
+    {
+      "common": 2,
+      "earlier": 2,
+      "earlier_clock": 2,
+      "id": "6f5f98f04eab6b125713",
+      "origin": "CERTIFIED_RECOMPOSITION",
+      "parents": [
+        "2eccfd2433f9163694a5",
+        "332ca0faa63137a9797c"
+      ],
+      "source": 21,
+      "source_clock": 7,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "common": 5,
+      "earlier": 3,
+      "earlier_clock": 1,
+      "id": "b2bb6d874b28a2bb80c2",
+      "origin": "V131_ROOT9_FORMALLY_CHECKED_PARAMETRIC_JOIN",
+      "parents": [],
+      "source": 9,
+      "source_clock": 9,
+      "support": "v131_root9_formal_family"
+    },
+    {
+      "common": 5,
+      "earlier": 3,
+      "earlier_clock": 1,
+      "id": "67b1c336f4e49d1d2e98",
+      "origin": "V131_CONDITIONAL_CHART_WITH_BOUNDED_EXACT_PREMISES",
+      "parents": [],
+      "source": 15,
+      "source_clock": 8,
+      "support": "v132_exact_affine_chart_hypotheses"
+    },
+    {
+      "common": 1,
+      "earlier": 2,
+      "earlier_clock": 1,
+      "id": "aa592f18cc5136afe027",
+      "origin": "CERTIFIED_RECOMPOSITION",
+      "parents": [
+        "b2bb6d874b28a2bb80c2",
+        "332ca0faa63137a9797c"
+      ],
+      "source": 9,
+      "source_clock": 13,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "common": 1,
+      "earlier": 2,
+      "earlier_clock": 1,
+      "id": "d49177c9b1851c61e03a",
+      "origin": "CERTIFIED_RECOMPOSITION",
+      "parents": [
+        "67b1c336f4e49d1d2e98",
+        "332ca0faa63137a9797c"
+      ],
+      "source": 15,
+      "source_clock": 12,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "common": 5,
+      "earlier": 3,
+      "earlier_clock": 1,
+      "id": "c15a5694cc350d84c7fb",
+      "origin": "V133_ROOT23_FORMAL_ALL_OFFSET_JOIN",
+      "parents": [],
+      "source": 23,
+      "source_clock": 7,
+      "support": "v133_root23_formal_family"
+    },
+    {
+      "common": 5,
+      "earlier": 3,
+      "earlier_clock": 1,
+      "id": "725c4a9642e61e83b33b",
+      "origin": "CERTIFIED_RECOMPOSITION",
+      "parents": [
+        "f3e9c9c973dc0e3fc81d",
+        "c15a5694cc350d84c7fb"
+      ],
+      "source": 27,
+      "source_clock": 66,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "common": 1,
+      "earlier": 2,
+      "earlier_clock": 1,
+      "id": "3d536ec765d2c9a5453a",
+      "origin": "CERTIFIED_RECOMPOSITION",
+      "parents": [
+        "c15a5694cc350d84c7fb",
+        "332ca0faa63137a9797c"
+      ],
+      "source": 23,
+      "source_clock": 11,
+      "support": "v123_composition_theorem"
+    },
+    {
+      "common": 1,
+      "earlier": 2,
+      "earlier_clock": 1,
+      "id": "deef3edf5737f8dc5775",
+      "origin": "CERTIFIED_RECOMPOSITION",
+      "parents": [
+        "f3e9c9c973dc0e3fc81d",
+        "3d536ec765d2c9a5453a"
+      ],
+      "source": 27,
+      "source_clock": 70,
+      "support": "v123_composition_theorem"
+    }
+  ],
+  "negative_controls": [
+    {
+      "F_n": 11,
+      "assertion": "no_equal_clock_collision; asymmetric two-clock join exists",
+      "n": 3,
+      "support": "v66_future_quotient",
+      "type": "opposite_phase"
+    },
+    {
+      "cannot_infer_positive_infinite_survivor": true,
+      "changing_source": 16777215,
+      "fixed_natural_nondivisibility_witness_exponent": 26,
+      "horizon": 24,
+      "type": "FINITE_POSITIVE_SHADOW_OF_NEGATIVE_2ADIC_FIXED_POINT"
+    },
+    {
+      "cannot_infer_positive_infinite_survivor": true,
+      "changing_source": 1208925819614629174706175,
+      "fixed_natural_nondivisibility_witness_exponent": 82,
+      "horizon": 80,
+      "type": "FINITE_POSITIVE_SHADOW_OF_NEGATIVE_2ADIC_FIXED_POINT"
+    }
+  ],
+  "objective": "exclude_second_positive_future_coalescence_class",
+  "parametric_laws": [
+    {
+      "constructor_status": "WARRANTED_FORMAL_ALL_OFFSETS",
+      "earlier_affine": [
+        3,
+        12
+      ],
+      "earlier_clock": 2,
+      "endpoint_affine": [
+        8,
+        27
+      ],
+      "global_coverage": "UNKNOWN",
+      "guard": "0 < earlier < original source; both source and earlier congruent 3 modulo 6",
+      "law_id": "V129_ODD_THREE_ROOT_RELATIONAL_JOIN",
+      "parameter": "t:Nat",
+      "source_affine": [
+        21,
+        72
+      ],
+      "source_clock": 3,
+      "support": "v129_odd_three_root_family",
+      "theorem": "CollatzFinal.root21_family_join"
+    },
+    {
+      "constructor_status": "WARRANTED_FORMAL_ALL_OFFSETS",
+      "earlier_affine": [
+        3,
+        486
+      ],
+      "earlier_clock": 1,
+      "endpoint_affine": [
+        5,
+        729
+      ],
+      "global_coverage": "UNKNOWN",
+      "guard": "positive earlier source, 0<earlier<original source; both sources congruent to 3 mod 6",
+      "law_id": "V131_ODD_THREE_ROOT9_FORMALLY_CHECKED_FAMILY",
+      "parameter": "t:Nat",
+      "source_affine": [
+        9,
+        1536
+      ],
+      "source_clock": 9,
+      "support": "v131_root9_formal_family",
+      "theorem": "CollatzFinal.root9ViaChart"
+    },
+    {
+      "constructor_status": "WARRANTED_FORMAL_ALL_OFFSETS",
+      "earlier_affine": [
+        3,
+        54
+      ],
+      "earlier_clock": 1,
+      "endpoint_affine": [
+        5,
+        81
+      ],
+      "global_coverage": "UNKNOWN",
+      "guard": "0<3+54*t<23+384*t, source and earlier positive, earlier root=3 mod6",
+      "law_id": "V133_ROOT23_ODD_THREE_ROOT_ALL_OFFSET",
+      "parameter": "t:Nat",
+      "source_affine": [
+        23,
+        384
+      ],
+      "source_clock": 7,
+      "support": "v133_root23_formal_family",
+      "theorem": "CollatzFinal.root23ViaChart"
+    }
+  ],
+  "qed": false,
+  "rejected_candidates": [
+    {
+      "closed_set_size": 34,
+      "grammar": "FIXED_F_SOURCE",
+      "max_reachable_from_any_smaller_source": 80,
+      "source": 27,
+      "support": "v121_no_fixed_F27",
+      "target": 83,
+      "verdict": "EXCLUDED_ONLY_FOR_THIS_FIXED_ENDPOINT"
+    }
+  ],
+  "residuals": [
+    {
+      "grammar": "FIXED_F_SOURCE",
+      "reason": "all-clock fixed F impossibility, not a nonconvergent integer",
+      "source": 27,
+      "status": "REFINED_GRAMMAR_SEPARATED"
+    },
+    {
+      "reason": "grammar-relative remainder; not 159938 counterexamples",
+      "remaining_classes": 159938,
+      "source_family": "V120_old_CRT_partition",
+      "status": "UNKNOWN_IN_GRAMMAR"
+    }
+  ],
+  "retired_hypotheses": [
+    "fixed_f_target_complete",
+    "fixed_bounded_delay_implies_nonconvergence",
+    "finite_2adic_shadow_is_natural_bad_source",
+    "a_single_preferred_three_root_is_a_complete_lower_source_detector"
+  ],
+  "schema": "COLLATZ_ROS_LAWFUL_FUTURE_V123",
+  "support": {
+    "v120_phase_schema": {
+      "run": 37974704309,
+      "scope": "generic guarded phase merger, refined source27 family",
+      "sha": "11f8742f2f84e686845beb080fafb2d113bd183a",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v121_no_fixed_F27": {
+      "run": 37975109424,
+      "scope": "no positive p<27 reaches F(27)=83 at any clock",
+      "sha": "1973d853a3b6d2e50ce59888dd39fcdf5767d43e",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v122_exact_first_join_27": {
+      "run": 37975443683,
+      "scope": "27 first joins any smaller positive future at source clock 59",
+      "sha": "f6dec5d5ae9ae681868e1f0f29bbd494267c8bfd",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v123_bounded_arithmetic": {
+      "run": null,
+      "scope": "exact arithmetic replay of 11->3 and 3->2 and composition",
+      "sha": null,
+      "status": "BOUNDED_EXACT"
+    },
+    "v123_composition_theorem": {
+      "run": 37978857199,
+      "scope": "generic source-indexed two-clock composition only, conditional on both live certified premises; no new base witness",
+      "sha": "e44442266792ae2a072c4b320316021a5fd8bb3a",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v124_exact_replay": {
+      "run": null,
+      "scope": "finite source-indexed two-clock witnesses independently replayed on admission and restart; no Lean-family or universal claim",
+      "sha": null,
+      "status": "BOUNDED_EXACT"
+    },
+    "v128_preferred_root_incomplete": {
+      "run": 37983621550,
+      "scope": "source21 chosen 3-root selector remains 21 on EVERY future step, but source3 joins at clocks 3,2; negative grammar separator only",
+      "sha": "2bda4439b015f4ac6e3aa901b84a6097776881a9",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v129_odd_three_root_family": {
+      "run": 37984356667,
+      "scope": "ONLY the all-offset odd three-root family 21+72*t -> 3+12*t at source clock3, earlier clock2, endpoint 8+27*t, theorem root21_family_join",
+      "sha": "f07db1c38e877a85d6116e876bebad8310b26bab",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v131_chart_overlap_generic": {
+      "run": 37986167263,
+      "scope": "ONLY generic chartOverlapJoin conditional soundness: each chart needs its exact proven positive source, both clocks, base endpoint equality, endpoint coefficient equality and nonexpanding predecessor slope; NO universal existence",
+      "sha": "9bd21704ef5fe22cbd2e74b04de65969922b28d3",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v131_root9_formal_family": {
+      "run": 37986167263,
+      "scope": "ONLY root9ViaChart source 9+1536*t -> positive smaller 3+486*t, clocks (9,1), endpoint 5+729*t, for every t natural; scope specifically checked in Lean",
+      "sha": "9bd21704ef5fe22cbd2e74b04de65969922b28d3",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v132_exact_affine_chart_hypotheses": {
+      "run": null,
+      "scope": "Only executable exact symbolic all-offset parity chart hypotheses; generic V131 Lean theorem supplies conditional soundness, but these arbitrary numerical premises are NOT separately kernel-checked",
+      "sha": null,
+      "status": "BOUNDED_EXACT"
+    },
+    "v133_root23_formal_family": {
+      "run": 37988274186,
+      "scope": "ONLY V133 root23ViaChart: 23+384*t\u21923+54*t, source-clock7, earlier-clock1, endpoint5+81*t for all t Nat; Lean also qualified 27\u21923 and 27\u21922 at clocks (66,1) and (70,1) by separate V122 source27 premise",
+      "sha": "b734f5c5dbb9b52ec1eea6df84e17dd20a3a97d0",
+      "status": "WARRANTED_FORMAL"
+    },
+    "v66_future_quotient": {
+      "run": 36840670599,
+      "scope": "future-coalescence equivalence, quotient stationarity",
+      "sha": "1d23ed2a87465fd968db7b333103b6f558d0a433",
+      "status": "WARRANTED_FORMAL"
+    }
+  },
+  "universal_event_producer_proved": false
+}
