@@ -1,0 +1,108 @@
+name: WebArena GitLab blind excluded-label navigation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_gitlab_excluded_label_blind.yml"
+      - "scripts/webarena_gitlab_excluded_label_blind.py"
+      - "tests/test_webarena_gitlab_excluded_label_blind.py"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout official authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start GitLab
+        run: |
+          mkdir -p artifacts/webarena_gitlab_excluded_label
+          docker pull am1n3e/webarena-verified-gitlab
+          docker image inspect am1n3e/webarena-verified-gitlab --format '{{index .RepoDigests 0}}' > artifacts/webarena_gitlab_excluded_label/gitlab_digest.txt
+          docker run -d --name gitlab -p 8023:8023 am1n3e/webarena-verified-gitlab
+          for i in $(seq 1 180); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8023/users/sign_in || true)
+            if [ "$code" = 200 ]; then exit 0; fi
+            sleep 3
+          done
+          exit 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Check blind source admission
+        run: python -m unittest discover -s tests -p 'test_webarena_gitlab_excluded_label_blind.py' -v
+      - name: Execute user-intent negative-label navigation
+        run: |
+          ROOT=artifacts/webarena_gitlab_excluded_label
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{"__GITLAB__":{"urls":["http://localhost:8023"],"active_url_idx":0,
+          "credentials":{"username":"byteblaze","password":"hello1234"}}}}
+          JSON
+          python - <<'PY'
+          import json,uuid,subprocess,sys
+          from pathlib import Path
+          root=Path("artifacts/webarena_gitlab_excluded_label")
+          task=next(t for t in json.loads((root/"hard.json").read_text()) if int(t["task_id"])==106)
+          slot=uuid.uuid4().hex
+          dest=root/"output"/slot
+          dest.mkdir(parents=True,exist_ok=True)
+          cmd=[sys.executable,"scripts/webarena_gitlab_excluded_label_blind.py",
+               "--intent",task["intent"],"--start-url",task["start_urls"][0],
+               "--output-dir",str(dest)]
+          run=subprocess.run(cmd,capture_output=True,text=True,timeout=180,check=False)
+          (dest/"stdout.txt").write_text(run.stdout[-20000:])
+          (dest/"stderr.txt").write_text(run.stderr[-30000:])
+          (root/"manifest.json").write_text(json.dumps({"task":106,"slot":slot,"exit":run.returncode},indent=2)+"\n")
+          print("Execution exit",run.returncode,run.stdout[-1200:],run.stderr[-1200:])
+          PY
+      - name: Official network consequence qualification
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_gitlab_excluded_label")
+          run=json.loads((root/"manifest.json").read_text())
+          out=root/"output"/run["slot"]
+          if run["exit"]!=0 or not (out/"agent_response.json").exists() or not (out/"network.har").exists():
+              seal={"epistemic_state":"CANDIDATE_WITH_RESIDUAL","reason":"execution_failed","exit":run["exit"]}
+          else:
+              wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+              trace=NetworkTrace.from_har(out/"network.har")
+              ev=wa.evaluate_task(task_id=106,agent_response=out/"agent_response.json",network_trace=trace)
+              result=ev.model_dump(mode="json",exclude_none=True)
+              (out/"official.json").write_text(json.dumps(result,indent=2)+"\n")
+              good=float(ev.score)==1.0 and ev.status.value=="success"
+              seal={"epistemic_state":"WARRANTED_BOUNDED" if good else "CANDIDATE_WITH_RESIDUAL",
+                   "boundary":"one GitLab negative-label navigation with observed URL and official network consequences",
+                   "score":float(ev.score),"status":ev.status.value,
+                   "evaluation_events":len(trace.evaluation_events)}
+          seal["upstream_commit"]="6473f72db5dcefc97b5725b59e734504edc28a21"
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2),flush=True)
+          if seal["epistemic_state"]!="WARRANTED_BOUNDED":
+              raise SystemExit("negative-label navigation residual")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-gitlab-excluded-label
+          path: artifacts/webarena_gitlab_excluded_label
