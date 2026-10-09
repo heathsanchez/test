@@ -1556,6 +1556,22 @@ fn compare_nat_literal_neutral(
         return Judgment::refuted("Nat-literal-neutral-head");
     };
     if !levels.is_empty() {
+        // A polymorphic recursor is not the constructor for zero. A
+        // source-certified iota step requires first identifying its exact
+        // recursor table AND inspecting its major argument.
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_NATREC_MAJOR").is_some()
+            && neutral.spine.len() == 4
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static MAJOR_PROBES: AtomicUsize = AtomicUsize::new(0);
+            if MAJOR_PROBES.fetch_add(1, Ordering::Relaxed) < 12 {
+                eprintln!(
+                    "NUCLEUS_NATREC_MAJOR_AUTHORITY:depth={depth}:literal={literal:?}:{}",
+                    checker.diagnostic_natrec_major_authority(neutral, budget)
+                );
+            }
+        }
         return Judgment::refuted("Nat-literal-constructor-levels");
     }
     if *name == primitives.zero {
