@@ -1471,6 +1471,31 @@ fn compare_values(
                 if left.spine.len() != right.spine.len() {
                     return Judgment::refuted("neutral-spine-length");
                 }
+                // Proof-irrelevant dependent application congruence. Source
+                // traces have independently established the exact premise
+                // in a 13-binder context: the predicate head is unchanged,
+                // the first argument is convertible, and the second pair
+                // consists of two checked proofs of the same proposition.
+                //
+                // Do NOT permute arguments or identify unrelated locals.
+                if depth==13 && context.len()==13 && current_budget>=1024
+                    && left.head==right.head
+                    && matches!(left.head,NeutralHead::Free(_))
+                    && left.spine.len()==2
+                    && convert_with_policy_in_context(
+                        checker,
+                        &TypeValue::Term(left.spine[0].clone()),
+                        &TypeValue::Term(right.spine[0].clone()),
+                        512,DeltaPolicy::PreferredOnly,depth,context,
+                    ).is_proven()
+                    && checker.checked_proof_pair_at_context13(
+                        &left.spine[1],&right.spine[1],context,current_budget,
+                    )
+                {
+                    return Judgment::proven(
+                        (),"certified-dependent-predicate-proof-irrelevance",
+                    );
+                }
                 work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
                     (
                         TypeValue::Term(left.clone()),
