@@ -1,0 +1,160 @@
+name: Collatz V136 primitive charts and clock-guard boundary
+on:
+  push:
+    branches: [collatz-v136-primitive-chart-saturation]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-primitive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exercise exact primitive families and adverse suffix controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v136_primitive_chart > evidence/v136-exact.json
+          python3 - <<'PY'
+          import pathlib,hashlib,json,subprocess
+          p=pathlib.Path('evidence/v136-exact.json')
+          q=json.loads(p.read_text())
+          assert q['schema']=='COLLATZ_V136_PRIMITIVE_CHART_AND_SUFFIX_BOUNDARY'
+          assert len(q['families'])==6
+          assert all(w['guard'] and w['tested_offsets']==201 for w in q['families'])
+          assert q['families'][0]['source_slope']==128 and q['families'][0]['earlier_slope']==18
+          assert q['families'][1]['source_slope']==6 and q['families'][1]['earlier_slope']==4
+          assert q['hostile_control']['guard'] is False
+          assert q['suffix_phase_cases']==4 and q['suffix_steps_per_case']==31
+          assert q['no_claim_of_universal_base_meeting']
+          assert q['universal_collatz']=='UNKNOWN' and q['qed'] is False
+          r={'schema':'COLLATZ_V136_EXACT_PRIMITIVE_CHART_SEAL',
+             'status':'WARRANTED_BOUNDED_EXACT_REGRESSION',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'evidence_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'families':len(q['families']),
+             'offsets_per_family':201,
+             'suffix_phase_controls':4,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v136-exact-seal.json').write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v136-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-primitive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild pinned ancestors then kernel-check V136 boundary theorems
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object formal/Collatz/RootChartOverlapCompiler.lean)" = c35bde45d11aad51f46e6e8beced5322acd43e9b
+          test "$(git hash-object formal/Collatz/CanonicalCrossPowerChart.lean)" = cf1caec503fe2e1209a3253166978e18bb9e9f6d
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in SourceProductAffine CylinderCoalescence LawfulFutureJoin RelationalRootMerger RootChartOverlapCompiler FirstResidualRefinement Root23LateJoinReclosure CanonicalCrossPowerChart; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/PrimitiveCrossPowerChart.lean 2>&1 | tee evidence/v136-lean.log
+          python3 - <<'PY'
+          import re,pathlib,hashlib,json,subprocess
+          p=pathlib.Path('evidence/v136-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log)
+          axs={}
+          for name,line in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            values=[v.strip() for v in line.split(',') if v.strip()]
+            assert set(values)<={'propext','Quot.sound','Classical.choice'},(name,values)
+            axs[name]=values
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axs[name]=[]
+          targets=['positive_multiplier_order_reflection','split_three_power',
+             'primitive_endpoint_slopes_match','primitive_has_unit_multiplier',
+             'primitive_weighted_guard_iff','primitiveCrossPowerJoin',
+             'primitive_cross_power_compiles_lower_source',
+             'all_offsets_strict_smaller_forces_slope',
+             'slope_iff_all_offsets_strict_smaller','odd_count_append',
+             'common_suffix_preserves_weighted_orientation',
+             'base_meeting_refutes_minimal_positive_bad','primitiveRoot23',
+             'primitiveRoot23_all_offsets','primitiveRoot5',
+             'primitiveRoot5_all_offsets']
+          for n in targets:
+             assert 'CollatzFinal.'+n in axs,n
+          q={'schema':'COLLATZ_V136_FORMAL_PRIMITIVE_CLOCK_BOUNDARY',
+             'status':'WARRANTED_FORMAL_CONDITIONAL_PRIMITIVE_CHART_COMPILER',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'named_axioms':axs,
+             'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+             'primitive_coefficients':'u=3^(beta-min(alpha,beta)),v=3^(alpha-min(alpha,beta))',
+             'slope_guard':'IFF all-offset smaller source given p<a',
+             'suffix_guard':'IFF for common actual forward suffix',
+             'base_meeting_suffices_without_orientation_for_fixed_source':True,
+             'universal_event_production':'UNKNOWN',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v136-formal-seal.json').write_text(json.dumps(q,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v136-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-primitive, formal-primitive]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v136-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v136-formal
+          path: evidence/formal
+      - name: Seal same-SHA primitive chart mathematics without global promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,json,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v136-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v136-formal-seal.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert b['status']=='WARRANTED_FORMAL_CONDITIONAL_PRIMITIVE_CHART_COMPILER'
+          assert b['base_meeting_suffices_without_orientation_for_fixed_source']
+          assert b['universal_event_production']=='UNKNOWN'
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          final={'schema':'COLLATZ_V136_PROTECTED_PRIMITIVE_CHART_FINAL',
+                 'status':'WARRANTED_FORMAL_CONDITIONAL_PRIMITIVE_AND_ORIENTATION',
+                 'source_commit':head,
+                 'reusable':['reduced_cross_power_chart',
+                             'weighted_guard_necessary_for_all_offset_strictness',
+                             'common_suffix_orientation_invariant'],
+                 'operational_controller':'V134_UNCHANGED',
+                 'universal_favourable_event':'UNKNOWN',
+                 'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v136-final-seal.json').write_text(json.dumps(final,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v136-final
+          path: evidence/v136-final-seal.json
+          if-no-files-found: error
