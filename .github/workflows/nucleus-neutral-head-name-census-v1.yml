@@ -68,7 +68,7 @@ jobs:
             mapped=[]
             for line in lines:
               if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in line:
-                ids=[int(s) for s in re.findall(r'NameId\\((\\d+)\\)',line)]
+                ids=[int(s) for s in re.findall(r'NameId\((\d+)\)',line)]
                 mapped.append([{'id':n,'name':id_to_name.get(n,'UNKNOWN_NAME'),
                                 'delta_present':n in defs,
                                 'delta_hint':defs.get(n,{}).get('hint')} for n in ids[:3]])
