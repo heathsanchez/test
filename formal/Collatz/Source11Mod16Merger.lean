@@ -51,13 +51,13 @@ theorem source_11_mod16_45_mod729_lower_merge (z : Nat) :
       (7199 + 8192 * z) := by
   have heq :
       45 + 729 * (14 + 16 * z) =
-      11 + 16 * (640 + 729 * z) := by ring
+      11 + 16 * (640 + 729 * z) := by omega
   have hn :
       45 + 729 * (14 + 16 * z) =
-      10251 + 11664 * z := by ring
+      10251 + 11664 * z := by omega
   have hp :
       31 + 512 * (14 + 16 * z) =
-      7199 + 8192 * z := by ring
+      7199 + 8192 * z := by omega
   have hpar := source_11_mod16_parity_collision (640 + 729 * z)
   rw [← heq] at hpar
   obtain ⟨hodd, heven, hnextodd⟩ := hpar
