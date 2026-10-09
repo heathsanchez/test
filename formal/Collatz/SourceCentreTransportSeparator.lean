@@ -82,7 +82,7 @@ theorem listed_centre_magnitude_le_max :
       rcases hd with h | h
       · subst d
         exact Nat.le_max_left a (maxNegativeCentreMagnitude rest)
-      · exact (ih d h).trans
+      · exact Nat.le_trans (ih d h)
           (Nat.le_max_right a (maxNegativeCentreMagnitude rest))
 
 /-- Elementary all-depth growth for a power of two, no source
@@ -291,6 +291,7 @@ theorem shadow_high_endpoint_precision (t : Nat) :
       rw [hend]
       omega
     rw [hsum]
+    exact dvd_refl _
   · exact shadow_source_affine_identity t
 
 /-- If the dyadic precision q exceeds 13+9d, the correct affine
@@ -335,8 +336,10 @@ theorem no_finite_integer_centres_for_rising_shadow_family
   have hb : shadowPrecision t < shadowModulus t := by
     exact pow_two_exceeds_its_index (shadowPrecision t)
   have hsize : 13 + 9 * M < shadowModulus t := by
-    dsimp [shadowPrecision, t] at hb
-    omega
+    have hindex : 13 + 9 * M ≤ shadowPrecision t := by
+      dsimp [shadowPrecision, t]
+      omega
+    exact Nat.lt_of_le_of_lt hindex hb
   obtain ⟨hmod, hprefix⟩ := shadow_actual_prefix_nondescending t
   obtain ⟨hdyadic, _⟩ := shadow_high_endpoint_precision t
   refine ⟨t, hmod, hprefix, hdyadic, ?_⟩
