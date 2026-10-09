@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      SOURCE_COMMIT: 0d028db6199119085cefd9ae160664bba491a6ff
-      SOURCE_SUBTREE: 21b769b7eca479374e83c19dea70e4369bff0cb8
+      SOURCE_COMMIT: c3b7ed2acff6501630fa3c233de3f9760cb18974
+      SOURCE_SUBTREE: 7f5c9cbb76d1dde41e6f0ca578fd2ebe155d29af
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
@@ -85,7 +85,8 @@ jobs:
               'sha256':hashlib.sha256(data).hexdigest(),
               'terminal':[l for l in lines if 'NUCLEUS_DOWNSTREAM:' in l][-2:],
               'app':[l[:1400] for l in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in l][:6],
-              'projection':[l[:1800] for l in lines if 'NUCLEUS_LEBLE_PROJECTION:' in l][-8:]}
+              'projection':[l[:1800] for l in lines if 'NUCLEUS_LEBLE_PROJECTION:' in l][-8:],
+              'major':[l[:1400] for l in lines if 'NUCLEUS_LEBLE_MAJOR:' in l][:5]}
             results.append(row)
             print(json.dumps(row,sort_keys=True))
             assert p.returncode==expected,row
