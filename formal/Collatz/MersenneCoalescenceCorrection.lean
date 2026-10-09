@@ -5,6 +5,8 @@ namespace CollatzFinal
 namespace SourceProduct
 namespace MersenneCorrection
 
+set_option exponentiation.threshold 512
+
 /- Exact separation of two bounded observations: absence of a capped
    ternary hit is NOT absence of an already certified earlier-source merger.
    This module does not assert universal Collatz termination. -/
@@ -24,9 +26,13 @@ theorem power_residue (t : Nat) :
       decide
 
 theorem source_residue (t : Nat) : source t % 1458 = 273 := by
-  have h := power_residue t
+  have hd := Nat.mod_add_div (2 ^ (20 + 486 * t)) 1458
+  rw [power_residue t] at hd
+  have hs : 2 ^ (20 + 486 * t) - 1 =
+      273 + 1458 * (2 ^ (20 + 486 * t) / 1458) := by omega
   unfold source exponent
-  omega
+  rw [hs]
+  simp [Nat.add_mod, Nat.mul_mod]
 
 theorem source_decomposition (t : Nat) :
     source t = 273 + 1458 * parameter t := by
@@ -58,9 +64,9 @@ theorem family_meeting_clocks (q : Nat) :
     iter shortcut 1 (273 + 1458 * q) =
       iter shortcut 10 (191 + 1024 * q) := by
   have hr := affine_reverse_sound v113_a_reverse_word q
-  have ho : (273 + 1458 * q) % 2 = 1 := by omega
+  have ho : (273 + 1458 * q) % 2 ≠ 0 := by omega
   have hf : shortcut (273 + 1458 * q) = 410 + 2187 * q := by
-    simp only [shortcut, ho]
+    simp only [shortcut, ho, ite_false]
     omega
   change shortcut (273 + 1458 * q) = _
   rw [hf, hr]
@@ -97,8 +103,8 @@ theorem not_minimal_bad (t : Nat) :
 
 theorem shortcut_two_mul_sub_one (z : Nat) (hz : 0 < z) :
     shortcut (2 * z - 1) = 3 * z - 1 := by
-  have ho : (2 * z - 1) % 2 = 1 := by omega
-  simp only [shortcut, ho]
+  have ho : (2 * z - 1) % 2 ≠ 0 := by omega
+  simp only [shortcut, ho, ite_false]
   omega
 
 theorem corridor_step (j m : Nat) :
@@ -122,7 +128,7 @@ theorem corridor_above_cap (i m : Nat) :
     3 * (2 ^ ((i + 1) + m) - 1) ≤
       2 * iter shortcut (i + 1) (2 ^ ((i + 1) + m) - 1) - 1 := by
   rw [all_ones_prefix]
-  have hpow : (2 : Nat) ^ i ≤ 3 ^ i := Nat.pow_le_pow_left (by decide)
+  have hpow : (2 : Nat) ^ i ≤ 3 ^ i := Nat.pow_le_pow_left (by decide : (2 : Nat) ≤ 3) i
   have hmul := Nat.mul_le_mul_right (2 ^ m) hpow
   have he : 2 ^ ((i + 1) + m) = 2 * (2 ^ i * 2 ^ m) := by
     simp [Nat.pow_add, Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
@@ -144,8 +150,7 @@ theorem no_capped_hit_in_corridor (t j : Nat) (hj : j ≤ exponent t) :
       have he : exponent t = (i + 1) + (exponent t - (i + 1)) := by omega
       have hb := corridor_above_cap i (exponent t - (i + 1))
       have hn : source t = 2 ^ ((i + 1) + (exponent t - (i + 1))) - 1 := by
-        unfold source
-        rw [he]
+        exact congrArg (fun k : Nat => 2 ^ k - 1) he
       rw [← hn] at hb
       exact Nat.not_lt_of_ge hb h.2
 
