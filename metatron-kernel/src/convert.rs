@@ -1724,6 +1724,17 @@ fn certified_local_proof_irrelevance(
                 depth,
                 context,
             );
+            if depth == 5 {
+                let lhs = checker.machine().expose(left_type.clone(), Transparency::Reducible, probe);
+                if let Some(Value::Neutral(neutral)) = lhs.proven_value() {
+                    if let NeutralHead::Const { name, .. } = neutral.head {
+                        let declaration = checker.diagnostic_applied_telescope(
+                            name, &neutral.spine, probe,
+                        );
+                        eprintln!("NUCLEUS_DEPTH5_APPLIED_TELESCOPE:{declaration}");
+                    }
+                }
+            }
             eprintln!("NUCLEUS_LOCAL_PROOF_PREMISES:depth={depth}:left={left_free:?}:right={right_free:?}:left_type={left_type:?}:right_type={right_type:?}:left_proposition={left_proposition:?}:right_proposition={right_proposition:?}:type_relation={relation:?}");
         }
     }
