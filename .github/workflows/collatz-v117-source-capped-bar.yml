@@ -1,0 +1,52 @@
+name: Collatz V117 exact source-capped ternary bar equivalence
+on:
+  push:
+    branches: [collatz-v115-source-capped-equivalence-v117]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pinned-lean-equivalence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check all premises, collision, and conditional equivalence
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for file in SourceProductAffine CylinderCoalescence ReverseAffineMerger Q7SourceMerger ScaledReverseMerger ThreeCongruenceMerger NineCongruenceMerger ParityCollisionBridge; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${file}.olean" "formal/Collatz/${file}.lean" > "evidence/${file}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/SourceCappedTernaryBar.lean | tee evidence/v117-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v117-lean.log
+          grep -q "collatz_iff_source_capped_ternary_bar.*depends on axioms" evidence/v117-lean.log
+          grep -q "collatz_of_source_capped_ternary_bar.*depends on axioms" evidence/v117-lean.log
+          git rev-parse HEAD > evidence/commit.txt
+      - name: Seal checked reduction boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee evidence/qualification.json
+          import hashlib,json
+          data={
+            "schema":"COLLATZ_V117_SOURCE_CAPPED_TERNARY_EQUIVALENCE",
+            "status":"WARRANTED_FORMAL_CONDITIONAL_EQUIVALENCE",
+            "premise_universally_proved":False,
+            "entire_collatz_conjecture_proved":False,
+            "global_collatz":"UNKNOWN",
+            "qed":False}
+          data["certificate_sha256"]=hashlib.sha256(json.dumps(data,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          print(json.dumps(data,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v117-source-capped-conditional-equivalence
+          path: evidence/
+          if-no-files-found: error
