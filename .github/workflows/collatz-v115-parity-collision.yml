@@ -1,0 +1,69 @@
+name: Collatz V115 source-attached parity collision bridge
+on:
+  push:
+    branches: [collatz-v114-parity-collision-bridge-v115]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-symbolic-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify finite exact parity-cylinder regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v115_parity_collision_probe.py | tee evidence/v115-regression.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open("evidence/v115-regression.json"))
+          assert r["status"]=="BOUNDED_EXACT_REGRESSION_FORMAL_CANDIDATE"
+          assert r["exact_offset_affine_trace_cases"]==41
+          assert r["tested_odd_run_depth_min"]==0
+          assert r["tested_odd_run_depth_max"]==40
+          assert r["global_collatz"]=="UNKNOWN" and r["qed"] is False
+          print("V115_ALL_OFFSET_REGRESSION_PASSED_NOT_UNIVERSAL_QED")
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v115-symbolic-regressions
+          path: evidence/
+          if-no-files-found: error
+  lean-universal-structural-law:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check source-attached variable-depth collision
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductAffine.olean formal/Collatz/SourceProductAffine.lean > evidence/affine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/CylinderCoalescence.olean formal/Collatz/CylinderCoalescence.lean > evidence/v108.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ReverseAffineMerger.olean formal/Collatz/ReverseAffineMerger.lean > evidence/v109.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/Q7SourceMerger.olean formal/Collatz/Q7SourceMerger.lean > evidence/v110.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ScaledReverseMerger.olean formal/Collatz/ScaledReverseMerger.lean > evidence/v112.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/ThreeCongruenceMerger.olean formal/Collatz/ThreeCongruenceMerger.lean > evidence/v113.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/NineCongruenceMerger.olean formal/Collatz/NineCongruenceMerger.lean > evidence/v114.log
+          lake env lean -DautoImplicit=false formal/Collatz/ParityCollisionBridge.lean | tee evidence/v115.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v115.log
+          grep -q 'q7_shifted_six_step_predecessor' evidence/v115.log
+          grep -q 'three_plus_two_collision_after_odd_run' evidence/v115.log
+          grep -q 'q7_source_merge_of_odd_run_even_odd' evidence/v115.log
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v115-lean-parity-collision
+          path: evidence/
+          if-no-files-found: error
