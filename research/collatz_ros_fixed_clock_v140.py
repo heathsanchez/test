@@ -165,7 +165,7 @@ def parent_bytes()->bytes:
     j=json.loads(b)
     if digest(j)!=PARENT_EXPECTED_SHA:
         raise ValueError("parent canonical research content changed without qualification")
-    blob_head=("blob "+str(len(b))+"\\0").encode().replace(b"\\\\0",b"\\0")
+    blob_head=("blob "+str(len(b))).encode()+bytes([0])
     if hashlib.sha1(blob_head+b).hexdigest()!=PARENT_GIT_BLOB_SHA:
         raise ValueError("parent Git source blob bytes changed without qualification")
     if j["admission_schema"]!="COLLATZ_ROS_V134_LATE_ROOT_REUSE_AUTHORITY":
