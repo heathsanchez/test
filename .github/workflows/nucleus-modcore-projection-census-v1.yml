@@ -87,6 +87,7 @@ jobs:
               env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_STUCK_BRANCH':'1',
                                'NUCLEUS_TRACE_RIGID_ARG_GAP':'1',
                                'NUCLEUS_TRACE_RIGID_ARG_SHADOW':'1',
+                               'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
                                'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
                                'NUCLEUS_TRACE_DEPENDENCY_GAP':'1'})
             trace=p.stderr.decode(errors='replace').splitlines()
@@ -94,6 +95,7 @@ jobs:
                  'stuck_events':[s for s in trace if 'NUCLEUS_STUCK_BRANCH:' in s][:36],
                  'rigid_arg_gaps':[s for s in trace if 'NUCLEUS_RIGID_ARG_GAP:' in s][-50:],
                  'rigid_shadows':[s for s in trace if 'NUCLEUS_RIGID_SHADOW:' in s][-20:],
+                 'neutral_mismatches':[s for s in trace if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in s][-40:],
                  'typed_gaps':[s for s in trace if 'NUCLEUS_DEPENDENCY_GAP:' in s][:4],
                  'terminal':[s for s in trace if 'NUCLEUS_DOWNSTREAM:' in s][-3:]}
             print('MODCORE_TEST='+json.dumps(row),flush=True)
