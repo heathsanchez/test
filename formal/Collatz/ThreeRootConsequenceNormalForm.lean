@@ -31,7 +31,7 @@ private theorem root_consequence_affine
   calc
     iter shortcut k (base + 3 * 2 ^ k * t) =
       iter shortcut k (base + 2 ^ k * (3 * t)) := by rw [heq]
-    _ = r + 3 * (3 * t) := by simpa only [pow_one] using h
+    _ = r + 3 * (3 * t) := h
     _ = r + 9 * t := by omega
 
 /-- Residue 1 modulo 9. -/
