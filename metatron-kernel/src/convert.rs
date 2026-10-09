@@ -1188,7 +1188,15 @@ fn compare_values(
                         use std::sync::atomic::{AtomicUsize, Ordering};
                         static PRINTED: AtomicUsize = AtomicUsize::new(0);
                         if PRINTED.fetch_add(1, Ordering::Relaxed) < 36 {
-                            eprintln!("NUCLEUS_STUCK_BRANCH:paired:depth={depth}:budget={current_budget}:type={left_type:?}:index={left_index}:left_structure={left_structure:?}:right_structure={right_structure:?}:left_spine={left_spine:?}:right_spine={right_spine:?}:left_result={left_value:?}:right_result={right_value:?}");
+                            let lhs_bound = match checker.expression(left_structure.expr) {
+                                Some(Expr::BVar(i)) => left_structure.env.lookup(*i),
+                                _ => None,
+                            };
+                            let rhs_bound = match checker.expression(right_structure.expr) {
+                                Some(Expr::BVar(i)) => right_structure.env.lookup(*i),
+                                _ => None,
+                            };
+                            eprintln!("NUCLEUS_STUCK_BRANCH:paired:depth={depth}:budget={current_budget}:type={left_type:?}:index={left_index}:left_structure={left_structure:?}:right_structure={right_structure:?}:lhs_selected_binding={lhs_bound:?}:rhs_selected_binding={rhs_bound:?}:left_spine={left_spine:?}:right_spine={right_spine:?}:left_result={left_value:?}:right_result={right_value:?}");
                         }
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
