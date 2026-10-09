@@ -1704,13 +1704,30 @@ fn certified_local_proof_irrelevance(
         return false;
     }
     let probe = budget.min(1024);
-    if !checker
-        .is_proposition_in_context(left_type.expr, context, &left_type.env, probe)
-        .is_proven()
-        || !checker
-            .is_proposition_in_context(right_type.expr, context, &right_type.env, probe)
-            .is_proven()
-    {
+    let left_proposition = checker.is_proposition_in_context(
+        left_type.expr, context, &left_type.env, probe,
+    );
+    let right_proposition = checker.is_proposition_in_context(
+        right_type.expr, context, &right_type.env, probe,
+    );
+    #[cfg(feature = "diagnostics")]
+    if std::env::var_os("NUCLEUS_TRACE_LOCAL_PROOF_IRREL").is_some() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static PRINTED: AtomicUsize = AtomicUsize::new(0);
+        if PRINTED.fetch_add(1, Ordering::Relaxed) < 48 {
+            let relation = convert_with_policy_in_context(
+                checker,
+                &TypeValue::Term(left_type.clone()),
+                &TypeValue::Term(right_type.clone()),
+                probe,
+                DeltaPolicy::PreferredOnly,
+                depth,
+                context,
+            );
+            eprintln!("NUCLEUS_LOCAL_PROOF_PREMISES:depth={depth}:left={left_free:?}:right={right_free:?}:left_type={left_type:?}:right_type={right_type:?}:left_proposition={left_proposition:?}:right_proposition={right_proposition:?}:type_relation={relation:?}");
+        }
+    }
+    if !left_proposition.is_proven() || !right_proposition.is_proven() {
         return false;
     }
     convert_with_policy_in_context(
