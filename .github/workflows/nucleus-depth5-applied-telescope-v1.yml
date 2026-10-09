@@ -1,8 +1,8 @@
-name: Nucleus three-constructor recursor motive and minor premise
+name: Nucleus SourceInfo synthetic field definitional alias census
 
 on:
   push:
-    branches: [nucleus-three-ctor-recursor-premise-v1]
+    branches: [nucleus-sourceinfo-synthetic-field-alias-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -179,6 +179,46 @@ jobs:
           p.write_text(json.dumps(rows,indent=2))
           PY
 
+      - name: Inspect exact synthetic third field and recursor-minor source aliases
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('/tmp/arena-tests/good')
+          for case,synthetic_field,minor_field in (
+              ('init-prelude',8060,879),
+              ('perf/grind-ring-5',7726,2135),
+          ):
+              names={0:''};exprs={};definitions={};levels={}
+              for raw in (root/(case+'.ndjson')).read_bytes().splitlines():
+                  obj=json.loads(raw)
+                  if 'in' in obj:
+                      z=obj.get('str',obj.get('num'))
+                      names[obj['in']]=names.get(z['pre'],'')+('.' if names.get(z['pre'],'') else '')+str(z.get('str',z.get('i')))
+                  if 'ie' in obj:exprs[obj['ie']]=obj
+                  if 'il' in obj:levels[obj['il']]=obj
+                  if 'def' in obj:
+                      z=obj['def'];definitions[z['name']]=z
+              def node(i,d=0):
+                  if d>7:return {'truncated':i}
+                  obj=exprs.get(i)
+                  if obj is None:return {'missing':i}
+                  r={'id':i}
+                  for key in ('const','app','bvar','forallE','lam','sort','natVal','proj'):
+                      if key not in obj:continue
+                      z=obj[key]
+                      if key=='const':
+                          r['const']={'name':names.get(z['name'],str(z['name'])),'id':z['name'],'universes':z.get('us')}
+                          r['declaration']=definitions.get(z['name'])
+                      elif key=='app':r['app']={'fn':node(z['fn'],d+1),'arg':node(z['arg'],d+1)}
+                      elif key in ('forallE','lam'):
+                          r[key]={'type':node(z['type'],d+1),'body':node(z['body'],d+1)}
+                      else:r[key]=z
+                  return r
+              left=node(synthetic_field);right=node(minor_field)
+              print('NUCLEUS_SYNTHETIC_FIELD_ALIAS='+json.dumps({'case':case,'constructor_field':left,'minor_field':right},separators=(',',':')),flush=True)
+          PY
+
       - name: Require new contextual proof with exact negative controls
         run: |
           set -euo pipefail
@@ -348,7 +388,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-three-ctor-premises-${{ github.sha }}
+          name: nucleus-sourceinfo-synthetic-alias-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -361,7 +401,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="three ctor premises: ${{ job.status }}; no complete replay"
+          description="SourceInfo synthetic alias: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -372,6 +412,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/three-ctor-premises" \
+            -f context="nucleus/sourceinfo-synthetic-alias" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
