@@ -1,8 +1,8 @@
-name: Nucleus certified nested Decidable Bool iota qualification
+name: Nucleus DecidableBall post-iota dependent App type census
 
 on:
   push:
-    branches: [nucleus-certified-nested-bool-decidable-iota-v1]
+    branches: [nucleus-decidableBall-post-iota-type-v1]
     paths:
       - ".github/workflows/nucleus-depth5-applied-telescope-v1.yml"
       - "metatron-kernel/**"
@@ -127,6 +127,7 @@ jobs:
               if 'magma-list-pair' in name:
                   extra['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
                   extra['NUCLEUS_TRACE_RECURSOR_MAJOR']='1'
+                  extra['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE']='1'
                   extra['NUCLEUS_TRACE_NESTED_RECURSOR_IOTA']='1'
                   extra['NUCLEUS_TRACE_DECIDABLE_MAJOR_CHAIN']='1'
                   extra['NUCLEUS_TRACE_VALUE_MISMATCH']='1'
@@ -146,7 +147,7 @@ jobs:
               app=[x for x in lines if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in x]
               major=[x for x in lines if 'NUCLEUS_NATREC_MAJOR_AUTHORITY:' in x]
               row={'case':name,'return_code':p.returncode,'downstream_last':downstream[-8:],
-                   'typed_proofs':local[-4:],'app_errors':app[-4:],'major_census':major[-4:],
+                   'typed_proofs':local[-4:],'app_errors':app[-12:],'major_census':major[-4:],
                    'neutral_mismatch':[x for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x][-6:],
                    'recursor_major':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR:' in x][-8:],
                    'recursor_major_value':[x for x in lines if 'NUCLEUS_RECURSOR_MAJOR_VALUE:' in x][-8:],
@@ -167,12 +168,14 @@ jobs:
                       prefix=idx.get(z['pre'],'')
                       idx[j['in']]=prefix+('.' if prefix else '')+str(z.get('str',z.get('i')))
                   row['neutral_head_names']={str(k):idx.get(k,'') for k in (169,147,75,62,145,146,170)}
+              if 'magma-list-pair' in name:
+                  assert row['app_errors'], ('missing dependent app residual witness',name)
               print('POST_TELESCOPE_FIRST_BOUNDARY='+json.dumps(row),flush=True)
               rows.append(row)
           pathlib.Path('metatron-kernel/evidence-out/contextual-rigid/post-telescope-boundary.json').write_text(json.dumps(rows,indent=2))
           PY
 
-      - name: Requalify full196 with zero wrong and strict positive gain
+      - name: Preserve all frozen196 verdicts under read-only dependent App type census
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -210,14 +213,14 @@ jobs:
           print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in out.items() if k!='rows'}),flush=True)
           assert not wrong, 'UNSAFE_VERDICT_REGRESSION'
           assert rejected==71, 'EXPECTED_REJECT_REGRESSION'
-          assert accepted>=119 and unknown<=6, 'NO_NEW_FULL_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED'
-          print('NESTED_IOTA_196_GAIN',flush=True)
+          assert accepted==118 and unknown==7, 'DIAGNOSTIC_CHANGED_FROZEN196'
+          print('DECIDABLE_BALL_APP_DIAGNOSTIC_ONLY',flush=True)
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-decidable-nested-iota-${{ github.sha }}
+          name: nucleus-decidableBall-app-type-${{ github.sha }}
           path: metatron-kernel/evidence-out
           if-no-files-found: warn
 
@@ -230,7 +233,7 @@ jobs:
           state=failure
           if [ "${{ job.status }}" = "success" ]; then state=success; fi
           report=metatron-kernel/evidence-out/final-qualification-v1/telescope-replay.json
-          description="decidable nested iota: ${{ job.status }}; no complete replay"
+          description="decidableBall app type: ${{ job.status }}; no complete replay"
           if [ -s "$report" ]; then
             description="$(python3 - "$report" <<'PY'
           import json,sys
@@ -241,6 +244,6 @@ jobs:
           fi
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -f state="$state" \
-            -f context="nucleus/decidable-nested-iota" \
+            -f context="nucleus/decidableBall-app-type" \
             -f description="$description" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
