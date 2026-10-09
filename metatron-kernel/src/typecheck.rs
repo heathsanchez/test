@@ -1691,6 +1691,14 @@ impl<'a> TypeChecker<'a> {
         self.environment.is_certified_constructor(name)
     }
 
+    /// Only an independently admitted projection signature may enter the
+    /// recursor-congruence shortcut. Never infer a field index from shape.
+    pub(crate) fn projection_spec(
+        &self, type_name: NameId,
+    ) -> Option<crate::machine::ProjectionSpec> {
+        self.environment.projection_specs().get(&type_name).cloned()
+    }
+
     pub(crate) fn eta_projection_spec_for_constructor(
         &self,
         constructor: NameId,
