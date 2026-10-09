@@ -70,6 +70,65 @@ jobs:
           assert counts["reject"]==71 and counts["accept"]>=115
           assert not any("name=Char:stage=inductive" in x for x in char["downstream"]),char
           PY
+      - name: Protect Char constructor and recursor metadata against mutations
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import copy, hashlib, json, os, pathlib, subprocess
+          fixture = pathlib.Path("/tmp/tests/good/perf/grind-ring-5.ndjson")
+          digest = hashlib.sha256(fixture.read_bytes()).hexdigest()
+          assert digest == "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f", digest
+          lines = fixture.read_bytes().splitlines(keepends=True)
+          found = [(i, json.loads(line)) for i, line in enumerate(lines)
+                   if b'"inductive"' in line]
+          found = [(i, row) for i, row in found if row.get("inductive", {}).get("types", [{}])[0].get("name") == 282]
+          assert len(found) == 1, found
+          index, original = found[0]
+          assert original["inductive"]["ctors"][0]["name"] == 283
+          assert original["inductive"]["recs"][0]["name"] == 285
+          assert original["inductive"]["ctors"][0]["numFields"] == 2
+          changes = {
+            "wrong-constructor-owner": ("ctors", 0, "induct", 285),
+            "wrong-constructor-ordinal": ("ctors", 0, "cidx", 1),
+            "wrong-constructor-arity": ("ctors", 0, "numFields", 3),
+            "wrong-recursor-rule-constructor": ("recs", 0, "rules", None),
+            "wrong-recursor-rule-arity": ("recs", 0, "rules", None),
+          }
+          outputs = []
+          for name, (section, position, key, value) in changes.items():
+            variant = copy.deepcopy(original)
+            block = variant["inductive"]
+            if name == "wrong-recursor-rule-constructor":
+              block["recs"][0]["rules"][0]["ctor"] = 285
+            elif name == "wrong-recursor-rule-arity":
+              block["recs"][0]["rules"][0]["nfields"] = 3
+            else:
+              block[section][position][key] = value
+            candidate = lines.copy()
+            candidate[index] = (json.dumps(variant, separators=(",", ":")) + "\n").encode()
+            trial = subprocess.run(
+              ["metatron-kernel/target/release/metatron-kernel"],
+              input=b"".join(candidate), stdout=subprocess.DEVNULL,
+              stderr=subprocess.PIPE, timeout=30,
+              env=os.environ | {"NUCLEUS_TRACE_DOWNSTREAM": "1"},
+            )
+            row = {
+              "mutant": name, "exit": trial.returncode,
+              "downstream": [x for x in trial.stderr.decode(errors="replace").splitlines()
+                             if "NUCLEUS_DOWNSTREAM:" in x][-2:],
+            }
+            outputs.append(row)
+            assert trial.returncode in (1, 2), row
+          target = pathlib.Path("metatron-kernel/evidence-out/char-dependent-pair-v1")
+          target.mkdir(parents=True, exist_ok=True)
+          record = {
+            "fixture_sha256": digest, "char_name_id": 282, "constructor_name_id": 283,
+            "recursor_name_id": 285, "source": os.environ["SOURCE_COMMIT"],
+            "qualification": os.environ["GITHUB_SHA"], "mutants": outputs
+          }
+          (target / "char-negative-separator.json").write_text(json.dumps(record, indent=2))
+          print(json.dumps(record, sort_keys=True))
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
