@@ -76,7 +76,8 @@ async def resolve_forum(page,base,description,max_pages=12):
     if query and len(query.split()) <= 7:
         from urllib.parse import quote
         variants=[query, re.sub(r"[^a-z0-9]+","",query.casefold()),
-                  re.sub(r"[^a-z0-9]+","-",query.casefold()).strip("-")]
+                  re.sub(r"[^a-z0-9]+","-",query.casefold()).strip("-"),
+                  re.sub(r"[^a-z0-9]+","",re.sub(r"\\b([0-9])\\b",lambda m: next((word for word,digit in NUMBER_WORDS.items() if digit==m.group(1)),m.group(1)),query.casefold()))]
         for variant in dict.fromkeys(v for v in variants if v):
             response=await page.goto(f"{base.rstrip('/')}/f/{quote(variant)}",wait_until="networkidle",timeout=120000)
             if response is None or response.status!=200:
