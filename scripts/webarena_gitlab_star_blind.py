@@ -79,9 +79,42 @@ async def api_request(page,method:str,path:str):
     return json.loads(result['text'])
 
 
+async def observed_ranked_projects(page,per_page:int=100,max_pages:int=250):
+    """Rank complete observed project pages without unsupported star ordering.
+
+    This fixture's GitLab version returns HTTP 400 for order_by=star_count.
+    Plain paginated project GETs are the trusted source of star counts;
+    exhausting the listing is required before selecting any top-N projects.
+    """
+    projects=[]
+    pages=0
+    for page_number in range(1,max_pages+1):
+        batch=await api_request(page,'GET',
+            f'/api/v4/projects?per_page={per_page}&page={page_number}')
+        if not isinstance(batch,list):
+            raise RuntimeError('GitLab project-list response is not a list')
+        pages+=1
+        for project in batch:
+            if not isinstance(project,dict) or not isinstance(project.get('id'),int):
+                raise RuntimeError('GitLab project list contains an invalid ID')
+            if not isinstance(project.get('star_count'),int) or project['star_count']<0:
+                raise RuntimeError('GitLab project list contains invalid star evidence')
+            if not project.get('path_with_namespace'):
+                raise RuntimeError('GitLab project list lacks a project name')
+        projects.extend(batch)
+        if len(batch)<per_page:
+            break
+    else:
+        raise RuntimeError('GitLab project listing exceeds bounded pagination; ranking UNKNOWN')
+    if not projects:
+        raise RuntimeError('GitLab project listing empty')
+    # Deterministic tie-break affects only equal-star projects. Preserve
+    # observed project identifiers so the readback verifies exactly these.
+    return sorted(projects,key=lambda project:(-project['star_count'],project['id'])),pages
+
+
 async def perform(page,count:int)->dict:
-    ranked=await api_request(page,'GET',
-        '/api/v4/projects?order_by=star_count&sort=desc&per_page=100&page=1')
+    ranked,pages=await observed_ranked_projects(page)
     chosen=choose_projects(ranked,count)
     receipt=[]
     for project in chosen:
@@ -109,6 +142,8 @@ async def perform(page,count:int)->dict:
         raise RuntimeError('GitLab starred-project readback did not confirm all writes')
     return {'capability':'gitlab_star_top_projects',
             'selected_count':count,
+            'observed_project_count':len(ranked),
+            'observed_pages':pages,
             'ranked_projects':[{'id':p['id'],'path':p['path_with_namespace'],
                                 'observed_stars':p['star_count']} for p in chosen],
             'writes':receipt,'verified_project_ids':selected_ids}
