@@ -240,6 +240,31 @@ fn convert_in_context_with_congruence(
             return Judgment::refuted("distinct-rigid-local-terms");
         }
 
+        // Proof-carrying, support-sensitive source contraction. Identical
+        // syntax in two captured environments denotes the same term only if
+        // all actually referenced *external* binders have independently
+        // proved-convertible substitutions. Unused environment slots are
+        // not required to match. Lambda/Pi/let-bound locals remain lexical;
+        // this is NOT a FreeId or EnvFrame equality shortcut.
+        if let (TypeValue::Term(lhs), TypeValue::Term(rhs)) = (&left, &right)
+            && certified_same_source_support(
+                checker, lhs, rhs, remaining, depth, context,
+            )
+        {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_SOURCE_SUPPORT").is_some() {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static REPORTED: AtomicUsize = AtomicUsize::new(0);
+                if REPORTED.fetch_add(1, Ordering::Relaxed) < 64 {
+                    eprintln!(
+                        "NUCLEUS_SOURCE_SUPPORT:expr={:?}:depth={depth}:remaining={remaining}:left_env={}:right_env={}",
+                        lhs.expr, lhs.env.id(), rhs.env.id()
+                    );
+                }
+            }
+            continue;
+        }
+
         match (left, right) {
             (TypeValue::Sort(left), TypeValue::Sort(right)) => {
                 match level_equal(left, right, remaining) {
@@ -1831,6 +1856,111 @@ fn certified_neutral_receiver_congruence(
             depth,
             context,
         ).is_proven()
+    })
+}
+
+/// Compute precisely which captured EnvFrame slots a source expression may
+/// read, accounting for de Bruijn shadowing. A syntactic subexpression shared
+/// at the same binder depth is scanned only once. This is an exact static
+/// support analysis: there is no observation-based guess about equality.
+fn source_external_bvar_support(
+    checker: &TypeChecker<'_>,
+    root: ExprId,
+    max_nodes: usize,
+) -> Option<Vec<u64>> {
+    let mut pending = vec![(root, 0u64)];
+    let mut visited = HashSet::new();
+    let mut support = std::collections::BTreeSet::new();
+    while let Some((id, binders)) = pending.pop() {
+        if !visited.insert((id, binders)) {
+            continue;
+        }
+        if visited.len() > max_nodes || support.len() > 64 {
+            return None;
+        }
+        match checker.expression(id)? {
+            Expr::BVar(index) if *index >= binders => {
+                support.insert(index.checked_sub(binders)?);
+            }
+            Expr::BVar(_) | Expr::Sort(_) | Expr::NatLit(_)
+            | Expr::StrLit(_) | Expr::Const { .. } => {}
+            Expr::App { fun, arg } => {
+                pending.push((*fun, binders));
+                pending.push((*arg, binders));
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                pending.push((*domain, binders));
+                pending.push((*body, binders.checked_add(1)?));
+            }
+            Expr::Let { ty, value, body } => {
+                pending.push((*ty, binders));
+                pending.push((*value, binders));
+                pending.push((*body, binders.checked_add(1)?));
+            }
+            Expr::Proj { structure, .. } => {
+                pending.push((*structure, binders));
+            }
+        }
+    }
+    Some(support.into_iter().collect())
+}
+
+/// Explicit substitution congruence for one identical source expression.
+/// Requalification on the full Arena corpus is required before promotion;
+/// no cached result, source name or expression fingerprint is authority.
+///
+/// Recursion always enters a source subterm's captured binding, with a
+/// strictly smaller finite budget. A failed subproof is not an equality.
+fn certified_same_source_support(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    budget: usize,
+    depth: usize,
+    context: &[TypeValue],
+) -> bool {
+    if budget < 64 || depth != context.len()
+        || left.expr != right.expr || left.levels != right.levels
+    {
+        return false;
+    }
+    if left.env == right.env {
+        return true;
+    }
+    // Bound analysis work in direct proportion to the available conversion
+    // budget, never silently truncating the support set to a false positive.
+    let Some(support) = source_external_bvar_support(
+        checker, left.expr, budget.min(512),
+    ) else {
+        return false;
+    };
+    let each_budget = (budget / (support.len() + 1)).min(256);
+    if each_budget < 16 {
+        return false;
+    }
+    support.into_iter().all(|slot| match (
+        left.env.lookup(slot),
+        right.env.lookup(slot),
+    ) {
+        (None, None) => true,
+        (Some(EnvBinding::Free(a)), Some(EnvBinding::Free(b))) => a == b,
+        (Some(EnvBinding::Closure(a)), Some(EnvBinding::Closure(b))) => {
+            a == b || convert_with_policy_in_context(
+                checker,
+                &TypeValue::Term(a),
+                &TypeValue::Term(b),
+                each_budget / 2,
+                DeltaPolicy::GuardedSemanticFallback,
+                depth,
+                context,
+            ).is_proven()
+        }
+        (Some(EnvBinding::Neutral(a)), Some(EnvBinding::Neutral(b))) => {
+            a == b || certified_neutral_receiver_congruence(
+                checker, &a, &b, each_budget / 2, depth, context, 6,
+            )
+        }
+        _ => false,
     })
 }
 
