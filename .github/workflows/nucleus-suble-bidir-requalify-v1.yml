@@ -1,0 +1,95 @@
+name: Nucleus Nat.sub_le bidirectional requalification
+on:
+  push:
+    branches: [nucleus-suble-bidir-requalify-v1]
+    paths: ["metatron-kernel/**",".github/workflows/nucleus-suble-bidir-requalify-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_COMMIT: f4e69d7c64cd20aae649dec341a9bd59d201e931
+      SOURCE_SUBTREE: 46369582184bd6accb2f6d01f359e5ddd1041852
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind exact source and release tests
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = "$SOURCE_SUBTREE"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch frozen fixture authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/a /tmp/tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Qualify dependent Pi against two exact sub-le reproductions and negatives
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/suble-bidir
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,subprocess,sys
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/tests')
+          out=pathlib.Path('metatron-kernel/evidence-out/suble-bidir')
+          names_hash={
+             'init-prelude':'eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5',
+             'perf/magma-list-pair-n7':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
+          }
+          cases=[]
+          for name,expected in names_hash.items():
+            raw=(root/'good'/(name+'.ndjson')).read_bytes()
+            assert hashlib.sha256(raw).hexdigest()==expected
+            names={0:''};prefix=[]
+            for line in raw.splitlines(keepends=True):
+              j=json.loads(line);prefix.append(line)
+              if 'in' in j:
+                v=j.get('str',j.get('num'))
+                parent=names.get(v['pre'],'')
+                names[j['in']]=parent+('.' if parent else '')+str(v.get('str',v.get('i')))
+              if 'thm' in j and names.get(j['thm']['name'])=='Nat.sub_le':
+                break
+            assert names.get(j['thm']['name'])=='Nat.sub_le',name
+            cases.append((name,b''.join(prefix),0))
+            if name=='init-prelude':
+              negative=false_index(extract(raw))
+              assert hashlib.sha256(negative).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+              cases.append(('false-index',negative,-1))
+          cases.append(('nested-unused-param',(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),1))
+          rows=[]
+          for name,prefix,expected in cases:
+            p=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+              input=prefix,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45,
+              env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_BIDIR_SUBLE':'1'})
+            lines=p.stderr.decode(errors='replace').splitlines()
+            row={'name':name,'actual':p.returncode,'expected':expected,'bytes':len(prefix),
+              'sha256':hashlib.sha256(prefix).hexdigest(),
+              'bidir_proven':sum('NUCLEUS_SUBLE_BIDIR_PROVEN:' in x for x in lines),
+              'last':[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x][-3:]}
+            rows.append(row)
+            assert p.returncode in ((0,2) if expected==0 else ((1,2) if expected==-1 else (1,))),row
+            print('SUBLE_WITNESS='+json.dumps(row,sort_keys=True),flush=True)
+          earned=sum(r['actual']==0 for r in rows if r['expected']==0)
+          result={'source':os.environ['SOURCE_COMMIT'],'subtree':os.environ['SOURCE_SUBTREE'],
+            'qualification':os.environ['GITHUB_SHA'],'earned_positive':earned,'rows':rows}
+          (out/'report.json').write_text(json.dumps(result,indent=2))
+          print('EARNED_POSITIVE='+str(earned),flush=True)
+          assert earned>=1,'No new acceptance on the protected dependent-type witnesses'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-suble-bidir-${{ github.sha }}
+          path: metatron-kernel/evidence-out/suble-bidir
+          if-no-files-found: warn
