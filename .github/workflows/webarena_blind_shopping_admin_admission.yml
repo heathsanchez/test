@@ -1,0 +1,131 @@
+name: WebArena blind Shopping and Admin admission
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_blind_shopping_admin_admission.yml"
+      - "scripts/webarena_unified_blind_four_site.py"
+      - "tests/test_webarena_unified_blind_four_site.py"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned evaluator authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Start Shopping and Shopping Admin
+        run: |
+          mkdir -p artifacts/webarena_blind_shopping_admin
+          docker pull am1n3e/webarena-verified-shopping
+          docker image inspect am1n3e/webarena-verified-shopping --format '{{index .RepoDigests 0}}' > artifacts/webarena_blind_shopping_admin/shopping_digest.txt
+          docker run -d --name webarena-shopping -p 7770:80 am1n3e/webarena-verified-shopping
+          for i in $(seq 1 120); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:7770 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then break; fi
+            if [ "$i" = 120 ]; then exit 1; fi
+            sleep 2
+          done
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{index .RepoDigests 0}}' > artifacts/webarena_blind_shopping_admin/admin_digest.txt
+          docker run -d --name webarena-admin -p 7780:80 -p 7781:8877 am1n3e/webarena-verified-shopping_admin
+          for i in $(seq 1 120); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:7780/admin || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then break; fi
+            if [ "$i" = 120 ]; then exit 1; fi
+            sleep 2
+          done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Verify blind admission scope
+        run: |
+          python -m unittest discover -s tests -p 'test_webarena_unified_blind_four_site.py' -v
+      - name: Execute six opaque-site tasks
+        run: |
+          ROOT=artifacts/webarena_blind_shopping_admin
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{
+            "__SHOPPING__":{"urls":["http://localhost:7770"],"active_url_idx":0},
+            "__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0}
+          }}
+          JSON
+          python - <<'PY'
+          import json,subprocess,sys,uuid
+          from pathlib import Path
+          root=Path("artifacts/webarena_blind_shopping_admin")
+          by_id={int(row["task_id"]):row for row in json.loads((root/"hard.json").read_text())}
+          chosen=(108,110,111,163,165,166)
+          runs={}
+          for ident in chosen:
+              task=by_id[ident]
+              slot=uuid.uuid4().hex
+              cmd=[
+                  sys.executable,"scripts/webarena_unified_blind_four_site.py",
+                  "--intent",task["intent"],
+                  "--start-url",(task.get("start_urls") or [""])[0],
+                  "--output-dir",str(root/"output"/slot),
+              ]
+              proc=subprocess.run(cmd,check=False)
+              runs[str(ident)]={"opaque_slot":slot,"exit_code":proc.returncode}
+              print("BLIND",ident,proc.returncode,flush=True)
+          (root/"execution_manifest.json").write_text(json.dumps(runs,indent=2)+"\n")
+          PY
+      - name: Score all six against pinned official evaluator
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+          root=Path("artifacts/webarena_blind_shopping_admin")
+          wa=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          runs=json.loads((root/"execution_manifest.json").read_text())
+          empty=NetworkTrace.model_construct(is_playwright=False,src_file=Path("<response-only>"),events=())
+          results={};failures=[]
+          for key,record in runs.items():
+              ident=int(key);out=root/"output"/record["opaque_slot"]
+              if record["exit_code"]!=0 or not (out/"agent_response.json").is_file():
+                  results[key]={"score":0.0,"status":"execution_failed","exit_code":record["exit_code"]}
+                  failures.append(ident);continue
+              try:
+                  result=wa.evaluate_task(task_id=ident,agent_response=out/"agent_response.json",network_trace=empty)
+                  row={"score":float(result.score),"status":result.status.value}
+                  (out/"eval_result.json").write_text(json.dumps(result.model_dump(mode="json",exclude_none=True),indent=2)+"\n")
+                  results[key]=row
+                  if row["score"]!=1.0 or row["status"]!="success":failures.append(ident)
+              except Exception as exc:
+                  results[key]={"score":0.0,"status":"evaluator_error","error":repr(exc)}
+                  failures.append(ident)
+              print("OFFICIAL",ident,results[key],flush=True)
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED" if not failures else "CANDIDATE_WITH_RESIDUALS",
+              "boundary":"six official response-only Hard tasks via task-ID-blind four-site agent",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "attempted":len(runs),
+              "successes":sum(x.get("score")==1.0 and x.get("status")=="success" for x in results.values()),
+              "failures":failures,"results":results,
+          }
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2),flush=True)
+          if len(runs)!=6 or failures:
+              raise SystemExit(f"blind four-site admission residuals: {failures}")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-blind-shopping-admin
+          path: artifacts/webarena_blind_shopping_admin
