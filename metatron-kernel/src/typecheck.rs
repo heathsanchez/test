@@ -622,7 +622,7 @@ impl<'a> TypeChecker<'a> {
                         }
                     }
                 }
-                match conversion {
+                let outcome = match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
                             && !definite_conversion_obstruction(obstruction.0) =>
@@ -630,10 +630,75 @@ impl<'a> TypeChecker<'a> {
                         Judgment::unknown(obstruction.0)
                     }
                     other => other,
+                };
+                if matches!(outcome, Judgment::Unknown { .. })
+                    && let Some(Judgment::Proven { .. }) = self.check_lambda_against_expected_pi(
+                        expression, expected, context, frame, remaining, cache,
+                    )
+                {
+                    return Judgment::proven((), "verified-bidirectional-lambda");
                 }
+                outcome
             }
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
-            Judgment::Unknown { residual } => Judgment::Unknown { residual },
+            Judgment::Unknown { residual } => {
+                if let Some(Judgment::Proven { .. }) = self.check_lambda_against_expected_pi(
+                    expression, expected, context, frame, remaining, cache,
+                ) {
+                    return Judgment::proven((), "verified-bidirectional-lambda");
+                }
+                Judgment::Unknown { residual }
+            }
+        }
+    }
+
+    // A lambda can be checked against an independently established dependent
+    // Pi without first synthesizing a dependent type for its body. This never
+    // promotes an unresolved domain, binder substitution, or body judgment.
+    fn check_lambda_against_expected_pi(
+        &self,
+        expression: ExprId,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+    ) -> Option<Judgment<()>> {
+        let Expr::Lam { domain, body } = self.expressions.get(expression)? else {
+            return None;
+        };
+        let (expected_domain, PiBody::Closure(expected_body)) =
+            self.pi_view(Judgment::proven(expected.clone(), "given-pi"), *remaining)?
+        else {
+            return None;
+        };
+        let domain_type = self.infer_in(*domain, context, frame, remaining, cache);
+        if !self.sort_level(domain_type, *remaining).is_proven() {
+            return None;
+        }
+        let actual_domain = TypeValue::Term(self.closure(*domain, frame.clone()));
+        if !crate::convert::convert_with_policy_in_context(
+            self, &actual_domain, &expected_domain, *remaining, self.delta_policy,
+            context.len(), context,
+        ).is_proven() {
+            return None;
+        }
+        let free = fresh_local(context.len())?;
+        let mut extended = context.to_vec();
+        extended.push(actual_domain);
+        let actual_body_frame = frame.extend_free(free);
+        let expected_body = TypeValue::Term(expected_body.under_free(free));
+        let result = self.check_in(
+            *body, &expected_body, &extended, &actual_body_frame,
+            remaining, true, cache,
+        );
+        if result.is_proven() {
+            if std::env::var_os("NUCLEUS_TRACE_BIDIR_SUBLE").is_some() {
+                eprintln!("NUCLEUS_SUBLE_BIDIR_PROVEN:expr={expression:?}");
+            }
+            Some(result)
+        } else {
+            None
         }
     }
 
