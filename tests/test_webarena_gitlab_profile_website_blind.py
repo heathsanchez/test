@@ -2,7 +2,7 @@ import sys,unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
 from webarena_gitlab_profile_website_blind import (
-    parse_profile_website_intent,website_key,
+    parse_profile_website_intent,website_key,valid_form_website,
 )
 
 
@@ -15,6 +15,11 @@ class ProfileWebsiteIntentTests(unittest.TestCase):
         }
         for intent,wanted in samples.items():
             self.assertEqual(parse_profile_website_intent(intent),wanted)
+
+    def test_schemed_url_for_site_validation(self):
+        self.assertEqual(valid_form_website("helloworld.xyz"),"https://helloworld.xyz")
+        self.assertEqual(valid_form_website("www.byteblaze.com"),"https://www.byteblaze.com")
+        self.assertEqual(valid_form_website("https://example.org/a"),"https://example.org/a")
 
     def test_scheme_relative_website_identity(self):
         self.assertEqual(website_key("http://helloworld.xyz/"),website_key("helloworld.xyz"))
