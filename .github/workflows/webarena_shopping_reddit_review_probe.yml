@@ -1,0 +1,163 @@
+name: WebArena isolated Shopping to Reddit review composition
+
+on:
+  push:
+    branches: [webarena-verified-capability-compiler-v1]
+    paths:
+      - ".github/workflows/webarena_shopping_reddit_review_probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 26bed0778e14be19a4229ea2a92742210cb1543a
+
+      - name: Pin candidate source for attribution
+        run: |
+          mkdir -p artifacts/webarena_shopping_reddit_compound
+          test "$(git rev-parse HEAD)" = "__REF__"
+          git rev-parse HEAD > artifacts/webarena_shopping_reddit_compound/source_commit.txt
+
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+
+      - name: Source tests before pulling fixtures
+        run: |
+          python -m pip install playwright
+          python -m unittest discover -s tests -p 'test_webarena_shopping_reddit_review_compound.py' -v
+          python -m compileall -q scripts tests
+          git diff --check
+
+      - name: Checkout pinned official evaluator
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+
+      - name: Start Shopping and Reddit
+        run: |
+          docker pull am1n3e/webarena-verified-shopping
+          docker image inspect am1n3e/webarena-verified-shopping --format '{{index .RepoDigests 0}}' > artifacts/webarena_shopping_reddit_compound/shopping_digest.txt
+          docker run -d --name shopping -p 7770:80 am1n3e/webarena-verified-shopping
+          for i in $(seq 1 120); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:7770 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then break; fi
+            if [ "$i" = 120 ]; then exit 1; fi
+            sleep 2
+          done
+          docker pull am1n3e/webarena-verified-reddit
+          docker image inspect am1n3e/webarena-verified-reddit --format '{{index .RepoDigests 0}}' > artifacts/webarena_shopping_reddit_compound/reddit_digest.txt
+          docker run -d --name reddit -p 9999:80 -p 9998:8877 am1n3e/webarena-verified-reddit
+          for i in $(seq 1 120); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9999 || true)
+            if [ "$code" = "200" ] || [ "$code" = "302" ]; then break; fi
+            if [ "$i" = 120 ]; then exit 1; fi
+            sleep 2
+          done
+
+      - name: Install evaluator and Chromium
+        run: |
+          python -m pip install "./upstream[examples]"
+          playwright install --with-deps chromium
+
+      - name: Execute five intent-only cross-site compositions
+        run: |
+          ROOT=artifacts/webarena_shopping_reddit_compound
+          cp upstream/assets/dataset/webarna-verfied-hard.json "$ROOT/hard.json"
+          cat > "$ROOT/config.json" <<'JSON'
+          {"environments":{
+            "__SHOPPING__":{"urls":["http://localhost:7770"],"active_url_idx":0},
+            "__REDDIT__":{"urls":["http://localhost:9999"],"active_url_idx":0}
+          }}
+          JSON
+          python - <<'PY'
+          import json,subprocess,sys,uuid
+          from pathlib import Path
+          root=Path("artifacts/webarena_shopping_reddit_compound")
+          tasks=json.loads((root/"hard.json").read_text())
+          by_id={int(t["task_id"]):t for t in tasks}
+          records={}
+          for ident in (671,672,673,674,675):
+              task=by_id[ident]
+              slot=uuid.uuid4().hex
+              out=root/"output"/slot
+              out.mkdir(parents=True,exist_ok=True)
+              result=subprocess.run([
+                  sys.executable,"scripts/webarena_shopping_reddit_review_compound.py",
+                  "--intent",task["intent"],
+                  "--start-url",task["start_urls"][0],
+                  "--output-dir",str(out),
+              ],capture_output=True,text=True,timeout=240,check=False)
+              (out/"stdout.txt").write_text(result.stdout[-20000:])
+              (out/"stderr.txt").write_text(result.stderr[-30000:])
+              records[str(ident)]={"slot":slot,"exit_code":result.returncode}
+              print("COMPOUND",ident,"exit",result.returncode,
+                    "stderr",result.stderr[-1400:],flush=True)
+          (root/"execution_manifest.json").write_text(json.dumps(records,indent=2)+"\n")
+          PY
+
+      - name: Officially score each retained network trace
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from webarena_verified.api import WebArenaVerified
+          from webarena_verified.types.config import WebArenaVerifiedConfig
+          from webarena_verified.types.tracing import NetworkTrace
+
+          root=Path("artifacts/webarena_shopping_reddit_compound")
+          authority=WebArenaVerified(config=WebArenaVerifiedConfig.from_file(root/"config.json"))
+          records=json.loads((root/"execution_manifest.json").read_text())
+          result_rows={};failures=[]
+          for key,record in records.items():
+              ident=int(key)
+              out=root/"output"/record["slot"]
+              if record["exit_code"]!=0 or not (out/"agent_response.json").is_file() or not (out/"network.har").is_file():
+                  result_rows[key]={"score":0.0,"status":"execution_failed","exit_code":record["exit_code"]}
+                  failures.append(ident)
+                  continue
+              try:
+                  trace=NetworkTrace.from_har(out/"network.har")
+                  official=authority.evaluate_task(task_id=ident,
+                      agent_response=out/"agent_response.json",network_trace=trace)
+                  dumped=official.model_dump(mode="json",exclude_none=True)
+                  (out/"official.json").write_text(json.dumps(dumped,indent=2)+"\n")
+                  row={"score":float(official.score),"status":official.status.value,
+                       "network_events":len(trace.evaluation_events)}
+                  result_rows[key]=row
+                  if row["score"]!=1.0 or row["status"]!="success":
+                      failures.append(ident)
+              except Exception as exc:
+                  result_rows[key]={"score":0.0,"status":"evaluation_error","error":repr(exc)}
+                  failures.append(ident)
+              print("OFFICIAL",ident,result_rows[key],flush=True)
+          seal={
+              "epistemic_state":"WARRANTED_BOUNDED" if not failures else "CANDIDATE_WITH_RESIDUALS",
+              "boundary":"five Shopping product-review retrieval to Reddit mutation tasks; task-ID-blind agent; HAR official evaluator",
+              "upstream_commit":"6473f72db5dcefc97b5725b59e734504edc28a21",
+              "attempted":len(records),
+              "success_count":sum(x.get("score")==1.0 and x.get("status")=="success" for x in result_rows.values()),
+              "results":result_rows,"failures":failures
+          }
+          (root/"qualification.json").write_text(json.dumps(seal,indent=2)+"\n")
+          print(json.dumps(seal,indent=2),flush=True)
+          if len(records)!=5 or failures:
+              raise SystemExit(f"Shopping→Reddit residuals: {failures}")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webarena-shopping-reddit-review-compound
+          path: artifacts/webarena_shopping_reddit_compound
