@@ -226,7 +226,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json,hashlib,pathlib,subprocess
+          import json,hashlib,pathlib,subprocess,os
           root=pathlib.Path('/tmp/arena-tests/good')
           results=[]
           for case in ('init-prelude','perf/grind-ring-5'):
@@ -287,7 +287,8 @@ jobs:
                       'metadata':{k:v for k,v in rec.items() if k not in ('type','name','rules')}
                   })
               payload=b''.join(prefix)
-              run=subprocess.run(['/tmp/nucleus'],input=payload,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90)
+              run=subprocess.run(['/tmp/nucleus'],input=payload,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90,
+                                 env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1'})
               downstream=[x for x in run.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_DOWNSTREAM:' in x][-3:]
               record={
                   'case':case,'prefix_sha256':hashlib.sha256(payload).hexdigest(),
