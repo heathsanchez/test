@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -13,7 +14,7 @@ use crate::value::{
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct AuthorityId(pub u64);
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Transparency {
     Opaque,
     Reducible,
@@ -77,6 +78,16 @@ pub struct Exposure {
     pub transitions: Vec<TransitionWitness>,
 }
 
+/// Only certified exposure results may be retained. Closure frames and the
+/// declared authority are part of the key; budget is an exploration limit,
+/// not a semantic hypothesis about the normalized value.
+pub(crate) type ExposureCacheKey = (AuthorityId, Closure, Transparency, bool, Vec<Closure>);
+pub(crate) type ExposureCache = Rc<RefCell<HashMap<ExposureCacheKey, Value>>>;
+
+pub(crate) fn new_exposure_cache() -> ExposureCache {
+    Rc::new(RefCell::new(HashMap::new()))
+}
+
 type VisitKey = (AuthorityId, ExprId, u64);
 const INLINE_VISIT_CAPACITY: usize = 8;
 
@@ -129,6 +140,7 @@ impl VisitSet {
 
 pub struct Machine<'a> {
     authority: AuthorityId,
+    exposure_cache: Option<ExposureCache>,
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
     definitions: Rc<HashMap<NameId, DefinitionBody>>,
@@ -149,6 +161,7 @@ impl<'a> Machine<'a> {
     ) -> Self {
         Self {
             authority,
+            exposure_cache: None,
             expressions,
             levels,
             definitions: definitions.into(),
@@ -176,6 +189,13 @@ impl<'a> Machine<'a> {
 
     pub fn with_projection_specs(mut self, specs: HashMap<NameId, ProjectionSpec>) -> Self {
         self.projection_specs = specs;
+        self
+    }
+
+    /// Share positive exposure evidence over one type-checker judgment.
+    /// Unresolved / cyclic evaluations are intentionally never cached.
+    pub(crate) fn with_exposure_cache(mut self, cache: ExposureCache) -> Self {
+        self.exposure_cache = Some(cache);
         self
     }
 
@@ -362,7 +382,61 @@ impl<'a> Machine<'a> {
         )
     }
 
+    /// Memoize exact successful normal forms across exposure calls that
+    /// share an environment/authority. Never treat a cached UNKNOWN as proof.
     fn expose_internal_with_pending(
+        &self,
+        closure: Closure,
+        transparency: Transparency,
+        budget: usize,
+        record_witnesses: bool,
+        preserve_stuck_projection: bool,
+        pending: Vec<Closure>,
+    ) -> Judgment<Exposure> {
+        if budget == 0 {
+            return Judgment::unknown("reduction-budget-exhausted");
+        }
+        let Some(cache) = self.exposure_cache.as_ref().filter(|_| !record_witnesses) else {
+            return self.expose_uncached_internal_with_pending(
+                closure, transparency, budget, record_witnesses,
+                preserve_stuck_projection, pending,
+            );
+        };
+        let key = (
+            self.authority,
+            closure.clone(),
+            transparency,
+            preserve_stuck_projection,
+            pending.clone(),
+        );
+        let cached = cache.borrow().get(&key).cloned();
+        if let Some(value) = cached {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_EXPOSURE_CACHE").is_some() {
+                eprintln!("NUCLEUS_EXPOSURE_CACHE:hit:expression={:?}", closure.expr);
+            }
+            return Judgment::proven(
+                Exposure { value, transitions: Vec::new() },
+                "certified-cached-closure-exposure",
+            );
+        }
+        let result = self.expose_uncached_internal_with_pending(
+            closure, transparency, budget, false,
+            preserve_stuck_projection, pending,
+        );
+        if let Some(established) = result.proven_value() {
+            let mut entries = cache.borrow_mut();
+            // Bound memory across large Arena exports. Eviction affects only
+            // performance and never creates a judgment.
+            if entries.len() >= 8192 {
+                entries.clear();
+            }
+            entries.insert(key, established.value.clone());
+        }
+        result
+    }
+
+    fn expose_uncached_internal_with_pending(
         &self,
         mut closure: Closure,
         transparency: Transparency,
