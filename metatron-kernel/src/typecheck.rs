@@ -976,11 +976,8 @@ impl<'a> TypeChecker<'a> {
     }
 
     /// Refute proof conversion before exposing either proof body, but only
-    /// when both term types are independently established propositions and
-    /// their proposition types have a definite conversion obstruction.
-    ///
-    /// This is deliberately refutation-only: UNKNOWN never becomes false,
-    /// and this path grants no new proof-irrelevance acceptance authority.
+    /// for an already certified rigid separator: distinct opaque closed
+    /// proposition constants. This path grants no new acceptance authority.
     pub(crate) fn proof_terms_different_propositions_before_whnf(
         &self,
         left: &Closure,
@@ -1041,31 +1038,46 @@ impl<'a> TypeChecker<'a> {
             return false;
         }
 
-        match crate::convert::convert_with_policy_in_context(
-            self,
-            &left_type,
-            &right_type,
-            probe,
-            self.delta_policy,
-            context.len(),
-            context,
-        ) {
-            Judgment::Refuted { obstruction }
-                if definite_conversion_obstruction(obstruction.0) =>
-            {
-                #[cfg(feature = "diagnostics")]
-                if std::env::var_os("NUCLEUS_TRACE_PREWHNF_PROOF_REFUTE").is_some() {
-                    eprintln!(
-                        "NUCLEUS_PREWHNF_PROOF_REFUTE:left={:?}:right={:?}:obstruction={:?}",
-                        left_type, right_type, obstruction
-                    );
-                }
-                true
+        let rigid_closed_prop = |ty: &TypeValue| -> Option<(NameId, Vec<LevelTerm>)> {
+            let TypeValue::Term(closure) = ty else {
+                return None;
+            };
+            let exposed = self
+                .machine()
+                .expose(closure.clone(), Transparency::Reducible, probe);
+            let Value::Neutral(neutral) = exposed.proven_value()? else {
+                return None;
+            };
+            if !neutral.spine.is_empty() {
+                return None;
             }
-            Judgment::Proven { .. }
-            | Judgment::Refuted { .. }
-            | Judgment::Unknown { .. } => false,
+            let NeutralHead::Const { name, levels } = &neutral.head else {
+                return None;
+            };
+            Some((*name, levels.clone()))
+        };
+
+        let (Some((left_name, left_levels)), Some((right_name, right_levels))) =
+            (rigid_closed_prop(&left_type), rigid_closed_prop(&right_type))
+        else {
+            return false;
+        };
+
+        let refuted = self.distinct_opaque_closed_proposition_types(
+            left_name,
+            &left_levels,
+            right_name,
+            &right_levels,
+            probe,
+        );
+        #[cfg(feature = "diagnostics")]
+        if refuted && std::env::var_os("NUCLEUS_TRACE_PREWHNF_PROOF_REFUTE").is_some() {
+            eprintln!(
+                "NUCLEUS_PREWHNF_PROOF_REFUTE:left={:?}:right={:?}",
+                left_type, right_type
+            );
         }
+        refuted
     }
 
     pub(crate) fn proof_terms_same_proposition(
