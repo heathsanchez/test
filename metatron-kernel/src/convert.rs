@@ -1575,6 +1575,22 @@ fn compare_nat_literal_neutral(
             "NUCLEUS_NATLIT_RIGID:literal={literal:?}:head={name:?}:levels={levels:?}:spine={:?}:budget={budget}:depth={depth}:context={}",
             neutral.spine, context.len(),
         );
+        if depth == 5 && !levels.is_empty() {
+            let nat_rec_head = *name == primitives.recursor;
+            let nat_zero_head = *name == primitives.zero;
+            let nat_succ_head = *name == primitives.succ;
+            let major = neutral.spine.last();
+            let major_reducible = major.map(|term| checker.machine().expose(
+                term.clone(), Transparency::Reducible, budget.min(96),
+            ));
+            let major_full = major.map(|term| checker.machine().expose(
+                term.clone(), Transparency::Full, budget.min(96),
+            ));
+            eprintln!(
+                "NUCLEUS_NATREC_MAJOR:head={name:?}:is_certified_nat_rec={nat_rec_head}:is_nat_zero={nat_zero_head}:is_nat_succ={nat_succ_head}:universe={levels:?}:arity={}:major={major:?}:major_reducible={major_reducible:?}:major_full={major_full:?}:depth={depth}:context={}",
+                neutral.spine.len(), context.len(),
+            );
+        }
     }
     if !levels.is_empty() {
         return Judgment::refuted("Nat-literal-constructor-levels");
