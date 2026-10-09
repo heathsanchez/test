@@ -5,6 +5,10 @@ on:
     branches: [webarena-verified-capability-compiler-v1]
     paths:
       - ".github/workflows/webarena_shopping_reddit_review_probe.yml"
+      - "scripts/webarena_shopping_reddit_review_compound.py"
+      - "scripts/webarena_product_name_match.py"
+      - "tests/test_webarena_shopping_reddit_review_compound.py"
+      - "tests/test_webarena_product_name_match.py"
   workflow_dispatch:
 
 permissions:
@@ -20,13 +24,11 @@ jobs:
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: 26bed0778e14be19a4229ea2a92742210cb1543a
 
       - name: Pin candidate source for attribution
         run: |
           mkdir -p artifacts/webarena_shopping_reddit_compound
-          test "$(git rev-parse HEAD)" = "26bed0778e14be19a4229ea2a92742210cb1543a"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git rev-parse HEAD > artifacts/webarena_shopping_reddit_compound/source_commit.txt
 
       - uses: actions/setup-python@v5
@@ -36,6 +38,7 @@ jobs:
         run: |
           python -m pip install playwright
           python -m unittest discover -s tests -p 'test_webarena_shopping_reddit_review_compound.py' -v
+          python -m unittest discover -s tests -p 'test_webarena_product_name_match.py' -v
           python -m compileall -q scripts tests
           git diff --check
 
