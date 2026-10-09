@@ -1464,6 +1464,26 @@ fn compare_values(
                         }
                     }
                 }
+                // A projection's receiver is a semantic neutral value. Two
+                // receiver closures need not share an EnvFrame ID: lambda/Pi
+                // opening can reconstruct identical bound applications under
+                // different lexical frames. Accept only when every receiver
+                // head, universe level and actually applied argument is
+                // independently proved convertible in THIS dependent context.
+                // In particular, this never equates distinct data FreeIds or
+                // treats common types as evidence of term equality.
+                if certified_projected_neutral_congruence(
+                    checker, left, right, current_budget, depth, context,
+                ) {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_CERTIFIED_NEUTRAL_PROJECTION").is_some() {
+                        eprintln!(
+                            "NUCLEUS_CERTIFIED_NEUTRAL_PROJECTION:depth={depth}:budget={current_budget}:left={:?}:right={:?}",
+                            left.head, right.head
+                        );
+                    }
+                    return Judgment::proven((), "certified-projected-neutral-congruence");
+                }
                 match compare_neutral_heads(checker, left, right, current_budget) {
                     Judgment::Proven { .. } => {}
                     other => return other,
@@ -1712,6 +1732,102 @@ fn compare_nat_literal_neutral(
         );
     }
     Judgment::refuted("Nat-literal-non-Nat-head")
+}
+
+/// Source-registered projection congruence across distinct lexical frames.
+///
+/// The neutral syntax is already produced by Machine only after a checked
+/// ProjectionSpec, but that does NOT make its receiver frames equal. This
+/// procedure proves every relevant receiver premise using the same ordinary
+/// Nucleus conversion kernel, under the original dependent binder context.
+/// The recursive source-head walk is finite (nested projection limit), and
+/// each strict subargument gets a smaller budget. Unknown remains UNKNOWN.
+fn certified_projected_neutral_congruence(
+    checker: &TypeChecker<'_>,
+    left: &Neutral,
+    right: &Neutral,
+    budget: usize,
+    depth: usize,
+    context: &[TypeValue],
+) -> bool {
+    if budget < 64 || depth != context.len() {
+        return false;
+    }
+    if !matches!(
+        (&left.head, &right.head),
+        (
+            NeutralHead::Projection {
+                type_name: lty,
+                index: li,
+                ..
+            },
+            NeutralHead::Projection {
+                type_name: rty,
+                index: ri,
+                ..
+            }
+        ) if lty == rty && li == ri
+    ) {
+        return false;
+    }
+    certified_neutral_receiver_congruence(
+        checker, left, right, budget, depth, context, 8,
+    )
+}
+
+fn certified_neutral_receiver_congruence(
+    checker: &TypeChecker<'_>,
+    left: &Neutral,
+    right: &Neutral,
+    budget: usize,
+    depth: usize,
+    context: &[TypeValue],
+    nesting: usize,
+) -> bool {
+    if budget < 16 || nesting == 0 || left.spine.len() != right.spine.len() {
+        return false;
+    }
+    let same_head = match (&left.head, &right.head) {
+        (NeutralHead::Free(a), NeutralHead::Free(b)) => a == b,
+        (
+            NeutralHead::Const { name: a, levels: la },
+            NeutralHead::Const { name: b, levels: lb },
+        ) if a == b && la.len() == lb.len() => {
+            la.iter().zip(lb)
+                .all(|(a, b)| level_equal(a.clone(), b.clone(), budget).is_proven())
+        }
+        (
+            NeutralHead::Projection {
+                type_name: ta, index: ia, structure: sa,
+            },
+            NeutralHead::Projection {
+                type_name: tb, index: ib, structure: sb,
+            },
+        ) if ta == tb && ia == ib => {
+            certified_neutral_receiver_congruence(
+                checker, sa, sb, budget / 2, depth, context, nesting - 1,
+            )
+        }
+        _ => false,
+    };
+    if !same_head {
+        return false;
+    }
+    // A syntactically identical closure carries a correct reflexivity
+    // certificate. All other arguments must be proved convertible;
+    // equal type or apparent equality of EnvFrame metadata is insufficient.
+    let each_budget = (budget / (left.spine.len() + 1)).min(256);
+    left.spine.iter().zip(&right.spine).all(|(a, b)| {
+        a == b || convert_with_policy_in_context(
+            checker,
+            &TypeValue::Term(a.clone()),
+            &TypeValue::Term(b.clone()),
+            each_budget,
+            DeltaPolicy::PreferredOnly,
+            depth,
+            context,
+        ).is_proven()
+    })
 }
 
 fn compare_neutral_heads(
