@@ -130,22 +130,22 @@ source, any repeated-anchor return starting no higher than that source
 cannot strictly decrease its owner. -/
 theorem minimal_bad_source_capped_coherent_return_non_decrease
     {n : Nat} (hmin : MinimalBad PositiveBad n)
-    (prefix : Nat) (a : ValidEpisode)
+    (initialDepth : Nat) (a : ValidEpisode)
     (hinit :
-      iter shortcut prefix n =
+      iter shortcut initialDepth n =
         2 ^ a.anchor * a.owner - 1)
     (i d : Nat) (hd : 0 < d)
     (hsame :
       (episodeStream a (i + d)).anchor =
         (episodeStream a i).anchor)
     (hcap :
-      iter shortcut (prefix + episodeStreamTime a i) n ≤ n) :
+      iter shortcut (initialDepth + episodeStreamTime a i) n ≤ n) :
     (episodeStream a i).owner ≤
       (episodeStream a (i + d)).owner := by
   let before := episodeStream a i
   let after := episodeStream a (i + d)
   have hbefore :
-      iter shortcut (prefix + episodeStreamTime a i) n =
+      iter shortcut (initialDepth + episodeStreamTime a i) n =
         2 ^ before.anchor * before.owner - 1 := by
     rw [iter_add, hinit]
     exact episode_stream_matches_actual_shortcut a i
@@ -159,7 +159,7 @@ theorem minimal_bad_source_capped_coherent_return_non_decrease
     rw [hsame] at htrace
     exact htrace
   have hno := minimal_bad_excludes_source_capped_return_descent
-    hmin (prefix + episodeStreamTime a i)
+    hmin (initialDepth + episodeStreamTime a i)
     (episodeStreamTime before d)
     before.anchor before.owner after.owner
     before.anchor_pos before.owner_pos after.owner_pos
@@ -172,16 +172,16 @@ the owner must strictly ASCEND. This identifies the surviving
 local residual under the minimal-bad hypothesis. -/
 theorem minimal_bad_source_capped_admitted_return_strict_ascent
     {n : Nat} (hmin : MinimalBad PositiveBad n)
-    (prefix : Nat) (a : ValidEpisode)
+    (initialDepth : Nat) (a : ValidEpisode)
     (hinit :
-      iter shortcut prefix n = 2 ^ a.anchor * a.owner - 1)
+      iter shortcut initialDepth n = 2 ^ a.anchor * a.owner - 1)
     (i d A B P D : Nat)
     (hd : 0 < d)
     (hsame :
       (episodeStream a (i + d)).anchor =
         (episodeStream a i).anchor)
     (hcap :
-      iter shortcut (prefix + episodeStreamTime a i) n ≤ n)
+      iter shortcut (initialDepth + episodeStreamTime a i) n ≤ n)
     (hP : P = 2 ^ D)
     (hAff :
       P * (episodeStream a (i + d)).owner =
@@ -194,7 +194,7 @@ theorem minimal_bad_source_capped_admitted_return_strict_ascent
       (episodeStream a (i + d)).owner := by
   have hle :=
     minimal_bad_source_capped_coherent_return_non_decrease
-      hmin prefix a hinit i d hd hsame hcap
+      hmin initialDepth a hinit i d hd hsame hcap
   have hEq :
       2 ^ D * (episodeStream a (i + d)).owner =
         A * (episodeStream a i).owner + B := by
