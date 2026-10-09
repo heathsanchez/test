@@ -39,8 +39,10 @@ jobs:
           lake env lean --version | tee evidence/toolchain.txt
           lake build CollatzFinal > evidence/build.log
           lake env lean -DautoImplicit=false formal/Collatz/BiadicStutterObstruction.lean | tee evidence/v116-lean.log
-          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v116-lean.log
+          lake env lean -DautoImplicit=false formal/Collatz/SourceCappedTernaryBar.lean | tee evidence/v116-bar-lean.log
+          ! grep -Eq 'sorryAx|Lean.ofReduceBool|error:' evidence/v116-lean.log evidence/v116-bar-lean.log
           grep -q 'v116_all_ones_actual_prefix' evidence/v116-lean.log
+          grep -q 'universal_source_capped_bar_iff_collatz' evidence/v116-bar-lean.log
       - name: Seal checked boundary
         shell: bash
         run: |
