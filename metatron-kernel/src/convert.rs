@@ -1472,9 +1472,9 @@ fn compare_values(
                 // heads. Different EnvFrame IDs are not enough evidence.
                 //
                 // Narrow boundary from chain6_datF: one receiver argument
-                // and one pending argument. Every premise uses the ordinary
-                // contextual converter with a *strictly lower* budget.
-                if depth==context.len() && current_budget>=1024
+                // and one pending argument. Each probe has at most one quarter
+                // the caller's remaining budget, so it cannot self-license.
+                if depth==context.len() && current_budget>=32
                     && let (
                         NeutralHead::Projection {
                             type_name: lhs_type,index:lhs_index,structure:lhs_receiver,
@@ -1493,7 +1493,7 @@ fn compare_values(
                     && left.spine.len()==1
                     && right.spine.len()==1
                 {
-                    let probe=512;
+                    let probe=(current_budget/4).min(32);
                     let receiver_check=convert_with_policy_in_context(
                         checker,
                         &TypeValue::Term(lhs_receiver.spine[0].clone()),
