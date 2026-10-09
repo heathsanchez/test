@@ -1853,6 +1853,42 @@ impl<'a> TypeChecker<'a> {
     pub(crate) fn nat_primitives(&self) -> Option<&crate::environment::NatPrimitives> {
         self.environment.nat_primitives()
     }
+    /// The recursor's zero-branch iota is authorized only by the validated
+    /// Nat primitives and their installed constructor-reduction interface.
+    /// This witness is independent of the current expression's name IDs.
+    pub(crate) fn certified_nat_rec_zero_rule(
+        &self,
+        head: NameId,
+        level_arity: usize,
+        application_arity: usize,
+    ) -> bool {
+        let Some(nat) = self.environment.nat_primitives() else {
+            return false;
+        };
+        if head != nat.recursor {
+            return false;
+        }
+        let Some(reduction) = self.environment.recursor_reduction(head) else {
+            return false;
+        };
+        !reduction.k
+            && reduction.num_params == 0
+            && reduction.num_indices == 0
+            && reduction.level_params.len() == level_arity
+            && reduction.rules.len() == 2
+            && application_arity == 4
+            && reduction.rules.iter().any(|rule| {
+                rule.constructor == nat.zero
+                    && rule.num_params == 0
+                    && rule.num_fields == 0
+            })
+            && reduction.rules.iter().any(|rule| {
+                rule.constructor == nat.succ
+                    && rule.num_params == 0
+                    && rule.num_fields == 1
+            })
+    }
+
 
     pub(crate) fn definition_value(&self, name: NameId) -> Option<ExprId> {
         self.environment.get(name)?.value
