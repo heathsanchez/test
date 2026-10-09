@@ -316,6 +316,14 @@ impl<'a> Machine<'a> {
             return Judgment::unknown("projection-structure-neutral");
         };
         if name != spec.constructor {
+            if std::env::var_os("NUCLEUS_TRACE_LEBLE_PROJECTION").is_some() {
+                if let Some(major) = neutral.spine.last() {
+                    let actual_major = self.expose_internal(
+                        major.clone(), Transparency::Full, budget.min(128), false, false
+                    );
+                    eprintln!("NUCLEUS_LEBLE_MAJOR:expected={:?}:observed={name:?}:raw={major:?}:normal={actual_major:?}", spec.constructor);
+                }
+            }
             return Judgment::unknown("projection-constructor-mismatch");
         }
         let field_offset = spec.num_params + index;
