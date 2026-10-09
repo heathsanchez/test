@@ -1329,6 +1329,45 @@ impl<'a> TypeChecker<'a> {
                                 expected_body_whnf=Some(self.machine().expose(
                                     expected_body,Transparency::Full,512,
                                 ));
+                                if let (
+                                    Some(Value::Neutral(left)),
+                                    Some(Value::Neutral(right)),
+                                )=(
+                                    actual_body_whnf.as_ref().and_then(|x|x.proven_value()),
+                                    expected_body_whnf.as_ref().and_then(|x|x.proven_value()),
+                                ){
+                                    if left.head==right.head
+                                        && left.spine.len()==3 && right.spine.len()==3
+                                    {
+                                        for index in 0..3{
+                                            let a=&left.spine[index];
+                                            let b=&right.spine[index];
+                                            let preferred=crate::convert::convert_with_policy_in_context(
+                                                self,&TypeValue::Term(a.clone()),
+                                                &TypeValue::Term(b.clone()),512,
+                                                crate::convert::DeltaPolicy::PreferredOnly,
+                                                ext.len(),&ext,
+                                            );
+                                            let guarded=if preferred.is_proven(){
+                                                preferred.clone()
+                                            }else{
+                                                crate::convert::convert_with_policy_in_context(
+                                                    self,&TypeValue::Term(a.clone()),
+                                                    &TypeValue::Term(b.clone()),512,
+                                                    crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                    ext.len(),&ext,
+                                                )
+                                            };
+                                            eprintln!(
+                                                "NUCLEUS_CHAIN6_SPINE_ARG:expr={expression:?}:context={}:index={index}:head={:?}:lhs={a:?}:rhs={b:?}:preferred={preferred:?}:guarded={guarded:?}:lhs_whnf={:?}:rhs_whnf={:?}",
+                                                ext.len(),left.head,
+                                                self.machine().expose(a.clone(),Transparency::Full,512),
+                                                self.machine().expose(b.clone(),Transparency::Full,512),
+                                            );
+                                        }
+                                    }
+                                }
+
                             }
                         }
                         eprintln!(
