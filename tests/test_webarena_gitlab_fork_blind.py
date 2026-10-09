@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
 from webarena_gitlab_fork_blind import (
     parse_fork_intent,select_exact_project,select_user,
-    choose_user_namespace,fork_payload,
+    choose_user_namespace,fork_payload,should_fork_to_namespace,
 )
 
 class ForkIntentContract(unittest.TestCase):
@@ -45,6 +45,28 @@ class ForkIntentContract(unittest.TestCase):
         namespaces=[{"id":51,"path":"other","kind":"user","owner_id":8},
                     {"id":777,"path":"byteblaze","kind":"user","owner_id":9}]
         self.assertEqual(choose_user_namespace(user,namespaces),777)
+
+    def test_reverse_fork_into_source_upstream_is_not_reissued(self):
+        target_namespace_id=77
+        source_projects=[
+            {"id":1,"path":"already-owned","forked_from_project":{
+                "id":91,"path_with_namespace":"current/already-owned",
+                "namespace":{"id":77}}},
+            {"id":2,"path":"from-another-account","forked_from_project":{
+                "id":92,"namespace":{"id":88}}},
+            {"id":3,"path":"original","forked_from_project":None},
+        ]
+        eligible=[
+            project["id"] for project in source_projects
+            if should_fork_to_namespace(project,target_namespace_id)
+        ]
+        self.assertEqual(eligible,[2,3])
+
+    def test_no_alias_based_exception_for_other_user_forks(self):
+        source={"id":42,"path":"same-name","forked_from_project":{
+            "namespace":{"id":200}}}
+        self.assertTrue(should_fork_to_namespace(source,201))
+        self.assertFalse(should_fork_to_namespace(source,200))
 
     def test_post_body_uses_actual_project_and_namespace(self):
         project={"id":31,"name":"CacheEval","path":"CacheEval"}

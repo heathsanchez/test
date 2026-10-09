@@ -46,6 +46,19 @@ def choose_user_namespace(user,namespaces):
     if len(candidates)!=1:raise RuntimeError("authenticated fork namespace not uniquely observed")
     return int(candidates[0]["id"])
 
+def should_fork_to_namespace(project,namespace_id):
+    """Avoid reversing an already-observed fork back into its own origin.
+
+    A project the source user forked *from* the authenticated target namespace
+    cannot be forked back there. Distinguish this from legitimate source forks
+    whose upstream lives in some other namespace.
+    """
+    upstream=project.get("forked_from_project") or {}
+    parent_ns=upstream.get("namespace") or {}
+    upstream_ns_id=parent_ns.get("id")
+    return upstream_ns_id is None or str(upstream_ns_id)!=str(namespace_id)
+
+
 def fork_payload(project,namespace_id):
     return {"id":int(project["id"]),"name":str(project["name"]),
             "namespace_id":int(namespace_id),"path":str(project["path"])}
@@ -122,7 +135,22 @@ async def run(intent,start_url,output_dir):
             namespace_id=choose_user_namespace(account,await pages(page,"/api/v4/namespaces"))
             projects=await projects_to_fork(page,kind,target)
             evidence["source_project_count"]=len(projects)
-            for project in projects:
+            reversed_forks=[
+                project for project in projects
+                if not should_fork_to_namespace(project,namespace_id)
+            ]
+            evidence["skipped_reverse_forks"]=[
+                {"source":project.get("path_with_namespace"),
+                 "upstream":(project.get("forked_from_project") or {}).get("path_with_namespace")}
+                for project in reversed_forks
+            ]
+            eligible=[
+                project for project in projects
+                if should_fork_to_namespace(project,namespace_id)
+            ]
+            if not eligible:
+                raise RuntimeError("no independent project eligible for a new fork")
+            for project in eligible:
                 receipt=await submit_fork_once(page,project,namespace_id)
                 evidence["posted"].append(receipt)
         finally:
