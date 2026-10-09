@@ -1367,6 +1367,70 @@ fn compare_values(
                 },
                 _,
             ) => {
+                // Demand-normalize the OTHER projection only by registered
+                // constructor-field computation. HAdd -> Add -> PProd.fst
+                // reaches a shared observation without equating distinct
+                // projection signatures or guessing a Nat.rec constructor.
+                if current_budget >= 64
+                    && matches!(current_right, Value::StuckProjection { .. })
+                {
+                    let mut descendant = current_right.clone();
+                    for _ in 0..3 {
+                        let Value::StuckProjection {
+                            type_name: right_type,
+                            index: right_index,
+                            structure: right_structure,
+                            spine: right_spine,
+                        } = &descendant else {
+                            break;
+                        };
+                        if right_type == type_name && right_index == index {
+                            let mut candidate_work = Vec::new();
+                            let mut candidate_frees = proof_function_frees.clone();
+                            let relation = compare_values(
+                                checker,
+                                &current_left,
+                                &descendant,
+                                current_budget.saturating_sub(1),
+                                depth,
+                                context,
+                                &mut candidate_work,
+                                &mut candidate_frees,
+                            );
+                            if relation.is_proven() {
+                                #[cfg(feature = "diagnostics")]
+                                if std::env::var_os("NUCLEUS_TRACE_PROJECTION_NORMALFORM").is_some() {
+                                    use std::sync::atomic::{AtomicUsize, Ordering};
+                                    static COUNT: AtomicUsize = AtomicUsize::new(0);
+                                    if COUNT.fetch_add(1, Ordering::Relaxed) < 32 {
+                                        eprintln!(
+                                            "NUCLEUS_PROJECTION_NORMALFORM:proved:depth={depth}:field={index}:type={type_name:?}:pending_left={}:pending_right={}",
+                                            spine.len(),right_spine.len()
+                                        );
+                                    }
+                                }
+                                *proof_function_frees = candidate_frees;
+                                work.extend(candidate_work);
+                                return relation;
+                            }
+                            break;
+                        }
+                        let exposed = checker.machine().projection_value_for_conversion(
+                            right_structure.clone(),
+                            *right_type,
+                            *right_index,
+                            right_spine,
+                            current_budget.min(1024),
+                        );
+                        let Some(next) = exposed.proven_value().cloned() else {
+                            break;
+                        };
+                        if next == descendant {
+                            break;
+                        }
+                        descendant = next;
+                    }
+                }
                 let exposed = checker.machine().projection_value_for_conversion(
                     structure.clone(),
                     *type_name,
