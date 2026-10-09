@@ -2,6 +2,7 @@ name: Collatz V106 actual signed-return separator
 on:
   push:
     branches: [collatz-v105-actual-return-sign-separator-v106]
+  workflow_dispatch:
 permissions:
   contents: read
   actions: read
