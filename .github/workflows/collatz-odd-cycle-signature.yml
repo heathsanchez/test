@@ -1,0 +1,52 @@
+name: Collatz finite odd-visit cycle signature audit
+on:
+  push:
+    branches: [collatz-v116-odd-cycle-signature-gate]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-signatures:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact finite nonterminal periodic signature search
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_odd_cycle_signature_gate.py 14 > evidence/odd-cycle-gate.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open("evidence/odd-cycle-gate.json"))
+          assert d["schema"]=="COLLATZ_ODD_VISIT_CYCLE_SIGNATURE_EXCLUSION"
+          assert d["max_odd_visits"]==14
+          assert d["total_signatures"]==2221043
+          assert len(d["rows"])==14
+          assert sum(r["signature_count"] for r in d["rows"])==2221043
+          assert all(r["nonterminal_cycles"]==0 for r in d["rows"])
+          assert d["nonterminal_cycles_in_declared_envelope"]==0
+          assert d["global_collatz"]=="UNKNOWN" and d["qed"] is False
+          print("EXACT_ODD_CYCLE_SIGNATURE_BOUND_14_PASS_GLOBAL_UNKNOWN")
+          PY
+      - name: Seal bounded evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > evidence/commit.txt
+          python3 - <<'PY'
+          import json,hashlib
+          data=open("evidence/odd-cycle-gate.json","rb").read()
+          cert=dict(schema="COLLATZ_ODD_CYCLE_GATE_QUALIFICATION",
+                    status="BOUNDED_EXECUTABLE_ONLY",
+                    result_sha256=hashlib.sha256(data).hexdigest(),
+                    global_collatz="UNKNOWN",qed=False)
+          open("evidence/certificate.json","w").write(json.dumps(cert,sort_keys=True,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-finite-odd-cycle-exclusion
+          path: evidence/
+          if-no-files-found: error
