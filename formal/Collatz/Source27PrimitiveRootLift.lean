@@ -69,7 +69,7 @@ theorem source27_reduced_root3_earlier (t : Nat) :
         SourceProduct.oddCount 3 1 = 39 := by decide
   have hp : (2 : Nat) ^ 1 = 2 := by decide
   rw [hv, hp]
-  simp [Nat.mul_assoc]
+  rw [← Nat.mul_assoc]
 
 /-- For every nonnegative parameter, this is a TRUE two-clock
 earlier-positive-source meeting, in precisely the V124 protected
@@ -107,7 +107,9 @@ theorem source27_reduced_root3_earlier_is_three_root (t : Nat) :
   have heq : 3 + 2 * 3 ^ 39 * t =
       3 + 6 * (3 ^ 38 * t) := by
     rw [hpow]
-    ring
+    have h6 : (2 : Nat) * 3 = 6 := by decide
+    rw [← h6]
+    simp [Nat.mul_assoc]
   rw [heq]
   omega
 
@@ -125,7 +127,7 @@ theorem source27_reduced_root3_is_old_dyadic_subfamily (t : Nat) :
     27 + 2 ^ 66 * t = 27 + 2 ^ 59 * (128 * t) := by
   have hp : (2 : Nat) ^ 66 = 2 ^ 59 * 128 := by decide
   rw [hp]
-  ring
+  simp [Nat.mul_assoc]
 
 theorem source27_root_and_previous_direct_descent_coexist (t : Nat) :
     LowerMerge shortcut (27 + 2 ^ 66 * t)
