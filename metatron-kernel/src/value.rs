@@ -341,3 +341,118 @@ impl Closure {
         s.closure(self).map(|(c, _)| c)
     }
 }
+
+
+/// Rename only the explicitly declared free-variable identity of a Pi binder.
+/// The operation preserves all other lexical variables and their proof context;
+/// it never guesses equality from expression IDs, frame IDs, or term shape.
+impl Closure {
+    pub(crate) fn rename_local_free(
+        &self,
+        source: FreeId,
+        target: FreeId,
+        remaining: &mut usize,
+    ) -> Option<Self> {
+        if source == target {
+            return Some(self.clone());
+        }
+
+        struct Rename<'a> {
+            from: FreeId,
+            to: FreeId,
+            remaining: &'a mut usize,
+            frames: std::collections::HashMap<u64, (EnvFrame, bool)>,
+        }
+        impl Rename<'_> {
+            fn tick(&mut self) -> Option<()> {
+                if *self.remaining == 0 {
+                    return None;
+                }
+                *self.remaining -= 1;
+                Some(())
+            }
+            fn closure(&mut self, c: &Closure) -> Option<(Closure, bool)> {
+                self.tick()?;
+                let (env, changed) = self.frame(&c.env)?;
+                Some((
+                    if changed {
+                        Closure::with_levels(c.expr, env, c.levels.clone())
+                    } else {
+                        c.clone()
+                    },
+                    changed,
+                ))
+            }
+            fn neutral(&mut self, n: &Neutral) -> Option<(Neutral, bool)> {
+                self.tick()?;
+                let (head, mut changed) = match &n.head {
+                    NeutralHead::Free(id) if *id == self.from =>
+                        (NeutralHead::Free(self.to), true),
+                    NeutralHead::Free(id) =>
+                        (NeutralHead::Free(*id), false),
+                    NeutralHead::Const { name, levels } =>
+                        (NeutralHead::Const { name: *name, levels: levels.clone() }, false),
+                    NeutralHead::Projection { type_name, index, structure } => {
+                        let (receiver, modified) = self.neutral(structure)?;
+                        (NeutralHead::Projection {
+                            type_name: *type_name,
+                            index: *index,
+                            structure: Box::new(receiver),
+                        }, modified)
+                    }
+                };
+                let mut spine = Vec::with_capacity(n.spine.len());
+                for arg in &n.spine {
+                    let (arg, did_change) = self.closure(arg)?;
+                    changed |= did_change;
+                    spine.push(arg);
+                }
+                Some((
+                    if changed { Neutral { head, spine } } else { n.clone() },
+                    changed,
+                ))
+            }
+            fn binding(&mut self, b: &EnvBinding) -> Option<(EnvBinding, bool)> {
+                self.tick()?;
+                match b {
+                    EnvBinding::Free(id) =>
+                        Some((EnvBinding::Free(if *id == self.from {self.to} else {*id}), *id == self.from)),
+                    EnvBinding::Closure(c) => {
+                        let (result, changed) = self.closure(c)?;
+                        Some((EnvBinding::Closure(result), changed))
+                    }
+                    EnvBinding::Neutral(n) => {
+                        let (result, changed) = self.neutral(n)?;
+                        Some((EnvBinding::Neutral(result), changed))
+                    }
+                }
+            }
+            fn frame(&mut self, f: &EnvFrame) -> Option<(EnvFrame, bool)> {
+                self.tick()?;
+                if let Some(done) = self.frames.get(&f.id()) {
+                    return Some(done.clone());
+                }
+                let result = match f.0.as_ref() {
+                    EnvNode::Empty => (f.clone(), false),
+                    EnvNode::Extend { parent, value, .. } => {
+                        let (next_parent, p_changed) = self.frame(parent)?;
+                        let (next_value, v_changed) = self.binding(value)?;
+                        if p_changed || v_changed {
+                            (next_parent.extend_binding(next_value), true)
+                        } else {
+                            (f.clone(), false)
+                        }
+                    }
+                };
+                self.frames.insert(f.id(), result.clone());
+                Some(result)
+            }
+        }
+
+        let mut visitor = Rename {
+            from: source, to: target, remaining,
+            frames: std::collections::HashMap::new(),
+        };
+        visitor.closure(self).map(|(c, _)| c)
+    }
+}
