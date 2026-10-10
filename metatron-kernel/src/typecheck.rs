@@ -2484,6 +2484,17 @@ impl<'a> TypeChecker<'a> {
         instantiate_level(self.levels, level, &self.level_substitution, budget).map_err(|_| ())
     }
 
+    /// Resolve a source universe level under the closure's actual immutable
+    /// level substitution. UNKNOWN/missing substitutions are not equalities.
+    pub(crate) fn instantiate_in_levels(
+        &self,
+        level: LevelId,
+        substitution: &LevelSubstitution,
+        budget: usize,
+    ) -> Option<LevelTerm> {
+        instantiate_level(self.levels, level, substitution, budget).ok()
+    }
+
     pub(crate) fn authority(&self) -> crate::machine::AuthorityId {
         self.environment.authority()
     }
