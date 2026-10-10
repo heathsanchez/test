@@ -1,7 +1,7 @@
 name: Nucleus MSI Nat.mul checked-source separator
 on:
   push:
-    branches: [nucleus-msi-source-mul-v1]
+    branches: [nucleus-msi-typed-mul-v1]
     paths:
       - "metatron-kernel/**"
       - ".github/workflows/nucleus-msi-source-mul-v1.yml"
@@ -144,7 +144,10 @@ jobs:
           for mode in ('typed_baseline','native_mul'):
             env=os.environ.copy()
             for flag in flags: env[flag]='1'
-            if mode=='native_mul': env['NUCLEUS_EXPERIMENTAL_NATIVE_MUL']='1'
+            if mode=='native_mul':
+                env['NUCLEUS_EXPERIMENTAL_NATIVE_MUL']='1'
+                env['NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER']='1'
+                env['NUCLEUS_EXPERIMENTAL_DEMAND_PROJECTION']='1'
             rows=[]
             for bucket in ('good','bad'):
               for f in sorted((root/bucket).rglob('*.ndjson')):
