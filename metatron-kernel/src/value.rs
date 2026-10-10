@@ -22,7 +22,7 @@ enum EnvNode {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum EnvBinding {
     Closure(Closure),
     Free(FreeId),
@@ -177,13 +177,13 @@ pub enum Value {
     },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Neutral {
     pub head: NeutralHead,
     pub spine: Vec<Closure>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum NeutralHead {
     Free(FreeId),
     Const {
