@@ -72,6 +72,35 @@ impl BigNat {
         Self(out)
     }
 
+    /// Exact multiplication of arbitrary-precision Nat numerals. The
+    /// observed proof reduction can request a product only when both operands
+    /// are independently exposed as Nat literals; no symbolic rewrite occurs.
+    pub fn mul(&self, other: &Self) -> Self {
+        if self.is_zero() || other.is_zero() {
+            return Self::zero();
+        }
+        let mut digits = vec![0u32; self.0.len() + other.0.len()];
+        for (i, &x) in self.0.iter().enumerate() {
+            let mut carry = 0u64;
+            for (j, &y) in other.0.iter().enumerate() {
+                let k = i + j;
+                let total = u64::from(digits[k]) + u64::from(x) * u64::from(y) + carry;
+                digits[k] = (total % BASE) as u32;
+                carry = total / BASE;
+            }
+            let mut k = i + other.0.len();
+            while carry != 0 {
+                let total = u64::from(digits[k]) + carry;
+                digits[k] = (total % BASE) as u32;
+                carry = total / BASE;
+                k += 1;
+            }
+        }
+        let mut product = Self(digits);
+        product.normalize();
+        product
+    }
+
     pub fn sub_trunc(&self, other: &Self) -> Self {
         if self.compare(other) == Ordering::Less {
             return Self::zero();
@@ -119,6 +148,17 @@ mod tests {
         let p = n.pred().unwrap();
         assert_eq!(p.compare(&n), Ordering::Less);
         assert_eq!(p.add(&BigNat::parse_decimal("1").unwrap()), n);
+    }
+
+    #[test]
+    fn multiplication_extends_beyond_machine_word() {
+        let a = BigNat::parse_decimal("1000000000000000000000000000000").unwrap();
+        let b = BigNat::parse_decimal("1000000000000000000000000000000").unwrap();
+        let p = BigNat::parse_decimal("1000000000000000000000000000000000000000000000000000000000000").unwrap();
+        assert_eq!(a.mul(&b), p);
+        assert!(a.mul(&BigNat::zero()).is_zero());
+        assert_eq!(BigNat::parse_decimal("12345").unwrap().mul(&BigNat::parse_decimal("6789").unwrap()),
+            BigNat::parse_decimal("83810205").unwrap());
     }
 
     #[test]
