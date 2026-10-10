@@ -2033,6 +2033,55 @@ fn certified_structural_closure_congruence(
         heads && lhs.spine.iter().zip(&rhs.spine)
             .all(|(a,b)|eq_closure(checker,a,b,depth,st))
     }
+    // Source-certified WHNF is used only as a transparent, checkable
+    // transport from two closure presentations to the same value grammar.
+    // A successful equality must STILL be reconstructed structurally from
+    // all relevant subvalues and shared binder introduction.
+    fn eq_weak(
+        checker: &TypeChecker<'_>,
+        lhs: &Closure,
+        rhs: &Closure,
+        depth: usize,
+        st: &mut State,
+    ) -> bool {
+        if st.fuel < 24 {return false;}
+        let machine=checker.machine();
+        let probe=st.fuel.min(512);
+        let a=machine.expose_for_conversion(lhs.clone(),Transparency::Reducible,probe);
+        let b=machine.expose_for_conversion(rhs.clone(),Transparency::Reducible,probe);
+        let (Some(a),Some(b))=(a.proven_value(),b.proven_value()) else {
+            return false;
+        };
+        match (a,b) {
+            (Value::Sort(a),Value::Sort(b))=>level_equal(a.clone(),b.clone(),st.fuel).is_proven(),
+            (Value::NatLit(a),Value::NatLit(b))=>a==b,
+            (Value::Neutral(a),Value::Neutral(b))=>eq_neutral(checker,a,b,depth,st),
+            (
+                Value::Pi{domain:da,body:ba},
+                Value::Pi{domain:db,body:bb},
+            ) | (
+                Value::Lam{domain:da,body:ba},
+                Value::Lam{domain:db,body:bb},
+            ) => {
+                eq_closure(checker,da,db,depth,st)
+                && fresh_local(depth).is_some_and(|free|
+                    eq_closure(
+                        checker,&ba.under_free(free),&bb.under_free(free),
+                        depth+1,st,
+                    )
+                )
+            }
+            (
+                Value::StuckProjection{type_name:at,index:ai,structure:as_,spine:ap},
+                Value::StuckProjection{type_name:bt,index:bi,structure:bs,spine:bp},
+            ) => {
+                at==bt && ai==bi && ap.len()==bp.len()
+                && eq_closure(checker,as_,bs,depth,st)
+                && ap.iter().zip(bp).all(|(a,b)|eq_closure(checker,a,b,depth,st))
+            }
+            _=>false,
+        }
+    }
     fn eq_binding(
         checker: &TypeChecker<'_>,
         lhs: Option<EnvBinding>,
@@ -2124,7 +2173,7 @@ fn certified_structural_closure_congruence(
                     eq_closure(checker,
                         &lhs.sibling(*ab,lhs.env.extend(lhs.sibling(*av,lhs.env.clone()))),
                         &rhs.sibling(*bb,rhs.env.extend(rhs.sibling(*bv,rhs.env.clone()))),depth,st),
-                _ => false,
+                _ => eq_weak(checker,lhs,rhs,depth,st),
             }
         };
         st.active.remove(&key);
