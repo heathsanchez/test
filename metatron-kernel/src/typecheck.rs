@@ -49,6 +49,9 @@ pub struct TypeChecker<'a> {
     delta_policy: crate::convert::DeltaPolicy,
     exposure_cache: ExposureCache,
     checked_binding_lineage: Rc<RefCell<HashMap<u64,Option<CheckedBinderWitness>>>>,
+    // Diagnostic-only strictness: a FreeId is typed solely by its checked
+    // immutable binder node under the identical protected source scope.
+    strict_origin_probe: bool,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -65,6 +68,7 @@ impl<'a> TypeChecker<'a> {
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
             exposure_cache: new_exposure_cache(),
             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
+            strict_origin_probe: false,
         }
     }
 
@@ -82,6 +86,7 @@ impl<'a> TypeChecker<'a> {
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
             exposure_cache: new_exposure_cache(),
             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
+            strict_origin_probe: false,
         }
     }
 
@@ -317,11 +322,23 @@ impl<'a> TypeChecker<'a> {
                 // supply this immutable binding-node typing witness. Reuse
                 // its type at the exact protected scope before recursively
                 // inferring a value in a possibly different context.
-                if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION").is_some()
+                if (self.strict_origin_probe ||
+                    std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION").is_some())
                     && let Some(checked) =
                         self.checked_type_of_bound_source(&term.env, *index, context)
                 {
                     return Some(checked);
+                }
+                // This diagnostic probe cannot convert numeric FreeId
+                // coincidence into an origin-type certificate. An immutable
+                // checked binder witness with EXACT protected scope is needed.
+                if self.strict_origin_probe {
+                    match term.env.lookup(*index)? {
+                        EnvBinding::Free(_) | EnvBinding::Neutral(Neutral {
+                            head: NeutralHead::Free(_), spine,
+                        }) if spine.is_empty() => return None,
+                        _ => {}
+                    }
                 }
                 match term.env.lookup(*index)? {
                     EnvBinding::Free(free) =>
@@ -2330,6 +2347,7 @@ impl<'a> TypeChecker<'a> {
             checked_binding_lineage: Rc::new(RefCell::new(
                 self.checked_binding_lineage.borrow().clone(),
             )),
+            strict_origin_probe: self.strict_origin_probe,
         };
         let mut remaining = budget.min(1024);
         let mut current = match &neutral.head {
