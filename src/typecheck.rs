@@ -2322,6 +2322,50 @@ impl<'a> TypeChecker<'a> {
     /// A preserved binder witness carries its original checked context.
     /// Replay occurs under THAT context, not a synthetic empty caller scope.
     /// No derived result is installed in the production checker.
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_lambda_source_premises(
+        &self,
+        lambda: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let Some(Expr::Lam { domain, body }) = self.expressions.get(lambda.expr)
+        else { return "not-source-lambda".into() };
+        let mut remaining=budget.min(512);
+        let domain= lambda.sibling(*domain, lambda.env.clone());
+        let Some(domain_type)=self.infer_exact_closure_in_context(
+            &domain,context,&mut remaining,0,
+        ) else {
+            return format!("lambda-domain-untyped:source={:?}:frame={}",
+                domain.expr,domain.env.id());
+        };
+        let domain_sort=self.sort_level(
+            Judgment::proven(domain_type,"source-lambda-domain"),
+            remaining.min(256),
+        );
+        if !domain_sort.is_proven() {
+            return format!("lambda-domain-not-established-sort:source={:?}:sort={domain_sort:?}",
+                domain.expr);
+        }
+        let Some(free_id)=u64::try_from(context.len()).ok().map(FreeId)
+        else {return "lambda-binder-depth-overflow".into()};
+        let mut body_context=context.to_vec();
+        body_context.push(TypeValue::Term(domain.clone()));
+        let body_frame=lambda.env.extend_free(free_id);
+        self.retain_checked_elimination(
+            &body_frame,TypeValue::Term(domain.clone()),&body_context,
+        );
+        let body_term=lambda.sibling(*body,body_frame);
+        let mut body_budget=remaining.min(512);
+        let body_type=self.infer_exact_closure_in_context(
+            &body_term,&body_context,&mut body_budget,0,
+        );
+        format!(
+            "lambda-domain-sort=PROVEN:ctx={}:opened={free_id:?}:body_expr={:?}:body_shape={:?}:body_type={body_type:?}:remaining={body_budget}",
+            context.len(),body_term.expr,self.expressions.get(body_term.expr),
+        )
+    }
+
     /// Same exact origin witness can also be used to *diagnose* the complete
     /// enclosing recursor telescope. The origin is selected by an actual
     /// source-bound Free node inside the leaf, not by matching recursor names.
@@ -2619,6 +2663,10 @@ impl<'a> TypeChecker<'a> {
                                         }
                                     }
                                 }
+                            } else if matches!(other, Some(Expr::Lam { .. })) {
+                                probe.diagnostic_lambda_source_premises(
+                                    &cursor, context, remaining.min(512),
+                                )
                             } else {
                                 "non-application-source-leaf".to_owned()
                             };
