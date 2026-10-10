@@ -1643,6 +1643,12 @@ impl<'a> Machine<'a> {
         });
         let major_cap = if bool_rules && nat_beq_major {
             256
+        } else if bool_rules
+            && std::env::var_os("NUCLEUS_EXPERIMENTAL_BOOL_MAJOR_EXPANSION").is_some()
+        {
+            // CANDIDATE: only inspect already-registered constructor majors
+            // more deeply. Never use the chosen result branch as evidence.
+            512
         } else if certified_nat_rec {
             128
         } else {
