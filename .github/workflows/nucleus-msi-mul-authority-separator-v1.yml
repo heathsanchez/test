@@ -90,6 +90,9 @@ jobs:
               print('NUCLEUS_MUL_SEPARATOR='+json.dumps({
                   'case':case,'rc':p.returncode,'mul_source':row['mul_source'],
                   'tree_nodes':len(row['mul_nodes']),
+                  'mul_nodes':row['mul_nodes'][:24],
+                  'instance_leaf':row['instance_leaf'][:2],
+                  'post_projection':row['post_projection'][-2:],
                   'projection_field_count':len(row['projection_field']),
                   'projection_examples':row['projection_field'][-3:],
                   'first_unknown':row['first_unknown']}),flush=True)
