@@ -8,6 +8,10 @@ on:
       - "metatron-kernel/**"
   workflow_dispatch:
 
+concurrency:
+  group: nucleus-msi-typed-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -140,13 +144,13 @@ jobs:
           def env_for(mode,trace=False):
               env=os.environ.copy()
               env['NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION']='1'
-              if mode=='origin_replay':
+              if mode in ('origin_replay','support'):
                   env['NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT']='1'
                   env['NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512']='1'
                   env['NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL']='1'
                   env['NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F']='1'
                   env['NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA']='1'
-              if mode=='origin_replay' and trace:
+              if mode in ('origin_replay','support') and trace:
                   env['NUCLEUS_TRACE_PROJECTION_CONTEXT']='1'
                   env['NUCLEUS_TRACE_PROJECTION_CROSSFRAME_512']='1'
                   env['NUCLEUS_TRACE_POLYMORPHIC_PROP_IRREL']='1'
@@ -160,12 +164,15 @@ jobs:
                   env['NUCLEUS_TRACE_ORIGIN_REPLAY']='1'
                   env['NUCLEUS_TRACE_SOURCE_PROOF_BETA']='1'
                   env['NUCLEUS_TRACE_PROJECTION_LAST_FAILURE']='1'
+              if mode=='support':
+                  env['NUCLEUS_EXPERIMENTAL_EXACT_SUPPORT_EQ']='1'
+                  if trace: env['NUCLEUS_TRACE_EXACT_SUPPORT_EQ']='1'
               if trace: env['NUCLEUS_TRACE_DOWNSTREAM']='1'
               return env
           rows=[]
           for name in seven:
               data=(root/'good'/(name+'.ndjson')).read_bytes()
-              for mode in ('baseline','origin_replay'):
+              for mode in ('baseline','origin_replay','support'):
                   t=time.monotonic()
                   p=subprocess.run(['/tmp/nucleus'],input=data,stdout=subprocess.DEVNULL,
                       stderr=subprocess.PIPE,timeout=150,env=env_for(mode,True))
@@ -205,14 +212,15 @@ jobs:
                            if 'NUCLEUS_CODOMAIN_PAIRS:' in s][-16:],
                        'arith_instances':[s for s in logs
                            if 'NUCLEUS_ARITHMETIC_INSTANCE:' in s][-20:],
-                       'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
+                       'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:],
+                       'support_reuses':sum(s.startswith('NUCLEUS_EXACT_SUPPORT_EQ:PROVEN') for s in logs)}
                   print('NUCLEUS_ORIGIN_SEVEN='+json.dumps(row),flush=True)
                   assert p.returncode in (0,2),('valid became rejected',row)
                   if mode=='baseline': assert p.returncode==2,('baseline moved',row)
-                  if name=='init-prelude' and mode=='origin_replay':
+                  if name=='init-prelude' and mode in ('origin_replay','support'):
                       assert row['origin_replay_count']>0 and row['outer_replays'],(
                           'missing complete origin or outer telescope witness',row)
-                  if mode=='origin_replay' and name in seven[:4]:
+                  if mode in ('origin_replay','support') and name in seven[:4]:
                       assert any('source-context=7:opened-context=8:' in s
                                  for s in row['outer_replays']),(
                           'captured source binder scope was not reconstructed',row)
@@ -228,7 +236,7 @@ jobs:
           forged=false_index(extract(source))
           assert hashlib.sha256(forged).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
           protected=[]
-          for mode in ('baseline','origin_replay'):
+          for mode in ('baseline','origin_replay','support'):
               f=subprocess.run(['/tmp/nucleus'],input=forged,stdout=subprocess.DEVNULL,
                   timeout=90,env=env_for(mode)).returncode
               n=subprocess.run(['/tmp/nucleus'],
@@ -241,7 +249,7 @@ jobs:
           assert len(items)==196 and sum(x[0]=='bad' for x in items)==71
           counts={}
           mode_rows={}
-          for mode in ('baseline','origin_replay'):
+          for mode in ('baseline','origin_replay','support'):
               env=env_for(mode)
               def check(item):
                   expected,path=item
@@ -266,12 +274,16 @@ jobs:
                   assert (report['accepted'],report['unknown'])==(118,7),'baseline drift'
           changes=[{'case':b['case'],'baseline_rc':b['rc'],'candidate_rc':c['rc']}
                  for b,c in zip(mode_rows['baseline'],mode_rows['origin_replay']) if b['rc']!=c['rc']]
+          support_diffs=[{'case':b['case'],'origin_rc':b['rc'],'support_rc':c['rc']}
+               for b,c in zip(mode_rows['origin_replay'],mode_rows['support']) if b['rc']!=c['rc']]
           result={'source':os.environ['GITHUB_SHA'],'arena_sha':os.environ['ARENA_SHA'],
                   'artifact':os.environ['ARENA_ARTIFACT'],'seven':rows,
-                  'protected':protected,'full196':counts,'verdict_diffs':changes}
+                  'protected':protected,'full196':counts,'verdict_diffs':changes,
+                   'support_diffs':support_diffs}
           (out/'result.json').write_text(json.dumps(result,indent=2))
           print('NUCLEUS_ORIGIN_DIFFS='+json.dumps(changes),flush=True)
-          if counts['origin_replay']['accepted']>118:
+          print('NUCLEUS_SUPPORT_DIFFS='+json.dumps(support_diffs),flush=True)
+          if max(counts[m]['accepted'] for m in ('origin_replay','support'))>118:
               print('NEW_COMPLETE_CASE_GAIN_PENDING_CURRENT_ARENA_AND_MATHLIB')
           else: print('NO_COMPLETE_CASE_GAIN__KEEP_ISOLATED')
           PY
