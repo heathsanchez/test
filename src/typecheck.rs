@@ -2800,7 +2800,24 @@ impl<'a> TypeChecker<'a> {
                                                 );
                                                 match aty {
                                                     None => {
-                                                        "first_app_argument_type=UNKNOWN".to_owned()
+                                                        let origin=match probe.expressions.get(a.expr) {
+                                                            Some(Expr::BVar(index))=>{
+                                                                let binding=a.env.lookup_with_node_id(*index);
+                                                                let checked=probe.checked_type_of_bound_source(
+                                                                    &a.env,*index,context,
+                                                                );
+                                                                let scope=binding.as_ref().and_then(|(node,_)|
+                                                                    probe.checked_binding_lineage.borrow()
+                                                                        .get(node).cloned()
+                                                                ).flatten().map(|w|
+                                                                    (w.protected_prefix.len(),
+                                                                    context.starts_with(&w.protected_prefix))
+                                                                );
+                                                                format!("BVar({index}):binding={binding:?}:checked_type={checked:?}:scope={scope:?}")
+                                                            }
+                                                            other=>format!("source={other:?}"),
+                                                        };
+                                                        format!("first_app_argument_type=UNKNOWN:arg={:?}:required_domain={domain:?}:origin={origin}",a.expr)
                                                     }
                                                     Some(actual) => {
                                                         let judgment =
