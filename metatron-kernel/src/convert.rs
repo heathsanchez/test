@@ -1997,7 +1997,7 @@ fn certified_structural_closure_congruence(
     context: &[TypeValue],
 ) -> bool {
     if budget < 64 || depth != context.len()
-        || left.expr != right.expr || left.levels != right.levels
+        || left.expr != right.expr
         || left.env == right.env
     {
         return false;
@@ -2058,12 +2058,12 @@ fn certified_structural_closure_congruence(
         st: &mut State,
     ) -> bool {
         if lhs==rhs {return true;}
-        if st.fuel==0 || lhs.levels!=rhs.levels {return false;}
+        if st.fuel==0 {return false;}
         let key=(lhs.clone(),rhs.clone(),depth);
         if st.proved.contains(&key){return true;}
         if !st.active.insert(key.clone()){return false;}
         st.fuel-=1;
-        let valid = if lhs.expr==rhs.expr {
+        let valid = if lhs.expr==rhs.expr && lhs.levels==rhs.levels {
             match source_external_bvar_support(
                 checker,lhs.expr,st.fuel.min(512)
             ) {
@@ -2084,9 +2084,26 @@ fn certified_structural_closure_congruence(
                 }
                 (Some(Expr::NatLit(a)),Some(Expr::NatLit(b))) => a==b,
                 (Some(Expr::StrLit(a)),Some(Expr::StrLit(b))) => a==b,
-                (Some(Expr::Sort(a)),Some(Expr::Sort(b))) => a==b,
+                (Some(Expr::Sort(a)),Some(Expr::Sort(b))) => {
+                    match (
+                        checker.instantiate_in_levels(*a,&lhs.levels,st.fuel),
+                        checker.instantiate_in_levels(*b,&rhs.levels,st.fuel),
+                    ) {
+                        (Some(a),Some(b)) => level_equal(a,b,st.fuel).is_proven(),
+                        _ => false,
+                    }
+                },
                 (Some(Expr::Const{name:an,levels:al}),Some(Expr::Const{name:bn,levels:bl})) =>
-                    an==bn && al==bl,
+                    an==bn && al.len()==bl.len()
+                    && al.iter().zip(bl).all(|(a,b)|{
+                        match (
+                            checker.instantiate_in_levels(*a,&lhs.levels,st.fuel),
+                            checker.instantiate_in_levels(*b,&rhs.levels,st.fuel),
+                        ){
+                            (Some(a),Some(b))=>level_equal(a,b,st.fuel).is_proven(),
+                            _=>false,
+                        }
+                    }),
                 (Some(Expr::App{fun:af,arg:aa}),Some(Expr::App{fun:bf,arg:ba})) =>
                     eq_closure(checker,&lhs.sibling(*af,lhs.env.clone()),&rhs.sibling(*bf,rhs.env.clone()),depth,st)
                     && eq_closure(checker,&lhs.sibling(*aa,lhs.env.clone()),&rhs.sibling(*ba,rhs.env.clone()),depth,st),
