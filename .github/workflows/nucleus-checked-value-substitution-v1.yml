@@ -71,7 +71,7 @@ jobs:
             exit 1
           fi
           echo 'NUCLEUS_TYPED_LINEAGE_RED:unregistered binder type not silently inferred'
-          NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib checked_binding_lineage_tests -- --ignored --nocapture --skip checked_pi_elimination_registers_its_actual_typed_substitution
+          NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib checked_binding_lineage_tests -- --ignored --nocapture --skip checked_pi_elimination_registers_its_actual_typed_substitution --skip captured_typed_substitution_uses_validated_source_domain_without_reinfer
           echo 'NUCLEUS_TYPED_LINEAGE_GREEN:exact scope prefix, nested binder, conflict revocation'
           set +e
           env -u NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib checked_pi_elimination_registers_its_actual_typed_substitution -- --ignored --nocapture > /tmp/reclosure-red.log 2>&1
@@ -83,7 +83,7 @@ jobs:
             exit 1
           fi
           echo 'NUCLEUS_TYPED_RECLOSURE_RED:baseline does not preserve checked dependent elimination witness'
-          NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib checked_binding_lineage_tests -- --ignored --nocapture
+          NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib checked_binding_lineage_tests -- --ignored --nocapture --skip captured_typed_substitution_uses_validated_source_domain_without_reinfer
           echo 'NUCLEUS_TYPED_RECLOSURE_GREEN:Pi/let binder lineage, scope negative and invalid application'
           set +e
           env -u NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib captured_typed_substitution_uses_validated_source_domain_without_reinfer -- --ignored --nocapture > /tmp/typed-value-red.log 2>&1
