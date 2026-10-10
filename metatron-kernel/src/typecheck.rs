@@ -2389,7 +2389,46 @@ impl<'a> TypeChecker<'a> {
                 } else {
                     format!("function-source={:?}",self.expressions.get(f.expr))
                 };
-                format!("lambda-body-app:fun={:?}:fun_type={fty:?}:arg={:?}:arg_type={aty:?}:pi_view_present={}:{}",
+                let source_chain = if fty.is_none() {
+                    let mut cursor=f.clone();
+                    let mut seen=std::collections::HashSet::new();
+                    let mut chain=Vec::new();
+                    for _ in 0..12 {
+                        if !seen.insert((cursor.expr,cursor.env.id())) {
+                            chain.push("cycle".to_owned()); break;
+                        }
+                        match self.expressions.get(cursor.expr) {
+                            Some(Expr::BVar(index)) => {
+                                let bound=cursor.env.lookup_with_node_id(*index);
+                                let (node,entry)=match bound {
+                                    Some(pair)=>pair,
+                                    None=>{
+                                        chain.push(format!("unbound:{index}")); break;
+                                    }
+                                };
+                                let record=self.checked_binding_lineage.borrow()
+                                    .get(&node).cloned().flatten();
+                                let scope=record.as_ref().map(|w|
+                                    (w.protected_prefix.len(),
+                                     body_context.starts_with(&w.protected_prefix))
+                                );
+                                chain.push(format!("BVar({index})@{}:node={node}:scope={scope:?}:value={entry:?}",
+                                    cursor.env.id()));
+                                if let EnvBinding::Closure(next)=entry {
+                                    cursor=next;
+                                } else {break}
+                            }
+                            other=>{
+                                chain.push(format!("first-source-leaf:{:?}:shape={other:?}",cursor.expr));
+                                break;
+                            }
+                        }
+                    }
+                    chain.join(" -> ").chars().take(2600).collect::<String>()
+                } else {
+                    "function-type-certified".into()
+                };
+                format!("lambda-body-app:fun={:?}:fun_type={fty:?}:arg={:?}:arg_type={aty:?}:pi_view_present={}:{}:source_chain={source_chain}",
                     f.expr,a.expr,fview.is_some(),binding)
             } else { "lambda-body-not-app".to_owned() }
         } else { "lambda-body-typed".to_owned() };
