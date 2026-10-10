@@ -62,7 +62,8 @@ theorem v156_source3_last_live :
     · exact ⟨3,3,by decide,rfl⟩
     · intro hExit
       rcases hExit with hTerm | hDrop | hMerge
-      · have hNo : ¬ Terminal (4 : Nat) := by decide
+      · have hNo : ¬ Terminal (4 : Nat) := by
+          simp [Terminal]
         apply hNo
         simpa [v156_source3_clock3_endpoint] using hTerm
       · have hSrc : (stateAt 3 3).source = 3 := by decide
@@ -81,7 +82,8 @@ theorem v156_source3_last_live :
           simpa [v156_source3_clock3_endpoint] using heq
         have hT4 : Terminal 4 := by
           simpa [hEq] using hT
-        have hNo : ¬ Terminal (4 : Nat) := by decide
+        have hNo : ¬ Terminal (4 : Nat) := by
+          simp [Terminal]
         exact hNo hT4
   · exact v156_source3_clock3_zero_tail
 
