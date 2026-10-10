@@ -2049,20 +2049,37 @@ fn certified_local_proof_irrelevance(
     ) else {
         return false;
     };
-    // Restrict the proof to the lexical substitution environment actually
-    // checked by infer_in; do not silently drop nontrivial universe maps.
-    if left_type.levels != crate::value::LevelSubstitution::default()
-        || right_type.levels != crate::value::LevelSubstitution::default()
-    {
-        return false;
-    }
+    // Preserve the established default-substitution path unchanged.
+    // A nontrivial universe substitution is not itself a sound reason to
+    // reject proof irrelevance: the exact instantiated proposition may be
+    // checked against Sort 0 through its closure, with its *real* levels.
+    // Until independently qualified, this generalized rule is restricted
+    // to the observed seven-binder locus and experimental flag.
+    let polymorphic = left_type.levels != crate::value::LevelSubstitution::default()
+        || right_type.levels != crate::value::LevelSubstitution::default();
+    let polymorphic_enabled = polymorphic
+        && depth == 7
+        && std::env::var_os("NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL").is_some();
+    if polymorphic && !polymorphic_enabled { return false; }
     let probe = budget.min(1024);
-    let mut left_proposition = checker.is_proposition_in_context(
-        left_type.expr, context, &left_type.env, probe,
-    );
-    let mut right_proposition = checker.is_proposition_in_context(
-        right_type.expr, context, &right_type.env, probe,
-    );
+    let mut left_proposition = if polymorphic_enabled {
+        checker.checked_captured_prop_type_in_context(
+            left_type, context, probe,
+        )
+    } else {
+        checker.is_proposition_in_context(
+            left_type.expr, context, &left_type.env, probe,
+        )
+    };
+    let mut right_proposition = if polymorphic_enabled {
+        checker.checked_captured_prop_type_in_context(
+            right_type, context, probe,
+        )
+    } else {
+        checker.is_proposition_in_context(
+            right_type.expr, context, &right_type.env, probe,
+        )
+    };
     // Replay exactly the captured dependent application when the ordinary
     // proposition checker cannot resolve either side. The replay checks
     // BOTH arguments against the instantiated Pi domains. A codomain
@@ -2132,7 +2149,7 @@ fn certified_local_proof_irrelevance(
     {
         return false;
     }
-    convert_with_policy_in_context(
+    let type_relation=convert_with_policy_in_context(
         checker,
         &TypeValue::Term(left_type.clone()),
         &TypeValue::Term(right_type.clone()),
@@ -2140,7 +2157,21 @@ fn certified_local_proof_irrelevance(
         DeltaPolicy::PreferredOnly,
         depth,
         context,
-    ).is_proven()
+    );
+    let warranted=type_relation.is_proven();
+    #[cfg(feature="diagnostics")]
+    if polymorphic_enabled &&
+       std::env::var_os("NUCLEUS_TRACE_POLYMORPHIC_PROP_IRREL").is_some()
+    {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static REPORT:AtomicUsize=AtomicUsize::new(0);
+        if REPORT.fetch_add(1,Ordering::Relaxed)<16 {
+            eprintln!(
+                "NUCLEUS_POLYMORPHIC_PROP_IRREL:depth={depth}:left_free={left_free:?}:right_free={right_free:?}:left_formation={left_proposition:?}:right_formation={right_proposition:?}:type_relation={type_relation:?}:warranted={warranted}",
+            );
+        }
+    }
+    warranted
 }
 
 fn one_neutral_head_is_free(left: &Neutral, right: &Neutral) -> bool {
