@@ -2640,6 +2640,59 @@ impl<'a> TypeChecker<'a> {
                                 source_context.len(),&source_context,
                             ))
                         } else {None};
+                        // Source-bound proof h : P may be eliminated only by
+                        // an actually available checked proof of P at the
+                        // six-binder caller, never by fabricating one.
+                        let source_proposition=source_context.get(context.len());
+                        let mut caller_proof_candidates=Vec::new();
+                        if let Some(proposition)=source_proposition {
+                            for (i,caller_ty) in context.iter().enumerate() {
+                                let eq=crate::convert::convert_with_policy_in_context(
+                                    self,caller_ty,proposition,512,
+                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                    context.len(),context,
+                                );
+                                if eq.is_proven() {
+                                    caller_proof_candidates.push(format!("FreeId({i}):type-equal"));
+                                }
+                            }
+                        }
+                        let mut captured_proof_candidates=Vec::new();
+                        if let Some(proposition)=source_proposition {
+                            for (label,frame) in [
+                                ("minor", &lambda.env),("captured-function", &captured.env),
+                            ] {
+                                for index in 0..32u64 {
+                                    let Some((node,binding))=frame.lookup_with_node_id(index)
+                                        else {break};
+                                    if node == 0 {continue}
+                                    let candidate_ty=match binding {
+                                        EnvBinding::Free(id) if id.0 < context.len() as u64 =>
+                                            self.checked_type_of_bound_source(frame,index,context)
+                                                .or_else(||context.get(id.0 as usize).cloned()),
+                                        EnvBinding::Closure(value) => {
+                                            let mut fuel=512;
+                                            self.infer_exact_closure_in_context(
+                                                &value,context,&mut fuel,0,
+                                            )
+                                        },
+                                        _=>None,
+                                    };
+                                    if let Some(candidate_ty)=candidate_ty {
+                                        let eq=crate::convert::convert_with_policy_in_context(
+                                            self,&candidate_ty,proposition,256,
+                                            crate::convert::DeltaPolicy::PreferredOnly,
+                                            context.len(),context,
+                                        );
+                                        if eq.is_proven() {
+                                            captured_proof_candidates.push(
+                                                format!("{label}:index={index}:node={node}:same-P")
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         let extra=FreeId(u64::try_from(context.len()).unwrap_or(u64::MAX));
                         let source_uses_extra=self.type_depends_on_free(
                             &TypeValue::Term(captured.clone()),extra,2048,
@@ -2653,7 +2706,7 @@ impl<'a> TypeChecker<'a> {
                         let first_source_body=self.diagnostic_one_source_lambda_body(
                             &captured,context,remaining.min(512),
                         );
-                        format!("eta-source={:?}:source-scope={}:origin-nodes={origin_nodes:?}:compatible={compatible}:source-type={source_ty:?}:source-vs-expected-in-source={relation:?}:eta-fresh={eta_free:?}:eta-fresh-absent={eta_fresh_absent:?}:eta-minor-type={eta_minor_ty:?}:eta-types-convert={eta_type_relation:?}:eta-terms-convert={eta_term_relation:?}:extra-free={extra:?}:source-term-dep={source_uses_extra:?}:source-type-dep={source_type_uses_extra:?}:expected-type-dep={expected_uses_extra:?}:remaining={budget}:next={first_source_body}",
+                        format!("eta-source={:?}:source-scope={}:origin-nodes={origin_nodes:?}:compatible={compatible}:source-type={source_ty:?}:source-vs-expected-in-source={relation:?}:eta-fresh={eta_free:?}:eta-fresh-absent={eta_fresh_absent:?}:eta-minor-type={eta_minor_ty:?}:eta-types-convert={eta_type_relation:?}:eta-terms-convert={eta_term_relation:?}:caller-proof-candidates={caller_proof_candidates:?}:captured-proof-candidates={captured_proof_candidates:?}:extra-free={extra:?}:source-term-dep={source_uses_extra:?}:source-type-dep={source_type_uses_extra:?}:expected-type-dep={expected_uses_extra:?}:remaining={budget}:next={first_source_body}",
                             captured.expr,source_context.len())
                     } else {"eta-source-binding-unavailable".into()}
                 } else {"not-eta-source-shape".into()};
