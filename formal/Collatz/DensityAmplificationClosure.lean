@@ -295,6 +295,14 @@ theorem v150_closed_certificate_sound
       exact lower_merge_preserves_eventual shortcut Terminal
         terminal_forward_invariant hm ih
 
+/-- A classical exact finite exceptional-population count. This
+    object is mathematical cardinality, not a decision procedure for
+    the infinite Collatz conjecture. -/
+noncomputable def v150EnvelopeCount
+    (E : Nat → Nat → Prop) (k : Nat) : Nat := by
+  classical
+  exact v150Count (E k) (2^k)
+
 /-- A certifier declares an exceptional predicate E(k,n) for
     each dyadic cutoff. Every positive n<2^k outside that predicate
     needs a full proof-carrying closure certificate, not only a drop
@@ -304,7 +312,7 @@ theorem v150_proof_carrying_envelope_bounds_true_bad_count
     (hCover : ∀ k n : Nat,
       0<n → n<2^k → ¬ E k n → V150Closed n)
     (k : Nat) :
-    v150BadCount (2^k) ≤ v150Count (E k) (2^k) := by
+    v150BadCount (2^k) ≤ v150EnvelopeCount E k := by
   classical
   change v150Count PositiveBad (2^k) ≤
     v150Count (E k) (2^k)
@@ -325,7 +333,7 @@ theorem v150_collatz_of_proof_carrying_exceptional_cover
     (hCover : ∀ k n : Nat,
       0<n → n<2^k → ¬ E k n → V150Closed n)
     (hSmall : ∃ K : Nat, ∀ k : Nat, K≤k →
-      k*v150Count (E k) (2^k) ≤ 2^k) :
+      k*v150EnvelopeCount E k ≤ 2^k) :
     ∀ n : Nat, 0<n → CollatzGood n := by
   have hDyad : V150DyadicBadMassVanishes := by
     obtain ⟨K,hK⟩ := hSmall
