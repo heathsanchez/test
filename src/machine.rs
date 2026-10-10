@@ -556,6 +556,27 @@ impl<'a> Machine<'a> {
                     );
                 }
                 Expr::Lam { domain, body } => {
+                    // Diagnostic-only, source-ID-pinned beta history for the
+                    // four immutable Nat.modCoreGo_lt witnesses. These are
+                    // syntax references, NOT production semantic rules.
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_SOURCE_PROOF_BETA").is_some()
+                        && matches!(
+                            (closure.expr.0, domain.0),
+                            (7143,7074)|(6897,6828)|(5728,5659)|(5725,5656)|
+                            (7091,5240)|(6845,4961)|(5676,3638)|(5673,3635)
+                        )
+                    {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static COUNT:AtomicUsize=AtomicUsize::new(0);
+                        if COUNT.fetch_add(1,Ordering::Relaxed)<200 {
+                            eprintln!(
+                                "NUCLEUS_SOURCE_BETA:lambda={:?}:domain={domain:?}:env={}:pending={}:actual={:?}:kind={}",
+                                closure.expr,closure.env.id(),pending.len(),pending.last(),
+                                if pending.is_empty() {"open-lambda"} else {"checked-argument-required"},
+                            );
+                        }
+                    }
                     if let Some(argument) = pending.pop() {
                         record_transition(
                             &mut transitions,
