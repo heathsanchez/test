@@ -95,12 +95,15 @@ jobs:
                        'origin_replay_count':sum('NUCLEUS_ORIGIN_REPLAY:' in s for s in logs),
                        'origin_replays':[s for s in logs
                            if 'NUCLEUS_ORIGIN_REPLAY:' in s][:8],
+                       'outer_replays':[s for s in logs
+                           if 'NUCLEUS_OUTER_ORIGIN_REPLAY:' in s][:8],
                        'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
                   print('NUCLEUS_ORIGIN_SEVEN='+json.dumps(row),flush=True)
                   assert p.returncode in (0,2),('valid became rejected',row)
                   if mode=='baseline': assert p.returncode==2,('baseline moved',row)
                   if name=='init-prelude' and mode=='origin_replay':
-                      assert row['origin_replay_count']>0,('missing typed premise trace',row)
+                      assert row['origin_replay_count']>0 and row['outer_replays'],(
+                          'missing complete origin or outer telescope witness',row)
                   rows.append(row)
           source=(root/'good/init-prelude.ndjson').read_bytes()
           forged=false_index(extract(source))
