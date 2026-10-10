@@ -85,10 +85,10 @@ def main() -> None:
     # Genuine connection/terminal admission is monotone in source
     # height and in clock, never inferred from a timeout alone.
     assert set(B) <= set(A)
-    assert set(C).intersection(range(1,2**24)) <= set(A)
+    assert {n for n in C if n < 2**24} <= set(A)
     assert set(D) <= set(C)
-    assert set(D).intersection(range(1,2**24)) <= set(B)
-    assert set(D).intersection(range(1,2**24)) <= set(A)
+    assert {n for n in D if n < 2**24} <= set(B)
+    assert {n for n in D if n < 2**24} <= set(A)
     # Optional second-basin controls at affordable smaller k.
     G=run(14,112,"G")
     S=run(14,112,"S")
