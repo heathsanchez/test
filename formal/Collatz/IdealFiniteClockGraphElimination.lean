@@ -79,6 +79,7 @@ theorem v170_timed_hit_has_full_graph_edge
     V170FullClockPath X H n b := by
   obtain ⟨i,hi,hEndpoint⟩ := hh
   exact V170FullClockPath.meeting
+    (i := i) (j := 0)
     hn hb hnX hbX hi (by omega)
     (by simpa [iter] using hEndpoint)
 
