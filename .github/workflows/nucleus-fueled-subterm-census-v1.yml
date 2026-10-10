@@ -1,0 +1,90 @@
+name: Nucleus fueled-chain true source subterm census
+
+on:
+  push:
+    branches: [nucleus-fueled-subterm-census-v1]
+    paths:
+      - ".github/workflows/nucleus-fueled-subterm-census-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ARENA_ARTIFACT: "11272848230"
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests research/nucleus-evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Audit causal origin and exact source-expression tree
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,pathlib,os
+          file=pathlib.Path('/tmp/arena-tests/good/perf/fueled-chain.ndjson')
+          raw=file.read_bytes()
+          expressions={}
+          names={0:''}
+          levels={0:{"zero":True}}
+          decls=[]
+          for line in raw.splitlines():
+              j=json.loads(line)
+              if 'ie' in j: expressions[j['ie']]=j
+              if 'il' in j: levels[j['il']]=j
+              if 'in' in j:
+                  z=j.get('str',j.get('num'))
+                  parent=names.get(z['pre'],'')
+                  names[j['in']]=parent+('.' if parent else '')+str(z.get('str',z.get('i')))
+              if 'def' in j or 'thm' in j:
+                  decls.append(j)
+          ids=[8,10,25,135,190,232,1052,2254,2695,2717,2759,2842,3285,3286,3752,3753,4768,4867,4868,5050,5051,5113,5123]
+          out={"commit":os.environ['GITHUB_SHA'],"arena_sha":os.environ['ARENA_SHA'],
+               "artifact":os.environ['ARENA_ARTIFACT'],"corpus_sha256":hashlib.sha256(raw).hexdigest(),
+               "expressions":{str(i):expressions.get(i) for i in ids},
+               "named_heads":{str(i):names.get(i) for i in [12,37,39,6,24,13]},
+               "target_theorem":[j for j in decls if names.get(j.get("thm",{}).get("name"))=="chain6_datF"]}
+          for i in ids:
+              print("NUCLEUS_EXACT_SOURCE_EXPR="+json.dumps({"id":i,"expr":expressions.get(i)},separators=(',',':')))
+          print("NUCLEUS_EXACT_NAME_BINDINGS="+json.dumps(out["named_heads"],separators=(',',':')))
+          print("NUCLEUS_EXACT_THEOREM="+json.dumps(out["target_theorem"])[:1600])
+          for i in (4868,8,5051,10,4867,5123,5050,5113,2759):
+              root=expressions.get(i)
+              if not root:continue
+              seen=set()
+              def walk(i,d):
+                  if d>4 or i in seen or len(seen)>100: return
+                  seen.add(i)
+                  x=expressions.get(i,{})
+                  for k in ['app','lam','forallE','letE','proj']:
+                      if k not in x:continue
+                      for field in ['fn','arg','type','body','value','struct']:
+                          child=x[k].get(field)
+                          if isinstance(child,int) and child in expressions:walk(child,d+1)
+              walk(i,0)
+              print("NUCLEUS_EXACT_SOURCE_TREE="+json.dumps({
+                  "root":i,"count":len(seen),"nodes":{str(j):expressions[j] for j in sorted(seen)}
+              },separators=(',',':'))[:8000])
+          dest=pathlib.Path('research/nucleus-evidence/fueled-source-census.json')
+          dest.write_text(json.dumps(out,indent=2))
+          assert len(expressions)>5000,len(expressions)
+          assert all(i in expressions for i in ids),(len(expressions),ids)
+          print("NUCLEUS_SOURCE_CENSUS_COMPLETE:read-only pinned syntax; no theorem admission")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-fueled-source-census-${{ github.sha }}
+          path: research/nucleus-evidence/fueled-source-census.json
+          if-no-files-found: warn
