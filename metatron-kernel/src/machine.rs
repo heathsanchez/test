@@ -941,6 +941,7 @@ impl<'a> Machine<'a> {
         let primitives = self.nat_primitives.as_ref()?;
         enum Operation {
             Add,
+            MulZero,
             Sub,
             Pred,
             Ble,
@@ -948,6 +949,8 @@ impl<'a> Machine<'a> {
         }
         let operation = if primitives.add == Some(name) {
             Operation::Add
+        } else if primitives.mul_zero == Some(name) {
+            Operation::MulZero
         } else if primitives.sub == Some(name) {
             Operation::Sub
         } else if primitives.pred == Some(name) {
@@ -1019,6 +1022,40 @@ impl<'a> Machine<'a> {
         // is the first source argument.
         let first = pending[pending.len() - 1].clone();
         let second = pending[pending.len() - 2].clone();
+
+        // No user-supplied name may grant this fast path: mul_zero is set only
+        // after the checker itself has established the symbolic closed-lambda
+        // conversion (fun n => mul n zero) ≡ (fun n => zero) at this exact
+        // declaration authority. The rule is deliberately one-sided:
+        // mul zero n and mul n one are NOT definitional equations for neutral n.
+        if matches!(operation, Operation::MulZero) {
+            let right = self.expose_internal(
+                second.clone(), transparency, budget.saturating_sub(1),
+                false, false,
+            );
+            let is_zero = right.proven_value().is_some_and(|out| match &out.value {
+                Value::NatLit(n) => n.is_zero(),
+                Value::Neutral(Neutral{
+                    head: NeutralHead::Const{name:ctor,levels},
+                    spine,
+                }) => *ctor==primitives.zero && levels.is_empty() && spine.is_empty(),
+                _ => false,
+            });
+            if !is_zero {
+                return None;
+            }
+            pending.clear();
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_VERIFIED_MUL_ZERO").is_some() {
+                eprintln!("NUCLEUS_VERIFIED_MUL_ZERO:PROVEN:head={name:?}");
+            }
+            return Some(Value::Neutral(Neutral {
+                head: NeutralHead::Const {
+                    name: primitives.zero, levels: Vec::new(),
+                },
+                spine: Vec::new(),
+            }));
+        }
 
         if matches!(operation, Operation::Beq) {
             let bools = self.bool_primitives.as_ref()?;
