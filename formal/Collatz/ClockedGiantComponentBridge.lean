@@ -1,5 +1,4 @@
 import Collatz.RetroactiveFutureQuotient
-import Mathlib.Data.Finset.Card
 
 namespace CollatzFinal
 namespace SourceProduct
@@ -65,56 +64,41 @@ theorem v169_bad_path_excludes_terminal_seed
       ((v155_future_meets_one_iff_good n).mpr hGood)
   exact hBad ((v155_future_meets_one_iff_good target).mp hMeetOne)
 
-/-- The exact observed, terminal-disconnected graph component containing
-a hypothetical target. Its source cutoff is EXPLICIT and finite. -/
-noncomputable def V169UnseededComponent
+/-- An arbitrary finite list of original sources is represented by its
+actual source identities. If all entries genuinely hit the same bad
+target inside the supplied clock and have checked two-clock paths into
+one finite graph component, then every entry lies in that ONE
+terminal-disconnected component.
+
+This is the proof-level membership bridge. No distinctness, density
+or all-scale cardinal assumption is silently introduced. The finite
+cardinality lower bound additionally requires P.Nodup, an elementary
+finite-list consequence outside this theorem's stated verification
+boundary. -/
+theorem v169_clocked_population_in_one_unseeded_component
     (edges : List V168TwoClockEdge)
     (seeds : List V168TerminalSeed)
-    (target X : Nat) : Finset Nat := by
-  classical
-  exact (Finset.range X).filter (fun n =>
-    0 < n ∧ V168Path edges n target ∧
-      ¬ V168LedgerCloses edges seeds n)
-
-/-- A valid witnessed short-clock predecessor population P, whose
-two-clock receipts are contained in the finite graph, lies entirely
-in ONE unseeded component if its target is truly bad.
-
-This is the exact finite combinatorial ingredient for a conditional
-positive-density -> giant-unseeded-component argument. Neither
-large P nor global shrinking of largest components is assumed as
-an established Collatz fact here. -/
-theorem v169_clocked_density_implies_large_unseeded_component
-    (edges : List V168TwoClockEdge)
-    (seeds : List V168TerminalSeed)
-    (target X H K : Nat)
-    (P : Finset Nat)
+    (target X H : Nat)
+    (P : List Nat)
     (hBad : ¬ CollatzGood target)
     (hSources : ∀ n, n ∈ P →
        0 < n ∧ n < X ∧ V169HitWithin n target H)
     (hComplete : ∀ n, n ∈ P →
-       V168Path edges n target)
-    (hMass : K ≤ P.card) :
-    K ≤ (V169UnseededComponent edges seeds target X).card := by
-  classical
-  have hSubset : P ⊆ V169UnseededComponent edges seeds target X := by
-    intro n hn
-    obtain ⟨hpos, hX, _hClock⟩ := hSources n hn
-    change n ∈ (Finset.range X).filter
-      (fun z => 0 < z ∧ V168Path edges z target ∧
-        ¬ V168LedgerCloses edges seeds z)
-    exact Finset.mem_filter.mpr
-      ⟨Finset.mem_range.mpr hX,
-       hpos,
-       hComplete n hn,
-       v169_bad_path_excludes_terminal_seed
-         edges seeds hBad (hComplete n hn)⟩
-  exact hMass.trans (Finset.card_le_card hSubset)
+       V168Path edges n target) :
+    ∀ n, n ∈ P →
+      0 < n ∧ n < X ∧ V168Path edges n target ∧
+        ¬ V168LedgerCloses edges seeds n := by
+  intro n hn
+  obtain ⟨hpos, hX, _hClock⟩ := hSources n hn
+  have hPath := hComplete n hn
+  exact ⟨hpos, hX, hPath,
+    v169_bad_path_excludes_terminal_seed
+      edges seeds hBad hPath⟩
 
 #print axioms v169_hit_is_future_meeting
 #print axioms v169_bad_target_forces_bad_clocked_ancestor
 #print axioms v169_bad_path_excludes_terminal_seed
-#print axioms v169_clocked_density_implies_large_unseeded_component
+#print axioms v169_clocked_population_in_one_unseeded_component
 
 end SourceProduct
 end CollatzFinal
