@@ -1,0 +1,98 @@
+name: Collatz V157 exact exit-progress equivalence audit
+on:
+  push:
+    branches: [collatz-v157-exit-progress-equivalence-audit]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  formal-equivalence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check V156 progress converse, exit-only converse, and three-way equivalence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in BiadicLexicographicCloseout NonvacuousExitRankClosure; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/ExitOrRankEquivalenceAudit.lean 2>&1 | tee evidence/v157-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v157-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-11000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            a=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(a)<={'propext','Classical.choice','Quot.sound'},(name,a)
+            ax[name]=a
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=['v157_collatz_implies_live_eventual_exit',
+                   'v157_exit_or_rank_iff_collatz',
+                   'v157_exit_only_iff_collatz',
+                   'v157_three_way_exact_frontier']
+          for t in targets:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V157_FORMAL_EQUIVALENCE_SEAL',
+            'source_commit':h,'axioms':ax,
+            'status':'WARRANTED_FORMAL_V156_PROGRESS_IF_AND_ONLY_IF_COLLATZ',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'progress_premise_is_not_weakening':True,
+            'universal_arithmetic_progress_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v157-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v157-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-seal:
+    needs: formal-equivalence
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v157-formal
+          path: evidence/formal
+      - name: Independent source and scope seal
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/formal/v157-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==h
+          assert pathlib.Path('evidence/formal/commit.txt').read_text().strip()==h
+          assert a['status']=='WARRANTED_FORMAL_V156_PROGRESS_IF_AND_ONLY_IF_COLLATZ'
+          assert a['progress_premise_is_not_weakening']
+          assert a['universal_arithmetic_progress_proved'] is False
+          assert a['global_collatz']=='UNKNOWN' and a['qed'] is False
+          out={'schema':'COLLATZ_V157_FINAL',
+            'source_commit':h,
+            'status':'WARRANTED_FORMAL_EQUIVALENCE_NOT_COLLATZ_QED',
+            'finding':'V156 universal exit-or-rank premise is equivalent to positive Collatz for EVERY rank and projection; exit-only criterion equivalent too',
+            'missing':'a genuinely independent Collatz-specific arithmetic theorem excluding a least positive nonterminal class',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v157-final.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v157-final
+          path: evidence/v157-final.json
+          if-no-files-found: error
