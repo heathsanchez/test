@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-deep-postprojection-head-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -83,6 +83,7 @@ jobs:
               if mode=='origin_replay' and trace:
                   env['NUCLEUS_TRACE_PROJECTION_CONTEXT']='1'
                   env['NUCLEUS_TRACE_PROJECTION_CROSSFRAME_512']='1'
+                  env['NUCLEUS_TRACE_DEEP_POST_PROJECTION_HEAD']='1'
                   env['NUCLEUS_TRACE_FIRST_TYPED_CONTINUATION']='1'
                   env['NUCLEUS_TRACE_ORIGIN_REPLAY']='1'
                   env['NUCLEUS_TRACE_SOURCE_PROOF_BETA']='1'
@@ -114,6 +115,8 @@ jobs:
                            if 'NUCLEUS_CONTEXTUAL_PROJECTION:' in s][-24:],
                        'crossframe_proofs':[s for s in logs
                            if 'NUCLEUS_CROSSFRAME_512_PROVEN:' in s][-24:],
+                       'post_heads':[s for s in logs
+                           if 'NUCLEUS_POST_PROJECTION_HEAD:' in s][-96:],
                        'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
                   print('NUCLEUS_ORIGIN_SEVEN='+json.dumps(row),flush=True)
                   assert p.returncode in (0,2),('valid became rejected',row)
