@@ -89,7 +89,7 @@ jobs:
               items.append(row)
               print('NUCLEUS_MUL_SEPARATOR='+json.dumps({
                   'case':case,'rc':p.returncode,'mul_source':row['mul_source'],
-                  'tree_nodes':row['mul_nodes'][:18],
+                  'tree_nodes':row['mul_nodes'][:18], 'constants':[line for line in lines if line.startswith('NUCLEUS_MUL_CONST:')][:12],
                   'projection_field_count':len(row['projection_field']),
                   'projection_examples':row['projection_field'][-3:],
                   'first_unknown':row['first_unknown']}),flush=True)
