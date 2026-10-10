@@ -57,10 +57,12 @@ pub(crate) fn probe(
 
     let succ_m = b.app(succ,n);
     let mul_m_succ_n = b.apply2(mul,m,succ_m);
-    let lhs_succ = b.lam(natty,b.lam(natty,mul_m_succ_n));
+    let lhs_succ_inner = b.lam(natty,mul_m_succ_n);
+    let lhs_succ = b.lam(natty,lhs_succ_inner);
     let mul_m_n = b.apply2(mul,m,n);
     let rhs_succ_body=b.apply2(plus,mul_m_n,m);
-    let rhs_succ=b.lam(natty,b.lam(natty,rhs_succ_body));
+    let rhs_succ_inner=b.lam(natty,rhs_succ_body);
+    let rhs_succ=b.lam(natty,rhs_succ_inner);
 
     let one=b.app(succ,zero);
     let mul_n_one=b.apply2(mul,n,one);
