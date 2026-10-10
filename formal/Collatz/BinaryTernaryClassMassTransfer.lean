@@ -4,6 +4,8 @@ import Collatz.UniversalFutureClassFrontier
 namespace CollatzFinal
 namespace SourceProduct
 
+noncomputable section
+
 /-- Finite exact population counting is classical for a hypothetical
     nondecidable future-class predicate; this instance carries ONLY
     logical decidability, not a convergent-or-divergent oracle. -/
