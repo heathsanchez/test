@@ -1919,49 +1919,68 @@ fn certified_same_source_support(
     depth: usize,
     context: &[TypeValue],
 ) -> bool {
+    #[cfg(feature = "diagnostics")]
+    let trace_this = std::env::var("NUCLEUS_TRACE_SOURCE_EXPR")
+        .ok().and_then(|x| x.parse::<u64>().ok())
+        .is_some_and(|id| id == left.expr.0 && left.expr == right.expr);
     if budget < 64 || depth != context.len()
         || left.expr != right.expr || left.levels != right.levels
     {
+        #[cfg(feature = "diagnostics")]
+        if trace_this {
+            eprintln!("NUCLEUS_SOURCE_FIRST_BOUNDARY:stage=eligibility:expr={:?}:depth={depth}:context={}:budget={budget}:same_levels={}:lhs_frame={}:rhs_frame={}",left.expr,context.len(),left.levels==right.levels,left.env.id(),right.env.id());
+        }
         return false;
     }
     if left.env == right.env {
         return true;
     }
-    // Bound analysis work in direct proportion to the available conversion
-    // budget, never silently truncating the support set to a false positive.
     let Some(support) = source_external_bvar_support(
         checker, left.expr, budget.min(512),
     ) else {
+        #[cfg(feature = "diagnostics")]
+        if trace_this {eprintln!("NUCLEUS_SOURCE_FIRST_BOUNDARY:stage=support-exhausted:expr={:?}:depth={depth}:budget={budget}",left.expr);}
         return false;
     };
     let each_budget = (budget / (support.len() + 1)).min(256);
+    #[cfg(feature = "diagnostics")]
+    if trace_this {
+        eprintln!("NUCLEUS_SOURCE_FIRST_BOUNDARY:stage=support:expr={:?}:depth={depth}:budget={budget}:each={each_budget}:slots={support:?}:lhs_frame={}:rhs_frame={}",left.expr,left.env.id(),right.env.id());
+    }
     if each_budget < 16 {
         return false;
     }
-    support.into_iter().all(|slot| match (
-        left.env.lookup(slot),
-        right.env.lookup(slot),
-    ) {
-        (None, None) => true,
-        (Some(EnvBinding::Free(a)), Some(EnvBinding::Free(b))) => a == b,
-        (Some(EnvBinding::Closure(a)), Some(EnvBinding::Closure(b))) => {
-            a == b || convert_with_policy_in_context(
-                checker,
-                &TypeValue::Term(a),
-                &TypeValue::Term(b),
-                each_budget / 2,
-                DeltaPolicy::GuardedSemanticFallback,
-                depth,
-                context,
-            ).is_proven()
+    for slot in support {
+        let a = left.env.lookup(slot);
+        let b = right.env.lookup(slot);
+        let relation = match (&a, &b) {
+            (None, None) => true,
+            (Some(EnvBinding::Free(a)),Some(EnvBinding::Free(b))) => a == b,
+            (Some(EnvBinding::Closure(a)),Some(EnvBinding::Closure(b))) =>
+                a == b || convert_with_policy_in_context(
+                    checker,&TypeValue::Term(a.clone()),&TypeValue::Term(b.clone()),
+                    each_budget / 2,DeltaPolicy::GuardedSemanticFallback,depth,context,
+                ).is_proven(),
+            (Some(EnvBinding::Neutral(a)),Some(EnvBinding::Neutral(b))) =>
+                a == b || certified_neutral_receiver_congruence(
+                    checker,a,b,each_budget/2,depth,context,6,
+                ),
+            _ => false,
+        };
+        #[cfg(feature = "diagnostics")]
+        if trace_this {
+            eprintln!("NUCLEUS_SOURCE_FIRST_BOUNDARY:stage=binding:expr={:?}:slot={slot}:proven={relation}:lhs={a:?}:rhs={b:?}",left.expr);
+            if !relation {
+                if let (Some(EnvBinding::Closure(ca)),Some(EnvBinding::Closure(cb)))=(&a,&b){
+                    let machine=checker.machine();
+                    let p=each_budget.max(128).min(512);
+                    eprintln!("NUCLEUS_SOURCE_FIRST_BOUNDARY:stage=failed-closure-value:expr={:?}:slot={slot}:left={:?}:right={:?}",left.expr,machine.expose_for_conversion(ca.clone(),Transparency::Reducible,p),machine.expose_for_conversion(cb.clone(),Transparency::Reducible,p));
+                }
+            }
         }
-        (Some(EnvBinding::Neutral(a)), Some(EnvBinding::Neutral(b))) => {
-            a == b || certified_neutral_receiver_congruence(
-                checker, &a, &b, each_budget / 2, depth, context, 6,
-            )
-        }
-        _ => false,
-    })
+        if !relation { return false; }
+    }
+    true
 }
 
 fn compare_neutral_heads(
