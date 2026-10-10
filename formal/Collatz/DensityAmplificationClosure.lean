@@ -260,7 +260,8 @@ theorem v150_collatz_of_amplification_and_dyadic_mass
     have hhigh : k*d ≤ 2^k := by
       simpa only [d] using hMass k hK
     have hd : 0<d := by
-      by_contra hn
+      apply Classical.byContradiction
+      intro hn
       have hzero : d=0 := by omega
       rw [hzero, Nat.mul_zero] at hlow
       have hpow : 0<(2 : Nat)^k := Nat.pow_pos (by decide)
@@ -294,37 +295,37 @@ theorem v150_closed_certificate_sound
       exact lower_merge_preserves_eventual shortcut Terminal
         terminal_forward_invariant hm ih
 
-/-- A certifier may output a finite exceptional Finset for each
-    dyadic cutoff. Soundness means EVERY positive source outside it
-    has a real terminal/merge chain, with proof, not a mere heuristic
-    prediction, apparent descent or root-class equality. -/
+/-- A certifier declares an exceptional predicate E(k,n) for
+    each dyadic cutoff. Every positive n<2^k outside that predicate
+    needs a full proof-carrying closure certificate, not only a drop
+    to an uncertified earlier source. The count is exact and finite. -/
 theorem v150_proof_carrying_envelope_bounds_true_bad_count
-    (E : Nat → Finset Nat)
+    (E : Nat → Nat → Prop)
     (hCover : ∀ k n : Nat,
-      0<n → n < 2^k → n ∉ E k → V150Closed n)
+      0<n → n<2^k → ¬ E k n → V150Closed n)
     (k : Nat) :
-    v150BadCount (2^k) ≤ (E k).card := by
+    v150BadCount (2^k) ≤ v150Count (E k) (2^k) := by
   classical
-  unfold v150BadCount
-  apply Finset.card_le_card
-  intro n hn
-  have hmem := Finset.mem_filter.mp hn
-  by_cases ht : n ∈ E k
-  · exact ht
-  · have hclosed := hCover k n hmem.2.1 (Finset.mem_range.mp hmem.1) ht
-    exact False.elim (hmem.2.2 (v150_closed_certificate_sound hclosed))
+  change v150Count PositiveBad (2^k) ≤
+    v150Count (E k) (2^k)
+  apply v150_count_monotone_below
+  intro n hbelow hb
+  apply Classical.byContradiction
+  intro hno
+  have hclosed := hCover k n hb.1 hbelow hno
+  exact hb.2 (v150_closed_certificate_sound hclosed)
 
-/-- The exact final source-verified path:
-    external density amplifier + certified terminal-closure coverage
-    + a UNIVERSAL dyadic mass estimate ⇒ Collatz.
-    Both quantified research inputs stay visibly explicit. -/
+/-- Conditional finish line: source-normalized external density
+    amplifier + verified all-depth terminal-closure coverage + a
+    shrinking dyadic exceptional mass estimate imply Collatz.
+    Both research premises remain explicit, not asserted true. -/
 theorem v150_collatz_of_proof_carrying_exceptional_cover
     (hAmp : V150PredecessorAmplifier)
-    (E : Nat → Finset Nat)
+    (E : Nat → Nat → Prop)
     (hCover : ∀ k n : Nat,
-      0<n → n < 2^k → n ∉ E k → V150Closed n)
+      0<n → n<2^k → ¬ E k n → V150Closed n)
     (hSmall : ∃ K : Nat, ∀ k : Nat, K≤k →
-      k*(E k).card ≤ 2^k) :
+      k*v150Count (E k) (2^k) ≤ 2^k) :
     ∀ n : Nat, 0<n → CollatzGood n := by
   have hDyad : V150DyadicBadMassVanishes := by
     obtain ⟨K,hK⟩ := hSmall
