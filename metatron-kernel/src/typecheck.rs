@@ -156,9 +156,33 @@ impl<'a> TypeChecker<'a> {
         if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE").is_none(){
             return None;
         }
-        let (node_id,_)=frame.lookup_with_node_id(index)?;
-        let proof=self.checked_binding_lineage.borrow()
-            .get(&node_id)?.as_ref()?.clone();
+        let observed=frame.lookup_with_node_id(index);
+        let stored=observed.as_ref().and_then(|(id,_)|
+            self.checked_binding_lineage.borrow().get(id).cloned()
+        );
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_FIRST_UNWARRANTED_BINDING").is_some()
+            && context.len()==5 && index==2
+        {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static FIRST:AtomicUsize=AtomicUsize::new(0);
+            if FIRST.fetch_add(1,Ordering::Relaxed)<36 {
+                let typed=stored.as_ref().and_then(|r|r.as_ref());
+                let separator=typed.and_then(|w|
+                    w.protected_prefix.iter().zip(context)
+                        .position(|(a,b)|a!=b)
+                );
+                eprintln!(
+                    "NUCLEUS_FIRST_UNWARRANTED_BINDING:frame={}:index={index}:context={}:actual_binding={observed:?}:witness_status={}:prefix_length={:?}:matches_protected_scope={}:first_separator={separator:?}",
+                    frame.id(),context.len(),
+                    if stored.is_none() {"unregistered"} else if stored.as_ref().is_some_and(|w|w.is_none()) {"conflicted"} else {"checked"},
+                    typed.map(|w|w.protected_prefix.len()),
+                    typed.is_some_and(|w|context.starts_with(&w.protected_prefix)),
+                );
+            }
+        }
+        let (node_id,_)=observed?;
+        let proof=stored?.as_ref()?.clone();
         if !context.starts_with(&proof.protected_prefix) {return None;}
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_TYPED_LINEAGE").is_some(){
