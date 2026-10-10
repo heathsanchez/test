@@ -2,7 +2,7 @@ name: Nucleus captured eta source witness audit
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-proof-discharge-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-proof-discharge-v1, nucleus-projection-source-audit-v1]
     paths: [".github/workflows/nucleus-captured-eta-source-v1.yml"]
   workflow_dispatch:
 
@@ -198,6 +198,43 @@ jobs:
           dest=pathlib.Path('research/nucleus-evidence/captured-eta-ancestry.json')
           dest.write_text(json.dumps(report,indent=2))
           assert len(report)==4
+          PY
+      - name: Ground exact projection IDs in pinned expression and name records
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          fixtures=[
+            ('init-prelude',[1014,5,1899],[142,668,26,656,952]),
+            ('perf/grind-ring-5',[532,2,2068],[98,502,160,490,901]),
+            ('perf/magma-list-pair-n7',[744,1,552],[177,160,75,147,1010]),
+            ('perf/magma-list-pair-n21',[740,1,548],[177,160,75,147,1010]),
+            ('perf/magma-list-deep-n21',[662,1],[138,287,74]),
+            ('perf/magma-list-deep-n36',[661,1],[138,287,74]),
+          ]
+          for case,eids,nids in fixtures:
+              expr={};names={0:''};decls=[]
+              for line in (pathlib.Path('/tmp/tests/good')/(case+'.ndjson')).read_bytes().splitlines():
+                  z=json.loads(line)
+                  if 'in' in z:
+                      x=z.get('str',z.get('num'))
+                      names[z['in']]=names.get(x['pre'],'')+('.' if names.get(x['pre']) else '')+str(x.get('str',x.get('i')))
+                  if 'ie' in z:expr[z['ie']]=z
+                  for tag in ('def','thm','axiom','ind'):
+                      if tag in z: decls.append((tag,z[tag]))
+              def shallow(e):
+                  if e not in expr:return None
+                  obj=expr[e]
+                  if 'app' in obj:
+                      fun=obj['app']['fn'];arg=obj['app']['arg']
+                      return {'node':obj,'fun':expr.get(fun),'arg':expr.get(arg)}
+                  return obj
+              print('NUCLEUS_SOURCE_PROJECTION='+json.dumps({
+                  'case':case,'names':{str(i):names.get(i) for i in nids},
+                  'exprs':{str(i):shallow(i) for i in eids},
+                  'decls':[(tag,names.get(d.get('name'),'')) for tag,d in decls
+                           if d.get('name') in nids],
+              },separators=(',',':'))[:14500],flush=True)
           PY
       - uses: actions/upload-artifact@v4
         with:
