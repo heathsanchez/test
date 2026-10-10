@@ -1,0 +1,145 @@
+name: Collatz V156 nonvacuous exit-or-rank correction
+on:
+  push:
+    branches: [collatz-v156-nonvacuous-exit-or-rank]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source3:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently replay real source3 last-live and next exit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v156_last_live_exit_audit > evidence/v156-exact.json
+          python3 - <<'PY'
+          import pathlib,json,hashlib,subprocess
+          p=pathlib.Path('evidence/v156-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V156_REAL_LAST_LIVE_STATE_SEPARATOR'
+          assert d['source']==3 and d['initial_clock']==3
+          assert d['real_endpoint']==4 and d['original_source_tail']==0
+          assert d['earlier_sources_cannot_reach_endpoint4']
+          assert d['all_later_shortcut_states_terminal']
+          assert d['zero_clock_rank_decrease_impossible_by_reflexivity']
+          assert d['old_V82_later_live_progress_premise_universally_realizable'] is False
+          assert d['new_universal_exit_or_rank_condition_proved'] is False
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V156_EXACT_SEAL','source_commit':h,
+            'status':'WARRANTED_EXACT_REAL_SOURCE3_LAST_LIVE_AND_EXIT',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v156-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v156-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-nonvacuous:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check V82 premise impossibility and corrected exit-or-rank theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/BiadicLexicographicCloseout.olean formal/Collatz/BiadicLexicographicCloseout.lean > evidence/lex-parent.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/NonvacuousExitRankClosure.lean 2>&1 | tee evidence/v156-lean.log
+          python3 - <<'PY'
+          import re,pathlib,json,hashlib,subprocess
+          log=pathlib.Path('evidence/v156-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-12000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[z.strip() for z in inside.split(',') if z.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          target=[
+            'v156_source3_clock3_endpoint',
+            'v156_source3_last_live',
+            'v156_source3_next_is_real_exit',
+            'v156_source3_future_terminal',
+            'v156_source3_no_later_zero_tail_live',
+            'v156_old_universal_later_live_rank_is_impossible',
+            'v156_zero_tail_kernel_empty_of_exit_or_lex_rank',
+            'v156_collatz_of_exit_or_lex_rank'
+          ]
+          for t in target:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V156_FORMAL_SCOPE_SEAL',
+            'source_commit':h,'axioms':ax,
+            'status':'WARRANTED_FORMAL_OLD_PREMISE_FALSE_NEW_CONDITIONAL_EXIT_OR_RANK_SOUND',
+            'log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'old_universal_later_live_progress_proved_impossible':True,
+            'new_universal_exit_or_rank_progress_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v156-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v156-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-source3,formal-nonvacuous]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v156-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v156-formal
+          path: evidence/formal
+      - name: Seal boundary correction with exact source and rejection state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v156-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v156-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert b['status']=='WARRANTED_FORMAL_OLD_PREMISE_FALSE_NEW_CONDITIONAL_EXIT_OR_RANK_SOUND'
+          assert b['old_universal_later_live_progress_proved_impossible']
+          assert not b['new_universal_exit_or_rank_progress_proved']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V156_FINAL','source_commit':h,
+            'status':'WARRANTED_FORMAL_NONVACUOUS_EXIT_OR_RANK_INTERFACE_NOT_QED',
+            'rejected':'Old universal later-LIVE strict rank premise is false on real source3 clock3',
+            'new_warrant':'If every zero-tail live state eventually exits OR strictly decreases rank while still live, then Collatz follows',
+            'still_missing':'Prove the actual map satisfies the new universal exit-or-rank premise',
+            'original_controller':'UNCHANGED',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v156-final.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v156-final
+          path: evidence/v156-final.json
+          if-no-files-found: error
