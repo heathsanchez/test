@@ -1249,8 +1249,21 @@ fn compare_values(
                     structure,
                     spine,
                 },
-                _,
+                opposing_value,
             ) => {
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_PROJECTION_OPPOSITION").is_some()
+                    && (6..=10).contains(&depth)
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static COUNT:AtomicUsize=AtomicUsize::new(0);
+                    if COUNT.fetch_add(1,Ordering::Relaxed)<32 {
+                        eprintln!(
+                            "NUCLEUS_PROJECTION_OPPOSITION:depth={depth}:budget={current_budget}:type={type_name:?}:field={index}:receiver={structure:?}:pending={spine:?}:opponent={opposing_value:?}:context={}",
+                            context.len(),
+                        );
+                    }
+                }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_FIRST_TYPED_CONTINUATION").is_some()
                     && let Value::Neutral(other) = &current_right
