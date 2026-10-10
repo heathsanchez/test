@@ -2121,7 +2121,7 @@ fn certified_structural_closure_congruence(
                 None => false,
             }
         } else {
-            match (checker.expression(lhs.expr),checker.expression(rhs.expr)) {
+            let direct = match (checker.expression(lhs.expr),checker.expression(rhs.expr)) {
                 (Some(Expr::BVar(a)),Some(Expr::BVar(b))) => {
                     let x=lhs.env.lookup(*a);
                     let y=rhs.env.lookup(*b);
@@ -2173,8 +2173,9 @@ fn certified_structural_closure_congruence(
                     eq_closure(checker,
                         &lhs.sibling(*ab,lhs.env.extend(lhs.sibling(*av,lhs.env.clone()))),
                         &rhs.sibling(*bb,rhs.env.extend(rhs.sibling(*bv,rhs.env.clone()))),depth,st),
-                _ => eq_weak(checker,lhs,rhs,depth,st),
-            }
+                _ => false,
+            };
+            direct || eq_weak(checker,lhs,rhs,depth,st)
         };
         st.active.remove(&key);
         if valid {st.proved.insert(key);}
