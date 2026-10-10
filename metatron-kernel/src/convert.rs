@@ -264,6 +264,26 @@ fn convert_in_context_with_congruence(
             }
             continue;
         }
+        // The support-based rule above can leave a subterm UNKNOWN when the
+        // existing conversion algorithm eagerly forces a stuck projection.
+        // This complementary rule proves *syntactic congruence of captured
+        // closures*, tracing only used de Bruijn bindings and shared binder
+        // placeholders. It never equates a pair of unknown subterms.
+        if let (TypeValue::Term(lhs), TypeValue::Term(rhs)) = (&left, &right)
+            && certified_structural_closure_congruence(
+                checker, lhs, rhs, remaining, depth, context,
+            )
+        {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_STRUCTURAL_CLOSURE").is_some() {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static REPORTED: AtomicUsize = AtomicUsize::new(0);
+                if REPORTED.fetch_add(1, Ordering::Relaxed) < 48 {
+                    eprintln!("NUCLEUS_STRUCTURAL_CLOSURE:depth={depth}:expr={:?}:budget={remaining}:frames={}:{}", lhs.expr,lhs.env.id(),rhs.env.id());
+                }
+            }
+            continue;
+        }
 
         match (left, right) {
             (TypeValue::Sort(left), TypeValue::Sort(right)) => {
@@ -1962,6 +1982,144 @@ fn certified_same_source_support(
         }
         _ => false,
     })
+}
+
+/// A purely structural, finite proof of context-substitution congruence.
+/// All recursive claims descend into explicit source syntax or immutable
+/// captured bindings. Active cycles fail closed; completed subproofs may be
+/// reused only after all of their premises have succeeded.
+fn certified_structural_closure_congruence(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    budget: usize,
+    depth: usize,
+    context: &[TypeValue],
+) -> bool {
+    if budget < 64 || depth != context.len()
+        || left.expr != right.expr || left.levels != right.levels
+        || left.env == right.env
+    {
+        return false;
+    }
+    struct State {
+        fuel: usize,
+        active: HashSet<(Closure, Closure, usize)>,
+        proved: HashSet<(Closure, Closure, usize)>,
+    }
+    fn eq_neutral(
+        checker: &TypeChecker<'_>,
+        lhs: &Neutral,
+        rhs: &Neutral,
+        depth: usize,
+        st: &mut State,
+    ) -> bool {
+        if st.fuel == 0 || lhs.spine.len() != rhs.spine.len() {
+            return false;
+        }
+        let heads = match (&lhs.head, &rhs.head) {
+            (NeutralHead::Free(a), NeutralHead::Free(b)) => a == b,
+            (
+                NeutralHead::Const { name: an, levels: al },
+                NeutralHead::Const { name: bn, levels: bl },
+            ) => an == bn && al.len() == bl.len() &&
+                al.iter().zip(bl).all(|(a,b)|level_equal(a.clone(),b.clone(),st.fuel).is_proven()),
+            (
+                NeutralHead::Projection { type_name: at, index: ai, structure: as_ },
+                NeutralHead::Projection { type_name: bt, index: bi, structure: bs },
+            ) => at == bt && ai == bi && eq_neutral(checker,as_,bs,depth,st),
+            _ => false,
+        };
+        heads && lhs.spine.iter().zip(&rhs.spine)
+            .all(|(a,b)|eq_closure(checker,a,b,depth,st))
+    }
+    fn eq_binding(
+        checker: &TypeChecker<'_>,
+        lhs: Option<EnvBinding>,
+        rhs: Option<EnvBinding>,
+        depth: usize,
+        st: &mut State,
+    ) -> bool {
+        match (lhs,rhs) {
+            (None,None) => true,
+            (Some(EnvBinding::Free(a)),Some(EnvBinding::Free(b))) => a==b,
+            (Some(EnvBinding::Closure(a)),Some(EnvBinding::Closure(b))) =>
+                eq_closure(checker,&a,&b,depth,st),
+            (Some(EnvBinding::Neutral(a)),Some(EnvBinding::Neutral(b))) =>
+                eq_neutral(checker,&a,&b,depth,st),
+            _ => false,
+        }
+    }
+    fn eq_closure(
+        checker: &TypeChecker<'_>,
+        lhs: &Closure,
+        rhs: &Closure,
+        depth: usize,
+        st: &mut State,
+    ) -> bool {
+        if lhs==rhs {return true;}
+        if st.fuel==0 || lhs.levels!=rhs.levels {return false;}
+        let key=(lhs.clone(),rhs.clone(),depth);
+        if st.proved.contains(&key){return true;}
+        if !st.active.insert(key.clone()){return false;}
+        st.fuel-=1;
+        let valid = if lhs.expr==rhs.expr {
+            match source_external_bvar_support(
+                checker,lhs.expr,st.fuel.min(512)
+            ) {
+                Some(support) => support.into_iter().all(|i|
+                    eq_binding(checker,lhs.env.lookup(i),rhs.env.lookup(i),depth,st)),
+                None => false,
+            }
+        } else {
+            match (checker.expression(lhs.expr),checker.expression(rhs.expr)) {
+                (Some(Expr::BVar(a)),Some(Expr::BVar(b))) => {
+                    let x=lhs.env.lookup(*a);
+                    let y=rhs.env.lookup(*b);
+                    if x.is_none() || y.is_none(){
+                        a==b && x.is_none() && y.is_none()
+                    } else {
+                        eq_binding(checker,x,y,depth,st)
+                    }
+                }
+                (Some(Expr::NatLit(a)),Some(Expr::NatLit(b))) => a==b,
+                (Some(Expr::StrLit(a)),Some(Expr::StrLit(b))) => a==b,
+                (Some(Expr::Sort(a)),Some(Expr::Sort(b))) => a==b,
+                (Some(Expr::Const{name:an,levels:al}),Some(Expr::Const{name:bn,levels:bl})) =>
+                    an==bn && al==bl,
+                (Some(Expr::App{fun:af,arg:aa}),Some(Expr::App{fun:bf,arg:ba})) =>
+                    eq_closure(checker,&lhs.sibling(*af,lhs.env.clone()),&rhs.sibling(*bf,rhs.env.clone()),depth,st)
+                    && eq_closure(checker,&lhs.sibling(*aa,lhs.env.clone()),&rhs.sibling(*ba,rhs.env.clone()),depth,st),
+                (Some(Expr::Proj{type_name:at,index:ai,structure:as_}),
+                 Some(Expr::Proj{type_name:bt,index:bi,structure:bs})) =>
+                    at==bt && ai==bi &&
+                    eq_closure(checker,&lhs.sibling(*as_,lhs.env.clone()),&rhs.sibling(*bs,rhs.env.clone()),depth,st),
+                (Some(Expr::Lam{domain:ad,body:ab}),Some(Expr::Lam{domain:bd,body:bb})) |
+                (Some(Expr::Pi{domain:ad,body:ab}),Some(Expr::Pi{domain:bd,body:bb})) => {
+                    eq_closure(checker,&lhs.sibling(*ad,lhs.env.clone()),&rhs.sibling(*bd,rhs.env.clone()),depth,st) &&
+                    fresh_local(depth).is_some_and(|free|eq_closure(
+                        checker,&lhs.sibling(*ab,lhs.env.extend_free(free)),
+                        &rhs.sibling(*bb,rhs.env.extend_free(free)),depth+1,st))
+                },
+                (Some(Expr::Let{ty:at,value:av,body:ab}),Some(Expr::Let{ty:bt,value:bv,body:bb})) =>
+                    eq_closure(checker,&lhs.sibling(*at,lhs.env.clone()),&rhs.sibling(*bt,rhs.env.clone()),depth,st) &&
+                    eq_closure(checker,&lhs.sibling(*av,lhs.env.clone()),&rhs.sibling(*bv,rhs.env.clone()),depth,st) &&
+                    eq_closure(checker,
+                        &lhs.sibling(*ab,lhs.env.extend(lhs.sibling(*av,lhs.env.clone()))),
+                        &rhs.sibling(*bb,rhs.env.extend(rhs.sibling(*bv,rhs.env.clone()))),depth,st),
+                _ => false,
+            }
+        };
+        st.active.remove(&key);
+        if valid {st.proved.insert(key);}
+        valid
+    }
+    let mut state=State{
+        fuel:budget.min(4096),
+        active:HashSet::new(),
+        proved:HashSet::new(),
+    };
+    eq_closure(checker,left,right,depth,&mut state)
 }
 
 fn compare_neutral_heads(
