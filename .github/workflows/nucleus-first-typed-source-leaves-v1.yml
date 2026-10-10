@@ -1,0 +1,124 @@
+name: Nucleus first typed argument exact source leaves
+
+on:
+  push:
+    branches: [nucleus-first-typed-lawful-continuation-v1]
+    paths:
+      - ".github/workflows/nucleus-first-typed-source-leaves-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch immutable source-authoritative exports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests research/nucleus-evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" >/tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Decode four first unproved exact source arguments
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,hashlib,pathlib
+          cases=[
+              ('init-prelude',94,38,656),
+              ('perf/grind-ring-5',28,220,490),
+              ('perf/magma-list-pair-n7',22,2,147),
+              ('perf/magma-list-pair-n21',22,2,147),
+          ]
+          all=[]
+          for case,arg,expected,rec_name in cases:
+              source=pathlib.Path('/tmp/arena-tests/good')/(case+'.ndjson')
+              b=source.read_bytes()
+              names={0:''}; expressions={}; decl={};inductives={}
+              for line in b.splitlines():
+                  j=json.loads(line)
+                  if 'in' in j:
+                      y=j.get('str',j.get('num'))
+                      pre=names.get(y['pre'],'')
+                      names[j['in']]=pre+('.' if pre else '')+str(y.get('str',y.get('i')))
+                  if 'ie' in j:expressions[j['ie']]=j
+                  for key in ('def','thm','axiom'):
+                      if key in j:
+                          v=j[key]
+                          decl[v['name']]={'kind':key,'declaration':v}
+                  if 'inductive' in j:
+                      for key,kind in [('types','inductive'),('ctors','constructor'),('recs','recursor')]:
+                          for v in j['inductive'].get(key,[]):
+                              decl[v['name']]={'kind':kind,'declaration':v}
+              def spine(expr):
+                  out=[];p=expr
+                  for _ in range(16):
+                      node=expressions.get(p,{})
+                      if 'app' not in node:break
+                      out.append(node['app']['arg']);p=node['app']['fn']
+                  return {'head':p,'arguments':out[::-1],'head_node':expressions.get(p)}
+              def dag(root,max_nodes=80):
+                  seen=set();stack=[(root,0)]
+                  while stack and len(seen)<max_nodes:
+                      e,d=stack.pop()
+                      if e in seen or d>8 or e not in expressions:continue
+                      seen.add(e)
+                      node=expressions[e]
+                      for key in ['app','lam','forallE','letE','proj']:
+                          if key in node:
+                              for field in ('fn','arg','type','body','value','struct'):
+                                  v=node[key].get(field)
+                                  if isinstance(v,int) and v in expressions:stack.append((v,d+1))
+                  return {str(k):expressions[k] for k in sorted(seen)}
+              record={
+                  'case':case,
+                  'source_sha256':hashlib.sha256(b).hexdigest(),
+                  'initial_untyped_argument':arg,
+                  'expected_pi_domain':expected,
+                  'recursor_name':rec_name,
+                  'resolved_recursor_name':names.get(rec_name),
+                  'recursor_authority':decl.get(rec_name),
+                  'argument_expr':expressions.get(arg),
+                  'expected_domain_expr':expressions.get(expected),
+                  'argument_spine':spine(arg),
+                  'expected_spine':spine(expected),
+                  'argument_dag':dag(arg),
+                  'expected_domain_dag':dag(expected,25),
+              }
+              all.append(record)
+              print('NUCLEUS_EXACT_FIRST_SOURCE='+json.dumps({
+                  'case':case,'sha256':record['source_sha256'],
+                  'recursor':record['resolved_recursor_name'],
+                  'argument_expr':record['argument_expr'],
+                  'expected_domain_expr':record['expected_domain_expr'],
+                  'argument_spine':record['argument_spine'],
+                  'expected_domain_spine':record['expected_spine'],
+                  'recursor_kind':record['recursor_authority']['kind'] if record['recursor_authority'] else None
+              },separators=(',',':'))[:8000],flush=True)
+          output={
+              'workflow_source':os.environ['GITHUB_SHA'],
+              'arena_source':os.environ['ARENA_SHA'],
+              'arena_artifact':os.environ['ARENA_ARTIFACT'],
+              'records':all,
+          }
+          pathlib.Path('research/nucleus-evidence/first-typed-source-leaves.json').write_text(
+              json.dumps(output,indent=2),
+          )
+          assert all(r['argument_expr'] and r['expected_domain_expr'] for r in all)
+          print('NUCLEUS_FIRST_TYPED_SOURCE_LEAVES_COMPLETE=4',flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-first-typed-source-leaves-${{ github.sha }}
+          path: research/nucleus-evidence/first-typed-source-leaves.json
+          if-no-files-found: error
