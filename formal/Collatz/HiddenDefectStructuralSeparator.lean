@@ -255,7 +255,7 @@ theorem v176_true_odd_affine_step_detects_hidden_defect
       (3*(a+2)+1)/2 := by
     change v173FreezeAt a (a+2) = (3*(a+2)+1)/2
     rw [v173_freeze_agrees_before_seed a (a+2) hNe]
-    simp [shortcut,hOdd]
+    simp only [shortcut,hOdd,ite_false]
   have hSecond : v176Adversary X H a=a := by
     change v173FreezeAt a a=a
     simp [v173FreezeAt]
