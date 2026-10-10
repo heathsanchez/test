@@ -52,6 +52,16 @@ jobs:
           assert all(d['gates'].values())
           assert d['claims']['strict_improvement_over_full_certificate_replay']=='REJECTED_ON_THIS_CASE'
           PY
+      - name: Install pinned Lean via elan
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Requalify Lean 4.24 constitutional and semantic contracts
+        run: |
+          set -euo pipefail
+          test "$(cat open_development/lean/lean-toolchain)" = "leanprover/lean4:v4.24.0"
+          bash open_development/lean/check.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
