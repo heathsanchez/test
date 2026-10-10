@@ -1,0 +1,200 @@
+name: Collatz V151 sparse dyadic exceptional-mass closeout
+on:
+  push:
+    branches: [collatz-v151-sparse-exceptional-mass]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-sparse-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare sparse dyadic mass vs overly strong all-k rate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test "$(git hash-object research/collatz_ros_state_v134.json)" = d035f4a639b3e026681d432b3e3ceebe173c9c09
+          test "$(git hash-object research/collatz_v150_external_density_provenance.json)" = e593ef8996eadba934afb5d245fed58117adf99b
+          python3 -m research.collatz_v151_sparse_density_audit > evidence/v151-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v151-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V151_SPARSE_EXCEPTIONAL_DENSITY_INTERFACE'
+          s=d['toy_sparse_vs_eventual_all_scale_separator']
+          assert s['synthetic_not_collatz']
+          assert s['sparse_reciprocal_trials']==400
+          assert s['eventual_all_k_one_over_k_bound_fails']
+          assert s['arbitrarily_large_odd_k_failures_tested']>=30
+          assert s['toy_zero_mass_even_scales_are_unbounded_in_k']
+          assert s['q_is_user_selected_precision_not_time_budget']
+          rows=d['bounded_true_shortcut_terminal_envelopes']
+          assert len(rows)==9 and rows[0]['k']==6 and rows[-1]['k']==14
+          assert all(r['finite_k_mass_inequality'] for r in rows)
+          assert all(r['unknown_is_not_a_counterexample'] for r in rows)
+          assert not d['external_mazur_source_rebuilt_here']
+          assert d['ordinary_predecessor_target_nondivisible3_guard_preserved']
+          assert d['positive_density_to_universal_requires_sparse_mass_premise']
+          assert not d['all_scale_one_over_k_bound_assumed']
+          assert not d['sparse_all_depth_certified_population_proved']
+          assert d['extrapolation_from_finite_coverage_prohibited']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V151_FINITE_AND_TOY_SPARSE_AUDIT',
+            'source_commit':h,'status':'WARRANTED_EXACT_SPARSE_VS_ALL_SCALE_SEMANTIC_CONTROLS',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'toy_population_not_real_collatz':True,
+            'finite_mass_not_asymptotic_warrant':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v151-exact-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v151-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-sparse-closure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check sparse density implication under explicit external amplification premise
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object research/collatz_ros_state_v134.json)" = d035f4a639b3e026681d432b3e3ceebe173c9c09
+          test "$(git hash-object formal/Collatz/DensityAmplificationClosure.lean)" = 6b0014b8ee755fc64d1cd01b95702376b28495b6
+          test "$(git hash-object formal/Collatz/SourceRelativeReverseComparison.lean)" = 3e024e8a6b8b9a05243bade9e78523b82f05ca67
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/SparseExceptionalMassClosure.lean 2>&1 | tee evidence/v151-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v151-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-6000:]
+          axioms={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            ax=[z.strip() for z in inside.split(',') if z.strip()]
+            assert set(ax)<={'propext','Classical.choice','Quot.sound'},(name,ax)
+            axioms[name]=ax
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          targets=['v151_sparse_density_eliminates_every_minimal_bad',
+              'v151_collatz_of_sparse_density_one_and_amplification',
+              'v151_certified_envelope_implies_sparse_bad_mass',
+              'v151_collatz_of_sparse_proof_carrying_exceptional_mass',
+              'v151_target_guard_inherited']
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V151_FORMAL_SPARSE_DYADIC_CLOSURE',
+            'source_commit':h,'status':'WARRANTED_FORMAL_CONDITIONAL_SPARSE_DENSITY_CLOSEOUT',
+            'axioms':axioms,
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'no_uniform_one_over_k_rate_needed':True,
+            'no_eventual_all_k_mass_bound_needed':True,
+            'arbitrarily_large_dyadic_cutoffs_suffice':True,
+            'external_mazur_amplifier_is_explicit_hypothesis':True,
+            'all_depth_terminal_exceptional_cover_remains_unproved':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v151-formal-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v151-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-sparse-controls,formal-sparse-closure]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v151-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v151-formal
+          path: evidence/formal
+      - name: Independently seal sparse-only theorem and negative boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v151-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v151-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert b['status']=='WARRANTED_FORMAL_CONDITIONAL_SPARSE_DENSITY_CLOSEOUT'
+          assert b['arbitrarily_large_dyadic_cutoffs_suffice']
+          assert b['no_uniform_one_over_k_rate_needed']
+          assert b['no_eventual_all_k_mass_bound_needed']
+          assert b['external_mazur_amplifier_is_explicit_hypothesis']
+          assert b['all_depth_terminal_exceptional_cover_remains_unproved']
+          assert a['toy_population_not_real_collatz']
+          assert a['finite_mass_not_asymptotic_warrant']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V151_SPARSE_DENSITY_FINAL',
+            'source_commit':h,'status':'WARRANTED_FORMAL_SHARP_SPARSE_DENSITY_BRIDGE_NOT_QED',
+            'new_theorem':'only arbitrarily small exceptional fraction along arbitrarily large dyadic cutoffs required',
+            'not_proved':['unconditional external library rebuild',
+              'universal sparse exceptional closure certificate mass bound',
+              'full Collatz'],
+            'active_v134_controller':'UNCHANGED',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v151-final-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v151-final
+          path: evidence/v151-final-seal.json
+          if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-sparse-controls,formal-sparse-closure,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Source-pinned exact qualification or explicit failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={exact:'${{ needs.exact-sparse-controls.result }}',
+              formal:'${{ needs.formal-sparse-closure.result }}',
+              final:'${{ needs.final-seal.result }}'};
+            const qualified=Object.values(stages).every(x=>x==='success');
+            const receipt={schema:'COLLATZ_V151_CI_RECEIPT',
+              source_commit:context.sha,
+              run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_SPARSE_DENSITY_BRIDGE':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false};
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v151-sparse-exceptional-mass',
+              path:'research/ci_seals/collatz_v151_'+context.sha+'.json',
+              message:'CI receipt: V151 sparse density theorem '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(receipt,null,2)+'\n').toString('base64')
+            });
