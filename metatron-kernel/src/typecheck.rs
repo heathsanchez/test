@@ -2929,11 +2929,34 @@ impl<'a> TypeChecker<'a> {
                 outer,&joined,budget.min(1024),false,
             ))
         } else {None};
+        // Once every dependent recursor argument is source-typed, inspect
+        // the ACTUAL major and existing certified recursor-iota interface.
+        // This is a decisive separator: source typing alone cannot license
+        // a constructor iota reduction on an unknown major.
+        let qualified_major = if joined_replay.as_ref().is_some_and(|s|
+            s.starts_with("all-source-arguments-checked"))
+        {
+            let certified=match &outer.head {
+                NeutralHead::Const{name,..} =>
+                    isolated.environment.recursor_reduction(*name).is_some(),
+                _=>false,
+            };
+            let major=outer.spine.last().map(|c|
+                isolated.machine().expose(
+                    c.clone(),Transparency::Full,512,
+                ));
+            let iota=isolated.machine().qualified_nested_recursor_result(
+                outer,512,
+            );
+            format!("certified={certified}:major={}:registered-iota={}",
+                format!("{major:?}").chars().take(1800).collect::<String>(),
+                format!("{iota:?}").chars().take(1000).collect::<String>())
+        } else {"recursor-not-fully-source-typed".into()};
         let result=isolated.diagnostic_neutral_source_telescope_inner(
             outer,&origin,budget.min(1024),false,
         );
         format!(
-            "joined_source_depth={}:joined_telescope={joined_replay:?}:join_trace={join_trace:?}:source_origin_depth={}:outer_arity={}:result={result}",
+            "joined_source_depth={}:joined_telescope={joined_replay:?}:major_obligation={qualified_major}:join_trace={join_trace:?}:source_origin_depth={}:outer_arity={}:result={result}",
             joined.len(),origin.len(),outer.spine.len(),
         )
     }
