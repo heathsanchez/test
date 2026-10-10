@@ -411,6 +411,14 @@ fn check_export_with_policy(
             }
         }
 
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_MUL_SOURCE").is_some()
+            && environment.nat_primitives().is_some()
+        {
+            let ids = [12,142,857,858,1530,1531,98,63,64,81,82,138,114,118,92,181,177];
+            eprintln!("NUCLEUS_MUL_SOURCE:names={:?}",
+                ids.into_iter().map(|id| (id,trace_name(&export,NameId(id)))).collect::<Vec<_>>());
+        }
         // Lean's Nat-literal kernel extension gives exact native meaning to
         // these standard root definitions.  Authority is installed only after
         // the definition itself has passed ordinary Nucleus type checking and
