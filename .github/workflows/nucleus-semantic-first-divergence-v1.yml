@@ -67,11 +67,12 @@ jobs:
           out=pathlib.Path('metatron-kernel/evidence-out/semantic-first-divergence')
           problems=[
               ('init-prelude', ['NUCLEUS_TRACE_PROJECTION_LAST_FAILURE',
-                                'NUCLEUS_TRACE_DEPENDENCY_GAP']),
+                                'NUCLEUS_TRACE_DEPENDENCY_GAP',
+                                'NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE']),
               ('perf/magma-list-pair-n7',['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE',
                                           'NUCLEUS_TRACE_DEPENDENCY_GAP']),
               ('perf/magma-list-deep-n21',['NUCLEUS_TRACE_NEUTRAL_HEADS',
-                                          'NUCLEUS_TRACE_VALUE_MISMATCH']),
+                                          'NUCLEUS_TRACE_VALUE_MISMATCH','NUCLEUS_TRACE_RECURSOR_MAJOR']),
               ('perf/fueled-chain',['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE'])
           ]
           report=[]
@@ -95,6 +96,9 @@ jobs:
                           'NUCLEUS_NEUTRAL_HEAD_MISMATCH:',
                           'NUCLEUS_VALUE_MISMATCH:',
                           'NUCLEUS_APPLICATION_FUNCTION_TYPE:',
+                          'NUCLEUS_RECURSOR_MAJOR:',
+                          'NUCLEUS_RECURSOR_MAJOR_VALUE:',
+                          'NUCLEUS_PROJECTION_FIELD_PROBE:',
                           'NUCLEUS_DOWNSTREAM:'
                       )):
                           kind=line.split('NUCLEUS_',1)[-1].split(':',1)[0]
