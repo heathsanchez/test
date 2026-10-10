@@ -1307,6 +1307,16 @@ fn compare_values(
                 continue;
             }
             (Value::Neutral(left), Value::Neutral(right)) => {
+                // Proof-carrying relevance signature: a proposition-valued
+                // argument may differ ONLY after both applications' exact
+                // dependent argument typing and data-argument congruence
+                // are independently established. The source metadata is
+                // the same authority used for ordinary application checks.
+                if checker.certified_relevance_spine_congruence(
+                    left,right,context,current_budget,depth,
+                ) {
+                    return Judgment::proven((), "checked-prop-spine-congruence");
+                }
                 // Lean proof irrelevance: two checked proof terms of the same
                 // *independently verified* proposition are convertible.
                 // Do not quotient their FreeId values or closure frames.
