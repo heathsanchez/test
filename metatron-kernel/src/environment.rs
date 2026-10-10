@@ -176,6 +176,27 @@ impl Environment {
         })
     }
 
+    /// Extend an exclusively owned environment without copying its growing
+    /// declaration maps. Rc::make_mut preserves any genuinely live snapshots.
+    /// The visibility boundary and authority increment match extend().
+    pub fn extend_owned(mut self, name: NameId, declaration: ConstantDecl) -> Result<Self, EnvironmentError> {
+        if self.constants.contains_key(&name) {
+            return Err(EnvironmentError::DuplicateConstant(name));
+        }
+        let next = self.authority.0.checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        if let Some(value) = declaration.value {
+            Rc::make_mut(&mut self.definitions).insert(name, DefinitionBody {
+                value,
+                preferred_for_reduction: declaration.preferred_for_reduction,
+                level_params: declaration.level_params.clone(),
+            });
+        }
+        Rc::make_mut(&mut self.constants).insert(name, declaration);
+        self.authority = AuthorityId(next);
+        Ok(self)
+    }
+
     /// Install the independently qualified nullary-singleton recursor
     /// computation rule for an already admitted recursor constant.
     pub fn install_singleton_recursor_reduction(
@@ -247,8 +268,16 @@ impl Environment {
         self.singleton_recursor_reductions.as_ref().clone()
     }
 
+    pub fn singleton_recursor_reductions_shared(&self) -> Rc<HashSet<NameId>> {
+        Rc::clone(&self.singleton_recursor_reductions)
+    }
+
     pub fn recursor_reductions(&self) -> HashMap<NameId, RecursorReduction> {
         self.recursor_reductions.as_ref().clone()
+    }
+
+    pub fn recursor_reductions_shared(&self) -> Rc<HashMap<NameId, RecursorReduction>> {
+        Rc::clone(&self.recursor_reductions)
     }
 
     pub fn recursor_reduction(&self, name: NameId) -> Option<&RecursorReduction> {
@@ -295,6 +324,10 @@ impl Environment {
 
     pub fn projection_specs(&self) -> HashMap<NameId, ProjectionSpec> {
         self.projection_specs.as_ref().clone()
+    }
+
+    pub fn projection_specs_shared(&self) -> Rc<HashMap<NameId, ProjectionSpec>> {
+        Rc::clone(&self.projection_specs)
     }
 
     pub fn install_nat_primitives(
