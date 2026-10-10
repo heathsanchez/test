@@ -1,5 +1,6 @@
 import Collatz.DensityAmplificationClosure
 import Collatz.ClockedGiantComponentBridge
+import Collatz.TimedOrdinaryHitGiantBridge
 
 namespace CollatzFinal
 namespace SourceProduct
@@ -47,6 +48,39 @@ def V170TimedDensity (H : Nat → Nat) : Prop :=
     ∃ q X0 : Nat, 0 < q ∧
       ∀ k : Nat, X0 ≤ 2^k →
         2^k ≤ q * V170TimedCount b (H k) (2^k)
+
+/-- Reuse the independently kernel-qualified V169 exact ORDINARY-to-
+SHORTCUT 2-mod-3 phase bridge, with the true source clock preserved.
+This discharges the clock-convention mismatch without importing any
+external timed positive-density theorem as an axiom. -/
+theorem v170_ordinary_timed_count_le_shortcut
+    (b H X : Nat) (hb : b % 3 = 2) :
+    v169OrdinaryTimedCount b H X ≤ V170TimedCount b H X := by
+  classical
+  change v150Count (fun n => 0 < n ∧ V169OrdinaryTimedHit b H n) X ≤
+    v150Count (fun n => 0 < n ∧ V169HitWithin n b H) X
+  apply v150_count_monotone_below
+  intro n hn hnHit
+  have hs : V169ShortcutTimedHit b H n :=
+    v169_timed_ordinary_hit_to_actual_shortcut b H n hb hnHit.2
+  exact ⟨hnHit.1, hs⟩
+
+/-- The external ordinary-step targetwise density contract entails the
+required shortcut-step contract for a residue-two target. BOTH
+contracts remain premises, not Collatz facts established here. -/
+theorem v170_ordinary_timed_density_to_shortcut
+    (H : Nat → Nat) (h : V169TimedTargetDensity H) :
+    V170TimedDensity H := by
+  intro b hb
+  obtain ⟨q, X0, hq, hd⟩ := h b hb
+  refine ⟨q, X0, hq, ?_⟩
+  intro k hk
+  calc
+    2^k ≤ q * v169OrdinaryTimedCount b (H k) (2^k) :=
+      hd k hk
+    _ ≤ q * V170TimedCount b (H k) (2^k) :=
+      Nat.mul_le_mul_left q
+        (v170_ordinary_timed_count_le_shortcut b (H k) (2^k) hb)
 
 /-- Candidate anti-two-giant law. No need to know in advance which
 component is terminal. At SOME arbitrarily high dyadic scale, any
@@ -166,6 +200,24 @@ theorem v170_collatz_of_timed_density_and_sparse_unique_giant
   intro hBad
   exact hNoBad n ⟨hn, hBad⟩
 
+/-- Stronger named conditional conclusion consuming the independently
+qualified original ordinary-step timing interface. The external
+positive-density premise and the sparse uniqueness arithmetic remain
+UNPROVED by this module. -/
+theorem v170_collatz_of_ordinary_timed_density_and_sparse_unique_giant
+    (H : Nat → Nat)
+    (E : Nat → List V168TwoClockEdge)
+    (hOrdinaryDensity : V169TimedTargetDensity H)
+    (hComplete : V170CompleteLedger E H)
+    (hUnique : V170SparseNoTwoGiants E) :
+    ∀ n : Nat, 0 < n → CollatzGood n :=
+  v170_collatz_of_timed_density_and_sparse_unique_giant H E
+    (v170_ordinary_timed_density_to_shortcut H hOrdinaryDensity)
+    hComplete hUnique
+
+#print axioms v170_ordinary_timed_count_le_shortcut
+#print axioms v170_ordinary_timed_density_to_shortcut
+#print axioms v170_collatz_of_ordinary_timed_density_and_sparse_unique_giant
 #print axioms v170_clocked_hits_are_component_members
 #print axioms v170_bad_target_not_connected_to_two
 #print axioms v170_collatz_of_timed_density_and_sparse_unique_giant
