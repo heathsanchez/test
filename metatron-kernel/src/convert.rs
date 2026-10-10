@@ -1251,6 +1251,28 @@ fn compare_values(
                 },
                 _,
             ) => {
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_FIRST_TYPED_CONTINUATION").is_some()
+                    && let Value::Neutral(other) = &current_right
+                    && current_budget >= 16
+                    && other.spine.len() == 5
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                    if PRINTED.fetch_add(1, Ordering::Relaxed) < 16 {
+                        // The "separator" is a failed *typing premise* in a
+                        // candidate proof derivation, not a claim that two
+                        // valid convertible Lean terms are inequivalent.
+                        let first = checker.diagnostic_neutral_source_telescope(
+                            other, context, current_budget,
+                        );
+                        let first: String = first.chars().take(2500).collect();
+                        eprintln!(
+                            "NUCLEUS_FIRST_TYPED_CONTINUATION:depth={depth}:scope={}:projection={type_name:?}:{index}:receiver={:?}:opposing_head={:?}:opposing_arity={}:first_premise={first}",
+                            context.len(), structure.expr, other.head, other.spine.len(),
+                        );
+                    }
+                }
                 let exposed = checker.machine().projection_value_for_conversion(
                     structure.clone(),
                     *type_name,
