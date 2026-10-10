@@ -176,6 +176,27 @@ impl Environment {
         })
     }
 
+    /// Extend an exclusively owned environment without copying its growing
+    /// declaration maps. Rc::make_mut preserves any genuinely live snapshots.
+    /// The visibility boundary and authority increment match extend().
+    pub fn extend_owned(mut self, name: NameId, declaration: ConstantDecl) -> Result<Self, EnvironmentError> {
+        if self.constants.contains_key(&name) {
+            return Err(EnvironmentError::DuplicateConstant(name));
+        }
+        let next = self.authority.0.checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        if let Some(value) = declaration.value {
+            Rc::make_mut(&mut self.definitions).insert(name, DefinitionBody {
+                value,
+                preferred_for_reduction: declaration.preferred_for_reduction,
+                level_params: declaration.level_params.clone(),
+            });
+        }
+        Rc::make_mut(&mut self.constants).insert(name, declaration);
+        self.authority = AuthorityId(next);
+        Ok(self)
+    }
+
     /// Install the independently qualified nullary-singleton recursor
     /// computation rule for an already admitted recursor constant.
     pub fn install_singleton_recursor_reduction(
@@ -247,8 +268,16 @@ impl Environment {
         self.singleton_recursor_reductions.as_ref().clone()
     }
 
+    pub fn singleton_recursor_reductions_shared(&self) -> Rc<HashSet<NameId>> {
+        Rc::clone(&self.singleton_recursor_reductions)
+    }
+
     pub fn recursor_reductions(&self) -> HashMap<NameId, RecursorReduction> {
         self.recursor_reductions.as_ref().clone()
+    }
+
+    pub fn recursor_reductions_shared(&self) -> Rc<HashMap<NameId, RecursorReduction>> {
+        Rc::clone(&self.recursor_reductions)
     }
 
     pub fn recursor_reduction(&self, name: NameId) -> Option<&RecursorReduction> {
@@ -295,6 +324,10 @@ impl Environment {
 
     pub fn projection_specs(&self) -> HashMap<NameId, ProjectionSpec> {
         self.projection_specs.as_ref().clone()
+    }
+
+    pub fn projection_specs_shared(&self) -> Rc<HashMap<NameId, ProjectionSpec>> {
+        Rc::clone(&self.projection_specs)
     }
 
     pub fn install_nat_primitives(
@@ -555,3 +588,50 @@ impl fmt::Display for EnvironmentError {
 }
 
 impl Error for EnvironmentError {}
+
+#[cfg(test)]
+mod minimal_sufficient_execution_tests {
+    use super::*;
+    use crate::id::ExprId;
+
+    #[test]
+    fn owned_extension_reuses_unique_map_allocation() {
+        let env = Environment::empty();
+        let prior_map = Rc::as_ptr(&env.constants);
+        let env = env
+            .extend_owned(NameId(7), ConstantDecl::axiom(Vec::new(), ExprId(0)))
+            .expect("first declaration must be admissible");
+        assert_eq!(Rc::as_ptr(&env.constants), prior_map);
+        assert!(env.get(NameId(7)).is_some());
+        assert_eq!(env.authority(), AuthorityId(1));
+    }
+
+    #[test]
+    fn owned_extension_does_not_leak_into_a_live_snapshot() {
+        let env = Environment::empty()
+            .extend_owned(NameId(7), ConstantDecl::axiom(Vec::new(), ExprId(0)))
+            .unwrap();
+        let snapshot = env.clone();
+        let env = env
+            .extend_owned(NameId(8), ConstantDecl::axiom(Vec::new(), ExprId(0)))
+            .unwrap();
+        assert!(snapshot.get(NameId(8)).is_none());
+        assert!(env.get(NameId(8)).is_some());
+        assert_eq!(snapshot.authority(), AuthorityId(1));
+        assert_eq!(env.authority(), AuthorityId(2));
+    }
+
+    #[test]
+    fn evaluator_rule_views_share_exact_authority_tables() {
+        let env = Environment::empty();
+        assert!(Rc::ptr_eq(
+            &env.singleton_recursor_reductions,
+            &env.singleton_recursor_reductions_shared(),
+        ));
+        assert!(Rc::ptr_eq(
+            &env.recursor_reductions,
+            &env.recursor_reductions_shared(),
+        ));
+        assert!(Rc::ptr_eq(&env.projection_specs, &env.projection_specs_shared()));
+    }
+}
