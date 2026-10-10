@@ -1,0 +1,226 @@
+name: Collatz V149 future-safe reverse comparison with source-admitted witness
+on:
+  push:
+    branches: [collatz-v149-source-relative-reverse-comparison]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-comparisons:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay exact inverse arithmetic and frozen semantic countercontrols
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test "$(git hash-object research/collatz_ros_state_v134.json)" = d035f4a639b3e026681d432b3e3ceebe173c9c09
+          python3 -m research.collatz_v149_reverse_comparison > evidence/v149-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v149-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V149_SOURCE_RELATIVE_REVERSE_COMPARISON'
+          c=d['exact_semantic_controls']
+          assert c['V128_source21_preferred_root_repaired']['status']=='WARRANTED_FINITE_LOWER_MERGER'
+          assert c['V106_ascending_sign_source9_repaired']['status']=='WARRANTED_FINITE_LOWER_MERGER'
+          assert c['V106_ascending_sign_source9_repaired']['true_endpoint']==13
+          assert c['V140_source5_valid_asymmetric_clocks']['status']=='WARRANTED_FINITE_LOWER_MERGER'
+          assert c['V129_even_source6_zero_reverse_clock']['status']=='WARRANTED_FINITE_LOWER_MERGER'
+          assert c['V146_source27_short_prefix_unknown']['status']=='UNKNOWN_REVERSE_DEPTH_LIMIT'
+          assert c['V146_source27_short_prefix_unknown']['reverse_depth_checked']==12
+          assert c['V148_terminal_source1_no_smaller_positive']['status']=='UNKNOWN_REVERSE_DEPTH_LIMIT'
+          assert c['V139_source27_later_descent_admitted']['selected']['lower_source']==23
+          assert len(d['pure_even_wqo_falsifier'])==3
+          assert all(x['all_sources_at_least_original'] for x in d['pure_even_wqo_falsifier'])
+          assert len(d['both_V106_return_signs_protected'])==2
+          assert d['frozen_static_quotient_future_counterexample']['equivalent_before']
+          assert not d['frozen_static_quotient_future_counterexample']['equivalent_after_unscaled_even_update']
+          assert d['shallow_true_source_comparisons_checked']==149
+          assert d['every_admitted_certificate_has_two_exact_real_clocks']
+          assert not d['finite_unknown_means_divergence']
+          assert not d['comparison_order_alone_produces_source_cap']
+          assert not d['all_no_exit_streams_comparison_complete']
+          assert d['universal_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V149_EXACT_REAL_FUTURE_COMPARISON',
+             'status':'WARRANTED_BOUNDED_EXACT_REVERSE_SOURCE_COMPARISON',
+             'source_commit':h,
+             'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+             'protected_v134_blob':'d035f4a639b3e026681d432b3e3ceebe173c9c09',
+             'no_covering_wqo_theorem':True,
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v149-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v149-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check inverse proof grammar and source-relative future simulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object research/collatz_ros_state_v134.json)" = d035f4a639b3e026681d432b3e3ceebe173c9c09
+          test "$(git hash-object formal/Collatz/ActualRationalCentreDrift.lean)" = 98014c42f785642cdfce89da2971f7a541c85841
+          test "$(git hash-object formal/Collatz/RationalCentreObservationQuotient.lean)" = f7f757a55851d8a51e1b9797a43d8433ccc49045
+          test "$(git hash-object formal/Collatz/ParityCycleResidual.lean)" = c6ff15b2a5aac17754ea315cb5c90507eae394b0
+          test "$(git hash-object formal/Collatz/SourceCentreTransportSeparator.lean)" = b294ad6c7cba66895b94d084855c5e1f2ebc4c69
+          test "$(git hash-object formal/Collatz/SourceProductAffine.lean)" = 97a32acc490465c3bb0cd528e42100a6bbfd2f61
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/SourceRelativeReverseComparison.lean 2>&1 | tee evidence/v149-lean.log
+          python3 - <<'PY'
+          import re,pathlib,json,subprocess,hashlib
+          p=pathlib.Path('evidence/v149-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-8000:]
+          axioms={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            vals=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(vals)<={'propext','Classical.choice','Quot.sound'},(name,vals)
+            axioms[name]=vals
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          targets=[
+            'v149_even_inverse_shortcut','v149_odd_inverse_shortcut',
+            'v149_reverse_trace_sound',
+            'v149_reverse_trace_preserves_every_future_suffix',
+            'v149_admissible_inverse_constructs_lower_merge',
+            'v149_admissible_inverse_preserves_all_future_meetings',
+            'v149_dominance_preserves_every_source_cap',
+            'v149_dominated_reverse_candidate_creates_lower_merge',
+            'v149_qualified_comparison_refutes_minimal_positive_bad',
+            'v149_source21_to_root3_constructive',
+            'v149_source9_to_root7_constructive',
+            'v149_pure_even_reverse_chain',
+            'v149_comparable_even_chain_need_not_produce_lower_source',
+            'v149_terminal_one_refuses_nonpositive_rank_shortcut',
+            'v149_rational_static_class_not_untyped_future_simulation']
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V149_FORMAL_SOURCE_FUTURE_COMPARISON',
+            'source_commit':h,
+            'status':'WARRANTED_FORMAL_CONSTRUCTIVE_INVERSE_REVERSE_COMPARISON',
+            'named_axioms':axioms,
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'constructs_actual_positive_lower_source_with_two_clocks':True,
+            'dominance_sound_only_at_same_actual_target_and_source_cap':True,
+            'all_actual_future_suffixes_preserve_certified_comparison':True,
+            'actual_V106_ascending_and_V128_preferred_root_cases_qualify':True,
+            'comparable_reverse_chain_does_not_force_lower_source':True,
+            'universal_all_noexit_streams_generate_comparison':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v149-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v149-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-source-comparisons, formal-comparison]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v149-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v149-formal
+          path: evidence/formal
+      - name: Independently seal exact source/cap witness and rejected universal wqo jump
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v149-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v149-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert b['constructs_actual_positive_lower_source_with_two_clocks']
+          assert b['all_actual_future_suffixes_preserve_certified_comparison']
+          assert b['dominance_sound_only_at_same_actual_target_and_source_cap']
+          assert b['comparable_reverse_chain_does_not_force_lower_source']
+          assert a['no_covering_wqo_theorem']
+          assert not b['universal_all_noexit_streams_generate_comparison']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          result={
+            'schema':'COLLATZ_V149_STRICT_FUTURE_COMPARISON_FINAL',
+            'status':'WARRANTED_FORMAL_STRICT_SOURCE_ADMITTED_REVERSE_COMPARISON',
+            'source_commit':h,
+            'warranted':['exact inverse-step proof grammar',
+              'actual meeting construction at independent clocks',
+              'future-suffix simulation at same endpoint',
+              'source-domination under verified smaller-source cap',
+              'source21 to root3, source9 to root7'],
+            'rejected':['order-alone yields a smaller source',
+              'finite search UNKNOWN means infinite nonconvergence',
+              'V147 static congruence implies future simulation'],
+            'global_residual':'all no-exit streams eventually supply an admissible positive strictly earlier source (UNKNOWN)',
+            'active_controller':'V134_UNCHANGED',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v149-final-seal.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v149-final
+          path: evidence/v149-final-seal.json
+          if-no-files-found: error
+
+  run-status-receipt:
+    needs: [exact-source-comparisons,formal-comparison,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Persist source-pinned success and failed proofs alike
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={
+              exact:'${{ needs.exact-source-comparisons.result }}',
+              formal:'${{ needs.formal-comparison.result }}',
+              final:'${{ needs.final-seal.result }}'};
+            const qualified=Object.values(stages).every(x=>x==='success');
+            const receipt={
+              schema:'COLLATZ_V149_CI_RECEIPT',
+              source_commit:context.sha,
+              run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_SOURCE_FUTURE_COMPARISON':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false};
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v149-source-relative-reverse-comparison',
+              path:'research/ci_seals/collatz_v149_'+context.sha+'.json',
+              message:'CI receipt: V149 source reverse comparison '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(receipt,null,2)+'\n').toString('base64')
+            });
