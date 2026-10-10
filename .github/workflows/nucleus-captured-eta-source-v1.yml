@@ -1,0 +1,79 @@
+name: Nucleus captured eta source witness audit
+
+on:
+  push:
+    branches: [nucleus-captured-origin-proof-v1]
+    paths: [".github/workflows/nucleus-captured-eta-source-v1.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned immutable Arena exports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ar /tmp/tests research/nucleus-evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/ar.zip
+          unzip -q /tmp/ar.zip -d /tmp/ar
+          tar --no-same-owner -xzf /tmp/ar/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Extract recursive lambda application forms and eta premises
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,os
+          cases=[
+              ('init-prelude',7091,1899),
+              ('perf/grind-ring-5',6845,2068),
+              ('perf/magma-list-pair-n7',5676,552),
+              ('perf/magma-list-pair-n21',5673,548),
+          ]
+          results=[]
+          for case,source_fun,source_minor in cases:
+              b=(pathlib.Path('/tmp/tests/good')/(case+'.ndjson')).read_bytes()
+              expr={}
+              for line in b.splitlines():
+                  j=json.loads(line)
+                  if 'ie' in j: expr[j['ie']]=j
+              def node(x):
+                  return expr.get(x)
+              walk=[]
+              def visit(e,depth=0):
+                  if depth>10 or e not in expr:return
+                  if any(w['expr']==e for w in walk):return
+                  n=expr[e]
+                  walk.append({'expr':e,'node':n})
+                  for key in ('lam','app','forallE','letE'):
+                      if key in n:
+                          d=n[key]
+                          for k in ('type','body','fn','arg','value'):
+                              if isinstance(d.get(k),int):visit(d[k],depth+1)
+              visit(source_fun);visit(source_minor)
+              rec={'case':case,'sha256':hashlib.sha256(b).hexdigest(),
+                   'source_fun':source_fun,'source_minor':source_minor,
+                   'fun_node':node(source_fun),'minor_node':node(source_minor),
+                   'fun_body_node':node(node(source_fun).get('lam',{}).get('body')),
+                   'minor_body_node':node(node(source_minor).get('lam',{}).get('body')),
+                   'source_walk':walk}
+              results.append(rec)
+              print('NUCLEUS_ETA_SOURCE='+json.dumps({k:v for k,v in rec.items()
+                   if k!='source_walk'},separators=(',',':')),flush=True)
+          pathlib.Path('research/nucleus-evidence/captured-eta-source.json').write_text(json.dumps({
+              'run_sha':os.environ['GITHUB_SHA'],'artifact':os.environ['ARENA_ARTIFACT'],'cases':results
+          },indent=2))
+          assert len(results)==4
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-captured-eta-source-${{ github.sha }}
+          path: research/nucleus-evidence/captured-eta-source.json
+          if-no-files-found: error
