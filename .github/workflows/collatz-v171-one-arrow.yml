@@ -45,7 +45,11 @@ jobs:
             'v171_two_disjoint_real_positive_future_classes',
             'v171_periodic_label_reconstructs_true_shortcut',
             'v171_no_nontrivial_fixed_mod_future_label',
-            'v171_true_hits_five_modified_sticks'
+            'v171_true_hits_five_modified_sticks',
+            'v171_ordinary_target_five_enters_second_basin',
+            'v171_ordinary_target_five_count_enters_second_basin',
+            'v171_positive_lower_density_second_basin_of_external_amp',
+            'v171_original_affine_lift_fails_at_exception'
           ]
           for n in expected:
             assert 'CollatzFinal.SourceProduct.'+n in ax,n
@@ -58,6 +62,7 @@ jobs:
             'all_moduli_periodic_label_collapse':True,
             'one_source_arrow_modified':5,
             'preserves_v160_true_affine_law':False,
+            'positive_lower_density_second_basin_requires_explicit_external_input':True,
             'global_collatz':'UNKNOWN','qed':False}
           pathlib.Path('evidence/v171-formal-seal.json').write_text(
             json.dumps(seal,sort_keys=True,indent=2)+'\n')
