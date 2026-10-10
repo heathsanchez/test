@@ -154,6 +154,7 @@ fn convert_in_context_with_congruence(
     let mut proof_frees = HashMap::new();
     let mut proof_function_frees = HashMap::new();
     let mut lazy_head_delta_used = false;
+    let mut lazy_projection_full_used = false;
 
     while let Some((left, right, depth, local_context)) = work.pop() {
         let context = local_context.as_slice();
@@ -482,6 +483,49 @@ fn convert_in_context_with_congruence(
                     }
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual }
+                        if delta_policy == DeltaPolicy::GuardedSemanticFallback
+                            && std::env::var_os("NUCLEUS_EXPERIMENTAL_UNKNOWN_FULL").is_some()
+                            && matches!(residual.0,
+                                "lazy-projection-value-exposure"
+                                | "lazy-projection-field-exposure"
+                                | "distinct-neutral-heads"
+                            )
+                            && remaining >= 32
+                            && !lazy_projection_full_used =>
+                    {
+                        lazy_projection_full_used = true;
+                        // UNKNOWN in the cheaper reducer is not a semantic
+                        // refutation. Re-expose both *actual checked closures*
+                        // at kernel-authorized Full transparency and accept
+                        // only a complete PROVEN comparison. Unsuccessful
+                        // replay retains the original UNKNOWN.
+                        let full_left = machine.expose_for_conversion(
+                            left, Transparency::Full, remaining.min(4096),
+                        );
+                        let full_right = machine.expose_for_conversion(
+                            right, Transparency::Full, remaining.min(4096),
+                        );
+                        if let (Some(lhs), Some(rhs)) =
+                            (full_left.proven_value(), full_right.proven_value())
+                        {
+                            if compare_values(
+                                checker, lhs, rhs, remaining.min(4096),
+                                depth, context, &mut work, &mut proof_function_frees,
+                            ).is_proven() {
+                                #[cfg(feature = "diagnostics")]
+                                if std::env::var_os("NUCLEUS_TRACE_UNKNOWN_FULL").is_some() {
+                                    use std::sync::atomic::{AtomicUsize, Ordering};
+                                    static N: AtomicUsize = AtomicUsize::new(0);
+                                    if N.fetch_add(1, Ordering::Relaxed) < 48 {
+                                        eprintln!("NUCLEUS_UNKNOWN_FULL_CERTIFIED:reason={:?}:depth={depth}", residual.0);
+                                    }
+                                }
+                                continue;
+                            }
+                        }
+                        return Judgment::Unknown { residual };
                     }
                     Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
