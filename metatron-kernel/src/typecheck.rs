@@ -2379,6 +2379,18 @@ impl<'a> TypeChecker<'a> {
                 let mut cursor = actual_arg.clone();
                 let mut seen = std::collections::HashSet::new();
                 let mut stages = Vec::new();
+                let warrant_status = |node: u64| -> String {
+                    let ledger = probe.checked_binding_lineage.borrow();
+                    match ledger.get(&node) {
+                        None => "absent".to_owned(),
+                        Some(None) => "conflicting".to_owned(),
+                        Some(Some(w)) if context.starts_with(&w.protected_prefix) =>
+                            format!("matched:prefix={}", w.protected_prefix.len()),
+                        Some(Some(w)) =>
+                            format!("scope-mismatch:expected-prefix={}:actual={}",
+                                w.protected_prefix.len(), context.len()),
+                    }
+                };
                 for _ in 0..12 {
                     if !seen.insert((cursor.expr, cursor.env.id())) {
                         stages.push("binding-cycle".to_owned());
@@ -2392,15 +2404,16 @@ impl<'a> TypeChecker<'a> {
                             match cursor.env.lookup_with_node_id(*index) {
                                 Some((node, EnvBinding::Closure(next))) => {
                                     stages.push(format!(
-                                        "BVar({index}):node={node}:cert={}:next={:?}@{}",
-                                        known_type.is_some(), next.expr, next.env.id(),
+                                        "BVar({index}):node={node}:cert={}:warrant={}:next={:?}@{}",
+                                        known_type.is_some(), warrant_status(node),
+                                        next.expr, next.env.id(),
                                     ));
                                     cursor = next;
                                 }
                                 Some((node, binding)) => {
                                     stages.push(format!(
-                                        "BVar({index}):node={node}:cert={}:terminal={binding:?}",
-                                        known_type.is_some(),
+                                        "BVar({index}):node={node}:cert={}:warrant={}:terminal={binding:?}",
+                                        known_type.is_some(), warrant_status(node),
                                     ));
                                     break;
                                 }
