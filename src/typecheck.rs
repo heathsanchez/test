@@ -473,6 +473,16 @@ impl<'a> TypeChecker<'a> {
                 self.retain_checked_elimination(
                     &body_frame,TypeValue::Term(domain.clone()),&extended,
                 );
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_SOURCE_PROOF_BETA").is_some()
+                    && matches!((term.expr.0,domain.expr.0),
+                        (7143,7074)|(6897,6828)|(5728,5659)|(5725,5656))
+                {
+                    eprintln!(
+                        "NUCLEUS_SOURCE_BINDER_INTRO:route=exact-infer:lambda={:?}:ctx={}:free={binder:?}:binding_node={}:source_frame={}:domain={:?}",
+                        term.expr,context.len(),body_frame.id(),term.env.id(),domain,
+                    );
+                }
                 let body=term.sibling(*body,body_frame);
                 let body_ty=self.infer_exact_closure_in_context(
                     &body,&extended,remaining,depth+1,
@@ -958,6 +968,16 @@ impl<'a> TypeChecker<'a> {
                 };
                 let body_frame = frame.extend_free(free);
                 self.retain_checked_binding(&body_frame,domain_type.clone(),&extended);
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_SOURCE_PROOF_BETA").is_some()
+                    && matches!((expression.0,domain.0),
+                        (7143,7074)|(6897,6828)|(5728,5659)|(5725,5656))
+                {
+                    eprintln!(
+                        "NUCLEUS_SOURCE_BINDER_INTRO:route=infer:lambda={expression:?}:ctx={}:free={free:?}:binding_node={}:source_frame={}:domain={domain:?}",
+                        context.len(),body_frame.id(),frame.id(),
+                    );
+                }
                 self.infer_in(*body, &extended, &body_frame, remaining, cache)
                     .map(|body_type| TypeValue::Pi {
                         domain: Box::new(domain_type),
