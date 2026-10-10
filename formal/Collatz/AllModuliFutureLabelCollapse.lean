@@ -240,6 +240,75 @@ theorem v159_positive_future_label_cannot_be_periodic {α : Type}
   have heq := hall n m
   simpa [g, Nat.ne_of_gt hn, Nat.ne_of_gt hm] using heq
 
+/-- Exact eventual terminal semantics is invariant under one real
+    shortcut step in BOTH directions (including the terminal cycle).
+    This is not the global Collatz theorem. -/
+theorem v159_good_step_iff (n : Nat) :
+    CollatzGood n ↔ CollatzGood (shortcut n) := by
+  constructor
+  · intro hg
+    exact eventually_step_forward shortcut Terminal
+      terminal_forward_invariant hg
+  · intro hg
+    obtain ⟨k,hk⟩ := hg
+    exact ⟨k+1,by simpa only [iter] using hk⟩
+
+/-- PROFINITE INSEPARABILITY NECESSITY.
+    IF an actual nonterminating positive source exists, then for
+    EVERY finite positive modulus M there are ACTUAL positive
+    sources n,m of the SAME residue, one convergent, one not.
+
+    This is conditional on the existence of a bad source, NOT a
+    claim that one exists, and not a source-class coalescence.
+    The proof uses no hypothetical density or finite-search data. -/
+theorem v159_any_bad_source_forces_mixed_every_modulus
+    (b M : Nat) (hb : 0<b ∧ ¬ CollatzGood b) (hM : 0<M) :
+    ∃ n m : Nat,
+      0<n ∧ 0<m ∧ n%M=m%M ∧
+      CollatzGood n ∧ ¬ CollatzGood m := by
+  classical
+  by_contra hNoMixed
+  have hSame (n m : Nat) (hn : 0<n) (hm : 0<m)
+      (hMod : n%M=m%M) :
+      CollatzGood n ↔ CollatzGood m := by
+    constructor
+    · intro hGood hBad
+      exact hNoMixed ⟨n,m,hn,hm,hMod,hGood,hBad⟩
+    · intro hGood hBad
+      exact hNoMixed ⟨m,n,hm,hn,hMod.symm,hGood,hBad⟩
+  let f : Nat → Bool := fun n => decide (CollatzGood n)
+  have hStep : ∀ n : Nat, 0<n → f (shortcut n)=f n := by
+    intro n _
+    have heq := v159_good_step_iff n
+    by_cases hgood : CollatzGood n
+    · have hs : CollatzGood (shortcut n) := heq.mp hgood
+      simp [f,hgood,hs]
+    · have hs : ¬ CollatzGood (shortcut n) := by
+        intro hh
+        exact hgood (heq.mpr hh)
+      simp [f,hgood,hs]
+  have hPer : ∀ n : Nat, 0<n → f (n+M)=f n := by
+    intro n hn
+    have hnM : 0<n+M := by omega
+    have hMod : n%M=(n+M)%M := by
+      simp [Nat.add_mod]
+    have hiff := hSame n (n+M) hn hnM hMod
+    by_cases hgood : CollatzGood n
+    · have hs : CollatzGood (n+M) := hiff.mp hgood
+      simp [f,hgood,hs]
+    · have hs : ¬ CollatzGood (n+M) := by
+        intro hh
+        exact hgood (hiff.mpr hh)
+      simp [f,hgood,hs]
+  have hall := v159_positive_future_label_cannot_be_periodic
+    f M hM hStep hPer 1 b (by decide) hb.1
+  have hOne : CollatzGood 1 := by
+    exact ⟨0,Or.inl rfl⟩
+  have hfOne : f 1 = true := by simp [f,hOne]
+  have hfBad : f b = false := by simp [f,hb.2]
+  rw [hfOne,hfBad] at hall
+  cases hall
+
 #print axioms v159_even_period_reduction
 #print axioms v159_odd_period_affine
 #print axioms v159_odd_third_period_reduction
@@ -249,6 +318,8 @@ theorem v159_positive_future_label_cannot_be_periodic {α : Type}
 #print axioms v159_step_implies_even_and_odd_invariance
 #print axioms v159_no_nontrivial_fixed_modulus_future_label
 #print axioms v159_positive_future_label_cannot_be_periodic
+#print axioms v159_good_step_iff
+#print axioms v159_any_bad_source_forces_mixed_every_modulus
 
 end SourceProduct
 end CollatzFinal
