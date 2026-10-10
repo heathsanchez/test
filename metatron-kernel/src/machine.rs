@@ -1357,10 +1357,43 @@ impl<'a> Machine<'a> {
             let major = self.expose_internal(
                 second.clone(), transparency, budget.saturating_sub(1), false, false,
             );
-            if matches!(major.proven_value().map(|v| &v.value),
-                Some(Value::NatLit(n)) if n.is_zero()) {
-                pending.clear();
-                return Some(Value::NatLit(crate::nat::BigNat::zero()));
+            if let Some(value) = major.proven_value().map(|v| &v.value) {
+                let is_zero = matches!(value, Value::NatLit(n) if n.is_zero())
+                    || matches!(value, Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name: ctor, levels },
+                        spine,
+                    }) if *ctor == primitives.zero && levels.is_empty() && spine.is_empty());
+                if is_zero {
+                    pending.clear();
+                    return Some(Value::NatLit(crate::nat::BigNat::zero()));
+                }
+                // Exact source recursion: mul x (succ y) = add (mul x y) x.
+                // The synthetic closure stores a genuinely source-typed Nat
+                // application and is evaluated only when demanded downstream.
+                if let Some(Value::Neutral(Neutral {
+                    head: NeutralHead::Const { name: ctor, levels },
+                    spine,
+                })) = Some(value)
+                    && *ctor == primitives.succ
+                    && levels.is_empty() && spine.len() == 1
+                    && let (Some(add), Some(bvar)) =
+                        (primitives.add, primitives.virtual_bvar_zero)
+                {
+                    let inner = Closure::new(bvar,
+                        EnvFrame::empty().extend_neutral(Neutral {
+                            head: NeutralHead::Const { name, levels: vec![] },
+                            spine: vec![first.clone(), spine[0].clone()],
+                        }));
+                    pending.clear();
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_NATIVE_MUL_SUCC").is_some() {
+                        eprintln!("NUCLEUS_NATIVE_MUL_SUCC:source-recursion");
+                    }
+                    return Some(Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name: add, levels: vec![] },
+                        spine: vec![inner, first],
+                    }));
+                }
             }
         }
         let first_value = self
