@@ -175,11 +175,11 @@ theorem v161_real_positive_finite_suffix
   obtain ⟨n,hnBound,hnResidue,hnBits⟩ :=
     v161_every_finite_future_parity_word k r hr h bits hBits
   have hnPos : 0<n := by
-    by_contra hNot
-    have hnZero : n=0 := by omega
-    subst n
-    simp at hnResidue
-    omega
+    by_cases hz : n=0
+    · have hZero : (0:Nat)%2^k=r := by
+        simpa [hz] using hnResidue
+      omega
+    · omega
   exact ⟨n,hnPos,hnBound,hnResidue,hnBits⟩
 
 /-- A SECOND map with exactly the same even branch and
@@ -197,7 +197,6 @@ theorem v161_two_basin_three_fixed :
 theorem v161_two_basin_even_source (n : Nat) :
     v161TwoBasin (2*n)=n := by
   simp [v161TwoBasin]
-  omega
 
 theorem v161_two_basin_odd_affine (n : Nat) :
     v161TwoBasin (2*n+1)=n+2 := by
