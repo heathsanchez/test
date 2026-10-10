@@ -12,6 +12,11 @@ jobs:
   qualify:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
+    env:
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: "1"
+      NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER: "1"
+      NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE: "1"
+      NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
