@@ -1165,7 +1165,19 @@ fn compare_values(
                 // after proving the receiver and all applied arguments equal.
                 // The existing source-level Nat computation never licenses
                 // identifying unrelated binder environments or Nat indices.
-                let probe = (current_budget / 2).min(128);
+                let guarded_projection = std::env::var_os(
+                    "NUCLEUS_EXPERIMENTAL_GUARDED_PROJECTION"
+                ).is_some();
+                let probe = if guarded_projection {
+                    (current_budget / 2).min(256)
+                } else {
+                    (current_budget / 2).min(128)
+                };
+                let probe_policy = if guarded_projection {
+                    DeltaPolicy::GuardedSemanticFallback
+                } else {
+                    DeltaPolicy::PreferredOnly
+                };
                 if probe >= 8
                     && left_spine.len() == right_spine.len()
                     && convert_with_policy_in_context(
@@ -1173,7 +1185,7 @@ fn compare_values(
                         &TypeValue::Term(left_structure.clone()),
                         &TypeValue::Term(right_structure.clone()),
                         probe,
-                        DeltaPolicy::PreferredOnly,
+                        probe_policy,
                         depth,
                         context,
                     ).is_proven()
@@ -1183,7 +1195,7 @@ fn compare_values(
                             &TypeValue::Term(lhs.clone()),
                             &TypeValue::Term(rhs.clone()),
                             probe,
-                            DeltaPolicy::PreferredOnly,
+                            probe_policy,
                             depth,
                             context,
                         ).is_proven()
