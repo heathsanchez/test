@@ -1,0 +1,47 @@
+name: Collatz V168 exact renewal negative controls
+on:
+  push:
+    branches: [collatz-v168-weighted-renewal-controls]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-adversarial-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact arithmetic, finite parity and inverse controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v168_renewal_controls.py | tee evidence/v168-exact.log
+          python3 - <<'PY'
+          import hashlib, json, pathlib, subprocess
+          p=pathlib.Path('evidence/v168-exact.log')
+          log=p.read_text()
+          assert 'G7 conditional bad-set parity exactly uniform' in log
+          assert 'G5 high-odd cycle and exact T1 rational shadow' in log
+          assert 'Adverse inverse-odd periodic-residue edge' in log
+          assert 'COLLATZ UNKNOWN' in log
+          seal={
+            'schema':'COLLATZ_V168_EXACT_NEGATIVE_CONTROLS',
+            'commit_sha':subprocess.check_output(
+              ['git','rev-parse','HEAD'],text=True).strip(),
+            'log_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'scope':'FINITE_EXACT_CONTROLS_PLUS_ELEMENTARY_SYMBOLIC_NOTES',
+            'formal_lean_qualification':False,
+            'universal_mass_gain_proved':False,
+            'global_collatz':'UNKNOWN',
+            'qed':False,
+          }
+          pathlib.Path('evidence/v168-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v168-exact-controls
+          path: evidence/
+          if-no-files-found: error
