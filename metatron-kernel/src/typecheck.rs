@@ -1804,18 +1804,45 @@ impl<'a> TypeChecker<'a> {
             TypeValue::Pi { domain, body, binder } => Some((*domain, PiBody::Fixed(binder, *body))),
             TypeValue::Term(closure) => {
                 let machine = self.machine();
-                let exposed = machine.expose(closure, Transparency::Reducible, budget);
-                match exposed.proven_value()? {
-                    Value::Pi { domain, body } => Some((
+                let exposed = machine.expose(
+                    closure.clone(), Transparency::Reducible, budget,
+                );
+                if let Some(Value::Pi { domain, body }) = exposed.proven_value() {
+                    return Some((
                         TypeValue::Term(domain.clone()),
                         PiBody::Closure(body.clone()),
-                    )),
-                    Value::NatLit(_)
-                    | Value::Sort(_)
-                    | Value::Lam { .. }
-                    | Value::Neutral(_)
-                    | Value::StuckProjection { .. } => None,
+                    ));
                 }
+                // Candidate: once the *function type* has already been inferred,
+                // a demand-driven Full delta view can reveal its actual Pi
+                // telescope. This does NOT bypass any argument check or infer
+                // an arbitrary Pi from an opaque neutral. Both the function
+                // type's source and the Full reduction are kernel-authorized.
+                //
+                // Kept separate behind an A/B switch until a complete Arena
+                // case changes while protected invalid inputs stay rejected.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_PI_FULL").is_some()
+                    && budget >= 16
+                {
+                    let full = machine.expose(
+                        closure, Transparency::Full, budget.min(1024),
+                    );
+                    if let Some(Value::Pi { domain, body }) = full.proven_value() {
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_TYPED_PI_FULL").is_some() {
+                            use std::sync::atomic::{AtomicUsize, Ordering};
+                            static COUNT: AtomicUsize = AtomicUsize::new(0);
+                            if COUNT.fetch_add(1, Ordering::Relaxed) < 32 {
+                                eprintln!("NUCLEUS_TYPED_PI_FULL:certified_source_pi");
+                            }
+                        }
+                        return Some((
+                            TypeValue::Term(domain.clone()),
+                            PiBody::Closure(body.clone()),
+                        ));
+                    }
+                }
+                None
             }
             TypeValue::Sort(_) => None,
         }
