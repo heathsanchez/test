@@ -1930,13 +1930,13 @@ mod minimal_observable_frame_tests {
         assert_ne!(first.id(),second.id());
         let x=machine.expose(Closure::new(ExprId(0),first),Transparency::Opaque,128);
         let y=machine.expose(Closure::new(ExprId(0),second),Transparency::Opaque,128);
-        assert_eq!(x.proven_value().map(|x|&x.value),y.proven_value().map(|x|&x.value));
+        assert_eq!(x.proven_value(),y.proven_value());
         assert_eq!(minimal.borrow().hits,1,
             "same expr, same actual BVar1, irrelevant BVar0 changed: quotient should reuse");
 
         let different=EnvFrame::empty().extend_free(FreeId(8)).extend_free(FreeId(42));
         let z=machine.expose(Closure::new(ExprId(0),different),Transparency::Opaque,128);
-        assert_ne!(x.proven_value().map(|x|&x.value),z.proven_value().map(|x|&x.value),
+        assert_ne!(x.proven_value(),z.proven_value(),
             "different actually used FreeIds cannot be merged");
         assert_eq!(minimal.borrow().hits,1,
             "a change in the observed binding must be an exact separator");
@@ -1957,12 +1957,12 @@ mod minimal_observable_frame_tests {
         assert_eq!(minimal.borrow().hits,1,
             "lambda body BVar0 refers to its OWN binder, not the captured frame");
         for output in [x,y] {
-            let Some(Value::Lam{body,..})=output.proven_value().map(|w|&w.value) else {
+            let Some(Value::Lam{body,..})=output.proven_value() else {
                 panic!("expected checked lambda");
             };
             let opened=machine.expose(body.under_free(FreeId(99)),Transparency::Opaque,128);
             assert_eq!(
-                opened.proven_value().map(|v|&v.value),
+                opened.proven_value(),
                 Some(&Value::Neutral(Neutral{
                     head:NeutralHead::Free(FreeId(99)),spine:vec![]
                 })),
