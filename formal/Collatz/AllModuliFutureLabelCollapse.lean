@@ -267,7 +267,8 @@ theorem v159_any_bad_source_forces_mixed_every_modulus
       0<n ∧ 0<m ∧ n%M=m%M ∧
       CollatzGood n ∧ ¬ CollatzGood m := by
   classical
-  by_contra hNoMixed
+  apply Classical.byContradiction
+  intro hNoMixed
   have hSame (n m : Nat) (hn : 0<n) (hm : 0<m)
       (hMod : n%M=m%M) :
       CollatzGood n ↔ CollatzGood m := by
