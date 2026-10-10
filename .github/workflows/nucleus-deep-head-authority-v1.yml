@@ -1,0 +1,73 @@
+name: Nucleus exact rigid head source authority
+
+on:
+  push:
+    branches: [nucleus-semantic-first-divergence-v1]
+    paths:
+      - ".github/workflows/nucleus-deep-head-authority-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get immutable Arena source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ar /tmp/tests research/nucleus-evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/ar.zip
+          unzip -q /tmp/ar.zip -d /tmp/ar
+          tar --no-same-owner -xzf /tmp/ar/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Resolve exact neutral head roles
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          records=[]
+          for case in ('perf/magma-list-deep-n21','perf/magma-list-deep-n36',
+                       'perf/magma-list-pair-n7','init-prelude'):
+              b=(pathlib.Path('/tmp/tests/good')/(case+'.ndjson')).read_bytes()
+              names={0:''};decl={};expr={}
+              for raw in b.splitlines():
+                  j=json.loads(raw)
+                  if 'in' in j:
+                      y=j.get('str',j.get('num'))
+                      names[j['in']]=names.get(y['pre'],'')+('.' if names.get(y['pre'],'') else '')+str(y.get('str',y.get('i')))
+                  if 'ie' in j: expr[j['ie']]=j
+                  for key in ('def','thm','axiom'):
+                      if key in j: decl[j[key]['name']]={'kind':key,'value':j[key]}
+                  if 'inductive' in j:
+                      for typ in j['inductive'].get('types',[]):
+                          decl[typ['name']]={'kind':'inductive','value':typ}
+                      for ctor in j['inductive'].get('ctors',[]):
+                          decl[ctor['name']]={'kind':'constructor','value':ctor}
+                      for rec in j['inductive'].get('recs',[]):
+                          decl[rec['name']]={'kind':'recursor','value':rec}
+              wanted=([297,378,46,65,142] if 'deep' in case
+                      else [70,74,62,142,46,297])
+              heads={str(k):{'name':names.get(k),
+                            'declaration':decl.get(k),
+                            'type_expr':expr.get(decl[k]['value'].get('type')) if k in decl else None}
+                     for k in wanted}
+              items={str(k):expr.get(k) for k in [1658,163,1565,1670,1739,8835,8805,
+                  8834,1014,12,7585,7441,5162,5095] if k in expr}
+              row={'case':case,'sha256':hashlib.sha256(b).hexdigest(),
+                   'heads':heads,'nodes':items}
+              records.append(row)
+              print('NUCLEUS_SOURCE_NEUTRAL_HEADS='+json.dumps(row,separators=(',',':'))[:30000],flush=True)
+          pathlib.Path('research/nucleus-evidence/deep-head-authority.json').write_text(json.dumps(records,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-exact-head-authority-${{ github.sha }}
+          path: research/nucleus-evidence/deep-head-authority.json
+          if-no-files-found: warn
