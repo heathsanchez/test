@@ -2697,7 +2697,54 @@ impl<'a> TypeChecker<'a> {
         let result=isolated.diagnostic_neutral_source_telescope_inner(
             outer,&origin,budget.min(1024),false,
         );
-        format!("source_origin_depth={}:outer_arity={}:result={result}",
+        // The fourth Decidable-rec argument is a source lambda whose body
+        // may be an eta presentation of an OLDER captured function lambda.
+        // Discover it from actual lexical nodes, not the name of any
+        // recursor or the identity of an Arena test.
+        let source_lambda=outer.spine.get(3).and_then(|minor| {
+            let Expr::Lam{body,..}=self.expressions.get(minor.expr)? else {return None};
+            let Expr::App{fun,arg}=self.expressions.get(*body)? else {return None};
+            if !matches!(self.expressions.get(*fun),Some(Expr::BVar(1)))
+                || !matches!(self.expressions.get(*arg),Some(Expr::BVar(0)))
+            {return None}
+            let EnvBinding::Closure(mut cursor)=minor.env.lookup(0)? else {return None};
+            let mut seen=std::collections::HashSet::new();
+            for _ in 0..16 {
+                if !seen.insert((cursor.expr,cursor.env.id())){return None}
+                match self.expressions.get(cursor.expr)? {
+                    Expr::BVar(idx) => {
+                        let EnvBinding::Closure(next)=cursor.env.lookup(*idx)?
+                        else {return None};
+                        cursor=next;
+                    }
+                    Expr::Lam { .. } => return Some(cursor),
+                    _ => return None,
+                }
+            }
+            None
+        });
+        let full_source_replay=match source_lambda {
+            None => "no-source-captured-lambda-shape".to_owned(),
+            Some(source_lambda) => {
+                match isolated.diagnostic_checked_source_origin(&source_lambda,&origin) {
+                    Err(reason) => format!("source-scope-unlicensed:{reason}"),
+                    Ok((source_context,used,source_nodes)) => {
+                        if source_context.len()<=origin.len() {
+                            format!("no-source-scope-extension:used={used:?}")
+                        } else {
+                            let recursor=isolated.diagnostic_neutral_source_telescope_inner(
+                                outer,&source_context,budget.min(2048),false,
+                            );
+                            format!(
+                                "typed_source_scope={}:used={used:?}:nodes={source_nodes:?}:outer_replay={recursor}",
+                                source_context.len(),
+                            )
+                        }
+                    }
+                }
+            }
+        };
+        format!("source_origin_depth={}:outer_arity={}:result={result}:full_source_replay={full_source_replay}",
             origin.len(),outer.spine.len())
     }
 
