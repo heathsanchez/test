@@ -1064,7 +1064,29 @@ impl<'a> TypeChecker<'a> {
                     }
                     return Judgment::unknown("application-function-type");
                 };
-                match self.check_in(*arg, &domain, context, frame, remaining, true, cache) {
+                let argument_judgment=self.check_in(
+                    *arg, &domain, context, frame, remaining, true, cache,
+                );
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION").is_some()
+                    && matches!(argument_judgment,Judgment::Unknown {..})
+                    && (context.len()==4 || context.len()==11)
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static TRACED:AtomicUsize=AtomicUsize::new(0);
+                    if TRACED.fetch_add(1,Ordering::Relaxed)<24 {
+                        let binding=match self.expressions.get(*arg){
+                            Some(Expr::BVar(i))=>frame.lookup_with_node_id(*i),
+                            _=>None,
+                        };
+                        eprintln!(
+                            "NUCLEUS_APP_DOMAIN_OBLIGATION:application={expression:?}:function={fun:?}:argument={arg:?}:argument_shape={:?}:argument_binding={binding:?}:expected_domain={domain:?}:judgment={argument_judgment:?}:context_depth={}:frame={}:remaining={}:source_head={:?}",
+                            self.expressions.get(*arg),context.len(),frame.id(),
+                            *remaining,self.expressions.get(*fun),
+                        );
+                    }
+                }
+                match argument_judgment {
                     Judgment::Proven { .. } => {
                         // The function was checked under a fresh local above, and
                         // the argument was checked against its domain. Re-infer a
