@@ -2088,6 +2088,35 @@ fn certified_local_proof_irrelevance(
     ) else {
         return false;
     };
+    #[cfg(feature="diagnostics")]
+    if std::env::var_os("NUCLEUS_TRACE_DEEP_FREE_PAIR").is_some()
+        && depth==7 && ((left_free.0==2 && right_free.0==6) ||
+                         (left_free.0==6 && right_free.0==2))
+    {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PROBE:AtomicUsize=AtomicUsize::new(0);
+        if PROBE.fetch_add(1,Ordering::Relaxed)<4 {
+            let lprop=checker.is_proposition_in_context(
+                left_type.expr,context,&left_type.env,2048,
+            );
+            let rprop=checker.is_proposition_in_context(
+                right_type.expr,context,&right_type.env,2048,
+            );
+            let mut relation=Vec::new();
+            for fuel in [256usize,512usize,2048usize] {
+                let x=convert_with_policy_in_context(
+                    checker,
+                    &TypeValue::Term(left_type.clone()),
+                    &TypeValue::Term(right_type.clone()),
+                    fuel,DeltaPolicy::PreferredOnly,depth,context,
+                );
+                relation.push((fuel,x));
+            }
+            eprintln!(
+                "NUCLEUS_DEEP_FREE_PAIR:depth={depth}:lhs={left_free:?}:rhs={right_free:?}:left_ty={left_type:?}:right_ty={right_type:?}:left_is_prop={lprop:?}:right_is_prop={rprop:?}:type_relations={relation:?}:context={context:?}",
+            );
+        }
+    }
     // Restrict the proof to the lexical substitution environment actually
     // checked by infer_in; do not silently drop nontrivial universe maps.
     if left_type.levels != crate::value::LevelSubstitution::default()
