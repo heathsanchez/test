@@ -102,9 +102,82 @@ jobs:
           print('REFERENCE_ORACLE_ONLY__NUCLEUS_SCORE_UNCHANGED',flush=True)
           PY
 
+      - name: Causal ablation of canonical bound-variable interning
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/flash/src/eval.rs')
+          src=p.read_text()
+          old="""        if let Some(v) = self.tc_cache.bvar_hc.get(&key) {
+            return v;
+        }
+        let empty = self.empty_spine();
+        let v = value::mk_bvar_with_empty(self.arena, level, ty, empty);
+        v.mark_canonical();
+        self.tc_cache.bvar_hc.insert(key, v);
+        v
+"""
+          new="""        let no_intern = std::env::var_os("FLASH_ABLATE_BVAR_HC").is_some();
+        if !no_intern {
+            if let Some(v) = self.tc_cache.bvar_hc.get(&key) {
+                return v;
+            }
+        }
+        let empty = self.empty_spine();
+        let v = value::mk_bvar_with_empty(self.arena, level, ty, empty);
+        if !no_intern {
+            v.mark_canonical();
+            self.tc_cache.bvar_hc.insert(key, v);
+        }
+        v
+"""
+          assert src.count(old)==1,src.count(old)
+          p.write_text(src.replace(old,new))
+          print('FLASH_BVAR_ABLATION_PATCH_SHA256='+__import__('hashlib').sha256(p.read_bytes()).hexdigest())
+          PY
+          (cd /tmp/flash && cargo build --release --locked)
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,time
+          root=pathlib.Path('/tmp/arena-tests')
+          binary='/tmp/flash/target/release/sokonanoda'
+          config='/tmp/flash/config.json'
+          cases=[('good','perf/fueled-chain'),('good','perf/magma-list-pair-n7'),
+                 ('bad','bugs/nested-unused-param')]
+          results=[]
+          for mode in ['interned','ablate_bound_variable_interning']:
+              env=os.environ.copy()
+              if mode.startswith('ablate'):
+                  env['FLASH_ABLATE_BVAR_HC']='1'
+              for kind,name in cases:
+                  p=(root/kind/(name+'.ndjson')).read_bytes()
+                  t=time.monotonic()
+                  try:
+                      q=subprocess.run([binary,config],cwd='/tmp/flash',input=p,
+                          stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90,env=env)
+                      rc=q.returncode
+                      error=q.stderr.decode(errors='replace')[-350:]
+                  except subprocess.TimeoutExpired:
+                      rc=124
+                      error='TIMEOUT'
+                  row={'mode':mode,'case':name,'kind':kind,'rc':rc,
+                       'elapsed_s':round(time.monotonic()-t,4),'stderr_tail':error}
+                  results.append(row)
+                  print('NUCLEUS_FLASH_BVAR_ABLATION='+json.dumps(row),flush=True)
+          out={'flash_source':os.environ['FLASH_SOURCE'],'ablation_source':os.environ['GITHUB_SHA'],
+               'arena_sha':os.environ['ARENA_SHA'],'results':results}
+          pathlib.Path('research/nucleus-evidence/flash-bvar-ablation.json').write_text(json.dumps(out,indent=2))
+          normals=[r for r in results if r['mode']=='interned']
+          assert all((r['rc']==0) if r['kind']=='good' else (r['rc']!=0) for r in normals),'baseline drifted'
+          assert not any(r['kind']=='bad' and r['rc']==0 for r in results),'bad accepted under ablation'
+          print('FLASH_BVAR_CAUSAL_ABLATION_COMPLETE__REFERENCE_ONLY')
+          PY
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: nucleus-flash-semantic-separator-${{ github.sha }}
-          path: research/nucleus-evidence/flash-semantic-separator.json
+          path: |
+            research/nucleus-evidence/flash-semantic-separator.json
+            research/nucleus-evidence/flash-bvar-ablation.json
           if-no-files-found: warn
