@@ -1922,7 +1922,13 @@ fn certified_same_source_support(
     #[cfg(feature = "diagnostics")]
     let trace_this = std::env::var("NUCLEUS_TRACE_SOURCE_EXPR")
         .ok().and_then(|x| x.parse::<u64>().ok())
-        .is_some_and(|id| id == left.expr.0 && left.expr == right.expr);
+        .is_some_and(|id| id == left.expr.0 && left.expr == right.expr && depth >= 8);
+    #[cfg(feature = "diagnostics")]
+    let trace_this = if trace_this {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static SAMPLES: AtomicUsize = AtomicUsize::new(0);
+        SAMPLES.fetch_add(1, Ordering::Relaxed) < 40
+    } else { false };
     if budget < 64 || depth != context.len()
         || left.expr != right.expr || left.levels != right.levels
     {
