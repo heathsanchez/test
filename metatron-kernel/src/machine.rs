@@ -1643,6 +1643,15 @@ impl<'a> Machine<'a> {
         });
         let major_cap = if bool_rules && nat_beq_major {
             256
+        } else if bool_rules
+            && std::env::var_os("NUCLEUS_EXPERIMENTAL_BOOL_MAJOR_EXPANSION").is_some()
+        {
+            // The exact Magma witness contains a certified Bool.rec whose
+            // major reduces, under Full, to an exported Bool constructor.
+            // Only the exposure budget changes. We still require the
+            // *actual* registered constructor and fully checked rule arity;
+            // no branch-shape/output-based constructor guessing is allowed.
+            512
         } else if certified_nat_rec {
             128
         } else {
