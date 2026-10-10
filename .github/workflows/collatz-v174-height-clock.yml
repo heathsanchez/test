@@ -1,0 +1,162 @@
+name: Collatz V174 source-height versus clock elimination
+on:
+  push:
+    branches: [collatz-v174-unseeded-source-height-probe]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-source-vs-clock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test fixed-H height increase against fixed-height clock increase at exact source scale
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v174_source_clock_height_audit | tee evidence/v174-console.json
+          python3 - <<'PY'
+          import json, pathlib, hashlib, subprocess
+          p=pathlib.Path('evidence/v174-summary.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V174_ORIGINAL_SOURCE_HEIGHT_VS_CLOCK_ELIMINATION'
+          assert d['arithmetic_system']=='TRUE_SHORTCUT_3N_PLUS_1'
+          assert d['number_of_finite_sources_tested_up_to']==2**25-1
+          assert len(d['finite_cases'])==6
+          assert d['finite_cases'][2]['k']==24 and d['finite_cases'][2]['H']==192
+          assert d['finite_cases'][4]['k']==25 and d['finite_cases'][4]['H']==200
+          assert d['finite_cases'][5]['k']==25 and d['finite_cases'][5]['H']==240
+          assert len(d['initial_40_old_source_ids'])==40
+          assert len(d['next_40_source_ids'])==40
+          assert len(d['independent_residual_component_replays'])==6
+          assert all(x['components_reconstructed_independently']
+                     for x in d['independent_residual_component_replays'])
+          assert len(d['synthetic_g7_s5_new_96_clock_separate_basins'])==2
+          assert all(x['false_terminal_admission_prevented'] and
+                     x['unseeded_components']>0
+                     for x in d['synthetic_g7_s5_new_96_clock_separate_basins'])
+          assert d['no_all_scale_mass_inequality_established']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          program=pathlib.Path('research/collatz_v174_component_identity.cpp').read_bytes()
+          assert hashlib.sha256(program).hexdigest()==d['source_cpp_sha256']
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V174_EXACT_SEAL',
+            'source_commit':head,
+            'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'cpp_sha256':d['source_cpp_sha256'],
+            'status':'WARRANTED_BOUNDED_HEIGHT_VS_CLOCK_SOURCE_COMPONENT_DISSECTION',
+            'full_original_sources_up_to_2_pow_25':True,
+            'all_scale_no_giant_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v174-exact-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v174-exact-height-clock
+          path: evidence/v174-*.json
+          if-no-files-found: error
+
+  formal-monotonicity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check canonical source/clock monotonicity and seed preservation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/lean-version.txt
+          lake build CollatzFinal > evidence/base.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure UniversalFutureClassFrontier RetroactiveFutureQuotient TimedOrdinaryHitGiantBridge IdealFiniteClockGraphElimination DominantClockSourceGraph; do
+            lake env lean -DautoImplicit=false \
+              -o ".lake/build/lib/lean/Collatz/$module.olean" \
+              "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/HeightClockEliminationMonotonicity.lean 2>&1 | tee evidence/v174-lean.log
+          python3 - <<'PY'
+          import json, pathlib, hashlib, subprocess, re
+          log=pathlib.Path('evidence/v174-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-12000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          for name in [
+            'v174_canonical_path_monotone',
+            'v174_terminal_seed_monotone',
+            'v174_unseeded_only_persists_backward',
+            'v174_bad_source_excluded_at_every_finite_budget'
+          ]:
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V174_FORMAL_SEAL',
+            'source_commit':head,
+            'status':'WARRANTED_FORMAL_HEIGHT_CLOCK_FINITE_COMPONENT_MONOTONICITY',
+            'axioms':ax,'lean_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'does_not_prove_every_component_closes':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v174-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v174-formal-height-clock
+          path: evidence/v174-*
+          if-no-files-found: error
+
+  independent-final-seal:
+    needs: [exact-source-vs-clock,formal-monotonicity]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v174-exact-height-clock
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v174-formal-height-clock
+          path: evidence/formal
+      - name: Check same-head source and finite-vs-universal boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          a=json.loads(pathlib.Path('evidence/exact/v174-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v174-formal-seal.json').read_text())
+          p=pathlib.Path('evidence/exact/v174-summary.json')
+          d=json.loads(p.read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert hashlib.sha256(p.read_bytes()).hexdigest()==a['result_sha256']
+          assert d['global_collatz']=='UNKNOWN' and not d['qed']
+          assert b['does_not_prove_every_component_closes']
+          assert not a['all_scale_no_giant_proved']
+          report={'schema':'COLLATZ_V174_FINAL','source_commit':head,
+            'status':'WARRANTED_FORMAL_HEIGHT_CLOCK_MONOTONICITY_AND_BOUNDED_COMPONENT_CAUSAL_ABLATION',
+            'finite_mechanism':'Same-H enlarged source population vs same-cutoff longer clock separately tested',
+            'negative_controls':'G7 and S5 separate live basins preserved',
+            'all_scale_no_giant':'UNKNOWN',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v174-final.json').write_text(
+            json.dumps(report,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v174-final
+          path: evidence/v174-final.json
+          if-no-files-found: error
