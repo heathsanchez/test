@@ -49,8 +49,7 @@ GLOBAL COLLATZ UNKNOWN — NO QED. V134 controller unchanged.
 theorem v149_even_inverse_shortcut (p : Nat) :
     shortcut (2*p) = p := by
   have hpar : (2*p)%2=0 := by omega
-  simp [shortcut,hpar]
-  omega
+  simp [shortcut,hpar] <;> omega
 
 /-- Exact odd reverse step: 3*q+1=2*p forces q to be odd and
     then computes the genuine shortcut endpoint p. -/
@@ -192,8 +191,11 @@ theorem v149_source21_to_root3_constructive :
     .odd h5 (by decide)
   let w : V149InverseCandidate 8 :=
     ⟨3,2,h3,(by decide)⟩
+  have hc : v149SourceAdmissible 21 8 w := by
+    dsimp [v149SourceAdmissible, w]
+    decide
   exact v149_admissible_inverse_constructs_lower_merge
-    21 3 8 hend w (by decide)
+    21 3 8 hend w hc
 
 /-- The ascending-sign V106 real source9 episode is not discarded:
     T^6(9)=13, and an independently certified four-step inverse
