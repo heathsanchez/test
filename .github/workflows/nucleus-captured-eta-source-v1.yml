@@ -275,6 +275,40 @@ jobs:
           pathlib.Path('research/nucleus-evidence/wellfounded-source.json').write_text(
               json.dumps(results,indent=2))
           PY
+      - name: Ground dependent expected lambda domains in the immutable source
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          cases=[
+              ('perf/magma-list-deep-n21',[11080,11148,11147,11141,11149]),
+              ('perf/magma-list-deep-n36',[11079,11147,11146,11140,11148]),
+              ('init-prelude',[7441,7585,7584,7575]),
+              ('perf/grind-ring-5',[7107,7251,7250,7241]),
+          ]
+          for case,ids in cases:
+              expr={};names={0:''}
+              for line in (pathlib.Path('/tmp/tests/good')/(case+'.ndjson')).read_bytes().splitlines():
+                  j=json.loads(line)
+                  if 'ie' in j:expr[j['ie']]=j
+                  if 'in' in j:
+                      y=j.get('str',j.get('num'))
+                      names[j['in']]=names.get(y['pre'],'')+('.' if names.get(y['pre']) else '')+str(y.get('str',y.get('i')))
+              def walk(e,depth=0):
+                  v=expr.get(e)
+                  if v is None:return None
+                  if depth>=3:return v
+                  for k in ('forallE','lam','app','proj'):
+                      if k not in v:continue
+                      d=v[k]
+                      return {'node':v,'children':{kk:walk(vv,depth+1)
+                          for kk,vv in d.items()
+                          if isinstance(vv,int) and kk in ('type','body','fn','arg','struct','structure')}}
+                  return v
+              result={'case':case,'names':len(names),
+                      'expected_lambdas':{str(e):walk(e) for e in ids}}
+              print('NUCLEUS_EXPECTED_SOURCE='+json.dumps(result,separators=(',',':'))[:18500],flush=True)
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: nucleus-captured-eta-source-${{ github.sha }}
