@@ -236,8 +236,47 @@ jobs:
                            if d.get('name') in nids],
               },separators=(',',':'))[:14500],flush=True)
           PY
+      - name: Audit WellFounded inductive source and exact recursor metadata
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          results=[]
+          for case in ['perf/magma-list-deep-n21','perf/magma-list-deep-n36']:
+              data=(pathlib.Path('/tmp/tests/good')/(case+'.ndjson')).read_bytes()
+              names={0:''};expr={};blocks=[]
+              for line in data.splitlines():
+                  z=json.loads(line)
+                  if 'in' in z:
+                      y=z.get('str',z.get('num'))
+                      names[z['in']]=names.get(y['pre'],'')+(
+                          '.' if names.get(y['pre']) else '')+str(y.get('str',y.get('i')))
+                  if 'ie' in z:expr[z['ie']]=z
+                  if 'inductive' in z:blocks.append(z['inductive'])
+              matches=[]
+              for block in blocks:
+                  if not any(names.get(i['name'])=='WellFounded' for i in block['types']):
+                      continue
+                  def ann(item):
+                      return dict(item=item,name=names.get(item['name']),
+                                  type_expr=expr.get(item.get('type')))
+                  matches.append({
+                      'types':[ann(x) for x in block['types']],
+                      'constructors':[ann(x) for x in block['ctors']],
+                      'recursors':[
+                          dict(ann(x),rules=[dict(q,constructor=names.get(q['ctor']),
+                               rhs_expr=expr.get(q['rhs'])) for q in x['rules']])
+                          for x in block['recs']],
+                  })
+              rec={'case':case,'wellfounded':matches,'count':len(matches)}
+              print('NUCLEUS_WELLFOUNDED_SOURCE='+json.dumps(rec,separators=(',',':'))[:22000],flush=True)
+              assert len(matches)==1
+              results.append(rec)
+          pathlib.Path('research/nucleus-evidence/wellfounded-source.json').write_text(
+              json.dumps(results,indent=2))
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: nucleus-captured-eta-source-${{ github.sha }}
-          path: research/nucleus-evidence/captured-eta-source.json
+          path: research/nucleus-evidence/
           if-no-files-found: error
