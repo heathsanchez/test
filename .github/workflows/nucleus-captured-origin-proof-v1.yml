@@ -163,6 +163,9 @@ jobs:
                                  'major_obligation=' in s
                                  for s in row['outer_replays']),(
                           'transitive source-origin join was not exercised',row)
+                  if mode=='origin_replay' and name in seven[:2]:
+                      assert any('NUCLEUS_CERTIFIED_FIELD:' in line for line in logs), (
+                          'target field-selection trace was not exercised', name)
                   rows.append(row)
           source=(root/'good/init-prelude.ndjson').read_bytes()
           forged=false_index(extract(source))
