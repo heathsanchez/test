@@ -807,6 +807,37 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    /// A reusable source-scoped conversion warrant. Both terms must first
+    /// typecheck in the SAME real context; equality of their types is not
+    /// confused with equality of their values. No unchecked strengthening.
+    pub(crate) fn checked_source_conversion(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> Judgment<()> {
+        let mut left_fuel=budget.min(4096);
+        let Some(left_type)=self.infer_exact_closure_in_context(
+            left,context,&mut left_fuel,0,
+        ) else { return Judgment::unknown("source-left-type-unavailable") };
+        let mut right_fuel=budget.min(4096);
+        let Some(right_type)=self.infer_exact_closure_in_context(
+            right,context,&mut right_fuel,0,
+        ) else { return Judgment::unknown("source-right-type-unavailable") };
+        let types=crate::convert::convert_with_policy_in_context(
+            self,&left_type,&right_type,budget.min(2048),
+            crate::convert::DeltaPolicy::PreferredOnly,
+            context.len(),context,
+        );
+        if !types.is_proven() { return types }
+        crate::convert::convert_with_policy_in_context(
+            self,&TypeValue::Term(left.clone()),&TypeValue::Term(right.clone()),
+            budget.min(4096),crate::convert::DeltaPolicy::PreferredOnly,
+            context.len(),context,
+        )
+    }
+
     pub fn convert(&self, left: &TypeValue, right: &TypeValue, budget: usize) -> Judgment<()> {
         crate::convert::convert_with_policy_at_depth(
             self,
