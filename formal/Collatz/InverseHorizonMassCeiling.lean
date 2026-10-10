@@ -86,6 +86,7 @@ theorem v163_scaled_terminal_path_budget (t : Nat) :
         3^(t+1)*v152FibonacciPathBudget (t+1) =
             3*(3^t*v152FibonacciPathBudget t) +
               6*(3^t*(v152FibonacciBounds (t+1)).2) := by
+                rw [show (6:Nat)=3*2 by decide]
                 simp [v152FibonacciPathBudget,Nat.pow_succ,
                   Nat.mul_add,Nat.mul_assoc,Nat.mul_comm,
                   Nat.mul_left_comm]
@@ -156,7 +157,10 @@ theorem v163_terminal_by_horizon_iff_exact_clock (n t : Nat) :
     have ht : j+(t-j)=t := by omega
     have hF := v163_terminal_stays_terminal
       (iter shortcut j n) (t-j) hTerm
-    simpa only [← ht,iter_add] using hF
+    have hCompose := iter_add shortcut j (t-j) n
+    rw [ht] at hCompose
+    rw [hCompose]
+    exact hF
   · intro h
     exact ⟨t,by omega,h⟩
 
@@ -183,11 +187,8 @@ theorem v163_exact_reverse_list_complete_and_sound (t n : Nat) :
 theorem v163_exact_reverse_list_length_ceiling (t : Nat) :
     (v163ExactTerminalReverseList t).length <=
       2*(v152FibonacciBounds t).2 := by
-  change
-    (v152InverseSources t 1).length+
-      (v152InverseSources t 2).length <=
-        2*(v152FibonacciBounds t).2
-  rw [v152_inverse_sources_length t 1,
+  unfold v163ExactTerminalReverseList
+  rw [List.length_append, v152_inverse_sources_length t 1,
     v152_inverse_sources_length t 2]
   have h1 := v152_inverse_words_global_fibonacci t 1
   have h2 := v152_inverse_words_global_fibonacci t 2
@@ -214,6 +215,7 @@ theorem v163_exact_depth_scaled_ceiling (t : Nat) :
             3^(t+1)*(2*(v152FibonacciBounds (t+1)).2) :=
           Nat.mul_le_mul_left _ hlen
         _ = 6*(3^t*(v152FibonacciBounds (t+1)).2) := by
+          rw [show (6:Nat)=3*2 by decide]
           simp [Nat.pow_succ,Nat.mul_assoc,Nat.mul_comm,
             Nat.mul_left_comm]
         _ <= 6*(2*5^t) := Nat.mul_le_mul_left 6 hb
