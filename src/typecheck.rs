@@ -2323,6 +2323,47 @@ impl<'a> TypeChecker<'a> {
     /// Replay occurs under THAT context, not a synthetic empty caller scope.
     /// No derived result is installed in the production checker.
     #[cfg(feature = "diagnostics")]
+    fn diagnostic_one_source_lambda_body(
+        &self,
+        lambda: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let Some(Expr::Lam { domain, body })=self.expressions.get(lambda.expr)
+        else {return "not-source-lambda".into()};
+        let checked_domain=lambda.sibling(*domain,lambda.env.clone());
+        let mut remaining=budget.min(512);
+        let Some(dty)=self.infer_exact_closure_in_context(
+            &checked_domain,context,&mut remaining,0,
+        ) else{return "lambda-source-domain-type-UNKNOWN".into()};
+        if !self.sort_level(
+            Judgment::proven(dty,"source-checked-captured-lambda"),
+            remaining.min(256),
+        ).is_proven(){return "lambda-source-domain-sort-UNKNOWN".into()}
+        let Some(fresh)=u64::try_from(context.len()).ok().map(FreeId)
+        else{return "lambda-source-binder-overflow".into()};
+        let mut extended=context.to_vec();
+        extended.push(TypeValue::Term(checked_domain.clone()));
+        let frame=lambda.env.extend_free(fresh);
+        self.retain_checked_elimination(
+            &frame,TypeValue::Term(checked_domain),&extended,
+        );
+        let body_source=lambda.sibling(*body,frame);
+        let exposed=self.machine().expose(
+            body_source.clone(),Transparency::Opaque,remaining.min(512),
+        );
+        let detail=match exposed.proven_value() {
+            Some(Value::Neutral(n)) =>
+                self.diagnostic_neutral_source_telescope_inner(
+                    n,&extended,remaining.min(512),false,
+                ),
+            other=>format!("source-body-not-neutral:{other:?}"),
+        };
+        format!("source-lambda-domain-formed:body={:?}:context={}:source-obligation={detail}",
+            body_source.expr,extended.len())
+    }
+
+    #[cfg(feature = "diagnostics")]
     fn diagnostic_lambda_source_premises(
         &self,
         lambda: &Closure,
@@ -2462,7 +2503,12 @@ impl<'a> TypeChecker<'a> {
                                 context.len(),context,
                             )
                         );
-                        format!("eta-source={:?}:source-type={source_ty:?}:source-vs-expected={relation:?}:remaining={budget}",
+                        let first_source_body = if source_ty.is_none() {
+                            self.diagnostic_one_source_lambda_body(
+                                &captured,context,remaining.min(512),
+                            )
+                        } else { "source-lambda-type-certified".into() };
+                        format!("eta-source={:?}:source-type={source_ty:?}:source-vs-expected={relation:?}:remaining={budget}:next={first_source_body}",
                             captured.expr)
                     } else {"eta-source-binding-unavailable".into()}
                 } else {"not-eta-source-shape".into()};
