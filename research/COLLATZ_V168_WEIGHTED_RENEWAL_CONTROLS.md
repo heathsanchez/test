@@ -83,3 +83,30 @@ So a sourcewise inequality sum_{T(n)=y} w(n) <= lambda*w(y) with lambda<=1 CANNO
 - Smallest experiment: add **exact height-boundary export and per-clock terminal-admission gain** to the V166 proof compiler, keeping original source, clock, and already-certified smaller-target lineage. Numerically examine the near-critical y=2 mod3 weighted reservoir, but promote only an exact all-height arithmetic inequality from true +1 integrality; run c=5 and c=7 controls. Deriving R_s(B)<=1/3 from mere class invariance is circular. The target must emerge from a separate source-height theorem.
 
 **NO QED. This checkpoint must not be read as a proof of a positive spectral gap.**
+
+
+## 7. V168B: exact infinite-source SINGLE fixed-block contraction, not QED
+
+[Source-pinned green V168B two-job qualification](https://github.com/heathsanchez/test/actions/runs/38085059622), exact head d1d159475c6e77b9e1a83026d36af434252f6908. Independently executed complete integer proof-audit source: [collatz_v168_rigorous_single_block_gain.py](https://github.com/heathsanchez/test/blob/d1d159475c6e77b9e1a83026d36af434252f6908/research/collatz_v168_rigorous_single_block_gain.py). The new result is an unconditional analytical inequality for ALL original positive natural sources but ONLY for clocks 40 and 60. It is NOT a uniform spectral gap, an all-H estimate, or a proof of full Collatz. It is not yet a Lean theorem.
+
+With S(H)=sum_{n>=1} U_H(n)/n^(3/2), where U_H(n) is exact *terminal*-timeout by real shortcut clock H, define X=2^18 and Q=10^12.
+
+A source-by-source EXACT computational audit for EVERY 1<=n<X finds:
+- U_40(n)=1 for 229,259 sources;
+- U_60(n)=1 for 164,657 sources;
+- 64,602 genuinely newly terminal-certified original sources at clocks 41..60 (not just an uncertified earlier-source merger).
+Use integer floor b_n=floor(Q/sqrt(n^3))=isqrt(floor(Q^2/n^3)), no floating arithmetic.
+
+Integer witnesses:
+- finite S(40) lower weight units: 125,286,327,534;
+- finite S(40) UPPER units: 125,286,556,793 (one Q^(-1) slack per timeout);
+- new genuine terminal gain LOWER units: 26,452,894,380.
+The entire *infinite* unexamined tail obeys sum_{n>=X}n^(-3/2)<=2/sqrt(X-1)<1/250 because X-1=262143>250000. Thus S(40)<129286556793/Q while S(40)-S(60)>=26452894380/Q.
+
+Consequently, with D=129286556793 and G=26452894380:
+  S(60)/S(40) <= 1-G/D = 102833662413/129286556793 < 4/5
+where the final comparison is exact integer cross-multiplication, and S(40)>0 from any surviving n<X.
+
+**The proof covers ALL n>=1 with exact tail control, but only one finite clock interval.** It exploits real terminal admissions plus an analytic summable weight, not V165's conservation. The same method could certify fixed-clock gains for other systems with multiple basins and cannot be iterated without an independently proved uniform clocked renewal theorem.
+
+**Promotion boundary:** WARRANTED_EXACT_CI_PLUS_ELEMENTARY_ANALYTIC_BOUND, NOT yet FORMAL_LEAN. Future work: strengthen to a true Collatz-specific *all-H*, source-height conditioned gain. Every fixed-H gain is compatible with a persistent bad class, so it cannot replace that missing theorem. See CI artifacts for the audit and seal.
