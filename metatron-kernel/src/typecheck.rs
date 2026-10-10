@@ -777,6 +777,36 @@ impl<'a> TypeChecker<'a> {
         )
     }
 
+    /// Proof-type formation through the exact captured closure. Unlike
+    /// checking bare ExprId against Sort 0, this preserves both its lexical
+    /// frame AND the universe-level substitution that produced the type.
+    /// It is valid only as a side-condition for ordinary proof irrelevance:
+    /// this judgment alone cannot identify any two proof terms.
+    pub(crate) fn checked_captured_prop_type_in_context(
+        &self,
+        proposition: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> Judgment<()> {
+        let mut remaining = budget.min(2048);
+        let Some(formation)=self.infer_exact_closure_in_context(
+            proposition, context, &mut remaining, 0,
+        ) else {
+            return Judgment::unknown("captured-proposition-formation-obligation");
+        };
+        match self.sort_level(
+            Judgment::proven(formation, "exact-captured-proposition-formation"),
+            remaining.min(1024),
+        ) {
+            Judgment::Proven {value:LevelTerm::Zero,..} =>
+                Judgment::proven((), "checked-captured-proposition-Sort0"),
+            Judgment::Proven {..} =>
+                Judgment::refuted("captured-proposition-sort-not-Prop"),
+            Judgment::Refuted {obstruction} => Judgment::Refuted {obstruction},
+            Judgment::Unknown {residual} => Judgment::Unknown {residual},
+        }
+    }
+
     pub fn convert(&self, left: &TypeValue, right: &TypeValue, budget: usize) -> Judgment<()> {
         crate::convert::convert_with_policy_at_depth(
             self,
