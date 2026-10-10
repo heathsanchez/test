@@ -35,7 +35,7 @@ theorem v164_zero_orbit (k : Nat) :
   induction k with
   | zero => rfl
   | succ k ih =>
-      rw [iter_succ_last,ih]
+      rw [v162_iter_succ_last,ih]
       decide
 
 /-- A REAL power target on a parity-cylinder affine chart
