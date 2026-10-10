@@ -2360,8 +2360,18 @@ impl<'a> TypeChecker<'a> {
             let Some(actual_type) = probe.infer_exact_closure_in_context(
                 actual_arg, context, &mut remaining, 0,
             ) else {
+                let origin = match probe.expressions.get(actual_arg.expr) {
+                    Some(Expr::BVar(index)) => format!(
+                        "source_bound={index}:actual_binding={:?}:checked_binding={:?}",
+                        actual_arg.env.lookup_with_node_id(*index),
+                        probe.checked_type_of_bound_source(
+                            &actual_arg.env, *index, context,
+                        ),
+                    ),
+                    other => format!("source_shape={other:?}"),
+                };
                 return format!(
-                    "first-untyped-argument:argument={position}:closure={actual_arg:?}:expected_domain={domain:?}:context_depth={}",
+                    "first-untyped-argument:argument={position}:closure={actual_arg:?}:expected_domain={domain:?}:context_depth={}:origin={origin}",
                     context.len(),
                 );
             };
