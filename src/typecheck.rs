@@ -349,11 +349,16 @@ impl<'a> TypeChecker<'a> {
                             &inferred_body, binder, &argument, remaining,
                         )
                     }
-                    PiBody::Closure(body) => Some(TypeValue::Term(
-                        Closure::with_levels(
-                            body.expr, body.env.extend(argument), body.levels,
-                        ),
-                    )),
+                    PiBody::Closure(body) => {
+                        let extended=body.env.extend(argument);
+                        // The argument type and dependent Pi domain were
+                        // independently established above. Retain that exact
+                        // substitution as a typed environment-node warrant.
+                        self.retain_checked_binding(&extended,domain,context);
+                        Some(TypeValue::Term(Closure::with_levels(
+                            body.expr,extended,body.levels,
+                        )))
+                    },
                 }
             }
             Expr::NatLit(_) => self.infer_in(
@@ -383,9 +388,13 @@ impl<'a> TypeChecker<'a> {
                 ).is_proven() {
                     return None;
                 }
-                let body = term.sibling(*body, term.env.extend(value));
+                let extended=term.env.extend(value);
+                self.retain_checked_binding(
+                    &extended,TypeValue::Term(declared),context,
+                );
+                let body=term.sibling(*body,extended);
                 self.infer_exact_closure_in_context(
-                    &body, context, remaining, depth + 1,
+                    &body,context,remaining,depth+1,
                 )
             }
             Expr::Pi { domain, body } | Expr::Lam { domain, body } => {
@@ -403,9 +412,13 @@ impl<'a> TypeChecker<'a> {
                 let binder = FreeId(u64::try_from(context.len()).ok()?);
                 let mut extended = context.to_vec();
                 extended.push(TypeValue::Term(domain.clone()));
-                let body = term.sibling(*body, term.env.extend_free(binder));
-                let body_ty = self.infer_exact_closure_in_context(
-                    &body, &extended, remaining, depth + 1,
+                let body_frame=term.env.extend_free(binder);
+                self.retain_checked_binding(
+                    &body_frame,TypeValue::Term(domain.clone()),&extended,
+                );
+                let body=term.sibling(*body,body_frame);
+                let body_ty=self.infer_exact_closure_in_context(
+                    &body,&extended,remaining,depth+1,
                 )?;
                 if is_pi {
                     let body_sort = self.sort_level(
@@ -973,11 +986,16 @@ impl<'a> TypeChecker<'a> {
                                 };
                                 type_value
                             }
-                            PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
-                                body.expr,
-                                body.env.extend(self.closure(*arg, frame.clone())),
-                                body.levels,
-                            )),
+                            PiBody::Closure(body) => {
+                                let actual=self.closure(*arg,frame.clone());
+                                let typed_frame=body.env.extend(actual);
+                                self.retain_checked_binding(
+                                    &typed_frame,domain.clone(),context,
+                                );
+                                TypeValue::Term(Closure::with_levels(
+                                    body.expr,typed_frame,body.levels,
+                                ))
+                            },
                         };
                         Judgment::proven(result, "application-type-instantiation")
                     }
@@ -2961,6 +2979,45 @@ mod checked_binding_lineage_tests {
         );
     }
 
+
+    #[test]
+    #[ignore="explicit checked source substitution reclosure A/B"]
+    fn checked_pi_elimination_registers_its_actual_typed_substitution(){
+        let mut expressions=IdTable::default();
+        let mut levels=IdTable::default();
+        levels.insert(LevelId(0),Level::Zero).unwrap();
+        levels.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
+        for (id,expr) in [
+            (0,Expr::Sort(LevelId(1))),
+            (1,Expr::Const{name:NameId(1),levels:vec![]}),
+            (2,Expr::Pi{domain:ExprId(1),body:ExprId(1)}),
+            (3,Expr::Const{name:NameId(2),levels:vec![]}),
+            (4,Expr::Const{name:NameId(3),levels:vec![]}),
+            (5,Expr::App{fun:ExprId(3),arg:ExprId(4)}),
+            (6,Expr::Sort(LevelId(0))),
+            (7,Expr::App{fun:ExprId(3),arg:ExprId(6)}),
+        ]{expressions.insert(ExprId(id),expr).unwrap();}
+        let env=Environment::empty()
+            .extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap()
+            .extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![],ExprId(2))).unwrap()
+            .extend(NameId(3),crate::environment::ConstantDecl::axiom(vec![],ExprId(1))).unwrap();
+        let checker=TypeChecker::new(&expressions,&levels,&env);
+        let mut budget=4096;
+        let proven=checker.infer_exact_closure_in_context(
+            &Closure::new(ExprId(5),EnvFrame::empty()),&[],&mut budget,0,
+        );
+        let Some(TypeValue::Term(result))=proven else{
+            panic!("checked application must infer a result type");
+        };
+        assert!(checker.checked_type_of_bound_source(&result.env,0,&[]).is_some(),
+            "a fully checked Pi elimination must produce a retained typed substitution witness");
+
+        let mut bad_budget=4096;
+        let invalid=checker.infer_exact_closure_in_context(
+            &Closure::new(ExprId(7),EnvFrame::empty()),&[],&mut bad_budget,0,
+        );
+        assert!(invalid.is_none(),"an ill-typed source argument cannot acquire a new warrant");
+    }
     #[test]
     #[ignore="explicit source-scoped binding authority A/B only"]
     fn a_different_typing_prefix_is_a_protected_future_separator(){
