@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -104,6 +104,10 @@ jobs:
                   if name=='init-prelude' and mode=='origin_replay':
                       assert row['origin_replay_count']>0 and row['outer_replays'],(
                           'missing complete origin or outer telescope witness',row)
+                  if mode=='origin_replay' and name in seven[:4]:
+                      assert any('source-context=7:opened-context=8:' in s
+                                 for s in row['outer_replays']),(
+                          'captured source binder scope was not reconstructed',row)
                   rows.append(row)
           source=(root/'good/init-prelude.ndjson').read_bytes()
           forged=false_index(extract(source))
