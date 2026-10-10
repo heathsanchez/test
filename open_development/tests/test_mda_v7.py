@@ -114,6 +114,11 @@ class MDASevenTests(unittest.TestCase):
             "protected_after": adapter.assess(virtual, self.obligation(STAGES[1], 0)).verdict,
             "child_after": adapter.assess(virtual, self.obligation(third, 1)).verdict,
             "shapes_after": adapter._programs(virtual),
+            "third_after_residual": adapter.assess(virtual, self.obligation(third, 1)).residual,
+            "third_after_certificate": adapter.assess(virtual, self.obligation(third, 1)).certificate,
+            "executed": adapter.execute(virtual, next(reversed(virtual["capabilities"])),
+                                         *adapter._problem(self.obligation(third, 1)), []),
+            "child_record": virtual["capabilities"][next(reversed(virtual["capabilities"]))],
         }, flush=True)
         acquire = dev.run_minimal(self.obligation(third, 1),
                                   protected=(self.obligation(STAGES[1], 0),))
