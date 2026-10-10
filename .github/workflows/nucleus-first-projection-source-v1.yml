@@ -1,0 +1,104 @@
+name: Nucleus first projection Nat equality source census
+
+on:
+  push:
+    branches: [nucleus-minimal-typed-obligation-v1]
+    paths:
+      - ".github/workflows/nucleus-first-projection-source-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      ARENA_ARTIFACT: "11272848230"
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned exact exports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests research/nucleus-evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Resolve authoritative names, types, projections and subterm roots
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,hashlib,pathlib
+          out=[]
+          for name,root,root_arg in [
+              ('perf/magma-list-pair-n7',3755,446),
+              ('perf/magma-list-pair-n21',3752,442)
+          ]:
+              b=pathlib.Path('/tmp/arena-tests/good/'+name+'.ndjson').read_bytes()
+              names={0:''};expr={};level={};decl={};proj=[]
+              for raw in b.splitlines():
+                  j=json.loads(raw)
+                  if 'in' in j:
+                      y=j.get('str',j.get('num'))
+                      prefix=names.get(y['pre'],'')
+                      names[j['in']]=prefix+('.' if prefix else '')+str(y.get('str',y.get('i')))
+                  if 'ie' in j:expr[j['ie']]=j
+                  if 'il' in j:level[j['il']]=j
+                  if 'def' in j or 'thm' in j or 'axiom' in j:
+                      y=j.get('def',j.get('thm',j.get('axiom')))
+                      decl[y['name']]=y
+                  if 'inductive' in j:
+                      proj.append(j['inductive'])
+              target=[root,root_arg,1,6,11,62,70]
+              visited=set();pending=[(root,0)]
+              while pending:
+                  id,depth=pending.pop()
+                  if id in visited or depth>10 or len(visited)>200:continue
+                  visited.add(id)
+                  j=expr.get(id,{})
+                  for tag in ('app','lam','forallE','letE','proj'):
+                      if tag in j:
+                          for k in ('fn','arg','body','type','struct','value'):
+                              q=j[tag].get(k)
+                              if isinstance(q,int) and q in expr:pending.append((q,depth+1))
+              names_of_interest={str(i):names.get(i) for i in [62,70,69,71,72,73,74,75,33,88]}
+              source_nodes={str(i):expr.get(i) for i in sorted(set(target)|visited)}
+              definition_sample=[]
+              for id in sorted(decl):
+                  if id in [62,70,69,71,72,73,74,75,33,88]:
+                      definition_sample.append({
+                          'name':names.get(id),'source':decl[id],
+                          'type_expr':expr.get(decl[id].get('type')),
+                          'value_expr':expr.get(decl[id].get('value')),
+                      })
+              type_blocks=[{
+                 'types':j['types'],'ctors':j['ctors'],'recs':j['recs'],
+              }for j in proj if any(q['name'] in [62,70] for q in j.get('types',[]))]
+              record={
+                  'name':name,'sha256':hashlib.sha256(b).hexdigest(),
+                  'names':names_of_interest,'source_roots':source_nodes,
+                  'definitions':definition_sample,'inductives':type_blocks,
+              }
+              out.append(record)
+              print('NUCLEUS_FIRST_PROJECTION_SOURCE='+json.dumps({
+                  'case':name,'sha256':record['sha256'],'names':names_of_interest,
+                  'targets':{str(i):expr.get(i) for i in target},
+                  'definitions':definition_sample,
+                  'inductives':type_blocks,
+                  'source_dag_sample':{str(i):expr[i] for i in sorted(visited)[:75]},
+              },separators=(',',':'))[:16000],flush=True)
+          pathlib.Path('research/nucleus-evidence/first-projection-source.json').write_text(
+              json.dumps({'source_commit':os.environ['GITHUB_SHA'],
+              'arena':os.environ['ARENA_SHA'],'rows':out},indent=2))
+          print('NUCLEUS_FIRST_PROJECTION_SOURCE_CENSUS_DONE')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-first-projection-source-${{ github.sha }}
+          path: research/nucleus-evidence/first-projection-source.json
+          if-no-files-found: warn
