@@ -205,12 +205,12 @@ jobs:
           python3 - <<'PY'
           import json,pathlib
           fixtures=[
-            ('init-prelude',[1014,5,1899],[142,668,26,656,952]),
-            ('perf/grind-ring-5',[532,2,2068],[98,502,160,490,901]),
-            ('perf/magma-list-pair-n7',[744,1,552],[177,160,75,147,1010]),
-            ('perf/magma-list-pair-n21',[740,1,548],[177,160,75,147,1010]),
-            ('perf/magma-list-deep-n21',[662,1],[138,287,74]),
-            ('perf/magma-list-deep-n36',[661,1],[138,287,74]),
+            ('init-prelude',[1014,1013,5,1899],[5,142,143,668,26,656,857,952]),
+            ('perf/grind-ring-5',[532,531,2,2068],[24,63,98,99,502,160,490,901]),
+            ('perf/magma-list-pair-n7',[744,743,1,552],[65,75,147,160,177,180,1010]),
+            ('perf/magma-list-pair-n21',[740,739,1,548],[65,75,147,160,177,180,1010]),
+            ('perf/magma-list-deep-n21',[662,661,1],[65,138,139,287,74]),
+            ('perf/magma-list-deep-n36',[661,660,1],[65,138,139,287,74]),
           ]
           for case,eids,nids in fixtures:
               expr={};names={0:''};decls=[]
