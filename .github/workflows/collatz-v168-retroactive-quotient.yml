@@ -1,0 +1,188 @@
+name: Collatz V168 retroactive future-quotient certificates
+on:
+  push:
+    branches: [collatz-v168-retroactive-future-quotient]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-adaptive-quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently replay original-source future graph receipts up to 2^24
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v168_quotient_audit | tee evidence/v168-stdout.json
+          python3 - <<'PY'
+          import json, pathlib, hashlib, subprocess
+          p=pathlib.Path("evidence/v168-summary.json")
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V168_UNION_FIRST_ADAPTIVE_FUTURE_CLASS_AUDIT'
+          assert d['highest_true_tested_positive_source']==2**24-1
+          assert (d['true_k20_initial_unknown'],d['true_k20_initial_component_count'])==(365,75)
+          assert (d['true_k24_initial_unknown'],d['true_k24_initial_component_count'])==(4815,649)
+          assert d['true_k24_final_unknown']==0
+          assert d['all_tested_true_populations_finitely_certified']
+          assert d['true_k24_additional_merge_certificates']<=649
+          assert d['true_k24_additional_source_clock_steps']<50000
+          assert d['synthetic_G7_controls'][-1]['final_unresolved_sources']>800000
+          assert d['initial_mass_ratio_k20_to_k22']>1
+          assert len(d['independent_receipt_replays'])==4
+          assert all(x['two_real_clocks_replayed'] and x['source_zero_absent']
+                     and x['synthetic_negative_preserved']
+                     for x in d['independent_receipt_replays'])
+          assert d['bounded_timeout_is_NOT_a_nonconvergence_proof']
+          assert not d['V151_sparse_exceptional_mass_theorem_proved']
+          assert not d['global_all_positive_source_closure_proved']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          cpp=pathlib.Path('research/collatz_v168_retrospective_quotient.cpp').read_bytes()
+          assert d['program_sha256']==hashlib.sha256(cpp).hexdigest()
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V168_EXACT_RETROACTIVE_SEAL',
+            'source_commit':sha,'source_cpp_sha256':hashlib.sha256(cpp).hexdigest(),
+            'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'status':'WARRANTED_BOUNDED_ACTUAL_TWO_CLOCK_RETROACTIVE_CLASS_CLOSURE',
+            'maximum_finite_source':2**24-1,
+            'synthetic_G7_real_cycle_remains_uncertified':True,
+            'universality_unproved':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v168-exact-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v168-exact-quotient
+          path: evidence/
+          if-no-files-found: error
+
+  formal-retroactive-soundness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check order-independent two-clock proof paths and retroactive terminal propagation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier; do
+            lake env lean -DautoImplicit=false \
+              -o ".lake/build/lib/lean/Collatz/$module.olean" \
+              "formal/Collatz/$module.lean" \
+              > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/RetroactiveFutureQuotient.lean 2>&1 | tee evidence/v168-lean.log
+          python3 - <<'PY'
+          import re, pathlib, hashlib, subprocess, json
+          log=pathlib.Path('evidence/v168-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-12000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=[
+            'v168_path_sound',
+            'v168_retroactive_terminal_reuse',
+            'v168_every_ledger_closure_is_genuine',
+            'v168_finite_certified_population',
+            'v168_ledger_path_monotone',
+            'v168_bad_source_excludes_terminal_component',
+            'v168_ledger_path_to_one_closes'
+          ]
+          for t in targets:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V168_FORMAL_RETROACTIVE_SOUNDNESS',
+            'source_commit':sha,'axioms':ax,
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'status':'WARRANTED_FORMAL_TWO_CLOCK_LEDGER_RETROACTIVE_CERTIFICATE_PROPAGATION',
+            'individual_finite_population_leanscripts_reified':False,
+            'missing_all_scale_component_mass_bound':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v168-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v168-formal-compiler
+          path: evidence/
+          if-no-files-found: error
+
+  independent-final-seal:
+    needs: [exact-adaptive-quotient,formal-retroactive-soundness]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v168-exact-quotient
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v168-formal-compiler
+          path: evidence/formal
+      - name: Reconcile exact source, independently replayed bounded ledgers, and non-QED scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, hashlib, subprocess
+          ea=json.loads(pathlib.Path('evidence/exact/v168-exact-seal.json').read_text())
+          fo=json.loads(pathlib.Path('evidence/formal/v168-formal-seal.json').read_text())
+          path=pathlib.Path('evidence/exact/v168-summary.json')
+          audit=json.loads(path.read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert ea['source_commit']==fo['source_commit']==sha
+          assert ea['source_cpp_sha256']==hashlib.sha256(
+            pathlib.Path('research/collatz_v168_retrospective_quotient.cpp').read_bytes()).hexdigest()
+          assert ea['result_sha256']==hashlib.sha256(path.read_bytes()).hexdigest()
+          assert ea['synthetic_G7_real_cycle_remains_uncertified']
+          assert ea['universality_unproved']
+          assert fo['status']=='WARRANTED_FORMAL_TWO_CLOCK_LEDGER_RETROACTIVE_CERTIFICATE_PROPAGATION'
+          assert not fo['individual_finite_population_leanscripts_reified']
+          assert fo['missing_all_scale_component_mass_bound']
+          assert audit['highest_true_tested_positive_source']==2**24-1
+          assert audit['true_k24_final_unknown']==0
+          assert audit['true_k20_initial_component_count']==75
+          assert audit['true_k24_initial_component_count']==649
+          assert audit['synthetic_G7_controls'][-1]['final_unresolved_sources']>800000
+          assert ea['global_collatz']==fo['global_collatz']==audit['global_collatz']=='UNKNOWN'
+          assert ea['qed'] is fo['qed'] is audit['qed'] is False
+          seal={'schema':'COLLATZ_V168_FINAL',
+            'source_commit':sha,
+            'status':'WARRANTED_FORMAL_PROOF_REUSE_PLUS_BOUNDED_2_POW_24_RETROACTIVE_CLOSURE_NOT_QED',
+            'fully_certified_finite_population':2**24-1,
+            'proof_reuse_regime':'unresolved sources may coalesce before any member is known good; later one-member terminal evidence closes the component',
+            'initial_k24_unknown':audit['true_k24_initial_unknown'],
+            'k24_component_representatives':audit['true_k24_initial_component_count'],
+            'k24_extra_genuine_merges':audit['true_k24_additional_merge_certificates'],
+            'k24_extra_actual_source_clock_steps':audit['true_k24_additional_source_clock_steps'],
+            'k24_final_unknown':0,
+            'protected_control':'Synthetic G7 5-11-20-10 cycle remains in a distinct uncertified component',
+            'unproved':['All-source infinite-scale absence of persistent bad components',
+                       'Effective all-scale component-mass anti-concentration',
+                       'Local import of external predecessor density'],
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v168-final.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v168-final
+          path: evidence/v168-final.json
+          if-no-files-found: error
