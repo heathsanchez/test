@@ -92,7 +92,8 @@ jobs:
                  'v176_all_depths_ternary_sieve',
                  'v176_hidden_periodic_label_reconstructs_true',
                  'v176_all_positive_periodic_future_labels_constant',
-                 'v176_full_finite_audit_still_cannot_detect_two_classes']
+                 'v176_full_finite_audit_still_cannot_detect_two_classes',
+                 'v176_true_odd_affine_step_detects_hidden_defect']
           for n in names:
             assert 'CollatzFinal.SourceProduct.'+n in ax,n
           head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
