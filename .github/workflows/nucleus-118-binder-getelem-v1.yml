@@ -1,8 +1,8 @@
-name: Nucleus 118 binder and 4-field record qualification
+name: Nucleus MSI V1 owned-environment and shared-evaluator A/B qualification
 
 on:
   push:
-    branches: [nucleus-118-binder-getelem-v1]
+    branches: [nucleus-minimal-sufficient-execution-v1]
     paths:
       - ".github/workflows/nucleus-118-binder-getelem-v1.yml"
       - "metatron-kernel/**"
@@ -20,6 +20,8 @@ jobs:
       ARENA_ARTIFACT: "11272848230"
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -52,6 +54,63 @@ jobs:
           gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
           unzip -q /tmp/arena.zip -d /tmp/arena-artifact
           tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+
+      - name: Same-run A/B against immutable qualified source
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/nucleus-msi-baseline 46862af34af7d20c79b9eda68fc0a3a668463e68
+          CARGO_TARGET_DIR=/tmp/nucleus-msi-base-target cargo build --release --locked \
+            --manifest-path /tmp/nucleus-msi-baseline/metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-msi-base-target/release/metatron-kernel /tmp/nucleus-baseline-bin
+          python3 - <<'PY'
+          import json, pathlib, statistics, subprocess, tempfile, time
+          ROOT=pathlib.Path('/tmp/arena-tests')
+          OUT=pathlib.Path('metatron-kernel/evidence-out/final-qualification-v1/ab-perf.json')
+          CASES=[
+            ('good','perf/shared-subterm'),
+            ('good','perf/folded-constant-first'),
+            ('good','perf/folded-constant-last'),
+            ('good','perf/args-before-unfold'),
+            ('bad','bugs/nested-unused-param'),
+          ]
+          binaries=[('baseline','/tmp/nucleus-baseline-bin'),('candidate','/tmp/nucleus')]
+          cases=[]
+          for bucket,case in CASES:
+            filename=ROOT/bucket/(case+'.ndjson')
+            assert filename.exists(),filename
+            data=filename.read_bytes()
+            runs={}
+            for repetition in range(2):
+              for name,binary in binaries:
+                with tempfile.TemporaryDirectory() as d:
+                  meter=pathlib.Path(d)/'meter'
+                  start=time.monotonic()
+                  proc=subprocess.run(['/usr/bin/time','-f','%U %S %M','-o',str(meter),binary],
+                    input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=35)
+                  wall=time.monotonic()-start
+                  user,sys,rss=meter.read_text().strip().split()[:3]
+                runs.setdefault(name,[]).append(dict(rc=proc.returncode,wall=wall,
+                  cpu=float(user)+float(sys),rss_kb=int(rss)))
+            expected=0 if bucket=='good' else 1
+            for name in runs:
+              statuses={r['rc'] for r in runs[name]}
+              assert len(statuses)==1,(case,name,runs[name])
+            assert runs['baseline'][0]['rc']==runs['candidate'][0]['rc'],(case,runs)
+            assert runs['candidate'][0]['rc'] in (expected,2),(case,runs)
+            row=dict(bucket=bucket,case=case,runs=runs,
+              baseline_median_cpu=statistics.median(r['cpu'] for r in runs['baseline']),
+              candidate_median_cpu=statistics.median(r['cpu'] for r in runs['candidate']))
+            cases.append(row)
+            print('MSI_AB_CASE='+json.dumps({k:v for k,v in row.items() if k!='runs'}),flush=True)
+          OUT.write_text(json.dumps(dict(schema='nucleus-msi-ab-v1',
+            baseline='46862af34af7d20c79b9eda68fc0a3a668463e68',
+            candidate=__import__('os').environ['GITHUB_SHA'],
+            measurement='same-run Linux user+system CPU seconds, not Arena retired instructions',
+            cases=cases),indent=2,sort_keys=True)+'\n')
+          print('MSI_AB_SUMMARY='+json.dumps(dict(n=len(cases),same_verdict=True,
+            baseline_cpu_total=sum(c['baseline_median_cpu'] for c in cases),
+            candidate_cpu_total=sum(c['candidate_median_cpu'] for c in cases))),flush=True)
+          PY
 
       - name: Diagnose beta ladder and succ-sub against baseline reasons
         run: |
