@@ -72,4 +72,4 @@ def main():
     }
 
 if __name__=="__main__":
-    print(json.dumps(main,indent=2,sort_keys=True))
+    print(json.dumps(main(),indent=2,sort_keys=True))
