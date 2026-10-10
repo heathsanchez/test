@@ -93,6 +93,7 @@ jobs:
                   row={'case':name,'mode':mode,'rc':p.returncode,
                        'seconds':round(time.monotonic()-t,3),
                        'certified_iota_observations':sum('NUCLEUS_GENERIC_IOTA:' in s for s in logs),
+                       'iota_samples':[s for s in logs if 'NUCLEUS_GENERIC_IOTA:' in s][:12],
                        'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
                   print('NUCLEUS_GENERIC_IOTA_SEVEN='+json.dumps(row),flush=True)
                   assert p.returncode in (0,2),('valid became rejected',row)
