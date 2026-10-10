@@ -91,7 +91,7 @@ jobs:
           targets=['v169_hit_is_future_meeting',
                    'v169_bad_target_forces_bad_clocked_ancestor',
                    'v169_bad_path_excludes_terminal_seed',
-                   'v169_clocked_density_implies_large_unseeded_component']
+                   'v169_clocked_population_in_one_unseeded_component']
           for name in targets:
             assert 'CollatzFinal.SourceProduct.'+name in axioms,name
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
@@ -100,7 +100,7 @@ jobs:
             'source_commit':sha,
             'axioms':axioms,
             'source_sha256':hashlib.sha256(pathlib.Path('formal/Collatz/ClockedGiantComponentBridge.lean').read_bytes()).hexdigest(),
-            'scope':'CLOCKED_POPULATION_TO_UNSEEDED_COMPONENT_IF_BAD_TARGET_AND_GRAPH_COMPLETENESS',
+            'scope':'CLOCKED_SOURCE_MEMBERSHIP_IN_ONE_UNSEEDED_COMPONENT_IF_BAD_TARGET_AND_GRAPH_COMPLETENESS',
             'external_density_imported':False,
             'all_scale_anti_giant_bound_proved':False,
             'global_collatz':'UNKNOWN','qed':False}
