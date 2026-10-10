@@ -68,7 +68,8 @@ theorem v158_three_target_pure_even_ancestry (k : Nat) :
         v158_three_target_only_even_predecessor n hDivStep
       calc
         n = 2 * shortcut n := hEven
-        _ = 2 * (2^k * iter shortcut k (shortcut n)) := by rw [hRec]
+        _ = 2 * (2^k * iter shortcut k (shortcut n)) :=
+          congrArg (fun z : Nat => 2*z) hRec
         _ = 2^(k+1) * iter shortcut (k+1) n := by
           simp [Nat.pow_succ, iter, Nat.mul_assoc,
             Nat.mul_comm, Nat.mul_left_comm]
