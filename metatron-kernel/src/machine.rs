@@ -363,6 +363,13 @@ impl<'a> Machine<'a> {
             return Judgment::unknown("projection-structure-neutral");
         };
         if name != spec.constructor {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONSTRUCTOR_MISMATCH").is_some() {
+                eprintln!(
+                    "NUCLEUS_PROJ_CTOR_MISMATCH:kind=conversion:type={type_name:?}:index={index}:expected={:?}:actual={name:?}:receiver={structure:?}:spine_len={}",
+                    spec.constructor, neutral.spine.len(),
+                );
+            }
             return Judgment::unknown("projection-constructor-mismatch");
         }
         let field_offset = spec.num_params + index;
@@ -851,7 +858,18 @@ impl<'a> Machine<'a> {
                             closure = field;
                             continue;
                         }
-                        NeutralHead::Const { .. } => {
+                        NeutralHead::Const { name: actual, .. } => {
+                            #[cfg(feature = "diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONSTRUCTOR_MISMATCH").is_some() {
+                                static MISMATCHES: std::sync::atomic::AtomicUsize =
+                                    std::sync::atomic::AtomicUsize::new(0);
+                                if MISMATCHES.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 90 {
+                                    eprintln!(
+                                        "NUCLEUS_PROJ_CTOR_MISMATCH:kind=evaluator:type={type_name:?}:index={index}:expected={:?}:actual={actual:?}:receiver={structure:?}:receiver_head={:?}:receiver_args={}:pending={}:transparency={transparency:?}:preserve={preserve_stuck_projection}",
+                                        spec.constructor, neutral.head, neutral.spine.len(), pending.len()
+                                    );
+                                }
+                            }
                             if preserve_stuck_projection {
                                 let mut spine = Vec::new();
                                 append_pending(&mut spine, &mut pending);
