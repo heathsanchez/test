@@ -213,8 +213,11 @@ theorem v149_source9_to_root7_constructive :
     .odd h11 (by decide)
   let w : V149InverseCandidate 13 :=
     ⟨7,4,h7,(by decide)⟩
+  have hc : v149SourceAdmissible 9 13 w := by
+    dsimp [v149SourceAdmissible, w]
+    decide
   exact v149_admissible_inverse_constructs_lower_merge
-    9 6 13 hend w (by decide)
+    9 6 13 hend w hc
 
 /-- A comparable pure-doubling reverse chain exists for EVERY
     endpoint y at all depths. This by itself has no source cap. -/
@@ -265,6 +268,7 @@ theorem v149_terminal_one_refuses_nonpositive_rank_shortcut
     ¬ v149SourceAdmissible 1 2 w := by
   intro hcap
   have hp := w.positive
+  change w.source < 1 at hcap
   omega
 
 /-- V147 equality of static rational source observations does NOT
