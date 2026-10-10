@@ -80,12 +80,14 @@ jobs:
               if mode=='origin_replay':
                   env['NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT']='1'
                   env['NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512']='1'
+                  env['NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER']='1'
                   env['NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL']='1'
                   env['NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F']='1'
                   env['NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA']='1'
               if mode=='origin_replay' and trace:
                   env['NUCLEUS_TRACE_PROJECTION_CONTEXT']='1'
                   env['NUCLEUS_TRACE_PROJECTION_CROSSFRAME_512']='1'
+                  env['NUCLEUS_TRACE_TYPED_RECEIVER']='1'
                   env['NUCLEUS_TRACE_POLYMORPHIC_PROP_IRREL']='1'
                   env['NUCLEUS_TRACE_PROP_SINGLETON']='1'
                   env['NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION']='1'
