@@ -146,6 +146,12 @@ jobs:
                        'arith_instances':[s for s in logs
                            if 'NUCLEUS_ARITHMETIC_INSTANCE:' in s][-20:],
                        'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
+                  # Record the actual subprocess witnesses BEFORE serializing
+                  # the row. Workflow-source echo is not subprocess stderr.
+                  runtime_fields=[line for line in logs
+                      if line.startswith('NUCLEUS_CERTIFIED_FIELD:')]
+                  row['runtime_certified_fields']=runtime_fields[:24]
+                  row['runtime_certified_field_count']=len(runtime_fields)
                   print('NUCLEUS_ORIGIN_SEVEN='+json.dumps(row),flush=True)
                   assert p.returncode in (0,2),('valid became rejected',row)
                   if mode=='baseline': assert p.returncode==2,('baseline moved',row)
@@ -163,9 +169,6 @@ jobs:
                                  'major_obligation=' in s
                                  for s in row['outer_replays']),(
                           'transitive source-origin join was not exercised',row)
-                  runtime_fields=[line for line in logs
-                      if line.startswith('NUCLEUS_CERTIFIED_FIELD:')]
-                  row['runtime_certified_fields']=runtime_fields[:24]
                   if mode=='origin_replay' and name in seven[:2]:
                       assert runtime_fields, (
                           'no runtime-certified arithmetic field witness', name,
