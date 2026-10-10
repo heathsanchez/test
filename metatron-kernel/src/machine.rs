@@ -174,6 +174,33 @@ impl<'a> Machine<'a> {
         }
     }
 
+    /// Construct with existing immutable rule tables directly. This avoids
+    /// allocating three empty Rc maps and immediately discarding them on the
+    /// hot TypeChecker::machine path.
+    pub(crate) fn new_with_shared_tables(
+        authority: AuthorityId,
+        expressions: &'a IdTable<ExprId, Expr>,
+        levels: &'a IdTable<LevelId, Level>,
+        definitions: Rc<HashMap<NameId, DefinitionBody>>,
+        singleton_recursor_reductions: Rc<HashSet<NameId>>,
+        recursor_reductions: Rc<HashMap<NameId, RecursorReduction>>,
+        projection_specs: Rc<HashMap<NameId, ProjectionSpec>>,
+    ) -> Self {
+        Self {
+            authority,
+            exposure_cache: None,
+            expressions,
+            levels,
+            definitions,
+            singleton_recursor_reductions,
+            recursor_reductions,
+            projection_specs,
+            nat_primitives: None,
+            bool_primitives: None,
+            quot_primitives: None,
+        }
+    }
+
     pub fn with_singleton_recursor_reductions(
         mut self, reductions: impl Into<Rc<HashSet<NameId>>>,
     ) -> Self {
