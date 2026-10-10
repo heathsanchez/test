@@ -1252,6 +1252,19 @@ fn compare_values(
                 opposing_value,
             ) => {
                 #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_TARGET_PROJECTION").is_some()
+                    && matches!(structure.expr.0, 1014|532|744|740|662|661)
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static TARGET:AtomicUsize=AtomicUsize::new(0);
+                    if TARGET.fetch_add(1,Ordering::Relaxed)<48 {
+                        eprintln!(
+                            "NUCLEUS_TARGET_OPPOSITION:depth={depth}:budget={current_budget}:projection={type_name:?}:{index}:structure={structure:?}:pending={spine:?}:opposition={opposing_value:?}:context={}",
+                            context.len(),
+                        );
+                    }
+                }
+                #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_PROJECTION_OPPOSITION").is_some()
                     && (6..=10).contains(&depth)
                 {
