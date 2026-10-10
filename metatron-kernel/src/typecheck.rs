@@ -1,4 +1,6 @@
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::collections::{hash_map::Entry, HashMap};
+use std::rc::Rc;
 use crate::machine::{ExposureCache, new_exposure_cache};
 
 use crate::environment::Environment;
@@ -23,6 +25,15 @@ pub enum TypeValue {
     },
 }
 
+/// A binder admitted after the source-domain type and substituted value
+/// were checked. Both the immutable node and the protected source scope
+/// must match before the certified type can be reused.
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct CheckedBinderWitness {
+    domain: TypeValue,
+    protected_prefix: Vec<TypeValue>,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum RuleKAttempt {
     NotApplicable,
@@ -37,6 +48,7 @@ pub struct TypeChecker<'a> {
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
     exposure_cache: ExposureCache,
+    checked_binding_lineage: Rc<RefCell<HashMap<u64,Option<CheckedBinderWitness>>>>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -52,6 +64,7 @@ impl<'a> TypeChecker<'a> {
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
             exposure_cache: new_exposure_cache(),
+            checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
@@ -68,12 +81,70 @@ impl<'a> TypeChecker<'a> {
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
             exposure_cache: new_exposure_cache(),
+            checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
     pub fn with_delta_policy(mut self, policy: crate::convert::DeltaPolicy) -> Self {
         self.delta_policy = policy;
         self
+    }
+
+    /// Retain a scope-indexed type judgment only AFTER the binder's source
+    /// domain was certified (Pi/Lam) or its substituted argument was checked
+    /// against that domain (Let / exact beta spine). This is the substitution
+    /// lemma as an explicit, local premise rather than a context-index guess.
+    fn retain_checked_binding(
+        &self,
+        frame: &EnvFrame,
+        domain: TypeValue,
+        protected_context: &[TypeValue],
+    ) {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE").is_none() {
+            return;
+        }
+        let node=frame.id();
+        let witness=CheckedBinderWitness {
+            domain,
+            protected_prefix:protected_context.to_vec(),
+        };
+        match self.checked_binding_lineage.borrow_mut().entry(node) {
+            Entry::Vacant(v)=>{v.insert(Some(witness));}
+            Entry::Occupied(mut o)=>{
+                if o.get().as_ref()!=Some(&witness) {
+                    // Conflicting records cannot establish a reusable
+                    // typing judgment. Do not arbitrarily choose one.
+                    o.insert(None);
+                }
+            }
+        }
+    }
+
+    fn checked_type_of_bound_source(
+        &self,
+        frame:&EnvFrame,
+        index:u64,
+        context:&[TypeValue],
+    ) -> Option<TypeValue> {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE").is_none(){
+            return None;
+        }
+        let (node_id,_)=frame.lookup_with_node_id(index)?;
+        let proof=self.checked_binding_lineage.borrow()
+            .get(&node_id)?.as_ref()?.clone();
+        if !context.starts_with(&proof.protected_prefix) {return None;}
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_TYPED_LINEAGE").is_some(){
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static RECORDED:AtomicUsize=AtomicUsize::new(0);
+            if RECORDED.fetch_add(1,Ordering::Relaxed)<64 {
+                eprintln!(
+                    "NUCLEUS_TYPED_LINEAGE_REUSE:frame={}:node={node_id}:index={index}:context={}:protected={}:type={:?}",
+                    frame.id(),context.len(),proof.protected_prefix.len(),proof.domain
+                );
+            }
+        }
+        Some(proof.domain)
     }
 
     pub fn infer(&self, expression: ExprId, budget: usize) -> Judgment<TypeValue> {
@@ -701,6 +772,11 @@ impl<'a> TypeChecker<'a> {
                 let Some(offset) = usize::try_from(*index).ok() else {
                     return Judgment::refuted("unbound-bvar");
                 };
+                if let Some(checked)=self.checked_type_of_bound_source(
+                    frame,*index,context,
+                ){
+                    return Judgment::proven(checked,"source-checked-lexical-binding");
+                }
                 // Canonical binder transport with an explicit source witness.
                 // The checker creates lexical FreeId(k) exactly when opening
                 // context entry k. If the captured frame exposes one of these
@@ -779,6 +855,9 @@ impl<'a> TypeChecker<'a> {
                     return Judgment::unknown("binder-depth-overflow");
                 };
                 let body_frame = frame.extend_free(free);
+                self.retain_checked_binding(
+                    &body_frame,TypeValue::Term(self.closure(*domain,frame.clone())),&extended,
+                );
                 let body_type = self.infer_in(*body, &extended, &body_frame, remaining, cache);
                 let body_sort = match self.sort_level(body_type, *remaining) {
                     Judgment::Proven { value, .. } => value,
@@ -808,6 +887,7 @@ impl<'a> TypeChecker<'a> {
                     return Judgment::unknown("binder-depth-overflow");
                 };
                 let body_frame = frame.extend_free(free);
+                self.retain_checked_binding(&body_frame,domain_type.clone(),&extended);
                 self.infer_in(*body, &extended, &body_frame, remaining, cache)
                     .map(|body_type| TypeValue::Pi {
                         domain: Box::new(domain_type),
@@ -1068,6 +1148,7 @@ impl<'a> TypeChecker<'a> {
                 let mut extended = context.to_vec();
                 extended.push(established);
                 let extended_frame = frame.extend(self.closure(*value, frame.clone()));
+                self.retain_checked_binding(&extended_frame,established,&extended);
                 self.infer_in(*body, &extended, &extended_frame, remaining, cache)
             }
         }
@@ -1473,8 +1554,9 @@ impl<'a> TypeChecker<'a> {
                 }
                 Judgment::Unknown { residual } => return Some(Judgment::Unknown { residual }),
             }
-            lexical_context.push(domain);
+            lexical_context.push(domain.clone());
             lexical_frame = lexical_frame.extend(self.closure(arg, frame.clone()));
+            self.retain_checked_binding(&lexical_frame,domain,&lexical_context);
             head = *body;
         }
         Some(self.infer_in(head, &lexical_context, &lexical_frame, remaining, cache))
