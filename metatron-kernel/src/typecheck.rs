@@ -4160,6 +4160,17 @@ impl<'a> TypeChecker<'a> {
         .then(|| (*name, levels.clone()))
     }
 
+    /// A positive answer proves exact closure substitution equality using
+    /// only the captured binders actually referenced by the source syntax.
+    /// This does not infer equality from FreeId numbers, types, or test signatures.
+    pub(crate) fn same_term_by_exact_support(
+        &self, left: &Closure, right: &Closure, budget: usize,
+    ) -> bool {
+        crate::support::same_term_by_exact_support(
+            self.expressions, left, right, budget,
+        )
+    }
+
     pub(crate) fn machine(&self) -> Machine<'_> {
         Machine::new_with_shared_tables(
             self.environment.authority(),
