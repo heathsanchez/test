@@ -1,0 +1,138 @@
+name: Collatz V159 all-moduli future-label collapse
+on:
+  push:
+    branches: [collatz-v159-all-moduli-class-collapse]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-modular-graph:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently test exact Collatz parity graph of all fixed moduli through 3000
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v159_all_moduli_audit > evidence/v159-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v159-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V159_EXACT_FIXED_MODULUS_CLASS_COLLAPSE'
+          assert d['finite_moduli_checked']==3000
+          assert d['all_checked_modular_class_graphs_connected']
+          assert sum(d['cases'].values())==3000
+          assert not d['synthetic_countermodel_used']
+          assert d['lean_universal_proof_required']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V159_EXACT','source_commit':h,
+            'status':'WARRANTED_BOUNDED_ALL_MODULI_3000_GRAPH_CONTROLS',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v159-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v159-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-modular-collapse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check universal fixed-modulus invariant collapse by period reduction
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/AllModuliFutureLabelCollapse.lean 2>&1 | tee evidence/v159-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v159-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-16000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[z.strip() for z in inside.split(',') if z.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          names=['v159_even_period_reduction','v159_odd_period_affine',
+            'v159_odd_third_period_reduction','v159_find_one_mod_six',
+            'v159_coprime_period_reduction','v159_all_finite_moduli_collapse',
+            'v159_step_implies_even_and_odd_invariance',
+            'v159_no_nontrivial_fixed_modulus_future_label']
+          for name in names:
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V159_FORMAL_MODULAR_COLLAPSE',
+            'source_commit':h,'axioms':ax,
+            'status':'WARRANTED_FORMAL_UNCONDITIONAL_ALL_FIXED_MODULI_COLLAPSE',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'full_collatz_convergence_proved':False,'no_arithmetic_axioms':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v159-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v159-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-final-seal:
+    needs: [exact-modular-graph,formal-modular-collapse]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v159-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v159-formal
+          path: evidence/formal
+      - name: Independent source and theorem-scope reconciliation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v159-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v159-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['status']=='WARRANTED_BOUNDED_ALL_MODULI_3000_GRAPH_CONTROLS'
+          assert b['status']=='WARRANTED_FORMAL_UNCONDITIONAL_ALL_FIXED_MODULI_COLLAPSE'
+          assert b['full_collatz_convergence_proved'] is False
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V159_FINAL','source_commit':h,
+            'status':'WARRANTED_FORMAL_ALL_FIXED_MODULI_LABEL_COLLAPSE_NOT_QED',
+            'new_theorem':'Any finite-modulus periodic label invariant under genuine shortcut dynamics is constant on positive sources',
+            'proven_mechanism':'period M shrinks to M/2, M/3 or (M-1)/2 from real even and odd elementary identities',
+            'next_residual':'Find genuinely source-indexed unbounded-precision arithmetic invariant excluding a persistent second future class',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v159-final.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v159-final
+          path: evidence/v159-final.json
+          if-no-files-found: error
