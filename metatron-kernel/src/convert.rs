@@ -1291,6 +1291,22 @@ fn compare_values(
                 ) {
                     return Judgment::proven((), "stuck-projection-rigid-application-congruence");
                 }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_BREC_ARGUMENT_PAIRS").is_some()
+                    && left_structure.expr == right_structure.expr
+                    && matches!(left_structure.expr.0, 1014 | 532 | 662)
+                    && depth == context.len()
+                    && current_budget >= 256
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static PRINTED:AtomicUsize=AtomicUsize::new(0);
+                    if PRINTED.fetch_add(1,Ordering::Relaxed)<12 {
+                        eprintln!("NUCLEUS_BREC_PREMISES:{}",
+                            checker.diagnostic_brec_argument_pair(
+                                left_structure,right_structure,context,
+                            ));
+                    }
+                }
                 let machine = checker.machine();
                 let left_value = machine.projection_value_for_conversion(
                     left_structure.clone(),
