@@ -1,0 +1,161 @@
+name: Collatz V170 canonical full clock graph elimination
+on:
+  push:
+    branches: [collatz-v170-ideal-clock-graph-completion]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  formal-full-clock-graph:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check full finite source-clock graph completeness and two-input conditional closeout
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure UniversalFutureClassFrontier RetroactiveFutureQuotient TimedOrdinaryHitGiantBridge; do
+            lake env lean -DautoImplicit=false \
+              -o ".lake/build/lib/lean/Collatz/$module.olean" \
+              "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/IdealFiniteClockGraphElimination.lean 2>&1 | tee evidence/v170-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v170-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-18000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          names=['v170_full_graph_path_sound',
+            'v170_timed_hit_has_full_graph_edge',
+            'v170_terminal_seeded_class_is_good',
+            'v170_bad_target_component_has_no_seed',
+            'v170_bad_target_timed_predecessors_into_one_class',
+            'v170_bad_target_timed_count_lower_bound',
+            'v170_collatz_of_timed_density_and_sparse_no_giant']
+          for name in names:
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V170_FORMAL_IDEAL_COMPLETE_CLOCK_GRAPH',
+            'source_commit':sha,'axioms':ax,
+            'status':'WARRANTED_FORMAL_CANONICAL_ALL_TIMED_EDGE_COMPLETENESS_WITH_TWO_VISIBLE_PREMISES',
+            'log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'all_source_clock_meeting_edges_included_by_definition':True,
+            'external_timed_density_not_rebuilt':True,
+            'no_giant_arithmetic_unproved':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v170-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v170-formal
+          path: evidence/
+          if-no-files-found: error
+
+  exact-full-graph:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently enumerate every real source clock collision and G7 two-class control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v170_complete_clock_graph_audit | tee evidence/v170-stdout.json
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          p=pathlib.Path('evidence/v170-full-graph.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V170_CANONICAL_FULL_CLOCK_GRAPH_EXACT'
+          assert d['all_full_graph_edges_are_actual_two_clock_meetings']
+          assert d['full_graph_completeness_is_by_construction']
+          assert d['true_shortcut_rows'][-1]['positive_sources']==(2**14-1)
+          assert len(d['true_shortcut_rows'])==4
+          assert len(d['synthetic_G7_rows'])==4
+          assert all(x['finite']['unseeded_sources']==0 for x in d['true_shortcut_rows'])
+          assert d['synthetic_G7_rows'][-1]['finite']['largest_unseeded_component']>1024
+          assert d['synthetic_negative_retains_unseeded_cycle']
+          assert not d['external_timed_density_locally_imported']
+          assert not d['global_all_scale_bound_proved']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V170_EXACT_COMPLETE_CLOCK_GRAPH',
+            'source_commit':sha,
+            'status':'WARRANTED_BOUNDED_FULL_SOURCE_CLOCK_ENDPOINT_GRAPH_AUDIT',
+            'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'same_clock_graph_as_formal_definition':True,
+            'positive_source_count_is_bounded':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v170-exact-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v170-exact
+          path: evidence/
+          if-no-files-found: error
+
+  final-scope-seal:
+    needs: [formal-full-clock-graph,exact-full-graph]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v170-formal
+          path: evidence/formal
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v170-exact
+          path: evidence/exact
+      - name: Source-exact full-graph structural check without promoting missing no-giant estimate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          formal=json.loads(pathlib.Path('evidence/formal/v170-formal-seal.json').read_text())
+          exact=json.loads(pathlib.Path('evidence/exact/v170-exact-seal.json').read_text())
+          data=json.loads(pathlib.Path('evidence/exact/v170-full-graph.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert exact['source_commit']==formal['source_commit']==sha
+          assert formal['all_source_clock_meeting_edges_included_by_definition']
+          assert formal['external_timed_density_not_rebuilt']
+          assert formal['no_giant_arithmetic_unproved']
+          assert exact['same_clock_graph_as_formal_definition']
+          assert data['synthetic_negative_retains_unseeded_cycle']
+          assert exact['global_collatz']==formal['global_collatz']==data['global_collatz']=='UNKNOWN'
+          assert exact['qed'] is formal['qed'] is data['qed'] is False
+          seal={'schema':'COLLATZ_V170_FINAL',
+            'source_commit':sha,
+            'status':'WARRANTED_UNCONDITIONAL_FULL_CLOCK_GRAPH_COMPLETENESS_AND_TWO_INPUT_CONDITIONAL_CLOSEOUT_NOT_QED',
+            'removed_assumption':'V169 external finite-ledger completeness; all genuine clock<=H source meetings belong to canonical graph by construction',
+            'external_input':'independent full Lean import of targetwise timed natural-density theorem remains missing',
+            'unique_missing_arithmetic':'source-height no-giant unseeded-component inequality for residue2 targets at H=8k',
+            'test_system':'true Collatz and G7 separate cycle bounded graph',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v170-final.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v170-final
+          path: evidence/v170-final.json
+          if-no-files-found: error
