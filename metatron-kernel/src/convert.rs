@@ -2002,6 +2002,7 @@ fn certified_structural_closure_congruence(
     {
         return false;
     }
+    #[derive(Clone)]
     struct State {
         fuel: usize,
         active: HashSet<(Closure, Closure, usize)>,
@@ -2037,6 +2038,40 @@ fn certified_structural_closure_congruence(
     // transport from two closure presentations to the same value grammar.
     // A successful equality must STILL be reconstructed structurally from
     // all relevant subvalues and shared binder introduction.
+    fn eq_weak_values(
+        checker: &TypeChecker<'_>,
+        a: &Value,
+        b: &Value,
+        depth: usize,
+        st: &mut State,
+    ) -> bool {
+        match (a,b) {
+            (Value::Sort(a),Value::Sort(b))=>level_equal(a.clone(),b.clone(),st.fuel).is_proven(),
+            (Value::NatLit(a),Value::NatLit(b))=>a==b,
+            (Value::Neutral(a),Value::Neutral(b))=>eq_neutral(checker,a,b,depth,st),
+            (
+                Value::Pi{domain:da,body:ba},
+                Value::Pi{domain:db,body:bb},
+            ) | (
+                Value::Lam{domain:da,body:ba},
+                Value::Lam{domain:db,body:bb},
+            ) => eq_closure(checker,da,db,depth,st)
+              && fresh_local(depth).is_some_and(|free|
+                eq_closure(checker,&ba.under_free(free),&bb.under_free(free),depth+1,st)
+              ),
+            (
+                Value::StuckProjection{type_name:at,index:ai,structure:as_,spine:ap},
+                Value::StuckProjection{type_name:bt,index:bi,structure:bs,spine:bp},
+            ) => at==bt && ai==bi && ap.len()==bp.len()
+              && eq_closure(checker,as_,bs,depth,st)
+              && ap.iter().zip(bp).all(|(a,b)|eq_closure(checker,a,b,depth,st)),
+            _=>false,
+        }
+    }
+    /// Search over exactly two source-registered observations, not over new
+    /// semantic equalities. Reducible WHNF is preferred. Only after that
+    /// fails may Full delta be evaluated, and either attempt must close a
+    /// complete finite congruence certificate before returning true.
     fn eq_weak(
         checker: &TypeChecker<'_>,
         lhs: &Closure,
@@ -2049,47 +2084,40 @@ fn certified_structural_closure_congruence(
         let probe=st.fuel.min(512);
         let a=machine.expose_for_conversion(lhs.clone(),Transparency::Reducible,probe);
         let b=machine.expose_for_conversion(rhs.clone(),Transparency::Reducible,probe);
-        let (Some(a),Some(b))=(a.proven_value(),b.proven_value()) else {
-            return false;
-        };
-        let proven = match (a,b) {
-            (Value::Sort(a),Value::Sort(b))=>level_equal(a.clone(),b.clone(),st.fuel).is_proven(),
-            (Value::NatLit(a),Value::NatLit(b))=>a==b,
-            (Value::Neutral(a),Value::Neutral(b))=>eq_neutral(checker,a,b,depth,st),
-            (
-                Value::Pi{domain:da,body:ba},
-                Value::Pi{domain:db,body:bb},
-            ) | (
-                Value::Lam{domain:da,body:ba},
-                Value::Lam{domain:db,body:bb},
-            ) => {
-                eq_closure(checker,da,db,depth,st)
-                && fresh_local(depth).is_some_and(|free|
-                    eq_closure(
-                        checker,&ba.under_free(free),&bb.under_free(free),
-                        depth+1,st,
-                    )
-                )
-            }
-            (
-                Value::StuckProjection{type_name:at,index:ai,structure:as_,spine:ap},
-                Value::StuckProjection{type_name:bt,index:bi,structure:bs,spine:bp},
-            ) => {
-                at==bt && ai==bi && ap.len()==bp.len()
-                && eq_closure(checker,as_,bs,depth,st)
-                && ap.iter().zip(bp).all(|(a,b)|eq_closure(checker,a,b,depth,st))
-            }
-            _=>false,
-        };
-        #[cfg(feature = "diagnostics")]
-        if proven && std::env::var_os("NUCLEUS_TRACE_WHNF_BISIM").is_some() {
-            use std::sync::atomic::{AtomicUsize, Ordering};
-            static REPORTS:AtomicUsize=AtomicUsize::new(0);
-            if REPORTS.fetch_add(1,Ordering::Relaxed)<48 {
-                eprintln!("NUCLEUS_WHNF_BISIM:depth={depth}:fuel={}:lhs={:?}:rhs={:?}",st.fuel,lhs.expr,rhs.expr);
+        if let (Some(a),Some(b))=(a.proven_value(),b.proven_value()){
+            let mut trial=st.clone();
+            if eq_weak_values(checker,a,b,depth,&mut trial){
+                *st=trial;
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_WHNF_BISIM").is_some(){
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static REPORTS:AtomicUsize=AtomicUsize::new(0);
+                    if REPORTS.fetch_add(1,Ordering::Relaxed)<48{
+                        eprintln!("NUCLEUS_WHNF_BISIM:depth={depth}:fuel={}:lhs={:?}:rhs={:?}",st.fuel,lhs.expr,rhs.expr);
+                    }
+                }
+                return true;
             }
         }
-        proven
+        if st.fuel<128{return false;}
+        let a=machine.expose_for_conversion(lhs.clone(),Transparency::Full,probe);
+        let b=machine.expose_for_conversion(rhs.clone(),Transparency::Full,probe);
+        if let (Some(a),Some(b))=(a.proven_value(),b.proven_value()){
+            let mut trial=st.clone();
+            if eq_weak_values(checker,a,b,depth,&mut trial){
+                *st=trial;
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_FULL_BISIM").is_some(){
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static REPORTS:AtomicUsize=AtomicUsize::new(0);
+                    if REPORTS.fetch_add(1,Ordering::Relaxed)<48{
+                        eprintln!("NUCLEUS_FULL_BISIM:depth={depth}:fuel={}:lhs={:?}:rhs={:?}",st.fuel,lhs.expr,rhs.expr);
+                    }
+                }
+                return true;
+            }
+        }
+        false
     }
     fn eq_binding(
         checker: &TypeChecker<'_>,
