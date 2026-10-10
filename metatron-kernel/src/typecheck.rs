@@ -2288,6 +2288,110 @@ impl<'a> TypeChecker<'a> {
         Some(current)
     }
 
+    /// Diagnostic-only proof-obligation separator. Unlike simply looking at
+    /// the instantiated result type, this walks a neutral's actual source
+    /// telescope and checks *every* captured argument against its dependent
+    /// Pi domain. This can identify the earliest missing typing witness
+    /// without allowing observational similarity to become kernel equality.
+    ///
+    /// This emits evidence only. No caller may use the resulting string to
+    /// authorize ACCEPT/REJECT.
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_neutral_source_telescope(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let mut remaining = budget.min(1024);
+        let mut current = match &neutral.head {
+            NeutralHead::Const { name, levels } => {
+                let Some(decl) = self.environment.get(*name) else {
+                    return format!("missing-declaration:head={name:?}");
+                };
+                if decl.level_params.len() != levels.len() {
+                    return format!("universe-arity:head={name:?}");
+                }
+                TypeValue::Term(Closure::with_levels(
+                    decl.ty,
+                    EnvFrame::empty(),
+                    LevelSubstitution::new(
+                        decl.level_params.iter().copied()
+                            .zip(levels.iter().cloned()).collect(),
+                    ),
+                ))
+            }
+            NeutralHead::Free(free) => {
+                let Some(ty) = usize::try_from(free.0).ok()
+                    .and_then(|i| context.get(i)).cloned()
+                else {
+                    return format!("missing-typed-local:free={free:?}");
+                };
+                ty
+            }
+            NeutralHead::Projection { .. } => {
+                return "neutral-projection-telescope-not-yet-qualified".into();
+            }
+        };
+        for (position, actual_arg) in neutral.spine.iter().enumerate() {
+            let Some((domain, body)) = self.pi_view(
+                Judgment::proven(current.clone(), "source-typed-telescope"),
+                remaining.min(512),
+            ) else {
+                return format!(
+                    "first-missing-pi:argument={position}:function_type={current:?}"
+                );
+            };
+            let Some(actual_type) = self.infer_exact_closure_in_context(
+                actual_arg, context, &mut remaining, 0,
+            ) else {
+                return format!(
+                    "first-untyped-argument:argument={position}:closure={actual_arg:?}:expected_domain={domain:?}:context_depth={}",
+                    context.len(),
+                );
+            };
+            let relation = crate::convert::convert_with_policy_in_context(
+                self, &actual_type, &domain,
+                remaining.min(256),
+                crate::convert::DeltaPolicy::PreferredOnly,
+                context.len(), context,
+            );
+            if !relation.is_proven() {
+                return format!(
+                    "first-undischarged-domain:argument={position}:actual={actual_type:?}:required={domain:?}:relation={relation:?}:context_depth={}",
+                    context.len(),
+                );
+            }
+            current = match body {
+                PiBody::Fixed(free, body_type) => {
+                    let Some(instantiated) = self.instantiate_fixed_pi_body(
+                        &body_type, free, actual_arg, &mut remaining,
+                    ) else {
+                        return format!(
+                            "first-unresolved-dependent-substitution:argument={position}:binder={free:?}:body={body_type:?}"
+                        );
+                    };
+                    instantiated
+                }
+                PiBody::Closure(body_closure) => {
+                    TypeValue::Term(Closure::with_levels(
+                        body_closure.expr,
+                        body_closure.env.extend(actual_arg.clone()),
+                        body_closure.levels,
+                    ))
+                }
+            };
+        }
+        let result_kind = self.sort_level(
+            Judgment::proven(current.clone(), "checked-neutral-telescope"),
+            remaining.min(256),
+        );
+        format!(
+            "all-source-arguments-checked:arity={}:result_type={current:?}:result_sort={result_kind:?}",
+            neutral.spine.len(),
+        )
+    }
+
     pub(crate) fn rule_k_reduce_neutral(
         &self,
         neutral: &Neutral,
