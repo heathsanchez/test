@@ -163,6 +163,9 @@ impl<'a> TypeChecker<'a> {
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_FIRST_UNWARRANTED_BINDING").is_some()
             && context.len()==5 && index==2
+            && observed.as_ref().is_some_and(|(_,binding)|
+                matches!(binding,EnvBinding::Closure(_))
+            )
         {
             use std::sync::atomic::{AtomicUsize,Ordering};
             static FIRST:AtomicUsize=AtomicUsize::new(0);
