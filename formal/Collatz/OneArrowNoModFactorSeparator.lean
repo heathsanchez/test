@@ -284,6 +284,65 @@ theorem v171_true_hits_five_modified_sticks
         have hHit := ih (shortcut n) hTail
         simpa only [iter,hSame] using hHit
 
+/-- True ordinary predecessors of 5 are never lost by the
+    one-arrow synthetic system: the real ordinary target-5 hit
+    converts to a genuine shortcut hit by V169's 2-mod-3 phase
+    theorem, then the modified map stays at fixed 5. -/
+def V171ReachesFixedFive (n : Nat) : Prop :=
+  ∃ k : Nat, iter v171Map k n=5
+
+theorem v171_ordinary_target_five_enters_second_basin
+    (n : Nat) (h : v150OrdReaches n 5) :
+    V171ReachesFixedFive n := by
+  obtain ⟨t,hOrd⟩ := h
+  obtain ⟨i,_hi,hTrue⟩ :=
+    v169_ordinary_to_shortcut_unit_target
+      t n 5 (by decide) hOrd
+  exact ⟨i,v171_true_hits_five_modified_sticks i n hTrue⟩
+
+noncomputable def v171SecondBasinCount (X : Nat) : Nat := by
+  classical
+  exact v150Count (fun n => 0<n ∧ V171ReachesFixedFive n) X
+
+/-- Exact finite original-source population inclusion, without
+    asserting or deciding global Collatz convergence. -/
+theorem v171_ordinary_target_five_count_enters_second_basin
+    (X : Nat) :
+    v150OrdPredecessorCount 5 X <= v171SecondBasinCount X := by
+  classical
+  change v150Count (fun n => 0<n ∧ v150OrdReaches n 5) X <=
+    v150Count (fun n => 0<n ∧ V171ReachesFixedFive n) X
+  apply v150_count_monotone_below
+  intro n _ hn
+  exact ⟨hn.1,v171_ordinary_target_five_enters_second_basin n hn.2⟩
+
+/-- Under the SAME EXTERNAL positive lower-density premise used
+    in V150, the modified map's genuinely disjoint fixed-5
+    future basin occupies a POSITIVE LOWER NATURAL DENSITY.
+
+    The external theorem is NOT imported or rebuilt here;
+    the implication itself is kernel-verified. This refutes
+    generic density-plus-ternary-sieve-plus-no-modular-factor
+    routes, NOT true 3n+1 arithmetic. -/
+theorem v171_positive_lower_density_second_basin_of_external_amp
+    (hAmp : V150PredecessorAmplifier) :
+    ∃ q X0 : Nat, 0<q ∧
+      ∀ X : Nat, X0<=X →
+        X<=q*v171SecondBasinCount X := by
+  obtain ⟨q,X0,hq,hLower⟩ :=
+    hAmp 5 (by decide) (by decide)
+  refine ⟨q,X0,hq,?_⟩
+  intro X hX
+  exact Nat.le_trans (hLower X hX)
+    (Nat.mul_le_mul_left q
+      (v171_ordinary_target_five_count_enters_second_basin X))
+
+/-- In contrast, the exact V160 all-source affine shift fails
+    at its single exceptional source5; this is the missing
+    distinction in the synthetic counterexample. -/
+theorem v171_original_affine_lift_fails_at_exception :
+    v171Map (5+2) ≠ v171Map 5+3 := by decide
+
 #print axioms v171_even_source
 #print axioms v171_odd_output_mod_three
 #print axioms v171_exact_full_ternary_sieve
@@ -293,6 +352,10 @@ theorem v171_true_hits_five_modified_sticks
 #print axioms v171_periodic_label_reconstructs_true_shortcut
 #print axioms v171_no_nontrivial_fixed_mod_future_label
 #print axioms v171_true_hits_five_modified_sticks
+#print axioms v171_ordinary_target_five_enters_second_basin
+#print axioms v171_ordinary_target_five_count_enters_second_basin
+#print axioms v171_positive_lower_density_second_basin_of_external_amp
+#print axioms v171_original_affine_lift_fails_at_exception
 
 end SourceProduct
 end CollatzFinal
