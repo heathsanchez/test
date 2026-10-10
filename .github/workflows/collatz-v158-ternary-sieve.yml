@@ -1,0 +1,158 @@
+name: Collatz V158 true ternary endpoint sieve
+on:
+  push:
+    branches: [collatz-v158-zero-tail-ternary-sieve]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-exact-sieve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check exact ternary sieve population and V154 negative odd-law control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v158_ternary_sieve_audit > evidence/v158-exact.json
+          python3 - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          p=pathlib.Path('evidence/v158-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V158_EXACT_TERNARY_ENDPOINT_SIEVE'
+          assert d['checked_source_cutoff_exclusive']==2**16
+          assert d['checked_time_depth_min']==0
+          assert d['checked_time_depth_max']==16
+          assert d['checked_source_clock_pairs']==17*2**16
+          assert d['odd_successor_residue_checks']==50000
+          assert d['every_sieve_identity_checked']
+          assert d['zero_tail_positive_three_guard_checked']
+          assert d['synthetic_v154_countercontrol_breaks_true_odd_sieve']
+          assert len(d['exact_dyadic_counts'])==17
+          assert all(r['mod3_sieve_violations']==0 and
+                     r['zero_tail_positive_target_guard_violations']==0 and
+                     r['three_divisible_endpoint_count']==r['exact_sieve_count']
+                     for r in d['exact_dyadic_counts'])
+          assert not d['external_mazur_predecessor_amplifier_built_locally']
+          assert not d['universal_sparse_terminal_mass_proved']
+          assert not d['any_second_future_class_excluded']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V158_EXACT_SEAL',
+            'source_commit':h,
+            'status':'WARRANTED_BOUNDED_EXACT_TERNARY_SIEVE_CONTROLS',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'not_asymptotic_mass':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v158-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v158-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-ternary-sieve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check exact all-depth 3-adic sieve and live target amplification guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/ZeroTailTernarySieve.lean 2>&1 | tee evidence/v158-lean.log
+          python3 - <<'PY'
+          import re,json,hashlib,pathlib,subprocess
+          log=pathlib.Path('evidence/v158-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-16000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            a=[z.strip() for z in inside.split(',') if z.strip()]
+            assert set(a)<={'propext','Classical.choice','Quot.sound'},(name,a)
+            ax[name]=a
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=[
+            'v158_three_target_only_even_predecessor',
+            'v158_three_target_pure_even_ancestry',
+            'v158_divisible_three_endpoint_iff_source',
+            'v158_after_source_bits_nondivisible_three',
+            'v158_reachable_zero_tail_nondivisible_three',
+            'v158_zero_tail_live_nondivisible_three',
+            'v158_amplify_any_zero_tail_live_bad']
+          for t in targets:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V158_FORMAL_SIEVE',
+            'source_commit':h,'axioms':ax,
+            'status':'WARRANTED_FORMAL_UNCONDITIONAL_TERNARY_SIEVE_AND_CONDITIONAL_UNIVERSAL_AMPLIFIER_GUARD',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'unconditional_exact_mod3_equivalence':True,
+            'external_mazur_amplifier_is_explicit_hypothesis':True,
+            'sparse_exceptional_mass_unproved':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v158-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v158-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-final-seal:
+    needs: [independent-exact-sieve,formal-ternary-sieve]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v158-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v158-formal
+          path: evidence/formal
+      - name: Reconcile same-commit arithmetic warrant and unproved QED
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v158-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v158-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['status']=='WARRANTED_BOUNDED_EXACT_TERNARY_SIEVE_CONTROLS'
+          assert b['status']=='WARRANTED_FORMAL_UNCONDITIONAL_TERNARY_SIEVE_AND_CONDITIONAL_UNIVERSAL_AMPLIFIER_GUARD'
+          assert b['unconditional_exact_mod3_equivalence']
+          assert b['external_mazur_amplifier_is_explicit_hypothesis']
+          assert b['sparse_exceptional_mass_unproved']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V158_FINAL','source_commit':h,
+            'status':'WARRANTED_ALL_DEPTH_COLLATZ_SPECIFIC_TERNARY_SIEVE_NOT_QED',
+            'new_theorem':'3 divides true T^k(n) iff 3*2^k divides n, including reachable zero-tail non-3 target guard',
+            'combined_result':'Every reachable zero-tail live bad target triggers V150 positive-bad-density amplifier, CONDITIONAL on external input',
+            'missing':['Local independent external amplifier rebuild','V151 sparse terminal exceptional mass bound','Exclusion of second source future class'],
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v158-final.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v158-final
+          path: evidence/v158-final.json
+          if-no-files-found: error
