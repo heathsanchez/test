@@ -4223,7 +4223,7 @@ impl<'a> TypeChecker<'a> {
             l = l.sibling(*lf,l.env.clone());
             r = r.sibling(*rf,r.env.clone());
         }
-        let head=(self.expressions.get(l.expr),self.expressions.get(r.expr));
+        let head=(probe.expressions.get(l.expr),probe.expressions.get(r.expr));
         let mut parts=Vec::new();
         for (i,(a,b)) in pairs.iter().rev().enumerate() {
             let mut lf=512usize;
