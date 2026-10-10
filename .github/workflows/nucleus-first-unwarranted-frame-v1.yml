@@ -1,0 +1,98 @@
+name: Nucleus first missing typed environment witness
+
+on:
+  push:
+    branches: [nucleus-first-unwarranted-frame-v1]
+    paths:
+      - ".github/workflows/nucleus-first-unwarranted-frame-v1.yml"
+      - "metatron-kernel/src/typecheck.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      ARENA_ARTIFACT: "11272848230"
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: "1"
+      NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER: "1"
+      NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE: "1"
+      NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use pinned runner Rust
+        run: |
+          set -euo pipefail
+          rustc --version
+          cargo --version
+      - name: Fetch dependency authority separately
+        env:
+          CARGO_HTTP_TIMEOUT: "120"
+          CARGO_NET_RETRY: "10"
+          CARGO_HTTP_LOW_SPEED_LIMIT: "0"
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            cargo fetch --locked --manifest-path metatron-kernel/Cargo.toml && exit 0
+          done
+          exit 1
+      - name: Qualify diagnostic source and protected regressions
+        run: |
+          set -euo pipefail
+          printf 'source=%s\n' "$GITHUB_SHA"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test relation_record
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib checked_binding_lineage_tests -- --ignored
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+      - name: Download exact frozen Magma source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests research/nucleus-evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Explain source failure at BVar2 under dependent context five
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,hashlib,pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests')
+          records=[]
+          for name in ['perf/magma-list-pair-n7','perf/magma-list-pair-n21']:
+              data=(root/'good'/(name+'.ndjson')).read_bytes()
+              env=os.environ|{'NUCLEUS_TRACE_FIRST_UNWARRANTED_BINDING':'1',
+                              'NUCLEUS_TRACE_DOWNSTREAM':'1'}
+              r=subprocess.run(['/tmp/nucleus'],input=data,
+                  stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=100,env=env)
+              ls=r.stderr.decode(errors='replace').splitlines()
+              witnessed=[z for z in ls if z.startswith('NUCLEUS_FIRST_UNWARRANTED_BINDING:')]
+              downstream=[z for z in ls if z.startswith('NUCLEUS_DOWNSTREAM:')]
+              record={'case':name,'sha256':hashlib.sha256(data).hexdigest(),
+                      'rc':r.returncode,'first_binding_states':witnessed,
+                      'terminal':downstream[-2:]}
+              print('NUCLEUS_FIRST_UNWARRANTED_SOURCE='+json.dumps({
+                  'case':name,'rc':r.returncode,'count':len(witnessed),
+                  'first_eight':witnessed[:8],'terminal':downstream[-2:]
+              }),flush=True)
+              records.append(record)
+              assert r.returncode==2,(name,'unexpected ACCEPT/REJECT')
+              assert witnessed,(name,'targeted BVar2 dependency not observed')
+          p=pathlib.Path('research/nucleus-evidence/first-unwarranted-binding.json')
+          p.write_text(json.dumps({
+              'source_commit':os.environ['GITHUB_SHA'],
+              'arena_artifact':os.environ['ARENA_ARTIFACT'],
+              'status':'WARRANTED_DIAGNOSTIC_NOT_NEW_CONVERSION',
+              'cases':records},indent=2))
+          print('NUCLEUS_FIRST_UNWARRANTED_PROOF_BOUNDARY_FOUND')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-first-unwarranted-binding-${{ github.sha }}
+          path: research/nucleus-evidence/first-unwarranted-binding.json
+          if-no-files-found: warn
