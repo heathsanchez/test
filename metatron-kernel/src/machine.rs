@@ -96,13 +96,29 @@ pub(crate) fn new_exposure_cache() -> ExposureCache {
 /// This is NOT an equality oracle for arbitrary expressions. The key can
 /// be shared only by the SAME source expression with equal observed
 /// binding payloads. Failed or incomplete reductions are never retained.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct ObservedClosureKey {
+    expr: ExprId,
+    levels: LevelSubstitution,
+    observed: Vec<(u64, EnvBinding)>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum PendingObservation {
+    Exact(Closure),
+    Observed(ObservedClosureKey),
+}
+
+/// The order and cardinality of protected future applications are never
+/// discarded. Each pending closure can itself be represented by exactly
+/// the bindings its source expression reads, including under fresh binders.
 type MinimalExposureKey = (
     AuthorityId,
     ExprId,
     LevelSubstitution,
     Transparency,
     bool,
-    Vec<Closure>,
+    Vec<PendingObservation>,
     Vec<(u64, EnvBinding)>,
 );
 
@@ -277,29 +293,43 @@ impl<'a> Machine<'a> {
         self
     }
 
+    fn observed_closure_key(&self,closure:&Closure)->Option<ObservedClosureKey>{
+        let cache=self.minimal_exposure_cache.as_ref()?;
+        let saved=cache.borrow().support.get(&closure.expr).cloned();
+        let support=match saved {
+            Some(result)=>result?,
+            None=>{
+                let result=exact_captured_support(self.expressions,closure.expr);
+                cache.borrow_mut().support.insert(closure.expr,result.clone());
+                result?
+            }
+        };
+        let mut observed=Vec::with_capacity(support.len());
+        for index in support{
+            observed.push((index,closure.env.lookup(index)?));
+        }
+        Some(ObservedClosureKey{expr:closure.expr,
+            levels:closure.levels.clone(),observed})
+    }
+
     fn minimal_exposure_key(
         &self,
         closure:&Closure,
         transparency:Transparency,
         preserve_stuck_projection:bool,
         pending:&[Closure],
+        minimize_pending:bool,
     ) -> Option<MinimalExposureKey> {
-        let cache=self.minimal_exposure_cache.as_ref()?;
-        let saved=cache.borrow().support.get(&closure.expr).cloned();
-        let support=match saved {
-            Some(result) => result?,
-            None => {
-                let result=exact_captured_support(self.expressions,closure.expr);
-                cache.borrow_mut().support.insert(closure.expr,result.clone());
-                result?
-            }
+        if pending.len()>24 {return None;}
+        let root=self.observed_closure_key(closure)?;
+        let future=if minimize_pending{
+            pending.iter().map(|p|self.observed_closure_key(p).map(PendingObservation::Observed))
+                .collect::<Option<Vec<_>>>()?
+        }else{
+            pending.iter().cloned().map(PendingObservation::Exact).collect()
         };
-        let mut bindings=Vec::with_capacity(support.len());
-        for index in support {
-            bindings.push((index,closure.env.lookup(index)?));
-        }
-        Some((self.authority,closure.expr,closure.levels.clone(),
-            transparency,preserve_stuck_projection,pending.to_vec(),bindings))
+        Some((self.authority,root.expr,root.levels,
+            transparency,preserve_stuck_projection,future,root.observed))
     }
 
     pub fn with_nat_primitives(mut self, primitives: Option<NatPrimitives>) -> Self {
@@ -551,6 +581,7 @@ impl<'a> Machine<'a> {
             || std::env::var_os("NUCLEUS_EXPERIMENTAL_MINIMAL_EXPOSURE").is_some() {
             self.minimal_exposure_key(
                 &closure,transparency,preserve_stuck_projection,&pending,
+                std::env::var_os("NUCLEUS_EXPERIMENTAL_MINIMAL_PENDING").is_some(),
             )
         } else {None};
         if let (Some(minimal),Some(mkey))=(self.minimal_exposure_cache.as_ref(),minimal_key.as_ref()) {
@@ -566,6 +597,19 @@ impl<'a> Machine<'a> {
                         eprintln!(
                             "NUCLEUS_MINIMAL_EXPOSURE_HIT:expr={:?}:frame={}:captures={}:authority={:?}:pending={}",
                             closure.expr,closure.env.id(),mkey.6.len(),self.authority,pending.len()
+                        );
+                    }
+                }
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_MINIMAL_FUTURE").is_some()
+                    && !pending.is_empty() {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static REPORT:AtomicUsize=AtomicUsize::new(0);
+                    if REPORT.fetch_add(1,Ordering::Relaxed)<64 {
+                        eprintln!(
+                            "NUCLEUS_MINIMAL_FUTURE_HIT:expr={:?}:root_captures={}:pending={}:mode={}",
+                            closure.expr,mkey.6.len(),pending.len(),
+                            if std::env::var_os("NUCLEUS_EXPERIMENTAL_MINIMAL_PENDING").is_some() {"observed"} else {"exact"}
                         );
                     }
                 }
@@ -1969,6 +2013,49 @@ mod minimal_observable_frame_tests {
                 "changing irrelevant frame must not change a lambda's future application"
             );
         }
+    }
+
+    #[test]
+    fn future_observation_discards_only_pending_arguments_unread_captures() {
+        let (expr,levels)=fixture();
+        let minimal=new_minimal_exposure_cache();
+        let machine=Machine::new(AuthorityId(9),&expr,&levels,HashMap::new())
+            .with_exposure_cache(new_exposure_cache())
+            .with_minimal_exposure_cache(minimal);
+
+        let root=Closure::new(ExprId(2),EnvFrame::empty());
+        let pa=Closure::new(ExprId(0),
+            EnvFrame::empty().extend_free(FreeId(7)).extend_free(FreeId(31)));
+        let pb=Closure::new(ExprId(0),
+            EnvFrame::empty().extend_free(FreeId(7)).extend_free(FreeId(48)));
+        let negative=Closure::new(ExprId(0),
+            EnvFrame::empty().extend_free(FreeId(8)).extend_free(FreeId(48)));
+
+        let a=machine.minimal_exposure_key(
+            &root,Transparency::Opaque,false,&[pa.clone()],true).unwrap();
+        let b=machine.minimal_exposure_key(
+            &root,Transparency::Opaque,false,&[pb.clone()],true).unwrap();
+        assert_eq!(a,b,
+            "pending BVar1 has the same observed FreeId7 despite irrelevant slot0");
+
+        let legacy=machine.minimal_exposure_key(
+            &root,Transparency::Opaque,false,&[pa],false).unwrap();
+        let distinct=machine.minimal_exposure_key(
+            &root,Transparency::Opaque,false,&[pb],false).unwrap();
+        assert_ne!(legacy,distinct,
+            "the old whole-frame future preserves an irrelevant distinction");
+
+        let other=machine.minimal_exposure_key(
+            &root,Transparency::Opaque,false,&[negative],true).unwrap();
+        assert_ne!(a,other,
+            "a pending argument with a different ACTUALLY USED FreeId must separate");
+        let different_order=machine.minimal_exposure_key(
+            &root,Transparency::Opaque,false,&[
+                Closure::new(ExprId(2),EnvFrame::empty()),
+                Closure::new(ExprId(0),EnvFrame::empty()
+                    .extend_free(FreeId(7)).extend_free(FreeId(31))),
+            ],true).unwrap();
+        assert_ne!(a,different_order,"future continuation length and order are protected");
     }
 
     #[test]
