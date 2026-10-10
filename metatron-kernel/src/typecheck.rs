@@ -666,6 +666,17 @@ impl<'a> TypeChecker<'a> {
             };
         }
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CMODEL_ARGUMENT").is_some()
+            && !result.is_proven() && expression.0 > 7000
+        {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static FAILS:AtomicUsize=AtomicUsize::new(0);
+            if FAILS.fetch_add(1,Ordering::Relaxed)<100 {
+                eprintln!("NUCLEUS_CMODEL_INFER_FAILURE:expr={expression:?}:source={:?}:context={}:frame={}:remaining={}:reason={result:?}",
+                         self.expressions.get(expression),context.len(),frame.id(),remaining);
+            }
+        }
         if let Judgment::Proven { value, .. } = &result {
             cache.insert(key, value.clone());
         }
@@ -837,7 +848,26 @@ impl<'a> TypeChecker<'a> {
                     }
                     return Judgment::unknown("application-function-type");
                 };
-                match self.check_in(*arg, &domain, context, frame, remaining, true, cache) {
+                let argument_check =
+                    self.check_in(*arg, &domain, context, frame, remaining, true, cache);
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_CMODEL_ARGUMENT").is_some()
+                    && !argument_check.is_proven()
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static ARGUMENTS: AtomicUsize = AtomicUsize::new(0);
+                    if ARGUMENTS.fetch_add(1,Ordering::Relaxed) < 100 {
+                        let target = self.closure(*arg,frame.clone());
+                        let output = self.machine().expose_for_conversion(
+                            target.clone(),Transparency::Reducible,(*remaining).min(512)
+                        );
+                        eprintln!(
+                            "NUCLEUS_CMODEL_ARG_FAILURE:application={expression:?}:function={fun:?}:argument={arg:?}:context={}:frame={}:remaining={}:domain={domain:?}:argument_result={argument_check:?}:argument_whnf={output:?}",
+                            context.len(),frame.id(),remaining
+                        );
+                    }
+                }
+                match argument_check {
                     Judgment::Proven { .. } => {
                         // The function was checked under a fresh local above, and
                         // the argument was checked against its domain. Re-infer a
