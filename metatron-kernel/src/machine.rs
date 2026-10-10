@@ -860,12 +860,14 @@ impl<'a> Machine<'a> {
                         }
                         NeutralHead::Const { name: actual, .. } => {
                             #[cfg(feature = "diagnostics")]
-                            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONSTRUCTOR_MISMATCH").is_some() {
-                                static MISMATCHES: std::sync::atomic::AtomicUsize =
+                            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONSTRUCTOR_MISMATCH").is_some()
+                                && !preserve_stuck_projection
+                            {
+                                static FATALS: std::sync::atomic::AtomicUsize =
                                     std::sync::atomic::AtomicUsize::new(0);
-                                if MISMATCHES.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 90 {
+                                if FATALS.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 50 {
                                     eprintln!(
-                                        "NUCLEUS_PROJ_CTOR_MISMATCH:kind=evaluator:type={type_name:?}:index={index}:expected={:?}:actual={actual:?}:receiver={structure:?}:receiver_head={:?}:receiver_args={}:pending={}:transparency={transparency:?}:preserve={preserve_stuck_projection}",
+                                        "NUCLEUS_PROJ_CTOR_MISMATCH:kind=fatal-evaluator:type={type_name:?}:index={index}:expected={:?}:actual={actual:?}:receiver={structure:?}:receiver_head={:?}:receiver_args={}:pending={}:transparency={transparency:?}",
                                         spec.constructor, neutral.head, neutral.spine.len(), pending.len()
                                     );
                                 }
