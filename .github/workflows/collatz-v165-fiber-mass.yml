@@ -1,0 +1,151 @@
+name: Collatz V165 exact binary-to-ternary future-class mass transport
+on:
+  push:
+    branches: [collatz-v165-binary-ternary-future-mass-transfer]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-class-populations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay q-by-q future class population on real and dual-basin synthetic maps
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v165_binary_ternary_mass_audit > evidence/v165-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v165-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V165_EXACT_BINARY_TERNARY_FUTURE_CLASS_MASS'
+          assert d['finite_source_indices_per_cylinder']==96
+          assert d['max_source_prefix_depth']==9
+          assert d['exact_source_endpoint_class_agreements']==196416
+          assert d['all_checked_finite_class_counts_equal']
+          assert d['synthetic_dual_class_fibers_detected']>0
+          assert d['same_mass_transport_admits_disjoint_future_classes']
+          assert d['distinct_synthetic_G_class_cycles']==['7->14->7','5->11->20->10->5']
+          assert not d['true_Collatz_global_future_class_uniqueness_proved']
+          assert not d['uniform_mass_spectral_gap_or_density_contraction_proved']
+          assert not d['V151_sparse_terminal_exceptional_mass_proved']
+          assert not d['synthetic_basin_counts_proved_all_scales']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V165_EXACT_SEAL',
+            'source_commit':h,
+            'status':'WARRANTED_BOUNDED_EXACT_DYADIC_TERNARY_FUTURE_MASS_REPLAY',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'countermodel_remains_synthetic':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v165-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v165-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-population-transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check finite integer q-population identity for arbitrary future class
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/BinaryTernaryClassMassTransfer.lean 2>&1 | tee evidence/v165-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v165-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-18000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          req=[
+            'v165_invariant_all_real_clocks',
+            'v165_binary_ternary_class_indicator_transport',
+            'v165_binary_ternary_finite_population_transport',
+            'v165_good_step_iff','v165_bad_step_iff',
+            'v165_bad_mass_binary_ternary_fiber',
+            'v165_future_meet_step_iff',
+            'v165_every_future_class_mass_fiber',
+            'v165_good_mass_binary_ternary_fiber'
+          ]
+          for target in req:
+            assert 'CollatzFinal.SourceProduct.'+target in ax,target
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V165_FORMAL_MASS_TRANSPORT',
+            'source_commit':h,'axioms':ax,
+            'status':'WARRANTED_FORMAL_ALL_SOURCE_EVERY_FUTURE_CLASS_FINITE_MASS_TRANSFER',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'actual_collatz_step_odd_affine':True,
+            'global_density_contraction_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v165-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v165-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-class-populations,formal-population-transfer]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v165-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v165-formal
+          path: evidence/formal
+      - name: Seal exact source-sha arithmetic scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v165-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v165-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['countermodel_remains_synthetic']
+          assert b['status']=='WARRANTED_FORMAL_ALL_SOURCE_EVERY_FUTURE_CLASS_FINITE_MASS_TRANSFER'
+          assert not b['global_density_contraction_proved']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V165_FINAL','source_commit':h,
+            'status':'WARRANTED_FORMAL_EXACT_FUTURE_CLASS_FIBER_MASS_IDENTITY_NOT_QED',
+            'new_theorem':'For every actual future class predicate, exact q-budget source count on r+2^k*q equals reached endpoint class count on T^k(r)+3^a*q',
+            'actual_consequence':'Bad and terminal-good finite populations can be transported without statistical independence or virtual sources',
+            'synthetic_negative':'G7 has two distinct invariant basins obeying same mass identity',
+            'unproved':'A spectral-gap/renewal/source-conditioned overlap bound forcing V151 sparse terminal exceptional mass',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v165-final.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v165-final
+          path: evidence/v165-final.json
+          if-no-files-found: error
