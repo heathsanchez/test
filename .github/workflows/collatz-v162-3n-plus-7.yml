@@ -1,0 +1,152 @@
+name: Collatz V162 3n+7 adversarial equivalence
+on:
+  push:
+    branches: [collatz-v162-3n-plus-7-adversarial]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-adversarial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay synthetic odd constant 7 with actual 3n+1 negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v162_three_n_plus_seven_audit > evidence/v162-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v162-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V162_THREE_N_PLUS_SEVEN_EXACT_ADVERSARIAL'
+          assert d['synthetic_map'].endswith('(3*n+7)/2')
+          assert d['genuine_collatz_is_separate_map']
+          assert d['odd_step_residue_two_mod_three_verified']
+          assert d['same_even_branch']
+          assert d['same_ternary_all_depth_sieve_verified_up_to_k']==19
+          assert d['ternary_source_depth_checks']==100000
+          assert d['affine_cases']==16000
+          assert d['same_source_affine_slope_3_oddcount_verified']
+          assert d['all_finite_parity_word_permutations_pass_for_both_maps']
+          assert d['finite_prefix_cases']==4080
+          assert d['finite_source_instances']==130050
+          assert d['cycle_A']==[7,14] and d['cycle_B']==[5,11,20,10]
+          assert d['two_disjoint_real_positive_periodic_classes']
+          assert d['finite_cycle_A_basin_count']>0 and d['finite_cycle_B_basin_count']>0
+          assert d['finite_cycle_A_basin_count']+d['finite_cycle_B_basin_count']==32767
+          assert not d['basin_density_unbounded_theorem_proved']
+          assert not d['actual_collatz_global_convergence_proved']
+          assert not d['qed'] and d['global_collatz']=='UNKNOWN'
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V162_EXACT_SEAL','source_commit':h,
+            'status':'WARRANTED_BOUNDED_3N7_SAME_STRUCTURAL_SEMANTICS_DISTINCT_CYCLES',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'countermodel_not_collatz':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v162-exact-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v162-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-adversarial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check identical finite parity semantics and distinct real 3n+7 cycles
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift FiniteParityPopulationMixing; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/ThreeNPlusSevenSeparator.lean 2>&1 | tee evidence/v162-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v162-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-18000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          target=['v162_exact_cylinder_affine','v162_odd_target_mod3',
+            'v162_pure_even_ancestry','v162_same_ternary_sieve',
+            'v162_flips_next_actual_parity',
+            'v162_preserves_earlier_actual_parities',
+            'v162_every_finite_future_parity_word',
+            'v162_disjoint_actual_positive_future_classes',
+            'v162_explicit_two_cycles']
+          for t in target:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V162_FORMAL_ADVERSARIAL',
+            'source_commit':h,'axioms':ax,
+            'status':'WARRANTED_FORMAL_3N7_SAME_TERNARY_AND_ALL_FINITE_PARITY_MIXING_DISTINCT_CYCLES',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'actual_collatz_conjecture_disproved':False,
+            'actual_collatz_conjecture_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v162-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v162-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-adversarial,formal-adversarial]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v162-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v162-formal
+          path: evidence/formal
+      - name: Independently seal theorem scope and true odd-constant separator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v162-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v162-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['countermodel_not_collatz']
+          assert not b['actual_collatz_conjecture_disproved']
+          assert not b['actual_collatz_conjecture_proved']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          out={'schema':'COLLATZ_V162_FINAL','source_commit':h,
+            'status':'WARRANTED_FORMAL_3N7_STRUCTURAL_COUNTERMODEL_NOT_QED',
+            'protected_separator':'Even-halving + odd 3x slope + exact ternary sieve + complete finite parity mixing do not force unique future class',
+            'cycles':['7 -> 14 -> 7','5 -> 11 -> 20 -> 10 -> 5'],
+            'missing':'Actual 3n+1 intercept-specific infinite-source class merger / stopping-tail bound',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v162-final.json').write_text(json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v162-final
+          path: evidence/v162-final.json
+          if-no-files-found: error
