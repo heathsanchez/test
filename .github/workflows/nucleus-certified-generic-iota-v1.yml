@@ -79,7 +79,9 @@ jobs:
               env['NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION']='1'
               if mode=='generic_iota':
                   env['NUCLEUS_EXPERIMENTAL_GENERIC_IOTA']='1'
-                  if trace: env['NUCLEUS_TRACE_GENERIC_IOTA']='1'
+                  if trace:
+                      env['NUCLEUS_TRACE_GENERIC_IOTA']='1'
+                      env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
               if trace: env['NUCLEUS_TRACE_DOWNSTREAM']='1'
               return env
           rows=[]
@@ -94,6 +96,7 @@ jobs:
                        'seconds':round(time.monotonic()-t,3),
                        'certified_iota_observations':sum('NUCLEUS_GENERIC_IOTA:' in s for s in logs),
                        'iota_samples':[s for s in logs if 'NUCLEUS_GENERIC_IOTA:' in s][:12],
+                       'first_head_mismatches':[s for s in logs if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in s][:8],
                        'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
                   print('NUCLEUS_GENERIC_IOTA_SEVEN='+json.dumps(row),flush=True)
                   assert p.returncode in (0,2),('valid became rejected',row)
