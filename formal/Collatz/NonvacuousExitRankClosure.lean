@@ -175,10 +175,10 @@ theorem v156_zero_tail_kernel_empty_of_exit_or_lex_rank
         | ind b ihB =>
             intro s hmajor hminor hs
             have hzero : ZeroTailLive s := hsub s hs
-            obtain ⟨j,hExit | ⟨_hjlive,hdec⟩⟩ :=
-              hProgress s hzero
+            obtain ⟨j,hcase⟩ := hProgress s hzero
             have hSj : S (iter step j s) :=
               postfixed_iter_mem S hPost j s hs
+            rcases hcase with hExit | ⟨_hjlive,hdec⟩
             · exact (hsub _ hSj).1.2 hExit
             · rcases hdec with hMaj | hMin
               · have hltA :
