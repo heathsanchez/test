@@ -1471,6 +1471,49 @@ impl<'a> TypeChecker<'a> {
                                 ))
                             }).collect::<Vec<_>>()
                         };
+                        let inspect=|label:&str,a:&Closure,b:&Closure| {
+                            let mut afuel=2048;
+                            let a_ty=self.infer_exact_closure_in_context(
+                                a,context,&mut afuel,0,
+                            );
+                            let mut bfuel=2048;
+                            let b_ty=self.infer_exact_closure_in_context(
+                                b,context,&mut bfuel,0,
+                            );
+                            let kind=|ty:&Option<TypeValue>|{
+                                if let Some(TypeValue::Term(c))=ty {
+                                    let mut fuel=1024;
+                                    self.infer_exact_closure_in_context(
+                                        c,context,&mut fuel,0,
+                                    ).map(|x|self.sort_level(
+                                        Judgment::proven(x,"source-operand-kind"),
+                                        fuel.min(512),
+                                    ))
+                                }else{None}
+                            };
+                            let same_type=match (&a_ty,&b_ty) {
+                                (Some(left),Some(right))=>Some(
+                                    crate::convert::convert_with_policy_in_context(
+                                        self,left,right,2048,
+                                        crate::convert::DeltaPolicy::PreferredOnly,
+                                        context.len(),context,
+                                    )),
+                                _=>None,
+                            };
+                            let a_value=self.machine().expose_for_conversion(
+                                a.clone(),Transparency::Reducible,512,
+                            );
+                            let b_value=self.machine().expose_for_conversion(
+                                b.clone(),Transparency::Reducible,512,
+                            );
+                            format!(
+                                "{label}:a={a:?}:b={b:?}:atype={a_ty:?}:btype={b_ty:?}:akind={:?}:bkind={:?}:type_relation={same_type:?}:value_a={}:value_b={}:checked_proof_pair={}",
+                                kind(&a_ty),kind(&b_ty),
+                                format!("{a_value:?}").chars().take(1500).collect::<String>(),
+                                format!("{b_value:?}").chars().take(1500).collect::<String>(),
+                                self.checked_proof_pair_in_bounded_context(a,b,context,2048),
+                            )
+                        };
                         match (left,right) {
                             (Some(Value::StuckProjection{
                                 type_name:ln,index:li,structure:ls,spine:la,
@@ -1479,14 +1522,14 @@ impl<'a> TypeChecker<'a> {
                             })) if ln==rn && li==ri && la.len()==ra.len() => {
                                 let receiver=compare_pair(ls,rs);
                                 let args=la.iter().zip(ra.iter()).enumerate()
-                                    .map(|(i,(a,b))|format!("arg{i}:{:?}",compare_pair(a,b)))
+                                    .map(|(i,(a,b))|format!("arg{i}:{:?}:{}",compare_pair(a,b),inspect(&format!("arg{i}"),a,b)))
                                     .collect::<Vec<_>>();
                                 format!("same_projection={ln:?}:{li}:receiver={receiver:?}:arguments={args:?}")
                             }
                             (Some(Value::Neutral(l)),Some(Value::Neutral(r)))
                                 if l.head==r.head && l.spine.len()==r.spine.len() => {
                                 let args=l.spine.iter().zip(r.spine.iter()).enumerate()
-                                    .map(|(i,(a,b))|format!("arg{i}:{:?}",compare_pair(a,b)))
+                                    .map(|(i,(a,b))|format!("arg{i}:{:?}:{}",compare_pair(a,b),inspect(&format!("arg{i}"),a,b)))
                                     .collect::<Vec<_>>();
                                 format!("same_neutral_head={:?}:arguments={args:?}",l.head)
                             }
