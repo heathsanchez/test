@@ -1,0 +1,150 @@
+name: Collatz V161 finite-horizon source-parity mixing
+on:
+  push:
+    branches: [collatz-v161-finite-parity-population-mixing]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-finite-populations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact finite parity permutations and adversarial disjoint basin
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v161_finite_population_audit > evidence/v161-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v161-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V161_FINITE_SOURCE_POPULATION_PARITY_MIXING'
+          assert d['prefix_suffix_map_checks']==4080
+          assert d['source_instances']==130050
+          assert d['all_finite_suffix_words_exactly_once_for_both_maps']
+          assert d['synthetic_map_two_disjoint_positive_terminal_cycles']
+          assert not d['synthetic_finite_mix_but_unique_terminal_basin']
+          assert len(d['per_depth'])==64
+          assert all(x['true_map_pass'] and x['synthetic_two_basin_pass']
+                     and x['exact_parity_suffix_permutation']
+                     for x in d['per_depth'])
+          assert not d['infinite_fixed_positive_source_mixing_proved']
+          assert not d['sparse_terminal_exceptional_mass_proved']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V161_EXACT_SEAL',
+            'source_commit':h,
+            'status':'WARRANTED_BOUNDED_ALL_FINITE_PARITY_PREFIX_PERMUTATIONS',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'synthetic_countermodel_stays_non_collatz':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v161-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v161-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-all-finite-words:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lean prove every future finite parity word has a genuine prefix-attached source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/FiniteParityPopulationMixing.lean 2>&1 | tee evidence/v161-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v161-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-16000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=['v161_odd_affine_coefficient',
+            'v161_flips_next_actual_parity',
+            'v161_preserves_earlier_actual_parities',
+            'v161_choose_one_more_bit',
+            'v161_every_finite_future_parity_word',
+            'v161_real_positive_finite_suffix',
+            'v161_two_basin_one_cycle','v161_two_basin_three_fixed',
+            'v161_two_basin_even_source','v161_two_basin_odd_affine']
+          for t in targets:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V161_FORMAL_ALL_FINITE_SUFFIXES',
+            'source_commit':h,'axioms':ax,
+            'status':'WARRANTED_FORMAL_SOURCE_PREFIX_ANY_FINITE_FUTURE_PARITY_WORD',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'conditional_on_global_convergence':False,
+            'infinite_time_stopping_bound_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v161-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v161-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-final-seal:
+    needs: [exact-finite-populations,formal-all-finite-words]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v161-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v161-formal
+          path: evidence/formal
+      - name: Verify same commit and retain unresolved stopping-time tail
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v161-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v161-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['synthetic_countermodel_stays_non_collatz']
+          assert b['conditional_on_global_convergence'] is False
+          assert b['infinite_time_stopping_bound_proved'] is False
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V161_FINAL','source_commit':h,
+            'status':'WARRANTED_FORMAL_ALL_FINITE_PARITY_SUFFIX_SOURCE_LIFTS_NOT_QED',
+            'new_unconditional':'Every finite binary parity suffix occurs in each fixed original k-bit source prefix by an actual positive integer source (if prefix positive)',
+            'countermodel':'Distinct 1-2 and 3 positive cycles coexist with exact finite parity mixing under a different odd affine rule',
+            'missing':'source-uniform infinite-horizon terminal stopping-time tail or class-overlap bound',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v161-final.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v161-final
+          path: evidence/v161-final.json
+          if-no-files-found: error
