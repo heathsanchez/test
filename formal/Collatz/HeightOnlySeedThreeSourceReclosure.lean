@@ -3,6 +3,9 @@ import Collatz.HeightClockEliminationMonotonicity
 namespace CollatzFinal
 namespace SourceProduct
 
+set_option maxRecDepth 8192
+set_option maxHeartbeats 1000000
+
 /-!
 V175 — ONE HEIGHT-ADMITTED TERMINAL SEED CLOSES THREE
 EARLIER UNSEEDED ORIGINAL-SOURCE MEMBERS.
@@ -77,7 +80,7 @@ theorem v175_terminal_n2_from_new_larger_seed :
   calc
     iter shortcut 264 v175N2 =
         iter shortcut (198+66) v175N2 := by
-          congr 1; decide
+          rfl
     _ = iter shortcut 66 (iter shortcut 198 v175N2) :=
       iter_add shortcut 198 66 v175N2
     _ = iter shortcut 66 (iter shortcut 2 v175Root) := by
@@ -91,11 +94,13 @@ theorem v175_terminal_n1_by_proof_reuse :
     iter shortcut 265 v175N1 = 2 := by
   calc
     iter shortcut 265 v175N1 =
-        iter shortcut (1+264) v175N1 := by congr 1; decide
+        iter shortcut (1+264) v175N1 := by rfl
     _ = iter shortcut 264 (iter shortcut 1 v175N1) :=
       iter_add shortcut 1 264 v175N1
     _ = iter shortcut 264 v175N2 := by
-      simp only [iter, v175_old_component_first_short_link]
+      change iter shortcut 264 (shortcut v175N1) =
+        iter shortcut 264 v175N2
+      rw [v175_old_component_first_short_link]
     _ = 2 := v175_terminal_n2_from_new_larger_seed
 
 theorem v175_terminal_n3_by_proof_reuse :
