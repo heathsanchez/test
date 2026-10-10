@@ -1,0 +1,129 @@
+name: Nucleus MSI Nat.mul checked-source separator
+on:
+  push:
+    branches: [nucleus-msi-mul-authority-separator-v1]
+    paths:
+      - "metatron-kernel/**"
+      - ".github/workflows/nucleus-msi-mul-authority-separator-v1.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: nucleus-mul-source-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build source-exact checker
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+      - name: Fetch pinned Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests metatron-kernel/evidence-out/mul-source
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" >/tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Probe checked Mul and captured HAdd HMul at first stuck obligation
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests')
+          dst=pathlib.Path('metatron-kernel/evidence-out/mul-source')
+          env=os.environ.copy()
+          for flag in ('NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION',
+                       'NUCLEUS_EXPERIMENTAL_RELEVANCE',
+                       'NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER',
+                       'NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE',
+                       'NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE',
+                       'NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT',
+                       'NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512',
+                       'NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL',
+                       'NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F',
+                       'NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA',
+                       'NUCLEUS_TRACE_MUL_SOURCE',
+                       'NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE',
+                       'NUCLEUS_TRACE_PROJECTION_LAST_FAILURE',
+                       'NUCLEUS_TRACE_ARITHMETIC_INSTANCE',
+                       'NUCLEUS_TRACE_DOWNSTREAM'):
+              env[flag]='1'
+          cases=['init-prelude','perf/grind-ring-5','perf/magma-list-deep-n21','perf/fueled-chain']
+          items=[]
+          for case in cases:
+              f=root/'good'/(case+'.ndjson')
+              data=f.read_bytes()
+              p=subprocess.run(['/tmp/nucleus'],input=data,env=env,
+                  stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=80)
+              lines=p.stderr.decode(errors='replace').splitlines()
+              def grab(key,n=60):
+                  return [s[:3400] for s in lines if s.startswith(key)][:n]
+              row={
+                  'case':case,'fixture_sha256':hashlib.sha256(data).hexdigest(),
+                  'verdict':p.returncode,
+                  'mul_source':grab('NUCLEUS_MUL_SOURCE:',5),
+                  'mul_nodes':grab('NUCLEUS_MUL_NODE:',72),
+                  'instance_leaf':grab('NUCLEUS_ARITHMETIC_INSTANCE:',8),
+                  'projection_field':grab('NUCLEUS_PROJECTION_FIELD_PROBE:',40),
+                  'post_projection':grab('NUCLEUS_POST_IOTA_PROJECTION_GAP:',24),
+                  'first_unknown':grab('NUCLEUS_DOWNSTREAM:',4),
+              }
+              items.append(row)
+              print('NUCLEUS_MUL_SEPARATOR='+json.dumps({
+                  'case':case,'rc':p.returncode,'mul_source':row['mul_source'],
+                  'tree_nodes':len(row['mul_nodes']),
+                  'projection_field_count':len(row['projection_field']),
+                  'projection_examples':row['projection_field'][-3:],
+                  'first_unknown':row['first_unknown']}),flush=True)
+              assert p.returncode==2,(case,p.returncode)
+          output=dst/'mul-source.json'
+          output.write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
+              'arena_sha':os.environ['ARENA_SHA'],
+              'artifact':os.environ['ARENA_ARTIFACT'],'rows':items},indent=2)+'\n')
+          print('NUCLEUS_MUL_SOURCE_ROWS='+str(len(items)),flush=True)
+          PY
+      - name: Protect unchanged frozen 196 verdicts
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests')
+          counts={'accept':0,'reject':0,'unknown':0}
+          items=list((root/'good').rglob('*.ndjson'))+list((root/'bad').rglob('*.ndjson'))
+          assert len(items)==196
+          for f in items:
+              p=subprocess.run(['/tmp/nucleus'],input=f.read_bytes(),
+                  stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=45)
+              code=p.returncode
+              if code==0:
+                  assert f.parent != root/'bad' and 'bad' not in f.relative_to(root).parts
+                  counts['accept']+=1
+              elif code==1:
+                  assert 'bad' in f.relative_to(root).parts
+                  counts['reject']+=1
+              else:
+                  assert code==2
+                  counts['unknown']+=1
+          print('NUCLEUS_MUL_FROZEN196='+str(counts),flush=True)
+          assert counts=={'accept':118,'reject':71,'unknown':7}, counts
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-msi-mul-source-${{ github.sha }}
+          path: metatron-kernel/evidence-out/mul-source
+          if-no-files-found: warn
