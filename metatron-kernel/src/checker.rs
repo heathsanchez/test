@@ -2882,12 +2882,20 @@ fn relation_proof_record_obligations(
     let checker = TypeChecker::with_level_substitution(
         &export.exprs, &export.levels, environment, parameter_substitution(&inductive.level_params),
     ).with_delta_policy(delta_policy);
-    let parameter_frame = EnvFrame::empty().extend_free(FreeId(75_000));
+    // For capture-aware inference, bind every synthetic free variable
+    // using its checked context position, rather than an unrelated display
+    // index. This is an explicit closed typing environment construction.
+    let canonical = std::env::var_os("NUCLEUS_EXPERIMENTAL_CAPTURED_BVAR").is_some();
+    let parameter_frame = EnvFrame::empty().extend_free(
+        FreeId(if canonical { 0 } else { 75_000 })
+    );
     let context = vec![
         TypeValue::Term(checker.closure(fields[0], EnvFrame::empty())),
         TypeValue::Term(checker.closure(fields[1], parameter_frame.clone())),
     ];
-    let frame = parameter_frame.extend_free(FreeId(75_001));
+    let frame = parameter_frame.extend_free(
+        FreeId(if canonical { 1 } else { 75_001 })
+    );
     matches!(checker.is_proposition_in_context(fields[2], &context, &frame, limits.judgment_steps), Judgment::Proven { .. })
 }
 
@@ -3332,7 +3340,13 @@ fn generic_prop_singleton_field_is_proposition(
         let Ok(index) = u64::try_from(index) else {
             return false;
         };
-        frame = frame.extend_free(FreeId(75_000 + index));
+        frame = frame.extend_free(FreeId(
+            if std::env::var_os("NUCLEUS_EXPERIMENTAL_CAPTURED_BVAR").is_some() {
+                index
+            } else {
+                75_000 + index
+            }
+        ));
     }
 
     for (field_index, field) in constructor_domains[parameter_count..].iter().enumerate() {
@@ -3349,7 +3363,11 @@ fn generic_prop_singleton_field_is_proposition(
         }
         context.push(TypeValue::Term(checker.closure(*field, frame.clone())));
         frame = frame.extend_free(FreeId(
-            75_000 + (parameter_count + field_index) as u64,
+            if std::env::var_os("NUCLEUS_EXPERIMENTAL_CAPTURED_BVAR").is_some() {
+                (parameter_count + field_index) as u64
+            } else {
+                75_000 + (parameter_count + field_index) as u64
+            }
         ));
     }
     true
