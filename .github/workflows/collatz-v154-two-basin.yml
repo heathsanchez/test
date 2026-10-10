@@ -1,0 +1,142 @@
+name: Collatz V154 protected-future two-basin separator
+on:
+  push:
+    branches: [collatz-v154-two-basin-density-separator]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-two-basin:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay the non-Collatz exact two-basin countermodel
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v154_two_basin_audit > evidence/v154-exact.json
+          python3 - <<'PY'
+          import pathlib,json,hashlib,subprocess
+          f=pathlib.Path('evidence/v154-exact.json')
+          d=json.loads(f.read_text())
+          assert d['schema']=='COLLATZ_V154_TWO_BASIN_DENSITY_COUNTERMODEL'
+          assert d['synthetic_not_actual_collatz']
+          assert d['all_even_doublings_preserved_in_tests']
+          assert d['every_n_ge_4_descends_in_one_step_in_tests']
+          assert d['all_targets_have_infinite_exact_dyadic_predecessor_blocks']
+          assert d['positive_lower_natural_density_for_each_target_via_intervals']
+          assert d['number_of_ancestor_interval_assertions']>500000
+          assert d['positive_density_of_both_basins']
+          assert d['naive_amplifier_plus_strict_descent_to_qed']=='REJECTED_BY_COUNTERMODEL'
+          assert d['actual_collatz_odd_affine_rule_not_satisfied']
+          assert d['global_collatz']=='UNKNOWN' and d['actual_collatz_qed'] is False
+          assert len(d['positive_predecessor_density_sampled_targets'])==34
+          assert all(r['good_basin_count']==r['X']//2 and r['bad_basin_count']==r['X']//2-1
+                     for r in d['finite_dyadic_basin_exact_counts'])
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V154_EXACT_SEAL','source_commit':h,
+            'status':'WARRANTED_EXACT_TWO_BASIN_SEMANTIC_COUNTERCONTROL',
+            'json_sha256':hashlib.sha256(f.read_bytes()).hexdigest(),
+            'synthetic_not_collatz':True,'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v154-exact-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v154-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-two-basin:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel check two basin counterexample with exact even inverse
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          lake env lean -DautoImplicit=false formal/Collatz/TwoBasinDensityCountermodel.lean 2>&1 | tee evidence/v154-lean.log
+          python3 - <<'PY'
+          import re,pathlib,json,hashlib,subprocess
+          f=pathlib.Path('evidence/v154-lean.log')
+          log=f.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-12000:]
+          axioms={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[z.strip() for z in inside.split(',') if z.strip()]
+            assert set(aa)<={'propext','Quot.sound','Classical.choice'},(name,aa)
+            axioms[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          for t in [
+            'v154_even_half','v154_eventual_strict_descent',
+            'v154_step_at_positive_binary_block',
+            'v154_every_target_binary_interval',
+            'v154_two_families_reach_one',
+            'v154_target_three_has_infinite_bad_blocks',
+            'v154_one_is_good','v154_three_is_bad']:
+            assert 'CollatzFinal.SourceProduct.'+t in axioms,t
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V154_FORMAL_TWO_BASIN',
+            'source_commit':h,'axioms':axioms,
+            'status':'WARRANTED_FORMAL_EXACT_TWO_BASIN_COUNTERMODEL',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'actual_collatz_odd_equation_not_satisfied':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v154-formal-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v154-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-seal:
+    needs: [exact-two-basin,formal-two-basin]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v154-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v154-formal
+          path: evidence/formal
+      - name: Source and result reconciliation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v154-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v154-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['synthetic_not_collatz'] and b['actual_collatz_odd_equation_not_satisfied']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V154_FINAL','source_commit':h,
+            'status':'WARRANTED_FORMAL_REJECTION_OF_GENERIC_AMPLIFIER_PLUS_DESCENT_CLOSEOUT',
+            'result':'Generic exact even-halving, targetwise positive-density predecessor intervals, uniform strict descent outside two finite roots and positive-density good basin coexist with independent positive-density bad basin.',
+            'needed':'A Collatz-specific odd affine equation and target basin coalescence/anti-branching theorem.',
+            'not_proved':'Collatz-specific basin mixing; sparse exceptional terminal mass; full Collatz',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v154-final.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v154-final
+          path: evidence/v154-final.json
+          if-no-files-found: error
