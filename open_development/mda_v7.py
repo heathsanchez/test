@@ -16,6 +16,7 @@ from collections import deque
 from copy import deepcopy
 from dataclasses import asdict, dataclass
 from itertools import islice
+import json
 from typing import Any, Mapping, Sequence
 
 from .runtime import (Developer, Evidence, EvidenceStore, Obligation, Repair,
@@ -63,9 +64,12 @@ def _project(state: Mapping[str, Any], repair: Repair, proof: Evidence,
     rid = admission_id(repair, proof.verifier)
     if rid in projected["capabilities"]:
         raise ValueError("duplicate projected admission")
-    projected["capabilities"][rid] = {
+    # The only faithful virtual successor is the persisted event's JSON
+    # denotation. Python tuple != list in executable dependency checks.
+    # This normalization is consequential, not decorative serialization.
+    projected["capabilities"][rid] = json.loads(canonical({
         "id": rid, "repair": asdict(repair), "evidence": asdict(proof),
-        "attachment": attachment, "status": "verified", "level": "K1"}
+        "attachment": attachment, "status": "verified", "level": "K1"}))
     if repair.kind == "observation":
         projected["observations"] = sorted(set(projected["observations"]) | {rid})
     if repair.kind == "policy":
@@ -271,7 +275,10 @@ class MinimalContinuation(Developer):
         actual = self.store.state()
         final = self._assess(actual, obligation)
         assess_checks += 1
-        okay = final is not None and final.verdict == "verified"
+        # The observed persistent present must equal the previewed present.
+        # A false-optimistic preview cannot license a durable capability.
+        okay = (final is not None and final.verdict == "verified"
+                and digest(actual) == digest(chosen.state))
         for old in protect_baseline:
             trial = self._assess(actual, old)
             checks += 1
