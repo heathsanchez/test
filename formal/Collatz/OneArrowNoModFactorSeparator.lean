@@ -19,7 +19,7 @@ The system still has:
 
 The last claim follows by a real two-clock/affine repair:
 any positive-source MOD-M periodic f invariant under S5
-also satisfies f(T(n))=f(n) at the exceptional source5,
+also satisfies f (T(n))=f (n) at the exceptional source5,
 because the unaffected source 5+2M is odd and
 T(5+2M)=T(5)+3M. V159 then makes f constant.
 
@@ -68,8 +68,10 @@ theorem v171_only_even_predecessors_of_three
   · have ht : v171Map n=n/2 := by
       have hEven := v171_even_source (n/2)
       have hn : n=2*(n/2) := by omega
-      rw [hn]
-      exact hEven
+      calc
+        v171Map n = v171Map (2*(n/2)) :=
+          congrArg v171Map hn
+        _ = n/2 := hEven
     rw [ht]
     omega
   · have hOdd : n%2=1 := by omega
@@ -188,9 +190,9 @@ theorem v171_two_disjoint_real_positive_future_classes :
     periodicity assumption. -/
 theorem v171_positive_period_multiples {α : Type}
     (f : Nat → α) (M : Nat)
-    (hPeriod : ∀ n, 0<n → f(n+M)=f n) :
+    (hPeriod : ∀ n, 0<n → f (n+M)=f n) :
     ∀ t n : Nat, 0<n →
-      f(n+t*M)=f n := by
+      f (n+t*M)=f n := by
   intro t
   induction t with
   | zero =>
@@ -200,10 +202,10 @@ theorem v171_positive_period_multiples {α : Type}
       intro n hn
       have hp : 0<n+t*M := by omega
       calc
-        f(n+(t+1)*M)=f((n+t*M)+M) := by
+        f (n+(t+1)*M)=f ((n+t*M)+M) := by
           congr 1
           omega
-        _=f(n+t*M) := hPeriod _ hp
+        _=f (n+t*M) := hPeriod _ hp
         _=f n := ih n hn
 
 /-- An invariant label of the modified map that is periodic
@@ -213,29 +215,29 @@ theorem v171_positive_period_multiples {α : Type}
     class exists in the modified system. -/
 theorem v171_periodic_label_reconstructs_true_shortcut
     {α : Type} (f : Nat → α) (M : Nat) (hM : 0<M)
-    (hStep : ∀ n, 0<n → f(v171Map n)=f n)
-    (hPeriod : ∀ n, 0<n → f(n+M)=f n) :
-    ∀ n, 0<n → f(shortcut n)=f n := by
+    (hStep : ∀ n, 0<n → f (v171Map n)=f n)
+    (hPeriod : ∀ n, 0<n → f (n+M)=f n) :
+    ∀ n, 0<n → f (shortcut n)=f n := by
   intro n hn
   by_cases hFive : n=5
   · subst n
     have hLift : (5+2*M)≠5 := by omega
     have hLiftPos : 0<5+2*M := by omega
-    have hShift : shortcut(5+2*M)=shortcut 5+3*M := by
+    have hShift : shortcut (5+2*M)=shortcut 5+3*M := by
       have hStepShift := shortcut_shift 5 M
       simpa using hStepShift
-    have hMap : v171Map(5+2*M)=shortcut(5+2*M) := by
+    have hMap : v171Map (5+2*M)=shortcut (5+2*M) := by
       simp [v171Map,hLift]
-    have hP3 : f(shortcut 5+3*M)=f(shortcut 5) :=
+    have hP3 : f (shortcut 5+3*M)=f (shortcut 5) :=
       v171_positive_period_multiples f M hPeriod
         3 (shortcut 5) (by decide)
-    have hP2 : f(5+2*M)=f 5 :=
+    have hP2 : f (5+2*M)=f 5 :=
       v171_positive_period_multiples f M hPeriod 2 5 (by decide)
     calc
-      f(shortcut 5)=f(shortcut 5+3*M) := hP3.symm
-      _=f(shortcut(5+2*M)) := by rw [hShift]
-      _=f(v171Map(5+2*M)) := by rw [hMap]
-      _=f(5+2*M) := hStep _ hLiftPos
+      f (shortcut 5)=f (shortcut 5+3*M) := hP3.symm
+      _=f (shortcut (5+2*M)) := by rw [hShift]
+      _=f (v171Map (5+2*M)) := by rw [hMap]
+      _=f (5+2*M) := hStep _ hLiftPos
       _=f 5 := hP2
   · have hs := hStep n hn
     simpa [v171Map,hFive] using hs
@@ -247,8 +249,8 @@ theorem v171_periodic_label_reconstructs_true_shortcut
 theorem v171_no_nontrivial_fixed_mod_future_label
     {α : Type} (f : Nat → α)
     (M : Nat) (hM : 0<M)
-    (hStep : ∀ n, 0<n → f(v171Map n)=f n)
-    (hPeriod : ∀ n, 0<n → f(n+M)=f n) :
+    (hStep : ∀ n, 0<n → f (v171Map n)=f n)
+    (hPeriod : ∀ n, 0<n → f (n+M)=f n) :
     ∀ n m, 0<n → 0<m → f n=f m := by
   exact v159_positive_future_label_cannot_be_periodic
     f M hM
