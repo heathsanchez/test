@@ -1836,6 +1836,11 @@ fn compare_neutral_heads(
             Judgment::proven((), "same-rigid-constant")
         }
         _ => {
+            if checker.certified_typed_neutral_proof_equivalence(
+                left,right,context,depth,budget,
+            ){
+                return Judgment::proven((),"independently-checked-neutral-proof-irrelevance");
+            }
             if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
                 eprintln!(
                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:depth={depth}:context_len={}:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
