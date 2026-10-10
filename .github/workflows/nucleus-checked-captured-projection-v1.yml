@@ -25,6 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           cp metatron-kernel/src/typecheck.rs /tmp/captured-projection-candidate.rs
+          git fetch --no-tags --depth=1 origin 842a94782aa2da174333358f66ff9273d1f4c336
           git show 842a94782aa2da174333358f66ff9273d1f4c336:metatron-kernel/src/typecheck.rs > metatron-kernel/src/typecheck.rs
           set +e
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test captured_projection_warrant captured_projection_field_is_typed_from_checked_constructor_telescope -- --nocapture > /tmp/captured-red.log 2>&1
