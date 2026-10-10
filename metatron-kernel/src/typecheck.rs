@@ -2397,7 +2397,15 @@ impl<'a> TypeChecker<'a> {
             if w.protected_prefix.get(slot)!=Some(&w.domain) {
                 return format!("origin-binder-domain-mismatch:node={node}:free={free:?}");
             }
-            if !w.protected_prefix.starts_with(context) {
+            // Proof-preserving weakening goes either direction in the
+            // prefix check: an older source witness may have fewer binders
+            // than the caller, provided their entire shared typed prefix
+            // is IDENTICAL. For a source extension, require a compatible
+            // continuation of the current context. Anything else is an
+            // obligation for an explicit typed substitution morphism.
+            if !w.protected_prefix.starts_with(context)
+                && !context.starts_with(&w.protected_prefix)
+            {
                 // This is a typed-context *separation*, not a refutation of
                 // Lean equality. Give the exact first premise that would
                 // require a checked telescope morphism, never merge by
@@ -3755,6 +3763,38 @@ mod checked_binding_lineage_tests {
         env: &'a Environment
     )->TypeChecker<'a>{
         TypeChecker::new(e,l,env)
+    }
+
+    #[test]
+    fn source_binder_witness_weakens_only_under_identical_typed_prefix() {
+        let mut expressions=IdTable::default();
+        expressions.insert(ExprId(0),Expr::BVar(0)).unwrap();
+        let levels=IdTable::default();
+        let env=Environment::empty();
+        let mut checker=TypeChecker::new(&expressions,&levels,&env);
+        checker.strict_origin_probe=true;
+        let prop=TypeValue::Sort(LevelTerm::Zero);
+        let other=TypeValue::Sort(LevelTerm::Succ(Box::new(LevelTerm::Zero)));
+        let frame=EnvFrame::empty().extend_free(FreeId(0));
+        checker.retain_checked_binding(&frame,prop.clone(),&[prop.clone()]);
+        let mut fuel=32;
+        assert_eq!(
+            checker.infer_exact_closure_in_context(
+                &Closure::new(ExprId(0),frame.clone()),
+                &[prop.clone(),other.clone()],
+                &mut fuel,0,
+            ),
+            Some(prop.clone()),
+            "verified binding from Γ may be weakened to Γ,Δ"
+        );
+        let mut fuel=32;
+        assert!(
+            checker.infer_exact_closure_in_context(
+                &Closure::new(ExprId(0),frame),
+                &[other,prop],&mut fuel,0,
+            ).is_none(),
+            "altered used binder in Γ must fail closed"
+        );
     }
 
     #[test]
