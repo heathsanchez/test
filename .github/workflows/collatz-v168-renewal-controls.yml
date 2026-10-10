@@ -22,6 +22,7 @@ jobs:
           p=pathlib.Path('evidence/v168-exact.log')
           log=p.read_text()
           assert 'G7 conditional bad-set parity exactly uniform' in log
+          assert 'Exact rational weighted clocked mass transport: 45 checks' in log
           assert 'G5 high-odd cycle and exact T1 rational shadow' in log
           assert 'Adverse inverse-odd periodic-residue edge' in log
           assert 'COLLATZ UNKNOWN' in log
