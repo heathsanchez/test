@@ -1,0 +1,239 @@
+name: Nucleus typed source substitution reclosure A/B qualification
+
+on:
+  push:
+    branches: [nucleus-typed-substitution-reclosure-v2]
+    paths:
+      - ".github/workflows/nucleus-typed-substitution-reclosure-v2.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: "1"
+      NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER: "1"
+      NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify preinstalled runner Rust without remote rustup channel refresh
+        run: |
+          set -euo pipefail
+          command -v rustc
+          command -v cargo
+          rustc --version
+          cargo --version
+          rustup toolchain list || true
+
+      - name: Fetch locked Rust dependencies with independent network gate
+        env:
+          CARGO_HTTP_TIMEOUT: "120"
+          CARGO_NET_RETRY: "10"
+          CARGO_HTTP_LOW_SPEED_LIMIT: "0"
+          CARGO_HTTP_MULTIPLEXING: "false"
+        run: |
+          set -euo pipefail
+          success=0
+          for attempt in 1 2 3 4 5; do
+            echo "CARGO_LOCKED_DEPENDENCY_FETCH_ATTEMPT=$attempt"
+            if cargo fetch --locked --manifest-path metatron-kernel/Cargo.toml; then
+              success=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$success" -ne 1 ]; then
+            echo 'CARGO_LOCKED_DEPENDENCY_FETCH_FAILED__NO_SEMANTIC_TEST_EXECUTED'
+            exit 1
+          fi
+          echo 'CARGO_LOCKED_DEPENDENCY_FETCH_GREEN'
+
+      - name: Establish exact source and full Rust regression
+        run: |
+          set -euo pipefail
+          printf 'source_commit=%s\n' "$GITHUB_SHA"
+          printf 'kernel_tree=%s\n' "$(git rev-parse HEAD:metatron-kernel)"
+          set +e
+          env -u NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib typed_binder_uses_its_witness_not_unrelated_latest_context_type -- --ignored --nocapture > /tmp/lineage-red.log 2>&1
+          red_rc=$?
+          set -e
+          if [ "$red_rc" -eq 0 ] || ! grep -q "BVar1 uses the checked parent binder's type" /tmp/lineage-red.log; then
+            cat /tmp/lineage-red.log
+            echo 'ERROR: typed binding lineage RED not qualified'
+            exit 1
+          fi
+          echo 'NUCLEUS_TYPED_LINEAGE_RED:unregistered binder type not silently inferred'
+          NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib checked_binding_lineage_tests -- --ignored --nocapture --skip checked_pi_elimination_registers_its_actual_typed_substitution
+          echo 'NUCLEUS_TYPED_LINEAGE_GREEN:exact scope prefix, nested binder, conflict revocation'
+          set +e
+          env -u NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib checked_pi_elimination_registers_its_actual_typed_substitution -- --ignored --nocapture > /tmp/reclosure-red.log 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ] || ! grep -q 'fully checked Pi elimination must produce a retained typed substitution witness' /tmp/reclosure-red.log; then
+            cat /tmp/reclosure-red.log
+            echo 'ERROR: source-checked Pi substitution RED not isolated'
+            exit 1
+          fi
+          echo 'NUCLEUS_TYPED_RECLOSURE_RED:baseline does not preserve checked dependent elimination witness'
+          NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --lib checked_binding_lineage_tests -- --ignored --nocapture
+          echo 'NUCLEUS_TYPED_RECLOSURE_GREEN:Pi/let binder lineage, scope negative and invalid application'
+          NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test relation_record -- --nocapture
+          NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+          sha256sum /tmp/nucleus
+
+      - name: Download immutable 196-case Arena authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests metatron-kernel/evidence-out/substitution-reclosure
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+
+      - name: Compare seven true residuals and exact protected false-index
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/arena-tests')
+          output=pathlib.Path('metatron-kernel/evidence-out/substitution-reclosure')
+          cases=['init-prelude','perf/grind-ring-5','perf/magma-list-pair-n7',
+                 'perf/magma-list-pair-n21','perf/magma-list-deep-n21',
+                 'perf/magma-list-deep-n36','perf/fueled-chain']
+          rows=[]
+          for case in cases:
+              data=(root/'good'/(case+'.ndjson')).read_bytes()
+              for mode in ['lineage','reclosure']:
+                  env=os.environ|{'NUCLEUS_TRACE_CONTEXT_BINDER':'1',
+                                  'NUCLEUS_TRACE_TYPED_LINEAGE':'1',
+                                  'NUCLEUS_TRACE_SUBSTITUTION_RECLOSURE':'1',
+                                  'NUCLEUS_TRACE_DOWNSTREAM':'1'}
+                  if mode=='reclosure':
+                      env['NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE']='1'
+                  t=time.monotonic()
+                  p=subprocess.run(['/tmp/nucleus'],input=data,stdout=subprocess.DEVNULL,
+                         stderr=subprocess.PIPE,timeout=150,env=env)
+                  lines=p.stderr.decode(errors='replace').splitlines()
+                  transports=[line for line in lines if 'NUCLEUS_CONTEXT_BINDER_TRANSPORT:' in line]
+                  witnesses=[line for line in lines if 'NUCLEUS_TYPED_LINEAGE_REUSE:' in line]
+                  reclosures=[line for line in lines if 'NUCLEUS_TYPED_SUBSTITUTION_RECLOSURE:' in line]
+                  downstream=[line for line in lines if 'NUCLEUS_DOWNSTREAM:' in line]
+                  row={'case':case,'mode':mode,'return_code':p.returncode,
+                       'elapsed_seconds':round(time.monotonic()-t,3),
+                       'transport_reports':len(transports),
+                       'transport_samples':transports[:3],
+                       'witnessed_binding_count':len(witnesses),
+                       'binding_samples':witnesses[:2],
+                       'checked_elimination_records':len(reclosures),
+                       'elimination_samples':reclosures[:2],
+                       'last_downstream':downstream[-2:]}
+                  print('NUCLEUS_RECLOSURE_AB='+json.dumps(row),flush=True)
+                  rows.append(row)
+                  assert p.returncode in (0,2),('incorrect rejection',row)
+                  if mode=='lineage':
+                      assert p.returncode==2,('baseline drifted',row)
+          source=(root/'good/init-prelude.ndjson').read_bytes()
+          negative=false_index(extract(source))
+          digest=hashlib.sha256(negative).hexdigest()
+          assert digest=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688',digest
+          protected=[]
+          for mode in ('lineage','reclosure'):
+              env=os.environ.copy()
+              if mode=='reclosure':
+                  env['NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE']='1'
+              rc=subprocess.run(['/tmp/nucleus'],input=negative,
+                  stdout=subprocess.DEVNULL,timeout=90,env=env).returncode
+              protected.append({'mode':mode,'false_index':rc})
+              assert rc in (1,2),('false-index ACCEPT',mode,rc)
+              malformed=subprocess.run(['/tmp/nucleus'],
+                  input=(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),
+                  stdout=subprocess.DEVNULL,timeout=90,env=env).returncode
+              protected[-1]['malformed_nested']=malformed
+              assert malformed==1,('malformed nested no longer REJECT',mode,malformed)
+          result={'source':os.environ['GITHUB_SHA'],
+                  'arena_sha':os.environ['ARENA_SHA'],
+                  'corpus_artifact':os.environ['ARENA_ARTIFACT'],
+                  'seven':rows,'protected':protected}
+          (output/'seven-comparison.json').write_text(json.dumps(result,indent=2))
+          print('NUCLEUS_SEVEN_RECLOSURE_AUDIT='+json.dumps({
+              'legacy_unknown':sum(x['return_code']==2 for x in rows if x['mode']=='lineage'),
+              'context_accepts':sum(x['return_code']==0 for x in rows if x['mode']=='reclosure'),
+              'legacy_transport_reports':sum(x['transport_reports'] for x in rows if x['mode']=='lineage'),
+              'context_transport_reports':sum(x['transport_reports'] for x in rows if x['mode']=='reclosure'),
+              'protected':protected
+          }),flush=True)
+          PY
+
+      - name: Independently compare both modes on frozen196
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import concurrent.futures,json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests')
+          out=pathlib.Path('metatron-kernel/evidence-out/substitution-reclosure')
+          good=sorted((root/'good').rglob('*.ndjson'))
+          bad=sorted((root/'bad').rglob('*.ndjson'))
+          assert len(good)==125 and len(bad)==71,(len(good),len(bad))
+          items=[('good',p) for p in good]+[('bad',p) for p in bad]
+          reports={}
+          for mode in ('lineage','reclosure'):
+              env=os.environ.copy()
+              if mode=='reclosure':
+                  env['NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE']='1'
+              def check(item):
+                  expected,path=item
+                  p=subprocess.run(['/tmp/nucleus'],input=path.read_bytes(),
+                      stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                      timeout=150,env=env)
+                  return {'case':str(path.relative_to(root)),'expected':expected,'rc':p.returncode}
+              with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+                  rows=list(pool.map(check,items))
+              assert all(r['rc'] in (0,1,2) for r in rows),'invalid subprocess code'
+              wrong=[r for r in rows if (r['expected']=='good' and r['rc']==1)
+                     or (r['expected']=='bad' and r['rc']==0)]
+              result={'accepted':sum(r['expected']=='good' and r['rc']==0 for r in rows),
+                      'rejected':sum(r['expected']=='bad' and r['rc']==1 for r in rows),
+                      'unknown':sum(r['rc']==2 for r in rows),
+                      'wrong':wrong,'rows':rows}
+              reports[mode]=result
+              print('NUCLEUS_FULL196_RECLOSURE_AB='+json.dumps({
+                  'mode':mode,**{k:v for k,v in result.items() if k!='rows'}
+              }),flush=True)
+              if mode=='lineage':
+                  assert (result['accepted'],result['rejected'],result['unknown'])==(118,71,7),'baseline authority drift'
+                  assert not wrong,'legacy wrong verdict'
+              else:
+                  assert not wrong,'binder mapping unsound: incorrect ACCEPT/REJECT'
+                  assert result['rejected']==71,'binder mapping invalid regression'
+          diffs=[{'case':a['case'],'lineage':a['rc'],'reclosure':b['rc']}
+                 for a,b in zip(reports['lineage']['rows'],reports['reclosure']['rows'])
+                 if a['rc']!=b['rc']]
+          final={'source':os.environ['GITHUB_SHA'],
+                 'arena_sha':os.environ['ARENA_SHA'],'artifact':os.environ['ARENA_ARTIFACT'],
+                 'baseline':reports['lineage'],'candidate':reports['reclosure'],'changes':diffs}
+          (out/'full196-ab.json').write_text(json.dumps(final,indent=2))
+          print('NUCLEUS_RECLOSURE_DIFFS='+json.dumps(diffs),flush=True)
+          if reports['reclosure']['accepted']>118:
+              print('CANDIDATE_SCORE_GAIN__SEPARATE_PRODUCTION_BUILD_AND_PERFORMANCE_GATE_REQUIRED')
+          else:
+              print('SUBSTITUTION_RECLOSURE_NO_COMPLETE_CASE_PROMOTION')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-substitution-reclosure-${{ github.sha }}
+          path: metatron-kernel/evidence-out/substitution-reclosure
+          if-no-files-found: warn
