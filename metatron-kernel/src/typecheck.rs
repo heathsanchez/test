@@ -698,16 +698,62 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::StrLit(_) => Judgment::unknown("string-literal-type-not-qualified"),
             Expr::BVar(index) => {
-                let Some(offset) = usize::try_from(*index).ok() else {
-                    return Judgment::refuted("unbound-bvar");
-                };
-                context
-                    .iter()
-                    .rev()
-                    .nth(offset)
-                    .cloned()
-                    .map(|value| Judgment::proven(value, "context-lookup"))
-                    .unwrap_or_else(|| Judgment::refuted("unbound-bvar"))
+                // The actual captured closure environment determines which
+                // lexical variable BVar(index) denotes after substitution.
+                // Do not infer its type from the unrelated newest context
+                // entry. This candidate is experimental and fails CLOSED.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_CAPTURED_BVAR").is_some() {
+                    let binding = frame.lookup(*index);
+                    let result = match &binding {
+                        Some(EnvBinding::Free(free)) => {
+                            usize::try_from(free.0).ok().and_then(|i|context.get(i))
+                                .cloned().map(|v| Judgment::proven(v,"captured-free-type"))
+                                .unwrap_or_else(||Judgment::unknown("captured-free-out-of-context"))
+                        }
+                        Some(EnvBinding::Neutral(Neutral{head:NeutralHead::Free(free),spine}))
+                            if spine.is_empty() =>
+                        {
+                            usize::try_from(free.0).ok().and_then(|i|context.get(i))
+                                .cloned().map(|v| Judgment::proven(v,"captured-neutral-free-type"))
+                                .unwrap_or_else(||Judgment::unknown("captured-neutral-out-of-context"))
+                        }
+                        Some(EnvBinding::Closure(clo)) =>
+                            self.infer_exact_closure_in_context(clo,context,remaining,0)
+                                .map(|v|Judgment::proven(v,"captured-closure-type"))
+                                .unwrap_or_else(||Judgment::unknown("captured-closure-type-unknown")),
+                        Some(EnvBinding::Neutral(_)) =>
+                            Judgment::unknown("captured-neutral-type-unknown"),
+                        None => {
+                            usize::try_from(*index).ok()
+                                .and_then(|i|context.iter().rev().nth(i))
+                                .cloned().map(|v|Judgment::proven(v,"lexical-context-type"))
+                                .unwrap_or_else(||Judgment::refuted("unbound-bvar"))
+                        }
+                    };
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_CAPTURED_BVAR").is_some() {
+                        if let Some(EnvBinding::Free(free)) = binding {
+                            let assumed=context.len().checked_sub(
+                                usize::try_from(*index).unwrap_or(usize::MAX).saturating_add(1)
+                            );
+                            if assumed!=usize::try_from(free.0).ok() {
+                                use std::sync::atomic::{AtomicUsize,Ordering};
+                                static TRACES:AtomicUsize=AtomicUsize::new(0);
+                                if TRACES.fetch_add(1,Ordering::Relaxed)<64 {
+                                    eprintln!("NUCLEUS_CAPTURED_BVAR:index={index}:free={free:?}:assumed={assumed:?}:depth={}:frame={}:result={result:?}",context.len(),frame.id());
+                                }
+                            }
+                        }
+                    }
+                    result
+                } else {
+                    let Some(offset) = usize::try_from(*index).ok() else {
+                        return Judgment::refuted("unbound-bvar");
+                    };
+                    context.iter().rev().nth(offset).cloned()
+                        .map(|v|Judgment::proven(v,"context-lookup"))
+                        .unwrap_or_else(||Judgment::refuted("unbound-bvar"))
+                }
             }
             Expr::Sort(level) => match self.instantiate(*level, *remaining) {
                 Ok(level) => Judgment::proven(TypeValue::Sort(succ(level)), "sort-inference"),
@@ -2758,4 +2804,44 @@ fn take_step(remaining: &mut usize) -> bool {
 
 fn fresh_local(depth: usize) -> Option<FreeId> {
     u64::try_from(depth).ok().map(FreeId)
+}
+
+#[cfg(test)]
+mod captured_bvar_alignment_tests {
+    use super::*;
+
+    fn check_captured(free:u64) -> Judgment<TypeValue> {
+        let mut expr=IdTable::default();
+        let lvls=IdTable::default();
+        expr.insert(ExprId(0),Expr::BVar(0)).unwrap();
+        let env=Environment::empty();
+        let ck=TypeChecker::new(&expr,&lvls,&env);
+        let context=vec![TypeValue::Sort(LevelTerm::Zero),
+            TypeValue::Sort(LevelTerm::Succ(Box::new(LevelTerm::Zero)))];
+        let frame=EnvFrame::empty().extend_free(FreeId(free));
+        let mut fuel=256;
+        ck.infer_in(ExprId(0),&context,&frame,&mut fuel,&mut HashMap::new())
+    }
+
+    #[test]
+    #[ignore = "explicit A/B only"]
+    fn protected_captured_free0_not_the_last_context_entry() {
+        let result=check_captured(0);
+        assert!(matches!(result,Judgment::Proven{value:TypeValue::Sort(LevelTerm::Zero),..}),
+            "the actual captured FreeId0 must use context[0]: {result:?}");
+    }
+    #[test]
+    #[ignore = "explicit A/B only"]
+    fn protected_distinct_captured_free1_keeps_its_type() {
+        let result=check_captured(1);
+        assert!(matches!(result,Judgment::Proven{value:TypeValue::Sort(LevelTerm::Succ(_)),..}),
+            "the captured FreeId1 must remain distinct: {result:?}");
+    }
+    #[test]
+    #[ignore = "explicit A/B only"]
+    fn protected_out_of_scope_free_is_not_assigned_a_context_type() {
+        let result=check_captured(2);
+        assert!(!result.is_proven(),
+            "a captured FreeId absent from the context must be UNKNOWN: {result:?}");
+    }
 }
