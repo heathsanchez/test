@@ -1,0 +1,138 @@
+name: Collatz V152 exact inverse Fibonacci barrier
+on:
+  push:
+    branches: [collatz-v152-certified-inverse-fibonacci]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-independent:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently enumerate predecessor words and synthetic false shortcuts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v152_inverse_growth_audit > evidence/v152-exact.json
+          python3 - <<'PY'
+          import pathlib,json,hashlib,subprocess
+          f=pathlib.Path('evidence/v152-exact.json')
+          d=json.loads(f.read_text())
+          assert d['schema']=='COLLATZ_V152_EXACT_INVERSE_FIBONACCI_SEPARATION'
+          assert d['independent_list_checks']==273
+          assert d['fibonacci_depth_max']==30
+          assert d['fibonacci_ceiling_asserted_all_sampled_sources']
+          assert d['toy_diagnostic']['counterexample_to_descent_to_terminal_promotion']
+          assert d['fixed_horizon_not_sufficient_for_sparse_exceptional_mass']
+          assert d['not_an_all_depth_density_bound']
+          assert d['external_predecessor_theorem_imported'] is False
+          assert d['full_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          s={'schema':'COLLATZ_V152_EXACT_SEAL','source_commit':h,
+            'sha256':hashlib.sha256(f.read_bytes()).hexdigest(),
+            'status':'WARRANTED_EXACT_REVERSE_FIBONACCI_CONTROLS',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v152-exact-seal.json').write_text(json.dumps(s,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v152-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-inverse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check complete one-step inverses and Fibonacci ceiling
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/InverseFibonacciBound.lean 2>&1 | tee evidence/v152-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v152-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-6000:]
+          axioms={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            a=[z.strip() for z in inside.split(',') if z.strip()]
+            assert set(a)<={'propext','Classical.choice','Quot.sound'},(name,a)
+            axioms[name]=a
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          roots=['v152_one_step_reverse_complete','v152_reverse_sources_sound',
+            'v152_reverse_sources_complete','v152_inverse_sources_length',
+            'v152_inverse_words_global_fibonacci','v152_terminal_path_budget_bounded',
+            'v152_fixed_terminal_horizon_cannot_supply_density']
+          for name in roots:
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          s={'schema':'COLLATZ_V152_FORMAL_INVERSE_FIBONACCI',
+            'source_commit':h,'axioms':axioms,
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'status':'WARRANTED_FORMAL_BOUNDED_INVERSE_PATH_CEILING',
+            'all_depth_exception_mass_bound':False,'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v152-formal-seal.json').write_text(json.dumps(s,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v152-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-seal:
+    needs: [exact-independent,formal-inverse]
+    runs-on: ubuntu-24.04
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v152-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v152-formal
+          path: evidence/formal
+      - name: Seal strict bounds and uncovered global theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v152-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v152-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['status']=='WARRANTED_EXACT_REVERSE_FIBONACCI_CONTROLS'
+          assert b['status']=='WARRANTED_FORMAL_BOUNDED_INVERSE_PATH_CEILING'
+          assert b['all_depth_exception_mass_bound'] is False
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          s={'schema':'COLLATZ_V152_FINAL',
+            'source_commit':h,
+            'status':'WARRANTED_BOUNDED_INVERSE_FIBONACCI_BARRIER_NOT_QED',
+            'new_result':'complete exact reverse-word lists and Fibonacci upper path count',
+            'next_residual':'prove unbounded source-attached certified exceptional mass vanishes at sparse scales',
+            'external_density_amplifier':'EXPLICIT_UNBUILT_PREMISE',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v152-final.json').write_text(json.dumps(s,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v152-final
+          path: evidence/v152-final.json
+          if-no-files-found: error
