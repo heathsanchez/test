@@ -9021,6 +9021,7 @@ fn check_exact_nat(
             succ: succ.name,
             recursor: recursor.name,
             add: None,
+            mul_zero: None,
             sub: None,
             pred: None,
             virtual_bvar_zero: export.exprs.iter_raw().find_map(|(raw, e)| {
