@@ -52,13 +52,13 @@ jobs:
                       for rec in j['inductive'].get('recs',[]):
                           decl[rec['name']]={'kind':'recursor','value':rec}
               wanted=([297,378,46,65,142] if 'deep' in case
-                      else [70,74,62,142,46,297])
+                      else [70,74,62,142,46,297,656,655,657])
               heads={str(k):{'name':names.get(k),
                             'declaration':decl.get(k),
                             'type_expr':expr.get(decl[k]['value'].get('type')) if k in decl else None}
                      for k in wanted}
               items={str(k):expr.get(k) for k in [1658,163,1565,1670,1739,8835,8805,
-                  8834,1014,12,7585,7441,5162,5095] if k in expr}
+                  8834,1014,1013,1012,1011,12,7585,7441,5162,5095] if k in expr}
               row={'case':case,'sha256':hashlib.sha256(b).hexdigest(),
                    'heads':heads,'nodes':items}
               records.append(row)
