@@ -74,7 +74,10 @@ def options(task, obs, e, f):
 def score(wa, empty, root, arm, phase, task_id, response):
     out = root / "candidate_responses" / arm / phase
     out.mkdir(parents=True, exist_ok=True)
-    path = out / f"{task_id}.json"
+    # Unique witness path preserves failed candidates and their exact response bytes.
+    # Same scorer/grammar/order; this is evidence retention, not a new experiment arm.
+    ordinal = len(list(out.glob(f"{task_id}_*.json")))
+    path = out / f"{task_id}_{ordinal:03d}.json"
     path.write_text(json.dumps(response, indent=2)+"\n")
     t=time.perf_counter()
     verdict=wa.evaluate_task(task_id=task_id, agent_response=path, network_trace=empty)
