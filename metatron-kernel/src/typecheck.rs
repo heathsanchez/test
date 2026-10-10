@@ -1959,6 +1959,110 @@ impl<'a> TypeChecker<'a> {
         skipped_proof
     }
 
+    /// Source-faithful proof irrelevance for two neutral proof values, not
+    /// just syntactically identical normalized proposition heads.
+    ///
+    /// Each neutral head must have a checked type; every applied argument is
+    /// independently typechecked against the ACTUAL dependent Pi domain and
+    /// substituted into its codomain. Both resulting types must independently
+    /// inhabit Sort 0 and be definitionally convertible. No non-proof data
+    /// value is ever erased by sharing a type. The nested conversion budget
+    /// is too small to invoke this rule recursively.
+    pub(crate) fn certified_typed_neutral_proof_equivalence(
+        &self,
+        left:&Neutral,
+        right:&Neutral,
+        context:&[TypeValue],
+        depth:usize,
+        budget:usize,
+    ) -> bool {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_NEUTRAL_PROOF").is_none()
+            || depth!=context.len() || !(4096..=1_000_000).contains(&budget)
+            || left.spine.len()>8 || right.spine.len()>8
+        {return false;}
+        if left.head==right.head && left.spine==right.spine {
+            return false;
+        }
+        let checked_type=|n:&Neutral|->Option<TypeValue>{
+            let mut current=match &n.head {
+                NeutralHead::Free(free) =>
+                    context.get(usize::try_from(free.0).ok()?)?.clone(),
+                NeutralHead::Const{name,levels}=>{
+                    let declaration=self.environment.get(*name)?;
+                    if levels.len()!=declaration.level_params.len(){return None;}
+                    TypeValue::Term(Closure::with_levels(
+                        declaration.ty,EnvFrame::empty(),
+                        LevelSubstitution::new(
+                            declaration.level_params.iter().copied()
+                                .zip(levels.iter().cloned()).collect()
+                        ),
+                    ))
+                }
+                NeutralHead::Projection{..}=>return None,
+            };
+            for argument in &n.spine {
+                let (domain,body)=self.pi_view(
+                    Judgment::proven(current,"certified-neutral-head-type"),1024
+                )?;
+                let mut inf_budget=1024;
+                let inferred=self.infer_exact_closure_in_context(
+                    argument,context,&mut inf_budget,0
+                )?;
+                if !crate::convert::convert_with_policy_in_context(
+                    self,&inferred,&domain,512,
+                    crate::convert::DeltaPolicy::PreferredOnly,
+                    depth,context
+                ).is_proven() {return None;}
+                current=match body {
+                    PiBody::Fixed(binder,ty)=>{
+                        let mut subst_budget=1024;
+                        self.instantiate_fixed_pi_body(
+                            &ty,binder,argument,&mut subst_budget
+                        )?
+                    }
+                    PiBody::Closure(body)=>TypeValue::Term(
+                        Closure::with_levels(
+                            body.expr,body.env.extend(argument.clone()),body.levels
+                        )
+                    ),
+                };
+            }
+            Some(current)
+        };
+        let Some(left_type)=checked_type(left) else {return false};
+        let Some(right_type)=checked_type(right) else {return false};
+        let proposition_type=|ty:&TypeValue|->bool{
+            let TypeValue::Term(c)=ty else {return false};
+            let mut fuel=1024;
+            let Some(ty_type)=self.infer_exact_closure_in_context(
+                c,context,&mut fuel,0
+            ) else {return false};
+            matches!(self.sort_level(
+                Judgment::proven(ty_type,"checked-neutral-prop-formation"),1024
+            ),Judgment::Proven{value:LevelTerm::Zero,..})
+        };
+        if !proposition_type(&left_type)||!proposition_type(&right_type){
+            return false;
+        }
+        if !crate::convert::convert_with_policy_in_context(
+            self,&left_type,&right_type,1024,
+            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            depth,context
+        ).is_proven(){return false;}
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_TYPED_NEUTRAL_PROOF").is_some(){
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static EARNED:AtomicUsize=AtomicUsize::new(0);
+            if EARNED.fetch_add(1,Ordering::Relaxed)<40{
+                eprintln!(
+                    "NUCLEUS_TYPED_NEUTRAL_PROOF:depth={depth}:left={:?}:right={:?}:left_type={left_type:?}:right_type={right_type:?}:typed=true:convertible=true",
+                    left.head,right.head
+                );
+            }
+        }
+        true
+    }
+
     pub(crate) fn proof_terms_same_proposition(
         &self,
         left: &Closure,
