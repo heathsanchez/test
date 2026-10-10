@@ -309,6 +309,42 @@ jobs:
                       'expected_lambdas':{str(e):walk(e) for e in ids}}
               print('NUCLEUS_EXPECTED_SOURCE='+json.dumps(result,separators=(',',':'))[:18500],flush=True)
           PY
+      - name: Trace exact source heads of arithmetic type mismatch and Eq motive
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          fixtures=[
+              ('init-prelude',[7510,7551,7511,7437,7580,7581]),
+              ('perf/grind-ring-5',[7176,7217,7177,7103,7246,7247]),
+              ('perf/magma-list-deep-n21',[10076,11130,11132,11144,11145,4227,1452]),
+              ('perf/magma-list-deep-n36',[10075,11129,11131,11143,11144,4226,1451]),
+          ]
+          for case,ids in fixtures:
+              names={0:''};expr={}
+              for line in (pathlib.Path('/tmp/tests/good')/(case+'.ndjson')).read_bytes().splitlines():
+                  j=json.loads(line)
+                  if 'ie' in j:expr[j['ie']]=j
+                  if 'in' in j:
+                      y=j.get('str',j.get('num'))
+                      names[j['in']]=names.get(y['pre'],'')+('.' if names.get(y['pre']) else '')+str(y.get('str',y.get('i')))
+              def head(e):
+                  args=[];chain=[]
+                  for i in range(35):
+                      x=expr.get(e)
+                      if not x:break
+                      chain.append({'id':e,'node':x})
+                      if 'app' not in x:break
+                      args.append(x['app']['arg'])
+                      e=x['app']['fn']
+                  name=None
+                  if x and 'const' in x:name=names.get(x['const']['name'])
+                  return {'head_id':e,'head_name':name,'applied_args':args[::-1],
+                          'raw_argument_shapes':[expr.get(z) for z in args[::-1]],
+                          'chain':chain[:10]}
+              print('NUCLEUS_ARITHMETIC_SOURCE='+json.dumps({
+                'case':case,'terms':{str(z):head(z) for z in ids}
+              },separators=(',',':'))[:36000],flush=True)
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: nucleus-captured-eta-source-${{ github.sha }}
