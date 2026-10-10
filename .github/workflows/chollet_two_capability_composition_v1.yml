@@ -1,0 +1,122 @@
+name: Two capability E+F composition economics
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-two-capability-composition-v1]
+    paths:
+      - "scripts/webarena_two_capability_composition_v1.py"
+      - ".github/workflows/chollet_two_capability_composition_v1.yml"
+jobs:
+  qualified-composition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Self-test matching and ablation logic
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/webarena_compounding_economics_v1.py scripts/webarena_two_capability_composition_v1.py
+          python scripts/webarena_two_capability_composition_v1.py --self-test
+      - name: Pin official WebArena scorer and corpus
+        run: |
+          set -euo pipefail
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+          test "$(git rev-parse HEAD)" = 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Restore independently qualified E and F source artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ROOT=artifacts/two_capability_composition_v1
+          mkdir -p "$ROOT/e_archive" "$ROOT/f_archive"
+          gh api /repos/heathsanchez/test/actions/artifacts/11467591099/zip > /tmp/e_archive.zip
+          gh api /repos/heathsanchez/test/actions/artifacts/11663621950/zip > /tmp/f_archive.zip
+          unzip -q /tmp/e_archive.zip -d "$ROOT/e_archive"
+          unzip -q /tmp/f_archive.zip -d "$ROOT/f_archive"
+          test -s "$ROOT/e_archive/result.json"
+          test -s "$ROOT/f_archive/result.json"
+          test -s "$ROOT/e_archive/frozen.json"
+          test -s "$ROOT/e_archive/representation.json"
+          sha256sum /tmp/e_archive.zip /tmp/f_archive.zip > "$ROOT/predecessor_zip_digests.txt"
+      - name: Launch pinned Magento shopping-admin fixture
+        run: |
+          set -euo pipefail
+          ROOT=artifacts/two_capability_composition_v1
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker run -d --name wa-admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{.Id}}' > "$ROOT/docker_fixture_id.txt"
+          for i in $(seq 1 150); do
+            status=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$status" = 200 ] || [ "$status" = 302 ]; then exit 0; fi
+            sleep 2
+          done
+          echo "Fixture unavailable" >&2
+          exit 1
+      - name: Install exact evaluator and browser
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Freeze oracle-free candidate surface
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          root=Path("artifacts/two_capability_composition_v1")
+          source=Path("upstream/assets/dataset/webarena-verified.json")
+          records=json.loads(source.read_text())
+          assert {288,290,292}.issubset({int(x["task_id"]) for x in records})
+          assert all(int(x["intent_template_id"])==234 for x in records if x["task_id"] in (288,290,292))
+          copy=[{k:v for k,v in r.items() if k not in {"eval","reference_url"}} for r in records]
+          assert all("eval" not in r and "reference_url" not in r for r in copy)
+          (root/"full_no_eval.json").write_text(json.dumps(copy,indent=2)+"\n")
+          (root/"config.json").write_text(json.dumps({"environments":{"__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0}}},indent=2)+"\n")
+          (root/"source_hashes.json").write_text(json.dumps({
+              "authority_dataset_sha256":hashlib.sha256(source.read_bytes()).hexdigest(),
+              "experiment_code_sha256":hashlib.sha256(Path("scripts/webarena_two_capability_composition_v1.py").read_bytes()).hexdigest(),
+          },indent=2)+"\n")
+          PY
+      - name: Observe one identical source world
+        run: |
+          set -euo pipefail
+          python scripts/webarena_customer_count_representation_synth.py observe --base-url http://localhost:7780/admin --output artifacts/two_capability_composition_v1/observation.json
+      - name: Acquire and freeze five arms before task 290 and 292
+        run: |
+          set -euo pipefail
+          python scripts/webarena_two_capability_composition_v1.py \
+            --root artifacts/two_capability_composition_v1 \
+            --tasks artifacts/two_capability_composition_v1/full_no_eval.json \
+            --config artifacts/two_capability_composition_v1/config.json \
+            --observation artifacts/two_capability_composition_v1/observation.json \
+            --budget 12
+      - name: Fail closed on fresh task 290 and protected task 292
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("artifacts/two_capability_composition_v1")
+          r=json.loads((root/"result.json").read_text())
+          assert len(r["arms"])==5
+          assert all((root/f"{arm}_freeze.json").exists() for arm in r["arms"])
+          assert r["claims"]["full_amortized_recursive_acceleration"]["state"]=="UNKNOWN"
+          assert all(a["candidate_evaluations"]<=12 for a in r["arms"].values())
+          print(json.dumps(r["claims"],indent=2))
+          assert r["claims"]["prospective_two_capability_composition"]["state"]=="WARRANTED_BOUNDED", (
+            "Novel task-290 compositional heldout was not verified; retain UNKNOWN and inspect artifact."
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: two-capability-composition-economics
+          path: artifacts/two_capability_composition_v1
