@@ -92,17 +92,21 @@ theorem v174_audited_endpoints_below_defect
 
 /-- An artificial freeze cannot change a finite trajectory before
 the first visit to the modified source. -/
-theorem v174_freeze_matches_avoided_prefix
-    (a n t : Nat)
-    (hAvoid : ∀ j : Nat, j<t → iter shortcut j n ≠ a) :
-    iter (v173FreezeAt a) t n = iter shortcut t n := by
+theorem v174_freeze_matches_avoided_prefix :
+    ∀ t a n : Nat,
+      (∀ j : Nat, j<t → iter shortcut j n ≠ a) →
+      iter (v173FreezeAt a) t n = iter shortcut t n := by
+  intro t
   induction t with
-  | zero => rfl
+  | zero =>
+      intro a n _hAvoid
+      rfl
   | succ t ih =>
+      intro a n hAvoid
       have hPrior : ∀ j : Nat, j<t → iter shortcut j n ≠ a := by
         intro j hj
         exact hAvoid j (by omega)
-      have hEq := ih hPrior
+      have hEq := ih a n hPrior
       have hNe : iter shortcut t n ≠ a :=
         hAvoid t (by omega)
       rw [iter_succ_last, iter_succ_last, hEq]
@@ -143,14 +147,14 @@ theorem v174_false_map_keeps_one_two (X H t : Nat) :
     iter (v173FreezeAt (v174HiddenDefect X H)) t 1 = 2 := by
   have ha : 5 ≤ v174HiddenDefect X H :=
     (v174_defect_large_and_odd X H).1
+  have hA1 : v174HiddenDefect X H ≠ 1 := by omega
+  have hA2 : v174HiddenDefect X H ≠ 2 := by omega
   have hOne :
       v173FreezeAt (v174HiddenDefect X H) 1=2 := by
-    simp [v173FreezeAt, shortcut]
-    omega
+    simp [v173FreezeAt, hA1, shortcut]
   have hTwo :
       v173FreezeAt (v174HiddenDefect X H) 2=1 := by
-    simp [v173FreezeAt, shortcut]
-    omega
+    simp [v173FreezeAt, hA2, shortcut]
   induction t with
   | zero => exact Or.inl rfl
   | succ t ih =>
