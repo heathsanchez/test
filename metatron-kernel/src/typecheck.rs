@@ -2809,10 +2809,34 @@ impl<'a> TypeChecker<'a> {
                                                                 let scope=binding.as_ref().and_then(|(node,_)|
                                                                     probe.checked_binding_lineage.borrow()
                                                                         .get(node).cloned()
-                                                                ).flatten().map(|w|
+                                                                ).flatten().map(|w| {
+                                                                    let first_difference=(0..w.protected_prefix.len().min(context.len()))
+                                                                        .find(|&i|context[i]!=w.protected_prefix[i]);
+                                                                    let conversion=first_difference.map(|idx| {
+                                                                        let relation=crate::convert::convert_with_policy_in_context(
+                                                                            &probe,
+                                                                            &context[idx],&w.protected_prefix[idx],
+                                                                            256,
+                                                                            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                                            idx,&context[..idx],
+                                                                        );
+                                                                        format!("position={idx}:relation={relation:?}:new={:?}:source={:?}",
+                                                                            context[idx],w.protected_prefix[idx])
+                                                                    });
+                                                                    if std::env::var_os("NUCLEUS_TRACE_ORIGIN_REPLAY").is_some() {
+                                                                        use std::sync::atomic::{AtomicUsize, Ordering};
+                                                                        static SCOPE:AtomicUsize=AtomicUsize::new(0);
+                                                                        if SCOPE.fetch_add(1,Ordering::Relaxed)<24 {
+                                                                            eprintln!(
+                                                                                "NUCLEUS_SOURCE_SCOPE_SEPARATOR:arg={:?}:original_depth={}:candidate_depth={}:first_difference={first_difference:?}:conversion={conversion:?}",
+                                                                                a.expr,w.protected_prefix.len(),context.len(),
+                                                                            );
+                                                                        }
+                                                                    }
                                                                     (w.protected_prefix.len(),
-                                                                    context.starts_with(&w.protected_prefix))
-                                                                );
+                                                                    context.starts_with(&w.protected_prefix),
+                                                                    first_difference,conversion)
+                                                                });
                                                                 format!("BVar({index}):binding={binding:?}:checked_type={checked:?}:scope={scope:?}")
                                                             }
                                                             other=>format!("source={other:?}"),
