@@ -373,6 +373,41 @@ fn check_export_with_policy(
         };
         environment = extended;
 
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_MUL_SOURCE").is_some()
+            && environment.nat_primitives().is_some_and(|nat|
+                name_is_child_str(&export, name, nat.type_name, "mul"))
+        {
+            // Read-only: print the source tree of the independently typechecked
+            // definition. Never classify a constant by name alone as arithmetic.
+            let root = environment.get(name).and_then(|d| d.value);
+            eprintln!("NUCLEUS_MUL_SOURCE:checked=true:name={}:root={root:?}:authority={:?}",
+                trace_name(&export, name), environment.authority());
+            if let Some(root) = root {
+                let mut pending = vec![(root, 0usize)];
+                let mut visited = HashSet::new();
+                while let Some((expr, depth)) = pending.pop() {
+                    if visited.len() >= 72 || depth > 13 || !visited.insert(expr) {continue;}
+                    let node = export.exprs.get(expr);
+                    eprintln!("NUCLEUS_MUL_NODE:depth={depth}:expr={expr:?}:node={node:?}");
+                    match node {
+                        Some(Expr::App {fun, arg}) => {
+                            pending.push((*arg,depth+1)); pending.push((*fun,depth+1));
+                        }
+                        Some(Expr::Lam {domain,body} | Expr::Pi {domain,body}) => {
+                            pending.push((*body,depth+1)); pending.push((*domain,depth+1));
+                        }
+                        Some(Expr::Let {ty,value,body}) => {
+                            pending.push((*body,depth+1));pending.push((*value,depth+1));
+                            pending.push((*ty,depth+1));
+                        }
+                        Some(Expr::Proj {structure,..}) => pending.push((*structure,depth+1)),
+                        _ => {}
+                    }
+                }
+            }
+        }
+
         // Lean's Nat-literal kernel extension gives exact native meaning to
         // these standard root definitions.  Authority is installed only after
         // the definition itself has passed ordinary Nucleus type checking and
