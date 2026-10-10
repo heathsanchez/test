@@ -374,6 +374,17 @@ fn check_export_with_policy(
         environment = extended;
 
         #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_MUL_DEFEQ_PROBE").is_some()
+            && environment.nat_primitives().is_some_and(|nat|
+                name_is_child_str(&export, name, nat.type_name, "mul"))
+        {
+            crate::nat_mul_probe::probe(
+                &mut export.exprs, &export.levels, &environment, name,
+                limits.judgment_steps.min(8192),
+            );
+        }
+
+        #[cfg(feature = "diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_MUL_SOURCE").is_some()
             && environment.nat_primitives().is_some_and(|nat|
                 name_is_child_str(&export, name, nat.type_name, "mul"))
