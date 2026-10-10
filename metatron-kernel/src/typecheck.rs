@@ -2331,18 +2331,61 @@ impl<'a> TypeChecker<'a> {
     ) -> String {
         let Some(Expr::Lam { domain, body })=self.expressions.get(lambda.expr)
         else {return "not-source-lambda".into()};
+        // Reconstruct the active scope from checked, actually captured
+        // source binder NODES. A FreeId numeric index never identifies
+        // independent lexical binders; unrelated scopes do not unify.
+        // The resulting source context is a DIAGNOSTIC context only and
+        // is never transported into the caller as a proof.
+        let mut origin=context.to_vec();
+        let mut source_nodes=Vec::new();
+        for idx in 0..48u64 {
+            let Some((node, binding))=lambda.env.lookup_with_node_id(idx)
+            else { break };
+            let EnvBinding::Free(free)=binding else { continue };
+            let proof=self.checked_binding_lineage.borrow()
+                .get(&node).cloned().flatten();
+            let Some(w)=proof else {continue};
+            let Ok(slot)=usize::try_from(free.0) else {
+                return "origin-free-index-overflow".into();
+            };
+            // The source witness must type the SAME actual immutable Free
+            // at the corresponding slot in its own checked prefix.
+            if w.protected_prefix.get(slot)!=Some(&w.domain) {
+                return format!("origin-binder-domain-mismatch:node={node}:free={free:?}");
+            }
+            if !w.protected_prefix.starts_with(context) {
+                return format!(
+                    "origin-not-a-caller-extension:node={node}:expected={}:caller={}",
+                    w.protected_prefix.len(),context.len(),
+                );
+            }
+            if w.protected_prefix.len()>origin.len() {
+                if !w.protected_prefix.starts_with(&origin) {
+                    return format!("origin-extensions-conflict:node={node}");
+                }
+                origin=w.protected_prefix.clone();
+            } else if !origin.starts_with(&w.protected_prefix) {
+                return format!("origin-short-prefix-conflict:node={node}");
+            }
+            source_nodes.push(format!("{node}:{free:?}:{}",w.protected_prefix.len()));
+        }
+        let original_length=context.len();
+        let source_length=origin.len();
+        if source_length==original_length {
+            return format!("no-larger-source-origin:caller={original_length}:source_nodes={source_nodes:?}");
+        }
         let checked_domain=lambda.sibling(*domain,lambda.env.clone());
         let mut remaining=budget.min(512);
         let Some(dty)=self.infer_exact_closure_in_context(
-            &checked_domain,context,&mut remaining,0,
-        ) else{return "lambda-source-domain-type-UNKNOWN".into()};
+            &checked_domain,&origin,&mut remaining,0,
+        ) else{return format!("lambda-source-domain-type-UNKNOWN:source_origin={source_length}:nodes={source_nodes:?}")};
         if !self.sort_level(
             Judgment::proven(dty,"source-checked-captured-lambda"),
             remaining.min(256),
         ).is_proven(){return "lambda-source-domain-sort-UNKNOWN".into()}
-        let Some(fresh)=u64::try_from(context.len()).ok().map(FreeId)
+        let Some(fresh)=u64::try_from(origin.len()).ok().map(FreeId)
         else{return "lambda-source-binder-overflow".into()};
-        let mut extended=context.to_vec();
+        let mut extended=origin.clone();
         extended.push(TypeValue::Term(checked_domain.clone()));
         let frame=lambda.env.extend_free(fresh);
         self.retain_checked_elimination(
@@ -2359,7 +2402,7 @@ impl<'a> TypeChecker<'a> {
                 ),
             other=>format!("source-body-not-neutral:{other:?}"),
         };
-        format!("source-lambda-domain-formed:body={:?}:context={}:source-obligation={detail}",
+        format!("source-lambda-domain-formed:body={:?}:caller_context={original_length}:original_source_context={source_length}:fresh={fresh:?}:nodes={source_nodes:?}:result_context={}:source-obligation={detail}",
             body_source.expr,extended.len())
     }
 
