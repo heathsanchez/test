@@ -1966,6 +1966,45 @@ fn compare_neutral_heads(
             Judgment::proven((), "same-rigid-constant")
         }
         _ => {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_DEEP_POST_PROJECTION_HEAD").is_some()
+                && (0..=16).contains(&depth)
+            {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static COUNT:AtomicUsize=AtomicUsize::new(0);
+                if COUNT.fetch_add(1,Ordering::Relaxed)<96 {
+                    let left_kind=match &left.head{
+                        NeutralHead::Const { name,levels }=>
+                            format!("const:{name:?}:{levels:?}"),
+                        NeutralHead::Free(f)=>format!("free:{f:?}"),
+                        NeutralHead::Projection {type_name,index,..}=>
+                            format!("projection:{type_name:?}:{index}"),
+                    };
+                    let right_kind=match &right.head{
+                        NeutralHead::Const { name,levels }=>
+                            format!("const:{name:?}:{levels:?}"),
+                        NeutralHead::Free(f)=>format!("free:{f:?}"),
+                        NeutralHead::Projection {type_name,index,..}=>
+                            format!("projection:{type_name:?}:{index}"),
+                    };
+                    let lview=left.spine.iter().take(4).map(|c|{
+                        let v=checker.machine().expose_for_conversion(
+                            c.clone(),Transparency::Reducible,256,
+                        );
+                        format!("arg={:?}:val={:?}",c.expr,v).chars().take(550).collect::<String>()
+                    }).collect::<Vec<_>>();
+                    let rview=right.spine.iter().take(4).map(|c|{
+                        let v=checker.machine().expose_for_conversion(
+                            c.clone(),Transparency::Reducible,256,
+                        );
+                        format!("arg={:?}:val={:?}",c.expr,v).chars().take(550).collect::<String>()
+                    }).collect::<Vec<_>>();
+                    eprintln!(
+                        "NUCLEUS_POST_PROJECTION_HEAD:depth={depth}:context={}:budget={budget}:left={left_kind}:left_arity={}:left_spine={lview:?}:right={right_kind}:right_arity={}:right_spine={rview:?}",
+                        context.len(),left.spine.len(),right.spine.len()
+                    );
+                }
+            }
             if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
                 eprintln!(
                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:depth={depth}:context_len={}:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
