@@ -424,6 +424,32 @@ fn check_export_with_policy(
         // the definition itself has passed ordinary Nucleus type checking and
         // exact Nat authority is already present.
         if let Some(nat) = environment.nat_primitives().cloned() {
+            // A source-specific optimization may only enter the machine after
+            // Nucleus has rechecked the CLOSED symbolic lambda equation under
+            // this exact admitted declaration environment, and protected
+            // wrong equations have remained unproved. No source-name-only
+            // arithmetic axiom is installed.
+            if std::env::var_os("NUCLEUS_EXPERIMENTAL_VERIFIED_MUL_ZERO").is_some()
+                && name_is_child_str(&export, name, nat.type_name, "mul")
+            {
+                let certified = crate::nat_mul_probe::probe(
+                    &mut export.exprs, &export.levels, &environment,
+                    name, limits.judgment_steps.min(8192),
+                );
+                if certified {
+                    let Ok(extended) = environment.install_nat_operation(
+                        name, NatOperation::MulZero,
+                    ) else {
+                        return trace_direct_reject("mul-zero-certified-install");
+                    };
+                    environment = extended;
+                }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_VERIFIED_MUL_ZERO").is_some() {
+                    eprintln!("NUCLEUS_MUL_ZERO_ADMISSION:certified={certified}:name={}:authority={:?}",
+                        trace_name(&export,name),environment.authority());
+                }
+            }
             let operation = if name_is_child_str(&export, name, nat.type_name, "add") {
                 Some(NatOperation::Add)
             } else if name_is_child_str(&export, name, nat.type_name, "sub") {
