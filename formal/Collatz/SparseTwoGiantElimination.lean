@@ -87,7 +87,8 @@ theorem v170_bad_target_not_connected_to_two
     ¬ V168Path E b 2 := by
   intro hPath
   have hGoodTwo : CollatzGood 2 := by
-    exact ⟨0, by decide⟩
+    refine ⟨0, ?_⟩
+    simp [iter, Terminal]
   have hTwoOne : V155FutureMeet 2 1 :=
     (v155_future_meets_one_iff_good 2).mpr hGoodTwo
   have hMeet : V155FutureMeet b 1 :=
@@ -119,7 +120,9 @@ theorem v170_collatz_of_timed_density_and_sparse_unique_giant
     obtain ⟨qB, XB, hqB, hBLower⟩ :=
       hDensity b hModB
     let q := max qTwo qB
-    have hq : 0 < q := lt_of_lt_of_le hqTwo (Nat.le_max_left _ _)
+    have hq : 0 < q := by
+      have hle : qTwo ≤ q := Nat.le_max_left _ _
+      omega
     obtain ⟨k, hX, hSep⟩ :=
       hUnique q (XTwo + XB + b + 4) hq
     have hTwoBound : 2 < 2^k := by omega
@@ -154,11 +157,13 @@ theorem v170_collatz_of_timed_density_and_sparse_unique_giant
       v170_bad_target_not_connected_to_two (E k) b hBadB.2
     have hSmall :=
       hSep b 2 hBadB.1 hbBound (by omega) hTwoBound hDistinct
-    rcases le_total (V170ComponentCount (E k) b (2^k))
-        (V170ComponentCount (E k) 2 (2^k)) with hle | hle
+    by_cases hle : V170ComponentCount (E k) b (2^k) ≤
+        V170ComponentCount (E k) 2 (2^k)
     · rw [min_eq_left hle] at hSmall
       omega
-    · rw [min_eq_right hle] at hSmall
+    · have hge : V170ComponentCount (E k) 2 (2^k) ≤
+          V170ComponentCount (E k) b (2^k) := by omega
+      rw [min_eq_right hge] at hSmall
       omega
   have hNoBad := no_bad_of_no_minimal PositiveBad hNoMin
   intro n hn
