@@ -158,7 +158,9 @@ impl<'a> TypeChecker<'a> {
         index:u64,
         context:&[TypeValue],
     ) -> Option<TypeValue> {
-        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE").is_none(){
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE").is_none()
+            && !self.strict_origin_probe
+        {
             return None;
         }
         let (node_id,_)=frame.lookup_with_node_id(index)?;
@@ -3352,6 +3354,40 @@ mod checked_binding_lineage_tests {
         env: &'a Environment
     )->TypeChecker<'a>{
         TypeChecker::new(e,l,env)
+    }
+
+    #[test]
+    fn strict_origin_requires_immutable_checked_binding_and_exact_context() {
+        let mut expressions=IdTable::default();
+        expressions.insert(ExprId(0),Expr::BVar(0)).unwrap();
+        let levels=IdTable::default();
+        let env=Environment::empty();
+        let mut checker=TypeChecker::new(&expressions,&levels,&env);
+        checker.strict_origin_probe=true;
+        let prop=TypeValue::Sort(LevelTerm::Zero);
+        let different=TypeValue::Sort(LevelTerm::Succ(Box::new(LevelTerm::Zero)));
+        let origin=vec![prop.clone()];
+        let frame=EnvFrame::empty().extend_free(FreeId(0));
+        let term=Closure::new(ExprId(0),frame.clone());
+        let mut fuel=32;
+        assert!(checker.infer_exact_closure_in_context(
+            &term,&origin,&mut fuel,0
+        ).is_none(),"numeric FreeId alone is not source typing");
+        // A deliberately source-registered binder node establishes one exact
+        // local typing judgment; it does not license arbitrary context change.
+        checker.retain_checked_binding(&frame,prop.clone(),&origin);
+        let mut fuel=32;
+        assert_eq!(checker.infer_exact_closure_in_context(
+            &term,&origin,&mut fuel,0
+        ),Some(prop.clone()));
+        let mut fuel=32;
+        assert!(checker.infer_exact_closure_in_context(
+            &term,&[different],&mut fuel,0
+        ).is_none(),"different protected type cannot inherit the witness");
+        let mut fuel=32;
+        assert!(checker.infer_exact_closure_in_context(
+            &term,&[],&mut fuel,0
+        ).is_none(),"the checked source scope must not disappear");
     }
 
     #[test]
