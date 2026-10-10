@@ -828,6 +828,42 @@ fn resolve_local_closure(checker: &TypeChecker<'_>, closure: &Closure) -> Option
 
 // Skip speculative argument equality when direct beta reduction can erase an
 // argument. This is only a cost gate; ordinary conversion remains authoritative.
+/// Source-certified argument irrelevance mask for a checked, exactly
+/// saturated definition. The field is absent only if both its value AND
+/// the entire following dependent type telescope ignore that binder.
+/// Truncated/unknown support checks are treated as USED (fail closed).
+pub(crate) fn source_absent_argument_mask(
+    checker: &TypeChecker<'_>,
+    name: crate::id::NameId,
+    arity: usize,
+) -> Option<Vec<bool>> {
+    if std::env::var_os("NUCLEUS_EXPERIMENTAL_SOURCE_ABSENCE").is_none()
+        || arity == 0 || arity > 6
+    { return None; }
+    let mut value=checker.definition_value(name)?;
+    let mut ty=checker.definition_declared_type(name)?;
+    let mut type_bodies=Vec::with_capacity(arity);
+    for _ in 0..arity {
+        let Expr::Lam {domain:vd,body:vb}=checker.expression(value)? else {return None};
+        let Expr::Pi {domain:td,body:tb}=checker.expression(ty)? else {return None};
+        // The checked declaration source must preserve each binder domain
+        // syntactically for this deliberately narrow certificate.
+        if vd != td {return None;}
+        value=*vb;
+        type_bodies.push(*tb);
+        ty=*tb;
+    }
+    let mut mask=Vec::with_capacity(arity);
+    for (i,body) in type_bodies.into_iter().enumerate() {
+        let last_body_uses=expression_uses_bvar(
+            checker,value,(arity-1-i) as u64,1024,
+        );
+        let dependent_type_uses=expression_uses_bvar(checker,body,0,1024);
+        mask.push(!last_body_uses && !dependent_type_uses);
+    }
+    mask.iter().any(|x|*x).then_some(mask)
+}
+
 fn definition_arguments_used(
     checker: &TypeChecker<'_>,
     name: crate::id::NameId,
