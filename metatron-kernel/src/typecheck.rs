@@ -334,7 +334,11 @@ impl<'a> TypeChecker<'a> {
                         self.infer_exact_closure_in_context(
                             &value, context, remaining, depth + 1,
                         ),
-                    EnvBinding::Neutral(_) => None,
+                    EnvBinding::Neutral(neutral) =>
+                        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_NEUTRAL_PROJ").is_some()
+                        {
+                            self.neutral_result_type(&neutral, context, (*remaining).min(2048))
+                        } else { None },
                 }
             },
             Expr::Sort(level) => Some(TypeValue::Sort(succ(
@@ -2266,7 +2270,55 @@ impl<'a> TypeChecker<'a> {
                     LevelSubstitution::new(substitution),
                 ))
             }
-            NeutralHead::Projection { .. } => return None,
+            NeutralHead::Projection {
+                type_name, index, structure,
+            } => {
+                // An evaluated neutral projection still has a precise type.
+                // Recover only a constructor-certified first-order parameter
+                // field by independently recovering its receiver's PProd-like
+                // inductive family. This is a type derivation, NEVER an
+                // equality of the receiver or its captures.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_NEUTRAL_PROJ").is_none()
+                    || budget < 16
+                {
+                    return None;
+                }
+                let spec = self.environment.projection_specs().get(type_name)?.clone();
+                let crate::machine::ProjectionFieldType::Parameter(parameter_index) =
+                    spec.field_types.get(*index)?
+                else {
+                    return None;
+                };
+                let TypeValue::Term(receiver_type) = self.neutral_result_type(
+                    structure, context, budget.saturating_sub(1),
+                )? else { return None };
+                let receiver_whnf = self.machine().expose(
+                    receiver_type, Transparency::Reducible, budget.min(2048),
+                );
+                let Value::Neutral(typed_receiver) = receiver_whnf.proven_value()? else {
+                    return None;
+                };
+                let NeutralHead::Const { name, levels } = &typed_receiver.head else {
+                    return None;
+                };
+                let declaration = self.environment.get(*type_name)?;
+                if *name != *type_name
+                    || declaration.level_params.len() != levels.len()
+                    || typed_receiver.spine.len() < spec.num_params
+                {
+                    return None;
+                }
+                let parameter = typed_receiver.spine.get(*parameter_index)?.clone();
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_TYPED_NEUTRAL_PROJ").is_some() {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static COUNT: AtomicUsize = AtomicUsize::new(0);
+                    if COUNT.fetch_add(1, Ordering::Relaxed) < 40 {
+                        eprintln!("NUCLEUS_TYPED_NEUTRAL_PROJ:certified:type={type_name:?}:index={index}:parameter={parameter_index}");
+                    }
+                }
+                TypeValue::Term(parameter)
+            },
         };
 
         for argument in &neutral.spine {
