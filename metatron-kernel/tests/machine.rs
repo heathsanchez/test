@@ -592,7 +592,7 @@ fn nat_add_symbolic_right_successor_zero_is_succ_without_index_assumption() {
     let machine=Machine::new(AuthorityId(8), &exprs, &levels, HashMap::new())
       .with_nat_primitives(Some(NatPrimitives {
         type_name:NameId(65),type_expr:ExprId(0),zero:NameId(10),
-        succ:NameId(11),recursor:NameId(66),add:Some(NameId(20)),
+        succ:NameId(11),recursor:NameId(66),add:Some(NameId(20)),mul_zero:None,
         sub:None,pred:None,virtual_bvar_zero:Some(ExprId(0)),ble:None,beq:None,
       }));
     let frame=EnvFrame::empty().extend_free(FreeId(17));
