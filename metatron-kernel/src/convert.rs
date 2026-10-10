@@ -2052,7 +2052,7 @@ fn certified_structural_closure_congruence(
         let (Some(a),Some(b))=(a.proven_value(),b.proven_value()) else {
             return false;
         };
-        match (a,b) {
+        let proven = match (a,b) {
             (Value::Sort(a),Value::Sort(b))=>level_equal(a.clone(),b.clone(),st.fuel).is_proven(),
             (Value::NatLit(a),Value::NatLit(b))=>a==b,
             (Value::Neutral(a),Value::Neutral(b))=>eq_neutral(checker,a,b,depth,st),
@@ -2080,7 +2080,16 @@ fn certified_structural_closure_congruence(
                 && ap.iter().zip(bp).all(|(a,b)|eq_closure(checker,a,b,depth,st))
             }
             _=>false,
+        };
+        #[cfg(feature = "diagnostics")]
+        if proven && std::env::var_os("NUCLEUS_TRACE_WHNF_BISIM").is_some() {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static REPORTS:AtomicUsize=AtomicUsize::new(0);
+            if REPORTS.fetch_add(1,Ordering::Relaxed)<48 {
+                eprintln!("NUCLEUS_WHNF_BISIM:depth={depth}:fuel={}:lhs={:?}:rhs={:?}",st.fuel,lhs.expr,rhs.expr);
+            }
         }
+        proven
     }
     fn eq_binding(
         checker: &TypeChecker<'_>,
