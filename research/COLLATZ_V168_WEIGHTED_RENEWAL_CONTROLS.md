@@ -110,3 +110,23 @@ where the final comparison is exact integer cross-multiplication, and S(40)>0 fr
 **The proof covers ALL n>=1 with exact tail control, but only one finite clock interval.** It exploits real terminal admissions plus an analytic summable weight, not V165's conservation. The same method could certify fixed-clock gains for other systems with multiple basins and cannot be iterated without an independently proved uniform clocked renewal theorem.
 
 **Promotion boundary:** WARRANTED_EXACT_CI_PLUS_ELEMENTARY_ANALYTIC_BOUND, NOT yet FORMAL_LEAN. Future work: strengthen to a true Collatz-specific *all-H*, source-height conditioned gain. Every fixed-H gain is compatible with a persistent bad class, so it cannot replace that missing theorem. See CI artifacts for the audit and seal.
+
+
+## 8. V168C: critical falsifier — the naive finite-clock anti-bias bound is FALSE
+
+V168's candidate sufficient theorem R_(3/2)(B)<=1/3 is formulated for a putative T-invariant bad class B, NOT for all finite timeout sets U_H. The latter stronger extension fails on the ACTUAL Collatz map at clock H=40, and we can prove this over ALL n>=1 with exact source-height tail protection.
+
+The same independently enumerated 1<=n<2^18 and exact integer weight floors give residue-2 weighted timeout mass lower numerator **43,282,288,053 / 10^12**. The TOTAL clock40 timeout mass across every natural source is bounded above by **129,286,556,793 / 10^12**, already including the full infinite n>=2^18 tail. Integer comparison:
+
+    3 * 43,282,288,053 = 129,846,864,159
+       > 129,286,556,793.
+
+Thus the TRUE all-source finite-clock timeouts satisfy
+
+    sum_{n>=1, n≡2(mod3)} U_40(n)/n^(3/2)
+    ------------------------------------------------ > 1/3.
+           sum_{n>=1} U_40(n)/n^(3/2)
+
+**Reject** any purported bound R_s(U_H)<=1/3 for ALL finite H, even though this would have been an enticing way to exclude a bad class. An invariant hypothetical bad B is not the same as a finite-clock timeout U_H; the experiment does NOT reject the more restricted but still unproved bad-class anti-bias lemma. It proves that the eventual/invariant distinction matters and cannot be removed from a proof by quantitative extrapolation.
+
+This is a FALSIFIER, not an additional Collatz convergence theorem. It is protected by the same exact integer audit and its green CI check. The remaining decisive issue is to show that real +1 arithmetic cannot sustain the observed transient residue-2 bias indefinitely, without asserting convergence or arbitrary-time equilibration.
