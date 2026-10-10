@@ -1,0 +1,155 @@
+name: Collatz V160 source-locked dyadic target lifts
+on:
+  push:
+    branches: [collatz-v160-source-locked-dyadic-lift]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-exact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Actual-source parity chart, primitive-root finite, and Mersenne height controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v160_dyadic_lift_audit > evidence/v160-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v160-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V160_EXACT_SOURCE_LOCKED_TARGET_LIFT'
+          assert d['unconditional_affine_lift_regression_cases']==39936
+          assert d['real_source_attached_target_witnesses']==8176
+          assert d['all_dyadic_residue_target_pairs_checked']
+          assert d['primitive_root_power2_unit_coverage_verified_for_a_at_most']==9
+          assert not d['unbounded_primitive_root_proof_in_lean']
+          assert d['mersenne_one_chart_power_exponent_grows_as_three_to_k_minus_one']
+          for row in d['per_depth']:
+            k=row['k']
+            assert row['worst_residue_for_target1']==2**k-1
+            assert row['worst_first_power_exponent_for_target1']==3**(k-1)
+          assert d['source_class_topological_density_implies_natural_density_one'] is False
+          assert d['certified_terminal_exceptional_mass_bound_proved'] is False
+          assert not d['external_amplifier_rebuilt']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V160_EXACT_SEAL',
+            'source_commit':h,
+            'status':'WARRANTED_BOUNDED_SOURCE_LOCKED_LIFTS_AND_MERSENNE_POWER_HEIGHT',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'primitive_root_full_lean_missing':True,
+            'natural_density_one_not_proved':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v160-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v160-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-source-lift:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check source-attached dyadic affine law and true two-clock target construction
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/SourceLockedDyadicFutureLift.lean 2>&1 | tee evidence/v160-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v160-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-18000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[z.strip() for z in inside.split(',') if z.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=[
+            'v160_exact_cylinder_affine',
+            'v160_zero_orbit',
+            'v160_power_target_is_actual_two_clock_join',
+            'v160_all_prefix_real_future_ancestors_of_power_hits',
+            'v160_every_positive_short_prefix_three_unit'
+          ]
+          for t in targets:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V160_FORMAL_SOURCE_LIFTS',
+            'source_commit':h,'axioms':ax,
+            'status':'WARRANTED_FORMAL_UNCONDITIONAL_SOURCE_AFFINE_AND_CONDITIONAL_POWER_TARGET_LIFTS',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'power_congruence_witness_is_explicit_hypothesis':True,
+            'full_primitive_root_number_theory_not_reified':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v160-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v160-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-final-seal:
+    needs: [independent-exact,formal-source-lift]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v160-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v160-formal
+          path: evidence/formal
+      - name: Source, conditional theorem, and non-QED scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v160-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v160-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['status']=='WARRANTED_BOUNDED_SOURCE_LOCKED_LIFTS_AND_MERSENNE_POWER_HEIGHT'
+          assert b['status']=='WARRANTED_FORMAL_UNCONDITIONAL_SOURCE_AFFINE_AND_CONDITIONAL_POWER_TARGET_LIFTS'
+          assert b['power_congruence_witness_is_explicit_hypothesis']
+          assert b['full_primitive_root_number_theory_not_reified']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V160_FINAL','source_commit':h,
+            'status':'WARRANTED_FORMAL_SOURCE_LOCKED_LIFT_WITH_EXPLICIT_NUMBER_THEORY_GUARD_NOT_QED',
+            'new_unconditional_result':'T^k(n+2^k*q)=T^k(n)+3^oddCount(n,k)*q for every Nat n,k,q',
+            'new_source_witness':'Exact two-clock source in each dyadic cylinder whenever power-congruence witness is supplied',
+            'elementary_mathematics':'Powers of2 primitive mod3^a; full Lean formalization still missing',
+            'critical_separator':'All-ones direct-terminal-power lift needs exponent 3^(k-1), and resulting family is O(log X) under cutoff X',
+            'remaining':['Full number-theory Lean closure','Natural-density abundance of ALL actual certified future-merger families','V151 sparse terminal exceptional mass'],
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v160-final.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v160-final
+          path: evidence/v160-final.json
+          if-no-files-found: error
