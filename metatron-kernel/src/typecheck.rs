@@ -1401,6 +1401,16 @@ impl<'a> TypeChecker<'a> {
             }
         }
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_BIDIR_BODY_GAP").is_some()
+            && context.len()==5
+            && matches!(expression.0,11147|11146|7584|7250|5306)
+        {
+            eprintln!(
+                "NUCLEUS_BIDIR_BODY_INFER:expr={expression:?}:context={}:frame={}:shape={:?}:inferred={inferred:?}:expected={expected:?}:remaining={}",
+                context.len(),frame.id(),self.expressions.get(expression),*remaining,
+            );
+        }
         match inferred {
             Judgment::Proven { value, .. } => {
                 let conversion = crate::convert::convert_with_policy_in_context(
@@ -1412,6 +1422,15 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_BIDIR_BODY_GAP").is_some()
+                    && context.len()==5
+                    && matches!(expression.0,11147|11146|7584|7250|5306)
+                {
+                    eprintln!(
+                        "NUCLEUS_BIDIR_BODY_CONVERT:expr={expression:?}:actual={value:?}:expected={expected:?}:relation={conversion:?}",
+                    );
+                }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_DEPENDENCY_GAP").is_some() {
                     if let Judgment::Unknown { residual } = &conversion {
