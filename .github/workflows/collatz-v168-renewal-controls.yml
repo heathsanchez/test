@@ -69,6 +69,9 @@ jobs:
           assert v['uncertified_at_60_below_cutoff'] == 164657
           assert v['newly_certified_between_41_and_60_below_cutoff'] == 64602
           assert v['tail_upper_units'] == 4_000_000_000
+          assert v['S40_residue2_lower_units'] == 43_282_288_053
+          assert 3*v['S40_residue2_lower_units'] > v['S40_infinite_upper_units']
+          assert v['finite_clock_R2_strictly_exceeds_one_third']
           assert v['new_terminal_weight_lower_units'] == 26_452_894_380
           assert 5*v['S60_over_S40_upper_num'] < 4*v['S60_over_S40_upper_den']
           assert v['strictly_less_than_four_fifths']
