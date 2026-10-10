@@ -418,6 +418,27 @@ fn check_export_with_policy(
             let ids = [12,142,857,858,1530,1531,98,63,64,81,82,138,114,118,92,181,177];
             eprintln!("NUCLEUS_MUL_SOURCE:names={:?}",
                 ids.into_iter().map(|id| (id,trace_name(&export,NameId(id)))).collect::<Vec<_>>());
+            for (owner,root) in [(142u64,1014u64),(98,532),(138,662)] {
+                if trace_name(&export,NameId(owner))!="PProd" {continue;}
+                let mut queue=vec![(ExprId(root),0usize)];
+                let mut seen=HashSet::new();
+                while let Some((expr,depth))=queue.pop(){
+                    if depth>8||seen.len()>28||!seen.insert(expr){continue;}
+                    let node=export.exprs.get(expr);
+                    let name=match node {
+                        Some(Expr::Const{name,..})=>Some(trace_name(&export,*name)),
+                        Some(Expr::Proj{type_name,..})=>Some(trace_name(&export,*type_name)),
+                        _=>None,
+                    };
+                    eprintln!("NUCLEUS_MUL_SOURCE:PPROD:root={root}:depth={depth}:expr={expr:?}:name={name:?}:node={node:?}");
+                    match node{
+                        Some(Expr::App{fun,arg})=>{queue.push((*arg,depth+1));queue.push((*fun,depth+1));}
+                        Some(Expr::Lam{domain,body}|Expr::Pi{domain,body})=>{queue.push((*body,depth+1));queue.push((*domain,depth+1));}
+                        Some(Expr::Proj{structure,..})=>queue.push((*structure,depth+1)),
+                        _=>{}
+                    }
+                }
+            }
         }
         // Lean's Nat-literal kernel extension gives exact native meaning to
         // these standard root definitions.  Authority is installed only after
