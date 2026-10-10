@@ -36,9 +36,9 @@ pub(crate) fn probe(
     environment: &Environment,
     mul_name: NameId,
     budget: usize,
-) {
-    let Some(nat) = environment.nat_primitives() else {return};
-    let Some(add) = nat.add else {return};
+) -> bool {
+    let Some(nat) = environment.nat_primitives() else {return false};
+    let Some(add) = nat.add else {return false};
     let mut b = Builder {
         next: expressions.iter_raw().map(|(id,_)|id).max().unwrap_or(0),
         expressions,
@@ -80,6 +80,8 @@ pub(crate) fn probe(
         ("incorrect_mul_n_one",lhs_wrong,rhs_wrong,false),
         ("incorrect_zero_mul_n",lhs_wrong2,rhs_zero,false),
     ];
+    let mut positive_zero = false;
+    let mut unsafe_negative = false;
     for (label,lhs,rhs,positive) in cases {
         let inferred_l=checker.infer(lhs,budget);
         let inferred_r=checker.infer(rhs,budget);
@@ -98,8 +100,15 @@ pub(crate) fn probe(
             environment.authority());
         // Even in diagnostics a contradiction to the protected negative
         // assumptions signals a material soundness concern. Never promote.
+        if label == "mul_n_zero" && relation.is_proven(){
+            positive_zero = true;
+        }
         if !positive && relation.is_proven(){
+            unsafe_negative = true;
             eprintln!("NUCLEUS_MUL_DEFEQ_PROBE:NEGATIVE_VIOLATION:{label}");
         }
     }
+    eprintln!("NUCLEUS_MUL_CERTIFICATE:zero={positive_zero}:unsafe_negative={unsafe_negative}:authority={:?}",
+        environment.authority());
+    positive_zero && !unsafe_negative
 }
