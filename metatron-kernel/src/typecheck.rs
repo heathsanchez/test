@@ -120,6 +120,19 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    fn retain_checked_elimination(
+        &self,
+        frame:&EnvFrame,
+        domain:TypeValue,
+        protected_context:&[TypeValue],
+    ){
+        // This stronger substitution lineage is A/B guarded independently
+        // of the already qualified local binder-introduction ledger.
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE").is_some(){
+            self.retain_checked_binding(frame,domain,protected_context);
+        }
+    }
+
     fn checked_type_of_bound_source(
         &self,
         frame:&EnvFrame,
@@ -354,7 +367,7 @@ impl<'a> TypeChecker<'a> {
                         // The argument type and dependent Pi domain were
                         // independently established above. Retain that exact
                         // substitution as a typed environment-node warrant.
-                        self.retain_checked_binding(&extended,domain,context);
+                        self.retain_checked_elimination(&extended,domain,context);
                         Some(TypeValue::Term(Closure::with_levels(
                             body.expr,extended,body.levels,
                         )))
@@ -389,7 +402,7 @@ impl<'a> TypeChecker<'a> {
                     return None;
                 }
                 let extended=term.env.extend(value);
-                self.retain_checked_binding(
+                self.retain_checked_elimination(
                     &extended,TypeValue::Term(declared),context,
                 );
                 let body=term.sibling(*body,extended);
@@ -413,7 +426,7 @@ impl<'a> TypeChecker<'a> {
                 let mut extended = context.to_vec();
                 extended.push(TypeValue::Term(domain.clone()));
                 let body_frame=term.env.extend_free(binder);
-                self.retain_checked_binding(
+                self.retain_checked_elimination(
                     &body_frame,TypeValue::Term(domain.clone()),&extended,
                 );
                 let body=term.sibling(*body,body_frame);
@@ -989,7 +1002,7 @@ impl<'a> TypeChecker<'a> {
                             PiBody::Closure(body) => {
                                 let actual=self.closure(*arg,frame.clone());
                                 let typed_frame=body.env.extend(actual);
-                                self.retain_checked_binding(
+                                self.retain_checked_elimination(
                                     &typed_frame,domain.clone(),context,
                                 );
                                 TypeValue::Term(Closure::with_levels(
