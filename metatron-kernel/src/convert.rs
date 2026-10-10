@@ -1165,7 +1165,44 @@ fn compare_values(
                 // after proving the receiver and all applied arguments equal.
                 // The existing source-level Nat computation never licenses
                 // identifying unrelated binder environments or Nat indices.
-                let probe = (current_budget / 2).min(128);
+                let baseline_probe=(current_budget/2).min(128);
+                // Smallest warranted repair: devote available search steps
+                // to exact congruence of the SAME source projection receiver
+                // under different captured frames, before forcing a possibly
+                // stuck PProd/structure projection. This is a budget policy,
+                // not an additional equality axiom. All receiver and pending
+                // arguments still require ordinary kernel-backed conversion.
+                let adaptive = std::env::var_os(
+                    "NUCLEUS_EXPERIMENTAL_PROJECTION_OBLIGATION"
+                ).is_some()
+                    && depth >= 5
+                    && current_budget >= 1024
+                    && left_structure.expr == right_structure.expr
+                    && left_structure.levels == right_structure.levels
+                    && left_spine.len()==right_spine.len()
+                    && left_spine.len()<=4
+                    && {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static ATTEMPTS:AtomicUsize=AtomicUsize::new(0);
+                        ATTEMPTS.fetch_add(1,Ordering::Relaxed)<256
+                    };
+                let probe=if adaptive {
+                    current_budget.min(4096)
+                } else {
+                    baseline_probe
+                };
+                #[cfg(feature="diagnostics")]
+                if adaptive && std::env::var_os("NUCLEUS_TRACE_ADAPTIVE_PROJECTION").is_some(){
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static REPORTS:AtomicUsize=AtomicUsize::new(0);
+                    if REPORTS.fetch_add(1,Ordering::Relaxed)<80{
+                        eprintln!(
+                            "NUCLEUS_ADAPTIVE_PROJECTION_ATTEMPT:depth={depth}:budget={current_budget}:probe={probe}:type={left_type:?}:index={left_index}:expr={:?}:env_left={}:env_right={}:pending={}",
+                            left_structure.expr,left_structure.env.id(),
+                            right_structure.env.id(),left_spine.len()
+                        );
+                    }
+                }
                 if probe >= 8
                     && left_spine.len() == right_spine.len()
                     && convert_with_policy_in_context(
@@ -1191,7 +1228,7 @@ fn compare_values(
                 {
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONGRUENCE").is_some() {
-                        eprintln!("NUCLEUS_PROJECTION_CONGRUENCE:earned-certified-operands");
+                        eprintln!("NUCLEUS_PROJECTION_CONGRUENCE:earned-certified-operands:adaptive={adaptive}:probe={probe}:source_expr={:?}",left_structure.expr);
                     }
                     return Judgment::proven((), "certified-projection-congruence");
                 }
