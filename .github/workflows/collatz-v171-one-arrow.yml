@@ -1,0 +1,165 @@
+name: Collatz V171 single-arrow modular irreducibility separator
+on:
+  push:
+    branches: [collatz-v171-one-arrow-irregular-basin]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  formal-single-defect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check same full ternary sieve and same no-modular-factor but separate fixed cycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure UniversalFutureClassFrontier RetroactiveFutureQuotient TimedOrdinaryHitGiantBridge IdealFiniteClockGraphElimination AllModuliFutureLabelCollapse; do
+            lake env lean -DautoImplicit=false \
+              -o ".lake/build/lib/lean/Collatz/$module.olean" \
+              "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/OneArrowNoModFactorSeparator.lean 2>&1 | tee evidence/v171-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v171-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-17000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          expected=[
+            'v171_even_source','v171_odd_output_mod_three',
+            'v171_exact_full_ternary_sieve','v171_all_future_five_fixed',
+            'v171_one_two_stays_terminal',
+            'v171_two_disjoint_real_positive_future_classes',
+            'v171_periodic_label_reconstructs_true_shortcut',
+            'v171_no_nontrivial_fixed_mod_future_label',
+            'v171_true_hits_five_modified_sticks'
+          ]
+          for n in expected:
+            assert 'CollatzFinal.SourceProduct.'+n in ax,n
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V171_FORMAL_ONE_ARROW',
+            'source_commit':head,'axioms':ax,
+            'status':'WARRANTED_FORMAL_ONE_ARROW_SECOND_CYCLE_WITH_NO_PERIODIC_CLASS_FACTOR',
+            'log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'all_depth_ternary_sieve':True,
+            'all_moduli_periodic_label_collapse':True,
+            'one_source_arrow_modified':5,
+            'preserves_v160_true_affine_law':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v171-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v171-formal
+          path: evidence/
+          if-no-files-found: error
+
+  exact-one-arrow:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute full finite actual two-clock graph of one modified transition with no finite modular factor
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v171_one_arrow_adversarial | tee evidence/v171-stdout.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v171-one-arrow.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V171_ONE_ARROW_NONMODULAR_GIANT_COUNTERMODEL'
+          assert d['one_defect_at_source']==5
+          assert d['source_mod3_sieve_all_cases_exact']
+          assert d['source_mod3_sieve_cases']==8192*25
+          assert d['tested_fixed_moduli_from_one_to']==500
+          assert d['all_tested_periodic_label_graphs_connected']
+          assert d['finite_parity_word_permutation_first_fails_at_length']==3
+          assert not d['exact_v160_all_source_affine_identity_preserved']
+          assert d['last_largest_unseeded_component']==15386
+          assert d['last_unseeded_fraction']>0.93
+          assert d['countermodel_is_not_true_Collatz']
+          assert not d['external_target5_density_locally_imported']
+          assert not d['no_giant_for_true_Collatz_proved']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V171_EXACT_ONE_ARROW',
+            'source_commit':head,
+            'status':'WARRANTED_BOUNDED_ONE_ARROW_HUGE_UNSEEDED_CLASS',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'synthetic_not_Collatz':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v171-exact-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v171-exact
+          path: evidence/
+          if-no-files-found: error
+
+  independent-final:
+    needs: [formal-single-defect,exact-one-arrow]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v171-formal
+          path: evidence/formal
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v171-exact
+          path: evidence/exact
+      - name: Reconcile exact source and preserve the missing genuine affine arithmetic
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/formal/v171-formal-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/exact/v171-exact-seal.json').read_text())
+          data=json.loads(pathlib.Path('evidence/exact/v171-one-arrow.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['all_depth_ternary_sieve']
+          assert a['all_moduli_periodic_label_collapse']
+          assert not a['preserves_v160_true_affine_law']
+          assert data['last_largest_unseeded_component']==15386
+          assert b['synthetic_not_Collatz']
+          assert a['global_collatz']==b['global_collatz']==data['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is data['qed'] is False
+          out={'schema':'COLLATZ_V171_FINAL',
+            'source_commit':head,
+            'status':'WARRANTED_ONE_ARROW_SYNTHETIC_GIANT_WITH_TERNARY_SIEVE_AND_ALL_MOD_IRREDUCIBILITY',
+            'result':'Changing exactly 5->8 into5->5 allows an enormous separate future class, while all-depth ternary sieve and zero nontrivial fixed-period future labels survive',
+            'needed_extra_distinction':'The original all-source exact +1 affine identity must hold at every genuine arrow, with no single-source defect',
+            'single_arrow_bad_basin_population_at_k14':15386,
+            'all_scale_bad_density_not_locally_proved':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v171-final.json').write_text(
+            json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v171-final
+          path: evidence/v171-final.json
+          if-no-files-found: error
