@@ -1,0 +1,170 @@
+name: Collatz V169 timed target to giant future component
+on:
+  push:
+    branches: [collatz-v169-logclock-bad-giant-bridge]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  formal-clock-giant:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check ordinary-to-shortcut residue-two clock conversion and finite-component lower mass
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure UniversalFutureClassFrontier RetroactiveFutureQuotient; do
+            lake env lean -DautoImplicit=false \
+              -o ".lake/build/lib/lean/Collatz/$module.olean" \
+              "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/TimedOrdinaryHitGiantBridge.lean 2>&1 | tee evidence/v169-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v169-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log), log[-16000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          expected=[
+            'v169_even_ordinary_is_shortcut',
+            'v169_odd_two_ordinary_steps',
+            'v169_ordinary_to_shortcut_unit_target',
+            'v169_timed_ordinary_hit_to_actual_shortcut',
+            'v169_timed_hit_is_genuine_future_join',
+            'v169_bad_target_cannot_have_a_terminal_seeded_path',
+            'v169_bad_target_forces_one_unseeded_component',
+            'v169_collatz_of_timed_density_and_no_giant'
+          ]
+          for name in expected:
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V169_FORMAL_GIANT_BRIDGE',
+            'source_commit':head,'axioms':ax,
+            'status':'WARRANTED_FORMAL_UNIT_TARGET_CLOCK_PHASE_AND_CONDITIONAL_BAD_GIANT_BOUND',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'external_timed_density_not_imported':True,
+            'universal_no_giant_not_proved':True,
+            'no_global_collatz_qed':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v169-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v169-formal
+          path: evidence/
+          if-no-files-found: error
+
+  exact-no-giant-scope:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute H equals 8k quotient cutoff experiments and G7 negative control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v169_logclock_component_audit | tee evidence/v169-stdout.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v169-summary.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V169_LOGCLOCK_COMPONENT_GIANT_AUDIT'
+          assert d['ordinary_to_shortcut_phase_validation']['source_count']==12000
+          assert d['ordinary_to_shortcut_phase_validation']['phase_guard_is_necessary']
+          assert d['ordinary_to_shortcut_phase_validation']['ordinary_target_4_is_not_shortcut_target_for_source_1']
+          assert d['true_3n1'][-1]['k']==24
+          assert d['true_3n1'][-1]['source_cutoff']==2**24-1
+          assert d['adversarial_G7'][-1]['k']==20
+          assert d['adversarial_G7'][-1]['largest_unseeded_fraction']>0.2
+          assert not d['external_timed_density_locally_kernel_built']
+          assert not d['full_component_ledger_clock_completeness_in_Lean_proved']
+          assert not d['all_scale_no_giant_component_bound_proved']
+          assert d['finite_test_results_do_not_imply_global_Collatz']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          cpp=pathlib.Path('research/collatz_v168_retrospective_quotient.cpp').read_bytes()
+          assert hashlib.sha256(cpp).hexdigest()==d['source_cpp_sha256']
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V169_EXACT_GIANT',
+            'source_commit':head,
+            'status':'WARRANTED_BOUNDED_ACTUAL_CLOCK_8K_COMPONENT_SCALE_AUDIT',
+            'source_cpp_sha256':d['source_cpp_sha256'],
+            'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'countermodel_retains_other_cycle':True,
+            'unknown_is_not_divergence':True,
+            'all_scales_unproved':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v169-exact-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v169-exact
+          path: evidence/
+          if-no-files-found: error
+
+  final-warrant:
+    needs: [formal-clock-giant,exact-no-giant-scope]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v169-formal
+          path: evidence/formal
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v169-exact
+          path: evidence/exact
+      - name: Independent exact source and conditional-scope seal
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/formal/v169-formal-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/exact/v169-exact-seal.json').read_text())
+          data=json.loads(pathlib.Path('evidence/exact/v169-summary.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['status']=='WARRANTED_FORMAL_UNIT_TARGET_CLOCK_PHASE_AND_CONDITIONAL_BAD_GIANT_BOUND'
+          assert b['status']=='WARRANTED_BOUNDED_ACTUAL_CLOCK_8K_COMPONENT_SCALE_AUDIT'
+          assert a['external_timed_density_not_imported']
+          assert a['universal_no_giant_not_proved']
+          assert b['all_scales_unproved']
+          assert data['true_3n1'][-1]['source_cutoff']==2**24-1
+          assert a['global_collatz']==b['global_collatz']==data['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is data['qed'] is False
+          seal={'schema':'COLLATZ_V169_FINAL',
+            'source_commit':head,
+            'status':'WARRANTED_UNCONDITIONAL_CLOCK_PHASE_BRIDGE_AND_CONDITIONAL_BAD_GIANT_CRITERION_NOT_QED',
+            'unconditional':'Every ordinary hit to a residue-2 mod3 target within H clocks is a real shortcut hit within H clocks, without assuming convergence',
+            'new_giant_logic':'An actual bad residue-2 target forces its ordinary timed hitting predecessors into one unseeded same-future component in a clock-complete source ledger',
+            'external_input':'Shaik timed lower natural density not imported into this Lean proof',
+            'remaining':['All-k finite-clock complete ledger guarantee','Source-height no-giant estimate for true 3n+1','External published density theorem Lean import and 11ln2<8'],
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v169-final.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v169-final
+          path: evidence/v169-final.json
+          if-no-files-found: error
