@@ -321,6 +321,18 @@ impl<'a> TypeChecker<'a> {
                     && let Some(checked) =
                         self.checked_type_of_bound_source(&term.env, *index, context)
                 {
+                    // Observational only: the census never changes a verdict.
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_TYPED_VALUE_USE").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static HITS: AtomicUsize = AtomicUsize::new(0);
+                        if HITS.fetch_add(1, Ordering::Relaxed) < 80 {
+                            eprintln!(
+                                "NUCLEUS_TYPED_VALUE_USE:expr={:?}:frame={}:bvar={}:context={}:type={:?}",
+                                term.expr, term.env.id(), index, context.len(), checked
+                            );
+                        }
+                    }
                     return Some(checked);
                 }
                 match term.env.lookup(*index)? {
