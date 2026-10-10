@@ -67,6 +67,19 @@ jobs:
               results.append(rec)
               print('NUCLEUS_ETA_SOURCE='+json.dumps({k:v for k,v in rec.items()
                    if k!='source_walk'},separators=(',',':')),flush=True)
+              fun_body=rec['fun_body_node']
+              if 'app' in fun_body:
+                  h=fun_body['app']['fn'];a=fun_body['app']['arg']
+                  function_chain=[];cur=h
+                  for i in range(16):
+                      n=node(cur)
+                      function_chain.append({'id':cur,'shape':n})
+                      if not n or 'app' not in n:break
+                      cur=n['app']['fn']
+                  print('NUCLEUS_ETA_SOURCE_BODY='+json.dumps({
+                      'case':case,'body_fn':h,'body_arg':a,
+                      'body_arg_node':node(a),'function_chain':function_chain
+                  },separators=(',',':'))[:13500],flush=True)
           pathlib.Path('research/nucleus-evidence/captured-eta-source.json').write_text(json.dumps({
               'run_sha':os.environ['GITHUB_SHA'],'artifact':os.environ['ARENA_ARTIFACT'],'cases':results
           },indent=2))
