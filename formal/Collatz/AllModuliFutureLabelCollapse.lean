@@ -267,48 +267,49 @@ theorem v159_any_bad_source_forces_mixed_every_modulus
       0<n ∧ 0<m ∧ n%M=m%M ∧
       CollatzGood n ∧ ¬ CollatzGood m := by
   classical
-  apply Classical.byContradiction
-  intro hNoMixed
-  have hSame (n m : Nat) (hn : 0<n) (hm : 0<m)
-      (hMod : n%M=m%M) :
-      CollatzGood n ↔ CollatzGood m := by
-    constructor
-    · intro hGood hBad
-      exact hNoMixed ⟨n,m,hn,hm,hMod,hGood,hBad⟩
-    · intro hGood hBad
-      exact hNoMixed ⟨m,n,hm,hn,hMod.symm,hGood,hBad⟩
-  let f : Nat → Bool := fun n => decide (CollatzGood n)
-  have hStep : ∀ n : Nat, 0<n → f (shortcut n)=f n := by
-    intro n _
-    have heq := v159_good_step_iff n
-    by_cases hgood : CollatzGood n
-    · have hs : CollatzGood (shortcut n) := heq.mp hgood
-      simp [f,hgood,hs]
-    · have hs : ¬ CollatzGood (shortcut n) := by
-        intro hh
-        exact hgood (heq.mpr hh)
-      simp [f,hgood,hs]
-  have hPer : ∀ n : Nat, 0<n → f (n+M)=f n := by
-    intro n hn
-    have hnM : 0<n+M := by omega
-    have hMod : n%M=(n+M)%M := by
-      simp [Nat.add_mod]
-    have hiff := hSame n (n+M) hn hnM hMod
-    by_cases hgood : CollatzGood n
-    · have hs : CollatzGood (n+M) := hiff.mp hgood
-      simp [f,hgood,hs]
-    · have hs : ¬ CollatzGood (n+M) := by
-        intro hh
-        exact hgood (hiff.mpr hh)
-      simp [f,hgood,hs]
-  have hall := v159_positive_future_label_cannot_be_periodic
-    f M hM hStep hPer 1 b (by decide) hb.1
-  have hOne : CollatzGood 1 := by
-    exact ⟨0,Or.inl rfl⟩
-  have hfOne : f 1 = true := by simp [f,hOne]
-  have hfBad : f b = false := by simp [f,hb.2]
-  rw [hfOne,hfBad] at hall
-  cases hall
+  by_cases hMissing : ∃ n m : Nat, 0<n ∧ 0<m ∧ n%M=m%M ∧ CollatzGood n ∧ ¬ CollatzGood m
+  · exact hMissing
+  · have hNoMixed : ¬ (∃ n m : Nat, 0<n ∧ 0<m ∧ n%M=m%M ∧ CollatzGood n ∧ ¬ CollatzGood m) := hMissing
+    have hSame (n m : Nat) (hn : 0<n) (hm : 0<m)
+        (hMod : n%M=m%M) :
+        CollatzGood n ↔ CollatzGood m := by
+      constructor
+      · intro hGood hBad
+        exact hNoMixed ⟨n,m,hn,hm,hMod,hGood,hBad⟩
+      · intro hGood hBad
+        exact hNoMixed ⟨m,n,hm,hn,hMod.symm,hGood,hBad⟩
+    let f : Nat → Bool := fun n => decide (CollatzGood n)
+    have hStep : ∀ n : Nat, 0<n → f (shortcut n)=f n := by
+      intro n _
+      have heq := v159_good_step_iff n
+      by_cases hgood : CollatzGood n
+      · have hs : CollatzGood (shortcut n) := heq.mp hgood
+        simp [f,hgood,hs]
+      · have hs : ¬ CollatzGood (shortcut n) := by
+          intro hh
+          exact hgood (heq.mpr hh)
+        simp [f,hgood,hs]
+    have hPer : ∀ n : Nat, 0<n → f (n+M)=f n := by
+      intro n hn
+      have hnM : 0<n+M := by omega
+      have hMod : n%M=(n+M)%M := by
+        simp [Nat.add_mod]
+      have hiff := hSame n (n+M) hn hnM hMod
+      by_cases hgood : CollatzGood n
+      · have hs : CollatzGood (n+M) := hiff.mp hgood
+        simp [f,hgood,hs]
+      · have hs : ¬ CollatzGood (n+M) := by
+          intro hh
+          exact hgood (hiff.mpr hh)
+        simp [f,hgood,hs]
+    have hall := v159_positive_future_label_cannot_be_periodic
+      f M hM hStep hPer 1 b (by decide) hb.1
+    have hOne : CollatzGood 1 := by
+      exact ⟨0,Or.inl rfl⟩
+    have hfOne : f 1 = true := by simp [f,hOne]
+    have hfBad : f b = false := by simp [f,hb.2]
+    rw [hfOne,hfBad] at hall
+    cases hall
 
 #print axioms v159_even_period_reduction
 #print axioms v159_odd_period_affine
