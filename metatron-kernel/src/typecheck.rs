@@ -2693,6 +2693,81 @@ impl<'a> TypeChecker<'a> {
                                 }
                             }
                         }
+                        // Decisive proof-parametricity separator. Hypothetically
+                        // open a SECOND proof binder h' : P after the original
+                        // checked source h : P; both contexts are well-formed
+                        // only when P : Prop independently checks at the
+                        // original six-binder prefix. Replacing h by h' must
+                        // preserve typing, and comparison must be established
+                        // by conversion, never by merely classifying arguments.
+                        let proof_parametricity=(|| -> String {
+                            if !compatible || source_context.len()!=context.len()+1 {
+                                return "source-context-incompatible".into()
+                            }
+                            let Some(prop)=source_proposition.cloned() else {
+                                return "source-proposition-not-found".into()
+                            };
+                            let TypeValue::Term(p_term)=&prop else {
+                                return "source-proposition-not-term".into()
+                            };
+                            let mut sort_fuel=1024;
+                            let Some(ptype)=self.infer_exact_closure_in_context(
+                                p_term,context,&mut sort_fuel,0,
+                            ) else{return "source-proposition-not-formed".into()};
+                            let psort=self.sort_level(
+                                Judgment::proven(ptype,"parametricity-source-proposition"),
+                                sort_fuel.min(512),
+                            );
+                            if !matches!(psort,Judgment::Proven {value:LevelTerm::Zero,..}) {
+                                return format!("source-proposition-not-Prop:{psort:?}")
+                            }
+                            let Some((raw,_))=self.expressions.iter_raw()
+                                .find(|(_,e)|matches!(e,Expr::BVar(0))) else {
+                                return "no-bvar-zero-expression".into()
+                            };
+                            let source_h=FreeId(context.len() as u64);
+                            let second_h=FreeId(source_context.len() as u64);
+                            let replacement_frame=EnvFrame::empty().extend_free(second_h);
+                            let replacement=Closure::new(ExprId(raw),replacement_frame.clone());
+                            let mut double_proof_context=source_context.clone();
+                            double_proof_context.push(prop.clone());
+                            self.retain_checked_elimination(
+                                &replacement_frame,prop.clone(),&double_proof_context,
+                            );
+                            let mut subst_fuel=8192;
+                            let Some(instantiated)=captured.substitute_local_free(
+                                source_h,&replacement,&mut subst_fuel,
+                            ) else{return "capture-safe-substitution-unknown".into()};
+                            let mut original_fuel=2048;
+                            let original_ty=self.infer_exact_closure_in_context(
+                                &captured,&double_proof_context,&mut original_fuel,0,
+                            );
+                            let mut substituted_fuel=2048;
+                            let substituted_ty=self.infer_exact_closure_in_context(
+                                &instantiated,&double_proof_context,&mut substituted_fuel,0,
+                            );
+                            let type_equal=match (&original_ty,&substituted_ty) {
+                                (Some(l),Some(r))=>Some(
+                                    crate::convert::convert_with_policy_in_context(
+                                        self,l,r,512,crate::convert::DeltaPolicy::PreferredOnly,
+                                        double_proof_context.len(),&double_proof_context,
+                                    )),
+                                _=>None,
+                            };
+                            let term_equal=if type_equal.as_ref().is_some_and(|j|j.is_proven()) {
+                                Some(crate::convert::convert_with_policy_in_context(
+                                    self,&TypeValue::Term(captured.clone()),
+                                    &TypeValue::Term(instantiated.clone()),2048,
+                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                    double_proof_context.len(),&double_proof_context,
+                                ))
+                            } else {None};
+                            format!(
+                                "ctx={}:h={source_h:?}:h2={second_h:?}:subst-remaining={subst_fuel}:original-type={}:replaced-type={}:types-convert={type_equal:?}:terms-convert={term_equal:?}",
+                                double_proof_context.len(),original_ty.is_some(),
+                                substituted_ty.is_some(),
+                            )
+                        })();
                         let extra=FreeId(u64::try_from(context.len()).unwrap_or(u64::MAX));
                         let source_uses_extra=self.type_depends_on_free(
                             &TypeValue::Term(captured.clone()),extra,2048,
@@ -2706,7 +2781,7 @@ impl<'a> TypeChecker<'a> {
                         let first_source_body=self.diagnostic_one_source_lambda_body(
                             &captured,context,remaining.min(512),
                         );
-                        format!("eta-source={:?}:source-scope={}:origin-nodes={origin_nodes:?}:compatible={compatible}:source-type={source_ty:?}:source-vs-expected-in-source={relation:?}:eta-fresh={eta_free:?}:eta-fresh-absent={eta_fresh_absent:?}:eta-minor-type={eta_minor_ty:?}:eta-types-convert={eta_type_relation:?}:eta-terms-convert={eta_term_relation:?}:caller-proof-candidates={caller_proof_candidates:?}:captured-proof-candidates={captured_proof_candidates:?}:extra-free={extra:?}:source-term-dep={source_uses_extra:?}:source-type-dep={source_type_uses_extra:?}:expected-type-dep={expected_uses_extra:?}:remaining={budget}:next={first_source_body}",
+                        format!("eta-source={:?}:source-scope={}:origin-nodes={origin_nodes:?}:compatible={compatible}:source-type={source_ty:?}:source-vs-expected-in-source={relation:?}:eta-fresh={eta_free:?}:eta-fresh-absent={eta_fresh_absent:?}:eta-minor-type={eta_minor_ty:?}:eta-types-convert={eta_type_relation:?}:eta-terms-convert={eta_term_relation:?}:caller-proof-candidates={caller_proof_candidates:?}:captured-proof-candidates={captured_proof_candidates:?}:proof-parametricity={proof_parametricity}:extra-free={extra:?}:source-term-dep={source_uses_extra:?}:source-type-dep={source_type_uses_extra:?}:expected-type-dep={expected_uses_extra:?}:remaining={budget}:next={first_source_body}",
                             captured.expr,source_context.len())
                     } else {"eta-source-binding-unavailable".into()}
                 } else {"not-eta-source-shape".into()};
