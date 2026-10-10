@@ -95,6 +95,37 @@ def existing_source_locked_compiler(k: int, c: int, H: int | None = None) -> dic
     return d
 
 
+
+
+def certify_adverse_sources() -> list[dict]:
+    """Exact future and eventual terminal receipts for the seven finite timeouts.
+
+    These are ordinary bounded test witnesses, NEVER an assumption that all
+    unknown sources eventually terminate.
+    """
+    cases=[
+        (20,1027431,238),(20,1042431,276),
+        (22,2643183,271),(22,3428767,349),
+        (22,3964775,270),(22,4053039,335),
+        (22,4063723,354),
+    ]
+    receipts=[]
+    for k,n,clock in cases:
+        x=n
+        for t in range(clock):
+            assert x not in (1,2),(n,t,x)
+            x=step(x,1)
+        assert x in (1,2),(n,clock,x)
+        receipts.append({'k':k,'source':n,
+                         'verified_direct_terminal_clock':clock})
+    assert step(2643183,1)==3964775
+    x=4063723
+    for _ in range(5):
+        x=step(x,1)
+    assert x==3428767
+    return receipts
+
+
 def main() -> None:
     subprocess.run(
         ["g++", "-std=c++17", "-O3", str(SOURCE), "-o", str(BIN)],
@@ -145,6 +176,11 @@ def main() -> None:
         "clock_schedule":"H=8*k; safely greater than 11*log(2)*k",
         "independently_recomputed_k":[8,10,12],
         "rows":rows,
+        "adverse_source_receipts":certify_adverse_sources(),
+        "k22_observed_two_clock_edges":[
+            {'source':2643183,'clock':1,'other':3964775,'other_clock':0},
+            {'source':4063723,'clock':5,'other':3428767,'other_clock':0},
+        ],
         "true_k20_at_H184_unresolved":0,
         "positive_density_external_theorem_locally_rebuilt":False,
         "component_anti_giant_limit_proved":False,
