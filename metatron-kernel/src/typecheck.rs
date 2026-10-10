@@ -1458,6 +1458,45 @@ impl<'a> TypeChecker<'a> {
                         crate::convert::DeltaPolicy::PreferredOnly,
                         context.len(),context,
                     );
+                    let pair_results={
+                        let left=actual_exposed.as_ref().and_then(|v|v.proven_value());
+                        let right=expected_exposed.as_ref().and_then(|v|v.proven_value());
+                        let compare_pair=|a:&Closure,b:&Closure| {
+                            [128usize,512,2048].into_iter().map(|fuel|{
+                                (fuel,crate::convert::convert_with_policy_in_context(
+                                    self,&TypeValue::Term(a.clone()),
+                                    &TypeValue::Term(b.clone()),fuel,
+                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                    context.len(),context,
+                                ))
+                            }).collect::<Vec<_>>()
+                        };
+                        match (left,right) {
+                            (Some(Value::StuckProjection{
+                                type_name:ln,index:li,structure:ls,spine:la,
+                            }),Some(Value::StuckProjection{
+                                type_name:rn,index:ri,structure:rs,spine:ra,
+                            })) if ln==rn && li==ri && la.len()==ra.len() => {
+                                let receiver=compare_pair(ls,rs);
+                                let args=la.iter().zip(ra.iter()).enumerate()
+                                    .map(|(i,(a,b))|format!("arg{i}:{:?}",compare_pair(a,b)))
+                                    .collect::<Vec<_>>();
+                                format!("same_projection={ln:?}:{li}:receiver={receiver:?}:arguments={args:?}")
+                            }
+                            (Some(Value::Neutral(l)),Some(Value::Neutral(r)))
+                                if l.head==r.head && l.spine.len()==r.spine.len() => {
+                                let args=l.spine.iter().zip(r.spine.iter()).enumerate()
+                                    .map(|(i,(a,b))|format!("arg{i}:{:?}",compare_pair(a,b)))
+                                    .collect::<Vec<_>>();
+                                format!("same_neutral_head={:?}:arguments={args:?}",l.head)
+                            }
+                            _=>format!("nonmatched-shapes:left={left:?}:right={right:?}"),
+                        }
+                    };
+                    eprintln!(
+                        "NUCLEUS_CODOMAIN_PAIRS:expression={expression:?}:depth={}:premises={pair_results}",
+                        context.len(),
+                    );
                     eprintln!(
                         "NUCLEUS_FINAL_CODOMAIN:expression={expression:?}:scope={}:body={:?}:actual={value:?}:expected={expected:?}:guarded={conversion:?}:preferred={alternate:?}:actual_exposed={actual_exposed:?}:expected_exposed={expected_exposed:?}",
                         context.len(),self.expressions.get(expression),
