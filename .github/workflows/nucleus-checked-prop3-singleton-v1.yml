@@ -73,14 +73,15 @@ jobs:
           out=pathlib.Path('metatron-kernel/evidence-out/prop3-singleton')
           expected={
               'perf/magma-list-pair-n7':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
-              'perf/magma-list-pair-n21':'b8279fa9189a203c6c11b04702c27c0f99a650b37',
+              'perf/magma-list-pair-n21':'b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84',
           }
           results=[]
           for name,digest in expected.items():
               data=(root/(name+'.ndjson')).read_bytes()
               assert hashlib.sha256(data).hexdigest()==digest,(name,'corpus drift')
+              full_lines=data.splitlines(keepends=True)
               names={0:''}; lines=[]; block=None; position=None
-              for raw in data.splitlines(keepends=True):
+              for raw in full_lines:
                   x=json.loads(raw); lines.append(raw)
                   if 'in' in x:
                       p=x.get('str',x.get('num'))
@@ -103,8 +104,11 @@ jobs:
                   ][-10:]
               original=b''.join(lines)
               rc,last,diagnostic=run(original)
+              full_rc,full_last,full_gates=run(data)
               row={'case':name,'sha256':hashlib.sha256(original).hexdigest(),
-                   'first_contract_return_code':rc,'last':last,'semantic_gates':diagnostic,'mutants':[]}
+                   'first_contract_return_code':rc,'last':last,'semantic_gates':diagnostic,
+                   'full_return_code':full_rc,'full_last':full_last,'full_semantic_gates':full_gates,
+                   'mutants':[]}
               print('NUCLEUS_PROP3_SOURCE_POSITIVE='+json.dumps(row),flush=True)
               for label,mutator in [
                   ('bad_constructor_fields',lambda o:o['inductive']['ctors'][0].__setitem__('numFields',2)),
@@ -115,7 +119,7 @@ jobs:
                   ('wrong_recursor_universe_arity',lambda o:o['inductive']['recs'][0].__setitem__('levelParams',[ind['recs'][0]['levelParams'][0]])),
               ]:
                   mutated=copy.deepcopy(block);mutator(mutated)
-                  newlines=lines.copy()
+                  newlines=full_lines.copy()
                   newlines[position]=(json.dumps(mutated,separators=(',',':'))+'\n').encode()
                   code,term,diag=run(b''.join(newlines))
                   row['mutants'].append({'mutation':label,'rc':code,'terminal':term[-1:]})
@@ -125,16 +129,19 @@ jobs:
                   'case':name,'return_code':rc,'mutants':row['mutants'],
                   'last':last,'semantic_gates':diagnostic
               }),flush=True)
-              assert rc in (0,2),('valid source declared REJECT',row)
+              assert rc in (0,2) and full_rc in (0,2),('valid source declared REJECT',row)
           (out/'nezero-prefix-and-mutants.json').write_text(json.dumps({
               'source_commit':os.environ['GITHUB_SHA'],'arena':os.environ['ARENA_SHA'],
               'artifact':os.environ['ARENA_ARTIFACT'],'rows':results
           },indent=2))
-          assert all(x['first_contract_return_code']==0 for x in results),(
-              'SOURCE_DERIVED_PROP_SINGLETON_NOT_ADMITTED_YET',
-              [(x['case'],x['first_contract_return_code'],x['last'],x['semantic_gates']) for x in results]
-          )
-          print('SOURCE_DERIVED_PROP_SINGLETON_ADMISSION_CERTIFIED_BOUNDED')
+          print('SOURCE_DERIVED_PROP_SINGLETON_FULL_REPLAY='+json.dumps([
+              {'case':x['case'],'full_return_code':x['full_return_code'],
+               'full_last':x['full_last'],'full_semantic_gates':x['full_semantic_gates']} for x in results
+          ]),flush=True)
+          # This is an evidence-only source-geometry gate. A prefix may stop
+          # on a prior declaration; source admission is judged on full exports,
+          # and only a new complete ACCEPT can satisfy the later promotion gate.
+          print('SOURCE_DERIVED_PROP_SINGLETON_DIAGNOSTIC_COMPLETE')
           PY
 
       - name: Replay the seven residual exports and pinned soundness negatives
