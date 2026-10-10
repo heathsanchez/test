@@ -1146,7 +1146,7 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
                 let mut extended = context.to_vec();
-                extended.push(established);
+                extended.push(established.clone());
                 let extended_frame = frame.extend(self.closure(*value, frame.clone()));
                 self.retain_checked_binding(&extended_frame,established,&extended);
                 self.infer_in(*body, &extended, &extended_frame, remaining, cache)
