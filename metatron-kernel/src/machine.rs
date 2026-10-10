@@ -851,8 +851,33 @@ impl<'a> Machine<'a> {
                             closure = field;
                             continue;
                         }
-                        NeutralHead::Const { .. } => {
-                            if preserve_stuck_projection {
+                        NeutralHead::Const { name: actual, .. } => {
+                            // A registered recursor on a neutral major is not a
+                            // structure constructor. Its projection remains a
+                            // neutral expression; never invent a PProd.mk. This
+                            // experimental branch only preserves that syntax
+                            // for subsequent type-directed conversion. It does
+                            // not produce an equality verdict by itself.
+                            let checked_recursor = self.recursor_reductions.contains_key(actual)
+                                || self.nat_primitives.as_ref()
+                                    .is_some_and(|p| p.recursor == *actual);
+                            let retain_neutral_recursor =
+                                std::env::var_os("NUCLEUS_EXPERIMENTAL_NEUTRAL_RECURSOR_PROJECTION").is_some()
+                                    && checked_recursor;
+                            if preserve_stuck_projection || retain_neutral_recursor {
+                                #[cfg(feature = "diagnostics")]
+                                if retain_neutral_recursor && !preserve_stuck_projection
+                                    && std::env::var_os("NUCLEUS_TRACE_NEUTRAL_RECURSOR_PROJECTION").is_some()
+                                {
+                                    static HIT: std::sync::atomic::AtomicUsize =
+                                        std::sync::atomic::AtomicUsize::new(0);
+                                    if HIT.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 75 {
+                                        eprintln!(
+                                            "NUCLEUS_NEUTRAL_RECURSOR_PROJECTION:preserved:type={type_name:?}:expected={:?}:recursor={actual:?}:argc={}:field={index}:receiver={:?}",
+                                            spec.constructor, neutral.spine.len(), structure.expr,
+                                        );
+                                    }
+                                }
                                 let mut spine = Vec::new();
                                 append_pending(&mut spine, &mut pending);
                                 return exposed(
