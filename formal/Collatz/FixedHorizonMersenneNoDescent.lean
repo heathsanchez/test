@@ -81,7 +81,6 @@ theorem v167_no_universal_fixed_horizon_size_exit (H : Nat) :
   have hp : 0 < 2^H := Nat.pow_pos (by decide)
   have hScale : 2^(H+2)=4*2^H := by
     rw [show H+2=2+H by omega, Nat.pow_add]
-    rfl
   have hn : 2<n := by
     dsimp [n]
     rw [hScale]
