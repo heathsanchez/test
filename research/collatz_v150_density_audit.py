@@ -143,7 +143,7 @@ def main():
       "semantic_guards":semantics,
       "finite_dyadic_terminal_envelopes":mass,
       "finite_predecessor_lower_counts":preds,
-      "external_ma zur_theorem_imported_in_local_lean":False,
+      "external_mazur_theorem_imported_in_local_lean":False,
       "external_positive_lower_density_accepted_only_as_explicit_premise":True,
       "upper_natural_density_one_convergence_proved":False,
       "universal_dyadic_exceptional_mass_bound_proved":False,
