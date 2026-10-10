@@ -39,7 +39,7 @@ def run_c1_c7(k: int,c: int) -> dict:
     sizes.sort(reverse=True)
     largest, second=(sizes+[0,0])[:2]
     assert largest+sum(sizes[1:])<=2**k-1
-    assert second==sorted(sizes,reverse=True)[1]
+    assert second==(sorted(sizes,reverse=True)+[0,0])[1]
     if k<=12:
         indep=independent_small_full_graph(k,c)
         assert indep["unresolved_sources"]==d["initial_unresolved_sources"]
