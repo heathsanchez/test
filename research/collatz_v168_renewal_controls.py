@@ -57,6 +57,34 @@ def reverse_renewal(X: int, c: int, good_or_bad) -> int:
     return evens + odds
 
 
+
+
+def timeout(n: int, c: int, roots: set[int], H: int) -> int:
+    for _ in range(H + 1):
+        if n in roots:
+            return 0
+        n = step(n, c)
+    return 1
+
+
+def check_clocked_weighted_renewal(X: int, H: int, c: int, roots: set[int]) -> None:
+    """Exactly test s=2 finite-height and finite-clock mass renewal.
+
+    Odd source endpoints y may be ABOVE the original height cutoff X.
+    """
+    left = sum((Fraction(timeout(n,c,roots,H+1), n*n)
+                for n in range(1,X)), Fraction(0))
+    even = sum((Fraction(timeout(y,c,roots,H), (2*y)**2)
+                for y in range(1,(X+1)//2)), Fraction(0))
+    odd = Fraction(0)
+    for y in range((3+c)//2, (3*X+c+1)//2):
+        q = 2*y-c
+        if q>0 and q%3==0 and 0<q//3<X:
+            p=q//3
+            assert p%2==1 and step(p,c)==y
+            odd += Fraction(timeout(y,c,roots,H),p*p)
+    assert left == even+odd,(X,H,c,left,even,odd)
+
 def main() -> None:
     assert cycle(7, 7) == [7, 14]
     assert cycle(5, 7) == [5, 11, 20, 10]
@@ -77,6 +105,11 @@ def main() -> None:
     for X in (8, 13, 27, 50, 64, 101, 1024, 16384):
         assert reverse_renewal(X, 7, bad) == bad_seven_below(X)
     print('G7 guarded reverse-source renewal: eight height cutoffs')
+    for c, roots in ((1,{1,2}),(5,{5,10}),(7,{7,14})):
+        for X in (30,80,143):
+            for H in (0,1,2,5,10):
+                check_clocked_weighted_renewal(X,H,c,roots)
+    print('Exact rational weighted clocked mass transport: 45 checks')
     values = cycle(187, 5)
     assert len(values) == 27 and min(values) == 187
     data = cycle_affine_data(values, 5)
