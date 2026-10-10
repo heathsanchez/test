@@ -350,7 +350,101 @@ impl<'a> TypeChecker<'a> {
                     })
                 }
             }
-            Expr::Proj { .. } | Expr::StrLit(_) => None,
+            Expr::Proj {
+                type_name,
+                index,
+                structure,
+            } => {
+                // Captured-expression counterpart of infer_uncached's checked
+                // projection telescope. Do not type a projection by merely
+                // reducing the field: infer its receiver in the ACTUAL
+                // captured environment and validate the inductive family.
+                //
+                // The field metadata was admitted by the source-checked
+                // inductive validator; unknown recursors, an unmatched
+                // family, absent parameters, or unresolved earlier fields
+                // must remain UNKNOWN. In particular, a syntactically
+                // identical BVar in two captured frames is not equal.
+                let spec = self.environment.projection_specs().get(type_name)?.clone();
+                let index = usize::try_from(*index).ok()?;
+                let field_type = spec.field_types.get(index)?.clone();
+                let receiver = term.sibling(*structure, term.env.clone());
+                let TypeValue::Term(receiver_type) = self.infer_exact_closure_in_context(
+                    &receiver, context, remaining, depth + 1,
+                )? else { return None };
+                let type_exposed = self.machine().expose(
+                    receiver_type, Transparency::Reducible, (*remaining).min(4096),
+                );
+                let Value::Neutral(receiver_type_value) =
+                    type_exposed.proven_value()?.clone()
+                else { return None };
+                let NeutralHead::Const { name, levels } = receiver_type_value.head else {
+                    return None;
+                };
+                if name != *type_name || receiver_type_value.spine.len() < spec.num_params {
+                    return None;
+                }
+                let result = match field_type {
+                    ProjectionFieldType::Parameter(parameter_index) => {
+                        receiver_type_value.spine.get(parameter_index).cloned()?
+                    }
+                    ProjectionFieldType::Derived(field_expression) => {
+                        let inductive_decl = self.environment.get(*type_name)?;
+                        if inductive_decl.level_params.len() != levels.len() {
+                            return None;
+                        }
+                        let mut frame = EnvFrame::empty();
+                        for param in receiver_type_value.spine.iter().take(spec.num_params) {
+                            frame = frame.extend(param.clone());
+                        }
+                        if index > 0 {
+                            let value_exposed = self.machine().expose(
+                                receiver, Transparency::Reducible, (*remaining).min(4096),
+                            );
+                            let Value::Neutral(receiver_value) =
+                                value_exposed.proven_value()?.clone()
+                            else { return None };
+                            for field in 0..index {
+                                match &receiver_value.head {
+                                    NeutralHead::Const { name, .. } if *name == spec.constructor => {
+                                        let offset = spec.num_params.checked_add(field)?;
+                                        frame = frame.extend(receiver_value.spine.get(offset)?.clone());
+                                    }
+                                    NeutralHead::Const { .. } => return None,
+                                    NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
+                                        frame = frame.extend_neutral(Neutral {
+                                            head: NeutralHead::Projection {
+                                                type_name: *type_name,
+                                                index: field,
+                                                structure: Box::new(receiver_value.clone()),
+                                            },
+                                            spine: Vec::new(),
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        let substitution = LevelSubstitution::new(
+                            inductive_decl.level_params.iter().copied()
+                                .zip(levels).collect(),
+                        );
+                        Closure::with_levels(field_expression, frame, substitution)
+                    }
+                };
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_EXACT_PROJECTION").is_some() {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static CERTIFIED: AtomicUsize = AtomicUsize::new(0);
+                    if CERTIFIED.fetch_add(1, Ordering::Relaxed) < 36 {
+                        eprintln!(
+                            "NUCLEUS_EXACT_PROJECTION:expr={:?}:type={type_name:?}:index={index}:context={}:frame={}:field_type={result:?}",
+                            term.expr,context.len(),term.env.id()
+                        );
+                    }
+                }
+                Some(TypeValue::Term(result))
+            }
+            Expr::StrLit(_) => None,
         }
     }
 
