@@ -147,6 +147,11 @@ fn convert_in_context_with_congruence(
     crate::diagnostics::conversion();
 
     let mut remaining = budget;
+    // Research-only: exact syntactic support checks are authorized to discharge
+    // a difference in unrelated capture frames. They do not compare arbitrary
+    // different terms, or equate distinct source-local proof hypotheses.
+    let exact_support_enabled =
+        std::env::var_os("NUCLEUS_EXPERIMENTAL_EXACT_SUPPORT_EQ").is_some();
     let mut work = vec![(left.clone(), right.clone(), initial_depth, context.to_vec())];
     let mut visited = ConversionVisitSet::new();
     let mut unit_like_frees = HashMap::new();
