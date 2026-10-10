@@ -101,6 +101,20 @@ class MDASevenTests(unittest.TestCase):
 
         third = {"polynomial": {"1": "1", "3": "-1"},
                  "domain": ["interval", "0", "1"]}
+        from open_development.mda_v7 import _project
+        state_before = self.store.state()
+        probe_third = adapter.assess(state_before, self.obligation(third, 1))
+        cand = next(adapter.propose(state_before, self.obligation(third, 1), probe_third.residual))
+        proof = adapter.verify(state_before, self.obligation(third, 1), cand)
+        virtual = _project(state_before, cand, proof, adapter)
+        print("MDA_DEBUG_PROJECTED_THIRD", {
+            "parent_id": stage_two.retained[0],
+            "candidate": cand.payload,
+            "protected_before": adapter.assess(state_before, self.obligation(STAGES[1], 0)).verdict,
+            "protected_after": adapter.assess(virtual, self.obligation(STAGES[1], 0)).verdict,
+            "child_after": adapter.assess(virtual, self.obligation(third, 1)).verdict,
+            "shapes_after": adapter._programs(virtual),
+        }, flush=True)
         acquire = dev.run_minimal(self.obligation(third, 1),
                                   protected=(self.obligation(STAGES[1], 0),))
         self.assertEqual(acquire.outcome, "COMMIT", repr(acquire))
