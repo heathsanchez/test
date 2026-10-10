@@ -37,7 +37,7 @@ def run_c1_c7(k: int,c: int) -> dict:
     sizes=[d["positive_source_cutoff"]-d["initial_unresolved_sources"]]
     sizes += [n for _,n in d["initial_top_components"]]
     sizes.sort(reverse=True)
-    largest, second=sizes[:2]
+    largest, second=(sizes+[0,0])[:2]
     assert largest+sum(sizes[1:])<=2**k-1
     assert second==sorted(sizes,reverse=True)[1]
     if k<=12:
@@ -67,7 +67,7 @@ def run_c5(k: int) -> dict:
     good=d["positive_sources"]-d["unseeded_sources"]
     sizes=[good]+[count for _,count in d["top_source_components"]]
     sizes.sort(reverse=True)
-    largest,second=sizes[:2]
+    largest,second=(sizes+[0,0])[:2]
     if k<=12:
         indep=c5_independent(k,H)
         assert indep==(d["unseeded_components"],d["unseeded_sources"],
