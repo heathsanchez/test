@@ -103,23 +103,18 @@ class MDASevenTests(unittest.TestCase):
                  "domain": ["interval", "0", "1"]}
         from open_development.mda_v7 import _project
         state_before = self.store.state()
-        probe_third = adapter.assess(state_before, self.obligation(third, 1))
-        cand = next(adapter.propose(state_before, self.obligation(third, 1), probe_third.residual))
-        proof = adapter.verify(state_before, self.obligation(third, 1), cand)
-        virtual = _project(state_before, cand, proof, adapter)
-        print("MDA_DEBUG_PROJECTED_THIRD", {
-            "parent_id": stage_two.retained[0],
-            "candidate": cand.payload,
-            "protected_before": adapter.assess(state_before, self.obligation(STAGES[1], 0)).verdict,
-            "protected_after": adapter.assess(virtual, self.obligation(STAGES[1], 0)).verdict,
-            "child_after": adapter.assess(virtual, self.obligation(third, 1)).verdict,
-            "shapes_after": adapter._programs(virtual),
-            "third_after_residual": adapter.assess(virtual, self.obligation(third, 1)).residual,
-            "third_after_certificate": adapter.assess(virtual, self.obligation(third, 1)).certificate,
-            "executed": adapter.execute(virtual, next(reversed(virtual["capabilities"])),
-                                         *adapter._problem(self.obligation(third, 1)), []),
-            "child_record": virtual["capabilities"][next(reversed(virtual["capabilities"]))],
-        }, flush=True)
+        evidence = adapter.assess(state_before, self.obligation(third, 1))
+        child = next(adapter.propose(state_before, self.obligation(third, 1),
+                                     evidence.residual))
+        attested = adapter.verify(state_before, self.obligation(third, 1), child)
+        virtual = _project(state_before, child, attested, adapter)
+        child_id = next(reversed(virtual["capabilities"]))
+        self.assertEqual(virtual["capabilities"][child_id]["repair"]["dependencies"],
+                         [stage_two.retained[0]], "preview must match JSON ledger types")
+        self.assertEqual(adapter.assess(virtual, self.obligation(third, 1)).verdict,
+                         "verified", "projected executor must preserve dependency semantics")
+        self.assertEqual(adapter.assess(virtual, self.obligation(STAGES[1], 0)).verdict,
+                         "verified")
         acquire = dev.run_minimal(self.obligation(third, 1),
                                   protected=(self.obligation(STAGES[1], 0),))
         self.assertEqual(acquire.outcome, "COMMIT", repr(acquire))
