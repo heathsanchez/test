@@ -2398,8 +2398,20 @@ impl<'a> TypeChecker<'a> {
                 return format!("origin-binder-domain-mismatch:node={node}:free={free:?}");
             }
             if !w.protected_prefix.starts_with(context) {
+                // This is a typed-context *separation*, not a refutation of
+                // Lean equality. Give the exact first premise that would
+                // require a checked telescope morphism, never merge by
+                // numeric FreeId or matching raw expression IDs.
+                let first_mismatch=(0..w.protected_prefix.len().min(context.len()))
+                    .find(|&n| w.protected_prefix[n] != context[n]);
+                let source=first_mismatch
+                    .and_then(|n| w.protected_prefix.get(n))
+                    .map(|x|format!("{x:?}").chars().take(700).collect::<String>());
+                let target=first_mismatch
+                    .and_then(|n| context.get(n))
+                    .map(|x|format!("{x:?}").chars().take(700).collect::<String>());
                 return format!(
-                    "origin-not-a-caller-extension:node={node}:expected={}:caller={}",
+                    "origin-requires-typed-context-morphism:used_slot={idx}:node={node}:free={free:?}:source_context={}:target_context={}:first_distinguishing_slot={first_mismatch:?}:source_type={source:?}:target_type={target:?}:all_used_slots={used_slots:?}",
                     w.protected_prefix.len(),context.len(),
                 );
             }
