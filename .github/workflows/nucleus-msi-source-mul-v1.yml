@@ -125,6 +125,55 @@ jobs:
           print('NUCLEUS_MUL_FROZEN196='+str(counts),flush=True)
           assert counts=={'accept':118,'reject':71,'unknown':7}, counts
           PY
+      - name: Qualify guarded native Nat.mul on seven and protected frozen196
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests')
+          seven=['init-prelude','perf/grind-ring-5','perf/magma-list-pair-n7',
+                 'perf/magma-list-pair-n21','perf/magma-list-deep-n21',
+                 'perf/magma-list-deep-n36','perf/fueled-chain']
+          flags=('NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION',
+                 'NUCLEUS_EXPERIMENTAL_RELEVANCE','NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER',
+                 'NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE','NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE',
+                 'NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT','NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512',
+                 'NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL','NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F',
+                 'NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA')
+          modes={}
+          for mode in ('typed_baseline','native_mul'):
+            env=os.environ.copy()
+            for flag in flags: env[flag]='1'
+            if mode=='native_mul': env['NUCLEUS_EXPERIMENTAL_NATIVE_MUL']='1'
+            rows=[]
+            for bucket in ('good','bad'):
+              for f in sorted((root/bucket).rglob('*.ndjson')):
+                p=subprocess.run(['/tmp/nucleus'],input=f.read_bytes(),env=env,
+                    stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=45)
+                rows.append({'case':str(f.relative_to(root)),
+                    'expected':bucket,'rc':p.returncode,
+                    'last':p.stderr.decode(errors='replace').splitlines()[-1:]})
+            assert len(rows)==196
+            wrong=[v for v in rows if v['rc'] not in (0,1,2)
+                   or (v['expected']=='good' and v['rc']==1)
+                   or (v['expected']=='bad' and v['rc']==0)]
+            counts={'accept':sum(v['expected']=='good' and v['rc']==0 for v in rows),
+                    'reject':sum(v['expected']=='bad' and v['rc']==1 for v in rows),
+                    'unknown':sum(v['rc']==2 for v in rows)}
+            assert not wrong,wrong
+            assert counts['reject']==71,counts
+            if mode=='typed_baseline': assert counts=={'accept':118,'reject':71,'unknown':7},counts
+            modes[mode]={'counts':counts,'rows':rows}
+            print('NUCLEUS_MUL_MODE='+json.dumps({'mode':mode,'counts':counts}),flush=True)
+          base=modes['typed_baseline']['rows']
+          candidate=modes['native_mul']['rows']
+          diff=[{'case':v['case'],'before':v['rc'],'after':c['rc']}
+                for v,c in zip(base,candidate) if v['rc']!=c['rc']]
+          print('NUCLEUS_MUL_VERDICT_DIFF='+json.dumps(diff),flush=True)
+          path=pathlib.Path('metatron-kernel/evidence-out/mul-source/mul-ab.json')
+          path.write_text(json.dumps({'head':os.environ['GITHUB_SHA'],
+               'cases':196,'results':modes,'changes':diff},indent=2)+'\n')
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
