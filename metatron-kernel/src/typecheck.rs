@@ -516,7 +516,7 @@ impl<'a> TypeChecker<'a> {
                 // family, absent parameters, or unresolved earlier fields
                 // must remain UNKNOWN. In particular, a syntactically
                 // identical BVar in two captured frames is not equal.
-                let spec = self.environment.projection_specs().get(type_name)?.clone();
+                let spec = self.environment.projection_specs_ref().get(type_name)?.clone();
                 let index = usize::try_from(*index).ok()?;
                 let field_type = spec.field_types.get(index)?.clone();
                 let receiver = term.sibling(*structure, term.env.clone());
@@ -1137,7 +1137,7 @@ impl<'a> TypeChecker<'a> {
                 index,
                 structure,
             } => {
-                let specs = self.environment.projection_specs();
+                let specs = self.environment.projection_specs_ref();
                 let Some(spec) = specs.get(type_name) else {
                     return Judgment::unknown("unsupported-projection");
                 };
@@ -3961,35 +3961,35 @@ impl<'a> TypeChecker<'a> {
         &self,
         constructor: NameId,
     ) -> Option<(NameId, usize, usize)> {
-        let specs = self.environment.projection_specs();
+        let specs = self.environment.projection_specs_ref();
         let mut matches = specs
-            .into_iter()
+            .iter()
             .filter(|(_, spec)| spec.eta_expandable && spec.constructor == constructor);
         let (type_name, spec) = matches.next()?;
         if matches.next().is_some() {
             return None;
         }
-        Some((type_name, spec.num_params, spec.field_types.len()))
+        Some((*type_name, spec.num_params, spec.field_types.len()))
     }
 
     pub(crate) fn non_eta_structure_for_constructor(
         &self,
         constructor: NameId,
     ) -> Option<(NameId, usize)> {
-        let specs = self.environment.projection_specs();
+        let specs = self.environment.projection_specs_ref();
         let mut matches = specs
-            .into_iter()
+            .iter()
             .filter(|(_, spec)| !spec.eta_expandable && spec.constructor == constructor);
         let (type_name, spec) = matches.next()?;
         if matches.next().is_some() {
             return None;
         }
-        Some((type_name, spec.num_params + spec.field_types.len()))
+        Some((*type_name, spec.num_params + spec.field_types.len()))
     }
 
     pub(crate) fn is_non_eta_structure_type(&self, type_name: NameId) -> bool {
         self.environment
-            .projection_specs()
+            .projection_specs_ref()
             .get(&type_name)
             .is_some_and(|spec| !spec.eta_expandable)
     }
