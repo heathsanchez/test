@@ -94,7 +94,9 @@ theorem v169_ordinary_to_shortcut_unit_target :
                 have hodd : n%2=1 := by omega
                 have htwo := v169_odd_two_ordinary_steps n hodd
                 have hLong : iter v150Ordinary (2+j) n=b := by
-                  convert h using 1 <;> omega
+                  have hClock : (j+1)+1 = 2+j := by omega
+                  rw [← hClock]
+                  exact h
                 rw [iter_add,htwo] at hLong
                 obtain ⟨i,hi,hiHit⟩ :=
                   ih j (by omega) (shortcut n) b hb hLong
