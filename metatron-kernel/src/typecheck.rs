@@ -1095,6 +1095,67 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                // Diagnostic-only smallest failed conversion obligation:
+                // original source binder judgment + actual/expected type
+                // normal forms + precisely the captured binder that the
+                // source expression reads. This creates NO conversion rule.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_MINIMAL_TYPED_OBLIGATION").is_some()
+                    && !conversion.is_proven()
+                    && context.len() >= 4
+                    && matches!(self.expressions.get(expression),Some(Expr::BVar(_)))
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static FIRST:AtomicUsize=AtomicUsize::new(0);
+                    if FIRST.fetch_add(1,Ordering::Relaxed)<18 {
+                        let source=self.expressions.get(expression);
+                        let index=match source {
+                            Some(Expr::BVar(i))=>*i,
+                            _=>0,
+                        };
+                        let captured=frame.lookup(index);
+                        let actual_normal=match &value {
+                            TypeValue::Term(clo)=>Some(
+                                self.machine().expose_for_conversion(
+                                    clo.clone(),Transparency::Reducible,(*remaining).min(1024),
+                                )
+                            ),
+                            _=>None,
+                        };
+                        let target_normal=match expected {
+                            TypeValue::Term(clo)=>Some(
+                                self.machine().expose_for_conversion(
+                                    clo.clone(),Transparency::Reducible,(*remaining).min(1024),
+                                )
+                            ),
+                            _=>None,
+                        };
+                        let target_relevant=match &captured{
+                            Some(EnvBinding::Free(free))=>usize::try_from(free.0)
+                                .ok().and_then(|i|context.get(i)).cloned(),
+                            _=>None,
+                        };
+                        let source_ty_proposition=match &value {
+                            TypeValue::Term(clo) if clo.levels==LevelSubstitution::default()=>
+                                Some(self.is_proposition_in_context(
+                                    clo.expr,context,&clo.env,(*remaining).min(1024),
+                                )),
+                            _=>None,
+                        };
+                        let target_ty_proposition=match expected {
+                            TypeValue::Term(clo) if clo.levels==LevelSubstitution::default()=>
+                                Some(self.is_proposition_in_context(
+                                    clo.expr,context,&clo.env,(*remaining).min(1024),
+                                )),
+                            _=>None,
+                        };
+                        eprintln!(
+                            "NUCLEUS_TYPED_OBLIGATION:source={expression:?}:bvar={index}:context={}:frame={}:captured={captured:?}:captured_type={target_relevant:?}:actual={value:?}:expected={expected:?}:result={conversion:?}:actual_whnf={actual_normal:?}:expected_whnf={target_normal:?}:actual_type_is_prop={source_ty_proposition:?}:expected_type_is_prop={target_ty_proposition:?}",
+                            context.len(),frame.id()
+                        );
+                    }
+                }
+
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_DEPENDENCY_GAP").is_some() {
                     if let Judgment::Unknown { residual } = &conversion {
