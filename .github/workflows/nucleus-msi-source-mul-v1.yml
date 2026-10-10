@@ -79,7 +79,7 @@ jobs:
               row={
                   'case':case,'fixture_sha256':hashlib.sha256(data).hexdigest(),
                   'verdict':p.returncode,
-                  'mul_source':grab('NUCLEUS_MUL_SOURCE:',5),
+                  'mul_source':grab('NUCLEUS_MUL_SOURCE:',45),
                   'mul_nodes':grab('NUCLEUS_MUL_NODE:',72),
                   'instance_leaf':grab('NUCLEUS_ARITHMETIC_INSTANCE:',8),
                   'projection_field':grab('NUCLEUS_PROJECTION_FIELD_PROBE:',40),
