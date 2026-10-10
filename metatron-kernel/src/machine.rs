@@ -360,6 +360,20 @@ impl<'a> Machine<'a> {
         let Some(field) = neutral.spine.get(field_offset).cloned() else {
             return Judgment::unknown("projection-constructor-arity");
         };
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_SELECTED_FIELD").is_some() {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static COUNT:AtomicUsize=AtomicUsize::new(0);
+            if COUNT.fetch_add(1,Ordering::Relaxed)<64 {
+                let value=self.expose_internal(
+                    field.clone(),Transparency::Reducible,budget.min(512),false,false,
+                );
+                eprintln!(
+                    "NUCLEUS_SELECTED_FIELD:type={type_name:?}:index={index}:constructor={:?}:selected={field:?}:value={}",
+                    spec.constructor,format!("{value:?}").chars().take(1300).collect::<String>(),
+                );
+            }
+        }
         Judgment::proven(field, "projection-selected-field")
     }
 
