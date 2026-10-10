@@ -1,0 +1,181 @@
+name: Collatz V172 earliest-clock canonical graph saturation
+on:
+  push:
+    branches: [collatz-v172-dominant-clock-complete-graph]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  formal-clock-dominance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check real source-clock dominance and preservation of late joins and terminal seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure UniversalFutureClassFrontier RetroactiveFutureQuotient TimedOrdinaryHitGiantBridge IdealFiniteClockGraphElimination; do
+            lake env lean -DautoImplicit=false \
+              -o ".lake/build/lib/lean/Collatz/$module.olean" \
+              "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/DominantClockSourceGraph.lean 2>&1 | tee evidence/v172-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v172-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-16000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          names=[
+            'v172_dominated_endpoint_future',
+            'v172_earliest_clock_owner_captures_later_collision',
+            'v172_skipped_suffix_keeps_full_class_connection',
+            'v172_dominant_owner_inherits_terminal'
+          ]
+          for name in names:
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V172_FORMAL_DOMINANT_CLOCK',
+            'source_commit':sha,'axioms':ax,
+            'status':'WARRANTED_FORMAL_EARLIER_ARRIVAL_DOMINATES_ANY_LATER_FUTURE_WITHIN_H',
+            'log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'source_clocks_and_future_component_joins_preserved':True,
+            'full_CPP_implementation_semantics_separately_tested':True,
+            'all_k_no_giant_unproved':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v172-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v172-formal
+          path: evidence/
+          if-no-files-found: error
+
+  exact-dominant-graph:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently compare all clocked components against exhaustive source graph and extend true cutoff to 2^25
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v172_dominant_clock_audit | tee evidence/v172-stdout.json
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          p=pathlib.Path('evidence/v172-summary.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V172_DOMINANT_CLOCK_END_TO_END_AUDIT'
+          assert d['all_12_exhaustive_source_clock_graphs_matched']
+          assert d['actual_all_source_meeting_clocks_replayed_on_small_cutoffs']
+          assert d['all_finite_ledger_termination_sound']
+          assert d['max_bounded_real_source_checked']==2**25-1
+          assert d['k24_endpoints_examined']==68881607
+          assert d['k24_clock_examinations_reduction_factor']>45
+          assert len(d['independent_source_receipt_replays'])==12
+          assert all(x['receipt_DSUs_equivalent_to_exhaustive']
+            and x['no_false_terminal_propagation']
+            for x in d['independent_source_receipt_replays'])
+          rows=d['large_true_rows']
+          assert [x['k'] for x in rows]==[16,18,20,22,24,25]
+          assert [x['unseeded_sources'] for x in rows]==[0,0,2,5,40,40]
+          assert [x['largest_unseeded_component'] for x in rows]==[0,0,1,2,13,10]
+          assert d['synthetic_big_controls'][1]['largest_unseeded_component']==983307
+          assert d['synthetic_big_controls'][0]['largest_unseeded_component']>500000
+          assert not d['all_k_no_giant_theorem_proved']
+          assert not d['external_timed_density_locally_imported']
+          assert d['universal_collatz']=='UNKNOWN' and d['qed'] is False
+          code=pathlib.Path('research/collatz_v172_dominant_clock_graph.cpp').read_bytes()
+          assert d['source_cpp_sha256']==hashlib.sha256(code).hexdigest()
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V172_EXACT_DOMINANT_CLOCK',
+            'source_commit':sha,
+            'status':'WARRANTED_BOUNDED_VERTEX_EXACT_DOMINANCE_VS_EXHAUSTIVE_2_POW_25',
+            'code_sha256':hashlib.sha256(code).hexdigest(),
+            'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'largest_real_source':2**25-1,
+            'exhaustive_labels_matched_at_smaller_cutoffs':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v172-exact-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v172-exact
+          path: evidence/
+          if-no-files-found: error
+
+  final-source-evidence:
+    needs: [formal-clock-dominance,exact-dominant-graph]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v172-formal
+          path: evidence/formal
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v172-exact
+          path: evidence/exact
+      - name: Independent exact source and no-global-Collatz promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          a=json.loads(pathlib.Path('evidence/formal/v172-formal-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/exact/v172-exact-seal.json').read_text())
+          p=pathlib.Path('evidence/exact/v172-summary.json')
+          d=json.loads(p.read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==sha
+          assert b['result_sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
+          assert a['source_clocks_and_future_component_joins_preserved']
+          assert b['exhaustive_labels_matched_at_smaller_cutoffs']
+          assert d['max_bounded_real_source_checked']==2**25-1
+          assert d['all_12_exhaustive_source_clock_graphs_matched']
+          assert not a['all_k_no_giant_unproved'] is False
+          assert not d['all_k_no_giant_theorem_proved']
+          assert a['global_collatz']==b['global_collatz']==d['universal_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is d['qed'] is False
+          out={'schema':'COLLATZ_V172_FINAL',
+            'source_commit':sha,
+            'status':'WARRANTED_FORMAL_LOCAL_CLOCK_DOMINANCE_AND_BOUNDED_GRAPH_TO_2_POW_25_NOT_QED',
+            'new_warrant':'Earlier arrival at identical true shortcut endpoint dominates every later source suffix within finite H; skip preserves transitive future joins and terminal witnesses',
+            'independent_algorithm_checks':'12 complete exact graph comparisons with source and clock replay of each receipt, T/G7/S5 k8/10/12/14',
+            'all_bounded_true_sources_covered_once':2**25-1,
+            'k24_real_unseeded_sources':40,
+            'k24_real_unseeded_components':10,
+            'k24_max_component':13,
+            'k24_primitive_endpoint_examinations':68881607,
+            'k25_unseeded_sources':40,
+            'k25_unseeded_components':10,
+            'k25_max_component':10,
+            'missing':'Prove a genuinely uniform all-k source-height nonterminal component bound for exact unmodified +1 map',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v172-final.json').write_text(
+            json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v172-final
+          path: evidence/v172-final.json
+          if-no-files-found: error
