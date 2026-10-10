@@ -1,0 +1,123 @@
+name: Nucleus countermodel first failed checked argument judgment census
+
+on:
+  push:
+    branches: [nucleus-countermodel-arg-judgment-v1]
+    paths:
+      - ".github/workflows/nucleus-countermodel-arg-judgment-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      ARENA_ARTIFACT: "11272848230"
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Pin exact checked development state
+        run: |
+          set -euo pipefail
+          printf 'source=%s\n' "$GITHUB_SHA"
+          printf 'kernel_tree=%s\n' "$(git rev-parse HEAD:metatron-kernel)"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test checked_relevance_signature -- --nocapture
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+      - name: Fetch exact pinned positive sources
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests research/nucleus-evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Trace actual countermodel application boundary and exact source graph
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,re,hashlib,pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests')
+          records=[]
+          for case in ('perf/magma-list-pair-n7','perf/magma-list-pair-n21'):
+              data=(root/'good'/(case+'.ndjson')).read_bytes()
+              expected={'perf/magma-list-pair-n7':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
+                        'perf/magma-list-pair-n21':'b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84'}
+              assert hashlib.sha256(data).hexdigest()==expected[case]
+              env=os.environ|{
+                  'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                  'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
+                  'NUCLEUS_TRACE_CMODEL_ARGUMENT':'1',
+                  'NUCLEUS_TRACE_DEPENDENCY_GAP':'1',
+                  'NUCLEUS_TRACE_DEPENDENCY_VALUES':'1',
+                  'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                  'NUCLEUS_TRACE_PROP_SINGLETON':'1',
+                  'NUCLEUS_TRACE_CHECKED_RELEVANCE':'1',
+                  'NUCLEUS_TRACE_PROOF_ARGUMENT_TYPES':'1',
+              }
+              p=subprocess.run(['/tmp/nucleus'],input=data,stdout=subprocess.DEVNULL,
+                               stderr=subprocess.PIPE,timeout=95,env=env)
+              stderr=p.stderr.decode(errors='replace').splitlines()
+              last=[l for l in stderr if 'NUCLEUS_DOWNSTREAM:' in l]
+              app=[l for l in stderr if 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' in l]
+              failed_args=[l for l in stderr if 'NUCLEUS_CMODEL_ARG_FAILURE:' in l]
+              failed_inferences=[l for l in stderr if 'NUCLEUS_CMODEL_INFER_FAILURE:' in l]
+              gaps=[l for l in stderr if 'NUCLEUS_DEPENDENCY_GAP:' in l]
+              values=[l for l in stderr if 'NUCLEUS_DEP_VALUES:' in l]
+              mismatches=[l for l in stderr if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in l]
+              names={0:''};expr={};classes=[]
+              for line in data.splitlines():
+                  obj=json.loads(line)
+                  if 'ie' in obj: expr[obj['ie']]=obj
+                  if 'in' in obj:
+                      v=obj.get('str',obj.get('num'));pre=names.get(v['pre'],'')
+                      names[obj['in']]=pre+('.' if pre else '')+str(v.get('str',v.get('i')))
+                  if 'inductive' in obj: classes.extend(names.get(i['name'],'') for i in obj['inductive']['types'])
+              seen=set();targets=[]
+              for l in app:
+                  m=re.search(r'application=ExprId\((\d+)\):function=ExprId\((\d+)\):argument=ExprId\((\d+)\)',l)
+                  if m:
+                      tup=tuple(map(int,m.groups()))
+                      if tup not in seen:seen.add(tup);targets.append(tup)
+              syntax=[]
+              for tup in targets[:15]:
+                  view={}
+                  for id in tup:
+                      view[str(id)]=expr.get(id)
+                  syntax.append({'nodes':list(tup),'source':view})
+              row={'case':case,'commit':os.environ['GITHUB_SHA'],
+                   'arena':os.environ['ARENA_SHA'],'digest':expected[case],
+                   'rc':p.returncode,'first_boundary':last[-4:],
+                   'application_count':len(app),'application_first':app[:10],
+                   'failed_checked_arguments':failed_args[:60],
+                   'failed_inferences':failed_inferences[:60],
+                   'application_last':app[-10:],
+                   'dependency_gaps':gaps[-14:],
+                   'exposed_types':values[-14:],
+                   'neutral_mismatches':mismatches[-14:],
+                   'source_judgments':syntax,
+                   'singleton_gates':[l for l in stderr if 'NUCLEUS_PROP_SINGLETON:' in l][-5:],
+                   'relevance_witnesses':[l for l in stderr if 'NUCLEUS_CHECKED_RELEVANCE:' in l][-6:],
+                   'last_declarations':classes[-12:]}
+              print('NUCLEUS_COUNTERMODEL_FIRST_JUDGMENT='+json.dumps({
+                  k:v for k,v in row.items() if k not in ('neutral_mismatches','exposed_types')
+              },separators=(',',':'))[:25000],flush=True)
+              records.append(row)
+              assert p.returncode==2 and last and 'countermodel:' in last[-1],(case,p.returncode,last[-1:] if last else [])
+              assert failed_args or failed_inferences,(case,'no authentic typed argument failure captured')
+          pathlib.Path('research/nucleus-evidence/countermodel-arg-judgment.json').write_text(
+              json.dumps({'status':'WARRANTED_DIAGNOSTIC_ONLY','cases':records},indent=2))
+          print('NUCLEUS_COUNTERMODEL_CENSUS_COMPLETE__NO_VERDICT_PROMOTION')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-countermodel-arg-judgment-${{ github.sha }}
+          path: research/nucleus-evidence/countermodel-arg-judgment.json
+          if-no-files-found: warn
