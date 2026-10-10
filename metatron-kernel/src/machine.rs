@@ -325,6 +325,42 @@ impl<'a> Machine<'a> {
         self.expose_internal(closure, transparency, budget, true, false)
     }
 
+    /// A source-certified shortcut for the existing projection iota rule.
+    /// It only selects a field if the captured source is *literally* a fully
+    /// applied, registered constructor. A symbolic or computed major falls
+    /// back to the existing normal evaluator; branch output is never used to
+    /// guess the constructor. This procedure is conservative by construction.
+    fn projection_field_from_source_constructor(
+        &self, mut source: Closure, spec: &ProjectionSpec,
+        index: usize, budget: usize,
+    ) -> Option<Closure> {
+        let arity = spec.num_params.checked_add(spec.field_types.len())?;
+        let field_index = spec.num_params.checked_add(index)?;
+        if field_index >= arity { return None; }
+        let mut reversed: Vec<Closure> = Vec::with_capacity(arity);
+        for _ in 0..budget.min(128) {
+            match self.expressions.get(source.expr)? {
+                Expr::BVar(i) => {
+                    let EnvBinding::Closure(bound) = source.env.lookup(*i)? else {
+                        return None;
+                    };
+                    source = bound;
+                }
+                Expr::App {fun,arg} => {
+                    if reversed.len() >= arity { return None; }
+                    reversed.push(source.sibling(*arg, source.env.clone()));
+                    source = source.sibling(*fun, source.env.clone());
+                }
+                Expr::Const {name, ..}
+                    if *name == spec.constructor && reversed.len() == arity => {
+                    return reversed.get(arity - 1 - field_index).cloned();
+                }
+                _ => return None,
+            }
+        }
+        None
+    }
+
     pub(crate) fn projection_field_for_conversion(
         &self,
         structure: Closure,
@@ -337,6 +373,17 @@ impl<'a> Machine<'a> {
         };
         if index >= spec.field_types.len() {
             return Judgment::unknown("projection-index-out-of-range");
+        }
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_DIRECT_CONSTRUCTOR_FIELD").is_some() {
+            if let Some(field) =
+                self.projection_field_from_source_constructor(structure.clone(), spec, index, budget)
+            {
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_DIRECT_CONSTRUCTOR_FIELD").is_some() {
+                    eprintln!("NUCLEUS_DIRECT_CONSTRUCTOR_FIELD:PROVEN:type={type_name:?}:index={index}:source={:?}:field={:?}",structure.expr,field.expr);
+                }
+                return Judgment::proven(field, "registered-source-constructor-iota");
+            }
         }
         let exposed = self.expose_internal(
             structure.clone(),
