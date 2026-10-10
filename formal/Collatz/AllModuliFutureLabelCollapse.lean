@@ -205,6 +205,41 @@ theorem v159_no_nontrivial_fixed_modulus_future_label {α : Type}
   obtain ⟨hd,ho⟩ := v159_step_implies_even_and_odd_invariance f hStep
   exact v159_all_finite_moduli_collapse f hd ho M hM hPeriod
 
+/-- Direct POSITIVE-SOURCE version. Its hypotheses involve only
+    genuine positive Collatz trajectories; there is NO assumption
+    about the behavior or future class of the artificial source zero.
+    A positive-periodic label extends to zero by assigning f(0):=f(M)
+    solely for the finite-modulus proof. -/
+theorem v159_positive_future_label_cannot_be_periodic {α : Type}
+    (f : Nat → α) (M : Nat) (hM : 0<M)
+    (hStep : ∀ n : Nat, 0<n → f (shortcut n)=f n)
+    (hPer : ∀ n : Nat, 0<n → f (n+M)=f n) :
+    ∀ n m : Nat, 0<n → 0<m → f n=f m := by
+  let g : Nat → α := fun n => if n=0 then f M else f n
+  have hgStep : ∀ n, g (shortcut n)=g n := by
+    intro n
+    by_cases hzero : n=0
+    · subst n
+      simp [g, shortcut]
+    · have hn : 0<n := Nat.pos_of_ne_zero hzero
+      have hPos : 0<shortcut n := shortcut_positive n hn
+      have hEq := hStep n hn
+      simpa [g, hzero, Nat.ne_of_gt hPos] using hEq
+  have hgPer : V159Period g M := by
+    intro n
+    by_cases hzero : n=0
+    · subst n
+      simp [g, Nat.ne_of_gt hM]
+    · have hn : 0<n := Nat.pos_of_ne_zero hzero
+      have hPos : 0<n+M := by omega
+      have hEq := hPer n hn
+      simpa [g, hzero, Nat.ne_of_gt hPos] using hEq
+  have hall := v159_no_nontrivial_fixed_modulus_future_label
+    g hgStep M hM hgPer
+  intro n m hn hm
+  have heq := hall n m
+  simpa [g, Nat.ne_of_gt hn, Nat.ne_of_gt hm] using heq
+
 #print axioms v159_even_period_reduction
 #print axioms v159_odd_period_affine
 #print axioms v159_odd_third_period_reduction
@@ -213,6 +248,7 @@ theorem v159_no_nontrivial_fixed_modulus_future_label {α : Type}
 #print axioms v159_all_finite_moduli_collapse
 #print axioms v159_step_implies_even_and_odd_invariance
 #print axioms v159_no_nontrivial_fixed_modulus_future_label
+#print axioms v159_positive_future_label_cannot_be_periodic
 
 end SourceProduct
 end CollatzFinal
