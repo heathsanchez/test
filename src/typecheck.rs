@@ -2443,8 +2443,21 @@ impl<'a> TypeChecker<'a> {
                             } else {
                                 "non-application-source-leaf".to_owned()
                             };
+                            let neutral_probe = probe.machine().expose(
+                                cursor.clone(), Transparency::Opaque, 256,
+                            );
+                            let neutral_premise = match neutral_probe.proven_value() {
+                                Some(Value::Neutral(value)) => {
+                                    probe.diagnostic_neutral_source_telescope(
+                                        value, context, 512,
+                                    )
+                                }
+                                other => format!("no-opaque-neutral={other:?}"),
+                            };
+                            let neutral_premise: String =
+                                neutral_premise.chars().take(1300).collect();
                             stages.push(format!(
-                                "source_leaf={:?}@{}:shape={other:?}:typing={app_obligation}",
+                                "source_leaf={:?}@{}:shape={other:?}:typing={app_obligation}:opaque_telescope={neutral_premise}",
                                 cursor.expr, cursor.env.id(),
                             ));
                             break;
