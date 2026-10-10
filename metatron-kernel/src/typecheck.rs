@@ -2369,6 +2369,7 @@ impl<'a> TypeChecker<'a> {
         &self,
         lambda: &Closure,
         context: &[TypeValue],
+        expected_type: &TypeValue,
         budget: usize,
     ) -> String {
         let Some(Expr::Lam { domain, body })=self.expressions.get(lambda.expr)
@@ -2466,7 +2467,24 @@ impl<'a> TypeChecker<'a> {
                 ),
             other=>format!("source-body-not-neutral:{other:?}"),
         };
-        format!("source-lambda-domain-formed:body={:?}:caller_context={original_length}:original_source_context={source_length}:fresh={fresh:?}:used_slots={used_slots:?}:nodes={source_nodes:?}:result_context={}:source-obligation={detail}",
+        // This second pass checks the WHOLE original source lambda under
+        // its independently reconstructed source telescope. A successful
+        // result is a local typing derivation, not automatically an equality
+        // judgment in the shorter caller context.
+        let mut typing_budget=4096;
+        let source_function_type=self.infer_exact_closure_in_context(
+            lambda,&origin,&mut typing_budget,0,
+        );
+        let type_relation=source_function_type.as_ref().map(|ty|
+            crate::convert::convert_with_policy_in_context(
+                self,ty,expected_type,2048,
+                crate::convert::DeltaPolicy::PreferredOnly,
+                origin.len(),&origin,
+            )
+        );
+        let typed_view=format!("{source_function_type:?}")
+            .chars().take(1300).collect::<String>();
+        format!("source-lambda-domain-formed:body={:?}:caller_context={original_length}:original_source_context={source_length}:fresh={fresh:?}:used_slots={used_slots:?}:nodes={source_nodes:?}:result_context={}:source-obligation={detail}:source_lambda_type={typed_view}:source_lambda_expected_conversion={type_relation:?}:typing_budget_remaining={typing_budget}",
             body_source.expr,extended.len())
     }
 
@@ -2612,7 +2630,7 @@ impl<'a> TypeChecker<'a> {
                         );
                         let first_source_body = if source_ty.is_none() {
                             self.diagnostic_one_source_lambda_body(
-                                &captured,context,remaining.min(512),
+                                &captured,context,expected_type,remaining.min(2048),
                             )
                         } else { "source-lambda-type-certified".into() };
                         format!("eta-source={:?}:source-type={source_ty:?}:source-vs-expected={relation:?}:remaining={budget}:next={first_source_body}",
