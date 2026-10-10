@@ -1,5 +1,7 @@
 use std::collections::HashMap;
-use crate::machine::{ExposureCache, new_exposure_cache};
+use crate::machine::{
+    ExposureCache, MinimalExposureCache, new_exposure_cache, new_minimal_exposure_cache,
+};
 
 use crate::environment::Environment;
 use crate::id::{ExprId, IdTable, LevelId, NameId};
@@ -37,6 +39,7 @@ pub struct TypeChecker<'a> {
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
     exposure_cache: ExposureCache,
+    minimal_exposure_cache: MinimalExposureCache,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -52,6 +55,7 @@ impl<'a> TypeChecker<'a> {
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
             exposure_cache: new_exposure_cache(),
+            minimal_exposure_cache: new_minimal_exposure_cache(),
         }
     }
 
@@ -68,6 +72,7 @@ impl<'a> TypeChecker<'a> {
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
             exposure_cache: new_exposure_cache(),
+            minimal_exposure_cache: new_minimal_exposure_cache(),
         }
     }
 
@@ -2636,6 +2641,7 @@ impl<'a> TypeChecker<'a> {
         .with_bool_primitives(self.environment.bool_primitives().cloned())
         .with_quot_primitives(self.environment.quot_primitives().cloned())
         .with_exposure_cache(self.exposure_cache.clone())
+        .with_minimal_exposure_cache(self.minimal_exposure_cache.clone())
     }
 
     pub(crate) fn instantiate(&self, level: LevelId, budget: usize) -> Result<LevelTerm, ()> {
