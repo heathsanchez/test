@@ -233,6 +233,37 @@ theorem v176_full_finite_audit_still_cannot_detect_two_classes
     exact v174_every_bounded_audit_agrees X H n t hn ht
   · exact v174_false_map_has_two_disjoint_positive_classes X H
 
+/-- A SINGLE check of the actual universally quantified V160
+odd-affine equation (step k=1, q=1) catches the hidden defect at
+its original positive source a, no matter how high a is.
+
+It is outside any previously prescribed bounded finite audit, and
+therefore cannot be replaced by checking more finite sources.
+This theorem prevents confusing a fully specified +1 rule with an
+almost-everywhere correct successor program. -/
+theorem v176_true_odd_affine_step_detects_hidden_defect
+    (X H : Nat) :
+    v176Adversary X H (v174HiddenDefect X H + 2) ≠
+      v176Adversary X H (v174HiddenDefect X H) + 3 := by
+  let a := v174HiddenDefect X H
+  have hPos : 5 ≤ a := (v174_defect_large_and_odd X H).1
+  have hOdd : (a+2)%2 ≠ 0 := by
+    have hA : a%2=1 := (v174_defect_large_and_odd X H).2.1
+    omega
+  have hNe : a+2 ≠ a := by omega
+  have hFirst : v176Adversary X H (a+2) =
+      (3*(a+2)+1)/2 := by
+    change v173FreezeAt a (a+2) = (3*(a+2)+1)/2
+    rw [v173_freeze_agrees_before_seed a (a+2) hNe]
+    simp [shortcut,hOdd]
+  have hSecond : v176Adversary X H a=a := by
+    change v173FreezeAt a a=a
+    simp [v173FreezeAt]
+  rw [hFirst,hSecond]
+  omega
+
+#print axioms v176_true_odd_affine_step_detects_hidden_defect
+
 #print axioms v176_even_halving
 #print axioms v176_odd_output_mod_three
 #print axioms v176_all_depths_ternary_sieve
