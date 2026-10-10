@@ -34,13 +34,13 @@ jobs:
           python3 - <<'PY'
           import json,os,hashlib,pathlib
           cases=[
-              ('init-prelude',94,38,656,10),
-              ('perf/grind-ring-5',28,220,490,14),
-              ('perf/magma-list-pair-n7',22,2,147,9),
-              ('perf/magma-list-pair-n21',22,2,147,9),
+              ('init-prelude',94,38,656,10,5240),
+              ('perf/grind-ring-5',28,220,490,14,4961),
+              ('perf/magma-list-pair-n7',22,2,147,9,3638),
+              ('perf/magma-list-pair-n21',22,2,147,9,3635),
           ]
           records=[]
-          for case,arg,expected,rec_name,source_binding in cases:
+          for case,arg,expected,rec_name,source_binding,app_leaf in cases:
               source=pathlib.Path('/tmp/arena-tests/good')/(case+'.ndjson')
               b=source.read_bytes()
               names={0:''}; expressions={}; decl={};inductives={}
@@ -85,6 +85,10 @@ jobs:
                   'initial_untyped_argument':arg,
                   'expected_pi_domain':expected,
                   'first_captured_binding_expr':source_binding,
+                  'first_actual_application_leaf':app_leaf,
+                  'leaf_app_source':expressions.get(app_leaf),
+                  'leaf_app_spine':spine(app_leaf),
+                  'leaf_app_dag':dag(app_leaf,35),
                   'captured_binding_source':expressions.get(source_binding),
                   'captured_binding_dag':dag(source_binding,35),
                   'recursor_name':rec_name,
@@ -104,6 +108,9 @@ jobs:
                   'argument_expr':record['argument_expr'],
                   'captured_binding_source':record['captured_binding_source'],
                   'captured_binding_spine':spine(source_binding),
+                  'leaf_app_source':record['leaf_app_source'],
+                  'leaf_app_spine':record['leaf_app_spine'],
+                  'leaf_app_head_name':names.get(spine(app_leaf)['head_node'].get('const',{}).get('name')) if spine(app_leaf)['head_node'] else None,
                   'expected_domain_expr':record['expected_domain_expr'],
                   'argument_spine':record['argument_spine'],
                   'expected_domain_spine':record['expected_spine'],
@@ -118,7 +125,7 @@ jobs:
           pathlib.Path('research/nucleus-evidence/first-typed-source-leaves.json').write_text(
               json.dumps(output,indent=2),
           )
-          assert all(r['argument_expr'] and r['expected_domain_expr'] and r['captured_binding_source'] for r in records)
+          assert all(r['argument_expr'] and r['expected_domain_expr'] and r['captured_binding_source'] and r['leaf_app_source'] for r in records)
           print('NUCLEUS_FIRST_TYPED_SOURCE_LEAVES_COMPLETE=4',flush=True)
           PY
       - uses: actions/upload-artifact@v4
