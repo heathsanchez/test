@@ -381,7 +381,7 @@ impl<'a> TypeChecker<'a> {
                     &value, context, remaining, depth + 1,
                 )?;
                 if !crate::convert::convert_with_policy_in_context(
-                    self, &value_ty, &TypeValue::Term(declared),
+                    self, &value_ty, &TypeValue::Term(declared.clone()),
                     (*remaining).min(512),
                     crate::convert::DeltaPolicy::PreferredOnly,
                     context.len(), context,
