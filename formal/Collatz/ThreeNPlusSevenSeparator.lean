@@ -379,6 +379,86 @@ theorem v162_explicit_two_cycles :
   decide
 
 
+/-- The different odd intercept is the ONLY change between
+    genuine T with 3n+1 and synthetic G with 3n+7.
+    Their arithmetic is conjugate on the positive 7N lattice:
+    G(7*n)=7*T(n). This is an exact REAL NAT equation. -/
+theorem v162_seven_scale_true_shortcut (n : Nat) :
+    v162Map (7*n)=7*shortcut n := by
+  by_cases he : n%2=0
+  · have hp : (7*n)%2=0 := by omega
+    simp only [v162Map,shortcut,he,hp,ite_true]
+    omega
+  · have hp : ¬ (7*n)%2=0 := by omega
+    simp only [v162Map,shortcut,he,hp,ite_false]
+    omega
+
+/-- The exact conjugacy holds at EVERY finite actual clock,
+    but only on original sources that are divisible by seven.
+    It is NOT a bijection over all positive natural sources. -/
+theorem v162_seven_scale_true_future (k n : Nat) :
+    iter v162Map k (7*n)=
+      7*iter shortcut k n := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+      calc
+        iter v162Map (k+1) (7*n) =
+            v162Map (iter v162Map k (7*n)) :=
+          v162_iter_succ_last (7*n) k
+        _ = v162Map (7*iter shortcut k n) := by rw [ih]
+        _ = 7*shortcut (iter shortcut k n) :=
+          v162_seven_scale_true_shortcut _
+        _ = 7*iter shortcut (k+1) n := by
+          rw [iter_succ_last]
+
+/-- Divisibility by seven IS a genuine invariant of G.
+    This fails for the original 3n+1 shortcut; it explains
+    why the G cycle through five can lie outside 7N. -/
+theorem v162_seven_divisible_iff_after_step (n : Nat) :
+    v162Map n%7=0 ↔ n%7=0 := by
+  by_cases he : n%2=0
+  · have hEq : 2*v162Map n=n := by
+      simp only [v162Map,he,ite_true]
+      omega
+    omega
+  · have hEq : 2*v162Map n=3*n+7 := by
+      simp only [v162Map,he,ite_false]
+      omega
+    omega
+
+theorem v162_seven_divisibility_all_clocks
+    (n k : Nat) (hn : n%7=0) :
+    (iter v162Map k n)%7=0 := by
+  induction k with
+  | zero => simpa [iter] using hn
+  | succ k ih =>
+      rw [v162_iter_succ_last]
+      exact (v162_seven_divisible_iff_after_step _).mpr ih
+
+theorem v162_cycle_five_outside_seven_lattice
+    {x : Nat} (hx : v162CycleB x) :
+    x%7≠0 := by
+  rcases hx with h | h | h | h
+  · subst x; decide
+  · subst x; decide
+  · subst x; decide
+  · subst x; decide
+
+/-- The exact protected separator: a genuine positive 7N
+    source cannot reach the disjoint G orbit from five.
+    This is only about the synthetic map G. -/
+theorem v162_scaled_sources_never_join_extra_cycle
+    (n : Nat) (hn : n%7=0) :
+    ¬ (∃ i j : Nat,
+      iter v162Map i n=iter v162Map j 5) := by
+  intro ⟨i,j,hMeet⟩
+  have hSeven := v162_seven_divisibility_all_clocks n i hn
+  have hOutside := v162_cycle_five_outside_seven_lattice
+    (v162_all_cyclesB j)
+  rw [hMeet] at hSeven
+  exact hOutside hSeven
+
 #print axioms v162_exact_cylinder_affine
 #print axioms v162_odd_target_mod3
 #print axioms v162_pure_even_ancestry
@@ -388,6 +468,12 @@ theorem v162_explicit_two_cycles :
 #print axioms v162_every_finite_future_parity_word
 #print axioms v162_disjoint_actual_positive_future_classes
 #print axioms v162_explicit_two_cycles
+#print axioms v162_seven_scale_true_shortcut
+#print axioms v162_seven_scale_true_future
+#print axioms v162_seven_divisible_iff_after_step
+#print axioms v162_seven_divisibility_all_clocks
+#print axioms v162_cycle_five_outside_seven_lattice
+#print axioms v162_scaled_sources_never_join_extra_cycle
 
 end SourceProduct
 end CollatzFinal
