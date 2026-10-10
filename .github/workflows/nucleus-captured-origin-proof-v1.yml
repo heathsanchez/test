@@ -116,7 +116,8 @@ jobs:
                       assert any('caller-proof-candidates=' in s and
                                  'captured-proof-candidates=' in s and
                                  'proof-parametricity=' in s and
-                                 'joined_source_depth=' in s
+                                 'joined_source_depth=' in s and
+                                 'major_obligation=' in s
                                  for s in row['outer_replays']),(
                           'transitive source-origin join was not exercised',row)
                   rows.append(row)
