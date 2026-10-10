@@ -80,6 +80,7 @@ jobs:
               if mode=='origin_replay' and trace:
                   env['NUCLEUS_TRACE_FIRST_TYPED_CONTINUATION']='1'
                   env['NUCLEUS_TRACE_ORIGIN_REPLAY']='1'
+                  env['NUCLEUS_TRACE_SOURCE_PROOF_BETA']='1'
               if trace: env['NUCLEUS_TRACE_DOWNSTREAM']='1'
               return env
           rows=[]
@@ -97,6 +98,10 @@ jobs:
                            if 'NUCLEUS_ORIGIN_REPLAY:' in s][:8],
                        'outer_replays':[s for s in logs
                            if 'NUCLEUS_OUTER_ORIGIN_REPLAY:' in s][:8],
+                       'source_beta':[s for s in logs
+                           if 'NUCLEUS_SOURCE_BETA:' in s][:80],
+                       'source_introductions':[s for s in logs
+                           if 'NUCLEUS_SOURCE_BINDER_INTRO:' in s][:80],
                        'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
                   print('NUCLEUS_ORIGIN_SEVEN='+json.dumps(row),flush=True)
                   assert p.returncode in (0,2),('valid became rejected',row)
