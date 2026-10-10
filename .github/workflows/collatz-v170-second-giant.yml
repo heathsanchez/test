@@ -70,7 +70,7 @@ jobs:
           export PATH="$HOME/.elan/bin:$PATH"
           lake env lean --version | tee evidence/toolchain.txt
           lake build CollatzFinal > evidence/spine.log 2>&1
-          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure UniversalFutureClassFrontier RetroactiveFutureQuotient ClockedGiantComponentBridge; do
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure UniversalFutureClassFrontier RetroactiveFutureQuotient ClockedGiantComponentBridge TimedOrdinaryHitGiantBridge; do
             lake env lean -DautoImplicit=false \
               -o ".lake/build/lib/lean/Collatz/$module.olean" \
               "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
@@ -87,7 +87,10 @@ jobs:
             ax[name]=aa
           for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
             ax[name]=[]
-          for name in ('v170_clocked_hits_are_component_members',
+          for name in ('v170_ordinary_timed_count_le_shortcut',
+                       'v170_ordinary_timed_density_to_shortcut',
+                       'v170_collatz_of_ordinary_timed_density_and_sparse_unique_giant',
+                       'v170_clocked_hits_are_component_members',
                        'v170_bad_target_not_connected_to_two',
                        'v170_collatz_of_timed_density_and_sparse_unique_giant'):
             assert 'CollatzFinal.SourceProduct.'+name in ax,name
