@@ -941,6 +941,7 @@ impl<'a> Machine<'a> {
         let primitives = self.nat_primitives.as_ref()?;
         enum Operation {
             Add,
+            Mul,
             Sub,
             Pred,
             Ble,
@@ -948,6 +949,8 @@ impl<'a> Machine<'a> {
         }
         let operation = if primitives.add == Some(name) {
             Operation::Add
+        } else if primitives.mul == Some(name) {
+            Operation::Mul
         } else if primitives.sub == Some(name) {
             Operation::Sub
         } else if primitives.pred == Some(name) {
@@ -1350,6 +1353,16 @@ impl<'a> Machine<'a> {
             }
         }
 
+        if matches!(operation, Operation::Mul) {
+            let major = self.expose_internal(
+                second.clone(), transparency, budget.saturating_sub(1), false, false,
+            );
+            if matches!(major.proven_value().map(|v| &v.value),
+                Some(Value::NatLit(n)) if n.is_zero()) {
+                pending.clear();
+                return Some(Value::NatLit(crate::nat::BigNat::zero()));
+            }
+        }
         let first_value = self
             .expose_internal(first, transparency, budget.saturating_sub(1), false, false)
             .proven_value()?
@@ -1367,6 +1380,7 @@ impl<'a> Machine<'a> {
         Some(match operation {
             Operation::Pred => unreachable!("unary Nat.pred handled above"),
             Operation::Add => Value::NatLit(first.add(&second)),
+            Operation::Mul => Value::NatLit(first.mul_bounded(&second, 65_536)?),
             Operation::Sub => Value::NatLit(first.sub_trunc(&second)),
             Operation::Ble => {
                 let bools = self.bool_primitives.as_ref()?;
