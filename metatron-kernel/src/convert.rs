@@ -2058,7 +2058,8 @@ fn certified_local_proof_irrelevance(
     let polymorphic = left_type.levels != crate::value::LevelSubstitution::default()
         || right_type.levels != crate::value::LevelSubstitution::default();
     let polymorphic_enabled = polymorphic
-        && depth == 7
+        && depth == context.len()
+        && context.len() <= 24
         && std::env::var_os("NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL").is_some();
     if polymorphic && !polymorphic_enabled { return false; }
     let probe = budget.min(1024);
