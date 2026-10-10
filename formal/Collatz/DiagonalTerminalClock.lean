@@ -52,7 +52,14 @@ theorem v153_terminal_hit_is_closed
     every concrete triple (c,k,n); all excluded positives carry
     a real V150Closed witness, not merely strict descent. -/
 def V153Uncertified (c k n : Nat) : Prop :=
-  ¬ V153WithinTerminal c k n
+  0 < n ∧ ¬ V153WithinTerminal c k n
+
+/-- Exact population match with finite audits: zero never appears
+    in the exceptional set, since V151 counts all n < 2^k. -/
+theorem v153_zero_is_not_uncertified (c k : Nat) :
+    ¬ V153Uncertified c k 0 := by
+  intro h
+  exact Nat.lt_irrefl 0 h.1
 
 theorem v153_diagonal_terminal_coverage
     (c : Nat) :
@@ -60,7 +67,9 @@ theorem v153_diagonal_terminal_coverage
       ¬ V153Uncertified c k n → V150Closed n := by
   intro k n hn _ hncert
   have hh : V153WithinTerminal c k n := by
-    exact Classical.byContradiction hncert
+    apply Classical.byContradiction
+    intro hnot
+    exact hncert ⟨hn,hnot⟩
   obtain ⟨t,_,ht⟩ := hh
   exact v153_terminal_hit_is_closed n t hn ht
 
@@ -105,6 +114,7 @@ theorem v153_minimal_bad_forces_diagonal_timeout_density
   exact Nat.le_trans (hLower (2^k) hk)
     (Nat.mul_le_mul_left q hbound)
 
+#print axioms v153_zero_is_not_uncertified
 #print axioms v153_terminal_hit_is_closed
 #print axioms v153_diagonal_terminal_coverage
 #print axioms v153_collatz_of_sparse_diagonal_terminal_clock
