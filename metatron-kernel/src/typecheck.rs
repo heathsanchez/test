@@ -2322,6 +2322,48 @@ impl<'a> TypeChecker<'a> {
     /// A preserved binder witness carries its original checked context.
     /// Replay occurs under THAT context, not a synthetic empty caller scope.
     /// No derived result is installed in the production checker.
+    /// Exact, conservative external BVar support of a source expression.
+    /// This is the already-qualified source-observable rule from Nucleus
+    /// minimal-observable-frame: no evaluation or inferred irrelevance.
+    /// Only used to avoid demanding scope witnesses for syntactically
+    /// invisible frame slots. It never grants equality or typing itself.
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_exact_external_support(
+        &self,
+        root: ExprId,
+    ) -> Option<Vec<u64>> {
+        let mut pending=vec![(root,0u64)];
+        let mut seen=std::collections::HashSet::new();
+        let mut support=std::collections::BTreeSet::new();
+        while let Some((e,shadow))=pending.pop() {
+            if !seen.insert((e,shadow)) {continue}
+            if seen.len()>4096 {return None}
+            match self.expressions.get(e)? {
+                Expr::BVar(idx) if *idx>=shadow => {
+                    support.insert(idx.checked_sub(shadow)?);
+                    if support.len()>64 {return None}
+                }
+                Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_)
+                | Expr::Sort(_) | Expr::Const { .. } => {}
+                Expr::App {fun,arg} => {
+                    pending.push((*fun,shadow));
+                    pending.push((*arg,shadow));
+                }
+                Expr::Pi {domain,body} | Expr::Lam {domain,body} => {
+                    pending.push((*domain,shadow));
+                    pending.push((*body,shadow.checked_add(1)?));
+                }
+                Expr::Let {ty,value,body} => {
+                    pending.push((*ty,shadow));
+                    pending.push((*value,shadow));
+                    pending.push((*body,shadow.checked_add(1)?));
+                }
+                Expr::Proj {structure,..} => pending.push((*structure,shadow)),
+            }
+        }
+        Some(support.into_iter().collect())
+    }
+
     #[cfg(feature = "diagnostics")]
     fn diagnostic_one_source_lambda_body(
         &self,
@@ -2338,9 +2380,11 @@ impl<'a> TypeChecker<'a> {
         // is never transported into the caller as a proof.
         let mut origin=context.to_vec();
         let mut source_nodes=Vec::new();
-        for idx in 0..48u64 {
+        let Some(used_slots)=self.diagnostic_exact_external_support(lambda.expr)
+        else {return "source-support-not-certified".into()};
+        for idx in used_slots.iter().copied() {
             let Some((node, binding))=lambda.env.lookup_with_node_id(idx)
-            else { break };
+            else { return format!("observed-source-binder-unbound:slot={idx}") };
             let EnvBinding::Free(free)=binding else { continue };
             let proof=self.checked_binding_lineage.borrow()
                 .get(&node).cloned().flatten();
@@ -2372,7 +2416,7 @@ impl<'a> TypeChecker<'a> {
         let original_length=context.len();
         let source_length=origin.len();
         if source_length==original_length {
-            return format!("no-larger-source-origin:caller={original_length}:source_nodes={source_nodes:?}");
+            return format!("no-larger-source-origin:caller={original_length}:used_slots={used_slots:?}:source_nodes={source_nodes:?}");
         }
         let checked_domain=lambda.sibling(*domain,lambda.env.clone());
         let mut remaining=budget.min(512);
@@ -2402,7 +2446,7 @@ impl<'a> TypeChecker<'a> {
                 ),
             other=>format!("source-body-not-neutral:{other:?}"),
         };
-        format!("source-lambda-domain-formed:body={:?}:caller_context={original_length}:original_source_context={source_length}:fresh={fresh:?}:nodes={source_nodes:?}:result_context={}:source-obligation={detail}",
+        format!("source-lambda-domain-formed:body={:?}:caller_context={original_length}:original_source_context={source_length}:fresh={fresh:?}:used_slots={used_slots:?}:nodes={source_nodes:?}:result_context={}:source-obligation={detail}",
             body_source.expr,extended.len())
     }
 
