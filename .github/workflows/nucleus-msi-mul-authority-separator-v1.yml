@@ -21,12 +21,16 @@ jobs:
     env:
       ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
       ARENA_ARTIFACT: "11272848230"
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: "1"
+      NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER: "1"
+      NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE: "1"
+      NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE: "1"
     steps:
       - uses: actions/checkout@v4
       - name: Build source-exact checker
         run: |
           set -euo pipefail
-          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
       - name: Fetch pinned Arena corpus
