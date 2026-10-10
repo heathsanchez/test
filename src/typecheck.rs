@@ -2337,6 +2337,7 @@ impl<'a> TypeChecker<'a> {
         // immutable binder nodes. Instead recover the deepest compatible,
         // source-checked prefix from actual captured Free bindings.
         // Never invent a type from its numeric FreeId or expected Pi domain.
+        let caller_depth=context.len();
         let mut recovered_context=context.to_vec();
         let mut recovered_node=None;
         for index in 0..64u64 {
@@ -2385,14 +2386,48 @@ impl<'a> TypeChecker<'a> {
         let exposed=self.machine().expose(
             body_source.clone(),Transparency::Opaque,remaining.min(512),
         );
+        // Separate the source-bound *proof/data* classification from the
+        // η binder introduced after it. A FreeId in a proof argument is
+        // not licensed for erasure until the enclosing proposition and any
+        // replacement proof are checked in the same source scope.
+        let extra=FreeId(u64::try_from(caller_depth).unwrap_or(u64::MAX));
+        let extra_domain_kind=context.get(caller_depth).and_then(|ty| {
+            let TypeValue::Term(closure)=ty else {return None};
+            let mut fuel=512;
+            let kind=self.infer_exact_closure_in_context(
+                closure,&context[..caller_depth],&mut fuel,0,
+            )?;
+            Some(self.sort_level(Judgment::proven(kind,"source-binder-domain-kind"),512))
+        });
         let detail=match exposed.proven_value() {
-            Some(Value::Neutral(n)) =>
-                self.diagnostic_neutral_source_telescope_inner(
+            Some(Value::Neutral(n)) => {
+                let argument_census=n.spine.iter().enumerate().take(8)
+                    .map(|(position,arg)| {
+                        let support=self.type_depends_on_free(
+                            &TypeValue::Term(arg.clone()),extra,1024,
+                        );
+                        let mut fuel=1024;
+                        let actual_ty=self.infer_exact_closure_in_context(
+                            arg,&extended,&mut fuel,0,
+                        );
+                        let argument_type_sort=actual_ty.as_ref().and_then(|ty| {
+                            let TypeValue::Term(t)=ty else {return None};
+                            let mut inner_fuel=512;
+                            let kind=self.infer_exact_closure_in_context(
+                                t,&extended,&mut inner_fuel,0,
+                            )?;
+                            Some(self.sort_level(Judgment::proven(kind,"exact-argument-kind"),512))
+                        });
+                        format!("{position}:depends-on-source={support:?}:type-kind={argument_type_sort:?}")
+                    }).collect::<Vec<_>>();
+                let telescope=self.diagnostic_neutral_source_telescope_inner(
                     n,&extended,remaining.min(512),false,
-                ),
+                );
+                format!("source-argument-census={argument_census:?}:telescope={telescope}")
+            }
             other=>format!("source-body-not-neutral:{other:?}"),
         };
-        format!("source-lambda-domain-formed:body={:?}:source-context={}:opened-context={}:source-node={recovered_node:?}:source-obligation={detail}",
+        format!("source-lambda-domain-formed:body={:?}:source-context={}:opened-context={}:source-node={recovered_node:?}:extra-domain-kind={extra_domain_kind:?}:source-obligation={detail}",
             body_source.expr,context.len(),extended.len())
     }
 
