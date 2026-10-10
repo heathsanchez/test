@@ -2364,6 +2364,52 @@ impl<'a> TypeChecker<'a> {
         Some(support.into_iter().collect())
     }
 
+    /// Recover a source context ONLY from immutable, previously checked
+    /// binder nodes that the exact source expression can actually read.
+    /// Shorter compatible prefixes weaken into the larger scope. No
+    /// ill-typed or nonprefix witness can be spliced in by FreeId/name.
+    /// This is a typed-context locator, not a Lean-defeq certificate.
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_checked_source_origin(
+        &self, expression: &Closure, context: &[TypeValue],
+    ) -> Result<(Vec<TypeValue>,Vec<u64>,Vec<String>),String> {
+        let mut origin=context.to_vec();
+        let mut source_nodes=Vec::new();
+        let used_slots=self.diagnostic_exact_external_support(expression.expr)
+            .ok_or_else(||"source-support-not-certified".to_owned())?;
+        for idx in used_slots.iter().copied() {
+            let (node,binding)=expression.env.lookup_with_node_id(idx)
+                .ok_or_else(||format!("observed-source-binder-unbound:slot={idx}"))?;
+            let EnvBinding::Free(free)=binding else { continue };
+            let proof=self.checked_binding_lineage.borrow()
+                .get(&node).cloned().flatten();
+            let Some(w)=proof else {continue};
+            let slot=usize::try_from(free.0)
+                .map_err(|_|"origin-free-index-overflow".to_owned())?;
+            if w.protected_prefix.get(slot)!=Some(&w.domain) {
+                return Err(format!("origin-binder-domain-mismatch:node={node}:free={free:?}"));
+            }
+            if !w.protected_prefix.starts_with(context)
+                && !context.starts_with(&w.protected_prefix)
+            {
+                let mismatch=(0..w.protected_prefix.len().min(context.len()))
+                    .find(|&n|w.protected_prefix[n]!=context[n]);
+                return Err(format!("typed-context-morphism-required:node={node}:used_slot={idx}:source_ctx={}:target_ctx={}:mismatch={mismatch:?}",
+                    w.protected_prefix.len(),context.len()));
+            }
+            if w.protected_prefix.len()>origin.len() {
+                if !w.protected_prefix.starts_with(&origin) {
+                    return Err(format!("source-context-extension-conflict:node={node}"));
+                }
+                origin=w.protected_prefix.clone();
+            } else if !origin.starts_with(&w.protected_prefix) {
+                return Err(format!("source-context-short-prefix-conflict:node={node}"));
+            }
+            source_nodes.push(format!("{node}:{free:?}:{}",w.protected_prefix.len()));
+        }
+        Ok((origin,used_slots,source_nodes))
+    }
+
     #[cfg(feature = "diagnostics")]
     fn diagnostic_one_source_lambda_body(
         &self,
@@ -2379,61 +2425,11 @@ impl<'a> TypeChecker<'a> {
         // independent lexical binders; unrelated scopes do not unify.
         // The resulting source context is a DIAGNOSTIC context only and
         // is never transported into the caller as a proof.
-        let mut origin=context.to_vec();
-        let mut source_nodes=Vec::new();
-        let Some(used_slots)=self.diagnostic_exact_external_support(lambda.expr)
-        else {return "source-support-not-certified".into()};
-        for idx in used_slots.iter().copied() {
-            let Some((node, binding))=lambda.env.lookup_with_node_id(idx)
-            else { return format!("observed-source-binder-unbound:slot={idx}") };
-            let EnvBinding::Free(free)=binding else { continue };
-            let proof=self.checked_binding_lineage.borrow()
-                .get(&node).cloned().flatten();
-            let Some(w)=proof else {continue};
-            let Ok(slot)=usize::try_from(free.0) else {
-                return "origin-free-index-overflow".into();
+        let (origin,used_slots,source_nodes)=
+            match self.diagnostic_checked_source_origin(lambda,context) {
+                Ok(w)=>w,
+                Err(e)=>return e,
             };
-            // The source witness must type the SAME actual immutable Free
-            // at the corresponding slot in its own checked prefix.
-            if w.protected_prefix.get(slot)!=Some(&w.domain) {
-                return format!("origin-binder-domain-mismatch:node={node}:free={free:?}");
-            }
-            // Proof-preserving weakening goes either direction in the
-            // prefix check: an older source witness may have fewer binders
-            // than the caller, provided their entire shared typed prefix
-            // is IDENTICAL. For a source extension, require a compatible
-            // continuation of the current context. Anything else is an
-            // obligation for an explicit typed substitution morphism.
-            if !w.protected_prefix.starts_with(context)
-                && !context.starts_with(&w.protected_prefix)
-            {
-                // This is a typed-context *separation*, not a refutation of
-                // Lean equality. Give the exact first premise that would
-                // require a checked telescope morphism, never merge by
-                // numeric FreeId or matching raw expression IDs.
-                let first_mismatch=(0..w.protected_prefix.len().min(context.len()))
-                    .find(|&n| w.protected_prefix[n] != context[n]);
-                let source=first_mismatch
-                    .and_then(|n| w.protected_prefix.get(n))
-                    .map(|x|format!("{x:?}").chars().take(700).collect::<String>());
-                let target=first_mismatch
-                    .and_then(|n| context.get(n))
-                    .map(|x|format!("{x:?}").chars().take(700).collect::<String>());
-                return format!(
-                    "origin-requires-typed-context-morphism:used_slot={idx}:node={node}:free={free:?}:source_context={}:target_context={}:first_distinguishing_slot={first_mismatch:?}:source_type={source:?}:target_type={target:?}:all_used_slots={used_slots:?}",
-                    w.protected_prefix.len(),context.len(),
-                );
-            }
-            if w.protected_prefix.len()>origin.len() {
-                if !w.protected_prefix.starts_with(&origin) {
-                    return format!("origin-extensions-conflict:node={node}");
-                }
-                origin=w.protected_prefix.clone();
-            } else if !origin.starts_with(&w.protected_prefix) {
-                return format!("origin-short-prefix-conflict:node={node}");
-            }
-            source_nodes.push(format!("{node}:{free:?}:{}",w.protected_prefix.len()));
-        }
         let original_length=context.len();
         let source_length=origin.len();
         if source_length==original_length {
