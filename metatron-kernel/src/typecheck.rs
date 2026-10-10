@@ -2331,6 +2331,39 @@ impl<'a> TypeChecker<'a> {
     ) -> String {
         let Some(Expr::Lam { domain, body })=self.expressions.get(lambda.expr)
         else {return "not-source-lambda".into()};
+        // Diagnostic-only: the captured source may have introduced FreeId(6)
+        // before this lambda was opened. Reusing the caller's six-binder
+        // context and assigning FreeId(6) again conflates TWO DIFFERENT
+        // immutable binder nodes. Instead recover the deepest compatible,
+        // source-checked prefix from actual captured Free bindings.
+        // Never invent a type from its numeric FreeId or expected Pi domain.
+        let mut recovered_context=context.to_vec();
+        let mut recovered_node=None;
+        for index in 0..64u64 {
+            let Some((node,binding))=lambda.env.lookup_with_node_id(index)
+                else {break};
+            if !matches!(binding,EnvBinding::Free(_)) {continue}
+            let record=self.checked_binding_lineage.borrow()
+                .get(&node).cloned().flatten();
+            let Some(record)=record else {continue};
+            if record.protected_prefix.len()<=context.len() {continue}
+            if !record.protected_prefix.starts_with(context) {
+                return format!(
+                    "source-lambda-captured-prefix-conflict:node={node}:depth={}",
+                    record.protected_prefix.len(),
+                );
+            }
+            if record.protected_prefix.len()>recovered_context.len() {
+                if !record.protected_prefix.starts_with(&recovered_context) {
+                    return format!("source-lambda-incompatible-captured-prefixes:node={node}");
+                }
+                recovered_context=record.protected_prefix;
+                recovered_node=Some(node);
+            } else if !recovered_context.starts_with(&record.protected_prefix) {
+                return format!("source-lambda-incompatible-captured-prefixes:node={node}");
+            }
+        }
+        let context=recovered_context.as_slice();
         let checked_domain=lambda.sibling(*domain,lambda.env.clone());
         let mut remaining=budget.min(512);
         let Some(dty)=self.infer_exact_closure_in_context(
@@ -2359,8 +2392,8 @@ impl<'a> TypeChecker<'a> {
                 ),
             other=>format!("source-body-not-neutral:{other:?}"),
         };
-        format!("source-lambda-domain-formed:body={:?}:context={}:source-obligation={detail}",
-            body_source.expr,extended.len())
+        format!("source-lambda-domain-formed:body={:?}:source-context={}:opened-context={}:source-node={recovered_node:?}:source-obligation={detail}",
+            body_source.expr,context.len(),extended.len())
     }
 
     #[cfg(feature = "diagnostics")]
