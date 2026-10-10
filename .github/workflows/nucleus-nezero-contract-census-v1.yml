@@ -64,6 +64,24 @@ jobs:
                           for k in ('fn','arg','body','type','value','struct'):
                               sub=o[tag].get(k)
                               if isinstance(sub,int) and sub in expressions:queue.append((sub,depth+1))
+              def telescope(root,count):
+                  domains=[]
+                  cur=root
+                  for _ in range(count):
+                      x=expressions.get(cur,{})
+                      if 'forallE' not in x:
+                          return {'complete':False,'consumed':len(domains),'tail':cur,'tail_expr':x,'domains':domains}
+                      domains.append({'id':x['forallE']['type'],'expr':expressions.get(x['forallE']['type'])})
+                      cur=x['forallE']['body']
+                  return {'complete':True,'consumed':count,'tail':cur,'tail_expr':expressions.get(cur),'domains':domains}
+              ind=b['types'][0]; ctor=b['ctors'][0]; rec=b['recs'][0]
+              shape={
+                  'inductive_telescope':telescope(ind['type'],ind['numParams']),
+                  'constructor_telescope':telescope(ctor['type'],ctor['numParams']+ctor['numFields']),
+                  'recursor_telescope':telescope(rec['type'],rec['numParams']+rec['numMinors']+rec['numMotives']+1),
+                  'rule_telescope':telescope(rec['rules'][0]['rhs'],rec['numParams']+rec['numMinors']+rec['numMotives']+rec['rules'][0]['nfields']),
+              }
+              print('NUCLEUS_NEZERO_SOURCE_SHAPE='+json.dumps({'case':name,'shape':shape},separators=(',',':'))[:18000],flush=True)
               q={'case':name,'source_sha256':hashlib.sha256(data).hexdigest(),
                  'type_blocks':b['types'],'constructors':b['ctors'],'recursors':b['recs'],
                  'declared_names':{str(i):names.get(i) for i in (
