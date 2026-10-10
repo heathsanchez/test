@@ -51,6 +51,18 @@ def main()->None:
     assert 141+(196-2)==335
     assert 65+131==196
     assert run(origin,335)==run(p,196)==run(q,131)==2
+    def OneArrow(n: int)->int:
+        return 5 if n==5 else T(n)
+    def ROne(n:int,t:int)->int:
+        for _ in range(t):
+            n=OneArrow(n)
+        return n
+    assert OneArrow(5)==5 and T(5)==8
+    assert ROne(origin,141)==ROne(p,2)==y
+    assert ROne(p,65)==ROne(q,0)==z
+    assert ROne(q,128)==ROne(q,131)==5
+    assert ROne(q,131) not in (1,2)
+
     # Each equality is replayed from the ORIGINAL integer source and clock.
     # No relative/rational orbit or unverified source-state is admitted.
     out={
@@ -66,6 +78,7 @@ def main()->None:
         'direct_original_terminal_clock':335,
         'terminal_consequence_replayed_from_all_three_original_sources':True,
         'source_height_unlock_requires_new_sources_for_THIS_LEDGER':True,
+        'one_arrow_countercontrol_joins_survive_but_terminal_fails':True,
         'global_source_height_elimination_proved':False,
         'all_scale_contraction_proved':False,
         'global_collatz':'UNKNOWN','qed':False,
