@@ -1206,11 +1206,11 @@ fn compare_values(
                     && depth == context.len()
                     && same_rigid_application_congruence_in_context(
                         checker, left_structure, right_structure,
-                        current_budget, depth, context,
+                        current_budget, depth, context, CHEAP_PROJECTION_CONGRUENCE_BUDGET,
                     )
                     && same_closure_spine_congruence_in_context(
                         checker, left_spine, right_spine,
-                        current_budget, depth, context,
+                        current_budget, depth, context, CHEAP_PROJECTION_CONGRUENCE_BUDGET,
                     );
                 if contextual {
                     #[cfg(feature = "diagnostics")]
@@ -1220,6 +1220,38 @@ fn compare_values(
                         );
                     }
                     return Judgment::proven((), "checked-contextual-projection-congruence");
+                }
+                // Narrow second-stage budget: only paired projections with
+                // the same original receiver syntax and universe instance,
+                // under an explicit lexical context of at most two binders.
+                // Unlike shape-based shortcuts, every recursor argument is
+                // still independently proved definitionally equal by the
+                // guarded converter with a bounded local budget.
+                let deep_contextual =
+                    std::env::var_os("NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512")
+                        .is_some()
+                    && depth == context.len()
+                    && depth <= 2
+                    && *left_index == 0
+                    && current_budget >= 256
+                    && left_structure.expr == right_structure.expr
+                    && left_structure.levels == right_structure.levels
+                    && same_rigid_application_congruence_in_context(
+                        checker,left_structure,right_structure,
+                        512,depth,context,512,
+                    )
+                    && same_closure_spine_congruence_in_context(
+                        checker,left_spine,right_spine,
+                        512,depth,context,512,
+                    );
+                if deep_contextual {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CROSSFRAME_512").is_some() {
+                        eprintln!(
+                            "NUCLEUS_CROSSFRAME_512_PROVEN:depth={depth}:receiver_left={left_structure:?}:receiver_right={right_structure:?}",
+                        );
+                    }
+                    return Judgment::proven((), "source-verified-bounded-projection-congruence");
                 }
                 if same_rigid_application_congruence(
                     checker,
@@ -1619,8 +1651,9 @@ fn same_closure_spine_congruence_in_context(
     budget: usize,
     depth: usize,
     context: &[TypeValue],
+    max_budget: usize,
 ) -> bool {
-    let budget = budget.min(CHEAP_PROJECTION_CONGRUENCE_BUDGET);
+    let budget = budget.min(max_budget);
     left.len() == right.len()
         && left.iter().zip(right).all(|(left,right)| {
             convert_with_policy_in_context(
@@ -1640,9 +1673,10 @@ fn same_rigid_application_congruence_in_context(
     budget: usize,
     depth: usize,
     context: &[TypeValue],
+    max_budget: usize,
 ) -> bool {
     rigid_application_head_congruence_in_context(
-        checker, left, right, budget, depth, context,
+        checker, left, right, budget, depth, context, max_budget,
     ).is_some_and(|(_, judgment)| judgment.is_proven())
 }
 
@@ -1663,7 +1697,7 @@ fn rigid_application_head_congruence(
     budget: usize,
 ) -> Option<(crate::id::NameId, Judgment<()>)> {
     rigid_application_head_congruence_in_context(
-        checker, left, right, budget, 0, &[],
+        checker, left, right, budget, 0, &[], CHEAP_PROJECTION_CONGRUENCE_BUDGET,
     )
 }
 
@@ -1674,8 +1708,9 @@ fn rigid_application_head_congruence_in_context(
     budget: usize,
     depth: usize,
     context: &[TypeValue],
+    max_budget: usize,
 ) -> Option<(crate::id::NameId, Judgment<()>)> {
-    let budget = budget.min(CHEAP_PROJECTION_CONGRUENCE_BUDGET);
+    let budget = budget.min(max_budget);
     if budget == 0 {
         return None;
     }
