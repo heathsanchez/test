@@ -56,6 +56,19 @@ At k20,H160 the exact audit reports 900,605 original sources in nonseeded compon
 
 **Preserve:** c=5 and c=7 both have persistent genuine distinct future classes, despite highly effective proof-graph mixing. Any positive all-scale M_k bound must use something the true +1 map has that these non-Collatz maps lack.
 
+## Sharper and strictly weaker finish line: sparse anti-giant dips
+
+The target can be **weakened**. A hypothetical bad odd 3-coprime target has a target-dependent strictly positive lower-density constant; hence for ALL sufficiently large k the terminal-disconnected component of that fixed target has at least δ_a 2^k/2 distinct source members.
+
+It is therefore enough to establish the **sparse** quantitative statement
+
+```text
+liminf_{k->infinity} M_k / 2^k = 0,
+where H_k = 8*k and M_k is the LARGEST unseeded true two-clock component.
+```
+
+An unbounded sequence of scales with an arbitrarily small largest-component fraction would already contradict any fixed bad target. No monotonicity in k, no contraction at every block, no density-one total terminal certification, and no ban on many small unknown components is required. The sparse liminf claim is a CANDIDATE, not an achieved theorem; it may still require the same deep +1 arithmetic. It must be proved from finite-source-height semantics rather than assumed as an equivalent finish line.
+
 ## Next cheapest decisive arithmetic experiment
 
 Look for a **genuine Collatz-specific anti-giant lemma** that operates on source-height boundary flow, rather than on generic parity mixing or unsound finite modulus connectivity. Build the smallest exact (+1)-specific inequality that forces M_k/2^k small, and test it against the giant G7 component and high-odd c=5 cycles, including V168-weighted residue2 replenishment.
