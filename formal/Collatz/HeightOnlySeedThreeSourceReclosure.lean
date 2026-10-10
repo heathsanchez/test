@@ -107,7 +107,7 @@ theorem v175_terminal_n3_by_proof_reuse :
     iter shortcut 267 v175N3 = 2 := by
   calc
     iter shortcut 267 v175N3 =
-        iter shortcut (2+265) v175N3 := by congr 1; decide
+        iter shortcut (2+265) v175N3 := by rfl
     _ = iter shortcut 265 (iter shortcut 2 v175N3) :=
       iter_add shortcut 2 265 v175N3
     _ = iter shortcut 265 v175N1 := by
