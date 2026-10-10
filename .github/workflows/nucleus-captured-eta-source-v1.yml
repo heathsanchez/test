@@ -40,9 +40,12 @@ jobs:
           results=[]
           for case,source_fun,source_minor in cases:
               b=(pathlib.Path('/tmp/tests/good')/(case+'.ndjson')).read_bytes()
-              expr={};names={0:''}
+              expr={};names={0:''};decls={}
               for line in b.splitlines():
                   j=json.loads(line)
+                  for dk in ('def','thm','axiom'):
+                      if dk in j:
+                          d=j[dk];decls[d['name']]=(dk,d)
                   if 'in' in j:
                       y=j.get('str',j.get('num'))
                       pre=names.get(y['pre'],'')
@@ -83,11 +86,29 @@ jobs:
                   head=function_chain[-1]
                   n=head['shape'] or {}
                   cname=n.get('const',{}).get('name')
+                  decl=decls.get(cname)
+                  telescope=[]
+                  if decl:
+                      p=decl[1].get('type')
+                      for _ in range(12):
+                          pn=node(p)
+                          if not pn or 'forallE' not in pn:break
+                          q=pn['forallE']
+                          telescope.append({'domain_id':q['type'],
+                                            'domain_shape':node(q['type']),
+                                            'binder_info':q.get('binderInfo')})
+                          p=q['body']
+                  args=[x['shape']['app']['arg'] for x in function_chain
+                        if x['shape'] and 'app' in x['shape']][::-1]+[a]
                   print('NUCLEUS_ETA_SOURCE_BODY='+json.dumps({
                       'case':case,'body_fn':h,'body_arg':a,
                       'body_arg_node':node(a),'function_chain':function_chain,
-                      'head_name_id':cname,'head_name':names.get(cname)
-                  },separators=(',',':'))[:13500],flush=True)
+                      'head_name_id':cname,'head_name':names.get(cname),
+                      'head_decl_kind':decl[0] if decl else None,
+                      'head_type':decl[1].get('type') if decl else None,
+                      'source_telescope':telescope,
+                      'actual_arg_ids':args,'actual_arg_shapes':[node(z) for z in args]
+                  },separators=(',',':'))[:19000],flush=True)
           pathlib.Path('research/nucleus-evidence/captured-eta-source.json').write_text(json.dumps({
               'run_sha':os.environ['GITHUB_SHA'],'artifact':os.environ['ARENA_ARTIFACT'],'cases':results
           },indent=2))
