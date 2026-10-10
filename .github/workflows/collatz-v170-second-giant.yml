@@ -29,6 +29,7 @@ jobs:
           assert height['bridge_one']['endpoint']==12690089
           assert height['terminal_seed']=={'source':5575759,'terminal_clock':131,'terminal_endpoint':2}
           assert height['derived_original_terminal_clock']==335
+          assert height['one_arrow_countercontrol_joins_survive_but_terminal_fails']
           assert height['global_collatz']=='UNKNOWN' and height['qed'] is False
           assert x['schema']=='COLLATZ_V170_SECOND_LARGEST_FUTURE_COMPONENT'
           d={(row['map'],row['k']):row for row in x['rows']}
@@ -113,7 +114,11 @@ jobs:
                        'v172_height_unlocked_finite_ledger',
                        'v172_height_unlocked_terminal_certificate',
                        'v172_all_component_clocks_below_176',
-                       'v172_new_height_is_essential_to_this_ledger'):
+                       'v172_new_height_is_essential_to_this_ledger',
+                       'v172_one_arrow_retains_first_join',
+                       'v172_one_arrow_retains_second_join',
+                       'v172_one_arrow_terminal_anchor_fails',
+                       'v172_one_arrow_rejects_terminal_promotion'):
             assert 'CollatzFinal.SourceProduct.'+name in ax,name
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           out={'schema':'COLLATZ_V170_FORMAL_CONDITIONAL_UNIQUE_GIANT',
@@ -126,6 +131,7 @@ jobs:
                'height_unlock_source_sha256':hashlib.sha256(pathlib.Path(
                  'formal/Collatz/HeightUnlockCertificate.lean').read_bytes()).hexdigest(),
                'source_4053039_terminal_warrant_reused_in_lean':True,
+               'one_arrow_negative_terminal_anchor_formal':True,
                'warrant':'CONDITIONAL_ONLY_TWO_GIANT_ELIMINATION_WITH_CANONICAL_GRAPH',
                'external_density_locally_rebuilt':False,
                'sparse_uniqueness_estimate_proved':False,
@@ -168,6 +174,7 @@ jobs:
           assert e['no_all_scale_anti_two_giant_proof']
           assert f['canonical_finite_clock_ledger_completeness_proved']
           assert f['source_4053039_terminal_warrant_reused_in_lean']
+          assert f['one_arrow_negative_terminal_anchor_formal']
           assert e['height_unlock_exact_sha256']
           assert not f['sparse_uniqueness_estimate_proved']
           assert not f['external_density_locally_rebuilt']
@@ -177,6 +184,7 @@ jobs:
                'status':'WARRANTED_BOUNDED_SECOND_GIANT_TEST_AND_FORMAL_CONDITIONAL_BRIDGE',
                'canonical_clocked_ledger_completeness_proved':True,
                'one_concrete_cross_height_terminal_certificate_lean_verified':True,
+               'one_arrow_countercontrol_formal_and_exact':True,
                'remaining_arithmetic':'sparse anti-two-macroscopic-component inequality',
                'external_density_locally_imported':False,
                'all_scale_sparse_uniqueness_proved':False,
