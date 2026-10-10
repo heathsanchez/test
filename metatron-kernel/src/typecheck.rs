@@ -1291,14 +1291,21 @@ impl<'a> TypeChecker<'a> {
         conversion_refutation_is_unknown: bool,
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<()> {
-        if std::env::var_os("NUCLEUS_EXPERIMENTAL_KERNEL_BIDIR_LAMBDA").is_some()
+        // A verified source certificate is useful only after the ordinary
+        // checker has actually reached an unresolved typing premise.
+        // Speculatively rechecking every already-typed Lambda multiplied
+        // the fueled-chain cost by 5.8x; that old variant is superseded.
+        let inferred = self.infer_in(expression, context, frame, remaining, cache);
+        if matches!(&inferred, Judgment::Unknown { .. })
+            && std::env::var_os("NUCLEUS_EXPERIMENTAL_KERNEL_BIDIR_LAMBDA").is_some()
             && matches!(self.expressions.get(expression),Some(Expr::Lam{..}))
+            && context.len()<=24
             && let Some(fuel) = self.try_kernel_checked_lambda(
-                expression,expected,context,frame,*remaining,
+                expression,expected,context,frame,(*remaining).min(512),
                 conversion_refutation_is_unknown,
             )
         {
-            *remaining=fuel;
+            *remaining=(*remaining).min(fuel);
             #[cfg(feature="diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_KERNEL_BIDIR_LAMBDA").is_some() {
                 use std::sync::atomic::{AtomicUsize,Ordering};
@@ -1312,7 +1319,6 @@ impl<'a> TypeChecker<'a> {
             }
             return Judgment::proven((),"source-typed-bidirectional-lambda");
         }
-        let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
             Judgment::Proven { value, .. } => {
                 let conversion = crate::convert::convert_with_policy_in_context(
