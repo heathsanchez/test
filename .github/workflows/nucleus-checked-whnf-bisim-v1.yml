@@ -1,0 +1,163 @@
+name: Nucleus certified WHNF and contextual lambda bisimulation qualification
+
+on:
+  push:
+    branches: [nucleus-checked-whnf-bisim-v1]
+    paths:
+      - ".github/workflows/nucleus-checked-whnf-bisim-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Independent Rust unit tests and diagnostics binary
+        run: |
+          set -euo pipefail
+          printf 'candidate_commit=%s\n' "$GITHUB_SHA"
+          printf 'candidate_tree=%s\n' "$(git rev-parse HEAD:metatron-kernel)"
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test projected_neutral_congruence -- --nocapture
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test source_support_congruence -- --nocapture
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test structural_closure_bisim -- --nocapture
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test instantiated_universe_bisim -- --nocapture
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test whnf_closure_bisim -- --nocapture
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+          sha256sum /tmp/nucleus
+
+      - name: Obtain exact source-authoritative frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests metatron-kernel/evidence-out/whnf-bisim
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+
+      - name: Replay the seven residual exports and pinned soundness negatives
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/arena-tests')
+          out=pathlib.Path('metatron-kernel/evidence-out/whnf-bisim')
+          names=['init-prelude','perf/grind-ring-5','perf/magma-list-pair-n7',
+                 'perf/magma-list-pair-n21','perf/magma-list-deep-n21',
+                 'perf/magma-list-deep-n36','perf/fueled-chain']
+          rows=[]
+          for name in names:
+              data=(root/'good'/(name+'.ndjson')).read_bytes()
+              t=time.monotonic()
+              env=os.environ|{'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                   'NUCLEUS_TRACE_CERTIFIED_NEUTRAL_PROJECTION':'1',
+                   'NUCLEUS_TRACE_SOURCE_SUPPORT':'1',
+                   'NUCLEUS_TRACE_STRUCTURAL_CLOSURE':'1',
+                   'NUCLEUS_TRACE_WHNF_BISIM':'1',
+                   'NUCLEUS_TRACE_DEPENDENCY_GAP':'1'}
+              p=subprocess.run(['/tmp/nucleus'],input=data,stdout=subprocess.DEVNULL,
+                  stderr=subprocess.PIPE,timeout=150,env=env)
+              lines=p.stderr.decode(errors='replace').splitlines()
+              row={'case':name,'sha256':hashlib.sha256(data).hexdigest(),
+                   'rc':p.returncode,'seconds':round(time.monotonic()-t,3),
+                   'last':[s for s in lines if 'NUCLEUS_DOWNSTREAM:' in s][-3:],
+                   'first_dependency_gap':[s for s in lines if 'NUCLEUS_DEPENDENCY_GAP:' in s][:1],
+                   'certified_whnf_bisim':len(
+                       [s for s in lines if 'NUCLEUS_WHNF_BISIM:' in s]),
+                   'certified_structural_bisim':len(
+                       [s for s in lines if 'NUCLEUS_STRUCTURAL_CLOSURE:' in s]),
+                   'certified_source_support':len(
+                       [s for s in lines if 'NUCLEUS_SOURCE_SUPPORT:' in s]),
+                   'certified_receiver_congruence':len(
+                       [s for s in lines if 'NUCLEUS_CERTIFIED_NEUTRAL_PROJECTION:' in s]),
+                   'sample':[s for s in lines if 'NUCLEUS_CERTIFIED_NEUTRAL_PROJECTION:' in s][:2]}
+              print('NUCLEUS_PROJECTED_NEUTRAL_CASE='+json.dumps(row),flush=True)
+              rows.append(row)
+              assert p.returncode in (0,2),('wrongly rejected good export',name,p.returncode)
+          baseline=(root/'good/init-prelude.ndjson').read_bytes()
+          negative=false_index(extract(baseline))
+          assert hashlib.sha256(negative).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          false_rc=subprocess.run(['/tmp/nucleus'],input=negative,
+              stdout=subprocess.DEVNULL,timeout=90).returncode
+          bad_rc=subprocess.run(['/tmp/nucleus'],
+              input=(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),
+              stdout=subprocess.DEVNULL,timeout=90).returncode
+          assert false_rc in (1,2),('invalid false index ACCEPT',false_rc)
+          assert bad_rc==1,('invalid nested recursor not REJECT',bad_rc)
+          (out/'seven.json').write_text(json.dumps({
+              'commit':os.environ['GITHUB_SHA'],'arena_sha':os.environ['ARENA_SHA'],
+              'cases':rows,'false_index':false_rc,'malformed_nested':bad_rc
+          },indent=2))
+          print('NUCLEUS_SEVEN_PROJECTION_SUMMARY='+json.dumps({
+             'complete_case_accepts':sum(r['rc']==0 for r in rows),
+             'receiver_certificates':sum(r['certified_receiver_congruence'] for r in rows),
+             'source_support_certificates':sum(r['certified_source_support'] for r in rows),
+             'structural_bisim_certificates':sum(r['certified_structural_bisim'] for r in rows),
+             'whnf_bisim_certificates':sum(r['certified_whnf_bisim'] for r in rows),
+             'false_index':false_rc,'malformed_nested':bad_rc
+          }),flush=True)
+          PY
+
+      - name: Requalify exact 125 positive and 71 negative exports
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import concurrent.futures,json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests')
+          out=pathlib.Path('metatron-kernel/evidence-out/whnf-bisim')
+          positive=sorted((root/'good').rglob('*.ndjson'))
+          negative=sorted((root/'bad').rglob('*.ndjson'))
+          assert (len(positive),len(negative))==(125,71)
+          items=[('good',p) for p in positive]+[('bad',p) for p in negative]
+          def check(item):
+              label,path=item
+              p=subprocess.run(['/tmp/nucleus'],input=path.read_bytes(),
+                   stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=150)
+              return {'type':label,'file':str(path.relative_to(root)),'rc':p.returncode}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+              rows=list(pool.map(check,items))
+          assert all(r['rc'] in (0,1,2) for r in rows),'checker process error'
+          wrong=[r for r in rows if (r['type']=='good' and r['rc']==1)
+                 or (r['type']=='bad' and r['rc']==0)]
+          report={'commit':os.environ['GITHUB_SHA'],'artifact':os.environ['ARENA_ARTIFACT'],
+                  'arena_sha':os.environ['ARENA_SHA'],
+                  'accepted':sum(r['type']=='good' and r['rc']==0 for r in rows),
+                  'rejected':sum(r['type']=='bad' and r['rc']==1 for r in rows),
+                  'unknown':sum(r['rc']==2 for r in rows),
+                  'wrong':wrong,'rows':rows}
+          (out/'full196.json').write_text(json.dumps(report,indent=2))
+          print('NUCLEUS_FULL196='+json.dumps({k:v for k,v in report.items() if k!='rows'}),flush=True)
+          assert not wrong,'INCORRECT_CHECKER_VERDICT'
+          assert report['rejected']==71,'REJECT_REGRESSION'
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-whnf-bisim-${{ github.sha }}
+          path: metatron-kernel/evidence-out/whnf-bisim
+          if-no-files-found: warn
+
+      - name: Strict complete-case promotion boundary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          d=json.load(open('metatron-kernel/evidence-out/whnf-bisim/full196.json'))
+          assert d['accepted']>=119 and d['unknown']<=6 and d['rejected']==71 and not d['wrong'],\
+               ('NO_NEW_COMPLETE_CASE_ACCEPT__CANDIDATE_NOT_PROMOTED',d['accepted'],d['rejected'],d['unknown'])
+          print('CANDIDATE_COMPLETE_CASE_GAIN__STILL_REQUIRES_CURRENT_LARGE_AND_MATHLIB_VALIDATION')
+          PY
