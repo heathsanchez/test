@@ -1,0 +1,156 @@
+name: Collatz V170 elimination of a second macroscopic future class
+on:
+  push:
+    branches: [collatz-v170-eliminate-second-giant]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-second-component:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recompute second largest authentic source component with three controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v170_second_giant_audit > evidence/v170-second-component.json
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          p=pathlib.Path('evidence/v170-second-component.json')
+          x=json.loads(p.read_text())
+          assert x['schema']=='COLLATZ_V170_SECOND_LARGEST_FUTURE_COMPONENT'
+          d={(row['map'],row['k']):row for row in x['rows']}
+          assert d['3n+1',20]['second_component_size']==1
+          assert d['3n+1',22]['second_component_size']==2
+          assert d['3n+1',24]['second_component_size']==13
+          assert d['3n+7',20]['second_component_size']>=140000
+          assert d['3n+5',20]['second_component_size']>=140000
+          assert x['stronger_monotone_contraction_falsified_at_k22_to_k24']
+          assert x['two_macroscopic_components_survive_under_G5_and_G7']
+          assert x['every_unknown_stays_UNKNOWN']
+          assert not x['external_timed_density_locally_imported']
+          assert not x['all_scale_sparse_uniqueness_proved']
+          assert x['global_collatz']=='UNKNOWN' and x['qed'] is False
+          assert x['C1_C7_unchanged_cpp_sha256']==hashlib.sha256(
+            pathlib.Path('research/collatz_v168_retrospective_quotient.cpp').read_bytes()).hexdigest()
+          assert x['C5_unchanged_cpp_sha256']==hashlib.sha256(
+            pathlib.Path('research/collatz_v169_c5_component_control.cpp').read_bytes()).hexdigest()
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out={'schema':'COLLATZ_V170_EXACT_SECOND_GIANT_SEAL',
+               'source_commit':sha,
+               'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+               'status':'BOUNDED_SECOND_LARGEST_COMPONENT_SEPARATION',
+               'no_all_scale_anti_two_giant_proof':True,
+               'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v170-exact-seal.json').write_text(
+              json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v170-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-conditional-unique-giant:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check core-Lean sparse two-giant elimination logic and axioms
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure UniversalFutureClassFrontier RetroactiveFutureQuotient ClockedGiantComponentBridge; do
+            lake env lean -DautoImplicit=false \
+              -o ".lake/build/lib/lean/Collatz/$module.olean" \
+              "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/SparseTwoGiantElimination.lean 2>&1 | tee evidence/v170-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v170-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-23000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[t.strip() for t in inside.split(',') if t.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          for name in ('v170_clocked_hits_are_component_members',
+                       'v170_bad_target_not_connected_to_two',
+                       'v170_collatz_of_timed_density_and_sparse_unique_giant'):
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out={'schema':'COLLATZ_V170_FORMAL_CONDITIONAL_UNIQUE_GIANT',
+               'source_commit':sha, 'axioms':ax,
+               'source_sha256':hashlib.sha256(pathlib.Path(
+                 'formal/Collatz/SparseTwoGiantElimination.lean').read_bytes()).hexdigest(),
+               'warrant':'CONDITIONAL_ONLY_TWO_GIANT_ELIMINATION',
+               'external_density_locally_rebuilt':False,
+               'sparse_uniqueness_estimate_proved':False,
+               'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v170-formal-seal.json').write_text(
+              json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v170-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-independent-evidence:
+    needs: [exact-second-component,formal-conditional-unique-giant]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v170-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v170-formal
+          path: evidence/formal
+      - name: Same-source formal and numerical reconciliation without QED
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          e=json.loads(pathlib.Path('evidence/exact/v170-exact-seal.json').read_text())
+          f=json.loads(pathlib.Path('evidence/formal/v170-formal-seal.json').read_text())
+          d=json.loads(pathlib.Path('evidence/exact/v170-second-component.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert e['source_commit']==f['source_commit']==sha
+          assert e['no_all_scale_anti_two_giant_proof']
+          assert not f['sparse_uniqueness_estimate_proved']
+          assert not f['external_density_locally_rebuilt']
+          assert d['global_collatz']==e['global_collatz']==f['global_collatz']=='UNKNOWN'
+          assert d['qed'] is e['qed'] is f['qed'] is False
+          out={'schema':'COLLATZ_V170_FINAL','source_commit':sha,
+               'status':'WARRANTED_BOUNDED_SECOND_GIANT_TEST_AND_FORMAL_CONDITIONAL_BRIDGE',
+               'remaining_arithmetic':'sparse anti-two-macroscopic-component inequality',
+               'external_density_locally_imported':False,
+               'all_scale_sparse_uniqueness_proved':False,
+               'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v170-final.json').write_text(
+              json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v170-final
+          path: evidence/v170-final.json
+          if-no-files-found: error
