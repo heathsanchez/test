@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -137,6 +137,8 @@ jobs:
                            if 'NUCLEUS_BIDIR_BODY_CONVERT:' in s][-24:],
                        'final_codomains':[s for s in logs
                            if 'NUCLEUS_FINAL_CODOMAIN:' in s][-16:],
+                       'paired_premises':[s for s in logs
+                           if 'NUCLEUS_CODOMAIN_PAIRS:' in s][-16:],
                        'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
                   print('NUCLEUS_ORIGIN_SEVEN='+json.dumps(row),flush=True)
                   assert p.returncode in (0,2),('valid became rejected',row)
