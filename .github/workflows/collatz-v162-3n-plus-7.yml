@@ -89,7 +89,13 @@ jobs:
             'v162_preserves_earlier_actual_parities',
             'v162_every_finite_future_parity_word',
             'v162_disjoint_actual_positive_future_classes',
-            'v162_explicit_two_cycles']
+            'v162_explicit_two_cycles',
+            'v162_seven_scale_true_shortcut',
+            'v162_seven_scale_true_future',
+            'v162_seven_divisible_iff_after_step',
+            'v162_seven_divisibility_all_clocks',
+            'v162_cycle_five_outside_seven_lattice',
+            'v162_scaled_sources_never_join_extra_cycle']
           for t in target:
             assert 'CollatzFinal.SourceProduct.'+t in ax,t
           h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
