@@ -1743,6 +1743,45 @@ fn rigid_application_head_congruence_in_context(
                 );
             }
         }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_DEEP_BVAR_ORIGIN").is_some()
+            && depth==1 && index==2
+            && matches!(left.expr.0, 662|661)
+        {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static DEEP:AtomicUsize=AtomicUsize::new(0);
+            if DEEP.fetch_add(1,Ordering::Relaxed)<8 {
+                let lhs_node=match checker.expression(lhs_arg.expr) {
+                    Some(Expr::BVar(i))=>lhs_arg.env.lookup_with_node_id(*i),
+                    _=>None,
+                };
+                let rhs_node=match checker.expression(rhs_arg.expr) {
+                    Some(Expr::BVar(i))=>rhs_arg.env.lookup_with_node_id(*i),
+                    _=>None,
+                };
+                let mut retries=Vec::new();
+                for fuel in [128usize, 512usize, 2048usize] {
+                    let attempt=convert_with_policy_in_context(
+                        checker,
+                        &TypeValue::Term(lhs_arg.clone()),
+                        &TypeValue::Term(rhs_arg.clone()),
+                        fuel,
+                        DeltaPolicy::PreferredOnly,depth,context,
+                    );
+                    retries.push((fuel,attempt));
+                }
+                let left_exposed=checker.machine().expose_for_conversion(
+                    lhs_arg.clone(),Transparency::Full,512,
+                );
+                let right_exposed=checker.machine().expose_for_conversion(
+                    rhs_arg.clone(),Transparency::Full,512,
+                );
+                eprintln!(
+                    "NUCLEUS_DEEP_BVAR_ORIGIN:depth={depth}:head={rigid_head:?}:source_left={:?}:source_right={:?}:left_binding={lhs_node:?}:right_binding={rhs_node:?}:type_context={:?}:original={comparison:?}:retries={retries:?}:left_value={left_exposed:?}:right_value={right_exposed:?}",
+                    left.expr,right.expr,context,
+                );
+            }
+        }
         match comparison {
             Judgment::Proven { .. } => {}
             Judgment::Refuted { obstruction } => {
