@@ -2398,8 +2398,53 @@ impl<'a> TypeChecker<'a> {
                             }
                         }
                         other => {
+                            let app_obligation = if let Some(Expr::App { fun, arg }) = other {
+                                let f = cursor.sibling(*fun, cursor.env.clone());
+                                let a = cursor.sibling(*arg, cursor.env.clone());
+                                let mut fuel = 256;
+                                let fty = probe.infer_exact_closure_in_context(
+                                    &f, context, &mut fuel, 0,
+                                );
+                                match fty {
+                                    None => "first_app_function_type=UNKNOWN".to_owned(),
+                                    Some(function_type) => {
+                                        match probe.pi_view(
+                                            Judgment::proven(
+                                                function_type, "diagnostic-typed-function",
+                                            ),
+                                            fuel.min(256),
+                                        ) {
+                                            None => "first_app_pi_view=UNKNOWN".to_owned(),
+                                            Some((domain, _)) => {
+                                                let aty = probe.infer_exact_closure_in_context(
+                                                    &a, context, &mut fuel, 0,
+                                                );
+                                                match aty {
+                                                    None => {
+                                                        "first_app_argument_type=UNKNOWN".to_owned()
+                                                    }
+                                                    Some(actual) => {
+                                                        let judgment =
+                                                            crate::convert::convert_with_policy_in_context(
+                                                                &probe, &actual, &domain,
+                                                                fuel.min(256),
+                                                                crate::convert::DeltaPolicy::PreferredOnly,
+                                                                context.len(), context,
+                                                            );
+                                                        format!(
+                                                            "first_app_argument_domain={judgment:?}:actual={actual:?}:domain={domain:?}"
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                "non-application-source-leaf".to_owned()
+                            };
                             stages.push(format!(
-                                "source_leaf={:?}@{}:shape={other:?}",
+                                "source_leaf={:?}@{}:shape={other:?}:typing={app_obligation}",
                                 cursor.expr, cursor.env.id(),
                             ));
                             break;
