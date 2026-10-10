@@ -274,10 +274,12 @@ theorem v159_any_bad_source_forces_mixed_every_modulus
         (hMod : n%M=m%M) :
         CollatzGood n ↔ CollatzGood m := by
       constructor
-      · intro hGood hBad
-        exact hNoMixed ⟨n,m,hn,hm,hMod,hGood,hBad⟩
-      · intro hGood hBad
-        exact hNoMixed ⟨m,n,hm,hn,hMod.symm,hGood,hBad⟩
+      · intro hGood
+        exact Classical.byContradiction
+          (fun hBad => hNoMixed ⟨n,m,hn,hm,hMod,hGood,hBad⟩)
+      · intro hGood
+        exact Classical.byContradiction
+          (fun hBad => hNoMixed ⟨m,n,hm,hn,hMod.symm,hGood,hBad⟩)
     let f : Nat → Bool := fun n => decide (CollatzGood n)
     have hStep : ∀ n : Nat, 0<n → f (shortcut n)=f n := by
       intro n _
