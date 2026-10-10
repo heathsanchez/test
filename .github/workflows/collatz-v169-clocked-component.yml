@@ -57,6 +57,50 @@ jobs:
           path: evidence/
           if-no-files-found: error
 
+  exact-c5-basin-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently replay three-n-plus-five coprime multi-basin control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v169_c5_component_audit.py > evidence/v169-c5-negative.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v169-c5-negative.json')
+          v=json.loads(p.read_text())
+          assert v['schema']=='COLLATZ_V169_G5_POSITIVE_BASIN_ADVERSARIAL'
+          assert v['independently_full_graph_replayed_k']==[8,10,12]
+          assert v['seed_1_and_bad_187_both_coprime_to_5']
+          assert v['nonterminal_cycle_187_length']==27
+          row=next(x for x in v['rows'] if x['k']==20)
+          assert row['unseeded_sources']==900605
+          assert row['max_unseeded_component']==520517
+          assert [187,33851] in row['top_source_components']
+          assert v['no_universal_convergence_inferred']
+          assert v['global_collatz']=='UNKNOWN' and v['qed'] is False
+          cpp=pathlib.Path('research/collatz_v169_c5_component_control.cpp').read_bytes()
+          assert hashlib.sha256(cpp).hexdigest()==v['compiler_sha256']
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V169_C5_EXACT_SEAL',
+                'source_commit':sha,
+                'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                'source_cpp_sha256':v['compiler_sha256'],
+                'c5_coprime_multiple_future_basins_protected':True,
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v169-c5-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v169-c5-negative
+          path: evidence/
+          if-no-files-found: error
+
   formal-clocked-bridge:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -115,7 +159,7 @@ jobs:
           if-no-files-found: error
 
   final-independent:
-    needs: [exact-clocked-components,formal-clocked-bridge]
+    needs: [exact-clocked-components,exact-c5-basin-control,formal-clocked-bridge]
     if: success()
     runs-on: ubuntu-24.04
     steps:
@@ -128,6 +172,10 @@ jobs:
         with:
           name: collatz-v169-formal-conditional-bridge
           path: evidence/formal
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v169-c5-negative
+          path: evidence/c5
       - name: Verify source-pinned independent scopes and UNKNOWN preservation
         shell: bash
         run: |
@@ -136,8 +184,11 @@ jobs:
           import json,pathlib,subprocess,hashlib
           e=json.loads(pathlib.Path('evidence/exact/v169-exact-seal.json').read_text())
           f=json.loads(pathlib.Path('evidence/formal/v169-formal-seal.json').read_text())
+          c5=json.loads(pathlib.Path('evidence/c5/v169-c5-seal.json').read_text())
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-          assert e['source_commit']==f['source_commit']==sha
+          assert e['source_commit']==f['source_commit']==c5['source_commit']==sha
+          assert c5['c5_coprime_multiple_future_basins_protected']
+          assert c5['global_collatz']=='UNKNOWN' and c5['qed'] is False
           assert e['warrant']=='BOUNDED_EXACT_TWO_CLOCK_COMPONENTS_ONLY'
           assert f['scope']=='CLOCKED_SOURCE_MEMBERSHIP_IN_ONE_UNSEEDED_COMPONENT_IF_BAD_TARGET_AND_GRAPH_COMPLETENESS'
           assert not f['external_density_imported'] and not f['all_scale_anti_giant_bound_proved']
