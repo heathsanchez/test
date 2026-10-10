@@ -75,7 +75,8 @@ jobs:
             'v159_odd_third_period_reduction','v159_find_one_mod_six',
             'v159_coprime_period_reduction','v159_all_finite_moduli_collapse',
             'v159_step_implies_even_and_odd_invariance',
-            'v159_no_nontrivial_fixed_modulus_future_label']
+            'v159_no_nontrivial_fixed_modulus_future_label',
+            'v159_positive_future_label_cannot_be_periodic']
           for name in names:
             assert 'CollatzFinal.SourceProduct.'+name in ax,name
           h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
