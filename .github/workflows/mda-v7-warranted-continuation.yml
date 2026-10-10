@@ -1,0 +1,58 @@
+name: MDA v7 - minimal warranted continuation and capability compounding
+on:
+  workflow_dispatch:
+  push:
+    branches: [mda-v7-warranted-continuation-compounding-v1]
+    paths:
+      - 'open_development/mda_v7.py'
+      - 'open_development/tests/test_mda_v7.py'
+      - 'open_development/mda_v7_economics.py'
+      - '.github/workflows/mda-v7-warranted-continuation.yml'
+permissions:
+  contents: read
+jobs:
+  unified-transition:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check source and exact MDA-specific tests
+        run: |
+          set -euo pipefail
+          python -m py_compile open_development/mda_v7.py open_development/tests/test_mda_v7.py
+          python -m unittest open_development.tests.test_mda_v7 -v
+      - name: Protect all previous Open Development runtime tests
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s open_development/tests -v
+      - name: Protect external qualification of retained role exaptation
+        run: |
+          set -euo pipefail
+          python -m open_development.exaptation_strict > /tmp/strict.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/strict.json'))
+          assert x['outcome']=='VERIFIED_EXAPTATION_STRICT'
+          assert x['classification']=={'reuse':False,'exaptation':True,'expansion':False}
+          assert x['heldout']['verdict']=='verified'
+          assert x['controls']['same_size_sham_K_B']=='refuted'
+          assert x['controls']['missing_K_A_executable_body']=='unknown'
+          assert x['controls']['restored_lineage']=='verified'
+          print('STRICT_EXAPTATION_REPLAY_PRESERVED')
+          PY
+      - name: Run bounded prospective economics audit
+        run: |
+          if [ -f open_development/mda_v7_economics.py ]; then
+            python -m open_development.mda_v7_economics > mda-v7-economic-result.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mda-v7-warranted-continuation
+          path: mda-v7-economic-result.json
+          if-no-files-found: warn
