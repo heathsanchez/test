@@ -132,12 +132,105 @@ theorem v163_four_step_exponential_separation (t : Nat) :
           Nat.mul_le_mul_left _ hbase
         _ = 6^(4*(t+1)) := by rw [h6]
 
+/-- The protected 1 <-> 2 terminal set is forward invariant
+    under every REAL shortcut clock. -/
+theorem v163_terminal_stays_terminal
+    (x j : Nat) (hx : Terminal x) :
+    Terminal (iter shortcut j x) := by
+  induction j with
+  | zero => simpa [iter] using hx
+  | succ j ih =>
+      rw [iter_succ_last]
+      exact terminal_forward_invariant _ ih
+
+/-- Terminal at SOME clock <=t is EQUIVALENT to terminal at
+    the SINGLE exact clock t, because the genuine terminal
+    class 1<->2 is closed under all actual future steps. -/
+theorem v163_terminal_by_horizon_iff_exact_clock (n t : Nat) :
+    (∃ j : Nat, j<=t ∧
+        Terminal (iter shortcut j n)) ↔
+      Terminal (iter shortcut t n) := by
+  constructor
+  · intro hh
+    obtain ⟨j,hj,hTerm⟩ := hh
+    have ht : j+(t-j)=t := by omega
+    have hF := v163_terminal_stays_terminal
+      (iter shortcut j n) (t-j) hTerm
+    simpa only [← ht,iter_add] using hF
+  · intro h
+    exact ⟨t,by omega,h⟩
+
+/-- Only TWO exact-depth reverse trees are needed, not
+    a sum over clocks. The latter overcounted the same
+    eventual terminal sources many times. -/
+def v163ExactTerminalReverseList (t : Nat) : List Nat :=
+  v152InverseSources t 1 ++ v152InverseSources t 2
+
+theorem v163_exact_reverse_list_complete_and_sound (t n : Nat) :
+    n ∈ v163ExactTerminalReverseList t ↔
+      Terminal (iter shortcut t n) := by
+  constructor
+  · intro hh
+    rcases List.mem_append.mp hh with h1 | h2
+    · exact Or.inl (v152_reverse_sources_sound t 1 n h1)
+    · exact Or.inr (v152_reverse_sources_sound t 2 n h2)
+  · intro hh
+    apply List.mem_append.mpr
+    rcases hh with h1 | h2
+    · exact Or.inl (v152_reverse_sources_complete t 1 n h1)
+    · exact Or.inr (v152_reverse_sources_complete t 2 n h2)
+
+theorem v163_exact_reverse_list_length_ceiling (t : Nat) :
+    (v163ExactTerminalReverseList t).length <=
+      2*(v152FibonacciBounds t).2 := by
+  change
+    (v152InverseSources t 1).length+
+      (v152InverseSources t 2).length <=
+        2*(v152FibonacciBounds t).2
+  rw [v152_inverse_sources_length t 1,
+    v152_inverse_sources_length t 2]
+  have h1 := v152_inverse_words_global_fibonacci t 1
+  have h2 := v152_inverse_words_global_fibonacci t 2
+  omega
+
+/-- Sharper ceiling from the terminal cycle:
+    3^t * (# inverse terminal paths of EXACT depth t)
+        <= 3*5^t.
+    This dominates the previous sum-of-depths budget.
+    It is still a path COUNT, not a natural-density-one theorem. -/
+theorem v163_exact_depth_scaled_ceiling (t : Nat) :
+    3^t*(v163ExactTerminalReverseList t).length <=
+      3*5^t := by
+  have hlen := v163_exact_reverse_list_length_ceiling t
+  cases t with
+  | zero =>
+      have hz : (v163ExactTerminalReverseList 0).length=2 := by
+        decide
+      simp [hz]
+  | succ t =>
+      have hb := v163_scaled_fibonacci_growth t
+      calc
+        3^(t+1)*(v163ExactTerminalReverseList (t+1)).length <=
+            3^(t+1)*(2*(v152FibonacciBounds (t+1)).2) :=
+          Nat.mul_le_mul_left _ hlen
+        _ = 6*(3^t*(v152FibonacciBounds (t+1)).2) := by
+          simp [Nat.pow_succ,Nat.mul_assoc,Nat.mul_comm,
+            Nat.mul_left_comm]
+        _ <= 6*(2*5^t) := Nat.mul_le_mul_left 6 hb
+        _ <= 3*5^(t+1) := by
+          simp [Nat.pow_succ]
+          omega
+
 #print axioms v163_fibonacci_pair_ratio
 #print axioms v163_fibonacci_one_step_growth
 #print axioms v163_scaled_fibonacci_growth
 #print axioms v163_scaled_terminal_path_budget
 #print axioms v163_actual_terminal_path_scaled_ceiling
 #print axioms v163_four_step_exponential_separation
+#print axioms v163_terminal_by_horizon_iff_exact_clock
+#print axioms v163_exact_reverse_list_complete_and_sound
+#print axioms v163_exact_reverse_list_length_ceiling
+#print axioms v163_exact_depth_scaled_ceiling
 
 end SourceProduct
 end CollatzFinal
