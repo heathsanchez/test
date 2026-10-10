@@ -52,7 +52,7 @@ jobs:
                       for rec in j['inductive'].get('recs',[]):
                           decl[rec['name']]={'kind':'recursor','value':rec}
               wanted=([297,378,46,65,142] if 'deep' in case
-                      else [70,74,62,142,46,297,656,655,657])
+                      else [70,74,62,142,46,297,656,655,657,149,150,148])
               heads={str(k):{'name':names.get(k),
                             'declaration':decl.get(k),
                             'type_expr':expr.get(decl[k]['value'].get('type')) if k in decl else None}
