@@ -204,7 +204,7 @@ theorem v171_positive_period_multiples {α : Type}
       calc
         f (n+(t+1)*M)=f ((n+t*M)+M) := by
           congr 1
-          omega
+          simp [Nat.succ_mul,Nat.add_assoc]
         _=f (n+t*M) := hPeriod _ hp
         _=f n := ih n hn
 
@@ -227,7 +227,9 @@ theorem v171_periodic_label_reconstructs_true_shortcut
       have hStepShift := shortcut_shift 5 M
       simpa using hStepShift
     have hMap : v171Map (5+2*M)=shortcut (5+2*M) := by
-      simp [v171Map,hLift]
+      change (if 5+2*M=5 then 5 else shortcut (5+2*M)) =
+        shortcut (5+2*M)
+      simp only [if_neg hLift]
     have hP3 : f (shortcut 5+3*M)=f (shortcut 5) :=
       v171_positive_period_multiples f M hPeriod
         3 (shortcut 5) (by decide)
