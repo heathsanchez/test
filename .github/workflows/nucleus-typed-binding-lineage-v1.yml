@@ -22,7 +22,14 @@ jobs:
       NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER: "1"
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify preinstalled runner Rust without remote rustup channel refresh
+        run: |
+          set -euo pipefail
+          command -v rustc
+          command -v cargo
+          rustc --version
+          cargo --version
+          rustup toolchain list || true
 
       - name: Fetch locked Rust dependencies with independent network gate
         env:
