@@ -1,0 +1,86 @@
+name: Nucleus exact WellFounded inductive source contract audit
+
+on:
+  push:
+    branches: [nucleus-wellfounded-source-shape-v1]
+    paths:
+      - ".github/workflows/nucleus-wellfounded-source-shape-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      ARENA_ARTIFACT: "11272848230"
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get exact frozen source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests metatron-kernel/evidence-out/wellfounded-source
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" >/tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Verify actual WellFounded shape in BOTH deep Magma exports
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path('/tmp/arena-tests/good')
+          rows=[]
+          for name in ('perf/magma-list-deep-n21','perf/magma-list-deep-n36'):
+              raw=(root/(name+'.ndjson')).read_bytes()
+              names={0:''};expressions={};levels={0:{'zero':True}};found=[]
+              for line in raw.splitlines():
+                  z=json.loads(line)
+                  if 'in' in z:
+                      p=z.get('str',z.get('num'));pref=names.get(p['pre'],'')
+                      names[z['in']]=pref+('.' if pref else '')+str(p.get('str',p.get('i')))
+                  elif 'ie' in z:expressions[z['ie']]=z
+                  elif 'il' in z:levels[z['il']]=z
+                  elif 'inductive' in z:
+                      b=z['inductive']
+                      if any(names.get(t['name'])=='WellFounded' for t in b['types']):
+                          found.append(b)
+              assert len(found)==1,(name,len(found))
+              b=found[0]
+              def pi(root,count):
+                  cur=root;ds=[]
+                  for _ in range(count):
+                      x=expressions.get(cur,{})
+                      if 'forallE' not in x:
+                          return {'complete':False,'domains':ds,'tail_id':cur,'tail':x}
+                      ty=x['forallE']['type']
+                      ds.append({'id':ty,'expr':expressions.get(ty)})
+                      cur=x['forallE']['body']
+                  return {'complete':True,'domains':ds,
+                          'tail_id':cur,'tail':expressions.get(cur)}
+              t=b['types'][0];ctors=b['ctors'];rs=b['recs']
+              q={'case':name,'source_sha256':hashlib.sha256(raw).hexdigest(),
+                  'type':t,'constructors':ctors,'recursors':rs,
+                  'type_result':pi(t['type'],t['numParams']),
+                  'ctor_results':[pi(c['type'],c['numParams']+c['numFields']) for c in ctors],
+                  'recursor_result':[pi(r['type'],r['numParams']+r['numMotives']+r['numMinors']+1) for r in rs],
+                  'names':{str(i):names.get(i) for i in
+                      [t['name']]+[c['name'] for c in ctors]+[r['name'] for r in rs]},
+                  'universe':{str(k):v for k,v in levels.items() if k in t.get('levelParams',[])}
+              }
+              print('NUCLEUS_WELLFOUNDED_SOURCE='+json.dumps(q,separators=(',',':'))[:18000],flush=True)
+              rows.append(q)
+          pathlib.Path('metatron-kernel/evidence-out/wellfounded-source/source.json').write_text(
+             json.dumps({'commit':os.environ['GITHUB_SHA'],
+                         'arena_sha':os.environ['ARENA_SHA'],'cases':rows},indent=2))
+          print('WELLFOUNDED_PINNED_SOURCE_AUDIT_COMPLETE')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-wellfounded-source-${{ github.sha }}
+          path: metatron-kernel/evidence-out/wellfounded-source
