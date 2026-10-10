@@ -34,7 +34,6 @@ theorem v154_even_half (n : Nat) (hn : 0 < n) :
   have h1 : 2*n ≠ 1 := by omega
   have h3 : 2*n ≠ 3 := by omega
   simp [v154Toy,h1,h3]
-  omega
 
 theorem v154_eventual_strict_descent (n : Nat) (hn : 4 ≤ n) :
     v154Toy n < n := by
@@ -69,11 +68,11 @@ theorem v154_every_target_binary_interval (t : Nat) :
         have hmul := Nat.mul_le_mul_right a (show 1 ≤ (2:Nat)^t by omega)
         omega
       have heq : 2^(t+1)*a+r = 2*(2^t*a)+r := by
-        simp [pow_succ]
-        omega
+        rw [Nat.pow_succ]
+        ac_rfl
       have hsmall : r/2 < 2^t := by
         have ht : r < 2*(2^t) := by
-          simpa [pow_succ] using hr
+          simpa [Nat.pow_succ, Nat.mul_comm] using hr
         omega
       have hstep :
           v154Toy (2^(t+1)*a+r) = 2^t*a+r/2 := by
