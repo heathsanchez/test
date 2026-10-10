@@ -4191,6 +4191,52 @@ impl<'a> TypeChecker<'a> {
         .then(|| (*name, levels.clone()))
     }
 
+    /// Read-only captured Nat.brecOn.go telescope separator.
+    /// It does not change the kernel decision or treat type equality as
+    /// equality of the captured arguments.
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_brec_argument_pair(
+        &self, left: &Closure, right: &Closure,
+        context: &[TypeValue],
+    ) -> String {
+        let mut l = left.clone();
+        let mut r = right.clone();
+        let mut pairs = Vec::new();
+        for _ in 0..3 {
+            let (Some(Expr::App { fun: lf, arg: la }),
+                 Some(Expr::App { fun: rf, arg: ra })) =
+                (self.expressions.get(l.expr), self.expressions.get(r.expr))
+            else { return format!("not-paired-three-application:left={:?}:right={:?}",l.expr,r.expr) };
+            let la = l.sibling(*la,l.env.clone());
+            let ra = r.sibling(*ra,r.env.clone());
+            pairs.push((la,ra));
+            l = l.sibling(*lf,l.env.clone());
+            r = r.sibling(*rf,r.env.clone());
+        }
+        let head=(self.expressions.get(l.expr),self.expressions.get(r.expr));
+        let mut parts=Vec::new();
+        for (i,(a,b)) in pairs.iter().rev().enumerate() {
+            let mut lf=512usize;
+            let mut rf=512usize;
+            let lt=self.infer_exact_closure_in_context(a,context,&mut lf,0);
+            let rt=self.infer_exact_closure_in_context(b,context,&mut rf,0);
+            let ty=if let (Some(lt),Some(rt))=(&lt,&rt) {
+                Some(crate::convert::convert_with_policy_in_context(
+                    self,lt,rt,512,crate::convert::DeltaPolicy::PreferredOnly,
+                    context.len(),context))
+            }else{None};
+            let value=if ty.as_ref().is_some_and(|j|j.is_proven()) {
+                Some(crate::convert::convert_with_policy_in_context(
+                    self,&TypeValue::Term(a.clone()),&TypeValue::Term(b.clone()),
+                    512,crate::convert::DeltaPolicy::PreferredOnly,context.len(),context))
+            }else{None};
+            parts.push(format!("arg{i}:left={:?}@{}:right={:?}@{}:lty={lt:?}:rty={rt:?}:types={ty:?}:values={value:?}",
+                a.expr,a.env.id(),b.expr,b.env.id()));
+        }
+        format!("head={head:?}:scope={}:src_left={:?}@{}:src_right={:?}@{}:premises={parts:?}",
+            context.len(),left.expr,left.env.id(),right.expr,right.env.id())
+    }
+
     pub(crate) fn machine(&self) -> Machine<'_> {
         Machine::new_with_shared_tables(
             self.environment.authority(),
