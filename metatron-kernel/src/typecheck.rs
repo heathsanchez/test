@@ -1435,6 +1435,34 @@ impl<'a> TypeChecker<'a> {
                         "NUCLEUS_BIDIR_BODY_CONVERT:expr={expression:?}:actual={value:?}:expected={expected:?}:relation={conversion:?}",
                     );
                 }
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_FINAL_CODOMAIN").is_some()
+                    && matches!((context.len(),expression.0),
+                        (8,7581)|(8,7247)|(7,11145)|(7,11144))
+                {
+                    let machine=self.machine();
+                    let actual_exposed=match &value {
+                        TypeValue::Term(t)=>Some(machine.expose_for_conversion(
+                            t.clone(),Transparency::Full,(*remaining).min(2048),
+                        )),
+                        _=>None,
+                    };
+                    let expected_exposed=match expected {
+                        TypeValue::Term(t)=>Some(machine.expose_for_conversion(
+                            t.clone(),Transparency::Full,(*remaining).min(2048),
+                        )),
+                        _=>None,
+                    };
+                    let alternate=crate::convert::convert_with_policy_in_context(
+                        self,&value,expected,(*remaining).min(2048),
+                        crate::convert::DeltaPolicy::PreferredOnly,
+                        context.len(),context,
+                    );
+                    eprintln!(
+                        "NUCLEUS_FINAL_CODOMAIN:expression={expression:?}:scope={}:body={:?}:actual={value:?}:expected={expected:?}:guarded={conversion:?}:preferred={alternate:?}:actual_exposed={actual_exposed:?}:expected_exposed={expected_exposed:?}",
+                        context.len(),self.expressions.get(expression),
+                    );
+                }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_DEPENDENCY_GAP").is_some() {
                     if let Judgment::Unknown { residual } = &conversion {
