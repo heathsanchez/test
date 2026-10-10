@@ -75,10 +75,11 @@ jobs:
               -o ".lake/build/lib/lean/Collatz/$module.olean" \
               "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
           done
-          lake env lean -DautoImplicit=false formal/Collatz/SparseTwoGiantElimination.lean 2>&1 | tee evidence/v170-lean.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SparseTwoGiantElimination.olean formal/Collatz/SparseTwoGiantElimination.lean 2>&1 | tee evidence/v170-lean.log
+          lake env lean -DautoImplicit=false formal/Collatz/CanonicalClockGraph.lean 2>&1 | tee evidence/v171-lean.log
           python3 - <<'PY'
           import re,json,pathlib,hashlib,subprocess
-          log=pathlib.Path('evidence/v170-lean.log').read_text()
+          log=pathlib.Path('evidence/v170-lean.log').read_text()+'\n'+pathlib.Path('evidence/v171-lean.log').read_text()
           assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-23000:]
           ax={}
           for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
@@ -92,14 +93,23 @@ jobs:
                        'v170_collatz_of_ordinary_timed_density_and_sparse_unique_giant',
                        'v170_clocked_hits_are_component_members',
                        'v170_bad_target_not_connected_to_two',
-                       'v170_collatz_of_timed_density_and_sparse_unique_giant'):
+                       'v170_collatz_of_timed_density_and_sparse_unique_giant',
+                       'v171_step_edge_member',
+                       'v171_step_member_clock',
+                       'v171_clock_member_source',
+                       'v171_canonical_hit_path',
+                       'v171_canonical_ledger_complete',
+                       'v171_collatz_of_ordinary_timed_density_and_canonical_no_two_giants'):
             assert 'CollatzFinal.SourceProduct.'+name in ax,name
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           out={'schema':'COLLATZ_V170_FORMAL_CONDITIONAL_UNIQUE_GIANT',
                'source_commit':sha, 'axioms':ax,
                'source_sha256':hashlib.sha256(pathlib.Path(
                  'formal/Collatz/SparseTwoGiantElimination.lean').read_bytes()).hexdigest(),
-               'warrant':'CONDITIONAL_ONLY_TWO_GIANT_ELIMINATION',
+               'canonical_source_sha256':hashlib.sha256(pathlib.Path(
+                 'formal/Collatz/CanonicalClockGraph.lean').read_bytes()).hexdigest(),
+               'canonical_finite_clock_ledger_completeness_proved':True,
+               'warrant':'CONDITIONAL_ONLY_TWO_GIANT_ELIMINATION_WITH_CANONICAL_GRAPH',
                'external_density_locally_rebuilt':False,
                'sparse_uniqueness_estimate_proved':False,
                'global_collatz':'UNKNOWN','qed':False}
@@ -139,12 +149,14 @@ jobs:
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           assert e['source_commit']==f['source_commit']==sha
           assert e['no_all_scale_anti_two_giant_proof']
+          assert f['canonical_finite_clock_ledger_completeness_proved']
           assert not f['sparse_uniqueness_estimate_proved']
           assert not f['external_density_locally_rebuilt']
           assert d['global_collatz']==e['global_collatz']==f['global_collatz']=='UNKNOWN'
           assert d['qed'] is e['qed'] is f['qed'] is False
           out={'schema':'COLLATZ_V170_FINAL','source_commit':sha,
                'status':'WARRANTED_BOUNDED_SECOND_GIANT_TEST_AND_FORMAL_CONDITIONAL_BRIDGE',
+               'canonical_clocked_ledger_completeness_proved':True,
                'remaining_arithmetic':'sparse anti-two-macroscopic-component inequality',
                'external_density_locally_imported':False,
                'all_scale_sparse_uniqueness_proved':False,
