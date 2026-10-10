@@ -34,13 +34,15 @@ def main() -> None:
             xs = [T(z) for z in xs]
     A, B = states[40], states[60]
     a_count, b_count, new_count = 0, 0, 0
-    lowerA, newLower = 0, 0
+    lowerA, newLower, residue2Lower = 0, 0, 0
     Q2 = Q*Q
     for n in range(1, X):
         floor_weight = isqrt(Q2 // (n*n*n))
         if A[n]:
             a_count += 1
             lowerA += floor_weight
+            if n % 3 == 2:
+                residue2Lower += floor_weight
             if not B[n]:
                 new_count += 1
                 newLower += floor_weight
@@ -60,6 +62,10 @@ def main() -> None:
     D = finiteAUpper + Q // 250
     ratioNumer = D - newLower
     assert D == 129286556793
+    assert residue2Lower == 43282288053
+    # A pointwise finite-clock residue-2 anti-bias bound is FALSE:
+    # exact infinite weighted residue-2 share of the H40 timeout set > 1/3.
+    assert 3*residue2Lower > D
     assert ratioNumer == 102833662413
     assert 5*ratioNumer < 4*D
     out = {
@@ -75,6 +81,8 @@ def main() -> None:
         'new_terminal_weight_lower_units':newLower,
         'tail_upper_units':Q//250,
         'S40_infinite_upper_units':D,
+        'S40_residue2_lower_units':residue2Lower,
+        'finite_clock_R2_strictly_exceeds_one_third':3*residue2Lower>D,
         'S60_over_S40_upper_num':ratioNumer,
         'S60_over_S40_upper_den':D,
         'strictly_less_than_four_fifths':5*ratioNumer<4*D,
