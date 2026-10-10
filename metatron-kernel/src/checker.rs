@@ -368,7 +368,7 @@ fn check_export_with_policy(
             }
         };
 
-        let Ok(extended) = environment.extend(name, established) else {
+        let Ok(extended) = environment.extend_owned(name, established) else {
             return trace_direct_reject("environment-extend");
         };
         environment = extended;
