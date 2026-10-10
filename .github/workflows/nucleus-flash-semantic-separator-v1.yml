@@ -109,29 +109,31 @@ jobs:
           from pathlib import Path
           p=Path('/tmp/flash/src/eval.rs')
           src=p.read_text()
-          old="""        if let Some(v) = self.tc_cache.bvar_hc.get(&key) {
-            return v;
-                  }
-                  let empty = self.empty_spine();
-                  let v = value::mk_bvar_with_empty(self.arena, level, ty, empty);
-                  v.mark_canonical();
-                  self.tc_cache.bvar_hc.insert(key, v);
-                  v
-          """
-          new="""        let no_intern = std::env::var_os("FLASH_ABLATE_BVAR_HC").is_some();
-                  if !no_intern {
-            if let Some(v) = self.tc_cache.bvar_hc.get(&key) {
-                return v;
-            }
-                  }
-                  let empty = self.empty_spine();
-                  let v = value::mk_bvar_with_empty(self.arena, level, ty, empty);
-                  if !no_intern {
-            v.mark_canonical();
-            self.tc_cache.bvar_hc.insert(key, v);
-                  }
-                  v
-          """
+          old=(
+          "        if let Some(v) = self.tc_cache.bvar_hc.get(&key) {\n"
+          "            return v;\n"
+          "        }\n"
+          "        let empty = self.empty_spine();\n"
+          "        let v = value::mk_bvar_with_empty(self.arena, level, ty, empty);\n"
+          "        v.mark_canonical();\n"
+          "        self.tc_cache.bvar_hc.insert(key, v);\n"
+          "        v\n"
+          )
+          new=(
+          "        let no_intern = std::env::var_os(\"FLASH_ABLATE_BVAR_HC\").is_some();\n"
+          "        if !no_intern {\n"
+          "            if let Some(v) = self.tc_cache.bvar_hc.get(&key) {\n"
+          "                return v;\n"
+          "            }\n"
+          "        }\n"
+          "        let empty = self.empty_spine();\n"
+          "        let v = value::mk_bvar_with_empty(self.arena, level, ty, empty);\n"
+          "        if !no_intern {\n"
+          "            v.mark_canonical();\n"
+          "            self.tc_cache.bvar_hc.insert(key, v);\n"
+          "        }\n"
+          "        v\n"
+          )
           assert src.count(old)==1,src.count(old)
           p.write_text(src.replace(old,new))
           print('FLASH_BVAR_ABLATION_PATCH_SHA256='+__import__('hashlib').sha256(p.read_bytes()).hexdigest())
