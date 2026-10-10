@@ -312,22 +312,30 @@ impl<'a> TypeChecker<'a> {
             return None;
         }
         match self.expressions.get(term.expr)? {
-            Expr::BVar(index) => match term.env.lookup(*index)? {
-                EnvBinding::Free(free) => {
-                    context.get(usize::try_from(free.0).ok()?).cloned()
+            Expr::BVar(index) => {
+                // Only a source-checked binder or dependent elimination can
+                // supply this immutable binding-node typing witness. Reuse
+                // its type at the exact protected scope before recursively
+                // inferring a value in a possibly different context.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION").is_some()
+                    && let Some(checked) =
+                        self.checked_type_of_bound_source(&term.env, *index, context)
+                {
+                    return Some(checked);
                 }
-                EnvBinding::Neutral(Neutral {
-                    head: NeutralHead::Free(free),
-                    spine,
-                }) if spine.is_empty() => {
-                    context.get(usize::try_from(free.0).ok()?).cloned()
+                match term.env.lookup(*index)? {
+                    EnvBinding::Free(free) =>
+                        context.get(usize::try_from(free.0).ok()?).cloned(),
+                    EnvBinding::Neutral(Neutral {
+                        head: NeutralHead::Free(free), spine,
+                    }) if spine.is_empty() =>
+                        context.get(usize::try_from(free.0).ok()?).cloned(),
+                    EnvBinding::Closure(value) =>
+                        self.infer_exact_closure_in_context(
+                            &value, context, remaining, depth + 1,
+                        ),
+                    EnvBinding::Neutral(_) => None,
                 }
-                EnvBinding::Closure(value) => {
-                    self.infer_exact_closure_in_context(
-                        &value, context, remaining, depth + 1,
-                    )
-                }
-                EnvBinding::Neutral(_) => None,
             },
             Expr::Sort(level) => Some(TypeValue::Sort(succ(
                 instantiate_level(self.levels, *level, &term.levels, *remaining).ok()?,
@@ -3045,6 +3053,36 @@ mod checked_binding_lineage_tests {
         );
         assert!(invalid.is_none(),"an ill-typed source argument cannot acquire a new warrant");
     }
+    #[test]
+    #[ignore="explicit checked value substitution witness A/B only"]
+    fn captured_typed_substitution_uses_validated_source_domain_without_reinfer() {
+        let mut expressions=IdTable::default();
+        let mut levels=IdTable::default();
+        levels.insert(LevelId(0),Level::Zero).unwrap();
+        expressions.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();
+        expressions.insert(ExprId(1),Expr::BVar(0)).unwrap();
+        let environment=Environment::empty();
+        let checker=checker_fixture(&expressions,&levels,&environment);
+        let actual=Closure::new(ExprId(0),EnvFrame::empty());
+        let mut source_fuel=16;
+        let checked_domain=checker.infer_exact_closure_in_context(
+            &actual,&[],&mut source_fuel,0,
+        ).expect("the source argument was independently typed");
+        let frame=EnvFrame::empty().extend(actual.clone());
+        checker.retain_checked_elimination(&frame,checked_domain.clone(),&[]);
+        let mut single_step_fuel=1;
+        let recovered=checker.infer_exact_closure_in_context(
+            &Closure::new(ExprId(1),frame),&[],&mut single_step_fuel,0,
+        );
+        assert_eq!(recovered,Some(checked_domain),
+            "checked substitution should reuse its proven type without re-inference");
+        let unwarranted=EnvFrame::empty().extend(actual);
+        let mut missing_fuel=1;
+        assert!(checker.infer_exact_closure_in_context(
+            &Closure::new(ExprId(1),unwarranted),&[],&mut missing_fuel,0
+        ).is_none(),"a distinct uncertified frame cannot acquire typing authority");
+    }
+
     #[test]
     #[ignore="explicit source-scoped binding authority A/B only"]
     fn a_different_typing_prefix_is_a_protected_future_separator(){
