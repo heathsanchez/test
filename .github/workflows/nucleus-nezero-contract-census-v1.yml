@@ -1,0 +1,87 @@
+name: Nucleus exact NeZero inductive contract census
+
+on:
+  push:
+    branches: [nucleus-nezero-contract-census-v1]
+    paths:
+      - ".github/workflows/nucleus-nezero-contract-census-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      ARENA_ARTIFACT: "11272848230"
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire pinned immutable case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests research/nucleus-evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Enumerate NeZero source geometry and bounded constructor recursor expression DAG
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,os
+          root=pathlib.Path('/tmp/arena-tests/good')
+          reports=[]
+          for name in ['perf/magma-list-pair-n7','perf/magma-list-pair-n21']:
+              data=(root/(name+'.ndjson')).read_bytes()
+              names={0:''}; expressions={}; levels={0:{'zero':True}}; blocks=[]
+              for line in data.splitlines():
+                  o=json.loads(line)
+                  if 'in' in o:
+                      q=o.get('str',o.get('num'))
+                      pre=names.get(q['pre'],'')
+                      names[o['in']]=pre+('.' if pre else '')+str(q.get('str',q.get('i')))
+                  elif 'ie' in o: expressions[o['ie']]=o
+                  elif 'il' in o: levels[o['il']]=o
+                  elif 'inductive' in o: blocks.append(o['inductive'])
+              candidates=[b for b in blocks if any(names.get(x['name'])=='NeZero' for x in b.get('types',[]))]
+              assert len(candidates)==1,(name,len(candidates))
+              b=candidates[0]
+              roots=[*(t['type'] for t in b['types']),*(x['type'] for x in b['ctors']),*(r['type'] for r in b['recs']),*(q['rhs'] for r in b['recs'] for q in r['rules'])]
+              queue=[(i,0) for i in roots];visited=set(); nodes={}
+              while queue:
+                  i,depth=queue.pop()
+                  if i in visited or depth>8 or len(visited)>1800:continue
+                  visited.add(i)
+                  o=expressions.get(i)
+                  if o is None:continue
+                  nodes[str(i)]=o
+                  for tag in ('app','lam','forallE','letE','proj'):
+                      if tag in o:
+                          for k in ('fn','arg','body','type','value','struct'):
+                              sub=o[tag].get(k)
+                              if isinstance(sub,int) and sub in expressions:queue.append((sub,depth+1))
+              q={'case':name,'source_sha256':hashlib.sha256(data).hexdigest(),
+                 'type_blocks':b['types'],'constructors':b['ctors'],'recursors':b['recs'],
+                 'declared_names':{str(i):names.get(i) for i in (
+                     [t['name'] for t in b['types']]+[x['name'] for x in b['ctors']]+[r['name'] for r in b['recs']]
+                 )},
+                 'root_exprs':{str(i):expressions.get(i) for i in roots},
+                 'expression_dag':nodes,'visited_count':len(visited)}
+              print('NUCLEUS_NEZERO_CONTRACT='+json.dumps({k:v for k,v in q.items() if k!='expression_dag'},separators=(',',':')),flush=True)
+              print('NUCLEUS_NEZERO_SAMPLES='+json.dumps({k:v for k,v in list(nodes.items())[:50]},separators=(',',':'))[:9000],flush=True)
+              reports.append(q)
+          out=pathlib.Path('research/nucleus-evidence/nezero-exact-contract.json')
+          out.write_text(json.dumps({'commit':os.environ['GITHUB_SHA'],
+              'arena':os.environ['ARENA_SHA'],'artifact':os.environ['ARENA_ARTIFACT'],'cases':reports},indent=2))
+          print('NEZERO_SOURCE_CENSUS_OK__NO_ADMISSION_CLAIM')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-nezero-contract-${{ github.sha }}
+          path: research/nucleus-evidence/nezero-exact-contract.json
+          if-no-files-found: warn
