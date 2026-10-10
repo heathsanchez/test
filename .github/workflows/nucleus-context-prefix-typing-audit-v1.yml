@@ -44,22 +44,8 @@ jobs:
           new="if !context.starts_with(&w.protected_prefix) {"
           assert code.count(old)==1, ("prefix guard changed",code.count(old))
           code=code.replace(old,new)
-          old2='''        if source_length==original_length {
-            return format!("no-larger-source-origin:caller={original_length}:used_slots={used_slots:?}:source_nodes={source_nodes:?}");
-        }'''
-          new2='''        // Exact checked source prefix is sufficient for diagnostic weakening
-        // into the already checked caller context. No equality is inferred.
-        if source_nodes.is_empty() {
-            return format!("no-checked-source-nodes:caller={original_length}:used_slots={used_slots:?}");
-        }
-        #[cfg(feature="diagnostics")]
-        if std::env::var_os("NUCLEUS_TRACE_CONTEXT_WEAKENING").is_some() {
-            use std::sync::atomic::{AtomicUsize,Ordering};
-            static COUNT:AtomicUsize=AtomicUsize::new(0);
-            if COUNT.fetch_add(1,Ordering::Relaxed)<32 {
-                eprintln!("NUCLEUS_TYPED_WEAKENING:exact-source-prefix:caller={original_length}:origin={source_length}:source_nodes={source_nodes:?}");
-            }
-        }'''
+          old2="        if source_length==original_length {\n            return format!(\"no-larger-source-origin:caller={original_length}:used_slots={used_slots:?}:source_nodes={source_nodes:?}\");\n        }"
+          new2="        // Exact checked source prefix is sufficient for diagnostic weakening\n        // into the already checked caller context. No equality is inferred.\n        if source_nodes.is_empty() {\n            return format!(\"no-checked-source-nodes:caller={original_length}:used_slots={used_slots:?}\");\n        }\n        #[cfg(feature=\"diagnostics\")]\n        if std::env::var_os(\"NUCLEUS_TRACE_CONTEXT_WEAKENING\").is_some() {\n            use std::sync::atomic::{AtomicUsize,Ordering};\n            static COUNT:AtomicUsize=AtomicUsize::new(0);\n            if COUNT.fetch_add(1,Ordering::Relaxed)<32 {\n                eprintln!(\"NUCLEUS_TYPED_WEAKENING:exact-source-prefix:caller={original_length}:origin={source_length}:source_nodes={source_nodes:?}\");\n            }\n        }"
           assert code.count(old2)==1,("scope stop changed",code.count(old2))
           code=code.replace(old2,new2)
           p.write_text(code)
