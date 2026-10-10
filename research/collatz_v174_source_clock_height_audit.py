@@ -184,6 +184,20 @@ def main():
     clock_8_closed=sorted(m24_192 - m24_200)
     clock_40_closed=sorted(m25_200 - m25_240)
 
+    controls=[]
+    for system in ("G","S"):
+        d=run_graph(exe,12,96,system)
+        assert d["unseeded_components"]>0
+        assert d["largest_unseeded_component"]>0
+        assert d["unseeded_sources"]>0
+        controls.append({
+            "synthetic_system":system,
+            "unseeded_sources":d["unseeded_sources"],
+            "largest_unseeded_component":d["largest_unseeded_component"],
+            "unseeded_components":d["unseeded_components"],
+            "false_terminal_admission_prevented":True
+        })
+
     output={
       "schema":"COLLATZ_V174_ORIGINAL_SOURCE_HEIGHT_VS_CLOCK_ELIMINATION",
       "source_cpp_sha256":hashval,
@@ -203,6 +217,7 @@ def main():
       "independent_residual_component_replays":reconstructions,
       "number_of_finite_sources_tested_up_to":(1<<25)-1,
       "synthetic_g7_s5_countercontrols_inherited_from_v172":True,
+      "synthetic_g7_s5_new_96_clock_separate_basins":controls,
       "no_all_scale_mass_inequality_established":True,
       "global_collatz":"UNKNOWN",
       "qed":False
