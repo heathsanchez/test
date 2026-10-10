@@ -2360,16 +2360,53 @@ impl<'a> TypeChecker<'a> {
             let Some(actual_type) = probe.infer_exact_closure_in_context(
                 actual_arg, context, &mut remaining, 0,
             ) else {
-                let origin = match probe.expressions.get(actual_arg.expr) {
-                    Some(Expr::BVar(index)) => format!(
-                        "source_bound={index}:actual_binding={:?}:checked_binding={:?}",
-                        actual_arg.env.lookup_with_node_id(*index),
-                        probe.checked_type_of_bound_source(
-                            &actual_arg.env, *index, context,
-                        ),
-                    ),
-                    other => format!("source_shape={other:?}"),
-                };
+                // Chase only the *actual* captured BVar bindings, never
+                // equate de Bruijn indices across separately captured frames.
+                // A first incomplete typing judgment is not a refutation.
+                let mut cursor = actual_arg.clone();
+                let mut seen = std::collections::HashSet::new();
+                let mut stages = Vec::new();
+                for _ in 0..12 {
+                    if !seen.insert((cursor.expr, cursor.env.id())) {
+                        stages.push("binding-cycle".to_owned());
+                        break;
+                    }
+                    match probe.expressions.get(cursor.expr) {
+                        Some(Expr::BVar(index)) => {
+                            let known_type = probe.checked_type_of_bound_source(
+                                &cursor.env, *index, context,
+                            );
+                            match cursor.env.lookup_with_node_id(*index) {
+                                Some((node, EnvBinding::Closure(next))) => {
+                                    stages.push(format!(
+                                        "BVar({index}):node={node}:cert={}:next={:?}@{}",
+                                        known_type.is_some(), next.expr, next.env.id(),
+                                    ));
+                                    cursor = next;
+                                }
+                                Some((node, binding)) => {
+                                    stages.push(format!(
+                                        "BVar({index}):node={node}:cert={}:terminal={binding:?}",
+                                        known_type.is_some(),
+                                    ));
+                                    break;
+                                }
+                                None => {
+                                    stages.push(format!("BVar({index}):unbound"));
+                                    break;
+                                }
+                            }
+                        }
+                        other => {
+                            stages.push(format!(
+                                "source_leaf={:?}@{}:shape={other:?}",
+                                cursor.expr, cursor.env.id(),
+                            ));
+                            break;
+                        }
+                    }
+                }
+                let origin = stages.join(" -> ");
                 return format!(
                     "first-untyped-argument:argument={position}:closure={actual_arg:?}:expected_domain={domain:?}:context_depth={}:origin={origin}",
                     context.len(),
