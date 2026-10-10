@@ -1,0 +1,97 @@
+name: Nucleus countermodel actual application spine source audit
+
+on:
+  push:
+    branches: [nucleus-countermodel-source-spine-v1]
+    paths:
+      - ".github/workflows/nucleus-countermodel-source-spine-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      ARENA_ARTIFACT: "11272848230"
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve exact source corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests research/nucleus-evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Reconstruct exact failing applications and bounded source support
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,hashlib,pathlib
+          root=pathlib.Path('/tmp/arena-tests/good')
+          rows=[]
+          for name,id in [('perf/magma-list-pair-n7',8835),('perf/magma-list-pair-n21',8825)]:
+              data=(root/(name+'.ndjson')).read_bytes()
+              names={0:''};expr={};decls={}
+              for l in data.splitlines():
+                  j=json.loads(l)
+                  if 'in' in j:
+                      z=j.get('str',j.get('num'));pre=names.get(z['pre'],'')
+                      names[j['in']]=pre+('.' if pre else '')+str(z.get('str',z.get('i')))
+                  elif 'ie' in j:expr[j['ie']]=j
+                  elif 'def' in j or 'thm' in j or 'axiom' in j:
+                      v=j.get('def',j.get('thm',j.get('axiom')))
+                      decls[v['name']]=v
+              def spine(i):
+                  args=[]
+                  for _ in range(50):
+                      j=expr.get(i,{})
+                      if 'app' not in j:break
+                      args.append(j['app']['arg']);i=j['app']['fn']
+                  args.reverse()
+                  return {'head':i,'head_expr':expr.get(i),'head_name':names.get(expr.get(i,{}).get('const',{}).get('name')),'args':args}
+              seen=set()
+              def expand(i,d,tree):
+                  if d>10 or i in seen or len(seen)>500:return
+                  seen.add(i)
+                  j=expr.get(i)
+                  if not j:return
+                  tree[str(i)]={'expr':j}
+                  if 'const' in j:
+                      n=j['const']['name']
+                      tree[str(i)]['resolved_name']=names.get(n)
+                      v=decls.get(n)
+                      if v: tree[str(i)]['source_declaration_type']=v.get('type')
+                  for t in ('app','lam','forallE','letE','proj'):
+                      if t not in j:continue
+                      for k in ('arg','fn','type','body','value','struct'):
+                          sub=j[t].get(k)
+                          if isinstance(sub,int) and sub in expr:expand(sub,d+1,tree)
+              fulltree={};expand(id,0,fulltree)
+              outer=spine(id);inner=spine(outer['head'])
+              relevant={k:dict(v,source_head=spine(int(k))) if 'app' in v.get('expr',{}) else v for k,v in fulltree.items()}
+              row={'case':name,'sha256':hashlib.sha256(data).hexdigest(),'root':id,
+                   'outer_spine':outer,'inner_spine':inner,'expanded':relevant,
+                   'resolved_declaration_names':{str(k):names.get(k) for k in list(decls.keys())[-20:]}}
+              print('NUCLEUS_COUNTERMODEL_SOURCE_HEAD='+json.dumps({
+                  'case':name,'sha':row['sha256'],'root':id,
+                  'outer_spine':outer,'inner_spine':inner,'first_nodes':list(relevant.items())[:50]
+              },separators=(',',':'))[:27000],flush=True)
+              rows.append(row)
+              assert 'app' in expr[id]
+          pathlib.Path('research/nucleus-evidence/countermodel-source-spines.json').write_text(
+              json.dumps({'audit_commit':os.environ['GITHUB_SHA'],'pinned_arena':os.environ['ARENA_SHA'],
+              'rows':rows},indent=2))
+          print('COUNTERMODEL_SOURCE_SPINE_RECONSTRUCTION_COMPLETE__READ_ONLY')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-countermodel-source-spines-${{ github.sha }}
+          path: research/nucleus-evidence/countermodel-source-spines.json
+          if-no-files-found: warn
