@@ -2314,6 +2314,78 @@ impl<'a> TypeChecker<'a> {
     ///
     /// This emits evidence only. No caller may use the resulting string to
     /// authorize ACCEPT/REJECT.
+    /// An exact source-origin replay of a neutral's dependent telescope.
+    /// A preserved binder witness carries its original checked context.
+    /// Replay occurs under THAT context, not a synthetic empty caller scope.
+    /// No derived result is installed in the production checker.
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_neutral_origin_replay(
+        &self,
+        neutral: &Neutral,
+        caller_context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let mut candidate: Option<Vec<TypeValue>> = None;
+        for arg in &neutral.spine {
+            let Some(Expr::BVar(index)) = self.expressions.get(arg.expr) else {
+                continue;
+            };
+            let Some((node_id, EnvBinding::Free(_))) =
+                arg.env.lookup_with_node_id(*index)
+            else {
+                continue;
+            };
+            let record = self.checked_binding_lineage.borrow()
+                .get(&node_id).cloned().flatten();
+            let Some(record) = record else { continue };
+            // The candidate is from the exact immutable binder node.
+            // It must extend (not replace) the caller's already checked
+            // prefix. Conflicting origin contexts cannot be spliced.
+            if !record.protected_prefix.starts_with(caller_context) {
+                return format!("origin-prefix-conflict:node={node_id}");
+            }
+            if let Some(prior) = &candidate {
+                if prior.len() > record.protected_prefix.len()
+                    && !prior.starts_with(&record.protected_prefix)
+                {
+                    return format!("incompatible-origin-scopes:node={node_id}");
+                }
+                if record.protected_prefix.len() > prior.len()
+                    && !record.protected_prefix.starts_with(prior)
+                {
+                    return format!("incompatible-origin-scopes:node={node_id}");
+                }
+            }
+            if candidate.as_ref()
+                .is_none_or(|p| record.protected_prefix.len() > p.len())
+            {
+                candidate = Some(record.protected_prefix);
+            }
+        }
+        let Some(origin) = candidate else {
+            return "no-source-checked-origin-prefix".into();
+        };
+        if origin.len() <= caller_context.len() {
+            return "source-origin-does-not-extend-caller".into();
+        }
+        let isolated = Self {
+            expressions: self.expressions,
+            levels: self.levels,
+            environment: self.environment,
+            level_substitution: self.level_substitution.clone(),
+            delta_policy: self.delta_policy,
+            exposure_cache: new_exposure_cache(),
+            checked_binding_lineage: Rc::new(RefCell::new(
+                self.checked_binding_lineage.borrow().clone(),
+            )),
+            strict_origin_probe: true,
+        };
+        let replay = isolated.diagnostic_neutral_source_telescope_inner(
+            neutral, &origin, budget.min(1024), false,
+        );
+        format!("source_origin_depth={}:typed_replay={}", origin.len(), replay)
+    }
+
     #[cfg(feature = "diagnostics")]
     pub(crate) fn diagnostic_neutral_source_telescope(
         &self,
@@ -2497,9 +2569,27 @@ impl<'a> TypeChecker<'a> {
                                         // One additional source telescope is
                                         // allowed, but cannot recursively call
                                         // itself on another untyped leaf.
-                                        probe.diagnostic_neutral_source_telescope_inner(
-                                            value, context, 512, false,
-                                        )
+                                        let ordinary =
+                                            probe.diagnostic_neutral_source_telescope_inner(
+                                                value, context, 512, false,
+                                            );
+                                        let original =
+                                            probe.diagnostic_neutral_origin_replay(
+                                                value, context, 512,
+                                            );
+                                        #[cfg(feature = "diagnostics")]
+                                        if std::env::var_os("NUCLEUS_TRACE_ORIGIN_REPLAY").is_some()
+                                        {
+                                            use std::sync::atomic::{AtomicUsize, Ordering};
+                                            static ORIGIN_COUNT: AtomicUsize = AtomicUsize::new(0);
+                                            if ORIGIN_COUNT.fetch_add(1, Ordering::Relaxed) < 48 {
+                                                eprintln!(
+                                                    "NUCLEUS_ORIGIN_REPLAY:head={:?}:arity={}:caller_depth={}:result={}",
+                                                    value.head, value.spine.len(), context.len(), original
+                                                );
+                                            }
+                                        }
+                                        format!("caller={ordinary}:origin={original}")
                                     }
                                     other => format!("no-opaque-neutral={other:?}"),
                                 }
