@@ -105,7 +105,9 @@ impl<'a> TypeChecker<'a> {
         domain: TypeValue,
         protected_context: &[TypeValue],
     ) {
-        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE").is_none() {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE").is_none()
+            && !self.strict_origin_probe
+        {
             return;
         }
         let node=frame.id();
