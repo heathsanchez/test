@@ -20,6 +20,7 @@ jobs:
       - name: Fail-closed local harness selftest
         run: |
           set -euo pipefail
+          python -m pip install --quiet playwright
           python -m py_compile scripts/webarena_compound_g_economics.py
           python -m py_compile scripts/webarena_compounding_economics_v1.py
           python scripts/webarena_compound_g_economics.py --self-test
