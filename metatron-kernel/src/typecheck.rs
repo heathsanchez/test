@@ -1376,8 +1376,12 @@ impl<'a> TypeChecker<'a> {
         // equality, or verdict is inferred from the ID; every positive here
         // is derived by the ordinary checked bidirectional premises above.
         if std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_some()
-            && context.len()==4
-            && matches!(expression.0,11148|11147|7585|7251|5307)
+            && (4..=7).contains(&context.len())
+            && matches!(expression.0,
+                11148|11147|11146|11145|
+                7585|7584|7583|7582|
+                7251|7250|7249|7248|
+                5307)
             && matches!(self.expressions.get(expression),Some(Expr::Lam {..}))
         {
             let mut local_budget=(*remaining).min(4096);
