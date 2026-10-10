@@ -2525,24 +2525,66 @@ impl<'a> TypeChecker<'a> {
                         }
                     }
                     if valid {
+                        // The captured function retains a distinct, source-checked
+                        // local after the six-binder caller prefix. Reconstruct
+                        // the original context for typing; never compare terms
+                        // under a guessed FreeId-equivalent scope.
+                        let mut source_context=context.to_vec();
+                        let mut origin_nodes=Vec::new();
+                        let mut compatible=true;
+                        for index in 0..64u64 {
+                            let Some((node,binding))=captured.env.lookup_with_node_id(index)
+                                else {break};
+                            if !matches!(binding,EnvBinding::Free(_)) {continue}
+                            let record=self.checked_binding_lineage.borrow()
+                                .get(&node).cloned().flatten();
+                            let Some(record)=record else {continue};
+                            if record.protected_prefix.len()<=context.len() {continue}
+                            if !record.protected_prefix.starts_with(context) {
+                                compatible=false;break
+                            }
+                            if record.protected_prefix.len()>source_context.len() {
+                                if !record.protected_prefix.starts_with(&source_context) {
+                                    compatible=false;break
+                                }
+                                source_context=record.protected_prefix;
+                            } else if !source_context.starts_with(&record.protected_prefix) {
+                                compatible=false;break
+                            }
+                            origin_nodes.push(node);
+                        }
                         let mut budget=2048;
-                        let source_ty=self.infer_exact_closure_in_context(
-                            &captured,context,&mut budget,0,
-                        );
+                        let source_ty=if compatible {
+                            self.infer_exact_closure_in_context(
+                                &captured,&source_context,&mut budget,0,
+                            )
+                        } else { None };
+                        // Comparison in the extended source scope is only a
+                        // DIAGNOSTIC. Even if proven, shrinking back to the
+                        // six-binder caller requires source-term strengthening
+                        // or an independently checked substitution witness.
                         let relation=source_ty.as_ref().map(|ty|
                             crate::convert::convert_with_policy_in_context(
                                 self,ty,expected_type,budget.min(512),
                                 crate::convert::DeltaPolicy::PreferredOnly,
-                                context.len(),context,
+                                source_context.len(),&source_context,
                             )
                         );
-                        let first_source_body = if source_ty.is_none() {
-                            self.diagnostic_one_source_lambda_body(
-                                &captured,context,remaining.min(512),
-                            )
-                        } else { "source-lambda-type-certified".into() };
-                        format!("eta-source={:?}:source-type={source_ty:?}:source-vs-expected={relation:?}:remaining={budget}:next={first_source_body}",
-                            captured.expr)
+                        let extra=FreeId(u64::try_from(context.len()).unwrap_or(u64::MAX));
+                        let source_uses_extra=self.type_depends_on_free(
+                            &TypeValue::Term(captured.clone()),extra,2048,
+                        );
+                        let source_type_uses_extra=source_ty.as_ref().and_then(|ty|
+                            self.type_depends_on_free(ty,extra,2048)
+                        );
+                        let expected_uses_extra=self.type_depends_on_free(
+                            expected_type,extra,2048,
+                        );
+                        let first_source_body=self.diagnostic_one_source_lambda_body(
+                            &captured,context,remaining.min(512),
+                        );
+                        format!("eta-source={:?}:source-scope={}:origin-nodes={origin_nodes:?}:compatible={compatible}:source-type={source_ty:?}:source-vs-expected-in-source={relation:?}:extra-free={extra:?}:source-term-dep={source_uses_extra:?}:source-type-dep={source_type_uses_extra:?}:expected-type-dep={expected_uses_extra:?}:remaining={budget}:next={first_source_body}",
+                            captured.expr,source_context.len())
                     } else {"eta-source-binding-unavailable".into()}
                 } else {"not-eta-source-shape".into()};
                 format!("lambda-body-app:fun={:?}:fun_type={fty:?}:arg={:?}:arg_type={aty:?}:pi_view_present={}:{}:source_chain={source_chain}:eta_obligation={eta_type_probe}",
