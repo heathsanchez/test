@@ -61,6 +61,7 @@ jobs:
                        'NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F',
                        'NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA',
                        'NUCLEUS_TRACE_MUL_SOURCE',
+                       'NUCLEUS_EXPERIMENTAL_MUL_DEFEQ_PROBE',
                        'NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE',
                        'NUCLEUS_TRACE_PROJECTION_LAST_FAILURE',
                        'NUCLEUS_TRACE_ARITHMETIC_INSTANCE',
@@ -111,6 +112,7 @@ jobs:
                   'mul_constant_names':named,
                   'verdict':p.returncode,
                   'mul_source':grab('NUCLEUS_MUL_SOURCE:',5),
+                  'mul_defeq':grab('NUCLEUS_MUL_DEFEQ_PROBE:',10),
                   'mul_nodes':grab('NUCLEUS_MUL_NODE:',72),
                   'instance_leaf':grab('NUCLEUS_ARITHMETIC_INSTANCE:',8),
                   'projection_field':grab('NUCLEUS_PROJECTION_FIELD_PROBE:',40),
@@ -118,11 +120,13 @@ jobs:
                   'first_unknown':grab('NUCLEUS_DOWNSTREAM:',4),
               }
               items.append(row)
+              assert not any('NEGATIVE_VIOLATION' in x for x in lines), (case,'false symbolic equation proved')
               print('NUCLEUS_MUL_SEPARATOR='+json.dumps({
                   'case':case,'rc':p.returncode,'mul_source':row['mul_source'],
                   'tree_nodes':len(row['mul_nodes']),
                   'mul_nodes':row['mul_nodes'][:24],
                   'mul_constant_names':row['mul_constant_names'],
+                  'mul_defeq':row['mul_defeq'],
                   'instance_leaf':row['instance_leaf'][:2],
                   'post_projection':row['post_projection'][-2:],
                   'projection_field_count':len(row['projection_field']),
