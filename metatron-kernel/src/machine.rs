@@ -1403,6 +1403,7 @@ impl<'a> Machine<'a> {
         pending.clear();
         Some(match operation {
             Operation::Pred => unreachable!("unary Nat.pred handled above"),
+            Operation::MulZero => unreachable!("verified Mul-zero handled before literal operations"),
             Operation::Add => Value::NatLit(first.add(&second)),
             Operation::Sub => Value::NatLit(first.sub_trunc(&second)),
             Operation::Ble => {
