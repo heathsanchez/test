@@ -140,30 +140,60 @@ theorem v150_minimal_bad_has_nonthree_bad_successor
     exact hmin.1.2 (v150_good_before_shortcut n hg)
   exact ⟨⟨hp,hbad⟩,by omega⟩
 
-/-- Count DISTINCT positive starting integers below X; the
-    noncomputable decision procedure is used only to state exact
-    finite cardinality bounds, not to decide Collatz. -/
+/-- Exact finite predicate count, implemented recursively in
+    minimal Lean/Std rather than Mathlib Finset. The decider appears
+    only in finite counting, not in any claim to decide Collatz. -/
+def v150Count (P : Nat → Prop) [DecidablePred P] : Nat → Nat
+  | 0 => 0
+  | X+1 => v150Count P X + (if P X then 1 else 0)
+
+/-- A pointwise implication restricted to numbers below X gives a
+    cardinality inequality for the exact finite counting function. -/
+theorem v150_count_monotone_below
+    (P Q : Nat → Prop) [DecidablePred P] [DecidablePred Q] :
+    ∀ X : Nat,
+      (∀ n : Nat, n<X → P n → Q n) →
+      v150Count P X ≤ v150Count Q X := by
+  intro X
+  induction X with
+  | zero =>
+      intro _
+      simp [v150Count]
+  | succ X ih =>
+      intro hImp
+      have hprior : ∀ n : Nat, n<X → P n → Q n := by
+        intro n hn hp
+        exact hImp n (by omega) hp
+      have hx : P X → Q X := hImp X (by omega)
+      by_cases hp : P X
+      · have hq : Q X := hx hp
+        simpa [v150Count,hp,hq] using ih hprior
+      · by_cases hq : Q X
+        · have hl : v150Count P X ≤ v150Count Q X+1 := by
+            have hh := ih hprior
+            omega
+          simpa [v150Count,hp,hq] using hl
+        · simpa [v150Count,hp,hq] using ih hprior
+
 noncomputable def v150BadCount (X : Nat) : Nat := by
   classical
-  exact ((Finset.range X).filter (fun n => PositiveBad n)).card
+  exact v150Count PositiveBad X
 
 noncomputable def v150OrdPredecessorCount (a X : Nat) : Nat := by
   classical
-  exact ((Finset.range X).filter
-    (fun n => 0<n ∧ v150OrdReaches n a)).card
+  exact v150Count (fun n => 0<n ∧ v150OrdReaches n a) X
 
 theorem v150_bad_target_predecessors_counted_as_bad
     (a X : Nat) (hbad : PositiveBad a) :
     v150OrdPredecessorCount a X ≤ v150BadCount X := by
   classical
-  unfold v150OrdPredecessorCount v150BadCount
-  apply Finset.card_le_card
-  intro n hn
-  have hmem := Finset.mem_filter.mp hn
-  apply Finset.mem_filter.mpr
-  exact ⟨hmem.1,
-    v150_ordinary_predecessor_of_bad_is_bad
-      a n hbad hmem.2.1 hmem.2.2⟩
+  change
+    v150Count (fun n => 0<n ∧ v150OrdReaches n a) X ≤
+    v150Count PositiveBad X
+  apply v150_count_monotone_below
+  intro n _ hpred
+  exact v150_ordinary_predecessor_of_bad_is_bad
+    a n hbad hpred.1 hpred.2
 
 /-- Explicit, *external* predecessor-amplification contract. This is
     a quantified premise, NOT an imported axiom or theorem proved
