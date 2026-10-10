@@ -61,7 +61,8 @@ theorem v176_preimage_div_three_even
     have hval : v176Adversary X H n=n/2 := by
       calc
         v176Adversary X H n =
-            v176Adversary X H (2*(n/2)) := by rw [hn]
+            v176Adversary X H (2*(n/2)) := by
+              exact congrArg (v176Adversary X H) hn
         _=n/2 := v176_even_halving X H (n/2)
     rw [hval]
     omega
@@ -140,7 +141,7 @@ source-zero assumption. -/
 theorem v176_positive_period_multiples
     {α : Type} (f : Nat → α) (M : Nat)
     (hPeriod : ∀ n, 0<n → f (n+M)=f n) :
-    ∀ t n : Nat, 0<n → f(n+t*M)=f n := by
+    ∀ t n : Nat, 0<n → f (n+t*M)=f n := by
   intro t
   induction t with
   | zero =>
@@ -150,10 +151,10 @@ theorem v176_positive_period_multiples
       intro n hn
       have hp : 0<n+t*M := by omega
       calc
-        f(n+(t+1)*M)=f((n+t*M)+M) := by
+        f (n+(t+1)*M)=f ((n+t*M)+M) := by
           congr 1
           simp [Nat.succ_mul,Nat.add_assoc]
-        _=f(n+t*M) := hPeriod _ hp
+        _=f (n+t*M) := hPeriod _ hp
         _=f n := ih n hn
 
 /-- Any mod-M periodic invariant label under the false map is also
@@ -164,8 +165,8 @@ theorem v176_hidden_periodic_label_reconstructs_true
     {α : Type} (f : Nat → α)
     (X H M : Nat) (hM : 0<M)
     (hStep : ∀ n, 0<n → f (v176Adversary X H n)=f n)
-    (hPeriod : ∀ n, 0<n → f(n+M)=f n) :
-    ∀ n, 0<n → f(shortcut n)=f n := by
+    (hPeriod : ∀ n, 0<n → f (n+M)=f n) :
+    ∀ n, 0<n → f (shortcut n)=f n := by
   intro n hn
   let a := v174HiddenDefect X H
   by_cases heq : n=a
@@ -187,16 +188,16 @@ theorem v176_hidden_periodic_label_reconstructs_true
     have hShortcutPos : 0<shortcut a := by
       simp only [shortcut,hOdd,ite_false]
       omega
-    have hP3 : f(shortcut a+3*M)=f(shortcut a) :=
+    have hP3 : f (shortcut a+3*M)=f (shortcut a) :=
       v176_positive_period_multiples f M hPeriod
         3 (shortcut a) hShortcutPos
-    have hP2 : f(a+2*M)=f a :=
+    have hP2 : f (a+2*M)=f a :=
       v176_positive_period_multiples f M hPeriod 2 a haPos
     calc
-      f(shortcut a)=f(shortcut a+3*M) := hP3.symm
-      _=f(shortcut (a+2*M)) := by rw [hShift]
-      _=f(v176Adversary X H (a+2*M)) := by rw [hTrue]
-      _=f(a+2*M) := hStep _ hLiftPos
+      f (shortcut a)=f (shortcut a+3*M) := hP3.symm
+      _=f (shortcut (a+2*M)) := by rw [hShift]
+      _=f (v176Adversary X H (a+2*M)) := by rw [hTrue]
+      _=f (a+2*M) := hStep _ hLiftPos
       _=f a := hP2
   · have hs := hStep n hn
     have hEq : v176Adversary X H n=shortcut n :=
@@ -210,8 +211,8 @@ positive future class. -/
 theorem v176_all_positive_periodic_future_labels_constant
     {α : Type} (f : Nat → α)
     (X H M : Nat) (hM : 0<M)
-    (hStep : ∀ n, 0<n → f(v176Adversary X H n)=f n)
-    (hPeriod : ∀ n, 0<n → f(n+M)=f n) :
+    (hStep : ∀ n, 0<n → f (v176Adversary X H n)=f n)
+    (hPeriod : ∀ n, 0<n → f (n+M)=f n) :
     ∀ n m, 0<n → 0<m → f n=f m := by
   exact v159_positive_future_label_cannot_be_periodic f M hM
     (v176_hidden_periodic_label_reconstructs_true
