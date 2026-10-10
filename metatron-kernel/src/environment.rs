@@ -75,6 +75,7 @@ pub struct NatPrimitives {
     pub succ: NameId,
     pub recursor: NameId,
     pub add: Option<NameId>,
+    pub mul: Option<NameId>,
     pub sub: Option<NameId>,
     pub pred: Option<NameId>,
     /// A checked export binder variable used solely to represent a
@@ -383,6 +384,7 @@ impl Environment {
         };
         let slot = match operation {
             NatOperation::Add => &mut primitives.add,
+            NatOperation::Mul => &mut primitives.mul,
             NatOperation::Sub => &mut primitives.sub,
             NatOperation::Pred => &mut primitives.pred,
             NatOperation::Ble => &mut primitives.ble,
@@ -532,6 +534,7 @@ impl Default for Environment {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum NatOperation {
     Add,
+    Mul,
     Sub,
     Pred,
     Ble,
