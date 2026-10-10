@@ -104,8 +104,9 @@ theorem v152_reverse_sources_sound (t : Nat) :
                 rfl
           _ = y := by rw [hh,v149_even_inverse_shortcut]
       · have htwo : y%3=2 := by
-          by_contra hn
-          simp [hn] at ho
+          by_cases hy : y%3=2
+          · exact hy
+          · simp [hy] at ho
         have hhh : n ∈ v152InverseSources t ((2*y-1)/3) := by
           simpa [htwo] using ho
         have hh := ih ((2*y-1)/3) n hhh
