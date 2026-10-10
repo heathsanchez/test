@@ -547,7 +547,8 @@ impl<'a> Machine<'a> {
         // Quotient captured state ONLY by exact source-observable bindings.
         // This is a positive-result cache: a candidate key alone proves
         // nothing. Every stored value was established by this evaluator.
-        let minimal_key=if std::env::var_os("NUCLEUS_EXPERIMENTAL_MINIMAL_EXPOSURE").is_some() {
+        let minimal_key=if cfg!(test)
+            || std::env::var_os("NUCLEUS_EXPERIMENTAL_MINIMAL_EXPOSURE").is_some() {
             self.minimal_exposure_key(
                 &closure,transparency,preserve_stuck_projection,&pending,
             )
@@ -1876,4 +1877,113 @@ fn record_transition(
 
 fn exposed(value: Value, transitions: Vec<TransitionWitness>) -> Judgment<Exposure> {
     Judgment::proven(Exposure { value, transitions }, "explicit-closure-machine")
+}
+
+#[cfg(test)]
+mod minimal_observable_frame_tests {
+    use super::*;
+
+    fn fixture() -> (
+        IdTable<ExprId,Expr>, IdTable<LevelId,Level>,
+    ) {
+        let mut expressions=IdTable::default();
+        let mut levels=IdTable::default();
+        levels.insert(LevelId(0),Level::Zero).unwrap();
+        let all=[
+            (0,Expr::BVar(1)),
+            (1,Expr::BVar(0)),
+            (2,Expr::Sort(LevelId(0))),
+            (3,Expr::Lam{domain:ExprId(2),body:ExprId(1)}),
+            (4,Expr::Lam{domain:ExprId(2),body:ExprId(0)}),
+            (5,Expr::Proj{type_name:NameId(3),index:0,structure:ExprId(0)}),
+            (6,Expr::Let{ty:ExprId(2),value:ExprId(1),body:ExprId(1)}),
+            (7,Expr::Let{ty:ExprId(2),value:ExprId(2),body:ExprId(1)}),
+            (8,Expr::App{fun:ExprId(0),arg:ExprId(1)}),
+        ];
+        for (id,expr) in all {expressions.insert(ExprId(id),expr).unwrap();}
+        (expressions,levels)
+    }
+
+    #[test]
+    fn source_support_preserves_only_used_captured_binders_including_shadowing() {
+        let (expressions,_)=fixture();
+        for (expr,expected) in [
+            (0,vec![1]), (1,vec![0]), (2,vec![]),
+            (3,vec![]), (4,vec![0]), (5,vec![1]),
+            (6,vec![0]), (7,vec![]), (8,vec![0,1]),
+        ] {
+            assert_eq!(exact_captured_support(&expressions,ExprId(expr)),Some(expected),
+                "wrong support at expression {expr}");
+        }
+    }
+
+    #[test]
+    fn identical_observed_bindings_reuse_proven_value_across_different_frames() {
+        let (expr,levels)=fixture();
+        let minimal=new_minimal_exposure_cache();
+        let machine=Machine::new(AuthorityId(9),&expr,&levels,HashMap::new())
+            .with_exposure_cache(new_exposure_cache())
+            .with_minimal_exposure_cache(minimal.clone());
+
+        let first=EnvFrame::empty().extend_free(FreeId(7)).extend_free(FreeId(31));
+        let second=EnvFrame::empty().extend_free(FreeId(7)).extend_free(FreeId(42));
+        assert_ne!(first.id(),second.id());
+        let x=machine.expose(Closure::new(ExprId(0),first),Transparency::Opaque,128);
+        let y=machine.expose(Closure::new(ExprId(0),second),Transparency::Opaque,128);
+        assert_eq!(x.proven_value().map(|x|&x.value),y.proven_value().map(|x|&x.value));
+        assert_eq!(minimal.borrow().hits,1,
+            "same expr, same actual BVar1, irrelevant BVar0 changed: quotient should reuse");
+
+        let different=EnvFrame::empty().extend_free(FreeId(8)).extend_free(FreeId(42));
+        let z=machine.expose(Closure::new(ExprId(0),different),Transparency::Opaque,128);
+        assert_ne!(x.proven_value().map(|x|&x.value),z.proven_value().map(|x|&x.value),
+            "different actually used FreeIds cannot be merged");
+        assert_eq!(minimal.borrow().hits,1,
+            "a change in the observed binding must be an exact separator");
+    }
+
+    #[test]
+    fn unused_captured_environment_is_ignored_under_bound_lambda_only() {
+        let (expr,levels)=fixture();
+        let minimal=new_minimal_exposure_cache();
+        let machine=Machine::new(AuthorityId(9),&expr,&levels,HashMap::new())
+            .with_exposure_cache(new_exposure_cache())
+            .with_minimal_exposure_cache(minimal.clone());
+        let first=EnvFrame::empty().extend_free(FreeId(7));
+        let second=EnvFrame::empty().extend_free(FreeId(8));
+        let x=machine.expose(Closure::new(ExprId(3),first),Transparency::Opaque,128);
+        let y=machine.expose(Closure::new(ExprId(3),second),Transparency::Opaque,128);
+        assert!(x.is_proven()&&y.is_proven());
+        assert_eq!(minimal.borrow().hits,1,
+            "lambda body BVar0 refers to its OWN binder, not the captured frame");
+        for output in [x,y] {
+            let Some(Value::Lam{body,..})=output.proven_value().map(|w|&w.value) else {
+                panic!("expected checked lambda");
+            };
+            let opened=machine.expose(body.under_free(FreeId(99)),Transparency::Opaque,128);
+            assert_eq!(
+                opened.proven_value().map(|v|&v.value),
+                Some(&Value::Neutral(Neutral{
+                    head:NeutralHead::Free(FreeId(99)),spine:vec![]
+                })),
+                "changing irrelevant frame must not change a lambda's future application"
+            );
+        }
+    }
+
+    #[test]
+    fn lambda_that_uses_its_outer_frame_has_distinct_minimal_keys() {
+        let (expr,levels)=fixture();
+        let minimal=new_minimal_exposure_cache();
+        let machine=Machine::new(AuthorityId(9),&expr,&levels,HashMap::new())
+            .with_exposure_cache(new_exposure_cache())
+            .with_minimal_exposure_cache(minimal.clone());
+        let first=EnvFrame::empty().extend_free(FreeId(3));
+        let second=EnvFrame::empty().extend_free(FreeId(4));
+        let x=machine.expose(Closure::new(ExprId(4),first),Transparency::Opaque,128);
+        let y=machine.expose(Closure::new(ExprId(4),second),Transparency::Opaque,128);
+        assert!(x.is_proven() && y.is_proven());
+        assert_eq!(minimal.borrow().hits,0,
+            "lambda body BVar1 reads the captured slot: merging would be unsound");
+    }
 }
