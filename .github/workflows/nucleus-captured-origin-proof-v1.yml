@@ -1,0 +1,161 @@
+name: Nucleus checked source-origin typed telescope A/B
+
+on:
+  push:
+    branches: [nucleus-captured-origin-proof-v1]
+    paths:
+      - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: "1"
+      NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER: "1"
+      NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE: "1"
+      NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pinned tree and use available Rust toolchain
+        run: |
+          set -euo pipefail
+          echo "NUCLEUS_CANDIDATE_SOURCE=$GITHUB_SHA"
+          git rev-parse HEAD:metatron-kernel
+          command -v cargo
+          rustc --version
+          cargo --version
+      - name: Fetch locked dependencies
+        env:
+          CARGO_HTTP_TIMEOUT: "120"
+          CARGO_NET_RETRY: "8"
+          CARGO_HTTP_LOW_SPEED_LIMIT: "0"
+          CARGO_HTTP_MULTIPLEXING: "false"
+        run: |
+          set -euo pipefail
+          ok=0
+          for i in 1 2 3 4 5; do
+            if cargo fetch --locked --manifest-path metatron-kernel/Cargo.toml; then ok=1; break; fi
+            sleep 5
+          done
+          test "$ok" -eq 1
+      - name: Test entire Rust source and build diagnostics binary
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus
+          sha256sum /tmp/nucleus
+      - name: Get fixed Arena authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests metatron-kernel/evidence-out/origin-replay
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Compare seven, protected controls and full immutable 196
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import concurrent.futures,hashlib,json,os,pathlib,subprocess,sys,time
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/arena-tests')
+          out=pathlib.Path('metatron-kernel/evidence-out/origin-replay')
+          seven=['init-prelude','perf/grind-ring-5','perf/magma-list-pair-n7',
+                 'perf/magma-list-pair-n21','perf/magma-list-deep-n21',
+                 'perf/magma-list-deep-n36','perf/fueled-chain']
+          def env_for(mode,trace=False):
+              env=os.environ.copy()
+              env['NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION']='1'
+              if mode=='origin_replay' and trace:
+                  env['NUCLEUS_TRACE_FIRST_TYPED_CONTINUATION']='1'
+                  env['NUCLEUS_TRACE_ORIGIN_REPLAY']='1'
+              if trace: env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+              return env
+          rows=[]
+          for name in seven:
+              data=(root/'good'/(name+'.ndjson')).read_bytes()
+              for mode in ('baseline','origin_replay'):
+                  t=time.monotonic()
+                  p=subprocess.run(['/tmp/nucleus'],input=data,stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE,timeout=150,env=env_for(mode,True))
+                  logs=p.stderr.decode(errors='replace').splitlines()
+                  row={'case':name,'mode':mode,'rc':p.returncode,
+                       'seconds':round(time.monotonic()-t,3),
+                       'origin_replay_count':sum('NUCLEUS_ORIGIN_REPLAY:' in s for s in logs),
+                       'origin_replays':[s for s in logs
+                           if 'NUCLEUS_ORIGIN_REPLAY:' in s][:8],
+                       'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
+                  print('NUCLEUS_ORIGIN_SEVEN='+json.dumps(row),flush=True)
+                  assert p.returncode in (0,2),('valid became rejected',row)
+                  if mode=='baseline': assert p.returncode==2,('baseline moved',row)
+                  if name=='init-prelude' and mode=='origin_replay':
+                      assert row['origin_replay_count']>0,('missing typed premise trace',row)
+                  rows.append(row)
+          source=(root/'good/init-prelude.ndjson').read_bytes()
+          forged=false_index(extract(source))
+          assert hashlib.sha256(forged).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          protected=[]
+          for mode in ('baseline','origin_replay'):
+              f=subprocess.run(['/tmp/nucleus'],input=forged,stdout=subprocess.DEVNULL,
+                  timeout=90,env=env_for(mode)).returncode
+              n=subprocess.run(['/tmp/nucleus'],
+                  input=(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),
+                  stdout=subprocess.DEVNULL,timeout=90,env=env_for(mode)).returncode
+              assert f in (1,2) and n==1,('protected false case promoted',mode,f,n)
+              protected.append({'mode':mode,'false_index_rc':f,'nested_rc':n})
+          items=[('good',p) for p in sorted((root/'good').rglob('*.ndjson'))]+[
+                 ('bad',p) for p in sorted((root/'bad').rglob('*.ndjson'))]
+          assert len(items)==196 and sum(x[0]=='bad' for x in items)==71
+          counts={}
+          mode_rows={}
+          for mode in ('baseline','origin_replay'):
+              env=env_for(mode)
+              def check(item):
+                  expected,path=item
+                  p=subprocess.run(['/tmp/nucleus'],input=path.read_bytes(),
+                      stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                      timeout=150,env=env)
+                  return {'case':str(path.relative_to(root)),'expected':expected,'rc':p.returncode}
+              with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+                  verdicts=list(pool.map(check,items))
+              bad=[v for v in verdicts if v['rc'] not in (0,1,2)
+                   or (v['expected']=='good' and v['rc']==1)
+                   or (v['expected']=='bad' and v['rc']==0)]
+              report={'accepted':sum(v['expected']=='good' and v['rc']==0 for v in verdicts),
+                      'rejected':sum(v['expected']=='bad' and v['rc']==1 for v in verdicts),
+                      'unknown':sum(v['rc']==2 for v in verdicts),
+                      'wrong':bad}
+              counts[mode]=report
+              mode_rows[mode]=verdicts
+              print('NUCLEUS_ORIGIN_FULL196='+json.dumps({'mode':mode,**report}),flush=True)
+              assert not bad and report['rejected']==71,('unsound candidate',report)
+              if mode=='baseline':
+                  assert (report['accepted'],report['unknown'])==(118,7),'baseline drift'
+          changes=[{'case':b['case'],'baseline_rc':b['rc'],'candidate_rc':c['rc']}
+                 for b,c in zip(mode_rows['baseline'],mode_rows['origin_replay']) if b['rc']!=c['rc']]
+          result={'source':os.environ['GITHUB_SHA'],'arena_sha':os.environ['ARENA_SHA'],
+                  'artifact':os.environ['ARENA_ARTIFACT'],'seven':rows,
+                  'protected':protected,'full196':counts,'verdict_diffs':changes}
+          (out/'result.json').write_text(json.dumps(result,indent=2))
+          print('NUCLEUS_ORIGIN_DIFFS='+json.dumps(changes),flush=True)
+          if counts['origin_replay']['accepted']>118:
+              print('NEW_COMPLETE_CASE_GAIN_PENDING_CURRENT_ARENA_AND_MATHLIB')
+          else: print('NO_COMPLETE_CASE_GAIN__KEEP_ISOLATED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-origin-replay-${{ github.sha }}
+          path: metatron-kernel/evidence-out/origin-replay
+          if-no-files-found: warn
