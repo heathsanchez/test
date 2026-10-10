@@ -75,6 +75,13 @@ impl BigNat {
     /// Exact multiplication of arbitrary-precision Nat numerals. The
     /// observed proof reduction can request a product only when both operands
     /// are independently exposed as Nat literals; no symbolic rewrite occurs.
+    pub fn mul_bounded(&self, other: &Self, max_limb_products: usize) -> Option<Self> {
+        if self.is_zero() || other.is_zero() { return Some(Self::zero()); }
+        let work = self.0.len().checked_mul(other.0.len())?;
+        if work > max_limb_products { return None; }
+        Some(self.mul(other))
+    }
+
     pub fn mul(&self, other: &Self) -> Self {
         if self.is_zero() || other.is_zero() {
             return Self::zero();
