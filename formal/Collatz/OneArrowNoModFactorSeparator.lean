@@ -157,17 +157,20 @@ theorem v171_one_two_stays_terminal
   induction t with
   | zero => exact Or.inl rfl
   | succ t ih =>
-      have hInv :
-          (∀ z, z=1 ∨ z=2 →
-             v171Map z=1 ∨ v171Map z=2) := by
-        intro z hz
-        rcases hz with h | h
-        · subst z
-          exact Or.inr (by decide)
-        · subst z
-          exact Or.inl (by decide)
-      have hstep := hInv (iter v171Map t 1) ih
-      simpa only [← iter_add, show t+1=t+1 by rfl] using hstep
+      have hStep :
+          iter v171Map (t+1) 1 =
+            v171Map (iter v171Map t 1) := by
+        calc
+          iter v171Map (t+1) 1 =
+              iter v171Map 1 (iter v171Map t 1) :=
+            iter_add v171Map t 1 1
+          _ = v171Map (iter v171Map t 1) := rfl
+      rw [hStep]
+      rcases ih with h1 | h2
+      · rw [h1]
+        exact Or.inr (by decide)
+      · rw [h2]
+        exact Or.inl (by decide)
 
 theorem v171_two_disjoint_real_positive_future_classes :
     ¬∃ i j : Nat,
