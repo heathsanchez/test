@@ -17,7 +17,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: |
           set -euo pipefail
-          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
       - name: Download exact Arena corpus
         env:
