@@ -730,6 +730,43 @@ impl<'a> TypeChecker<'a> {
                         }
                     }
                     Judgment::proven(qualified_type.clone(), "source-captured-canonical-binder-type")
+                } else if std::env::var_os("NUCLEUS_EXPERIMENTAL_CAPTURED_SUBSTITUTION").is_some()
+                    && let Some(EnvBinding::Closure(captured))=frame.lookup(*index)
+                {
+                    // An actual captured closure is not an additional lexical
+                    // binder. Infer the checked substituted term under its
+                    // OWN frame, universe instantiation and the same Γ.
+                    // This is ordinary substitution typing, not a new
+                    // quotient or an equality between unrelated data locals.
+                    //
+                    // All work is speculative until a complete positive
+                    // type judgment exists. Failure keeps the legacy
+                    // inference unchanged; protected full-corpus replay
+                    // separately checks that this fallback is conservative.
+                    let original_budget=*remaining;
+                    let probe_budget=original_budget.min(2048);
+                    let mut probe=probe_budget;
+                    if let Some(derived)=self.infer_exact_closure_in_context(
+                        &captured,context,&mut probe,0,
+                    ) {
+                        *remaining=original_budget.saturating_sub(probe_budget-probe);
+                        #[cfg(feature="diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_EXACT_CAPTURED_SUBSTITUTION").is_some(){
+                            use std::sync::atomic::{AtomicUsize,Ordering};
+                            static RECORDED:AtomicUsize=AtomicUsize::new(0);
+                            if RECORDED.fetch_add(1,Ordering::Relaxed)<64{
+                                eprintln!(
+                                    "NUCLEUS_EXACT_CAPTURED_SUBSTITUTION:expression={expression:?}:bvar={index}:context={}:frame={}:substituted={captured:?}:derived_type={derived:?}",
+                                    context.len(),frame.id()
+                                );
+                            }
+                        }
+                        Judgment::proven(derived,"source-checked-captured-substitution-type")
+                    } else {
+                        context.iter().rev().nth(offset).cloned()
+                            .map(|value|Judgment::proven(value,"context-lookup"))
+                            .unwrap_or_else(||Judgment::refuted("unbound-bvar"))
+                    }
                 } else {
                     context.iter().rev().nth(offset).cloned()
                         .map(|value| Judgment::proven(value, "context-lookup"))
@@ -2838,5 +2875,53 @@ mod minimal_context_binder_tests {
     fn actual_missing_bvar_still_rejected(){
         let result=infer_bvar(0,2);
         assert!(!result.is_proven(),"missing source variable cannot be assigned a type: {result:?}");
+    }
+}
+
+#[cfg(test)]
+mod minimal_captured_substitution_tests {
+    use super::*;
+
+    fn infer_substituted(actual_free:u64, invalid:bool)->Judgment<TypeValue> {
+        let mut expressions=IdTable::default();
+        expressions.insert(ExprId(0),Expr::BVar(0)).unwrap();
+        expressions.insert(ExprId(1),Expr::BVar(if invalid{5}else{1})).unwrap();
+        let levels=IdTable::default();
+        let env=Environment::empty();
+        let checker=TypeChecker::new(&expressions,&levels,&env);
+        let context=vec![
+            TypeValue::Sort(LevelTerm::Zero),
+            TypeValue::Sort(LevelTerm::Succ(Box::new(LevelTerm::Zero))),
+        ];
+        let body=Closure::new(ExprId(1),
+            EnvFrame::empty().extend_free(FreeId(actual_free))
+                .extend_free(FreeId(111_001)));
+        let frame=EnvFrame::empty().extend(body);
+        let mut budget=512;
+        checker.infer_in(ExprId(0),&context,&frame,&mut budget,&mut HashMap::new())
+    }
+    #[test]
+    #[ignore="source-captured substitution A/B only"]
+    fn typed_substituted_bvar_uses_actual_captured_closure(){
+        let got=infer_substituted(0,false);
+        assert!(matches!(
+            got,Judgment::Proven{value:TypeValue::Sort(LevelTerm::Zero),..}
+        ),"the source BVar0 captures a BVar1 that reads canonical FreeId0: {got:?}");
+    }
+    #[test]
+    #[ignore="source-captured substitution A/B only"]
+    fn different_captured_data_variable_remains_distinct(){
+        let got=infer_substituted(1,false);
+        assert!(matches!(
+            got,Judgment::Proven{value:TypeValue::Sort(LevelTerm::Succ(_)),..}
+        ),"source BVar0 captures a BVar1 that reads canonical FreeId1: {got:?}");
+    }
+    #[test]
+    #[ignore="source-captured substitution A/B only"]
+    fn unsupported_captured_term_returns_original_inference_without_forged_proof(){
+        let got=infer_substituted(0,true);
+        assert!(matches!(
+            got,Judgment::Proven{value:TypeValue::Sort(LevelTerm::Succ(_)),..}
+        ),"missing captured binder must not forge source-typed FreeId0: {got:?}");
     }
 }
