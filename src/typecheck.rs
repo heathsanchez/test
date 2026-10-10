@@ -2327,6 +2327,7 @@ impl<'a> TypeChecker<'a> {
         &self,
         lambda: &Closure,
         context: &[TypeValue],
+        expected_type: &TypeValue,
         budget: usize,
     ) -> String {
         let Some(Expr::Lam { domain, body }) = self.expressions.get(lambda.expr)
@@ -2428,7 +2429,44 @@ impl<'a> TypeChecker<'a> {
                 } else {
                     "function-type-certified".into()
                 };
-                format!("lambda-body-app:fun={:?}:fun_type={fty:?}:arg={:?}:arg_type={aty:?}:pi_view_present={}:{}:source_chain={source_chain}",
+                // Candidate η transport: the function behind body BVar1
+                // comes from the OUTER capture, before the new lambda binder.
+                // Verify its actual type under the same origin, then compare
+                // it to the declared dependent minor-argument type. Neither
+                // a source eta shape nor the recursor's expected type is by
+                // itself a typing certificate.
+                let eta_type_probe = if matches!(
+                    self.expressions.get(*arg),Some(Expr::BVar(0))
+                ) && matches!(
+                    self.expressions.get(*fun),Some(Expr::BVar(1))
+                ) {
+                    let mut captured=f.clone();
+                    let mut valid=true;
+                    for _ in 0..16 {
+                        let Some(Expr::BVar(idx))=self.expressions.get(captured.expr)
+                        else {break};
+                        match captured.env.lookup(*idx) {
+                            Some(EnvBinding::Closure(next))=>captured=next,
+                            _=>{valid=false;break}
+                        }
+                    }
+                    if valid {
+                        let mut budget=2048;
+                        let source_ty=self.infer_exact_closure_in_context(
+                            &captured,context,&mut budget,0,
+                        );
+                        let relation=source_ty.as_ref().map(|ty|
+                            crate::convert::convert_with_policy_in_context(
+                                self,ty,expected_type,budget.min(512),
+                                crate::convert::DeltaPolicy::PreferredOnly,
+                                context.len(),context,
+                            )
+                        );
+                        format!("eta-source={:?}:source-type={source_ty:?}:source-vs-expected={relation:?}:remaining={budget}",
+                            captured.expr)
+                    } else {"eta-source-binding-unavailable".into()}
+                } else {"not-eta-source-shape".into()};
+                format!("lambda-body-app:fun={:?}:fun_type={fty:?}:arg={:?}:arg_type={aty:?}:pi_view_present={}:{}:source_chain={source_chain}:eta_obligation={eta_type_probe}",
                     f.expr,a.expr,fview.is_some(),binding)
             } else { "lambda-body-not-app".to_owned() }
         } else { "lambda-body-typed".to_owned() };
@@ -2737,7 +2775,7 @@ impl<'a> TypeChecker<'a> {
                                 }
                             } else if matches!(other, Some(Expr::Lam { .. })) {
                                 probe.diagnostic_lambda_source_premises(
-                                    &cursor, context, remaining.min(512),
+                                    &cursor, context, &domain, remaining.min(512),
                                 )
                             } else {
                                 "non-application-source-leaf".to_owned()
