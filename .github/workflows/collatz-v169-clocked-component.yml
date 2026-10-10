@@ -1,0 +1,160 @@
+name: Collatz V169 clocked giant-component bridge
+on:
+  push:
+    branches: [collatz-v169-clocked-component-density-bridge]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-clocked-components:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run source-exact two-clock quotient against G7 and independent Python checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v169_clocked_giant_audit > evidence/v169-bounded-classes.json
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v169-bounded-classes.json')
+          v=json.loads(p.read_text())
+          assert v['schema']=='COLLATZ_V169_CLOCKED_GIANT_COMPONENT_BOUNDED_AUDIT'
+          assert v['independently_recomputed_k']==[8,10,12]
+          assert v['true_k20_at_H184_unresolved']==0
+          rows={(r['k'],r['intercept']):r for r in v['rows']}
+          assert rows[20,1]['unresolved_sources']==2
+          assert rows[22,1]['unresolved_sources']==5
+          assert rows[22,1]['largest_unresolved_component']==2
+          assert rows[20,7]['unresolved_sources']==898779
+          assert rows[20,7]['largest_unresolved_component']>898000
+          assert not v['positive_density_external_theorem_locally_rebuilt']
+          assert not v['component_anti_giant_limit_proved']
+          assert not v['all_ledger_edges_individually_lean_reified']
+          assert v['all_timeouts_stay_UNKNOWN']
+          assert v['global_collatz']=='UNKNOWN' and v['qed'] is False
+          src=pathlib.Path('research/collatz_v168_retrospective_quotient.cpp').read_bytes()
+          assert hashlib.sha256(src).hexdigest()==v['source_cpp_sha256']
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={
+            'schema':'COLLATZ_V169_EXACT_CLOCKED_COMPONENT_SEAL',
+            'source_commit':sha,
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'warrant':'BOUNDED_EXACT_TWO_CLOCK_COMPONENTS_ONLY',
+            'effective_predecessor_density_assumed_not_imported':True,
+            'anti_giant_limit_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v169-exact-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v169-exact-component-sweep
+          path: evidence/
+          if-no-files-found: error
+
+  formal-clocked-bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check conditional clocked hitting to unseeded component
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier RetroactiveFutureQuotient; do
+            lake env lean -DautoImplicit=false \
+              -o ".lake/build/lib/lean/Collatz/$module.olean" \
+              "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/ClockedGiantComponentBridge.lean 2>&1 | tee evidence/v169-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v169-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log), log[-20000:]
+          axioms={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            a=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(a)<={'propext','Classical.choice','Quot.sound'},(name,a)
+            axioms[name]=a
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          targets=['v169_hit_is_future_meeting',
+                   'v169_bad_target_forces_bad_clocked_ancestor',
+                   'v169_bad_path_excludes_terminal_seed',
+                   'v169_clocked_density_implies_large_unseeded_component']
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={
+            'schema':'COLLATZ_V169_FORMAL_CONDITIONAL_BRIDGE',
+            'source_commit':sha,
+            'axioms':axioms,
+            'source_sha256':hashlib.sha256(pathlib.Path('formal/Collatz/ClockedGiantComponentBridge.lean').read_bytes()).hexdigest(),
+            'scope':'CLOCKED_POPULATION_TO_UNSEEDED_COMPONENT_IF_BAD_TARGET_AND_GRAPH_COMPLETENESS',
+            'external_density_imported':False,
+            'all_scale_anti_giant_bound_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v169-formal-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v169-formal-conditional-bridge
+          path: evidence/
+          if-no-files-found: error
+
+  final-independent:
+    needs: [exact-clocked-components,formal-clocked-bridge]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v169-exact-component-sweep
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v169-formal-conditional-bridge
+          path: evidence/formal
+      - name: Verify source-pinned independent scopes and UNKNOWN preservation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          e=json.loads(pathlib.Path('evidence/exact/v169-exact-seal.json').read_text())
+          f=json.loads(pathlib.Path('evidence/formal/v169-formal-seal.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert e['source_commit']==f['source_commit']==sha
+          assert e['warrant']=='BOUNDED_EXACT_TWO_CLOCK_COMPONENTS_ONLY'
+          assert f['scope']=='CLOCKED_POPULATION_TO_UNSEEDED_COMPONENT_IF_BAD_TARGET_AND_GRAPH_COMPLETENESS'
+          assert not f['external_density_imported'] and not f['all_scale_anti_giant_bound_proved']
+          assert not e['anti_giant_limit_proved']
+          assert e['global_collatz']==f['global_collatz']=='UNKNOWN'
+          assert e['qed'] is f['qed'] is False
+          out={'schema':'COLLATZ_V169_FINAL',
+               'source_commit':sha,
+               'status':'WARRANTED_FORMAL_CONDITIONAL_GIANT_BRIDGE_PLUS_BOUNDED_ACTUAL_GRAPH_TESTS',
+               'required_external_input':'targetwise effective lower-density logarithmic-time ordinary hitting theorem plus odd-target shortcut clock bridge',
+               'new_arithmetic_gap':'prove asymptotic maximum terminal-disconnected component share is zero at H=8k',
+               'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v169-final.json').write_text(
+              json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v169-final
+          path: evidence/v169-final.json
+          if-no-files-found: error
