@@ -2866,11 +2866,76 @@ impl<'a> TypeChecker<'a> {
             )),
             strict_origin_probe:true,
         };
+        // The directly visible leaf determines a checked six-binder
+        // prefix. The fourth outer recursor argument is a lambda that closes
+        // over a function; follow its ACTUAL BVar bindings to find an
+        // additional source-checked proof binder. This is a context JOIN,
+        // never permission to manufacture a missing proof or to identify
+        // different local variables. This entire replay remains diagnostic.
+        let mut joined=origin.clone();
+        let mut join_trace=Vec::new();
+        if let Some(minor)=outer.spine.get(3) {
+            if let Some(Expr::Lam {body,..})=self.expressions.get(minor.expr) {
+                if let Some(Expr::App {fun,..})=self.expressions.get(*body) {
+                    let mut cursor=minor.sibling(
+                        *fun,minor.env.extend_free(FreeId(u64::MAX)),
+                    );
+                    for _ in 0..16 {
+                        if let Some(Expr::BVar(index))=self.expressions.get(cursor.expr) {
+                            let Some((node,binding))=cursor.env.lookup_with_node_id(*index)
+                                else {join_trace.push("unbound-capture".to_owned());break};
+                            join_trace.push(format!("capture-node={node}"));
+                            if let EnvBinding::Closure(next)=binding {
+                                cursor=next;
+                                continue
+                            }
+                            join_trace.push("nonclosure-capture".to_owned());
+                            break
+                        }
+                        if !matches!(self.expressions.get(cursor.expr),Some(Expr::Lam {..})) {
+                            join_trace.push("captured-function-not-source-lambda".to_owned());
+                            break
+                        }
+                        join_trace.push(format!("source-function={:?}",cursor.expr));
+                        for index in 0..64u64 {
+                            let Some((node,binding))=cursor.env.lookup_with_node_id(index)
+                                else {break};
+                            if !matches!(binding,EnvBinding::Free(_)){continue}
+                            let record=self.checked_binding_lineage.borrow()
+                                .get(&node).cloned().flatten();
+                            let Some(record)=record else {continue};
+                            let prefix=record.protected_prefix;
+                            if prefix.len()>joined.len() {
+                                if !prefix.starts_with(&joined) {
+                                    join_trace.push(format!("incompatible-source-node={node}"));
+                                    return format!("source_origin_depth={}:result={result}:joined-source-scope-CONFLICT",
+                                        origin.len(),result=isolated.diagnostic_neutral_source_telescope_inner(
+                                            outer,&origin,budget.min(1024),false,
+                                        ));
+                                }
+                                join_trace.push(format!("joined-node={node}:depth={}",prefix.len()));
+                                joined=prefix;
+                            } else if !joined.starts_with(&prefix) {
+                                return "joined-source-prefix-CONFLICT".into()
+                            }
+                        }
+                        break
+                    }
+                }
+            }
+        }
+        let joined_replay=if joined.len()>origin.len() {
+            Some(isolated.diagnostic_neutral_source_telescope_inner(
+                outer,&joined,budget.min(1024),false,
+            ))
+        } else {None};
         let result=isolated.diagnostic_neutral_source_telescope_inner(
             outer,&origin,budget.min(1024),false,
         );
-        format!("source_origin_depth={}:outer_arity={}:result={result}",
-            origin.len(),outer.spine.len())
+        format!(
+            "joined_source_depth={}:joined_telescope={joined_replay:?}:join_trace={join_trace:?}:source_origin_depth={}:outer_arity={}:result={result}",
+            joined.len(),origin.len(),outer.spine.len(),
+        )
     }
 
     #[cfg(feature = "diagnostics")]
