@@ -1,0 +1,167 @@
+name: Collatz V175 one height-only seed closes three prior unknowns
+on:
+  push:
+    branches: [collatz-v175-height-seed-four-step-reclosure]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-one-seed-three:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently replay one larger original source terminal seed closing three older unknowns
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v175_three_source_seed_audit > evidence/v175-exact.json
+          python3 - <<'PY'
+          import pathlib,json,hashlib,subprocess
+          p=pathlib.Path('evidence/v175-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V175_SINGLE_NEW_SEED_CLOSES_THREE_OLD_SOURCES'
+          assert d['old_positive_sources']==[10723327,16084991,14297769]
+          assert d['old_cutoff_exclusive']==2**24
+          assert d['new_cutoff_exclusive']==2**25
+          assert d['fixed_graph_clock_H']==200
+          assert d['single_new_larger_seed_source']==23311879
+          assert d['single_new_seed_first_true_terminal_clock']==68
+          assert d['exact_meeting_endpoint']==52451729
+          assert len(d['graph_exact_edges'])==3
+          assert d['all_graph_receipt_clocks_at_most_H']
+          assert d['all_old_sources_direct_terminal_later_than_H']
+          assert d['single_new_seed_closes_three_sources_by_genuine_paths']
+          assert d['new_seed_is_STRICTLY_LARGER_not_source_smaller']
+          assert d['synthetic_one_arrow_at_5_breaks_seed_terminal_proof']
+          assert d['synthetic_3n_plus7_breaks_true_meeting_endpoint']
+          assert not d['all_k_uniform_elimination_proved']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out={'schema':'COLLATZ_V175_EXACT_SEAL',
+            'source_commit':sha,
+            'status':'WARRANTED_EXACT_ONE_NEW_LARGER_SOURCE_CLOSES_THREE_OLDER',
+            'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v175-exact-seal.json').write_text(
+            json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v175-exact-three
+          path: evidence/v175-*.json
+          if-no-files-found: error
+
+  formal-three-source-seed:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check all actual clock receipts and complete three-source seeded graph proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/lean-version.txt
+          lake build CollatzFinal > evidence/base.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure UniversalFutureClassFrontier RetroactiveFutureQuotient TimedOrdinaryHitGiantBridge IdealFiniteClockGraphElimination DominantClockSourceGraph HeightClockEliminationMonotonicity; do
+            lake env lean -DautoImplicit=false \
+              -o ".lake/build/lib/lean/Collatz/$module.olean" \
+              "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/HeightOnlySeedThreeSourceReclosure.lean 2>&1 | tee evidence/v175-lean.log
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess,re
+          log=pathlib.Path('evidence/v175-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-16000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[t.strip() for t in inside.split(',') if t.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          names=['v175_actual_original_source_window',
+            'v175_old_component_first_short_link',
+            'v175_old_component_second_short_link',
+            'v175_new_source_true_two_clock_join',
+            'v175_join_reached_endpoint',
+            'v175_new_source_true_terminal_seed',
+            'v175_terminal_n2_from_new_larger_seed',
+            'v175_terminal_n1_by_proof_reuse',
+            'v175_terminal_n3_by_proof_reuse',
+            'v175_new_shell_actual_edge',
+            'v175_old_actual_short_edge_1',
+            'v175_old_actual_short_edge_2',
+            'v175_old_three_share_single_new_shell_seed',
+            'v175_all_three_true_collatz_good']
+          for n in names:
+            assert 'CollatzFinal.SourceProduct.'+n in ax,n
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out={'schema':'COLLATZ_V175_FORMAL_SEAL',
+            'source_commit':sha,
+            'status':'WARRANTED_FORMAL_SINGLE_HEIGHT_SEED_THREE_TRUE_SOURCE_CLOSURES',
+            'axioms':ax,'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v175-formal-seal.json').write_text(
+            json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v175-formal-three
+          path: evidence/v175-*
+          if-no-files-found: error
+
+  independent-final-seal:
+    needs: [exact-one-seed-three,formal-three-source-seed]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v175-exact-three
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v175-formal-three
+          path: evidence/formal
+      - name: Reconcile identical commit and no-hidden-QED contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v175-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v175-formal-seal.json').read_text())
+          d=json.loads(pathlib.Path('evidence/exact/v175-exact.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==sha
+          assert a['result_sha256']==hashlib.sha256(pathlib.Path('evidence/exact/v175-exact.json').read_bytes()).hexdigest()
+          assert a['status']=='WARRANTED_EXACT_ONE_NEW_LARGER_SOURCE_CLOSES_THREE_OLDER'
+          assert b['status']=='WARRANTED_FORMAL_SINGLE_HEIGHT_SEED_THREE_TRUE_SOURCE_CLOSURES'
+          assert d['global_collatz']==a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert d['qed'] is a['qed'] is b['qed'] is False
+          result={'schema':'COLLATZ_V175_FINAL',
+            'source_commit':sha,
+            'status':'WARRANTED_FORMAL_ONE_NEW_LARGER_SOURCE_SEED_THREE_OLDER_WITH_FIXED_GRAPH_H200',
+            'height_only_seed':23311879,
+            'old_sources':[10723327,16084991,14297769],
+            'all_edges_at_clocks_at_most':200,
+            'direct_real_terminal_clocks':[265,264,267],
+            'source_height_window':[2**24,2**25],
+            'universal_all_scale_source_component_reclosure':'UNKNOWN',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v175-final.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v175-final
+          path: evidence/v175-final.json
+          if-no-files-found: error
