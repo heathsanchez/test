@@ -1827,3 +1827,69 @@ fn record_transition(
 fn exposed(value: Value, transitions: Vec<TransitionWitness>) -> Judgment<Exposure> {
     Judgment::proven(Exposure { value, transitions }, "explicit-closure-machine")
 }
+
+#[cfg(test)]
+mod direct_constructor_projection_tests {
+    use super::*;
+    fn fixture() -> (IdTable<ExprId, Expr>, IdTable<LevelId, Level>, ProjectionSpec) {
+        let mut expressions = IdTable::default();
+        expressions.insert(ExprId(0), Expr::Const { name: NameId(50), levels: vec![] }).unwrap();
+        for id in 1..=3 {
+            expressions.insert(ExprId(id), Expr::Sort(LevelId(0))).unwrap();
+        }
+        expressions.insert(ExprId(4), Expr::App { fun: ExprId(0), arg: ExprId(1) }).unwrap();
+        expressions.insert(ExprId(5), Expr::App { fun: ExprId(4), arg: ExprId(2) }).unwrap();
+        expressions.insert(ExprId(6), Expr::App { fun: ExprId(5), arg: ExprId(3) }).unwrap();
+        expressions.insert(ExprId(7), Expr::BVar(0)).unwrap();
+        let mut levels=IdTable::default();
+        levels.insert(LevelId(0),Level::Zero).unwrap();
+        let spec=ProjectionSpec {
+            constructor:NameId(50),
+            num_params:2,
+            field_types:vec![ProjectionFieldType::Derived(ExprId(0))],
+            eta_expandable:false,
+        };
+        (expressions,levels,spec)
+    }
+
+    #[test]
+    fn selects_exact_field_of_literal_registered_constructor() {
+        let (expressions,levels,spec)=fixture();
+        let machine=Machine::new(AuthorityId(1),&expressions,&levels,
+            Rc::new(HashMap::new()));
+        let source=Closure::new(ExprId(6),EnvFrame::empty());
+        let result=machine.projection_field_from_source_constructor(
+            source,&spec,0,20).unwrap();
+        assert_eq!(result.expr,ExprId(3));
+    }
+
+    #[test]
+    fn preserves_captured_source_substitution() {
+        let (expressions,levels,spec)=fixture();
+        let machine=Machine::new(AuthorityId(1),&expressions,&levels,
+            Rc::new(HashMap::new()));
+        let root=EnvFrame::empty();
+        let source=Closure::new(ExprId(7),
+            root.extend(Closure::new(ExprId(6),root.clone())));
+        let result=machine.projection_field_from_source_constructor(
+            source,&spec,0,20).unwrap();
+        assert_eq!(result.expr,ExprId(3));
+        assert_eq!(result.env,root);
+    }
+
+    #[test]
+    fn cannot_guess_constructor_or_missing_field() {
+        let (expressions,levels,mut spec)=fixture();
+        let machine=Machine::new(AuthorityId(1),&expressions,&levels,
+            Rc::new(HashMap::new()));
+        let root=EnvFrame::empty();
+        spec.constructor=NameId(99);
+        assert!(machine.projection_field_from_source_constructor(
+            Closure::new(ExprId(6),root.clone()),&spec,0,20).is_none());
+        spec.constructor=NameId(50);
+        assert!(machine.projection_field_from_source_constructor(
+            Closure::new(ExprId(5),root.clone()),&spec,0,20).is_none());
+        assert!(machine.projection_field_from_source_constructor(
+            Closure::new(ExprId(7),root.extend_free(FreeId(5))),&spec,0,20).is_none());
+    }
+}
