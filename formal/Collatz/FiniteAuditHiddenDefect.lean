@@ -86,10 +86,21 @@ theorem v174_audited_endpoints_below_defect
     Nat.mul_le_mul_right n hPow
   have hHeight : 2^H*n ≤ 2^H*(X+1) :=
     Nat.mul_le_mul_left (2^H) (by omega)
-  have hTotal : iter shortcut t n ≤ 2^H*(X+1) :=
-    hStep.trans (hMul.trans hHeight)
+  have hTotal : iter shortcut t n ≤ 2^H*(X+1) := by
+    calc
+      iter shortcut t n ≤ 2^t*n := hStep
+      _ ≤ 2^H*n := hMul
+      _ ≤ 2^H*(X+1) := hHeight
   unfold v174HiddenDefect
   omega
+
+/-- General, genuine *function-parametric* final successor clock.
+The older iter_succ_last rewriting lemma is specialized to shortcut;
+using it on an artificially frozen map would silently mix maps. -/
+theorem v174_generic_iter_succ_last
+    (f : Nat → Nat) (t n : Nat) :
+    iter f (t+1) n = f (iter f t n) := by
+  simpa only [iter] using (iter_add f t 1 n)
 
 /-- An artificial freeze cannot change a finite trajectory before
 the first visit to the modified source. -/
@@ -112,8 +123,8 @@ theorem v174_freeze_matches_avoided_prefix :
         hAvoid t (by omega)
       calc
         iter (v173FreezeAt a) (t+1) n =
-            v173FreezeAt a (iter (v173FreezeAt a) t n) := by
-              rw [iter_succ_last]
+            v173FreezeAt a (iter (v173FreezeAt a) t n) :=
+              v174_generic_iter_succ_last (v173FreezeAt a) t n
         _ = v173FreezeAt a (iter shortcut t n) := by rw [hEq]
         _ = shortcut (iter shortcut t n) :=
           v173_freeze_agrees_before_seed a _ hNe
@@ -145,7 +156,16 @@ theorem v174_false_map_has_fixed_defect (X H t : Nat) :
   induction t with
   | zero => rfl
   | succ t ih =>
-      simp only [iter_succ_last, ih, hStep]
+      calc
+        iter (v173FreezeAt (v174HiddenDefect X H)) (t+1)
+            (v174HiddenDefect X H) =
+          v173FreezeAt (v174HiddenDefect X H)
+            (iter (v173FreezeAt (v174HiddenDefect X H)) t
+              (v174HiddenDefect X H)) :=
+            v174_generic_iter_succ_last _ t _
+        _ = v173FreezeAt (v174HiddenDefect X H)
+            (v174HiddenDefect X H) := by rw [ih]
+        _ = v174HiddenDefect X H := hStep
 
 /-- The genuine 1↔2 class survives the artificial high defect,
 because the defect is at least 5. -/
@@ -167,7 +187,7 @@ theorem v174_false_map_keeps_one_two (X H t : Nat) :
   induction t with
   | zero => exact Or.inl rfl
   | succ t ih =>
-      simp only [iter_succ_last]
+      rw [v174_generic_iter_succ_last]
       rcases ih with h1 | h2
       · rw [h1, hOne]
         exact Or.inr rfl
@@ -194,6 +214,7 @@ theorem v174_false_map_has_two_disjoint_positive_classes
     have hLarge := (v174_defect_large_and_odd X H).1
     omega
 
+#print axioms v174_generic_iter_succ_last
 #print axioms v174_shortcut_le_twice
 #print axioms v174_actual_endpoint_bound
 #print axioms v174_two_pow_mono
