@@ -2922,3 +2922,74 @@ mod minimal_context_binder_tests {
         assert!(!result.is_proven(),"missing source variable cannot be assigned a type: {result:?}");
     }
 }
+
+#[cfg(test)]
+mod checked_binding_lineage_tests {
+    use super::*;
+
+    fn checker_fixture<'a>(
+        e: &'a IdTable<ExprId,Expr>,
+        l: &'a IdTable<LevelId,Level>,
+        env: &'a Environment
+    )->TypeChecker<'a>{
+        TypeChecker::new(e,l,env)
+    }
+
+    #[test]
+    #[ignore="explicit source-scoped binding authority A/B only"]
+    fn typed_binder_uses_its_witness_not_unrelated_latest_context_type(){
+        let expressions=IdTable::default();
+        let levels=IdTable::default();
+        let env=Environment::empty();
+        let checker=checker_fixture(&expressions,&levels,&env);
+        let t0=TypeValue::Sort(LevelTerm::Zero);
+        let t1=TypeValue::Sort(LevelTerm::Succ(Box::new(LevelTerm::Zero)));
+        let f0=EnvFrame::empty().extend_free(FreeId(0));
+        checker.retain_checked_binding(&f0,t0.clone(),&[t0.clone()]);
+        let f1=f0.extend_free(FreeId(1));
+        checker.retain_checked_binding(&f1,t1.clone(),&[t0.clone(),t1.clone()]);
+        let prefix=vec![t0.clone(),t1.clone()];
+        assert_eq!(
+            checker.checked_type_of_bound_source(&f1,1,&prefix),
+            Some(t0.clone()),
+            "BVar1 uses the checked parent binder's type, not the newest context type"
+        );
+        assert_eq!(
+            checker.checked_type_of_bound_source(&f1,0,&prefix),
+            Some(t1),
+            "BVar0 is the newest binder's distinct type"
+        );
+    }
+
+    #[test]
+    #[ignore="explicit source-scoped binding authority A/B only"]
+    fn a_different_typing_prefix_is_a_protected_future_separator(){
+        let expressions=IdTable::default();
+        let levels=IdTable::default();
+        let env=Environment::empty();
+        let checker=checker_fixture(&expressions,&levels,&env);
+        let p=TypeValue::Sort(LevelTerm::Zero);
+        let q=TypeValue::Sort(LevelTerm::Succ(Box::new(LevelTerm::Zero)));
+        let frame=EnvFrame::empty().extend_free(FreeId(0));
+        checker.retain_checked_binding(&frame,p.clone(),&[p.clone()]);
+        assert!(checker.checked_type_of_bound_source(&frame,0,&[q]).is_none(),
+            "same source binder frame cannot be replayed under a different Γ");
+    }
+
+    #[test]
+    #[ignore="explicit source-scoped binding authority A/B only"]
+    fn conflicting_or_absent_witnesses_do_not_grant_type_authority(){
+        let expressions=IdTable::default();
+        let levels=IdTable::default();
+        let env=Environment::empty();
+        let checker=checker_fixture(&expressions,&levels,&env);
+        let p=TypeValue::Sort(LevelTerm::Zero);
+        let q=TypeValue::Sort(LevelTerm::Succ(Box::new(LevelTerm::Zero)));
+        let frame=EnvFrame::empty().extend_free(FreeId(0));
+        assert!(checker.checked_type_of_bound_source(&frame,0,&[p.clone()]).is_none());
+        checker.retain_checked_binding(&frame,p.clone(),&[p.clone()]);
+        checker.retain_checked_binding(&frame,q.clone(),&[p.clone()]);
+        assert!(checker.checked_type_of_bound_source(&frame,0,&[p]).is_none(),
+            "conflicting purported types revoke the reusable judgment");
+    }
+}
