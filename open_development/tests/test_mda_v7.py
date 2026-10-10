@@ -103,7 +103,7 @@ class MDASevenTests(unittest.TestCase):
                  "domain": ["interval", "0", "1"]}
         acquire = dev.run_minimal(self.obligation(third, 1),
                                   protected=(self.obligation(STAGES[1], 0),))
-        self.assertEqual(acquire.outcome, "COMMIT")
+        self.assertEqual(acquire.outcome, "COMMIT", repr(acquire))
         self.assertEqual(len(acquire.retained), 1)
 
         self.store.close()
