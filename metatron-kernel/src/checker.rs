@@ -413,7 +413,7 @@ fn check_export_with_policy(
 
         #[cfg(feature = "diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_MUL_SOURCE").is_some()
-            && environment.nat_primitives().is_some()
+            && environment.nat_primitives().is_some_and(|nat| name_is_child_str(&export,name,nat.type_name,"mul"))
         {
             let ids = [12,142,857,858,1530,1531,98,63,64,81,82,138,114,118,92,181,177];
             eprintln!("NUCLEUS_MUL_SOURCE:names={:?}",
