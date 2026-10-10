@@ -86,9 +86,10 @@ theorem v174_audited_endpoints_below_defect
     Nat.mul_le_mul_right n hPow
   have hHeight : 2^H*n ≤ 2^H*(X+1) :=
     Nat.mul_le_mul_left (2^H) (by omega)
-  let B : Nat := 2^H*(X+1)
-  have hB : B < 6*B+5 := by omega
-  exact lt_of_le_of_lt (hStep.trans (hMul.trans hHeight)) hB
+  have hTotal : iter shortcut t n ≤ 2^H*(X+1) :=
+    hStep.trans (hMul.trans hHeight)
+  unfold v174HiddenDefect
+  omega
 
 /-- An artificial freeze cannot change a finite trajectory before
 the first visit to the modified source. -/
@@ -109,9 +110,15 @@ theorem v174_freeze_matches_avoided_prefix :
       have hEq := ih a n hPrior
       have hNe : iter shortcut t n ≠ a :=
         hAvoid t (by omega)
-      rw [iter_succ_last, iter_succ_last, hEq]
-      exact v173_freeze_agrees_before_seed a
-        (iter shortcut t n) hNe
+      calc
+        iter (v173FreezeAt a) (t+1) n =
+            v173FreezeAt a (iter (v173FreezeAt a) t n) := by
+              rw [iter_succ_last]
+        _ = v173FreezeAt a (iter shortcut t n) := by rw [hEq]
+        _ = shortcut (iter shortcut t n) :=
+          v173_freeze_agrees_before_seed a _ hNe
+        _ = iter shortcut (t+1) n := by
+          rw [iter_succ_last]
 
 /-- Every source/clock outcome in ANY finite audit is EXACTLY
 indistinguishable from the real shortcut under this false map. -/
@@ -138,7 +145,7 @@ theorem v174_false_map_has_fixed_defect (X H t : Nat) :
   induction t with
   | zero => rfl
   | succ t ih =>
-      rw [iter_succ_last, ih, hStep]
+      simp only [iter_succ_last, ih, hStep]
 
 /-- The genuine 1↔2 class survives the artificial high defect,
 because the defect is at least 5. -/
@@ -149,16 +156,18 @@ theorem v174_false_map_keeps_one_two (X H t : Nat) :
     (v174_defect_large_and_odd X H).1
   have hA1 : v174HiddenDefect X H ≠ 1 := by omega
   have hA2 : v174HiddenDefect X H ≠ 2 := by omega
+  have hNot1 : (1 : Nat) ≠ v174HiddenDefect X H := by omega
+  have hNot2 : (2 : Nat) ≠ v174HiddenDefect X H := by omega
   have hOne :
       v173FreezeAt (v174HiddenDefect X H) 1=2 := by
-    simp [v173FreezeAt, hA1, shortcut]
+    simp [v173FreezeAt, hNot1, shortcut]
   have hTwo :
       v173FreezeAt (v174HiddenDefect X H) 2=1 := by
-    simp [v173FreezeAt, hA2, shortcut]
+    simp [v173FreezeAt, hNot2, shortcut]
   induction t with
   | zero => exact Or.inl rfl
   | succ t ih =>
-      rw [iter_succ_last]
+      simp only [iter_succ_last]
       rcases ih with h1 | h2
       · rw [h1, hOne]
         exact Or.inr rfl
