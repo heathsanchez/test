@@ -165,6 +165,18 @@ fn convert_in_context_with_congruence(
         if left == right {
             continue;
         }
+        if exact_support_enabled {
+            if let (TypeValue::Term(l), TypeValue::Term(r)) = (&left, &right) {
+                if l.expr == r.expr && checker.same_term_by_exact_support(l, r, 256) {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_EXACT_SUPPORT_EQ").is_some() {
+                        eprintln!("NUCLEUS_EXACT_SUPPORT_EQ:PROVEN:expr={:?}:left_frame={}:right_frame={}:depth={depth}",
+                            l.expr, l.env.id(), r.env.id());
+                    }
+                    continue;
+                }
+            }
+        }
         if remaining == 0 {
             return Judgment::unknown("conversion-budget-exhausted");
         }
