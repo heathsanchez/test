@@ -61,13 +61,13 @@ def V170SparseNoTwoGiants
       ∀ b c : Nat,
         0 < b → b < 2^k → 0 < c → c < 2^k →
         ¬ V168Path (E k) b c →
-        q * min (V170ComponentCount (E k) b (2^k))
-                (V170ComponentCount (E k) c (2^k)) < 2^k
+        q * V170ComponentCount (E k) b (2^k) < 2^k ∨
+        q * V170ComponentCount (E k) c (2^k) < 2^k
 
 /-- A genuine bounded target hit is counted in its observed component,
 provided the source/clock receipt is actually present. -/
 theorem v170_clocked_hits_are_component_members
-    (E : Nat → List V168TwoClockEdge)
+    (E : List V168TwoClockEdge)
     (b H X : Nat)
     (hComplete : ∀ n, 0 < n → n < X →
       V169HitWithin n b H → V168Path E n b) :
@@ -157,14 +157,9 @@ theorem v170_collatz_of_timed_density_and_sparse_unique_giant
       v170_bad_target_not_connected_to_two (E k) b hBadB.2
     have hSmall :=
       hSep b 2 hBadB.1 hbBound (by omega) hTwoBound hDistinct
-    by_cases hle : V170ComponentCount (E k) b (2^k) ≤
-        V170ComponentCount (E k) 2 (2^k)
-    · rw [min_eq_left hle] at hSmall
-      omega
-    · have hge : V170ComponentCount (E k) 2 (2^k) ≤
-          V170ComponentCount (E k) b (2^k) := by omega
-      rw [min_eq_right hge] at hSmall
-      omega
+    rcases hSmall with hSmallB | hSmallTwo
+    · omega
+    · omega
   have hNoBad := no_bad_of_no_minimal PositiveBad hNoMin
   intro n hn
   apply Classical.byContradiction
