@@ -94,6 +94,42 @@ theorem v172_new_height_is_essential_to_this_ledger :
     2^22 ≤ 5575759 ∧ 5575759 < 2^24 := by
   decide
 
+/-- Protected ONE-ARROW non-Collatz control: only source5's next
+state is changed. The two-height joins above remain real for this
+modified map, but its would-be terminal seed falls into fixed5.
+This prevents promoting arbitrary coalescence to convergence. -/
+def v172OneArrowControl (n : Nat) : Nat :=
+  if n = 5 then 5 else shortcut n
+
+theorem v172_one_arrow_only_changes_five (n : Nat)
+    (hn : n ≠ 5) :
+    v172OneArrowControl n = shortcut n := by
+  simp [v172OneArrowControl, hn]
+
+theorem v172_one_arrow_five_is_fixed :
+    v172OneArrowControl 5 = 5 := by decide
+
+theorem v172_one_arrow_retains_first_join :
+    iter v172OneArrowControl 141 4053039 =
+    iter v172OneArrowControl 2 5640039 := by decide
+
+theorem v172_one_arrow_retains_second_join :
+    iter v172OneArrowControl 65 5640039 =
+    iter v172OneArrowControl 0 5575759 := by decide
+
+theorem v172_one_arrow_terminal_anchor_fails :
+    iter v172OneArrowControl 131 5575759 = 5 := by decide
+
+theorem v172_one_arrow_rejects_terminal_promotion :
+    ¬ Terminal (iter v172OneArrowControl 131 5575759) := by
+  rw [v172_one_arrow_terminal_anchor_fails]
+  simp [Terminal]
+
+#print axioms v172_one_arrow_retains_first_join
+#print axioms v172_one_arrow_retains_second_join
+#print axioms v172_one_arrow_terminal_anchor_fails
+#print axioms v172_one_arrow_rejects_terminal_promotion
+
 #print axioms v172_height_unlocked_finite_ledger
 #print axioms v172_height_unlocked_terminal_certificate
 #print axioms v172_all_component_clocks_below_176
