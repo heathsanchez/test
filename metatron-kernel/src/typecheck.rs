@@ -1207,6 +1207,80 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    /// A source-typed bidirectional Lambda introduction rule.
+    /// The declared binder is independently checked as a type, its
+    /// domain is convertible to the expected Pi domain in the SAME
+    /// typed context, and the body is checked under a fresh source
+    /// local against the corresponding instantiated dependent Pi body.
+    /// No normalized result may substitute for a missing premise.
+    ///
+    /// This optional completion path lives inside a fully isolated
+    /// checker/witness cache: failed trials cannot poison production
+    /// conversion with speculative types or partially checked binders.
+    fn try_kernel_checked_lambda(
+        &self,
+        expression: ExprId,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: usize,
+        conversion_refutation_is_unknown: bool,
+    ) -> Option<usize> {
+        if remaining < 32 || context.len() >= 48 { return None; }
+        let Some(Expr::Lam { domain, body }) =
+            self.expressions.get(expression) else { return None };
+        let local = Self {
+            expressions:self.expressions,
+            levels:self.levels,
+            environment:self.environment,
+            level_substitution:self.level_substitution.clone(),
+            delta_policy:self.delta_policy,
+            exposure_cache:new_exposure_cache(),
+            checked_binding_lineage:Rc::new(RefCell::new(
+                self.checked_binding_lineage.borrow().clone(),
+            )),
+        };
+        let mut fuel=remaining;
+        let (expected_domain, expected_body)=local.pi_view(
+            Judgment::proven(expected.clone(),"checked-lambda-expected-type"),
+            fuel.min(512),
+        )?;
+        let domain_wf=local.infer_in(
+            *domain,context,frame,&mut fuel,&mut HashMap::new(),
+        );
+        if !local.sort_level(domain_wf,fuel.min(512)).is_proven() {
+            return None;
+        }
+        let actual_domain=TypeValue::Term(local.closure(*domain,frame.clone()));
+        if !crate::convert::convert_with_policy_in_context(
+            &local,&actual_domain,&expected_domain,fuel.min(1024),
+            crate::convert::DeltaPolicy::PreferredOnly,
+            context.len(),context,
+        ).is_proven() { return None; }
+        let fresh=fresh_local(context.len())?;
+        let mut source_context=context.to_vec();
+        source_context.push(actual_domain.clone());
+        let source_frame=frame.extend_free(fresh);
+        local.retain_checked_binding(
+            &source_frame,actual_domain,&source_context,
+        );
+        let dependent_expected=match expected_body {
+            PiBody::Closure(closure)=>TypeValue::Term(
+                Closure::with_levels(
+                    closure.expr,closure.env.extend_free(fresh),closure.levels,
+                )
+            ),
+            // A Fixed body needs separate proven substitution of the
+            // captured FreeId, never a numeric binder alias.
+            PiBody::Fixed(..)=>return None,
+        };
+        if !local.check_in(
+            *body,&dependent_expected,&source_context,&source_frame,
+            &mut fuel,conversion_refutation_is_unknown,&mut HashMap::new(),
+        ).is_proven() { return None; }
+        Some(fuel)
+    }
+
     fn check_in(
         &self,
         expression: ExprId,
@@ -1217,6 +1291,27 @@ impl<'a> TypeChecker<'a> {
         conversion_refutation_is_unknown: bool,
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<()> {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_KERNEL_BIDIR_LAMBDA").is_some()
+            && matches!(self.expressions.get(expression),Some(Expr::Lam{..}))
+            && let Some(fuel) = self.try_kernel_checked_lambda(
+                expression,expected,context,frame,*remaining,
+                conversion_refutation_is_unknown,
+            )
+        {
+            *remaining=fuel;
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_KERNEL_BIDIR_LAMBDA").is_some() {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static COUNT:AtomicUsize=AtomicUsize::new(0);
+                if COUNT.fetch_add(1,Ordering::Relaxed)<80 {
+                    eprintln!(
+                        "NUCLEUS_KERNEL_BIDIR_LAMBDA:certified:expr={expression:?}:depth={}:budget={fuel}",
+                        context.len()
+                    );
+                }
+            }
+            return Judgment::proven((),"source-typed-bidirectional-lambda");
+        }
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
             Judgment::Proven { value, .. } => {
