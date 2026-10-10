@@ -139,7 +139,7 @@ jobs:
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           assert e['source_commit']==f['source_commit']==sha
           assert e['warrant']=='BOUNDED_EXACT_TWO_CLOCK_COMPONENTS_ONLY'
-          assert f['scope']=='CLOCKED_POPULATION_TO_UNSEEDED_COMPONENT_IF_BAD_TARGET_AND_GRAPH_COMPLETENESS'
+          assert f['scope']=='CLOCKED_SOURCE_MEMBERSHIP_IN_ONE_UNSEEDED_COMPONENT_IF_BAD_TARGET_AND_GRAPH_COMPLETENESS'
           assert not f['external_density_imported'] and not f['all_scale_anti_giant_bound_proved']
           assert not e['anti_giant_limit_proved']
           assert e['global_collatz']==f['global_collatz']=='UNKNOWN'
