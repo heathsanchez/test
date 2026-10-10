@@ -134,6 +134,37 @@ theorem v166_compiled_earlier_source_join
   refine ⟨hCap,k+h,j,?_⟩
   exact (v166_actual_clock_shift r k h q).trans hEndpoint
 
+/-- STATEFUL PROOF REUSE CONTROL (V133): the clocked affine
+    chart compiler reconstructs the existing true all-offset
+    23 -> (3+54t) source-capped two-clock relation, without
+    assuming either family already converges or appealing to
+    the generic V131 chart theorem. -/
+theorem v166_root23_family_reconstructed (t : Nat) :
+    LowerMerge shortcut (23+384*t) (3+54*t) := by
+  have hCap : 3+54*t < 23+2^7*(3*t) := by
+    norm_num
+    omega
+  have hBase : iter shortcut 7 23=5 := by decide
+  have hOddCount : oddCount 23 7=3 := by decide
+  have hEarlier : iter shortcut 1 (3+54*t)=5+81*t := by
+    change shortcut (3+54*t)=5+81*t
+    have hOdd : (3+54*t)%2≠0 := by omega
+    simp only [shortcut,hOdd,ite_false]
+    omega
+  have hEndpoint :
+      iter shortcut 0
+        (iter shortcut 7 23+3^oddCount 23 7*(3*t)) =
+        iter shortcut 1 (3+54*t) := by
+    simp only [iter,hBase,hOddCount,hEarlier]
+    omega
+  have hMerge :=
+    v166_compiled_earlier_source_join
+      23 7 (3*t) 0 1 (3+54*t) hCap hEndpoint
+  have hSource : 23+2^7*(3*t)=23+384*t := by
+    norm_num
+    omega
+  simpa only [hSource] using hMerge
+
 #print axioms v166_hit_bool_semantics
 #print axioms v166_actual_clock_shift
 #print axioms v166_actual_hit_bool_transport
@@ -142,6 +173,7 @@ theorem v166_compiled_earlier_source_join
 #print axioms v166_terminal_certificate_count_transport
 #print axioms v166_timeout_count_transport
 #print axioms v166_compiled_earlier_source_join
+#print axioms v166_root23_family_reconstructed
 
 end SourceProduct
 end CollatzFinal
