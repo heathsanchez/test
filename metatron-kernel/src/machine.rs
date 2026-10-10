@@ -335,6 +335,18 @@ impl<'a> Machine<'a> {
                 );
             }
         }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CERTIFIED_ARITHMETIC_FIELD").is_some() {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static COUNT:AtomicUsize=AtomicUsize::new(0);
+            if COUNT.fetch_add(1,Ordering::Relaxed)<48 {
+                eprintln!(
+                    "NUCLEUS_CERTIFIED_FIELD:type={type_name:?}:index={index}:structure={structure:?}:constructor={:?}:params={}:exposure={}",
+                    spec.constructor,spec.num_params,
+                    format!("{exposed:?}").chars().take(1600).collect::<String>(),
+                );
+            }
+        }
         let Some(Value::Neutral(neutral)) = exposed.proven_value().map(|value| &value.value) else {
             return Judgment::unknown("projection-structure-stuck");
         };
