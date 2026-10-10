@@ -46,3 +46,47 @@ jobs:
           name: collatz-v168-exact-controls
           path: evidence/
           if-no-files-found: error
+
+  exact-global-single-block-gain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify infinite-source single-clock weighted gain from exact integer audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v168_rigorous_single_block_gain.py > evidence/v168B-block-gain.json
+          python3 - <<'PY'
+          import json, pathlib, subprocess, hashlib
+          p = pathlib.Path('evidence/v168B-block-gain.json')
+          v = json.loads(p.read_text())
+          assert v['schema'] == 'COLLATZ_V168B_GLOBAL_ORIGINAL_SOURCE_SINGLE_BLOCK_GAIN'
+          assert v['clock_from'] == 40 and v['clock_to'] == 60
+          assert v['source_cutoff_exclusive'] == 2**18
+          assert v['uncertified_at_40_below_cutoff'] == 229259
+          assert v['uncertified_at_60_below_cutoff'] == 164657
+          assert v['newly_certified_between_41_and_60_below_cutoff'] == 64602
+          assert v['tail_upper_units'] == 4_000_000_000
+          assert v['new_terminal_weight_lower_units'] == 26_452_894_380
+          assert 5*v['S60_over_S40_upper_num'] < 4*v['S60_over_S40_upper_den']
+          assert v['strictly_less_than_four_fifths']
+          assert v['all_scale_positive_gain_proved'] is False
+          assert v['global_collatz'] == 'UNKNOWN' and v['qed'] is False
+          sha = subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out = {'schema':'COLLATZ_V168B_EXACT_GLOBAL_SINGLE_BLOCK_SEAL',
+                 'source_commit':sha,
+                 'exact_result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                 'warrant':'EXPLICIT_40_TO_60_GLOBAL_WEIGHTED_GAIN_ONLY',
+                 'formal_lean_qualification':False,
+                 'all_scale_gain':'UNKNOWN', 'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v168B-seal.json').write_text(
+            json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v168B-global-single-block-exact
+          path: evidence/
+          if-no-files-found: error
