@@ -142,7 +142,7 @@ theorem v166_compiled_earlier_source_join
 theorem v166_root23_family_reconstructed (t : Nat) :
     LowerMerge shortcut (23+384*t) (3+54*t) := by
   have hCap : 3+54*t < 23+2^7*(3*t) := by
-    norm_num
+    change 3+54*t < 23+128*(3*t)
     omega
   have hBase : iter shortcut 7 23=5 := by decide
   have hOddCount : oddCount 23 7=3 := by decide
@@ -161,7 +161,7 @@ theorem v166_root23_family_reconstructed (t : Nat) :
     v166_compiled_earlier_source_join
       23 7 (3*t) 0 1 (3+54*t) hCap hEndpoint
   have hSource : 23+2^7*(3*t)=23+384*t := by
-    norm_num
+    change 23+128*(3*t)=23+384*t
     omega
   simpa only [hSource] using hMerge
 
