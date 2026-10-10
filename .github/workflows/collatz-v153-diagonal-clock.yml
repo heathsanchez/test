@@ -1,0 +1,148 @@
+name: Collatz V153 diagonal terminal-clock falsifier
+on:
+  push:
+    branches: [collatz-v153-diagonal-terminal-horizon]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay finite source-attached terminal clocks and adverse families
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v153_diagonal_terminal_audit > evidence/v153-finite.json
+          python3 - <<'PY'
+          import pathlib,json,hashlib,subprocess
+          p=pathlib.Path('evidence/v153-finite.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V153_FINITE_DIAGONAL_TERMINAL_CLOCK'
+          assert (d['finite_dyadic_k_min'],d['finite_dyadic_k_max'])==(8,21)
+          assert d['certified_successor_edges']>2000000
+          assert d['source_attached_finite_terminal_clocks_only']
+          assert d['no_descent_only_promotions'] and d['unknown_is_not_a_counterexample']
+          assert d['c4_timeout_fraction_k21_gt_k8']
+          assert d['c8_timeout_fraction_k21_lt_k8']
+          assert d['c12_timeout_fraction_k21_gt_k18']
+          assert d['c12_timeouts_nonzero_at_k21']
+          assert len(d['actual_mersenne_prefix_controls'])==5
+          assert len(d['finite_rows'])==14
+          row=d['finite_rows'][-1]
+          assert row['k']==21 and row['cutoff']==2**21
+          cc={x['c']:x['exceptional_count'] for x in row['clocks']}
+          assert cc[4]==1124610 and cc[8]==56809 and cc[12]==563
+          assert not d['sparse_all_depth_population_bound_proved']
+          assert not d['external_predecessor_amplifier_rebuilt']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V153_FINITE_AUDIT_SEAL','source_commit':h,
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'status':'WARRANTED_FINITE_SOURCE_ATTACHED_HORIZON_COUNTS',
+            'does_not_extrapolate':True,'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v153-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v153-finite
+          path: evidence/
+          if-no-files-found: error
+
+  formal-diagonal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check actual terminal-witness specialization of V151
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure SparseExceptionalMassClosure; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/DiagonalTerminalClock.lean 2>&1 | tee evidence/v153-lean.log
+          python3 - <<'PY'
+          import re,pathlib,json,hashlib,subprocess
+          log=pathlib.Path('evidence/v153-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-6000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            arr=[v.strip() for v in inside.split(',') if v.strip()]
+            assert set(arr)<={'propext','Classical.choice','Quot.sound'},(name,arr)
+            ax[name]=arr
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          for target in [
+            'v153_terminal_hit_is_closed',
+            'v153_diagonal_terminal_coverage',
+            'v153_collatz_of_sparse_diagonal_terminal_clock',
+            'v153_minimal_bad_forces_diagonal_timeout_density']:
+            assert 'CollatzFinal.SourceProduct.'+target in ax,target
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V153_FORMAL_DIAGONAL_CLOCK',
+            'source_commit':h,
+            'status':'WARRANTED_FORMAL_CONDITIONAL_DIAGONAL_CLOCK_INTERFACE',
+            'axioms':ax,'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'sparse_timeout_mass_is_explicit_hypothesis':True,
+            'external_amplifier_is_explicit_hypothesis':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v153-formal-seal.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v153-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [finite-audit,formal-diagonal]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v153-finite
+          path: evidence/finite
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v153-formal
+          path: evidence/formal
+      - name: Seal sources and hypotheses without promoting global Collatz
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/finite/v153-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v153-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['does_not_extrapolate']
+          assert b['sparse_timeout_mass_is_explicit_hypothesis']
+          assert b['external_amplifier_is_explicit_hypothesis']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V153_FINAL','source_commit':h,
+            'status':'WARRANTED_FORMAL_CONDITIONAL_CLOCK_AND_BOUNDED_DATA_NOT_QED',
+            'new_consequence':'Canonical explicit terminal hitting-time tail is a proof-carrying V151 exceptional envelope',
+            'missing':'Unbounded sparse dyadic vanishing tail for an actual scale clock, and external amplifier rebuilt',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v153-final.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v153-final
+          path: evidence/v153-final.json
+          if-no-files-found: error
