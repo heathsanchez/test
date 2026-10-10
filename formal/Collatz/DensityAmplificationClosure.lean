@@ -271,7 +271,7 @@ theorem v150_closed_certificate_sound
 theorem v150_proof_carrying_envelope_bounds_true_bad_count
     (E : Nat → Finset Nat)
     (hCover : ∀ k n : Nat,
-      n < 2^k → n ∉ E k → V150Closed n)
+      0<n → n < 2^k → n ∉ E k → V150Closed n)
     (k : Nat) :
     v150BadCount (2^k) ≤ (E k).card := by
   classical
@@ -281,7 +281,7 @@ theorem v150_proof_carrying_envelope_bounds_true_bad_count
   have hmem := Finset.mem_filter.mp hn
   by_cases ht : n ∈ E k
   · exact ht
-  · have hclosed := hCover k n (Finset.mem_range.mp hmem.1) ht
+  · have hclosed := hCover k n hmem.2.1 (Finset.mem_range.mp hmem.1) ht
     exact False.elim (hmem.2.2 (v150_closed_certificate_sound hclosed))
 
 /-- The exact final source-verified path:
@@ -292,7 +292,7 @@ theorem v150_collatz_of_proof_carrying_exceptional_cover
     (hAmp : V150PredecessorAmplifier)
     (E : Nat → Finset Nat)
     (hCover : ∀ k n : Nat,
-      n < 2^k → n ∉ E k → V150Closed n)
+      0<n → n < 2^k → n ∉ E k → V150Closed n)
     (hSmall : ∃ K : Nat, ∀ k : Nat, K≤k →
       k*(E k).card ≤ 2^k) :
     ∀ n : Nat, 0<n → CollatzGood n := by
