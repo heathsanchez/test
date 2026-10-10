@@ -1,0 +1,156 @@
+name: Collatz V176 finite indistinguishability plus universal sieve and modular no-factor
+on:
+  push:
+    branches: [collatz-v176-invariant-finite-audit-separator]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-universal-invariant-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source-exact finite adversarial controls and syntactic all-source law separator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v174_finite_hidden_defect_audit.py > evidence/v176-finite.json
+          python3 - <<'PY'
+          import pathlib, json, hashlib, subprocess
+          p=pathlib.Path('evidence/v176-finite.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V174_FINITE_AUDIT_HIDDEN_DEFECT_CONTROL'
+          assert len(d['audited_height_clock_pairs'])==8
+          assert all(z['all_audited_trajectories_equal'] for z in d['audited_height_clock_pairs'])
+          def T(n):
+            return n//2 if n%2==0 else (3*n+1)//2
+          for X,H in ((5,2),(19,4),(80,10),(100,15)):
+            a=6*((1<<H)*(X+1))+5
+            assert a%2==1 and a%3==2 and a>2
+            def S(n): return a if n==a else T(n)
+            assert S(a)==a and S(1)==2 and S(2)==1
+            assert S(a+2)==T(a)+3
+            assert S(a+2)!=S(a)+3
+            for n in range(0,500):
+              assert S(2*n)==n
+              if n%2==1: assert S(n)%3==2
+            for n in range(0,1000):
+              y=n
+              for k in range(0,9):
+                assert (y%3==0)==(n%(3*(1<<k))==0)
+                y=S(y)
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out={'schema':'COLLATZ_V176_EXACT_DIAGNOSTIC',
+               'source_commit':head,
+               'finite_data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+               'bounded_tests_passed':True,
+               'source_affine_even_plus_one_at_hidden_defect':False,
+               'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v176-exact-seal.json').write_text(
+            json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v176-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-hidden-invariant-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lean-core proof of all-depth sieve, all-moduli label collapse, and hidden defect
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier OneArrowBasinRepair AllModuliFutureLabelCollapse FiniteAuditHiddenDefect; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/HiddenDefectStructuralSeparator.lean 2>&1 | tee evidence/v176-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v176-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-20000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          names=['v176_even_halving','v176_odd_output_mod_three',
+                 'v176_all_depths_ternary_sieve',
+                 'v176_hidden_periodic_label_reconstructs_true',
+                 'v176_all_positive_periodic_future_labels_constant',
+                 'v176_full_finite_audit_still_cannot_detect_two_classes']
+          for n in names:
+            assert 'CollatzFinal.SourceProduct.'+n in ax,n
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out={'schema':'COLLATZ_V176_FORMAL_UNIVERSAL_SEPARATOR',
+               'source_commit':head, 'axioms':ax,
+               'source_sha256':hashlib.sha256(pathlib.Path(
+                   'formal/Collatz/HiddenDefectStructuralSeparator.lean').read_bytes()).hexdigest(),
+               'warrant':'ALL_SOURCE_TERNARY_SIEVE_AND_PERIODIC_LABEL_COLLAPSE_STILL_ALLOW_AN_UNOBSERVED_ONE_ARROW_BAD_BASIN',
+               'true_plus_one_all_source_affine_law_retained':False,
+               'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v176-formal-seal.json').write_text(
+              json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v176-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-independent:
+    needs: [exact-universal-invariant-control,formal-hidden-invariant-separator]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v176-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: v176-formal
+          path: evidence/formal
+      - name: Reconcile source and invariant countermodel without Collatz promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          e=json.loads(pathlib.Path('evidence/exact/v176-exact-seal.json').read_text())
+          f=json.loads(pathlib.Path('evidence/formal/v176-formal-seal.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert e['source_commit']==f['source_commit']==sha
+          assert e['bounded_tests_passed']
+          assert f['warrant']=='ALL_SOURCE_TERNARY_SIEVE_AND_PERIODIC_LABEL_COLLAPSE_STILL_ALLOW_AN_UNOBSERVED_ONE_ARROW_BAD_BASIN'
+          assert not f['true_plus_one_all_source_affine_law_retained']
+          assert e['global_collatz']==f['global_collatz']=='UNKNOWN'
+          assert e['qed'] is f['qed'] is False
+          out={'schema':'COLLATZ_V176_FINAL','source_commit':sha,
+               'status':'WARRANTED_ALL_FINITE_AUDIT_AND_TWO_UNIVERSAL_INVARIANTS_NEGATIVE_SEPARATOR',
+               'remaining':'prove TRUE +1 globally source-height anti-two-giant arithmetic',
+               'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v176-final.json').write_text(
+              json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v176-final
+          path: evidence/v176-final.json
+          if-no-files-found: error
