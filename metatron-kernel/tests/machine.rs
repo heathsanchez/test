@@ -505,7 +505,7 @@ fn symbolic_nat_ble_respects_pinned_constructor_equations() {
         .with_nat_primitives(Some(NatPrimitives {
             type_name: NameId(65), type_expr: ExprId(0),
             zero, succ, recursor: NameId(66),
-            add: None, sub: None, pred: None, virtual_bvar_zero: None, ble: Some(ble), beq: None,
+            add: None, mul_zero: None, sub: None, pred: None, virtual_bvar_zero: None, ble: Some(ble), beq: None,
         }))
         .with_bool_primitives(Some(BoolPrimitives { true_ctor, false_ctor }));
     let env = EnvFrame::empty().extend_free(FreeId(73)).extend_free(FreeId(74));
@@ -551,7 +551,7 @@ fn symbolic_nat_sub_successor_is_exact_predicate_computation() {
         .with_nat_primitives(Some(NatPrimitives {
             type_name: NameId(65), type_expr: ExprId(0),
             zero: NameId(10), succ: NameId(11), recursor: NameId(66),
-            add: None, sub: Some(NameId(12)), pred: Some(NameId(13)),
+            add: None, mul_zero: None, sub: Some(NameId(12)), pred: Some(NameId(13)),
             virtual_bvar_zero: Some(ExprId(1)),
             ble: None, beq: None,
         }));
@@ -627,7 +627,7 @@ fn symbolic_nat_sub_succ_zero_is_exact_source_equation() {
         .with_nat_primitives(Some(NatPrimitives {
             type_name: NameId(65), type_expr: ExprId(1),
             zero: NameId(10), succ: NameId(11), recursor: NameId(66),
-            add: None, sub: Some(NameId(12)), pred: Some(NameId(13)),
+            add: None, mul_zero: None, sub: Some(NameId(12)), pred: Some(NameId(13)),
             virtual_bvar_zero: Some(ExprId(0)), ble: None, beq: None,
         }));
     let env = EnvFrame::empty().extend_free(FreeId(18)).extend_free(FreeId(17));
