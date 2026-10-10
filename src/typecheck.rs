@@ -1823,6 +1823,137 @@ impl<'a> TypeChecker<'a> {
         true
     }
 
+    /// A conservatively checked counterpart of Flash's proof-relevance
+    /// signature. A proof-valued constant argument can be erased from an
+    /// equality obligation only when BOTH applications have independently
+    /// typechecked arguments at convertible proposition domains.
+    ///
+    /// This deliberately validates the dependent Pi telescope on BOTH
+    /// sides and checks every data argument. It never assumes that
+    /// convertible *types* imply equality of non-proof data terms. Unknown
+    /// premises return false, leaving the original conversion authoritative.
+    pub(crate) fn certified_relevance_spine_congruence(
+        &self,
+        left: &Neutral,
+        right: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+        depth: usize,
+    ) -> bool {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_RELEVANCE").is_none()
+            || depth != context.len() || budget < 512
+            || left.spine.is_empty() || left.spine.len() > 6
+            || left.spine.len() != right.spine.len()
+        {
+            return false;
+        }
+        let (
+            NeutralHead::Const { name: lname, levels: llevels },
+            NeutralHead::Const { name: rname, levels: rlevels },
+        ) = (&left.head, &right.head) else { return false };
+        if lname != rname || llevels.len() != rlevels.len() {
+            return false;
+        }
+        if !llevels.iter().zip(rlevels).all(|(a,b)|
+            crate::level::level_equal(a.clone(), b.clone(), budget.min(256)).is_proven()
+        ) { return false; }
+        let Some(decl) = self.environment.get(*lname) else { return false };
+        if decl.level_params.len() != llevels.len() { return false; }
+        let ty_for = |levels: &Vec<LevelTerm>| TypeValue::Term(
+            Closure::with_levels(
+                decl.ty, EnvFrame::empty(), LevelSubstitution::new(
+                    decl.level_params.iter().copied().zip(levels.iter().cloned()).collect()
+                )
+            )
+        );
+        let mut lhs_type=ty_for(llevels);
+        let mut rhs_type=ty_for(rlevels);
+        let probe=budget.min(2048);
+        let mut skipped_proof=false;
+        for (larg,rarg) in left.spine.iter().zip(&right.spine) {
+            let Some((ldom,lbody))=self.pi_view(
+                Judgment::proven(lhs_type,"relevance-typed-function"),probe,
+            ) else { return false };
+            let Some((rdom,rbody))=self.pi_view(
+                Judgment::proven(rhs_type,"relevance-typed-function"),probe,
+            ) else { return false };
+            if !crate::convert::convert_with_policy_in_context(
+                self,&ldom,&rdom,probe.min(512),
+                crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+            ).is_proven() {return false}
+            let mut lf=probe;
+            let Some(larg_ty)=self.infer_exact_closure_in_context(
+                larg,context,&mut lf,0,
+            ) else {return false};
+            let mut rf=probe;
+            let Some(rarg_ty)=self.infer_exact_closure_in_context(
+                rarg,context,&mut rf,0,
+            ) else {return false};
+            let check_ty=|actual:&TypeValue,expected:&TypeValue| {
+                crate::convert::convert_with_policy_in_context(
+                    self,actual,expected,probe.min(512),
+                    crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+                ).is_proven()
+            };
+            if !check_ty(&larg_ty,&ldom) || !check_ty(&rarg_ty,&rdom) {
+                return false;
+            }
+            let prop_domain=|dom:&TypeValue| {
+                let TypeValue::Term(c)=dom else {return false};
+                let mut f=probe;
+                let Some(ty)=self.infer_exact_closure_in_context(c,context,&mut f,0)
+                else {return false};
+                matches!(
+                    self.sort_level(
+                        Judgment::proven(ty,"checked-relevance-domain"),f.min(1024)
+                    ),
+                    Judgment::Proven {value:LevelTerm::Zero,..}
+                )
+            };
+            if prop_domain(&ldom) && prop_domain(&rdom) {
+                skipped_proof=true;
+            } else if !crate::convert::convert_with_policy_in_context(
+                self,
+                &TypeValue::Term(larg.clone()),
+                &TypeValue::Term(rarg.clone()),
+                probe.min(512),
+                crate::convert::DeltaPolicy::PreferredOnly,
+                depth,context,
+            ).is_proven() {
+                return false;
+            }
+            let next = |body:PiBody,arg:&Closure| -> Option<TypeValue> {
+                match body {
+                    PiBody::Fixed(binder,ty) => {
+                        let mut f=probe;
+                        self.instantiate_fixed_pi_body(&ty,binder,arg,&mut f)
+                    }
+                    PiBody::Closure(body) => Some(TypeValue::Term(
+                        Closure::with_levels(body.expr,body.env.extend(arg.clone()),body.levels)
+                    )),
+                }
+            };
+            let Some(lty)=next(lbody,larg) else {return false};
+            let Some(rty)=next(rbody,rarg) else {return false};
+            lhs_type=lty;
+            rhs_type=rty;
+        }
+        if skipped_proof {
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_CHECKED_RELEVANCE").is_some() {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static EARNED:AtomicUsize=AtomicUsize::new(0);
+                if EARNED.fetch_add(1,Ordering::Relaxed)<40 {
+                    eprintln!(
+                        "NUCLEUS_CHECKED_RELEVANCE:head={lname:?}:spine={}:depth={depth}:budget={budget}:verified_proof_erasures=true",
+                        left.spine.len()
+                    );
+                }
+            }
+        }
+        skipped_proof
+    }
+
     pub(crate) fn proof_terms_same_proposition(
         &self,
         left: &Closure,
