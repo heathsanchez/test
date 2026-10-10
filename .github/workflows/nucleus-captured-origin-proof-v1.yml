@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-receiver-warrant-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-receiver-warrant-v1, nucleus-projection-target-separator-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -84,6 +84,7 @@ jobs:
                   env['NUCLEUS_TRACE_PROJECTION_LAST_FAILURE']='1'
                   env['NUCLEUS_TRACE_PROJECTION_OPPOSITION']='1'
                   env['NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE']='1'
+                  env['NUCLEUS_TRACE_TARGET_PROJECTION']='1'
               if trace: env['NUCLEUS_TRACE_DOWNSTREAM']='1'
               return env
           rows=[]
@@ -109,6 +110,10 @@ jobs:
                            if 'NUCLEUS_POST_IOTA_PROJECTION_GAP:' in s][-24:],
                        'projection_opponents':[s for s in logs
                            if 'NUCLEUS_PROJECTION_OPPOSITION:' in s][-24:],
+                       'target_opponents':[s for s in logs
+                           if 'NUCLEUS_TARGET_OPPOSITION:' in s][-24:],
+                       'target_field_probes':[s for s in logs
+                           if 'NUCLEUS_TARGET_FIELD:' in s][-24:],
                        'projection_field_probes':[s for s in logs
                            if 'NUCLEUS_PROJECTION_FIELD_PROBE:' in s][-24:],
                        'first_typed':[s for s in logs
