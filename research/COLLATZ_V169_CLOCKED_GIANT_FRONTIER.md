@@ -48,6 +48,14 @@ Results:
 
 The k20 H160 true singleton exceptions falsify the guessed stronger claim “zero unseeded components at all finite scales with H=8k.” The actual maximal component ratio is tiny in all tested true windows, but no bound uniform in k is claimed.
 
+## Stronger independent c=5 coprime-sector negative control
+
+A separate source-exact checker [C5 compiler](../research/collatz_v169_c5_component_control.cpp) and [independent replay](../research/collatz_v169_c5_component_audit.py) runs the same H=8k graph construction for G5(2u)=u and G5(2u+1)=3u+4, with genuine terminal seed cycle **1 -> 4 -> 2 -> 1**. The source187 has a genuine disjoint 27-clock periodic cycle. BOTH 1 and 187 are coprime to five; therefore this competing basin cannot be dismissed as simply the other gcd(n,5) sector.
+
+At k20,H160 the exact audit reports 900,605 original sources in nonseeded components, largest 520,517 (49.64% of the cutoff), and a separate disconnected component anchored by original source187 with 33,851 members. Independent Python full-graph reconstruction checks the small k=8,10,12 results against the optimized C++ ledger. This is a more demanding failure test for proposed anti-giant inequalities than the G7 divisible-by-seven barrier. It STILL differs from the true +1 arithmetic, and does not refute a genuinely +1-specific theorem.
+
+**Preserve:** c=5 and c=7 both have persistent genuine distinct future classes, despite highly effective proof-graph mixing. Any positive all-scale M_k bound must use something the true +1 map has that these non-Collatz maps lack.
+
 ## Next cheapest decisive arithmetic experiment
 
 Look for a **genuine Collatz-specific anti-giant lemma** that operates on source-height boundary flow, rather than on generic parity mixing or unsound finite modulus connectivity. Build the smallest exact (+1)-specific inequality that forces M_k/2^k small, and test it against the giant G7 component and high-odd c=5 cycles, including V168-weighted residue2 replenishment.
