@@ -1,0 +1,103 @@
+name: Collatz V174 original-source height versus clock cohort
+on:
+  push:
+    branches: [collatz-v174-cohort-height-elimination]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-source-cohort-factorial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Original-source cohort turnover four-way height and clock factorial
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v174_cohort_factorial_audit > evidence/v174-cohorts.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v174-cohorts.json')
+          r=json.loads(p.read_text())
+          assert r['schema']=='COLLATZ_V174_SOURCE_IDENTITY_HEIGHT_CLOCK_FACTORIAL'
+          assert r['cohort_turnover']['source_old_k24_H192']==40
+          assert r['observations']['k25_H200']['unseeded_sources']==40
+          assert r['observations']['k24_H192']['largest_unseeded_component']==13
+          assert r['observations']['k25_H200']['largest_unseeded_component']==10
+          assert r['original_source_height_and_clock_are_independent_controls']
+          assert r['negative_controls']['G7_k14']['unseeded_sources']>3000
+          assert r['negative_controls']['S5_k14']['unseeded_sources']>10000
+          assert r['bounded_source_attested_only']
+          assert not r['unbounded_elimination_proved']
+          assert r['global_collatz']=='UNKNOWN' and r['qed'] is False
+          cpp=pathlib.Path('research/collatz_v174_height_clock_cohort.cpp').read_bytes()
+          assert hashlib.sha256(cpp).hexdigest()==r['source_cpp_sha256']
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out={'schema':'COLLATZ_V174_BOUNDED_SOURCE_COHORT_SEAL',
+               'source_commit':sha,
+               'cpp_sha256':r['source_cpp_sha256'],
+               'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+               'qualification':'EXACT_BOUNDED_SOURCE_IDENTITY_FACTORIAL',
+               'all_scale_gain_proved':False,
+               'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v174-exact-seal.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v174-source-cohort
+          path: evidence/
+          if-no-files-found: error
+
+  independent-source-seal:
+    needs: [exact-source-cohort-factorial]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v174-source-cohort
+          path: evidence
+      - name: Reconcile exact source and time-height causal contrasts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, hashlib, subprocess
+          p=pathlib.Path('evidence/v174-cohorts.json')
+          r=json.loads(p.read_text())
+          s=json.loads(pathlib.Path('evidence/v174-exact-seal.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert s['source_commit']==sha
+          assert s['result_sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
+          assert s['cpp_sha256']==hashlib.sha256(
+            pathlib.Path('research/collatz_v174_height_clock_cohort.cpp').read_bytes()).hexdigest()
+          for name,rec in r['observations'].items():
+            assert len(rec['unseeded_original_members'])==rec['unseeded_sources']
+            assert 0<=rec['largest_unseeded_component']<=rec['unseeded_sources']
+          counts=r['cohort_turnover']
+          assert counts['old_certified_by_height_only']>=0
+          assert counts['old_certified_by_clock_only']>=0
+          assert counts['old_certified_by_height_and_clock']>=0
+          assert r['global_collatz']==s['global_collatz']=='UNKNOWN'
+          assert r['qed'] is s['qed'] is False
+          out={'schema':'COLLATZ_V174_FINAL',
+               'source_commit':sha,
+               'result_sha256':s['result_sha256'],
+               'status':'WARRANTED_BOUNDED_SOURCE_IDENTITY_HEIGHT_VS_CLOCK_FACTORIAL',
+               'universal_convergence':'UNKNOWN',
+               'all_scale_anti_second_giant':'UNKNOWN',
+               'qed':False}
+          pathlib.Path('evidence/v174-final.json').write_text(
+            json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v174-final
+          path: evidence/v174-final.json
+          if-no-files-found: error
