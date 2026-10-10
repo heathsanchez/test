@@ -3269,7 +3269,12 @@ fn generic_prop_singleton_large_elim_candidate(
     };
 
     ((generic_nonrecursive_prop_small_candidate(export, block)
-        && inductive.num_params <= 1
+        // Three-parameter nonrecursive Prop singletons share the same
+        // checked field/recursor contract. This extends only the candidate
+        // selector; source-checked positive field propositions, constructor
+        // ownership, motive/minor/rule equations and universe arity are
+        // still independent obligations before any declaration is admitted.
+        && (inductive.num_params <= 1 || inductive.num_params == 3)
         && constructor.num_fields == 1)
         || generic_prop_function_pair_candidate(export, block)
         || generic_prop_relation_witness_candidate(export, block))
@@ -3293,7 +3298,7 @@ fn generic_prop_singleton_field_is_proposition(
     let Ok(field_count) = usize::try_from(constructor.num_fields) else {
         return false;
     };
-    if !((parameter_count <= 1 && field_count == 1)
+    if !(((parameter_count <= 1 || parameter_count == 3) && field_count == 1)
         || (parameter_count == 2 && field_count == 2)
         || (parameter_count == 2 && field_count == 3))
     {
