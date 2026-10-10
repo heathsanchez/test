@@ -2322,6 +2322,72 @@ impl<'a> TypeChecker<'a> {
     /// A preserved binder witness carries its original checked context.
     /// Replay occurs under THAT context, not a synthetic empty caller scope.
     /// No derived result is installed in the production checker.
+    /// Kernel Lam checking, supplied an independently source-typed expected
+    /// Pi. No inference from the desired result shape is allowed: both
+    /// domains and every body judgment must be checked in its own lexical
+    /// environment. This diagnostic returns no warrant to the live checker.
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_check_exact_against_pi(
+        &self,
+        term: &Closure,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        remaining: &mut usize,
+        depth: usize,
+    ) -> Option<()> {
+        if depth >= 24 || !take_step(remaining) { return None; }
+        if let Some(Expr::Lam {domain,body}) = self.expressions.get(term.expr) {
+            let (pi_domain, pi_body) = self.pi_view(
+                Judgment::proven(expected.clone(),"diagnostic-source-typed-Pi"),
+                (*remaining).min(512),
+            )?;
+            let syntax_domain=term.sibling(*domain,term.env.clone());
+            let domain_sort=self.infer_exact_closure_in_context(
+                &syntax_domain,context,remaining,depth+1,
+            )?;
+            if !self.sort_level(
+                Judgment::proven(domain_sort,"source-Lam-domain-wf"),
+                (*remaining).min(512),
+            ).is_proven() { return None }
+            let declared_domain=TypeValue::Term(syntax_domain.clone());
+            if !crate::convert::convert_with_policy_in_context(
+                self,&declared_domain,&pi_domain,
+                (*remaining).min(512),
+                crate::convert::DeltaPolicy::PreferredOnly,
+                context.len(),context,
+            ).is_proven() {return None}
+            let fresh=FreeId(u64::try_from(context.len()).ok()?);
+            let mut extended=context.to_vec();
+            extended.push(declared_domain.clone());
+            let body_frame=term.env.extend_free(fresh);
+            self.retain_checked_binding(&body_frame,declared_domain,&extended);
+            let source_body=term.sibling(*body,body_frame);
+            let target_body=match pi_body {
+                PiBody::Closure(expected_body) =>
+                    TypeValue::Term(Closure::with_levels(
+                        expected_body.expr,
+                        expected_body.env.extend_free(fresh),
+                        expected_body.levels,
+                    )),
+                // Fixed Pi body requires a separately checked substitution
+                // derivation. Never pretend its FreeId equals fresh.
+                PiBody::Fixed(..) => return None,
+            };
+            self.diagnostic_check_exact_against_pi(
+                &source_body,&target_body,&extended,remaining,depth+1,
+            )
+        } else {
+            let inferred=self.infer_exact_closure_in_context(
+                term,context,remaining,depth+1,
+            )?;
+            if crate::convert::convert_with_policy_in_context(
+                self,&inferred,expected,(*remaining).min(512),
+                crate::convert::DeltaPolicy::PreferredOnly,
+                context.len(),context,
+            ).is_proven() {Some(())} else {None}
+        }
+    }
+
     #[cfg(feature = "diagnostics")]
     fn diagnostic_lambda_source_premises(
         &self,
@@ -2639,9 +2705,27 @@ impl<'a> TypeChecker<'a> {
                     "first-missing-pi:argument={position}:function_type={current:?}"
                 );
             };
-            let Some(actual_type) = probe.infer_exact_closure_in_context(
-                actual_arg, context, &mut remaining, 0,
-            ) else {
+            let certified_bidir_lambda =
+                std::env::var_os("NUCLEUS_EXPERIMENTAL_BIDIR_LAMBDA").is_some()
+                && matches!(probe.expressions.get(actual_arg.expr),
+                    Some(Expr::Lam { .. }))
+                && probe.diagnostic_check_exact_against_pi(
+                    actual_arg,&domain,context,&mut remaining,0,
+                ).is_some();
+            #[cfg(feature="diagnostics")]
+            if certified_bidir_lambda
+                && std::env::var_os("NUCLEUS_TRACE_BIDIR_LAMBDA").is_some()
+            {
+                eprintln!("NUCLEUS_BIDIR_LAMBDA_PROVEN:argument={position}:context_depth={}:source={:?}",context.len(),actual_arg.expr);
+            }
+            let inferred=if certified_bidir_lambda {
+                Some(domain.clone())
+            } else {
+                probe.infer_exact_closure_in_context(
+                    actual_arg,context,&mut remaining,0,
+                )
+            };
+            let Some(actual_type)=inferred else {
                 // Chase only the *actual* captured BVar bindings, never
                 // equate de Bruijn indices across separately captured frames.
                 // A first incomplete typing judgment is not a refutation.
