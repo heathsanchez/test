@@ -205,18 +205,18 @@ class DetailReader:
         return data
 
 
-async def candidate(task_id, ob, key, filt, mode, limit, reader):
+async def candidate(task_id, task_intent, ob, key, filt, mode, limit, reader):
     chosen = select_order_rows(ob, key, filt, mode, limit)
     if not chosen:
         return {"task_type": "RETRIEVE", "status": "NOT_FOUND_ERROR",
                 "retrieved_data": None, "error_details": None}
     receipts = [await reader.get(x) for x in chosen]
-    if task_id == 290:
+    if re.search(r"\bSKUs?\b", task_intent, flags=re.I):
         data = [sku for receipt in receipts for sku in receipt["sku"]]
-    elif task_id == 291:
+    elif re.search(r"\btotal spend\b", task_intent, flags=re.I):
         data = [float(sum((Decimal(x["subtotal"]) for x in receipts), Decimal(0)))]
     else:
-        raise ValueError("unregistered test task")
+        raise ValueError("unsupported goal language")
     return {"task_type": "RETRIEVE", "status": "SUCCESS",
             "retrieved_data": data, "error_details": None}
 
@@ -281,7 +281,7 @@ async def experiment(args):
                 if n >= args.budget:
                     break
                 try:
-                    response = await candidate(290, ob, key, filt, mode, limit, reader)
+                    response = await candidate(290, tasks[290]["intent"], ob, key, filt, mode, limit, reader)
                     g = grade(wa, empty, root, arm, "train", 290, response,
                               str(n) + "_" + mode + "_" + str(limit))
                 except Exception as exc:
@@ -322,7 +322,7 @@ async def experiment(args):
             held = []
             if chosen is not None:
                 try:
-                    response = await candidate(291, ob, chosen["group_key"],
+                    response = await candidate(291, tasks[291]["intent"], ob, chosen["group_key"],
                                                chosen["status_filter"], chosen["recency_mode"],
                                                chosen["recent_order_count"], entry["_reader"])
                     held = [grade(wa, empty, root, arm, "heldout", 291, response, "frozen")]
