@@ -1982,7 +1982,10 @@ fn certified_same_source_support(
         left.env.lookup(slot),
         right.env.lookup(slot),
     ) {
-        (None, None) => true,
+        // A source free BVar without a captured binding is not evidence of
+        // equality, even if both sides fail to bind it. Missing authority
+        // always declines rather than synthesizing reflexivity.
+        (None, None) => false,
         (Some(EnvBinding::Free(a)), Some(EnvBinding::Free(b))) => a == b,
         (Some(EnvBinding::Closure(a)), Some(EnvBinding::Closure(b))) => {
             a == b || convert_with_policy_in_context(
