@@ -1,0 +1,98 @@
+name: Matched compounding economics F
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-matched-compounding-economics-v1]
+    paths:
+      - "scripts/webarena_compounding_economics_v1.py"
+      - ".github/workflows/chollet_compounding_economics_v1.yml"
+jobs:
+  source-pinned-matched-counterfactual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test acquisition harness
+        run: |
+          python -m py_compile scripts/webarena_compounding_economics_v1.py
+          python scripts/webarena_compounding_economics_v1.py --self-test
+      - name: Checkout pinned WebArena authority
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          cd upstream
+          git checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+          test "$(git rev-parse HEAD)" = 6473f72db5dcefc97b5725b59e734504edc28a21
+      - name: Recover qualified E representation from original artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ROOT=artifacts/matched_compounding_v1
+          mkdir -p "$ROOT/e_archive"
+          gh api /repos/heathsanchez/test/actions/artifacts/11467591099/zip > /tmp/e_archive.zip
+          unzip -q /tmp/e_archive.zip -d "$ROOT/e_archive"
+          test -s "$ROOT/e_archive/frozen.json"
+          test -s "$ROOT/e_archive/result.json"
+          test -s "$ROOT/e_archive/representation.json"
+          sha256sum /tmp/e_archive.zip > "$ROOT/e_archive_zip.sha256"
+      - name: Start official shopping-admin environment
+        run: |
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker run -d --name wa-admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{.Id}}' > artifacts/matched_compounding_v1/fixture_image.txt
+          for i in $(seq 1 150); do
+            a=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:7780/admin || true)
+            if [ "$a" = "200" ] || [ "$a" = "302" ]; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Install pinned official evaluator and browser
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Prepare candidate-only task corpus
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("artifacts/matched_compounding_v1")
+          records=json.loads(Path("upstream/assets/dataset/webarena-verified.json").read_text())
+          no_eval=[{k:v for k,v in x.items() if k not in {"eval","reference_url"}} for x in records]
+          assert {288,292}.issubset({int(x["task_id"]) for x in no_eval})
+          (root/"full_no_eval.json").write_text(json.dumps(no_eval,indent=2)+"\n")
+          (root/"config.json").write_text(json.dumps({"environments":{"__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0}}},indent=2)+"\n")
+          PY
+          sha256sum upstream/assets/dataset/webarena-verified.json > artifacts/matched_compounding_v1/authority_dataset.sha256
+          sha256sum scripts/webarena_compounding_economics_v1.py > artifacts/matched_compounding_v1/experiment_code.sha256
+      - name: Observe identical fresh F task world
+        run: |
+          python scripts/webarena_customer_count_representation_synth.py observe --base-url http://localhost:7780/admin --output artifacts/matched_compounding_v1/f_observation.json
+      - name: Run matched acquisition arms with freeze before heldout
+        run: |
+          python scripts/webarena_compounding_economics_v1.py --root artifacts/matched_compounding_v1 --archive artifacts/matched_compounding_v1/e_archive --observation artifacts/matched_compounding_v1/f_observation.json --tasks artifacts/matched_compounding_v1/full_no_eval.json --config artifacts/matched_compounding_v1/config.json --budget 12
+      - name: Fail-closed audit of claims
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=Path("artifacts/matched_compounding_v1")
+          d=json.loads((r/"result.json").read_text())
+          assert set(d["arms"])=={"retained_e","stateless_schema","stateless_broad"}
+          assert d["train"]==[288] and d["heldout"]==[292]
+          assert d["claims"]["full_amortized_recursive_acceleration"]=="UNKNOWN"
+          assert all(v["candidate_task_evaluations"]<=12 for v in d["arms"].values())
+          assert all((r/(arm+"_freeze.json")).exists() for arm in d["arms"])
+          print(json.dumps(d["claims"],indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: matched-compounding-economics-f
+          path: artifacts/matched_compounding_v1
