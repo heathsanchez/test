@@ -71,6 +71,8 @@ jobs:
             ('good','perf/folded-constant-first'),
             ('good','perf/folded-constant-last'),
             ('good','perf/args-before-unfold'),
+            ('good','init-prelude'),
+            ('good','perf/grind-ring-5'),
             ('bad','bugs/nested-unused-param'),
           ]
           binaries=[('baseline','/tmp/nucleus-baseline-bin'),('candidate','/tmp/nucleus')]
@@ -88,7 +90,7 @@ jobs:
                   proc=subprocess.run(['/usr/bin/time','-f','%U %S %M','-o',str(meter),binary],
                     input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=35)
                   wall=time.monotonic()-start
-                  user,sys,rss=meter.read_text().strip().split()[:3]
+                  user,sys,rss=meter.read_text().strip().splitlines()[-1].split()[:3]
                 runs.setdefault(name,[]).append(dict(rc=proc.returncode,wall=wall,
                   cpu=float(user)+float(sys),rss_kb=int(rss)))
             expected=0 if bucket=='good' else 1
@@ -99,7 +101,9 @@ jobs:
             assert runs['candidate'][0]['rc'] in (expected,2),(case,runs)
             row=dict(bucket=bucket,case=case,runs=runs,
               baseline_median_cpu=statistics.median(r['cpu'] for r in runs['baseline']),
-              candidate_median_cpu=statistics.median(r['cpu'] for r in runs['candidate']))
+              candidate_median_cpu=statistics.median(r['cpu'] for r in runs['candidate']),
+              baseline_median_wall=statistics.median(r['wall'] for r in runs['baseline']),
+              candidate_median_wall=statistics.median(r['wall'] for r in runs['candidate']))
             cases.append(row)
             print('MSI_AB_CASE='+json.dumps({k:v for k,v in row.items() if k!='runs'}),flush=True)
           OUT.write_text(json.dumps(dict(schema='nucleus-msi-ab-v1',
