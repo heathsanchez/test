@@ -1,0 +1,156 @@
+name: Collatz V163 reverse-terminal horizon mass ceiling
+on:
+  push:
+    branches: [collatz-v163-reverse-horizon-mass-ceiling]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-reverse-coverage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact terminal inverse-tree populations and source-clock replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v163_reverse_horizon_audit > evidence/v163-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v163-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V163_REVERSE_HORIZON_MASS_CEILING'
+          assert d['t_max_checked']==24
+          assert d['exact_terminal_by_horizon_equals_terminal_at_exact_depth']
+          assert d['all_sources_true_collatz_shortcut']
+          assert d['fibonacci_scaled_sum_bound_all_tested']
+          assert d['fibonacci_scaled_exact_depth_bound_all_tested']
+          assert d['four_step_six_over_five_exponential_separation_all_tested']
+          assert d['terminal_by_bitlength_coverage_upper_bound']=='3*(5/6)^k'
+          assert d['direct_terminal_by_bitlength_fraction_tends_to_zero_elementary']
+          assert d['rows'][-1]['terminal_by_t_positive_sources_below_cutoff']==3571
+          assert d['rows'][-1]['dyadic_cutoff']==2**24
+          assert not d['global_density_one_of_all_eventual_terminal_sources_proved']
+          assert not d['all_source_time_unbounded_coverage_proved']
+          assert not d['source_relative_merger_clock_excluded']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out={'schema':'COLLATZ_V163_EXACT_SEAL',
+            'source_commit':h,
+            'status':'WARRANTED_BOUNDED_REAL_INVERSE_SOURCES_AND_HORIZON_EXPONENTIAL_CEILING',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v163-exact-seal.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v163-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-scaled-ceiling:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check exact-depth reverse terminal and exponential population ceiling
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison InverseFibonacciBound; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/InverseHorizonMassCeiling.lean 2>&1 | tee evidence/v163-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v163-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-14000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          required=[
+            'v163_fibonacci_pair_ratio',
+            'v163_fibonacci_one_step_growth',
+            'v163_scaled_fibonacci_growth',
+            'v163_scaled_terminal_path_budget',
+            'v163_actual_terminal_path_scaled_ceiling',
+            'v163_four_step_exponential_separation',
+            'v163_terminal_by_horizon_iff_exact_clock',
+            'v163_exact_reverse_list_complete_and_sound',
+            'v163_exact_reverse_list_length_ceiling',
+            'v163_exact_depth_scaled_ceiling'
+          ]
+          for target in required:
+            assert 'CollatzFinal.SourceProduct.'+target in ax,target
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out={'schema':'COLLATZ_V163_FORMAL_SCALED_CEILING',
+            'source_commit':h,'axioms':ax,
+            'status':'WARRANTED_FORMAL_ALL_DEPTH_INVERSE_PATH_EXPONENTIAL_CEILING',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'includes_actual_one_two_terminal_cycle':True,
+            'source_relative_earlier_merge_excluded':False,
+            'all_depth_terminal_density_one_established':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v163-formal-seal.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v163-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-reverse-coverage,formal-scaled-ceiling]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v163-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v163-formal
+          path: evidence/formal
+      - name: Independently seal arithmetic scope and incomplete QED
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v163-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v163-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert b['includes_actual_one_two_terminal_cycle']
+          assert not b['source_relative_earlier_merge_excluded']
+          assert not b['all_depth_terminal_density_one_established']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V163_FINAL','source_commit':h,
+            'status':'WARRANTED_FORMAL_REVERSE_TERMINAL_HORIZON_MASS_CEILING_NOT_QED',
+            'quantitative_result':'3^t * exact terminal depth-t path count <= 3*5^t, so density for sources n<2^t reaching terminal by time t <=3*(5/6)^t',
+            'clock_caveat':'This prohibits bitlength-or-less direct-terminal clock as a density-one certificate grammar; it does not constrain source-dependent longer times or real earlier-source two-clock joins',
+            'missing':'Source-attached all-horizon certified terminal mass inequality of V151',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v163-final.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v163-final
+          path: evidence/v163-final.json
+          if-no-files-found: error
