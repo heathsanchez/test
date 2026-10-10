@@ -390,6 +390,9 @@ fn check_export_with_policy(
                     if visited.len() >= 72 || depth > 13 || !visited.insert(expr) {continue;}
                     let node = export.exprs.get(expr);
                     eprintln!("NUCLEUS_MUL_NODE:depth={depth}:expr={expr:?}:node={node:?}");
+                    if let Some(Expr::Const { name: named, .. }) = node {
+                        eprintln!("NUCLEUS_MUL_CONST:expr={expr:?}:name={}", trace_name(&export, *named));
+                    }
                     match node {
                         Some(Expr::App {fun, arg}) => {
                             pending.push((*arg,depth+1)); pending.push((*fun,depth+1));
