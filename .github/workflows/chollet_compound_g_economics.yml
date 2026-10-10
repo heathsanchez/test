@@ -1,0 +1,105 @@
+name: WebArena G qualified E-plus-F composition economics
+on:
+  workflow_dispatch:
+  push:
+    branches: [chollet-verified-compose-e-f-g-v1]
+    paths:
+      - "scripts/webarena_compound_g_economics.py"
+      - ".github/workflows/chollet_compound_g_economics.yml"
+jobs:
+  prospective-compositional-economics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Fail-closed local harness selftest
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/webarena_compound_g_economics.py
+          python -m py_compile scripts/webarena_compounding_economics_v1.py
+          python scripts/webarena_compound_g_economics.py --self-test
+      - name: Pinned official benchmark source
+        run: |
+          set -euo pipefail
+          git clone https://github.com/ServiceNow/webarena-verified.git upstream
+          (cd upstream && git checkout 6473f72db5dcefc97b5725b59e734504edc28a21 && test "$(git rev-parse HEAD)" = 6473f72db5dcefc97b5725b59e734504edc28a21)
+      - name: Retrieve E and F independently qualified source artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ROOT=artifacts/compound_g
+          mkdir -p "$ROOT/E" "$ROOT/F"
+          gh api /repos/heathsanchez/test/actions/artifacts/11467591099/zip > /tmp/capability_e.zip
+          gh api /repos/heathsanchez/test/actions/artifacts/11663621950/zip > /tmp/capability_f.zip
+          unzip -q /tmp/capability_e.zip -d "$ROOT/E"
+          unzip -q /tmp/capability_f.zip -d "$ROOT/F"
+          for f in "$ROOT/E/frozen.json" "$ROOT/E/result.json" "$ROOT/E/representation.json" "$ROOT/F/result.json"; do test -s "$f"; done
+          sha256sum /tmp/capability_e.zip /tmp/capability_f.zip > "$ROOT/acquisition_artifact_zip_hashes.txt"
+      - name: Start identical official shopping-admin fixture
+        run: |
+          set -euo pipefail
+          docker pull am1n3e/webarena-verified-shopping_admin
+          docker run -d --name wa-admin -p 7780:80 am1n3e/webarena-verified-shopping_admin
+          mkdir -p artifacts/compound_g
+          docker image inspect am1n3e/webarena-verified-shopping_admin --format '{{.Id}}' > artifacts/compound_g/fixture_image.txt
+          ready=0
+          for i in $(seq 1 150); do
+            c=$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:7780/admin || true)
+            if [ "$c" = 200 ] || [ "$c" = 302 ]; then ready=1; break; fi
+            sleep 2
+          done
+          test "$ready" = 1
+      - name: Install browser and source-pinned official evaluator
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "./upstream[examples]" playwright
+          playwright install --with-deps chromium
+      - name: Prepare no-evaluator candidate corpus
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("artifacts/compound_g")
+          tasks=json.loads(Path("upstream/assets/dataset/webarena-verified.json").read_text())
+          stripped=[{k:v for k,v in x.items() if k not in {"eval","reference_url"}} for x in tasks]
+          assert {290,291}.issubset({int(x["task_id"]) for x in stripped})
+          assert all("eval" not in x and "reference_url" not in x for x in stripped)
+          (root/"no_eval.json").write_text(json.dumps(stripped,indent=2)+"\n")
+          (root/"config.json").write_text(json.dumps({"environments":{"__SHOPPING_ADMIN__":{"urls":["http://localhost:7780/admin"],"active_url_idx":0}}},indent=2)+"\n")
+          PY
+          sha256sum upstream/assets/dataset/webarena-verified.json > artifacts/compound_g/authority_sha256.txt
+          sha256sum scripts/webarena_compound_g_economics.py > artifacts/compound_g/experiment_source_sha256.txt
+      - name: Record shared unbiased order-grid observation
+        run: |
+          python scripts/webarena_compound_g_economics.py --observe --observation artifacts/compound_g/observation.json
+      - name: Acquire G in matched four-arm counterfactual and score heldout
+        run: |
+          python scripts/webarena_compound_g_economics.py --root artifacts/compound_g --archive-e artifacts/compound_g/E --archive-f artifacts/compound_g/F --observation artifacts/compound_g/observation.json --tasks artifacts/compound_g/no_eval.json --config artifacts/compound_g/config.json --budget 6
+      - name: Audit prospectivity, immutable receipts and epistemic claims
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("artifacts/compound_g")
+          r=json.loads((root/"result.json").read_text())
+          assert r["source_exact"]=="6473f72db5dcefc97b5725b59e734504edc28a21"
+          assert r["train"]==[290] and r["heldout"]==[291]
+          assert set(r["arms"])=={"retained_ef","only_e","only_f","stateless_schema"}
+          assert all(json.loads((root/f"{k}_freeze.json").read_text())["heldout_scored_before_freeze"] is False for k in r["arms"])
+          assert all(r["arms"][k]["candidate_task_evaluations"]<=6 for k in r["arms"])
+          assert r["claims"]["decreasing_total_amortized_acquisition_cost"]=="UNKNOWN"
+          assert r["claims"]["multi_generation_recursive_acceleration"]=="UNKNOWN"
+          print(json.dumps({"claims":r["claims"],"arms":{k:{"state":v["state"],"cost":v["candidate_task_evaluations"]} for k,v in r["arms"].items()}},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chollet-composition-e-f-g
+          path: artifacts/compound_g
