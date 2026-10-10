@@ -1506,6 +1506,46 @@ impl<'a> TypeChecker<'a> {
                             let b_value=self.machine().expose_for_conversion(
                                 b.clone(),Transparency::Reducible,512,
                             );
+                            #[cfg(feature="diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_ARITHMETIC_INSTANCE").is_some()
+                                && label != "arg0" && context.len()>=7
+                            {
+                                let lv=self.machine().expose_for_conversion(
+                                    a.clone(),Transparency::Full,1024,
+                                );
+                                let rv=self.machine().expose_for_conversion(
+                                    b.clone(),Transparency::Full,1024,
+                                );
+                                let classify=|value:&Judgment<Value>|->String {
+                                    let Some(Value::StuckProjection{
+                                        type_name,index,structure,spine,
+                                    })=value.proven_value() else {
+                                        return format!("not-stuck:{}",format!("{value:?}").chars().take(1200).collect::<String>())
+                                    };
+                                    let struct_source=match self.expressions.get(structure.expr) {
+                                        Some(Expr::BVar(i))=>structure.env.lookup_with_node_id(*i),
+                                        _=>None,
+                                    };
+                                    let receiver=self.machine().expose_for_conversion(
+                                        structure.clone(),Transparency::Full,1024,
+                                    );
+                                    let original_args=spine.iter().map(|arg|{
+                                        let v=self.machine().expose_for_conversion(
+                                            arg.clone(),Transparency::Full,512,
+                                        );
+                                        format!("{:?}={}",arg.expr,
+                                            format!("{v:?}").chars().take(550).collect::<String>())
+                                    }).collect::<Vec<_>>();
+                                    format!(
+                                        "project={type_name:?}:{index}:struct={structure:?}:source={struct_source:?}:receiver={}:args={original_args:?}",
+                                        format!("{receiver:?}").chars().take(1700).collect::<String>(),
+                                    )
+                                };
+                                eprintln!(
+                                    "NUCLEUS_ARITHMETIC_INSTANCE:label={label}:context={}:left={}:right={}",
+                                    context.len(),classify(&lv),classify(&rv),
+                                );
+                            }
                             format!(
                                 "{label}:a={a:?}:b={b:?}:atype={a_ty:?}:btype={b_ty:?}:akind={:?}:bkind={:?}:type_relation={same_type:?}:value_a={}:value_b={}:checked_proof_pair={}",
                                 kind(&a_ty),kind(&b_ty),
