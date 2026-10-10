@@ -109,9 +109,10 @@ jobs:
                                  for s in row['outer_replays']),(
                           'captured source binder scope was not reconstructed',row)
                       assert any('caller-proof-candidates=' in s and
-                                 'captured-proof-candidates=' in s
+                                 'captured-proof-candidates=' in s and
+                                 'proof-parametricity=' in s
                                  for s in row['outer_replays']),(
-                          'checked candidate proof census absent',row)
+                          'checked proof-parametricity separator absent',row)
                   rows.append(row)
           source=(root/'good/init-prelude.ndjson').read_bytes()
           forged=false_index(extract(source))
