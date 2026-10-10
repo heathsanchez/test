@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -82,12 +82,14 @@ jobs:
                   env['NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512']='1'
                   env['NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL']='1'
                   env['NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F']='1'
+                  env['NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA']='1'
               if mode=='origin_replay' and trace:
                   env['NUCLEUS_TRACE_PROJECTION_CONTEXT']='1'
                   env['NUCLEUS_TRACE_PROJECTION_CROSSFRAME_512']='1'
                   env['NUCLEUS_TRACE_POLYMORPHIC_PROP_IRREL']='1'
                   env['NUCLEUS_TRACE_PROP_SINGLETON']='1'
                   env['NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION']='1'
+                  env['NUCLEUS_TRACE_EXPECTED_LAMBDA']='1'
                   env['NUCLEUS_TRACE_FIRST_TYPED_CONTINUATION']='1'
                   env['NUCLEUS_TRACE_ORIGIN_REPLAY']='1'
                   env['NUCLEUS_TRACE_SOURCE_PROOF_BETA']='1'
@@ -125,6 +127,8 @@ jobs:
                            if 'NUCLEUS_PROP_SINGLETON:' in s][-24:],
                        'app_domains':[s for s in logs
                            if 'NUCLEUS_APP_DOMAIN_OBLIGATION:' in s][-36:],
+                       'expected_lambdas':[s for s in logs
+                           if 'NUCLEUS_EXPECTED_LAMBDA:' in s][-36:],
                        'downstream':[s for s in logs if 'NUCLEUS_DOWNSTREAM:' in s][-2:]}
                   print('NUCLEUS_ORIGIN_SEVEN='+json.dumps(row),flush=True)
                   assert p.returncode in (0,2),('valid became rejected',row)
