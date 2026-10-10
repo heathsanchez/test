@@ -2303,6 +2303,19 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         budget: usize,
     ) -> String {
+        self.diagnostic_neutral_source_telescope_inner(
+            neutral, context, budget, true,
+        )
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_neutral_source_telescope_inner(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+        follow_source_leaf: bool,
+    ) -> String {
         // Diagnostic evaluation must not mutate the live checker's typed
         // binding ledger or reduction cache. Start from the same checked
         // witness snapshot in an isolated checker, then discard all new
@@ -2446,13 +2459,20 @@ impl<'a> TypeChecker<'a> {
                             let neutral_probe = probe.machine().expose(
                                 cursor.clone(), Transparency::Opaque, 256,
                             );
-                            let neutral_premise = match neutral_probe.proven_value() {
-                                Some(Value::Neutral(value)) => {
-                                    probe.diagnostic_neutral_source_telescope(
-                                        value, context, 512,
-                                    )
+                            let neutral_premise = if follow_source_leaf {
+                                match neutral_probe.proven_value() {
+                                    Some(Value::Neutral(value)) => {
+                                        // One additional source telescope is
+                                        // allowed, but cannot recursively call
+                                        // itself on another untyped leaf.
+                                        probe.diagnostic_neutral_source_telescope_inner(
+                                            value, context, 512, false,
+                                        )
+                                    }
+                                    other => format!("no-opaque-neutral={other:?}"),
                                 }
-                                other => format!("no-opaque-neutral={other:?}"),
+                            } else {
+                                "nested-source-probe-disabled".to_owned()
                             };
                             let neutral_premise: String =
                                 neutral_premise.chars().take(1300).collect();
