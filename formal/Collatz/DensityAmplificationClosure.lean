@@ -279,13 +279,10 @@ theorem v150_proof_carrying_envelope_bounds_true_bad_count
   apply Finset.card_le_card
   intro n hn
   have hmem := Finset.mem_filter.mp hn
-  apply Finset.mem_filter.mpr
-  by_contra hnot
-  have ht : n ∈ E k := by
-    by_contra hno
-    have hclosed := hCover k n (Finset.mem_range.mp hmem.1) hno
-    exact hmem.2.2 (v150_closed_certificate_sound hclosed)
-  exact hnot ht
+  by_cases ht : n ∈ E k
+  · exact ht
+  · have hclosed := hCover k n (Finset.mem_range.mp hmem.1) ht
+    exact False.elim (hmem.2.2 (v150_closed_certificate_sound hclosed))
 
 /-- The exact final source-verified path:
     external density amplifier + certified terminal-closure coverage
