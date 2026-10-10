@@ -1474,6 +1474,59 @@ fn compare_values(
                         }
                     }
                 }
+                // A source-registered recursor is allowed to reduce by iota
+                // regardless of the *other* term's head. In particular,
+                // Bool.rec over a certified major may compute the proposition
+                // True/False, which is NOT itself a Bool constructor.
+                // The previous fast path considered only a Bool constructor
+                // as the opposite term and thus missed this lawful reduction.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_GENERIC_IOTA").is_some()
+                    && current_budget >= 128
+                    && left.head != right.head
+                {
+                    let machine=checker.machine();
+                    let mut reduced=None;
+                    for (side,rec) in [(0u8,left),(1u8,right)] {
+                        if rec.spine.len()!=4 {continue}
+                        let outcome=machine.qualified_nested_recursor_result(
+                            rec,current_budget.min(2048),
+                        );
+                        #[cfg(feature="diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_GENERIC_IOTA").is_some() {
+                            use std::sync::atomic::{AtomicUsize,Ordering};
+                            static PRINTED:AtomicUsize=AtomicUsize::new(0);
+                            if PRINTED.fetch_add(1,Ordering::Relaxed)<80 {
+                                eprintln!("NUCLEUS_GENERIC_IOTA:side={side}:arity={}:result={outcome:?}",rec.spine.len());
+                            }
+                        }
+                        if let Some(value)=outcome.proven_value().cloned()
+                            && value!=Value::Neutral(rec.clone())
+                        {
+                            reduced=Some((side,value));
+                            break;
+                        }
+                    }
+                    if let Some((side,value))=reduced {
+                        let opposite=if side==0 {
+                            Value::Neutral(right.clone())
+                        } else {
+                            Value::Neutral(left.clone())
+                        };
+                        return if side==0 {
+                            compare_values(
+                                checker,&value,&opposite,
+                                current_budget.saturating_sub(1),depth,
+                                context,work,proof_function_frees,
+                            )
+                        } else {
+                            compare_values(
+                                checker,&opposite,&value,
+                                current_budget.saturating_sub(1),depth,
+                                context,work,proof_function_frees,
+                            )
+                        };
+                    }
+                }
                 match compare_neutral_heads(checker, left, right, current_budget, depth, context) {
                     Judgment::Proven { .. } => {}
                     other => return other,
