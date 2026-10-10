@@ -325,6 +325,20 @@ impl<'a> Machine<'a> {
             false,
         );
         #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_TARGET_PROJECTION").is_some()
+            && matches!(structure.expr.0, 1014|532|744|740|662|661)
+        {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static TARGET:AtomicUsize=AtomicUsize::new(0);
+            if TARGET.fetch_add(1,Ordering::Relaxed)<32 {
+                eprintln!(
+                    "NUCLEUS_TARGET_FIELD:structure={:?}:env={}:type={type_name:?}:index={index}:constructor={:?}:params={}:field_types={:?}:budget={budget}:full={exposed:?}",
+                    structure.expr,structure.env.id(),spec.constructor,
+                    spec.num_params,spec.field_types,
+                );
+            }
+        }
+        #[cfg(feature = "diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE").is_some() {
             static COUNT: std::sync::atomic::AtomicUsize =
                 std::sync::atomic::AtomicUsize::new(0);
