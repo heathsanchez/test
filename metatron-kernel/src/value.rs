@@ -74,6 +74,26 @@ impl EnvFrame {
         }
     }
 
+    /// Retrieve the *identity of the immutable binding node* read by one
+    /// de Bruijn index, in addition to its value. Typed binder authority is
+    /// attached to the node when a checked Pi/Lam/Let introduces it. The
+    /// node ID is a key for that evidence, NOT an equality of local terms.
+    pub(crate) fn lookup_with_node_id(&self, index: u64) -> Option<(u64, EnvBinding)> {
+        let mut frame=self.clone();
+        let mut index=index;
+        loop {
+            match frame.0.as_ref() {
+                EnvNode::Empty => return None,
+                EnvNode::Extend {id,parent,value} if index==0 =>
+                    return Some((*id,value.clone())),
+                EnvNode::Extend {parent,..} => {
+                    index=index.checked_sub(1)?;
+                    frame=parent.clone();
+                }
+            }
+        }
+    }
+
     pub fn id(&self) -> u64 {
         match self.0.as_ref() {
             EnvNode::Empty => 0,
