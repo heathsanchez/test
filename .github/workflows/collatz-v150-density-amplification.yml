@@ -1,0 +1,231 @@
+name: Collatz V150 verified density amplification interface and exceptional mass criterion
+on:
+  push:
+    branches: [collatz-v150-density-amplification-interface]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-density-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact ordinary/shortcut source guards and finite terminal exceptional envelopes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test "$(git hash-object research/collatz_ros_state_v134.json)" = d035f4a639b3e026681d432b3e3ceebe173c9c09
+          python3 -m research.collatz_v150_density_audit > evidence/v150-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v150-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V150_SOURCE_ATTACHED_DENSITY_BRIDGE_AUDIT'
+          sem=d['semantic_guards']
+          assert sem['ordinary_start1_visits4_but_shortcut_never_does']
+          assert sem['n5_descends_at_clock2_but_no_terminal_certificate']
+          assert sem['target3_only_pure_even_doubling_inverse']
+          assert sem['target3_excluded_from_external_density_theorem']
+          assert len(sem['all_sampled_odd_shortcut_successors_mod3_2'])==12
+          rows=d['finite_dyadic_terminal_envelopes']
+          assert len(rows)==9 and rows[0]['k']==6 and rows[-1]['k']==14
+          assert all(r['finite_verified_good_outside_envelope'] for r in rows)
+          assert all(r['covers_all_positive_n_below_cutoff'] for r in rows)
+          assert all(r['all_unknown_may_still_converge'] for r in rows)
+          assert all(r['mass_test_k_times_unknown_le_cutoff'] for r in rows)
+          assert any(r['unknown_exceptional_envelope']>0 for r in rows)
+          preds=d['finite_predecessor_lower_counts']
+          assert len(preds)==8 and all(r['finite_ordinary_target_predecessor_lower_counts']['3']==r['k']-1 for r in preds)
+          assert not any(r['external_all_depth_density_inferred'] for r in preds)
+          assert not d['external_mazur_theorem_imported_in_local_lean']
+          assert d['external_positive_lower_density_accepted_only_as_explicit_premise']
+          assert not d['upper_natural_density_one_convergence_proved']
+          assert not d['universal_dyadic_exceptional_mass_bound_proved']
+          assert not d['all_depth_terminal_certificate_cover_proved']
+          assert d['finite_observation_is_not_density_limit']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          meta=json.loads(pathlib.Path('research/collatz_v150_external_density_provenance.json').read_text())
+          assert meta['schema']=='COLLATZ_V150_EXTERNAL_MAZUR_AMPLIFIER_PROVENANCE'
+          assert meta['external_formal_theorem']=='CollatzPredecessorDensity.predecessors_positive_lower_density'
+          assert meta['supplement_source_sha256']=='55ceb4df0cca17ae728dc65b30bf5077000e1b47f2dc322454eea9f637ac75b3'
+          assert meta['supporting_source_sha256']=='23f5cac4d66e696401144658752cf180a13ce70373a122f00693e1e1fe969c1f'
+          assert meta['external_reported_formal_build']=='PASS'
+          assert not meta['independent_full_source_rebuild_in_mathgraph']
+          assert not meta['external_result_imported_as_axiom']
+          assert meta['external_result_is_explicit_hypothesis_in_Lean']
+          assert not meta['real_to_discrete_multiplier_equivalence_formalized_locally']
+          assert meta['global_collatz']=='UNKNOWN' and meta['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V150_EXACT_SEMANTIC_AND_FINITE_DENSITY_CONTROL',
+            'source_commit':head,
+            'status':'WARRANTED_BOUNDED_EXACT_DYADIC_ENVELOPE_REPLAY',
+            'exact_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'external_provenance_sha256':hashlib.sha256(pathlib.Path('research/collatz_v150_external_density_provenance.json').read_bytes()).hexdigest(),
+            'ordinary_target_three_sparse_negative_control':True,
+            'all_depth_mass_not_proved':True,
+            'external_formal_result_not_independently_rebuilt':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v150-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v150-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-density-interface:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel verify every new density bridge theorem, conditional interface, and proof grammar
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          test "$(git hash-object research/collatz_ros_state_v134.json)" = d035f4a639b3e026681d432b3e3ceebe173c9c09
+          test "$(git hash-object formal/Collatz/ActualRationalCentreDrift.lean)" = 98014c42f785642cdfce89da2971f7a541c85841
+          test "$(git hash-object formal/Collatz/RationalCentreObservationQuotient.lean)" = f7f757a55851d8a51e1b9797a43d8433ccc49045
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/DensityAmplificationClosure.lean 2>&1 | tee evidence/v150-lean.log
+          python3 - <<'PY'
+          import pathlib,hashlib,json,re,subprocess
+          p=pathlib.Path('evidence/v150-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-6000:]
+          axioms={}
+          for name,v in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            arr=[x.strip() for x in v.split(',') if x.strip()]
+            assert set(arr)<={'propext','Classical.choice','Quot.sound'},(name,arr)
+            axioms[name]=arr
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          names=[
+            'v150_good_after_one_ordinary_step',
+            'v150_ordinary_predecessor_of_bad_is_bad',
+            'v150_not_equal_predecessor_sets',
+            'v150_minimal_bad_has_nonthree_bad_successor',
+            'v150_bad_target_predecessors_counted_as_bad',
+            'v150_amplify_actual_minimal_bad',
+            'v150_collatz_of_amplification_and_dyadic_mass',
+            'v150_closed_certificate_sound',
+            'v150_proof_carrying_envelope_bounds_true_bad_count',
+            'v150_collatz_of_proof_carrying_exceptional_cover']
+          for name in names:
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V150_FORMAL_CONDITIONAL_DENSITY_CLOSURE',
+            'status':'WARRANTED_FORMAL_MAP_INTERFACE_AND_CONDITIONAL_EXCEPTIONAL_MASS',
+            'source_commit':head,
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'named_axioms':axioms,
+            'ordinary_predecessor_badness_transfer':True,
+            'minimal_bad_nonthree_source_successor':True,
+            'external_density_is_explicit_unproven_local_input':True,
+            'all_depth_proof_carrying_exceptional_cover_is_explicit_input':True,
+            'no_new_unqualified_universal_collatz_theorem':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v150-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+          git rev-parse HEAD > evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v150-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-density-controls,formal-density-interface]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v150-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v150-formal
+          path: evidence/formal
+      - name: Independently bind source pins and explicitly unproved universal premises
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v150-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v150-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['ordinary_target_three_sparse_negative_control']
+          assert b['ordinary_predecessor_badness_transfer']
+          assert b['minimal_bad_nonthree_source_successor']
+          assert b['external_density_is_explicit_unproven_local_input']
+          assert b['all_depth_proof_carrying_exceptional_cover_is_explicit_input']
+          assert b['no_new_unqualified_universal_collatz_theorem']
+          assert a['all_depth_mass_not_proved']
+          assert a['external_formal_result_not_independently_rebuilt']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          s={'schema':'COLLATZ_V150_DENSITY_BRIDGE_FINAL',
+            'source_commit':h,
+            'status':'WARRANTED_FORMAL_CONDITIONAL_DENSITY_AMPLIFICATION_BRIDGE',
+            'proved':['map semantic badness backward transfer',
+              'minimal bad successor targets residue 2 mod3',
+              'predecessor counted subset of bad population',
+              'source-coupled proof-carrying terminal closure soundness',
+              'conditional dyadic exceptional mass contradiction'],
+            'not_proved':['independent local reconstruction of Mazur imported proof',
+              'discrete-to-real density equivalence locally',
+              'all-depth exceptional mass bound',
+              'all-depth outside-envelope terminal certificates',
+              'universal Collatz'],
+            'active_v134_controller':'UNCHANGED',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v150-final-seal.json').write_text(json.dumps(s,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v150-final
+          path: evidence/v150-final-seal.json
+          if-no-files-found: error
+  run-status-receipt:
+    needs: [exact-density-controls,formal-density-interface,final-seal]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Persist source-pinned qualified or failed V150 state
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const stages={exact:'${{ needs.exact-density-controls.result }}',
+              formal:'${{ needs.formal-density-interface.result }}',
+              final:'${{ needs.final-seal.result }}'};
+            const qualified=Object.values(stages).every(s=>s==='success');
+            const receipt={
+              schema:'COLLATZ_V150_CI_RECEIPT',
+              source_commit:context.sha,
+              run_id:context.runId,
+              run_url:context.serverUrl+'/'+context.repo.owner+'/'+context.repo.repo+'/actions/runs/'+context.runId,
+              stages,qualified,
+              status:qualified?'WARRANTED_FORMAL_CONDITIONAL_DENSITY_BRIDGE':'NOT_WARRANTED',
+              global_collatz:'UNKNOWN',qed:false};
+            await github.rest.repos.createOrUpdateFileContents({
+              owner:context.repo.owner,repo:context.repo.repo,
+              branch:'collatz-v150-density-amplification-interface',
+              path:'research/ci_seals/collatz_v150_'+context.sha+'.json',
+              message:'CI receipt: V150 density amplification semantic bridge '+context.sha.slice(0,12),
+              content:Buffer.from(JSON.stringify(receipt,null,2)+'\n').toString('base64')
+            });
