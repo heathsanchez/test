@@ -418,6 +418,9 @@ fn check_export_with_policy(
         if let Some(nat) = environment.nat_primitives().cloned() {
             let operation = if name_is_child_str(&export, name, nat.type_name, "add") {
                 Some(NatOperation::Add)
+            } else if std::env::var_os("NUCLEUS_EXPERIMENTAL_NATIVE_MUL").is_some()
+                && name_is_child_str(&export, name, nat.type_name, "mul") {
+                Some(NatOperation::Mul)
             } else if name_is_child_str(&export, name, nat.type_name, "sub") {
                 Some(NatOperation::Sub)
             } else if name_is_child_str(&export, name, nat.type_name, "pred") {
@@ -9013,6 +9016,7 @@ fn check_exact_nat(
             succ: succ.name,
             recursor: recursor.name,
             add: None,
+            mul: None,
             sub: None,
             pred: None,
             virtual_bvar_zero: export.exprs.iter_raw().find_map(|(raw, e)| {
