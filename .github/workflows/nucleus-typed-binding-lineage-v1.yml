@@ -24,6 +24,29 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
 
+      - name: Fetch locked Rust dependencies with independent network gate
+        env:
+          CARGO_HTTP_TIMEOUT: "120"
+          CARGO_NET_RETRY: "10"
+          CARGO_HTTP_LOW_SPEED_LIMIT: "0"
+          CARGO_HTTP_MULTIPLEXING: "false"
+        run: |
+          set -euo pipefail
+          success=0
+          for attempt in 1 2 3 4 5; do
+            echo "CARGO_LOCKED_DEPENDENCY_FETCH_ATTEMPT=$attempt"
+            if cargo fetch --locked --manifest-path metatron-kernel/Cargo.toml; then
+              success=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$success" -ne 1 ]; then
+            echo 'CARGO_LOCKED_DEPENDENCY_FETCH_FAILED__NO_SEMANTIC_TEST_EXECUTED'
+            exit 1
+          fi
+          echo 'CARGO_LOCKED_DEPENDENCY_FETCH_GREEN'
+
       - name: Establish exact source and full Rust regression
         run: |
           set -euo pipefail
