@@ -83,6 +83,7 @@ jobs:
           for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
             ax[name]=[]
           for target in [
+            'v153_zero_is_not_uncertified',
             'v153_terminal_hit_is_closed',
             'v153_diagonal_terminal_coverage',
             'v153_collatz_of_sparse_diagonal_terminal_clock',
