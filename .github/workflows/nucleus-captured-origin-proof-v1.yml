@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -115,9 +115,10 @@ jobs:
                           'captured source binder scope was not reconstructed',row)
                       assert any('caller-proof-candidates=' in s and
                                  'captured-proof-candidates=' in s and
-                                 'proof-parametricity=' in s
+                                 'proof-parametricity=' in s and
+                                 'joined_source_depth=' in s
                                  for s in row['outer_replays']),(
-                          'checked proof-parametricity separator absent',row)
+                          'transitive source-origin join was not exercised',row)
                   rows.append(row)
           source=(root/'good/init-prelude.ndjson').read_bytes()
           forged=false_index(extract(source))
