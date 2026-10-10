@@ -18,6 +18,7 @@ jobs:
     env:
       ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
       ARENA_ARTIFACT: "11272848230"
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
