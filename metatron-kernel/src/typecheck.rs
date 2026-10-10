@@ -4243,7 +4243,16 @@ impl<'a> TypeChecker<'a> {
             parts.push(format!("arg{i}:left={:?}@{}:right={:?}@{}:lty={lt:?}:rty={rt:?}:types={ty:?}:values={value:?}",
                 a.expr,a.env.id(),b.expr,b.env.id()));
         }
-        format!("head={head:?}:scope={}:src_left={:?}@{}:src_right={:?}@{}:premises={parts:?}",
+        let mut lf=4096usize;
+        let mut rf=4096usize;
+        let whole_left=probe.infer_exact_closure_in_context(left,context,&mut lf,0);
+        let whole_right=probe.infer_exact_closure_in_context(right,context,&mut rf,0);
+        let whole_types=if let (Some(a),Some(b))=(&whole_left,&whole_right) {
+            Some(crate::convert::convert_with_policy_in_context(
+                &probe,a,b,2048,crate::convert::DeltaPolicy::PreferredOnly,
+                context.len(),context))
+        }else{None};
+        format!("head={head:?}:scope={}:src_left={:?}@{}:src_right={:?}@{}:whole_left={whole_left:?}:whole_right={whole_right:?}:whole_types={whole_types:?}:premises={parts:?}",
             context.len(),left.expr,left.env.id(),right.expr,right.env.id())
     }
 
