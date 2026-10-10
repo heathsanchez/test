@@ -86,10 +86,10 @@ theorem v163_scaled_terminal_path_budget (t : Nat) :
         3^(t+1)*v152FibonacciPathBudget (t+1) =
             3*(3^t*v152FibonacciPathBudget t) +
               6*(3^t*(v152FibonacciBounds (t+1)).2) := by
+                simp only [v152FibonacciPathBudget,
+                  Nat.pow_succ,Nat.mul_add]
                 rw [show (6:Nat)=3*2 by decide]
-                simp [v152FibonacciPathBudget,Nat.pow_succ,
-                  Nat.mul_add,Nat.mul_assoc,Nat.mul_comm,
-                  Nat.mul_left_comm]
+                ac_rfl
         _ <= 3*(6*5^t)+6*(2*5^t) :=
           Nat.add_le_add (Nat.mul_le_mul_left 3 ih)
             (Nat.mul_le_mul_left 6 hb)
@@ -215,9 +215,9 @@ theorem v163_exact_depth_scaled_ceiling (t : Nat) :
             3^(t+1)*(2*(v152FibonacciBounds (t+1)).2) :=
           Nat.mul_le_mul_left _ hlen
         _ = 6*(3^t*(v152FibonacciBounds (t+1)).2) := by
+          simp only [Nat.pow_succ]
           rw [show (6:Nat)=3*2 by decide]
-          simp [Nat.pow_succ,Nat.mul_assoc,Nat.mul_comm,
-            Nat.mul_left_comm]
+          ac_rfl
         _ <= 6*(2*5^t) := Nat.mul_le_mul_left 6 hb
         _ <= 3*5^(t+1) := by
           simp [Nat.pow_succ]
