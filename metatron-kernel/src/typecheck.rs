@@ -789,6 +789,25 @@ impl<'a> TypeChecker<'a> {
                     })
             }
             Expr::App { fun, arg } => {
+                // Flash-inspired but independently typechecked: derive the
+                // complete dependent application spine from one verified head
+                // type and actual checked arguments. Original inference
+                // remains authoritative if any premise is UNKNOWN.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_APP_SPINE").is_some()
+                    && *remaining >= 1024
+                {
+                    let original_budget=*remaining;
+                    let mut probe=original_budget.min(8192);
+                    let mut candidate_cache=HashMap::new();
+                    if let Some(candidate)=self.infer_checked_app_spine(
+                        expression,context,frame,&mut probe,&mut candidate_cache,
+                    ){
+                        *remaining=original_budget.saturating_sub(
+                            original_budget.min(8192).saturating_sub(probe)
+                        );
+                        return Judgment::proven(candidate,"source-checked-dependent-application-spine");
+                    }
+                }
                 let function_type = self.infer_in(*fun, context, frame, remaining, cache);
                 if let Judgment::Refuted { obstruction } = &function_type {
                     return Judgment::Refuted {
@@ -1388,6 +1407,72 @@ impl<'a> TypeChecker<'a> {
     // Whole-function inference has already succeeded. Reconstruct the
     // literal lambda telescope, checking each supplied argument in the caller
     // context while retaining each actual argument in the lexical environment.
+    /// An optional, independently typechecked application-spine traversal.
+    /// It is not a type shortcut. The head must have an independently inferred
+    /// Pi type, every actual argument must check against the current dependent
+    /// domain, and the resulting codomain is instantiated with THAT argument.
+    ///
+    /// Unlike nested App inference, this retains the established function
+    /// type instead of reinferring its syntactic prefixes. No application
+    /// gets an ACCEPT from shape, name or the reference implementation.
+    fn infer_checked_app_spine(
+        &self,
+        expression:ExprId,
+        context:&[TypeValue],
+        frame:&EnvFrame,
+        remaining:&mut usize,
+        cache:&mut HashMap<(ExprId,u64),TypeValue>,
+    ) -> Option<TypeValue> {
+        let mut head=expression;
+        let mut arguments=Vec::new();
+        while let Some(Expr::App{fun,arg})=self.expressions.get(head) {
+            if arguments.len()==24 || !take_step(remaining) {return None;}
+            arguments.push(*arg);
+            head=*fun;
+        }
+        if arguments.len()<3 || *remaining<64 {return None;}
+        if !matches!(self.expressions.get(head),
+            Some(Expr::Const{..}|Expr::BVar(_)|Expr::Lam{..}))
+        {return None;}
+        let mut current=self.infer_in(head,context,frame,remaining,cache)
+            .proven_value()?.clone();
+        for arg in arguments.into_iter().rev() {
+            if !take_step(remaining) {return None;}
+            let (domain,body)=self.pi_view(
+                Judgment::proven(current,"checked-application-spine-head"),
+                (*remaining).min(4096),
+            )?;
+            let proved=self.check_in(
+                arg,&domain,context,frame,remaining,true,cache,
+            );
+            if !proved.is_proven() {return None;}
+            let actual=self.closure(arg,frame.clone());
+            current=match body {
+                PiBody::Fixed(binder,inferred_body) =>
+                    self.instantiate_fixed_pi_body(
+                        &inferred_body,binder,&actual,remaining,
+                    )?,
+                PiBody::Closure(body) => TypeValue::Term(
+                    Closure::with_levels(
+                        body.expr,body.env.extend(actual),body.levels,
+                    )
+                ),
+            };
+        }
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CHECKED_APP_SPINE").is_some(){
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static EARNED:AtomicUsize=AtomicUsize::new(0);
+            if EARNED.fetch_add(1,Ordering::Relaxed)<64{
+                eprintln!(
+                    "NUCLEUS_CHECKED_APP_SPINE:expr={expression:?}:head={head:?}:context={}:type={current:?}",
+                    context.len()
+                );
+            }
+        }
+        Some(current)
+    }
+
     fn infer_literal_beta_spine(
         &self,
         expression: ExprId,
