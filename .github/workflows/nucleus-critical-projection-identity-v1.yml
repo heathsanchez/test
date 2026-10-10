@@ -1,0 +1,73 @@
+name: Nucleus minimal source witness for stuck class projection
+
+on:
+  push:
+    branches: [nucleus-critical-projection-identity-v1]
+    paths:
+      - ".github/workflows/nucleus-critical-projection-identity-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ARENA_ARTIFACT: "11272848230"
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read exact original frozen Arena source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests metatron-kernel/evidence-out/projection-identity
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Resolve exact projection class, instances, and Pi-body source nodes
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,pathlib,os
+          out=[]
+          for name in ['perf/magma-list-deep-n21','perf/magma-list-deep-n36']:
+              raw=pathlib.Path('/tmp/arena-tests/good/'+name+'.ndjson').read_bytes()
+              names={0:''}; expr={}; declarations={}; classes={}
+              for line in raw.splitlines():
+                  z=json.loads(line)
+                  if 'in' in z:
+                      w=z.get('str',z.get('num'))
+                      p=names.get(w['pre'],'')
+                      names[z['in']]=p+('.' if p else '')+str(w.get('str',w.get('i')))
+                  elif 'ie' in z: expr[z['ie']]=z
+                  else:
+                      for kind in ['def','thm','axiom']:
+                          if kind in z:
+                              d=z[kind];declarations[d['name']]={'kind':kind,'body':d}
+                      if 'inductive' in z:
+                          for t in z['inductive']['types']:
+                              classes[t['name']]=z['inductive']
+              ids=[138,114,69,92,37,46,29,63,2,115,11,201,200,662,661,
+                   11080,11079,11148,11147,11142,11141,11149,11148,11165,11164,
+                   1350,1349,6,1]
+              row={'case':name,'sha256':hashlib.sha256(raw).hexdigest(),
+                   'names':{str(k):names.get(k) for k in ids if k in names},
+                   'expressions':{str(k):expr.get(k) for k in ids if k in expr},
+                   'declarations':{str(k):declarations.get(k) for k in ids if k in declarations},
+                   'classes':{str(k):classes.get(k) for k in (138,114,69,92,37)},
+                   'neighbour_classes':{str(k):names.get(k) for k in range(110,151) if k in names}}
+              print('NUCLEUS_CLASS_PROJECTION_IDENTITY='+json.dumps(row,separators=(',',':'))[:20000],flush=True)
+              out.append(row)
+          target=pathlib.Path('metatron-kernel/evidence-out/projection-identity/source.json')
+          target.write_text(json.dumps({'commit':os.environ['GITHUB_SHA'],'cases':out},indent=2))
+          print('CRITICAL_PROJECTION_SOURCE_IDENTIFIED__NO_EQUALITY_ADMISSION')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-class-projection-identity-${{ github.sha }}
+          path: metatron-kernel/evidence-out/projection-identity
