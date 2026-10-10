@@ -1672,7 +1672,22 @@ impl<'a> Machine<'a> {
             Value::Neutral(Neutral {
                 head: NeutralHead::Const { name, .. },
                 spine,
-            }) if matches_rule(name, spine.len()) => Some((name, spine)),
+            }) if matches_rule(name, spine.len()) => {
+                #[cfg(feature = "diagnostics")]
+                if bool_rules
+                    && std::env::var_os("NUCLEUS_TRACE_BOOL_MAJOR_EXPANSION").is_some()
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static COUNT: AtomicUsize = AtomicUsize::new(0);
+                    if COUNT.fetch_add(1, Ordering::Relaxed) < 48 {
+                        eprintln!(
+                            "NUCLEUS_BOOL_MAJOR_CERTIFIED:constructor={name:?}:source_major={:?}:exposure_cap={major_cap}",
+                            target.expr
+                        );
+                    }
+                }
+                Some((name, spine))
+            },
             // Lean's trusted Nat numeral representation is definitionally
             // constructor-shaped. A recursor with independently installed
             // Nat.zero/Nat.succ iota rules may inspect that exact numeral.
