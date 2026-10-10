@@ -1,5 +1,7 @@
 import Collatz.RetroactiveFutureQuotient
 
+set_option maxRecDepth 16384
+
 namespace CollatzFinal
 namespace SourceProduct
 
