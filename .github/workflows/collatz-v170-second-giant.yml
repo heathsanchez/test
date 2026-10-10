@@ -18,10 +18,18 @@ jobs:
           set -euo pipefail
           mkdir -p evidence
           python3 -m research.collatz_v170_second_giant_audit > evidence/v170-second-component.json
+          python3 research/collatz_v172_height_unlock_audit.py > evidence/v172-height-unlock.json
           python3 - <<'PY'
           import json,pathlib,subprocess,hashlib
           p=pathlib.Path('evidence/v170-second-component.json')
           x=json.loads(p.read_text())
+          height=json.loads(pathlib.Path('evidence/v172-height-unlock.json').read_text())
+          assert height['schema']=='COLLATZ_V172_EXACT_SOURCE_HEIGHT_UNLOCK'
+          assert height['source_original']==4053039
+          assert height['bridge_one']['endpoint']==12690089
+          assert height['terminal_seed']=={'source':5575759,'terminal_clock':131,'terminal_endpoint':2}
+          assert height['derived_original_terminal_clock']==335
+          assert height['global_collatz']=='UNKNOWN' and height['qed'] is False
           assert x['schema']=='COLLATZ_V170_SECOND_LARGEST_FUTURE_COMPONENT'
           d={(row['map'],row['k']):row for row in x['rows']}
           assert d['3n+1',20]['second_component_size']==1
@@ -43,7 +51,8 @@ jobs:
           out={'schema':'COLLATZ_V170_EXACT_SECOND_GIANT_SEAL',
                'source_commit':sha,
                'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
-               'status':'BOUNDED_SECOND_LARGEST_COMPONENT_SEPARATION',
+               'height_unlock_exact_sha256':hashlib.sha256(pathlib.Path('evidence/v172-height-unlock.json').read_bytes()).hexdigest(),
+               'status':'BOUNDED_SECOND_LARGEST_COMPONENT_AND_TRUE_HEIGHT_UNLOCK',
                'no_all_scale_anti_two_giant_proof':True,
                'global_collatz':'UNKNOWN','qed':False}
           pathlib.Path('evidence/v170-exact-seal.json').write_text(
@@ -77,9 +86,10 @@ jobs:
           done
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SparseTwoGiantElimination.olean formal/Collatz/SparseTwoGiantElimination.lean 2>&1 | tee evidence/v170-lean.log
           lake env lean -DautoImplicit=false formal/Collatz/CanonicalClockGraph.lean 2>&1 | tee evidence/v171-lean.log
+          lake env lean -DautoImplicit=false formal/Collatz/HeightUnlockCertificate.lean 2>&1 | tee evidence/v172-lean.log
           python3 - <<'PY'
           import re,json,pathlib,hashlib,subprocess
-          log=pathlib.Path('evidence/v170-lean.log').read_text()+'\n'+pathlib.Path('evidence/v171-lean.log').read_text()
+          log=pathlib.Path('evidence/v170-lean.log').read_text()+'\n'+pathlib.Path('evidence/v171-lean.log').read_text()+'\n'+pathlib.Path('evidence/v172-lean.log').read_text()
           assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-23000:]
           ax={}
           for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
@@ -99,7 +109,11 @@ jobs:
                        'v171_clock_member_source',
                        'v171_canonical_hit_path',
                        'v171_canonical_ledger_complete',
-                       'v171_collatz_of_ordinary_timed_density_and_canonical_no_two_giants'):
+                       'v171_collatz_of_ordinary_timed_density_and_canonical_no_two_giants',
+                       'v172_height_unlocked_finite_ledger',
+                       'v172_height_unlocked_terminal_certificate',
+                       'v172_all_component_clocks_below_176',
+                       'v172_new_height_is_essential_to_this_ledger'):
             assert 'CollatzFinal.SourceProduct.'+name in ax,name
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           out={'schema':'COLLATZ_V170_FORMAL_CONDITIONAL_UNIQUE_GIANT',
@@ -109,6 +123,9 @@ jobs:
                'canonical_source_sha256':hashlib.sha256(pathlib.Path(
                  'formal/Collatz/CanonicalClockGraph.lean').read_bytes()).hexdigest(),
                'canonical_finite_clock_ledger_completeness_proved':True,
+               'height_unlock_source_sha256':hashlib.sha256(pathlib.Path(
+                 'formal/Collatz/HeightUnlockCertificate.lean').read_bytes()).hexdigest(),
+               'source_4053039_terminal_warrant_reused_in_lean':True,
                'warrant':'CONDITIONAL_ONLY_TWO_GIANT_ELIMINATION_WITH_CANONICAL_GRAPH',
                'external_density_locally_rebuilt':False,
                'sparse_uniqueness_estimate_proved':False,
@@ -150,6 +167,8 @@ jobs:
           assert e['source_commit']==f['source_commit']==sha
           assert e['no_all_scale_anti_two_giant_proof']
           assert f['canonical_finite_clock_ledger_completeness_proved']
+          assert f['source_4053039_terminal_warrant_reused_in_lean']
+          assert e['height_unlock_exact_sha256']
           assert not f['sparse_uniqueness_estimate_proved']
           assert not f['external_density_locally_rebuilt']
           assert d['global_collatz']==e['global_collatz']==f['global_collatz']=='UNKNOWN'
@@ -157,6 +176,7 @@ jobs:
           out={'schema':'COLLATZ_V170_FINAL','source_commit':sha,
                'status':'WARRANTED_BOUNDED_SECOND_GIANT_TEST_AND_FORMAL_CONDITIONAL_BRIDGE',
                'canonical_clocked_ledger_completeness_proved':True,
+               'one_concrete_cross_height_terminal_certificate_lean_verified':True,
                'remaining_arithmetic':'sparse anti-two-macroscopic-component inequality',
                'external_density_locally_imported':False,
                'all_scale_sparse_uniqueness_proved':False,
