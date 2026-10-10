@@ -2800,7 +2800,37 @@ impl<'a> TypeChecker<'a> {
                                                 );
                                                 match aty {
                                                     None => {
-                                                        "first_app_argument_type=UNKNOWN".to_owned()
+                                                        let actual_source = match probe.expressions.get(a.expr) {
+                                                            Some(Expr::BVar(index)) => {
+                                                                let binding=a.env.lookup_with_node_id(*index);
+                                                                let certificate=probe.checked_type_of_bound_source(
+                                                                    &a.env,*index,context,
+                                                                );
+                                                                let status = binding.as_ref().map(|(id,_)| {
+                                                                    let l=probe.checked_binding_lineage.borrow();
+                                                                    match l.get(id) {
+                                                                        None => "absent".to_owned(),
+                                                                        Some(None) => "conflicted".to_owned(),
+                                                                        Some(Some(w)) =>
+                                                                            format!("checked_context_len={}:matches={}",
+                                                                                w.protected_prefix.len(),
+                                                                                context.starts_with(&w.protected_prefix)),
+                                                                    }
+                                                                });
+                                                                format!(
+                                                                    "source=BVar({index}):frame={}:binding={binding:?}:warrant_status={status:?}:typed={certificate:?}",
+                                                                    a.env.id(),
+                                                                )
+                                                            }
+                                                            other => format!(
+                                                                "source={other:?}:frame={}:levels={:?}",
+                                                                a.env.id(),a.levels,
+                                                            ),
+                                                        };
+                                                        format!(
+                                                            "first_app_argument_type=UNKNOWN:arg_expr={:?}:required_domain={domain:?}:{actual_source}",
+                                                            a.expr,
+                                                        )
                                                     }
                                                     Some(actual) => {
                                                         let judgment =
