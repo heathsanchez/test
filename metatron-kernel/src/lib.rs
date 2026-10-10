@@ -13,6 +13,8 @@ pub mod judgment;
 pub mod level;
 pub mod machine;
 pub mod nat;
+#[cfg(feature = "diagnostics")]
+mod nat_mul_probe;
 pub mod parser;
 pub mod syntax;
 pub mod typecheck;
