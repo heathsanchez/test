@@ -1722,14 +1722,28 @@ fn rigid_application_head_congruence_in_context(
         return None;
     };
 
-    for (left, right) in left_args.iter().zip(&right_args) {
-        match convert_with_policy_in_context(
+    for (index,(lhs_arg, rhs_arg)) in left_args.iter().zip(&right_args).enumerate() {
+        let comparison=convert_with_policy_in_context(
             checker,
-            &TypeValue::Term(left.clone()),
-            &TypeValue::Term(right.clone()),
+            &TypeValue::Term(lhs_arg.clone()),
+            &TypeValue::Term(rhs_arg.clone()),
             budget.saturating_sub(1),
             DeltaPolicy::PreferredOnly, depth, context,
-        ) {
+        );
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_PROJECTION_RIGID_ARG").is_some()
+            && depth==1 && context.len()==depth
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static COUNT:AtomicUsize=AtomicUsize::new(0);
+            if COUNT.fetch_add(1,Ordering::Relaxed)<100 {
+                eprintln!(
+                    "NUCLEUS_CONTEXT_RIGID_ARG:receiver_left={:?}:receiver_right={:?}:head={rigid_head:?}:depth={depth}:arity={}:index={index}:left={lhs_arg:?}:right={rhs_arg:?}:comparison={comparison:?}",
+                    left.expr,right.expr,left_args.len(),
+                );
+            }
+        }
+        match comparison {
             Judgment::Proven { .. } => {}
             Judgment::Refuted { obstruction } => {
                 return Some((*rigid_head, Judgment::Refuted { obstruction }));
