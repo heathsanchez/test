@@ -130,6 +130,20 @@ impl<'a> TypeChecker<'a> {
         // of the already qualified local binder-introduction ledger.
         if std::env::var_os("NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE").is_some(){
             self.retain_checked_binding(frame,domain,protected_context);
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_SUBSTITUTION_RECLOSURE").is_some(){
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static SEEN:AtomicUsize=AtomicUsize::new(0);
+                if self.checked_binding_lineage.borrow().get(&frame.id())
+                    .is_some_and(|w|w.is_some())
+                    && SEEN.fetch_add(1,Ordering::Relaxed)<80
+                {
+                    eprintln!(
+                        "NUCLEUS_TYPED_SUBSTITUTION_RECLOSURE:frame={}:checked_prefix={}:registered=true",
+                        frame.id(),protected_context.len()
+                    );
+                }
+            }
         }
     }
 
