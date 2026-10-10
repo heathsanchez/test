@@ -71,9 +71,31 @@ pub(crate) fn probe(
     let zero_mul_n=b.apply2(mul,zero,n);
     let lhs_wrong2=b.lam(natty,zero_mul_n);
 
+    // Observe the exact symbolic weak-head obstruction after both inputs
+    // have passed the independent lambda-type checks. This is read-only,
+    // never a reduction rule or an equality certificate.
+    let body_pairs=[("mul_succ_lhs",mul_m_succ_n),
+                    ("mul_succ_rhs",rhs_succ_body),
+                    ("mul_zero_lhs",mul_n_zero)];
     // Borrow the now-complete expression table. Every candidate is a
     // closed lambda whose free input is supplied through a checked binder.
     let checker=TypeChecker::new(&*b.expressions,levels,environment);
+    if std::env::var_os("NUCLEUS_TRACE_MUL_SUCC_WHNF").is_some(){
+        use crate::machine::Transparency;
+        use crate::value::FreeId;
+        // Within the inner lambda, source BVar0 is fresh n, BVar1 is m.
+        let frame=EnvFrame::empty()
+            .extend_free(FreeId(0)).extend_free(FreeId(1));
+        for (label,expr) in body_pairs {
+            let closure=Closure::new(expr,frame.clone());
+            for mode in [Transparency::Reducible,Transparency::Full] {
+                let out=checker.machine().expose(closure.clone(),mode,budget.min(2048));
+                let result=format!("{out:?}");
+                eprintln!("NUCLEUS_MUL_SYMBOLIC_WHNF:label={label}:mode={mode:?}:out={}",
+                    result.chars().take(2400).collect::<String>());
+            }
+        }
+    }
     let cases=[
         ("mul_n_zero",lhs_zero,rhs_zero,true),
         ("mul_m_succ_n",lhs_succ,rhs_succ,true),
