@@ -60,6 +60,9 @@ jobs:
                   'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
                   'NUCLEUS_TRACE_PROP_SINGLETON':'1',
                   'NUCLEUS_TRACE_TYPED_NEUTRAL_PROOF':'1',
+                  'NUCLEUS_TRACE_PROJECTION_LAST_FAILURE':'1',
+                  'NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE':'1',
+                  'NUCLEUS_TRACE_PROJECTION_CONGRUENCE':'1',
                   'NUCLEUS_TRACE_CHECKED_RELEVANCE':'1',
                   'NUCLEUS_TRACE_PROOF_ARGUMENT_TYPES':'1',
               }
@@ -71,6 +74,9 @@ jobs:
               gaps=[l for l in stderr if 'NUCLEUS_DEPENDENCY_GAP:' in l]
               values=[l for l in stderr if 'NUCLEUS_DEP_VALUES:' in l]
               mismatches=[l for l in stderr if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in l]
+              projection_gaps=[l for l in stderr if 'NUCLEUS_POST_IOTA_PROJECTION_GAP:' in l]
+              projection_fields=[l for l in stderr if 'NUCLEUS_PROJECTION_FIELD_PROBE:' in l]
+              projection_congruence=[l for l in stderr if 'NUCLEUS_PROJECTION_CONGRUENCE:' in l]
               names={0:''};expr={};classes=[]
               for line in data.splitlines():
                   obj=json.loads(line)
@@ -99,13 +105,16 @@ jobs:
                    'dependency_gaps':gaps[-14:],
                    'exposed_types':values[-14:],
                    'neutral_mismatches':mismatches[-14:],
+                   'projection_gaps':projection_gaps[-30:],
+                   'projection_fields':projection_fields[-30:],
+                   'projection_congruence':projection_congruence[-20:],
                    'source_judgments':syntax,
                    'singleton_gates':[l for l in stderr if 'NUCLEUS_PROP_SINGLETON:' in l][-5:],
                    'relevance_witnesses':[l for l in stderr if 'NUCLEUS_CHECKED_RELEVANCE:' in l][-6:],
                    'last_declarations':classes[-12:]}
               print('NUCLEUS_NAT_ASSOC_FIRST_JUDGMENT='+json.dumps({
-                  k:v for k,v in row.items() if k not in ('neutral_mismatches','exposed_types')
-              },separators=(',',':'))[:25000],flush=True)
+                  k:v for k,v in row.items() if k not in ('neutral_mismatches','exposed_types','projection_fields','projection_congruence')
+              },separators=(',',':'))[:28000],flush=True)
               records.append(row)
               assert p.returncode==2 and last and 'Nat.add_assoc._f:' in last[-1],(case,p.returncode,last[-1:] if last else [])
           pathlib.Path('research/nucleus-evidence/nataddassoc-first-leaf.json').write_text(
