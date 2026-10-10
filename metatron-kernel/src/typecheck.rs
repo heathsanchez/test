@@ -1874,8 +1874,12 @@ impl<'a> TypeChecker<'a> {
         let mut lhs_type=ty_for(llevels);
         let mut rhs_type=ty_for(rlevels);
         let probe=budget.min(2048);
+        let absent=crate::convert::source_absent_argument_mask(
+            self,*lname,left.spine.len(),
+        );
         let mut skipped_proof=false;
-        for (larg,rarg) in left.spine.iter().zip(&right.spine) {
+        let mut skipped_absent_data=false;
+        for (argument_index,(larg,rarg)) in left.spine.iter().zip(&right.spine).enumerate() {
             let Some((ldom,lbody))=self.pi_view(
                 Judgment::proven(lhs_type,"relevance-typed-function"),probe,
             ) else { return false };
@@ -1917,6 +1921,11 @@ impl<'a> TypeChecker<'a> {
             };
             if prop_domain(&ldom) && prop_domain(&rdom) {
                 skipped_proof=true;
+            } else if absent.as_ref().and_then(|m|m.get(argument_index)) == Some(&true) {
+                // Both source λ-body and its following dependent Pi telescope
+                // are proven independent of this binder. The independently
+                // checked argument types above remain mandatory.
+                skipped_absent_data=true;
             } else if !crate::convert::convert_with_policy_in_context(
                 self,
                 &TypeValue::Term(larg.clone()),
@@ -1943,6 +1952,19 @@ impl<'a> TypeChecker<'a> {
             lhs_type=lty;
             rhs_type=rty;
         }
+        if skipped_absent_data {
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_SOURCE_ABSENCE").is_some() {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static EARNED:AtomicUsize=AtomicUsize::new(0);
+                if EARNED.fetch_add(1,Ordering::Relaxed)<48 {
+                    eprintln!(
+                        "NUCLEUS_SOURCE_ABSENT_ARGUMENT:head={lname:?}:arity={}:mask={absent:?}:depth={depth}:typed_args=true",
+                        left.spine.len()
+                    );
+                }
+            }
+        }
         if skipped_proof {
             #[cfg(feature="diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_CHECKED_RELEVANCE").is_some() {
@@ -1956,7 +1978,7 @@ impl<'a> TypeChecker<'a> {
                 }
             }
         }
-        skipped_proof
+        skipped_proof || skipped_absent_data
     }
 
     pub(crate) fn proof_terms_same_proposition(
@@ -2652,6 +2674,10 @@ impl<'a> TypeChecker<'a> {
 
     pub(crate) fn definition_value(&self, name: NameId) -> Option<ExprId> {
         self.environment.get(name)?.value
+    }
+
+    pub(crate) fn definition_declared_type(&self, name: NameId) -> Option<ExprId> {
+        Some(self.environment.get(name)?.ty)
     }
 
     pub(crate) fn is_certified_bool_constructor(&self, name: NameId) -> bool {
