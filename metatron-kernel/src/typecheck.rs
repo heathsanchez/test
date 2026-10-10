@@ -1847,6 +1847,11 @@ impl<'a> TypeChecker<'a> {
         {
             return false;
         }
+        // No potential saving exists if every captured argument closure is
+        // already byte-identical, so avoid expensive dependent inference.
+        if left.spine.iter().zip(&right.spine).all(|(a,b)|a==b) {
+            return false;
+        }
         let (
             NeutralHead::Const { name: lname, levels: llevels },
             NeutralHead::Const { name: rname, levels: rlevels },
