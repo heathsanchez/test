@@ -168,9 +168,9 @@ theorem v168_ledger_path_to_one_closes
     (edges : List V168TwoClockEdge)
     {n : Nat} (hPath : V168Path edges n 1) :
     CollatzGood n := by
-  have seed : V168TerminalSeed :=
-    ⟨1,0,by decide,Or.inl rfl⟩
-  exact v168_retroactive_terminal_reuse edges seed hPath
+  have hMeet : V155FutureMeet n 1 :=
+    v168_path_sound edges hPath
+  exact (v155_future_meets_one_iff_good n).mp hMeet
 
 #print axioms v168_path_sound
 #print axioms v168_retroactive_terminal_reuse
