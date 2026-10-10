@@ -1447,6 +1447,8 @@ fn compare_values(
                         if !constructor.spine.is_empty()
                             || !levels.is_empty()
                             || !checker.is_certified_bool_constructor(*name)
+                            || (recursive.spine.len()!=5 &&
+                                std::env::var_os("NUCLEUS_EXPERIMENTAL_REGISTERED_ARITY").is_none())
                         {
                             return None;
                         }
