@@ -4,6 +4,12 @@ import Collatz.UniversalFutureClassFrontier
 namespace CollatzFinal
 namespace SourceProduct
 
+/-- Finite exact population counting is classical for a hypothetical
+    nondecidable future-class predicate; this instance carries ONLY
+    logical decidability, not a convergent-or-divergent oracle. -/
+local instance (p : Prop) : Decidable p :=
+  Classical.propDecidable p
+
 /-!
 V165 — EXACT BINARY-SOURCE / TERNARY-ENDPOINT FUTURE-CLASS MASS TRANSFER.
 
