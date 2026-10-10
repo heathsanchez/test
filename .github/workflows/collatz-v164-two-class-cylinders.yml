@@ -1,0 +1,145 @@
+name: Collatz V164 two-class dyadic cylinder coexistence
+on:
+  push:
+    branches: [collatz-v164-two-class-cylinder-coexistence]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-two-classes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify genuine positive ancestors of two synthetic cycles in all dyadic prefixes through 8
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v164_two_class_cylinder_audit > evidence/v164-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v164-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V164_TWO_DISJOINT_CLASSES_EVERY_DYADIC_CYLINDER'
+          assert d['NOT_actual_Collatz']
+          assert d['all_checked_source_prefixes']==511
+          assert d['actual_source_to_target_joins_checked']==1022
+          assert d['both_classes_same_residue_every_checked_prefix']
+          assert d['source_is_positive_and_clock_is_real']
+          assert d['number_theory_unit_power_coverage_verified_up_to_a']<=8
+          assert not d['all_exponent_number_theory_kernel_reified']
+          assert d['all_prefix_coexistence_in_lean_explicit_power_hit_hypotheses']
+          assert not d['topological_source_coverage_implies_uniqueness']
+          assert not d['quantitative_natural_density_coverage_proved']
+          assert not d['actual_Collatz_second_class_excluded']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V164_EXACT_SEAL',
+            'source_commit':h,
+            'status':'WARRANTED_BOUNDED_BOTH_DISJOINT_CLASSES_IN_EACH_BINARY_PREFIX',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'source_positive_and_actual_clock':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v164-exact-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v164-exact
+          path: evidence/
+          if-no-files-found: error
+  formal-two-class:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check power-hit ancestor constructors and independent disjoint cycle evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift FiniteParityPopulationMixing ThreeNPlusSevenSeparator; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/TwoClassCylinderCoexistence.lean 2>&1 | tee evidence/v164-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v164-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-18000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=[
+            'v164_power_target_is_actual_two_clock_join',
+            'v164_all_prefix_real_future_ancestors_of_power_hits',
+            'v164_meet_trans',
+            'v164_two_distinct_future_classes_same_prefix',
+            'v164_both_classes_in_prefix_of_unbounded_power_hits'
+          ]
+          for t in targets:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V164_FORMAL_TWO_CLASS',
+            'source_commit':h,'axioms':ax,
+            'status':'WARRANTED_FORMAL_CONDITIONAL_TWO_DISJOINT_CLASSES_IN_SAME_POSITIVE_DYADIC_CYLINDER',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'number_theory_hit_witness_explicit':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v164-formal-seal.json').write_text(json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v164-formal
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-two-classes,formal-two-class]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v164-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v164-formal
+          path: evidence/formal
+      - name: Reconcile source and prevent unconditional power-hit promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v164-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v164-formal-seal.json').read_text())
+          h=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==h
+          assert a['source_positive_and_actual_clock']
+          assert b['number_theory_hit_witness_explicit']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V164_FINAL','source_commit':h,
+            'status':'WARRANTED_FORMAL_CONDITIONAL_TWO_DENSE_DISJOINT_SYNTHETIC_CLASSES_NOT_QED',
+            'result':'If explicit power hits supplied for targets 5 and 7, two genuine noncoalescing G7 sources of the SAME any fixed dyadic residue follow, with all actual clocks',
+            'scope':'511 tested prefixes and mathematical 2 primitive mod3^a, full primitive-root not yet kernel reified',
+            'separator':'Infinite ancestor coverage in every dyadic cylinder does NOT imply future-class uniqueness',
+            'actual_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v164-final.json').write_text(json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v164-final
+          path: evidence/v164-final.json
+          if-no-files-found: error
