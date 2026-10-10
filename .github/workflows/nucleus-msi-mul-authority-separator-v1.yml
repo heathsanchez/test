@@ -76,8 +76,39 @@ jobs:
               lines=p.stderr.decode(errors='replace').splitlines()
               def grab(key,n=60):
                   return [s[:3400] for s in lines if s.startswith(key)][:n]
+              # Decode exported NameId components from the source itself.
+              names={}
+              constants=[]
+              for source_line in data.splitlines():
+                  record=json.loads(source_line)
+                  if 'in' in record:
+                      names[int(record['in'])]=record
+                  elif 'def' in record or 'thm' in record:
+                      constants.append(record)
+              def fullname(name):
+                  if name==0:
+                      return ''
+                  record=names.get(name)
+                  if record is None:
+                      return '?'+str(name)
+                  if 'str' in record:
+                      obj=record['str']
+                      parent=fullname(int(obj['pre']))
+                      return (parent+'.' if parent else '')+obj['str']
+                  if 'num' in record:
+                      obj=record['num']
+                      parent=fullname(int(obj['pre']))
+                      return (parent+'.' if parent else '')+str(obj['i'])
+                  return '?'+str(name)
+              import re
+              const_ids=set()
+              for line in lines:
+                  if line.startswith('NUCLEUS_MUL_NODE:'):
+                      const_ids.update(int(x) for x in re.findall(r'NameId\\((\\d+)\\)',line))
+              named={str(i):fullname(i) for i in sorted(const_ids)}
               row={
                   'case':case,'fixture_sha256':hashlib.sha256(data).hexdigest(),
+                  'mul_constant_names':named,
                   'verdict':p.returncode,
                   'mul_source':grab('NUCLEUS_MUL_SOURCE:',5),
                   'mul_nodes':grab('NUCLEUS_MUL_NODE:',72),
@@ -91,6 +122,7 @@ jobs:
                   'case':case,'rc':p.returncode,'mul_source':row['mul_source'],
                   'tree_nodes':len(row['mul_nodes']),
                   'mul_nodes':row['mul_nodes'][:24],
+                  'mul_constant_names':row['mul_constant_names'],
                   'instance_leaf':row['instance_leaf'][:2],
                   'post_projection':row['post_projection'][-2:],
                   'projection_field_count':len(row['projection_field']),
