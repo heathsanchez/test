@@ -1195,6 +1195,32 @@ fn compare_values(
                     }
                     return Judgment::proven((), "certified-projection-congruence");
                 }
+                // Experimental: preserve the actual checked lexical context
+                // for projection receiver/spine congruence. The context-free
+                // fast path remains the production baseline. The new path is
+                // permitted only when the local context matches its binder depth
+                // and each argument conversion is independently PROVEN.
+                let contextual = std::env::var_os(
+                    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT",
+                ).is_some()
+                    && depth == context.len()
+                    && same_rigid_application_congruence_in_context(
+                        checker, left_structure, right_structure,
+                        current_budget, depth, context,
+                    )
+                    && same_closure_spine_congruence_in_context(
+                        checker, left_spine, right_spine,
+                        current_budget, depth, context,
+                    );
+                if contextual {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CONTEXT").is_some() {
+                        eprintln!(
+                            "NUCLEUS_CONTEXTUAL_PROJECTION:PROVEN:depth={depth}:receiver={left_structure:?}:opponent={right_structure:?}",
+                        );
+                    }
+                    return Judgment::proven((), "checked-contextual-projection-congruence");
+                }
                 if same_rigid_application_congruence(
                     checker,
                     left_structure,
@@ -1586,6 +1612,40 @@ fn same_closure_spine_congruence(
         })
 }
 
+fn same_closure_spine_congruence_in_context(
+    checker: &TypeChecker<'_>,
+    left: &[Closure],
+    right: &[Closure],
+    budget: usize,
+    depth: usize,
+    context: &[TypeValue],
+) -> bool {
+    let budget = budget.min(CHEAP_PROJECTION_CONGRUENCE_BUDGET);
+    left.len() == right.len()
+        && left.iter().zip(right).all(|(left,right)| {
+            convert_with_policy_in_context(
+                checker,
+                &TypeValue::Term(left.clone()),
+                &TypeValue::Term(right.clone()),
+                budget.saturating_sub(1),
+                DeltaPolicy::PreferredOnly, depth, context,
+            ).is_proven()
+        })
+}
+
+fn same_rigid_application_congruence_in_context(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    budget: usize,
+    depth: usize,
+    context: &[TypeValue],
+) -> bool {
+    rigid_application_head_congruence_in_context(
+        checker, left, right, budget, depth, context,
+    ).is_some_and(|(_, judgment)| judgment.is_proven())
+}
+
 fn same_rigid_application_congruence(
     checker: &TypeChecker<'_>,
     left: &Closure,
@@ -1601,6 +1661,19 @@ fn rigid_application_head_congruence(
     left: &Closure,
     right: &Closure,
     budget: usize,
+) -> Option<(crate::id::NameId, Judgment<()>)> {
+    rigid_application_head_congruence_in_context(
+        checker, left, right, budget, 0, &[],
+    )
+}
+
+fn rigid_application_head_congruence_in_context(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    budget: usize,
+    depth: usize,
+    context: &[TypeValue],
 ) -> Option<(crate::id::NameId, Judgment<()>)> {
     let budget = budget.min(CHEAP_PROJECTION_CONGRUENCE_BUDGET);
     if budget == 0 {
@@ -1650,12 +1723,12 @@ fn rigid_application_head_congruence(
     };
 
     for (left, right) in left_args.iter().zip(&right_args) {
-        match convert_with_policy(
+        match convert_with_policy_in_context(
             checker,
             &TypeValue::Term(left.clone()),
             &TypeValue::Term(right.clone()),
             budget.saturating_sub(1),
-            DeltaPolicy::PreferredOnly,
+            DeltaPolicy::PreferredOnly, depth, context,
         ) {
             Judgment::Proven { .. } => {}
             Judgment::Refuted { obstruction } => {
