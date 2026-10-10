@@ -2360,8 +2360,41 @@ impl<'a> TypeChecker<'a> {
         let body_type=self.infer_exact_closure_in_context(
             &body_term,&body_context,&mut body_budget,0,
         );
+        let failing_app=if body_type.is_none() {
+            if let Some(Expr::App { fun, arg }) =
+                self.expressions.get(body_term.expr)
+            {
+                let f=body_term.sibling(*fun,body_term.env.clone());
+                let a=body_term.sibling(*arg,body_term.env.clone());
+                let mut fbudget=256;
+                let fty=self.infer_exact_closure_in_context(
+                    &f,&body_context,&mut fbudget,0,
+                );
+                let mut abudget=256;
+                let aty=self.infer_exact_closure_in_context(
+                    &a,&body_context,&mut abudget,0,
+                );
+                let fview=fty.as_ref().and_then(|ty| self.pi_view(
+                    Judgment::proven(ty.clone(),"checked-source-lambda-function"),
+                    fbudget.min(256),
+                ));
+                let binding = if let Some(Expr::BVar(index)) =
+                    self.expressions.get(f.expr)
+                {
+                    let source=f.env.lookup_with_node_id(*index);
+                    let certificate=self.checked_type_of_bound_source(
+                        &f.env,*index,&body_context,
+                    );
+                    format!("function-bvar={index}:source={source:?}:certificate={certificate:?}")
+                } else {
+                    format!("function-source={:?}",self.expressions.get(f.expr))
+                };
+                format!("lambda-body-app:fun={:?}:fun_type={fty:?}:arg={:?}:arg_type={aty:?}:pi_view_present={}:{}",
+                    f.expr,a.expr,fview.is_some(),binding)
+            } else { "lambda-body-not-app".to_owned() }
+        } else { "lambda-body-typed".to_owned() };
         format!(
-            "lambda-domain-sort=PROVEN:ctx={}:opened={free_id:?}:body_expr={:?}:body_shape={:?}:body_type={body_type:?}:remaining={body_budget}",
+            "lambda-domain-sort=PROVEN:ctx={}:opened={free_id:?}:body_expr={:?}:body_shape={:?}:body_type={body_type:?}:remaining={body_budget}:subjudgment={failing_app}",
             context.len(),body_term.expr,self.expressions.get(body_term.expr),
         )
     }
