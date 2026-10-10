@@ -1602,15 +1602,15 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub(crate) fn machine(&self) -> Machine<'_> {
-        Machine::new(
+        Machine::new_with_shared_tables(
             self.environment.authority(),
             self.expressions,
             self.levels,
             self.environment.definition_bodies(),
+            self.environment.singleton_recursor_reductions_shared(),
+            self.environment.recursor_reductions_shared(),
+            self.environment.projection_specs_shared(),
         )
-        .with_singleton_recursor_reductions(self.environment.singleton_recursor_reductions_shared())
-        .with_recursor_reductions(self.environment.recursor_reductions_shared())
-        .with_projection_specs(self.environment.projection_specs_shared())
         .with_nat_primitives(self.environment.nat_primitives().cloned())
         .with_bool_primitives(self.environment.bool_primitives().cloned())
         .with_quot_primitives(self.environment.quot_primitives().cloned())
