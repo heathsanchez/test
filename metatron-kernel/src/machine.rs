@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::rc::Rc;
 
 use crate::environment::{BoolPrimitives, NatPrimitives, QuotPrimitives};
@@ -88,6 +88,77 @@ pub(crate) fn new_exposure_cache() -> ExposureCache {
     Rc::new(RefCell::new(HashMap::new()))
 }
 
+/// Minimal sufficient state for one source evaluation:
+/// the immutable declaration authority, source expression, universe
+/// instantiation, reduction mode, pending arguments, and ONLY captured
+/// bindings that can be read by this expression, including under binders.
+///
+/// This is NOT an equality oracle for arbitrary expressions. The key can
+/// be shared only by the SAME source expression with equal observed
+/// binding payloads. Failed or incomplete reductions are never retained.
+type MinimalExposureKey = (
+    AuthorityId,
+    ExprId,
+    LevelSubstitution,
+    Transparency,
+    bool,
+    Vec<Closure>,
+    Vec<(u64, EnvBinding)>,
+);
+
+#[derive(Default)]
+pub(crate) struct MinimalExposureState {
+    values: HashMap<MinimalExposureKey, Value>,
+    support: HashMap<ExprId, Option<Vec<u64>>>,
+    #[cfg(test)]
+    hits: usize,
+}
+pub(crate) type MinimalExposureCache = Rc<RefCell<MinimalExposureState>>;
+
+pub(crate) fn new_minimal_exposure_cache() -> MinimalExposureCache {
+    Rc::new(RefCell::new(MinimalExposureState::default()))
+}
+
+/// Exact free-variable support of a source expression. De Bruijn binders
+/// introduced by lambda, Pi and let do not consult the captured EnvFrame.
+/// All syntactic children are included, even if an optimizer might later
+/// prove they are unused. The bound guarantees only UNKNOWN on overflow.
+fn exact_captured_support(
+    expressions: &IdTable<ExprId, Expr>,
+    root: ExprId,
+) -> Option<Vec<u64>> {
+    let mut pending=vec![(root,0u64)];
+    let mut seen=HashSet::new();
+    let mut support=BTreeSet::new();
+    while let Some((id,shadow))=pending.pop() {
+        if !seen.insert((id,shadow)) {continue;}
+        if seen.len()>4096 {return None;}
+        match expressions.get(id)? {
+            Expr::BVar(index) if *index>=shadow => {
+                support.insert(index.checked_sub(shadow)?);
+                if support.len()>64 {return None;}
+            }
+            Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_)
+            | Expr::Sort(_) | Expr::Const {..} => {}
+            Expr::App{fun,arg} => {
+                pending.push((*fun,shadow));
+                pending.push((*arg,shadow));
+            }
+            Expr::Lam{domain,body} | Expr::Pi{domain,body} => {
+                pending.push((*domain,shadow));
+                pending.push((*body,shadow.checked_add(1)?));
+            }
+            Expr::Let{ty,value,body} => {
+                pending.push((*ty,shadow));
+                pending.push((*value,shadow));
+                pending.push((*body,shadow.checked_add(1)?));
+            }
+            Expr::Proj{structure,..} => pending.push((*structure,shadow)),
+        }
+    }
+    Some(support.into_iter().collect())
+}
+
 type VisitKey = (AuthorityId, ExprId, u64);
 const INLINE_VISIT_CAPACITY: usize = 8;
 
@@ -141,6 +212,7 @@ impl VisitSet {
 pub struct Machine<'a> {
     authority: AuthorityId,
     exposure_cache: Option<ExposureCache>,
+    minimal_exposure_cache: Option<MinimalExposureCache>,
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
     definitions: Rc<HashMap<NameId, DefinitionBody>>,
@@ -162,6 +234,7 @@ impl<'a> Machine<'a> {
         Self {
             authority,
             exposure_cache: None,
+            minimal_exposure_cache: None,
             expressions,
             levels,
             definitions: definitions.into(),
@@ -197,6 +270,36 @@ impl<'a> Machine<'a> {
     pub(crate) fn with_exposure_cache(mut self, cache: ExposureCache) -> Self {
         self.exposure_cache = Some(cache);
         self
+    }
+
+    pub(crate) fn with_minimal_exposure_cache(mut self, cache: MinimalExposureCache) -> Self {
+        self.minimal_exposure_cache = Some(cache);
+        self
+    }
+
+    fn minimal_exposure_key(
+        &self,
+        closure:&Closure,
+        transparency:Transparency,
+        preserve_stuck_projection:bool,
+        pending:&[Closure],
+    ) -> Option<MinimalExposureKey> {
+        let cache=self.minimal_exposure_cache.as_ref()?;
+        let saved=cache.borrow().support.get(&closure.expr).cloned();
+        let support=match saved {
+            Some(result) => result?,
+            None => {
+                let result=exact_captured_support(self.expressions,closure.expr);
+                cache.borrow_mut().support.insert(closure.expr,result.clone());
+                result?
+            }
+        };
+        let mut bindings=Vec::with_capacity(support.len());
+        for index in support {
+            bindings.push((index,closure.env.lookup(index)?));
+        }
+        Some((self.authority,closure.expr,closure.levels.clone(),
+            transparency,preserve_stuck_projection,pending.to_vec(),bindings))
     }
 
     pub fn with_nat_primitives(mut self, primitives: Option<NatPrimitives>) -> Self {
@@ -441,6 +544,37 @@ impl<'a> Machine<'a> {
                 "certified-cached-closure-exposure",
             );
         }
+        // Quotient captured state ONLY by exact source-observable bindings.
+        // This is a positive-result cache: a candidate key alone proves
+        // nothing. Every stored value was established by this evaluator.
+        let minimal_key=if std::env::var_os("NUCLEUS_EXPERIMENTAL_MINIMAL_EXPOSURE").is_some() {
+            self.minimal_exposure_key(
+                &closure,transparency,preserve_stuck_projection,&pending,
+            )
+        } else {None};
+        if let (Some(minimal),Some(mkey))=(self.minimal_exposure_cache.as_ref(),minimal_key.as_ref()) {
+            let reused=minimal.borrow().values.get(mkey).cloned();
+            if let Some(value)=reused {
+                #[cfg(test)]
+                {minimal.borrow_mut().hits+=1;}
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_MINIMAL_EXPOSURE").is_some(){
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static REPORT:AtomicUsize=AtomicUsize::new(0);
+                    if REPORT.fetch_add(1,Ordering::Relaxed)<80 {
+                        eprintln!(
+                            "NUCLEUS_MINIMAL_EXPOSURE_HIT:expr={:?}:frame={}:captures={}:authority={:?}:pending={}",
+                            closure.expr,closure.env.id(),mkey.6.len(),self.authority,pending.len()
+                        );
+                    }
+                }
+                cache.borrow_mut().insert(key,value.clone());
+                return Judgment::proven(
+                    Exposure{value,transitions:Vec::new()},
+                    "certified-minimal-observable-exposure",
+                );
+            }
+        }
         let result = self.expose_uncached_internal_with_pending(
             closure, transparency, budget, false,
             preserve_stuck_projection, pending,
@@ -453,6 +587,11 @@ impl<'a> Machine<'a> {
                 entries.clear();
             }
             entries.insert(key, established.value.clone());
+            if let (Some(minimal),Some(mkey))=(self.minimal_exposure_cache.as_ref(),minimal_key) {
+                let mut entries=minimal.borrow_mut();
+                if entries.values.len()>=8192 { entries.values.clear(); }
+                entries.values.insert(mkey,established.value.clone());
+            }
         }
         result
     }
