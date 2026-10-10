@@ -30,6 +30,9 @@ The inherited proof-program grammar already interprets nested certificates, but 
 
 With this new role, degree-four and degree-five proof procedures were acquired at 2 candidate proposals and 4 verifier calls combined. Sixteen further coefficient-distinct heldout obligations verified after restart. Relevant source-body ablation and ancestor revocation each returned all 16 to UNKNOWN; unrelated removal preserved all 16. All source lineage, protected prior proofs and independent verifier gates passed.
 
+## Latest independently requalified Lean and runtime source
+The later exact proof-bearing head [13325089c471996b8b68f46540fd4ad449df752c](https://github.com/heathsanchez/test/commit/13325089c471996b8b68f46540fd4ad449df752c) passed [GitHub Actions #38043019010](https://github.com/heathsanchez/test/actions/runs/38043019010): all MDA, legacy runtime, scoped source-role, downstream economics, and **pinned Lean 4.24.0 constitutional/semantic contract replay** steps completed successfully. [Artifact 11666428875](https://github.com/heathsanchez/test/actions/runs/38043019010/artifacts/11666428875), SHA256 `b2f6fb3c598dd6327f0b1d158c12e611011d7e76dd604f7a091973a461341a6a`. Lean checks exercise existing formal contracts; they **do not prove** the new Python cross-authority role transport universally sound. Subsequent Markdown-only commits do not alter the checked implementation.
+
 ## Scientific boundary
 
 WARRANTED_BOUNDED: one minimal-continuation decision procedure across proof and finite observation domains; executable three-generation reuse and measured amortized reductions versus episodic reconstruction; conservative, scope-bound role reuse leading to two additional dependent proof acquisitions.
