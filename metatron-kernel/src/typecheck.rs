@@ -2570,6 +2570,41 @@ impl<'a> TypeChecker<'a> {
                                 source_context.len(),&source_context,
                             )
                         );
+                        // η works relative to the *fresh* binder opened
+                        // by this minor lambda. It need not eliminate a
+                        // different, earlier captured binder. Keep the latter
+                        // in the source context and test the actual typed η
+                        // premise there, without authorizing caller-scope reuse.
+                        let eta_free=FreeId(u64::try_from(source_context.len()).unwrap_or(u64::MAX));
+                        let eta_fresh_absent=self.type_depends_on_free(
+                            &TypeValue::Term(captured.clone()),eta_free,2048,
+                        );
+                        let mut eta_fuel=2048;
+                        let eta_minor_ty=if compatible {
+                            self.infer_exact_closure_in_context(
+                                lambda,&source_context,&mut eta_fuel,0,
+                            )
+                        } else {None};
+                        let eta_type_relation=match (&eta_minor_ty,&source_ty) {
+                            (Some(left),Some(right))=>Some(
+                                crate::convert::convert_with_policy_in_context(
+                                    self,left,right,eta_fuel.min(512),
+                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                    source_context.len(),&source_context,
+                                )),
+                            _=>None,
+                        };
+                        let eta_term_relation=if compatible &&
+                            eta_fresh_absent==Some(false) &&
+                            eta_minor_ty.is_some() && source_ty.is_some()
+                        {
+                            Some(crate::convert::convert_with_policy_in_context(
+                                self,&TypeValue::Term(lambda.clone()),
+                                &TypeValue::Term(captured.clone()),512,
+                                crate::convert::DeltaPolicy::PreferredOnly,
+                                source_context.len(),&source_context,
+                            ))
+                        } else {None};
                         let extra=FreeId(u64::try_from(context.len()).unwrap_or(u64::MAX));
                         let source_uses_extra=self.type_depends_on_free(
                             &TypeValue::Term(captured.clone()),extra,2048,
@@ -2583,7 +2618,7 @@ impl<'a> TypeChecker<'a> {
                         let first_source_body=self.diagnostic_one_source_lambda_body(
                             &captured,context,remaining.min(512),
                         );
-                        format!("eta-source={:?}:source-scope={}:origin-nodes={origin_nodes:?}:compatible={compatible}:source-type={source_ty:?}:source-vs-expected-in-source={relation:?}:extra-free={extra:?}:source-term-dep={source_uses_extra:?}:source-type-dep={source_type_uses_extra:?}:expected-type-dep={expected_uses_extra:?}:remaining={budget}:next={first_source_body}",
+                        format!("eta-source={:?}:source-scope={}:origin-nodes={origin_nodes:?}:compatible={compatible}:source-type={source_ty:?}:source-vs-expected-in-source={relation:?}:eta-fresh={eta_free:?}:eta-fresh-absent={eta_fresh_absent:?}:eta-minor-type={eta_minor_ty:?}:eta-types-convert={eta_type_relation:?}:eta-terms-convert={eta_term_relation:?}:extra-free={extra:?}:source-term-dep={source_uses_extra:?}:source-type-dep={source_type_uses_extra:?}:expected-type-dep={expected_uses_extra:?}:remaining={budget}:next={first_source_body}",
                             captured.expr,source_context.len())
                     } else {"eta-source-binding-unavailable".into()}
                 } else {"not-eta-source-shape".into()};
