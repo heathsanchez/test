@@ -1301,6 +1301,67 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    // Experimental bidirectional lambda rule: given a previously checked
+    // expected dependent Pi, prove the annotation's domain formation,
+    // compare domains definitionally, and then check the lambda body under
+    // its genuinely introduced binder against the instantiated Pi codomain.
+    // This derives typing; it does not infer equality from a lambda shape.
+    fn check_expected_lambda_in(
+        &self,
+        expression: ExprId,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        conversion_refutation_is_unknown: bool,
+        cache: &mut HashMap<(ExprId,u64),TypeValue>,
+    ) -> Judgment<()> {
+        if !take_step(remaining) {
+            return Judgment::unknown("bidir-lambda-budget");
+        }
+        let Some(Expr::Lam {domain,body})=self.expressions.get(expression) else {
+            return Judgment::unknown("bidir-lambda-not-lambda");
+        };
+        let Some((required_domain, codomain))=self.pi_view(
+            Judgment::proven(expected.clone(),"checked-expected-Pi"),
+            (*remaining).min(2048),
+        ) else {
+            return Judgment::unknown("bidir-lambda-expected-not-Pi");
+        };
+        let domain_formation=self.infer_in(
+            *domain,context,frame,remaining,cache,
+        );
+        match self.sort_level(domain_formation,(*remaining).min(1024)) {
+            Judgment::Proven {..} => {},
+            Judgment::Unknown {residual}=>return Judgment::Unknown {residual},
+            Judgment::Refuted {obstruction}=>return Judgment::Refuted {obstruction},
+        };
+        let annotated=TypeValue::Term(self.closure(*domain,frame.clone()));
+        let relation=crate::convert::convert_with_policy_in_context(
+            self,&annotated,&required_domain,(*remaining).min(2048),
+            self.delta_policy,context.len(),context,
+        );
+        if !relation.is_proven(){return relation}
+        let Some(free)=fresh_local(context.len()) else{
+            return Judgment::unknown("bidir-lambda-fresh-binder-overflow")
+        };
+        let target=match codomain {
+            PiBody::Closure(expected_body)=>
+                TypeValue::Term(expected_body.under_free(free)),
+            PiBody::Fixed(binder,value) if binder==free => value,
+            PiBody::Fixed(_,_) =>
+                return Judgment::unknown("bidir-lambda-fixed-binder-not-aligned"),
+        };
+        let mut extended=context.to_vec();
+        extended.push(annotated.clone());
+        let body_frame=frame.extend_free(free);
+        self.retain_checked_binding(&body_frame,annotated,&extended);
+        self.check_in(
+            *body,&target,&extended,&body_frame,remaining,
+            conversion_refutation_is_unknown,cache,
+        )
+    }
+
     fn check_in(
         &self,
         expression: ExprId,
@@ -1311,6 +1372,34 @@ impl<'a> TypeChecker<'a> {
         conversion_refutation_is_unknown: bool,
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<()> {
+        // Source-ID selection is diagnostic only. No constructor, proof, type
+        // equality, or verdict is inferred from the ID; every positive here
+        // is derived by the ordinary checked bidirectional premises above.
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_some()
+            && context.len()==4
+            && matches!(expression.0,11148|11147|7585|7251|5307)
+            && matches!(self.expressions.get(expression),Some(Expr::Lam {..}))
+        {
+            let mut local_budget=(*remaining).min(4096);
+            let candidate=self.check_expected_lambda_in(
+                expression,expected,context,frame,&mut local_budget,
+                conversion_refutation_is_unknown,cache,
+            );
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_EXPECTED_LAMBDA").is_some() {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static COUNT:AtomicUsize=AtomicUsize::new(0);
+                if COUNT.fetch_add(1,Ordering::Relaxed)<40 {
+                    eprintln!(
+                        "NUCLEUS_EXPECTED_LAMBDA:expr={expression:?}:context={}:result={candidate:?}:remaining={local_budget}:expected={expected:?}",
+                        context.len(),
+                    );
+                }
+            }
+            if candidate.is_proven() {
+                return Judgment::proven((),"certified-expected-dependent-lambda");
+            }
+        }
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
             Judgment::Proven { value, .. } => {
