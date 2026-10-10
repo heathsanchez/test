@@ -1,0 +1,171 @@
+name: Collatz V167 four-route universal coverage falsification
+on:
+  push:
+    branches: [collatz-v167-four-route-universal-coverage-tests]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  four-exact-routes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run all four original-source/clock tests and adversarial controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v167_all_four_route_audit > evidence/v167-all-four.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v167-all-four.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V167_ALL_FOUR_ROUTE_SOURCE_FAITHFUL_AUDIT'
+          assert d['all_four_routes_ran'] and d['all_certified_source_witnesses_are_genuine']
+          assert d['all_timeouts_remain_UNKNOWN_not_bad']
+          A=d['approach_A_backward_certificate_saturation']
+          assert A['root_ledger_lower_source_chains_well_founded']
+          assert A['no_unknown_admitted_as_convergent']
+          assert A['direct_vs_merger_40step_k14']['total_certified']==16124
+          assert A['direct_vs_merger_40step_k14']['direct_terminal_only_same_clock']==5832
+          assert A['direct_vs_merger_40step_k14']['additional_sources_certified_vs_direct_only']==10292
+          assert A['synthetic_G7_only_seven_cycle_basin']['total_certified']==2299
+          assert A['sparse_scale_rows'][-1]['K']==20
+          assert A['sparse_scale_rows'][-1]['positive_source_timeouts']==1050
+          assert not A['all_scale_mass_contraction_proved']
+          B=d['approach_B_least_bad_reverse_funnel']
+          assert B['source27_first_reported_59_step_meeting_reproduced']=={
+            'source':27,'forward_clock':59,'earlier_source':23,'reverse_clock':0}
+          assert B['v119_mersenne20_one_step_with_ten_step_earlier_join_reproduced']=={
+            'source':1048575,'forward_clock':1,'earlier_source':736447,'reverse_clock':10}
+          assert [x['no_meeting_within_budget'] for x in B['rows']]==[256,76,39,18,9]
+          assert not B['universal_funnel_clock_bound_proved']
+          C=d['approach_C_source_relative_rank_stress']
+          assert C['all_fixed_H_size_descent_premises_have_exact_counterfamilies']
+          assert C['v156_last_live_state_source3_clock3_is_existing_formal_negative_control']
+          D=d['approach_D_height_controlled_modular_expansion']
+          assert D['all_true_modular_graphs_connected_for_M_1_to_252']
+          assert D['all_synthetic_G7_graphs_split_iff_M_divisible_by7_in_sample']
+          assert D['all_ones_exponent_exact_three_power_k_minus_one_through_k12']
+          assert D['V134_three_formally_warranted_source_family_laws_exactly_replayed']
+          assert D['V134_direct_family_source_coverage_per_4608']==79
+          assert not D['height_control_for_all_true_future_class_mergers_proved']
+          assert not d['V151_unbounded_exceptional_mass_bound_proved']
+          assert not d['external_Mazur_amplifier_built_locally']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V167_EXACT_FOUR_ROUTE_SEAL','source_commit':sha,
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'status':'WARRANTED_BOUNDED_FOUR_ROUTE_SOURCE_ATTACHED_TESTS',
+            'all_four_routes_completed':True,
+            'not_universal_collatz_proof':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v167-exact-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v167-exact-four-routes
+          path: evidence/
+          if-no-files-found: error
+
+  formal-fixed-horizon-no-go:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check every-H Mersenne no-size-descent/no-terminal family
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/lean-toolchain.txt
+          lake build CollatzFinal > evidence/core.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/FixedHorizonMersenneNoDescent.lean 2>&1 | tee evidence/v167-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v167-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-16000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          names=['v167_mersenne_corridor_step','v167_all_ones_real_prefix',
+                 'v167_three_pow_at_least_two',
+                 'v167_odd_corridor_no_numerical_descent',
+                 'v167_no_universal_fixed_horizon_size_exit']
+          for n in names:
+            assert 'CollatzFinal.SourceProduct.'+n in ax,n
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V167_FORMAL_MERSENNE_NO_GO',
+            'source_commit':sha,'axioms':ax,
+            'status':'WARRANTED_FORMAL_ALL_FIXED_HORIZONS_NO_NUMERIC_DESCENT',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'no_infinite_nonconvergent_source_claimed':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v167-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v167-formal-fixed-horizon
+          path: evidence/
+          if-no-files-found: error
+
+  final-evidence-seal:
+    needs: [four-exact-routes,formal-fixed-horizon-no-go]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v167-exact-four-routes
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v167-formal-fixed-horizon
+          path: evidence/formal
+      - name: Source-pinned four-route qualification with protected UNKNOWN
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v167-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v167-formal-seal.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==sha
+          assert a['all_four_routes_completed'] and a['not_universal_collatz_proof']
+          assert b['no_infinite_nonconvergent_source_claimed']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          out={'schema':'COLLATZ_V167_FINAL','source_commit':sha,
+            'status':'WARRANTED_EXACT_ALL_FOUR_BOUNDED_TESTS_PLUS_FORMAL_RANK_NO_GO',
+            'route_1':'BOUNDED PROMISING: recursive terminal plus verified earlier source certificates',
+            'route_2':'BOUNDED INCOMPLETE: reverse funnel with 27,703 hard controls',
+            'route_3':'UNIVERSALLY REJECTED: fixed H size descent by real Mersenne corridor',
+            'route_4':'BOUNDED NEGATIVE: fixed modulus/primitive power lift height and 79/4608 direct-family ceiling',
+            'all_scale_contraction':'UNKNOWN',
+            'external_density_input_locally_rebuilt':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v167-final.json').write_text(
+            json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v167-final
+          path: evidence/v167-final.json
+          if-no-files-found: error
