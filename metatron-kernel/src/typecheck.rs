@@ -3210,3 +3210,49 @@ mod checked_binding_lineage_tests {
             "conflicting purported types revoke the reusable judgment");
     }
 }
+
+#[cfg(test)]
+mod typed_bidirectional_lambda_regressions {
+    use super::*;
+
+    #[test]
+    fn source_lambda_requires_exact_dependent_domain_and_body() {
+        let mut expressions=IdTable::default();
+        let mut levels=IdTable::default();
+        levels.insert(LevelId(0),Level::Zero).unwrap();
+        levels.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
+        for (id,expr) in [
+            (0,Expr::Sort(LevelId(0))),            // Prop
+            (1,Expr::BVar(0)),                      // bound P
+            (2,Expr::Lam{domain:ExprId(0),body:ExprId(1)}),
+            (3,Expr::Pi{domain:ExprId(0),body:ExprId(0)}),
+            (4,Expr::Sort(LevelId(1))),            // Sort 1
+            (5,Expr::Lam{domain:ExprId(4),body:ExprId(1)}),
+            (6,Expr::App{fun:ExprId(0),arg:ExprId(1)}),
+            (7,Expr::Lam{domain:ExprId(0),body:ExprId(6)}),
+        ] { expressions.insert(ExprId(id),expr).unwrap(); }
+        let environment=Environment::empty();
+        let checker=TypeChecker::new(&expressions,&levels,&environment);
+        let target=TypeValue::Term(Closure::new(
+            ExprId(3),EnvFrame::empty(),
+        ));
+        assert!(
+            checker.try_kernel_checked_lambda(
+                ExprId(2),&target,&[],&EnvFrame::empty(),4096,true,
+            ).is_some(),
+            "fun P:Prop => P has the explicitly checked dependent Pi"
+        );
+        assert!(
+            checker.try_kernel_checked_lambda(
+                ExprId(5),&target,&[],&EnvFrame::empty(),4096,true,
+            ).is_none(),
+            "changing the used binder domain must not be erased"
+        );
+        assert!(
+            checker.try_kernel_checked_lambda(
+                ExprId(7),&target,&[],&EnvFrame::empty(),4096,true,
+            ).is_none(),
+            "invalid function application inside Lambda body is not licensed"
+        );
+    }
+}
