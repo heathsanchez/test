@@ -701,13 +701,40 @@ impl<'a> TypeChecker<'a> {
                 let Some(offset) = usize::try_from(*index).ok() else {
                     return Judgment::refuted("unbound-bvar");
                 };
-                context
-                    .iter()
-                    .rev()
-                    .nth(offset)
-                    .cloned()
-                    .map(|value| Judgment::proven(value, "context-lookup"))
-                    .unwrap_or_else(|| Judgment::refuted("unbound-bvar"))
+                // Canonical binder transport with an explicit source witness.
+                // The checker creates lexical FreeId(k) exactly when opening
+                // context entry k. If the captured frame exposes one of these
+                // canonical locals, its type is context[k], not necessarily
+                // the type of the most recent binder at de Bruijn position k.
+                //
+                // Crucially, noncanonical source-derived/synthetic IDs still
+                // use the original type-inference procedure. Those frames
+                // have NOT supplied this exact binder correspondence. This
+                // is not an equality between FreeIds or between data terms.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER").is_some()
+                    && let Some(EnvBinding::Free(free)) = frame.lookup(*index)
+                    && let Ok(canonical_index) = usize::try_from(free.0)
+                    && let Some(qualified_type) = context.get(canonical_index)
+                {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_CONTEXT_BINDER").is_some() {
+                        if context.len().checked_sub(offset + 1) != Some(canonical_index) {
+                            use std::sync::atomic::{AtomicUsize, Ordering};
+                            static WITNESSES: AtomicUsize = AtomicUsize::new(0);
+                            if WITNESSES.fetch_add(1, Ordering::Relaxed) < 80 {
+                                eprintln!(
+                                    "NUCLEUS_CONTEXT_BINDER_TRANSPORT:expr={expression:?}:bvar={index}:free={free:?}:context={}:frame={}:source_type={qualified_type:?}",
+                                    context.len(),frame.id(),
+                                );
+                            }
+                        }
+                    }
+                    Judgment::proven(qualified_type.clone(), "source-captured-canonical-binder-type")
+                } else {
+                    context.iter().rev().nth(offset).cloned()
+                        .map(|value| Judgment::proven(value, "context-lookup"))
+                        .unwrap_or_else(|| Judgment::refuted("unbound-bvar"))
+                }
             }
             Expr::Sort(level) => match self.instantiate(*level, *remaining) {
                 Ok(level) => Judgment::proven(TypeValue::Sort(succ(level)), "sort-inference"),
@@ -2758,4 +2785,58 @@ fn take_step(remaining: &mut usize) -> bool {
 
 fn fresh_local(depth: usize) -> Option<FreeId> {
     u64::try_from(depth).ok().map(FreeId)
+}
+
+#[cfg(test)]
+mod minimal_context_binder_tests {
+    use super::*;
+
+    fn infer_bvar(free: u64, source_index:u64) -> Judgment<TypeValue> {
+        let mut expression=IdTable::default();
+        let levels=IdTable::default();
+        expression.insert(ExprId(0),Expr::BVar(source_index)).unwrap();
+        let environment=Environment::empty();
+        let checker=TypeChecker::new(&expression,&levels,&environment);
+        let context=vec![
+            TypeValue::Sort(LevelTerm::Zero),
+            TypeValue::Sort(LevelTerm::Succ(Box::new(LevelTerm::Zero))),
+        ];
+        let frame=EnvFrame::empty().extend_free(FreeId(free));
+        let mut fuel=128;
+        checker.infer_in(ExprId(0),&context,&frame,&mut fuel,&mut HashMap::new())
+    }
+
+    #[test]
+    #[ignore="explicit bounded binder-context transport A/B"]
+    fn actual_source_captured_free_zero_overrules_unrelated_latest_context_entry(){
+        let result=infer_bvar(0,0);
+        assert!(matches!(
+            result,Judgment::Proven{value:TypeValue::Sort(LevelTerm::Zero),..}
+        ),"the source frame actually denotes FreeId0, with context[0] type: {result:?}");
+    }
+
+    #[test]
+    #[ignore="explicit bounded binder-context transport A/B"]
+    fn source_captured_free_one_retains_different_data_type(){
+        let result=infer_bvar(1,0);
+        assert!(matches!(
+            result,Judgment::Proven{value:TypeValue::Sort(LevelTerm::Succ(_)),..}
+        ),"FreeId1 must retain its distinct context[1] type: {result:?}");
+    }
+
+    #[test]
+    #[ignore="explicit bounded binder-context transport A/B"]
+    fn high_synthetic_free_id_does_not_claim_unproved_context_correspondence(){
+        let result=infer_bvar(75_000,0);
+        assert!(matches!(
+            result,Judgment::Proven{value:TypeValue::Sort(LevelTerm::Succ(_)),..}
+        ),"source validator synthetic FreeIds retain original inference: {result:?}");
+    }
+
+    #[test]
+    #[ignore="explicit bounded binder-context transport A/B"]
+    fn actual_missing_bvar_still_rejected(){
+        let result=infer_bvar(0,2);
+        assert!(!result.is_proven(),"missing source variable cannot be assigned a type: {result:?}");
+    }
 }
