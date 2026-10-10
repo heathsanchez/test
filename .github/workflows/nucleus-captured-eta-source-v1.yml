@@ -40,9 +40,13 @@ jobs:
           results=[]
           for case,source_fun,source_minor in cases:
               b=(pathlib.Path('/tmp/tests/good')/(case+'.ndjson')).read_bytes()
-              expr={}
+              expr={};names={0:''}
               for line in b.splitlines():
                   j=json.loads(line)
+                  if 'in' in j:
+                      y=j.get('str',j.get('num'))
+                      pre=names.get(y['pre'],'')
+                      names[j['in']]=pre+('.' if pre else '')+str(y.get('str',y.get('i')))
                   if 'ie' in j: expr[j['ie']]=j
               def node(x):
                   return expr.get(x)
@@ -76,9 +80,13 @@ jobs:
                       function_chain.append({'id':cur,'shape':n})
                       if not n or 'app' not in n:break
                       cur=n['app']['fn']
+                  head=function_chain[-1]
+                  n=head['shape'] or {}
+                  cname=n.get('const',{}).get('name')
                   print('NUCLEUS_ETA_SOURCE_BODY='+json.dumps({
                       'case':case,'body_fn':h,'body_arg':a,
-                      'body_arg_node':node(a),'function_chain':function_chain
+                      'body_arg_node':node(a),'function_chain':function_chain,
+                      'head_name_id':cname,'head_name':names.get(cname)
                   },separators=(',',':'))[:13500],flush=True)
           pathlib.Path('research/nucleus-evidence/captured-eta-source.json').write_text(json.dumps({
               'run_sha':os.environ['GITHUB_SHA'],'artifact':os.environ['ARENA_ARTIFACT'],'cases':results
