@@ -2303,10 +2303,25 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         budget: usize,
     ) -> String {
+        // Diagnostic evaluation must not mutate the live checker's typed
+        // binding ledger or reduction cache. Start from the same checked
+        // witness snapshot in an isolated checker, then discard all new
+        // synthetic diagnostic certificates with that snapshot.
+        let probe = Self {
+            expressions: self.expressions,
+            levels: self.levels,
+            environment: self.environment,
+            level_substitution: self.level_substitution.clone(),
+            delta_policy: self.delta_policy,
+            exposure_cache: new_exposure_cache(),
+            checked_binding_lineage: Rc::new(RefCell::new(
+                self.checked_binding_lineage.borrow().clone(),
+            )),
+        };
         let mut remaining = budget.min(1024);
         let mut current = match &neutral.head {
             NeutralHead::Const { name, levels } => {
-                let Some(decl) = self.environment.get(*name) else {
+                let Some(decl) = probe.environment.get(*name) else {
                     return format!("missing-declaration:head={name:?}");
                 };
                 if decl.level_params.len() != levels.len() {
@@ -2334,7 +2349,7 @@ impl<'a> TypeChecker<'a> {
             }
         };
         for (position, actual_arg) in neutral.spine.iter().enumerate() {
-            let Some((domain, body)) = self.pi_view(
+            let Some((domain, body)) = probe.pi_view(
                 Judgment::proven(current.clone(), "source-typed-telescope"),
                 remaining.min(512),
             ) else {
@@ -2342,7 +2357,7 @@ impl<'a> TypeChecker<'a> {
                     "first-missing-pi:argument={position}:function_type={current:?}"
                 );
             };
-            let Some(actual_type) = self.infer_exact_closure_in_context(
+            let Some(actual_type) = probe.infer_exact_closure_in_context(
                 actual_arg, context, &mut remaining, 0,
             ) else {
                 return format!(
@@ -2351,7 +2366,7 @@ impl<'a> TypeChecker<'a> {
                 );
             };
             let relation = crate::convert::convert_with_policy_in_context(
-                self, &actual_type, &domain,
+                &probe, &actual_type, &domain,
                 remaining.min(256),
                 crate::convert::DeltaPolicy::PreferredOnly,
                 context.len(), context,
@@ -2364,7 +2379,7 @@ impl<'a> TypeChecker<'a> {
             }
             current = match body {
                 PiBody::Fixed(free, body_type) => {
-                    let Some(instantiated) = self.instantiate_fixed_pi_body(
+                    let Some(instantiated) = probe.instantiate_fixed_pi_body(
                         &body_type, free, actual_arg, &mut remaining,
                     ) else {
                         return format!(
@@ -2382,7 +2397,7 @@ impl<'a> TypeChecker<'a> {
                 }
             };
         }
-        let result_kind = self.sort_level(
+        let result_kind = probe.sort_level(
             Judgment::proven(current.clone(), "checked-neutral-telescope"),
             remaining.min(256),
         );
