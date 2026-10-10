@@ -33,8 +33,8 @@ SOURCE = "6473f72db5dcefc97b5725b59e734504edc28a21"
 TRAIN = (290,)
 HELDOUT = (291,)
 BASE = "http://localhost:7780/admin"
-GRAMMAR = (("newest_id", 1), ("newest_id", 2), ("newest_id", 3),
-           ("newest_date", 1), ("oldest_id", 1), ("newest_id", 4))
+GRAMMAR = (("newest_date", 1), ("newest_date", 2), ("newest_date", 3),
+           ("newest_id", 1), ("oldest_id", 1), ("newest_date", 4))
 
 
 async def observe(base: str) -> dict:
@@ -138,8 +138,9 @@ def infer_filter(intent, ob):
 
 def date_key(row):
     s = row.get("purchase_date", "")
-    for f in ("%b %d, %Y, %I:%M:%S %p", "%B %d, %Y, %I:%M:%S %p",
-              "%b %d, %Y, %H:%M:%S", "%Y-%m-%d %H:%M:%S"):
+    for f in ("%b %d, %Y %I:%M:%S %p", "%B %d, %Y %I:%M:%S %p",
+              "%b %d, %Y, %I:%M:%S %p", "%B %d, %Y, %I:%M:%S %p",
+              "%b %d, %Y %H:%M:%S", "%b %d, %Y, %H:%M:%S", "%Y-%m-%d %H:%M:%S"):
         try:
             return datetime.strptime(s, f).timestamp()
         except ValueError:
@@ -302,7 +303,8 @@ async def experiment(args):
             (root / (arm + "_freeze.json")).write_text(json.dumps(freeze, indent=2) + "\n")
             result["arms"][arm] = {
                 "chosen": chosen, "freeze_sha256": freeze["freeze_sha256"],
-                "candidate_task_evaluations": len(search),
+                "candidate_task_evaluations": sum("verifier_seconds" in z["result"] for z in search),
+                "candidate_attempts": len(search),
                 "training": search,
                 "training_verifier_seconds": sum(z["result"].get("verifier_seconds", 0) for z in search),
                 "training_wall_seconds": time.perf_counter() - start,
@@ -387,6 +389,7 @@ def selftest():
     assert [x["id"] for x in s] == ["00002"]
     s = select_order_rows(ob, "customer email", "cancelled", "newest_date", 1)
     assert [x["id"] for x in s] == ["00002"]
+    assert date_key({"id": "00001", "purchase_date": "Apr 13, 2023 11:05:30 PM"}) > date_key({"id": "00002", "purchase_date": "Mar 4, 2023 11:05:15 AM"})
     p = extract_product_receipt(
         "Product\tItem Status\nTest Tee\nSKU: WS09-XS-Blue\n\tOrdered\t$28.00\n",
         "Grand Total\t$48.00\nSubtotal\t$28.00\nShipping & Handling\t$20.00")
