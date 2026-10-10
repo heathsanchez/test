@@ -1,0 +1,143 @@
+name: Collatz V174 finite audit cannot establish all-source class uniqueness
+on:
+  push:
+    branches: [collatz-v174-finite-audit-indistinguishability]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-all-finite-audit-negative-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independent source-clock replay of the hidden-defect adversary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v174_finite_hidden_defect_audit.py > evidence/v174-finite-control.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v174-finite-control.json')
+          x=json.loads(p.read_text())
+          assert x['schema']=='COLLATZ_V174_FINITE_AUDIT_HIDDEN_DEFECT_CONTROL'
+          assert len(x['audited_height_clock_pairs'])==8
+          assert all(r['all_audited_trajectories_equal'] and
+                     r['independent_nonterminal_fixed_class_in_fake_map']
+                     for r in x['audited_height_clock_pairs'])
+          assert x['logical_boundary']=='ALL_FINITE_PREFIX_AGREEMENT_NOT_GLOBAL_ODD_AFFINE_LAW'
+          assert not x['genuine_collatz_counterexample']
+          assert not x['all_scale_anti_two_giant_proved']
+          assert x['global_collatz']=='UNKNOWN' and x['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V174_EXACT_HIDDEN_DEFECT_SEAL',
+                'source_commit':sha,
+                'audit_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                'status':'BOUNDED_EXACT_AUDIT_AND_FAKE_CLASS_CONTROL',
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v174-exact-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v174-exact-audit
+          path: evidence/
+          if-no-files-found: error
+
+  formal-universal-finite-audit-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned core Lean proof and standard-axiom audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier OneArrowBasinRepair; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean"               "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/FiniteAuditHiddenDefect.lean 2>&1 | tee evidence/v174-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v174-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-20000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[z.strip() for z in inside.split(',') if z.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          names=['v174_shortcut_le_twice','v174_actual_endpoint_bound',
+                 'v174_two_pow_mono','v174_audited_endpoints_below_defect',
+                 'v174_freeze_matches_avoided_prefix',
+                 'v174_every_bounded_audit_agrees',
+                 'v174_false_map_has_two_disjoint_positive_classes']
+          for n in names:
+            assert 'CollatzFinal.SourceProduct.'+n in ax,n
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V174_FORMAL_AUDIT_LIMIT',
+                'source_commit':sha,'axioms':ax,
+                'source_sha256':hashlib.sha256(pathlib.Path(
+                    'formal/Collatz/FiniteAuditHiddenDefect.lean').read_bytes()).hexdigest(),
+                'warrant':'FOR_EVERY_FINITE_SOURCE_AND_CLOCK_BUDGET_EXISTS_DIFFERENT_TWO_BASIN_MAP',
+                'true_all_source_affine_law_retained_in_fake_map':False,
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v174-formal-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v174-formal-separator
+          path: evidence/
+          if-no-files-found: error
+
+  final-source-pinned:
+    needs: [exact-all-finite-audit-negative-control,formal-universal-finite-audit-separator]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v174-exact-audit
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v174-formal-separator
+          path: evidence/formal
+      - name: Seal exact source, universal theorem, and preserved QED boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          a=json.loads(pathlib.Path('evidence/exact/v174-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v174-formal-seal.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==sha
+          assert not b['true_all_source_affine_law_retained_in_fake_map']
+          assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V174_FINAL','source_commit':sha,
+                'status':'WARRANTED_UNIVERSAL_FINITE_AUDIT_INDISTINGUISHABILITY',
+                'scope':'FINITE_OBSERVATION_NEGATIVE_THEOREM',
+                'remaining':'EXACT_ALL_SOURCE_PLUS_ONE_ODD_AFFINE_INTERCEPT_MUST_ELIMINATE_SECOND_MACROSCOPIC_CLASS',
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v174-final.json').write_text(
+             json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v174-final
+          path: evidence/v174-final.json
+          if-no-files-found: error
