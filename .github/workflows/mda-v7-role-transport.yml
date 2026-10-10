@@ -1,0 +1,62 @@
+name: MDA v7 cross-authority role transport and extra capability generations
+on:
+  workflow_dispatch:
+  push:
+    branches: [mda-v7-next-capability-role-transport-v1]
+    paths:
+      - 'open_development/role_transport.py'
+      - 'open_development/role_transport_qualification.py'
+      - '.github/workflows/mda-v7-role-transport.yml'
+permissions:
+  contents: read
+jobs:
+  source-exact-role-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Preserve all current Open Development and MDA tests
+        run: |
+          set -euo pipefail
+          python -m py_compile open_development/role_transport.py open_development/role_transport_qualification.py
+          python -m unittest discover -s open_development/tests -v
+      - name: Qualify new certified role and protected future
+        run: |
+          set -euo pipefail
+          python -m open_development.role_transport_qualification > mda-v7-role-result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('mda-v7-role-result.json'))
+          assert all(d['gates'].values())
+          assert d['cost_event_counts']['new_candidate_attempts']==2
+          assert d['cost_event_counts']['new_independent_verifications']==4
+          assert d['outcomes']['protected_future_verdict_counts']=={'verified':16}
+          assert d['outcomes']['source_body_ablation']=={'unknown':16}
+          assert d['outcomes']['unrelated_ablation']=={'verified':16}
+          assert d['outcomes']['ancestor_revocation']=={'unknown':16}
+          assert d['claims']['general_CLC_transport_theorem']=='UNKNOWN'
+          print(json.dumps({'gates':d['gates'],'claims':d['claims']},indent=2))
+          PY
+      - name: Retain preceding economic E5 boundary
+        run: |
+          set -euo pipefail
+          python -m open_development.mda_v7_economics > mda-v7-economic-result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('mda-v7-economic-result.json'))
+          assert all(d['gates'].values())
+          assert d['claims']['strict_improvement_over_full_certificate_replay']=='REJECTED_ON_THIS_CASE'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mda-v7-certified-role-transport
+          path: |
+            mda-v7-role-result.json
+            mda-v7-economic-result.json
+          if-no-files-found: warn
