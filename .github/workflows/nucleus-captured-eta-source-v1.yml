@@ -2,7 +2,7 @@ name: Nucleus captured eta source witness audit
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-proof-discharge-v1]
     paths: [".github/workflows/nucleus-captured-eta-source-v1.yml"]
   workflow_dispatch:
 
@@ -113,6 +113,91 @@ jobs:
               'run_sha':os.environ['GITHUB_SHA'],'artifact':os.environ['ARENA_ARTIFACT'],'cases':results
           },indent=2))
           assert len(results)==4
+          PY
+      - name: Audit exact syntax ancestry and enclosing checked binder candidates
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections,json,pathlib
+          cases=[
+            ('init-prelude',7091,1899),
+            ('perf/grind-ring-5',6845,2068),
+            ('perf/magma-list-pair-n7',5676,552),
+            ('perf/magma-list-pair-n21',5673,548),
+          ]
+          report=[]
+          for case,fun,minor in cases:
+              b=(pathlib.Path('/tmp/tests/good')/(case+'.ndjson')).read_bytes()
+              expr={};decl=[];names={0:''}
+              for line in b.splitlines():
+                  row=json.loads(line)
+                  if 'ie' in row:expr[row['ie']]=row
+                  if 'in' in row:
+                      y=row.get('str',row.get('num'))
+                      names[row['in']]=names.get(y['pre'],'')+(
+                          '.' if names.get(y['pre'],'') else '')+str(y.get('str',y.get('i')))
+                  for k in ('def','thm','axiom'):
+                      if k in row:
+                          d=row[k];decl.append((k,names.get(d['name'],str(d['name'])),d))
+              parents=collections.defaultdict(list)
+              for p,node in expr.items():
+                  for k in ('lam','forallE','letE','app','proj'):
+                      z=node.get(k)
+                      if not isinstance(z,dict):continue
+                      for field in ('type','body','fn','arg','value','struct','structure'):
+                          child=z.get(field)
+                          if isinstance(child,int) and child in expr:
+                              parents[child].append((p,k,field))
+              def ancestors(start):
+                  found={start:0};paths={start:[]};q=collections.deque([start])
+                  while q:
+                      c=q.popleft()
+                      if found[c]>=75:continue
+                      for p,k,field in parents[c]:
+                          if p in found:continue
+                          found[p]=found[c]+1
+                          paths[p]=paths[c]+[(p,k,field)]
+                          q.append(p)
+                  return found,paths
+              df,pf=ancestors(fun);dm,pm=ancestors(minor)
+              def owners(ds):
+                  out=[]
+                  for kind,name,d in decl:
+                      for f in ('type','value'):
+                          root=d.get(f)
+                          if root in ds:
+                              out.append(dict(kind=kind,name=name,field=f,expr=root,steps=ds[root]))
+                  return sorted(out,key=lambda x:x['steps'])[:7]
+              def nearest_binders(dist,paths):
+                  relevant=[]
+                  for pa,d in dist.items():
+                      if pa not in expr:continue
+                      node=expr[pa]
+                      path=paths[pa]
+                      if not path:continue
+                      k=path[-1][1];edge=path[-1][2]
+                      if k in ('lam','forallE') and edge=='body':
+                          q=node[k]
+                          relevant.append(dict(expr=pa,distance=d,kind=k,domain=q['type'],
+                                               domain_shape=expr.get(q['type'],{}),
+                                               binder_name=names.get(q.get('name'),'')))
+                  return sorted(relevant,key=lambda x:x['distance'])[:12]
+              common=sorted(
+                  set(df).intersection(dm),
+                  key=lambda x:(df[x]+dm[x],df[x],dm[x])
+              )[:6]
+              rec=dict(case=case,fun=fun,minor=minor,source_owners=owners(df),
+                       minor_owners=owners(dm),source_enclosing_binders=nearest_binders(df,pf),
+                       minor_enclosing_binders=nearest_binders(dm,pm),
+                       common_syntax_ancestors=[
+                           dict(expr=x,dist_fun=df[x],dist_minor=dm[x],
+                                shape=expr.get(x,{})) for x in common
+                       ])
+              print('NUCLEUS_BINDER_ANCESTRY='+json.dumps(rec,separators=(',',':'))[:12000],flush=True)
+              report.append(rec)
+          dest=pathlib.Path('research/nucleus-evidence/captured-eta-ancestry.json')
+          dest.write_text(json.dumps(report,indent=2))
+          assert len(report)==4
           PY
       - uses: actions/upload-artifact@v4
         with:
