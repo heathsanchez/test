@@ -330,6 +330,12 @@ impl Environment {
         Rc::clone(&self.projection_specs)
     }
 
+    /// Borrow certified structure metadata without cloning the full map.
+    /// As with shared snapshots, this view is bound to this Environment's authority.
+    pub fn projection_specs_ref(&self) -> &HashMap<NameId, ProjectionSpec> {
+        &self.projection_specs
+    }
+
     pub fn install_nat_primitives(
         &self,
         primitives: NatPrimitives,
