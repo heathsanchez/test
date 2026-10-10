@@ -1161,6 +1161,53 @@ fn compare_values(
                     spine: right_spine,
                 },
             ) if left_type == right_type && left_index == right_index => {
+                // An exact source-substitution proof is stronger than
+                // observing matching fields after forced normalization.
+                // This trial is evaluated only on the *same source syntax*
+                // under different captured environments. Every source-used
+                // binding must be equal, independently established by normal
+                // checked conversion. Unused environment cells are irrelevant.
+                // Every pending application argument must also be proven
+                // convertible before this judgment earns a new equality.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_SOURCE_PROJECTION").is_some()
+                    && depth == context.len() && depth >= 4
+                    && current_budget >= 512
+                    && left_structure.expr == right_structure.expr
+                    && left_structure.levels == right_structure.levels
+                    && left_spine.len() == right_spine.len()
+                    && left_spine.len() <= 4
+                    && {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static ATTEMPTS:AtomicUsize=AtomicUsize::new(0);
+                        ATTEMPTS.fetch_add(1,Ordering::Relaxed)<320
+                    }
+                {
+                    let probe=current_budget.min(8192);
+                    let receiver=certified_same_source_support(
+                        checker,left_structure,right_structure,probe,depth,context,
+                    );
+                    let spine=receiver && left_spine.iter().zip(right_spine).all(|(a,b)| {
+                        a==b || convert_with_policy_in_context(
+                            checker,&TypeValue::Term(a.clone()),&TypeValue::Term(b.clone()),
+                            (probe/(left_spine.len()+1)).min(512),
+                            DeltaPolicy::PreferredOnly,depth,context,
+                        ).is_proven()
+                    });
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_SOURCE_PROJECTION").is_some() {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+                        if PRINTED.fetch_add(1,Ordering::Relaxed)<60 {
+                            eprintln!(
+                                "NUCLEUS_SOURCE_PROJECTION_TRIAL:depth={depth}:type={left_type:?}:index={left_index}:source={:?}:receiver={receiver}:spine={spine}:budget={current_budget}",
+                                left_structure.expr
+                            );
+                        }
+                    }
+                    if spine {
+                        return Judgment::proven((),"checked-same-source-projection-substitution-congruence");
+                    }
+                }
                 // A checked projection of one fixed field is congruent only
                 // after proving the receiver and all applied arguments equal.
                 // The existing source-level Nat computation never licenses
@@ -1853,6 +1900,107 @@ fn certified_neutral_receiver_congruence(
             depth,
             context,
         ).is_proven()
+    })
+}
+
+fn source_external_bvar_support(
+    checker: &TypeChecker<'_>,
+    root: ExprId,
+    max_nodes: usize,
+) -> Option<Vec<u64>> {
+    let mut pending = vec![(root, 0u64)];
+    let mut visited = HashSet::new();
+    let mut support = std::collections::BTreeSet::new();
+    while let Some((id, binders)) = pending.pop() {
+        if !visited.insert((id, binders)) {
+            continue;
+        }
+        if visited.len() > max_nodes || support.len() > 64 {
+            return None;
+        }
+        match checker.expression(id)? {
+            Expr::BVar(index) if *index >= binders => {
+                support.insert(index.checked_sub(binders)?);
+            }
+            Expr::BVar(_) | Expr::Sort(_) | Expr::NatLit(_)
+            | Expr::StrLit(_) | Expr::Const { .. } => {}
+            Expr::App { fun, arg } => {
+                pending.push((*fun, binders));
+                pending.push((*arg, binders));
+            }
+            Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                pending.push((*domain, binders));
+                pending.push((*body, binders.checked_add(1)?));
+            }
+            Expr::Let { ty, value, body } => {
+                pending.push((*ty, binders));
+                pending.push((*value, binders));
+                pending.push((*body, binders.checked_add(1)?));
+            }
+            Expr::Proj { structure, .. } => {
+                pending.push((*structure, binders));
+            }
+        }
+    }
+    Some(support.into_iter().collect())
+}
+
+/// Explicit substitution congruence for one identical source expression.
+/// Requalification on the full Arena corpus is required before promotion;
+/// no cached result, source name or expression fingerprint is authority.
+///
+/// Recursion always enters a source subterm's captured binding, with a
+/// strictly smaller finite budget. A failed subproof is not an equality.
+fn certified_same_source_support(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    budget: usize,
+    depth: usize,
+    context: &[TypeValue],
+) -> bool {
+    if budget < 64 || depth != context.len()
+        || left.expr != right.expr || left.levels != right.levels
+    {
+        return false;
+    }
+    if left.env == right.env {
+        return true;
+    }
+    // Bound analysis work in direct proportion to the available conversion
+    // budget, never silently truncating the support set to a false positive.
+    let Some(support) = source_external_bvar_support(
+        checker, left.expr, budget.min(512),
+    ) else {
+        return false;
+    };
+    let each_budget = (budget / (support.len() + 1)).min(256);
+    if each_budget < 16 {
+        return false;
+    }
+    support.into_iter().all(|slot| match (
+        left.env.lookup(slot),
+        right.env.lookup(slot),
+    ) {
+        (None, None) => true,
+        (Some(EnvBinding::Free(a)), Some(EnvBinding::Free(b))) => a == b,
+        (Some(EnvBinding::Closure(a)), Some(EnvBinding::Closure(b))) => {
+            a == b || convert_with_policy_in_context(
+                checker,
+                &TypeValue::Term(a),
+                &TypeValue::Term(b),
+                each_budget / 2,
+                DeltaPolicy::GuardedSemanticFallback,
+                depth,
+                context,
+            ).is_proven()
+        }
+        (Some(EnvBinding::Neutral(a)), Some(EnvBinding::Neutral(b))) => {
+            a == b || certified_neutral_receiver_congruence(
+                checker, &a, &b, each_budget / 2, depth, context, 6,
+            )
+        }
+        _ => false,
     })
 }
 
