@@ -2322,6 +2322,64 @@ impl<'a> TypeChecker<'a> {
     /// A preserved binder witness carries its original checked context.
     /// Replay occurs under THAT context, not a synthetic empty caller scope.
     /// No derived result is installed in the production checker.
+    /// Same exact origin witness can also be used to *diagnose* the complete
+    /// enclosing recursor telescope. The origin is selected by an actual
+    /// source-bound Free node inside the leaf, not by matching recursor names.
+    /// This does not create a transport from the source scope to the caller.
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_outer_telescope_at_leaf_origin(
+        &self,
+        outer: &Neutral,
+        leaf: &Neutral,
+        caller_context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let mut origin: Option<Vec<TypeValue>> = None;
+        for arg in &leaf.spine {
+            let Some(Expr::BVar(index)) = self.expressions.get(arg.expr) else {
+                continue;
+            };
+            let Some((node_id, EnvBinding::Free(_))) =
+                arg.env.lookup_with_node_id(*index) else { continue };
+            let witness = self.checked_binding_lineage.borrow()
+                .get(&node_id).cloned().flatten();
+            let Some(witness) = witness else { continue };
+            let prefix = witness.protected_prefix;
+            if !prefix.starts_with(caller_context) {
+                return format!("origin-context-not-a-caller-extension:node={node_id}");
+            }
+            if let Some(prior) = &origin {
+                if !(prior.starts_with(&prefix) || prefix.starts_with(prior)) {
+                    return format!("multiple-incompatible-checked-origins:node={node_id}");
+                }
+            }
+            if origin.as_ref().is_none_or(|v| prefix.len()>v.len()) {
+                origin=Some(prefix);
+            }
+        }
+        let Some(origin) = origin else { return "origin-not-certified".into() };
+        if origin.len()<=caller_context.len() {
+            return "origin-not-a-strict-extension".into();
+        }
+        let isolated=Self {
+            expressions:self.expressions,
+            levels:self.levels,
+            environment:self.environment,
+            level_substitution:self.level_substitution.clone(),
+            delta_policy:self.delta_policy,
+            exposure_cache:new_exposure_cache(),
+            checked_binding_lineage:Rc::new(RefCell::new(
+                self.checked_binding_lineage.borrow().clone(),
+            )),
+            strict_origin_probe:true,
+        };
+        let result=isolated.diagnostic_neutral_source_telescope_inner(
+            outer,&origin,budget.min(1024),false,
+        );
+        format!("source_origin_depth={}:outer_arity={}:result={result}",
+            origin.len(),outer.spine.len())
+    }
+
     #[cfg(feature = "diagnostics")]
     fn diagnostic_neutral_origin_replay(
         &self,
@@ -2581,6 +2639,10 @@ impl<'a> TypeChecker<'a> {
                                             probe.diagnostic_neutral_origin_replay(
                                                 value, context, 512,
                                             );
+                                        let enclosing =
+                                            probe.diagnostic_outer_telescope_at_leaf_origin(
+                                                neutral, value, context, 1024,
+                                            );
                                         #[cfg(feature = "diagnostics")]
                                         if std::env::var_os("NUCLEUS_TRACE_ORIGIN_REPLAY").is_some()
                                         {
@@ -2591,9 +2653,13 @@ impl<'a> TypeChecker<'a> {
                                                     "NUCLEUS_ORIGIN_REPLAY:head={:?}:arity={}:caller_depth={}:result={}",
                                                     value.head, value.spine.len(), context.len(), original
                                                 );
+                                                eprintln!(
+                                                    "NUCLEUS_OUTER_ORIGIN_REPLAY:head={:?}:arity={}:caller_depth={}:result={}",
+                                                    neutral.head, neutral.spine.len(), context.len(), enclosing
+                                                );
                                             }
                                         }
-                                        format!("caller={ordinary}:origin={original}")
+                                        format!("caller={ordinary}:origin={original}:enclosing={enclosing}")
                                     }
                                     other => format!("no-opaque-neutral={other:?}"),
                                 }
