@@ -34,13 +34,13 @@ jobs:
           python3 - <<'PY'
           import json,os,hashlib,pathlib
           cases=[
-              ('init-prelude',94,38,656),
-              ('perf/grind-ring-5',28,220,490),
-              ('perf/magma-list-pair-n7',22,2,147),
-              ('perf/magma-list-pair-n21',22,2,147),
+              ('init-prelude',94,38,656,10),
+              ('perf/grind-ring-5',28,220,490,14),
+              ('perf/magma-list-pair-n7',22,2,147,9),
+              ('perf/magma-list-pair-n21',22,2,147,9),
           ]
           records=[]
-          for case,arg,expected,rec_name in cases:
+          for case,arg,expected,rec_name,source_binding in cases:
               source=pathlib.Path('/tmp/arena-tests/good')/(case+'.ndjson')
               b=source.read_bytes()
               names={0:''}; expressions={}; decl={};inductives={}
@@ -84,6 +84,9 @@ jobs:
                   'source_sha256':hashlib.sha256(b).hexdigest(),
                   'initial_untyped_argument':arg,
                   'expected_pi_domain':expected,
+                  'first_captured_binding_expr':source_binding,
+                  'captured_binding_source':expressions.get(source_binding),
+                  'captured_binding_dag':dag(source_binding,35),
                   'recursor_name':rec_name,
                   'resolved_recursor_name':names.get(rec_name),
                   'recursor_authority':decl.get(rec_name),
@@ -99,6 +102,8 @@ jobs:
                   'case':case,'sha256':record['source_sha256'],
                   'recursor':record['resolved_recursor_name'],
                   'argument_expr':record['argument_expr'],
+                  'captured_binding_source':record['captured_binding_source'],
+                  'captured_binding_spine':spine(source_binding),
                   'expected_domain_expr':record['expected_domain_expr'],
                   'argument_spine':record['argument_spine'],
                   'expected_domain_spine':record['expected_spine'],
@@ -113,7 +118,7 @@ jobs:
           pathlib.Path('research/nucleus-evidence/first-typed-source-leaves.json').write_text(
               json.dumps(output,indent=2),
           )
-          assert all(r['argument_expr'] and r['expected_domain_expr'] for r in records)
+          assert all(r['argument_expr'] and r['expected_domain_expr'] and r['captured_binding_source'] for r in records)
           print('NUCLEUS_FIRST_TYPED_SOURCE_LEAVES_COMPLETE=4',flush=True)
           PY
       - uses: actions/upload-artifact@v4
