@@ -176,8 +176,8 @@ theorem v161_real_positive_finite_suffix
     v161_every_finite_future_parity_word k r hr h bits hBits
   have hnPos : 0<n := by
     by_cases hz : n=0
-    · have hZero : (0:Nat)%2^k=r := by
-        simpa [hz] using hnResidue
+    · have hrZero : r=0 := by
+        simpa [hz] using hnResidue.symm
       omega
     · omega
   exact ⟨n,hnPos,hnBound,hnResidue,hnBits⟩
