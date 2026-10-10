@@ -1251,6 +1251,30 @@ fn compare_values(
                 },
                 _,
             ) => {
+                // A different head can denote a source-registered recursor
+                // reducible by iota even when the projection receiver stays
+                // neutral. Only actual constructor-major evidence and the
+                // exact checked recursor rule can supply this alternative.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_CROSS_SHAPE_IOTA").is_some()
+                    && current_budget >= 48
+                    && let Value::Neutral(other) = &current_right
+                    && let Some(reduced) = checker.machine()
+                        .qualified_nested_recursor_result(other, current_budget)
+                        .proven_value().cloned()
+                    && reduced != Value::Neutral(other.clone())
+                {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_CROSS_SHAPE_IOTA").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static COUNT: AtomicUsize = AtomicUsize::new(0);
+                        if COUNT.fetch_add(1, Ordering::Relaxed) < 32 {
+                            eprintln!("NUCLEUS_CROSS_SHAPE_IOTA:side=right:verified_registered_recursion");
+                        }
+                    }
+                    current_right = reduced;
+                    current_budget -= 1;
+                    continue;
+                }
                 let exposed = checker.machine().projection_value_for_conversion(
                     structure.clone(),
                     *type_name,
@@ -1283,6 +1307,26 @@ fn compare_values(
                     spine,
                 },
             ) => {
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_CROSS_SHAPE_IOTA").is_some()
+                    && current_budget >= 48
+                    && let Value::Neutral(other) = &current_left
+                    && let Some(reduced) = checker.machine()
+                        .qualified_nested_recursor_result(other, current_budget)
+                        .proven_value().cloned()
+                    && reduced != Value::Neutral(other.clone())
+                {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_CROSS_SHAPE_IOTA").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static COUNT: AtomicUsize = AtomicUsize::new(0);
+                        if COUNT.fetch_add(1, Ordering::Relaxed) < 32 {
+                            eprintln!("NUCLEUS_CROSS_SHAPE_IOTA:side=left:verified_registered_recursion");
+                        }
+                    }
+                    current_left = reduced;
+                    current_budget -= 1;
+                    continue;
+                }
                 let exposed = checker.machine().projection_value_for_conversion(
                     structure.clone(),
                     *type_name,
