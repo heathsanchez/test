@@ -1253,6 +1253,31 @@ fn compare_values(
                     }
                     return Judgment::proven((), "source-verified-bounded-projection-congruence");
                 }
+                // The source-scoped warrant is only used for the receiver
+                // when both closures are independently typed in the SAME
+                // existing lexical context. This is not a shape-based shortcut.
+                let typed_receiver =
+                    std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER").is_some()
+                    && depth == context.len()
+                    && context.len() <= 12
+                    && current_budget >= 512
+                    && checker.checked_source_conversion(
+                        left_structure,right_structure,context,
+                        current_budget.min(2048),
+                    ).is_proven()
+                    && same_closure_spine_congruence_in_context(
+                        checker,left_spine,right_spine,
+                        current_budget,depth,context,512,
+                    );
+                if typed_receiver {
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_TYPED_RECEIVER").is_some(){
+                        eprintln!(
+                            "NUCLEUS_TYPED_RECEIVER:PROVEN:depth={depth}:left={left_structure:?}:right={right_structure:?}",
+                        );
+                    }
+                    return Judgment::proven((),"checked-source-typed-projection-congruence");
+                }
                 if same_rigid_application_congruence(
                     checker,
                     left_structure,
