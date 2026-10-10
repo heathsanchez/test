@@ -334,7 +334,8 @@ impl<'a> TypeChecker<'a> {
                 // checked binder witness with EXACT protected scope is needed.
                 if self.strict_origin_probe {
                     match term.env.lookup(*index)? {
-                        EnvBinding::Free(_) | EnvBinding::Neutral(Neutral {
+                        EnvBinding::Free(_) => return None,
+                        EnvBinding::Neutral(Neutral {
                             head: NeutralHead::Free(_), spine,
                         }) if spine.is_empty() => return None,
                         _ => {}
