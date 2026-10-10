@@ -1459,6 +1459,91 @@ impl<'a> TypeChecker<'a> {
                         context.len(),context,
                     );
                     let pair_results={
+                        fn first_unknown_chain(
+                            checker:&TypeChecker<'_>,left:&Closure,right:&Closure,
+                            context:&[TypeValue],max_depth:usize,
+                        )->Vec<String> {
+                            let mut out=Vec::new();
+                            let mut a=left.clone();
+                            let mut b=right.clone();
+                            for iteration in 0..max_depth {
+                                let result=crate::convert::convert_with_policy_in_context(
+                                    checker,&TypeValue::Term(a.clone()),
+                                    &TypeValue::Term(b.clone()),512,
+                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                    context.len(),context,
+                                );
+                                if result.is_proven() {
+                                    out.push(format!("step={iteration}:resolved-PROVEN"));
+                                    break
+                                }
+                                let av=checker.machine().expose_for_conversion(
+                                    a.clone(),Transparency::Full,1024,
+                                );
+                                let bv=checker.machine().expose_for_conversion(
+                                    b.clone(),Transparency::Full,1024,
+                                );
+                                let (Some(aval),Some(bval))=
+                                    (av.proven_value(),bv.proven_value()) else {
+                                    out.push(format!("step={iteration}:unexposed:a={av:?}:b={bv:?}"));
+                                    break
+                                };
+                                let pairs:Option<(String,Vec<(String,Closure,Closure)>)>=
+                                    match (aval,bval) {
+                                        (Value::StuckProjection{
+                                            type_name:lt,index:li,structure:ls,spine:la,
+                                        },Value::StuckProjection{
+                                            type_name:rt,index:ri,structure:rs,spine:ra,
+                                        }) if lt==rt && li==ri && la.len()==ra.len() => {
+                                            let mut children=vec![("receiver".into(),ls.clone(),rs.clone())];
+                                            children.extend(la.iter().zip(ra.iter()).enumerate()
+                                                .map(|(i,(x,y))|(format!("arg{i}"),x.clone(),y.clone())));
+                                            Some((format!("projection={lt:?}:{li}"),children))
+                                        }
+                                        (Value::Neutral(l),Value::Neutral(r))
+                                            if l.head==r.head && l.spine.len()==r.spine.len() => {
+                                            let children=l.spine.iter().zip(r.spine.iter()).enumerate()
+                                                .map(|(i,(x,y))|(format!("arg{i}"),x.clone(),y.clone()))
+                                                .collect::<Vec<_>>();
+                                            Some((format!("neutral={:?}",l.head),children))
+                                        }
+                                        _=>None,
+                                    };
+                                if let Some((head,pairs))=pairs {
+                                    let mut next=None;
+                                    let mut prem=Vec::new();
+                                    for (name,l,r) in pairs {
+                                        let j=crate::convert::convert_with_policy_in_context(
+                                            checker,&TypeValue::Term(l.clone()),
+                                            &TypeValue::Term(r.clone()),512,
+                                            crate::convert::DeltaPolicy::PreferredOnly,
+                                            context.len(),context,
+                                        );
+                                        prem.push(format!("{name}={}",if j.is_proven() {
+                                            "PROVEN".into()
+                                        }else{format!("{j:?}")}));
+                                        if !j.is_proven() && next.is_none(){
+                                            next=Some((name,l,r))
+                                        }
+                                    }
+                                    out.push(format!("step={iteration}:{head}:premises={prem:?}"));
+                                    if let Some((name,lv,rv))=next{
+                                        out.push(format!("descend={name}:left={lv:?}:right={rv:?}"));
+                                        a=lv;b=rv;
+                                    }else{
+                                        out.push("no-failed-operand-despite-unknown".into());break
+                                    }
+                                }else{
+                                    out.push(format!(
+                                        "step={iteration}:shape-divergence:left={}:right={}",
+                                        format!("{aval:?}").chars().take(1300).collect::<String>(),
+                                        format!("{bval:?}").chars().take(1300).collect::<String>(),
+                                    ));
+                                    break
+                                }
+                            }
+                            out
+                        }
                         let left=actual_exposed.as_ref().and_then(|v|v.proven_value());
                         let right=expected_exposed.as_ref().and_then(|v|v.proven_value());
                         let compare_pair=|a:&Closure,b:&Closure| {
@@ -1522,14 +1607,14 @@ impl<'a> TypeChecker<'a> {
                             })) if ln==rn && li==ri && la.len()==ra.len() => {
                                 let receiver=compare_pair(ls,rs);
                                 let args=la.iter().zip(ra.iter()).enumerate()
-                                    .map(|(i,(a,b))|format!("arg{i}:{:?}:{}",compare_pair(a,b),inspect(&format!("arg{i}"),a,b)))
+                                    .map(|(i,(a,b))|format!("arg{i}:{:?}:{}:first_unknown_chain={:?}",compare_pair(a,b),inspect(&format!("arg{i}"),a,b),if i>0 {first_unknown_chain(self,a,b,context,12)}else{vec![]}))
                                     .collect::<Vec<_>>();
                                 format!("same_projection={ln:?}:{li}:receiver={receiver:?}:arguments={args:?}")
                             }
                             (Some(Value::Neutral(l)),Some(Value::Neutral(r)))
                                 if l.head==r.head && l.spine.len()==r.spine.len() => {
                                 let args=l.spine.iter().zip(r.spine.iter()).enumerate()
-                                    .map(|(i,(a,b))|format!("arg{i}:{:?}:{}",compare_pair(a,b),inspect(&format!("arg{i}"),a,b)))
+                                    .map(|(i,(a,b))|format!("arg{i}:{:?}:{}:first_unknown_chain={:?}",compare_pair(a,b),inspect(&format!("arg{i}"),a,b),if i>0 {first_unknown_chain(self,a,b,context,12)}else{vec![]}))
                                     .collect::<Vec<_>>();
                                 format!("same_neutral_head={:?}:arguments={args:?}",l.head)
                             }
