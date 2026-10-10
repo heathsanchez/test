@@ -1,0 +1,80 @@
+name: Nucleus exact source-observable binder support audit
+on:
+  push:
+    branches: [nucleus-source-scope-extension-v1]
+    paths: [".github/workflows/nucleus-source-support-audit-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env: {ARENA_ARTIFACT: "11272848230"}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch immutable Arena authority
+        env: {GH_TOKEN: ${{ github.token }}}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/a /tmp/t research/nucleus-evidence
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" >/tmp/a.zip
+          unzip -q /tmp/a.zip -d /tmp/a
+          tar --no-same-owner -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/t
+      - name: Recover exact bound-variable support of captured lambda
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,hashlib,pathlib
+          cfg=[
+             ('init-prelude',7091,1899,7089),
+             ('perf/grind-ring-5',6845,2068,6843),
+             ('perf/magma-list-pair-n7',5676,552,5674),
+             ('perf/magma-list-pair-n21',5673,548,5671),
+          ]
+          output=[]
+          def support(exprs,root,cap=4096):
+              pending=[(root,0)];seen=set();used=set()
+              while pending:
+                  e,depth=pending.pop()
+                  if (e,depth) in seen:continue
+                  seen.add((e,depth))
+                  if len(seen)>cap: return None
+                  n=exprs.get(e)
+                  if n is None:return None
+                  if 'bvar' in n:
+                      if n['bvar']>=depth:used.add(n['bvar']-depth)
+                  elif 'app' in n:
+                      pending.extend((n['app'][v],depth) for v in ('fn','arg'))
+                  elif 'lam' in n or 'forallE' in n:
+                      k='lam' if 'lam' in n else 'forallE'
+                      pending.extend([(n[k]['type'],depth),(n[k]['body'],depth+1)])
+                  elif 'letE' in n:
+                      q=n['letE'];pending.extend([(q[v],depth) for v in ('type','value')])
+                      pending.append((q['body'],depth+1))
+                  elif 'proj' in n:
+                      pending.append((n['proj']['struct'],depth))
+              return sorted(used)
+          for case,source_fun,source_minor,last_arg in cfg:
+              raw=(pathlib.Path('/tmp/t/good')/(case+'.ndjson')).read_bytes()
+              exprs={}
+              for line in raw.splitlines():
+                  obj=json.loads(line)
+                  if 'ie' in obj:exprs[obj['ie']]=obj
+              row={'case':case,'sha256':hashlib.sha256(raw).hexdigest(),
+                  'source_fun':source_fun,'source_fun_support':support(exprs,source_fun),
+                  'source_minor':source_minor,'source_minor_support':support(exprs,source_minor),
+                  'last_arg':last_arg,'last_arg_support':support(exprs,last_arg),
+                  'lambda_source_domain_support':support(exprs,exprs[source_fun]['lam']['type']),
+                  'source_body_support':support(exprs,exprs[source_fun]['lam']['body'])}
+              print('NUCLEUS_EXACT_SOURCE_SUPPORT='+json.dumps(row),flush=True)
+              assert all(row[k] is not None for k in row if k.endswith('_support'))
+              output.append(row)
+          pathlib.Path('research/nucleus-evidence/source-captured-support.json').write_text(json.dumps(
+              {'head':os.environ['GITHUB_SHA'],'arena_artifact':os.environ['ARENA_ARTIFACT'],'four':output},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-source-support-${{ github.sha }}
+          path: research/nucleus-evidence/source-captured-support.json
+          if-no-files-found: error
