@@ -1,0 +1,156 @@
+name: Collatz V174 next-shell inverse witness qualification
+on:
+  push:
+    branches: [collatz-v174-cohort-height-elimination]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-next-shell:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source-exact bounded inverse shell search and small brute-force controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v174_next_shell_inverse_audit > evidence/v174-next-shell.json
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v174-next-shell.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V174_EXACT_NEXT_SHELL_SINGLE_JOIN_SEARCH'
+          assert d['clock_cap']==208
+          assert d['shell_lower_inclusive']==2**25
+          assert d['shell_upper_exclusive']==2**26
+          r={x['source']:x for x in d['observations']}
+          assert len(r)==4
+          assert r[13774695]['genuine_join_found']
+          assert (r[13774695]['original_source_clock'],
+                  r[13774695]['new_source'],
+                  r[13774695]['new_source_clock'],
+                  r[13774695]['shared_endpoint'],
+                  r[13774695]['new_source_terminal_clock'],
+                  r[13774695]['new_source_terminal_endpoint'])==(207,61407743,57,191866796,201,2)
+          assert all(not r[n]['genuine_join_found'] and
+                     r[n]['complete_negative_only_within_specified_shell_and_one_hop_seed']
+                     for n in (13002751,13421671,15410667))
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          assert not d['unbounded_elimination_proved']
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V174_EXACT_NEXT_SHELL_SEAL',
+                'source_commit':sha,
+                'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                'scope':'FINITE_SHELL_2_POWER_25_TO_26_ONE_HOP_DIRECT_SEED_H208',
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v174-shell-exact-seal.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v174-shell-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-next-shell:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check next-dyadic-shell two-clock source and terminal proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier RetroactiveFutureQuotient; do
+            lake env lean -DautoImplicit=false \
+              -o ".lake/build/lib/lean/Collatz/$module.olean" \
+              "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/NextShellHeightUnlock.lean 2>&1 | tee evidence/v174-shell-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v174-shell-lean.log')
+          log=p.read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-20000:]
+          axioms={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[a.strip() for a in inside.split(',') if a.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            axioms[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          for name in ('v174ShellLedgerCloses',
+                       'v174ShellTerminalConsequence',
+                       'v174ShellOriginalHeightGuard',
+                       'v174ShellAllIndividualClocksAtMost208',
+                       'v174ShellSharedEndpoint'):
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V174_FORMAL_NEXT_SHELL_SEAL',
+                'source_commit':sha,
+                'axioms':axioms,
+                'source_sha256':hashlib.sha256(pathlib.Path(
+                  'formal/Collatz/NextShellHeightUnlock.lean').read_bytes()).hexdigest(),
+                'scope':'FORMAL_ONE_SOURCE_NEXT_SHELL_TERMINAL_MERGE',
+                'all_scale_gain_proved':False,
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v174-shell-formal-seal.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v174-shell-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-next-shell:
+    needs: [exact-next-shell,formal-next-shell]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v174-shell-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v174-shell-formal
+          path: evidence/formal
+      - name: Reconcile source-pinned finite shell exact and formal scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          ex=json.loads(pathlib.Path('evidence/exact/v174-shell-exact-seal.json').read_text())
+          fo=json.loads(pathlib.Path('evidence/formal/v174-shell-formal-seal.json').read_text())
+          data=pathlib.Path('evidence/exact/v174-next-shell.json')
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert ex['source_commit']==fo['source_commit']==sha
+          assert ex['data_sha256']==hashlib.sha256(data.read_bytes()).hexdigest()
+          assert ex['global_collatz']==fo['global_collatz']=='UNKNOWN'
+          assert ex['qed'] is fo['qed'] is False
+          assert not fo['all_scale_gain_proved']
+          result={'schema':'COLLATZ_V174_NEXT_SHELL_FINAL',
+                  'source_commit':sha,
+                  'status':'WARRANTED_FORMAL_SINGLE_SOURCE_SHELL_JOIN_PLUS_BOUNDED_COMPLETE_SEARCH',
+                  'exact_data_sha256':ex['data_sha256'],
+                  'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v174-shell-final.json').write_text(
+            json.dumps(result,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v174-shell-final
+          path: evidence/v174-shell-final.json
+          if-no-files-found: error
