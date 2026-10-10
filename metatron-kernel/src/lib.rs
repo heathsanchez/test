@@ -15,6 +15,7 @@ pub mod machine;
 pub mod nat;
 pub mod parser;
 pub mod syntax;
+mod support;
 pub mod typecheck;
 pub mod value;
 pub mod verdict;
