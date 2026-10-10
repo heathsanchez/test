@@ -1447,13 +1447,33 @@ fn compare_values(
                         if !constructor.spine.is_empty()
                             || !levels.is_empty()
                             || !checker.is_certified_bool_constructor(*name)
-                            || recursive.spine.len() != 5
                         {
                             return None;
                         }
-                        checker.machine().qualified_nested_recursor_result(
-                            recursive, current_budget.min(2048),
-                        ).proven_value().cloned()
+                        // A registered Bool.rec may have four actual arguments
+                        // (motive, two minor branches, major), whereas the
+                        // other certified recursors may have five or more.
+                        // The source-installed recursor reduction validates
+                        // its own exact arity, constructor/major, universe
+                        // parameters and RHS telescope. Do not reject valid
+                        // source arities by a positional fixed-size guess.
+                        let result=checker.machine().qualified_nested_recursor_result(
+                            recursive,current_budget.min(2048),
+                        );
+                        #[cfg(feature="diagnostics")]
+                        if recursive.spine.len()==4
+                            && std::env::var_os("NUCLEUS_TRACE_REGISTERED_REC_ARITY").is_some()
+                        {
+                            use std::sync::atomic::{AtomicUsize,Ordering};
+                            static OBSERVED:AtomicUsize=AtomicUsize::new(0);
+                            if OBSERVED.fetch_add(1,Ordering::Relaxed)<80 {
+                                eprintln!(
+                                    "NUCLEUS_REGISTERED_REC_ARITY:source_arity={}:iota={result:?}",
+                                    recursive.spine.len(),
+                                );
+                            }
+                        }
+                        result.proven_value().cloned()
                     };
                     if let Some(result) = candidate(left, right) {
                         if result != Value::Neutral(right.clone()) {
