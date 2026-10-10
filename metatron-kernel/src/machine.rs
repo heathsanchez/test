@@ -338,6 +338,19 @@ impl<'a> Machine<'a> {
         if index >= spec.field_types.len() {
             return Judgment::unknown("projection-index-out-of-range");
         }
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_DEMAND_PROJECTION").is_some() {
+            let cheap = self.expose_internal(structure.clone(), Transparency::Reducible,
+                budget.min(128), false, false);
+            if let Some(Value::Neutral(Neutral { head: NeutralHead::Const { name, .. }, spine }))
+                = cheap.proven_value().map(|v| &v.value)
+            {
+                if *name == spec.constructor {
+                    if let Some(field) = spine.get(spec.num_params + index).cloned() {
+                        return Judgment::proven(field, "registered-cheap-projection");
+                    }
+                }
+            }
+        }
         let exposed = self.expose_internal(
             structure.clone(),
             Transparency::Full,
