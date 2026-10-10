@@ -4199,6 +4199,16 @@ impl<'a> TypeChecker<'a> {
         &self, left: &Closure, right: &Closure,
         context: &[TypeValue],
     ) -> String {
+        let probe = Self {
+            expressions: self.expressions,
+            levels: self.levels,
+            environment: self.environment,
+            level_substitution: self.level_substitution.clone(),
+            delta_policy: self.delta_policy,
+            exposure_cache: new_exposure_cache(),
+            checked_binding_lineage: Rc::new(RefCell::new(self.checked_binding_lineage.borrow().clone())),
+            strict_origin_probe: self.strict_origin_probe,
+        };
         let mut l = left.clone();
         let mut r = right.clone();
         let mut pairs = Vec::new();
