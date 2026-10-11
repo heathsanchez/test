@@ -305,6 +305,67 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    /// Experimental expected-type-directed check for an EXACT captured
+    /// closure. The expected type comes only from a previously inferred Pi
+    /// domain, never from a guessed function or a benchmark fingerprint.
+    /// A proof here requires checked binder-domain formation, domain
+    /// conversion, and recursive body checking under its real closure frame.
+    /// Returning false is UNKNOWN; this never grants rejection.
+    fn check_exact_closure_against(
+        &self,
+        term: &Closure,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        remaining: &mut usize,
+        depth: usize,
+    ) -> bool {
+        if depth >= 48 || !take_step(remaining) { return false; }
+        if let Some(Expr::Lam { domain, body })=self.expressions.get(term.expr) {
+            let Some((expected_domain, codomain))=self.pi_view(
+                Judgment::proven(expected.clone(), "exact-expected-Pi"),
+                (*remaining).min(1024),
+            ) else {return false};
+            let actual_domain=term.sibling(*domain,term.env.clone());
+            let Some(domain_kind)=self.infer_exact_closure_in_context(
+                &actual_domain,context,remaining,depth+1,
+            ) else {return false};
+            if !self.sort_level(
+                Judgment::proven(domain_kind,"exact-captured-lambda-domain"),
+                (*remaining).min(512),
+            ).is_proven(){return false}
+            if !crate::convert::convert_with_policy_in_context(
+                self,&TypeValue::Term(actual_domain.clone()),&expected_domain,
+                (*remaining).min(1024),crate::convert::DeltaPolicy::PreferredOnly,
+                context.len(),context,
+            ).is_proven(){return false}
+            let Some(free)=u64::try_from(context.len()).ok().map(FreeId)
+            else{return false};
+            let expected_body=match codomain {
+                PiBody::Closure(body)=>TypeValue::Term(body.under_free(free)),
+                PiBody::Fixed(binder,ty) if binder==free=>ty,
+                PiBody::Fixed(_,_)=>return false,
+            };
+            let mut extended=context.to_vec();
+            extended.push(TypeValue::Term(actual_domain.clone()));
+            let body_frame=term.env.extend_free(free);
+            self.retain_checked_elimination(
+                &body_frame,TypeValue::Term(actual_domain),&extended,
+            );
+            let actual_body=term.sibling(*body,body_frame);
+            return self.check_exact_closure_against(
+                &actual_body,&expected_body,&extended,remaining,depth+1,
+            )
+        }
+        let Some(inferred)=self.infer_exact_closure_in_context(
+            term,context,remaining,depth+1,
+        ) else{return false};
+        crate::convert::convert_with_policy_in_context(
+            self,&inferred,expected,(*remaining).min(1024),
+            crate::convert::DeltaPolicy::PreferredOnly,
+            context.len(),context,
+        ).is_proven()
+    }
+
     /// A deliberately partial *typing derivation* for evaluated closures.
     /// In contrast to inferring just the normalized neutral head, this
     /// reconstructs the original expression's typing through its capture
@@ -389,17 +450,40 @@ impl<'a> TypeChecker<'a> {
                     Judgment::proven(function_ty, "exact-captured-function-type"),
                     (*remaining).min(512),
                 )?;
-                let argument_ty = self.infer_exact_closure_in_context(
-                    &argument, context, remaining, depth + 1,
-                )?;
-                let domain_check = crate::convert::convert_with_policy_in_context(
-                    self, &argument_ty, &domain, (*remaining).min(512),
-                    crate::convert::DeltaPolicy::PreferredOnly,
-                    context.len(), context,
-                );
-                if !domain_check.is_proven() || !take_step(remaining) {
-                    return None;
-                }
+                // Only a lambda receives the expected-type route. For every
+                // other term preserve the exact original infer/convert path.
+                // The feature flag isolates this semantic candidate.
+                let checked_argument=if std::env::var_os(
+                    "NUCLEUS_EXPERIMENTAL_EXACT_LAMBDA_ARG",
+                ).is_some()
+                    && matches!(self.expressions.get(argument.expr),Some(Expr::Lam {..}))
+                {
+                    let result=self.check_exact_closure_against(
+                        &argument,&domain,context,remaining,depth+1,
+                    );
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_EXACT_LAMBDA_ARG").is_some() {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+                        if PRINTED.fetch_add(1,Ordering::Relaxed)<40 {
+                            eprintln!(
+                                "NUCLEUS_EXACT_LAMBDA_ARG:checked={result}:expr={:?}:scope={}:remaining={}:expected={domain:?}",
+                                argument.expr,context.len(),remaining,
+                            );
+                        }
+                    }
+                    result
+                } else {
+                    let argument_ty=self.infer_exact_closure_in_context(
+                        &argument,context,remaining,depth+1,
+                    )?;
+                    crate::convert::convert_with_policy_in_context(
+                        self,&argument_ty,&domain,(*remaining).min(512),
+                        crate::convert::DeltaPolicy::PreferredOnly,
+                        context.len(),context,
+                    ).is_proven()
+                };
+                if !checked_argument || !take_step(remaining) {return None;}
                 match body {
                     PiBody::Fixed(binder, inferred_body) => {
                         self.instantiate_fixed_pi_body(
