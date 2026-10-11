@@ -31,6 +31,8 @@ jobs:
         run: OPENBLAS_NUM_THREADS=1 python research/stuttgart_v12/real_data_identifiability.py
       - name: Source figure display-window sensitivity negative control
         run: OPENBLAS_NUM_THREADS=1 python research/stuttgart_v12/window_sensitivity.py
+      - name: Exact mixed-interval history quotient and noncommuting negative control
+        run: python research/stuttgart_v12/mixed_interval_quotient.py
       - name: Preserve exact evidence and failures
         if: always()
         uses: actions/upload-artifact@v4
@@ -42,5 +44,6 @@ jobs:
             research/stuttgart_v12/history_quotient_results.json
             research/stuttgart_v12/identifiability_results.json
             research/stuttgart_v12/window_sensitivity_results.json
+            research/stuttgart_v12/mixed_interval_quotient_results.json
             research/stuttgart_v11/calibration_data/
           if-no-files-found: warn
