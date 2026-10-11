@@ -104,6 +104,56 @@ theorem v177_root23_recompiled_from_single_meeting
   have hCap : 3+54*w < 23+384*w := by omega
   exact ⟨hCap,7,1,hSame⟩
 
+/-- One qualified source meeting with a strict lifted source-slope gap
+eliminates an INFINITE family of candidates for the LEAST genuine
+positive Collatz counterexample. This is the precise elimination
+interpretation of the affine compiler.
+
+The proof uses the independently warranted universal fact that a
+minimal bad source cannot join ANY strictly earlier positive source
+at two genuine clocks; NO assumption that all numbers converge. -/
+theorem v177_slope_lift_excludes_least_positive_bad
+    (n p i j w : Nat)
+    (hMeet : iter shortcut i n = iter shortcut j p)
+    (hSlope :
+       2^j*3^(oddCount n i) <
+         2^i*3^(oddCount p j)) :
+    ¬ MinimalBad PositiveBad
+      (n + 2^i*(3^(oddCount p j)*(p+1+w))) := by
+  intro hBad
+  obtain ⟨hLess, u, v, hEq⟩ :=
+    v177_infinite_source_capped_meetings n p i j w hMeet hSlope
+  have hTwo : 0 < 2^j := Nat.pow_pos (by decide)
+  have hThree : 0 < 3^(oddCount n i) := Nat.pow_pos (by decide)
+  have hW : 0 < p+1+w := by omega
+  have hSmallPos :
+      0 < p + 2^j*(3^(oddCount n i)*(p+1+w)) := by
+    have hpPart :
+        0 < 2^j*(3^(oddCount n i)*(p+1+w)) :=
+      Nat.mul_pos hTwo (Nat.mul_pos hThree hW)
+    omega
+  exact (minimal_positive_bad_no_earlier_source_meeting
+      hBad
+      (p + 2^j*(3^(oddCount n i)*(p+1+w)))
+      u v hSmallPos hLess) hEq
+
+/-- A concrete certified infinite excluded least-bad progression,
+already contained in V134's earlier rooted family. Its significance
+is that the *generic* V177 compiler now derives the same conclusion
+from an independently checkable two-clock source meeting. -/
+theorem v177_root23_progression_excludes_minimal_bad
+    (w : Nat) :
+    ¬ MinimalBad PositiveBad (23+384*w) := by
+  intro hBad
+  obtain ⟨hLess, i, j, hEq⟩ :=
+    v177_root23_recompiled_from_single_meeting w
+  have hSmallPos : 0 < 3+54*w := by omega
+  exact (minimal_positive_bad_no_earlier_source_meeting
+    hBad (3+54*w) i j hSmallPos hLess) hEq
+
+#print axioms v177_slope_lift_excludes_least_positive_bad
+#print axioms v177_root23_progression_excludes_minimal_bad
+
 #print axioms v177_parallel_source_affine_meeting
 #print axioms v177_infinite_source_capped_meetings
 #print axioms v177_root23_recompiled_from_single_meeting
