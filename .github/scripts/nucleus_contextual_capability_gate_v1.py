@@ -29,14 +29,14 @@ BASE = {
 }
 ARMS = {
     "original":("/tmp/nucleus-original",{}),
-    "context_memo":("/tmp/nucleus-context",{
-        "NUCLEUS_EXPERIMENTAL_CONTEXT_MEMO":"1",
-        "NUCLEUS_EXPERIMENTAL_CONTEXT_VISIT":"1",
+    "field_application":("/tmp/nucleus-context",{
+        "NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION":"1",
     }),
-    "capture_support":("/tmp/nucleus-context",{
+    "combined":("/tmp/nucleus-context",{
         "NUCLEUS_EXPERIMENTAL_CONTEXT_MEMO":"1",
         "NUCLEUS_EXPERIMENTAL_CONTEXT_VISIT":"1",
         "NUCLEUS_EXPERIMENTAL_CAPTURE_SUPPORT":"1",
+        "NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION":"1",
     }),
 }
 CASES = [
@@ -55,6 +55,7 @@ def run(binary, source, mode, timeout=180, performance=False, suffix=""):
     if performance:
         env["NUCLEUS_TRACE_CONTEXT_MEMO"]="1"
         env["NUCLEUS_TRACE_CAPTURE_SUPPORT"]="1"
+        env["NUCLEUS_TRACE_CERTIFIED_FIELD_APPLICATION"]="1"
     metrics = OUT / ("rusage_"+suffix+".txt")
     cmd = [binary]
     if performance:
@@ -68,6 +69,7 @@ def run(binary, source, mode, timeout=180, performance=False, suffix=""):
         "wall_seconds":round(time.monotonic()-start,4),
         "memo_hits_logged":p.stderr.count(b"NUCLEUS_CONTEXT_MEMO_HIT:"),
         "support_warrants_logged":p.stderr.count(b"NUCLEUS_CAPTURE_SUPPORT_CERT:"),
+        "field_app_warrants_logged":p.stderr.count(b"NUCLEUS_FIELD_APP_PROVEN:"),
     }
     if performance:
         # GNU time may prepend an exit-status message for UNKNOWN (exit 2).
@@ -111,7 +113,7 @@ def qualification():
 
     old={r["name"]:r for r in rows if r["mode"]=="original"}
     changes={}
-    for mode in ["context_memo","capture_support"]:
+    for mode in ["field_application","combined"]:
         cand={r["name"]:r for r in rows if r["mode"]==mode}
         diff=[
             {"case":k,"old":r["rc"],"new":cand[k]["rc"]}
@@ -154,7 +156,7 @@ def qualification():
         "frozen_artifact":os.environ.get("ARENA_ARTIFACT"),
         "frontiers":frontiers,"changes":changes,
         "protected_controls":negatives,
-        "new_complete_accept":frontiers["capture_support"]["ACCEPT"]>118,
+        "new_complete_accept":max(frontiers[mode]["ACCEPT"] for mode in ("field_application","combined"))>118,
         "official_arena_status":"UNKNOWN",
         "mathlib_status":"UNKNOWN",
         "independent_certificate_replay":"UNIMPLEMENTED",
@@ -184,6 +186,7 @@ def performance():
             "peak_rss_kb":max(x["max_rss_kb"] for x in rows if x["mode"]==mode),
             "logged_memo_hits_max96_per_process":sum(x["memo_hits_logged"] for x in rows if x["mode"]==mode),
             "logged_support_warrants_max96_per_process":sum(x["support_warrants_logged"] for x in rows if x["mode"]==mode),
+            "logged_field_app_warrants_max96_per_process":sum(x["field_app_warrants_logged"] for x in rows if x["mode"]==mode),
         }
         for mode in ARMS
     }
