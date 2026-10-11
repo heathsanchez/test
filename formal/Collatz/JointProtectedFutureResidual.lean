@@ -1,5 +1,5 @@
 import Collatz.SourceSpecificFutureGuard
-import Collatz.SparseFutureNormalForm
+import Collatz.GuardedInverseRuleClosure
 
 namespace CollatzFinal
 namespace SourceProduct
@@ -13,7 +13,8 @@ never-below-original-source all-prefix odd barrier, and V185's exact
 
 The CONSEQUENTIAL intersection is smaller than the information
 provided by any single module:
-  hypothetical LEAST bad n >=8 must be V178-IRREDUCIBLE,
+  hypothetical LEAST bad n >=8 must be V178-IRREDUCIBLE AND
+  V180 guarded-inverse-IRREDUCIBLE,
   have oddCount(n,5r)>=3r+1 for EVERY positive r, and
   satisfy 2^k*n^a <= (3*n+1)^a for EVERY k.
 
@@ -85,6 +86,26 @@ theorem v186_hypothetical_least_bad_is_V178_irreducible
     (minimal_positive_bad_no_earlier_source_meeting
       hbad p i j hp hlt) hEq
 
+/-- Genuine V180 guarded-odd inverse reducibility, carrying the
+29 separately kernel-checked original-source rules as a portable
+capability bank. This is distinct from V178's forward affine bank. -/
+def V186InverseReducible (n : Nat) : Prop :=
+  ∃ r : V180CertifiedInverseSeed, r ∈ v180GuardedInverseBank ∧
+    ∃ w : Nat,
+      n = r.source + 2^(r.priorClock+1)*w
+
+/-- The source-specific V180 inverse consequences are not recycled
+uncritically: the verified constructor proves each such source has
+a STRICTLY lower genuine positive two-clock companion, contradicting
+LEAST bad status. No assumed convergence of companion. -/
+theorem v186_hypothetical_least_bad_is_V180_irreducible
+    (n : Nat) (hbad : MinimalBad PositiveBad n) :
+    ¬ V186InverseReducible n := by
+  intro hred
+  obtain ⟨r,_hMember,w,hSource⟩ := hred
+  subst n
+  exact (v180_inverse_seed_excludes_least_bad r w) hbad
+
 /-- THE independently checkable Metalogic joint-source residual:
 all three protected source/future constraints hold simultaneously
 for any hypothetical least positive BAD original Nat source.
@@ -94,7 +115,7 @@ It must be tested as a JOINT consequence rather than treating source
 elimination, finite parity rarity or affine growth independently. -/
 theorem v186_least_bad_joint_protected_future_residual
     (n : Nat) (hbad : MinimalBad PositiveBad n) :
-    8<=n ∧ ¬ V179Reducible n ∧
+    8<=n ∧ ¬ V179Reducible n ∧ ¬ V186InverseReducible n ∧
     (∀ r : Nat, 0<r →
        3*r+1 <= oddCount n (5*r)) ∧
     (∀ k : Nat,
@@ -103,7 +124,9 @@ theorem v186_least_bad_joint_protected_future_residual
   have hEight :=
     v186_hypothetical_least_bad_at_least_eight n hbad
   refine ⟨hEight,
-    v186_hypothetical_least_bad_is_V178_irreducible n hbad, ?_, ?_⟩
+    v186_hypothetical_least_bad_is_V178_irreducible n hbad,
+    v186_hypothetical_least_bad_is_V180_irreducible n hbad,
+    ?_, ?_⟩
   · intro r hr
     exact
       v184_least_bad_perpetual_three_fifths_odd
@@ -122,6 +145,7 @@ theorem v186_irreducible_future_equivalence_preserves_good
 #print axioms v186_all_positive_sources_below_eight_are_good
 #print axioms v186_hypothetical_least_bad_at_least_eight
 #print axioms v186_hypothetical_least_bad_is_V178_irreducible
+#print axioms v186_hypothetical_least_bad_is_V180_irreducible
 #print axioms v186_least_bad_joint_protected_future_residual
 #print axioms v186_irreducible_future_equivalence_preserves_good
 
