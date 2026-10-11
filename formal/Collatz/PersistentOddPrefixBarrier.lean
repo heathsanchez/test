@@ -111,7 +111,7 @@ theorem v184_orbit_protected_product
                   simp only [Nat.pow_succ]
                   ac_rfl
                 _ = (2^k*8^(oddCount n k))*(16*shortcut x) := by
-                    decide
+                    rfl
           _ <= (2^k*8^(oddCount n k))*(25*x) := hLift
           _ <= n*25^(oddCount n (k+1)) := hIH
 
