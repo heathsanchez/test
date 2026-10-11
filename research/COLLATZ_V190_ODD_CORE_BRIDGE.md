@@ -60,7 +60,19 @@ For every integer `m>=15`, abstract normalized mass values
 
 satisfy the coarse `s=2` renewal equation with positive correction `1/(4m)` and V168's necessary residue bounds. These numbers are *not* a set of natural sources and do *not* establish a bad class. They demonstrate that the **scalar population constraints alone are algebraically consistent**.
 
-## 5. Evidence and residual
+## 5. Exact infinite negative control: first defect is not a bounded recovery
+
+For EVERY integer `K>=1`, the original Mersenne source `n=2^K-1` takes its first `K` real shortcut clocks through odd source states and reaches `T^K(n)=3^K-1`. For **odd `K>=3`**, the next, first even, transition yields `T^(K+1)(n)=(3^K-1)/2>2^K-1=n`, so the first V189-positive-defect event does not cause original-source descent.
+
+More generally the true shortcut always satisfies `T(x)>=x/2`, so for every `L>=0`,
+
+    2^L * T^(K+L)(2^K-1) >= 3^K-1.
+
+Consequently the condition `2^L*(2^K-1)<3^K-1` **proves NO descent** at any clock from `K` through `K+L`. Thus every fixed post-corridor budget `L` fails for arbitrarily large `K`. Any possible source-descent witness needs a delay growing at least like `K*log_2(3/2)` after the initial `K`-clock all-odd corridor (necessary, not sufficient). An exact bounded replay verifies the formulas for odd K=3..101; the general inequality is elementary and does not depend on the replay.
+
+**REJECTED:** a single V189-positive-defect event, or any fixed number of subsequent genuine shortcut clocks, universally restores descent after a long zero-defect corridor. The next mathematical separator must have SOURCE-HEIGHT-DEPENDENT clock allowance or a different all-scale invariant.
+
+## 6. Evidence and residual
 
 - [V168 exact/negative control checkpoint](https://github.com/heathsanchez/test/commit/d2998a3ca633b80002ba3176d42293ef66081564).
 - [V189 exact Lean defect ledger](https://github.com/heathsanchez/test/blob/8dbff92091d71837d28034171c93dc6c303783ef/formal/Collatz/InverseHeightDefectLedger.lean) and [green V189 CI](https://github.com/heathsanchez/test/actions/runs/38109758765).
