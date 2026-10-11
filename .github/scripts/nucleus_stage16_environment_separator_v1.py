@@ -12,7 +12,7 @@ replacement="""                #[cfg(feature = "diagnostics")]
                     eprintln!(
                         "NUCLEUS_STAGE16_ENV_SEPARATOR:expr_equal={}:env_equal={}:levels_equal={}:left_expr={:?}:right_expr={:?}:left_env={:?}:right_env={:?}",
                         larg.expr == rarg.expr,
-                        larg.env.id == rarg.env.id,
+                        larg.env.id() == rarg.env.id(),
                         larg.levels == rarg.levels,
                         larg.expr, rarg.expr, larg.env, rarg.env
                     );
