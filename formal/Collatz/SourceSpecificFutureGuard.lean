@@ -239,6 +239,56 @@ theorem v185_g5_cycle_187_arithmetic_exposes_missing_plus_one :
     (3*(187:Nat)+1)^17 < 2^27*187^17 := by
   decide
 
+/-- EXACT CONDITIONAL QED INTERFACE, NOT A RESULT THAT ESTABLISHES
+ITS OWN PREMISE. Every source n>1 must eventually produce a source-
+specific odd-count coefficient EXCESS. V185 then converts that
+warranted excess to a genuinely earlier original source meeting;
+strong induction transports verified terminality through the
+resulting small-source proof lineage.
+
+An assertion of this premise WITHOUT independent mathematical
+proof would simply restate the open Collatz conjecture and must
+not be promoted as evidence. -/
+theorem v185_collatz_of_universal_source_exact_excess
+    (hEvery : ∀ n : Nat, 1<n →
+      ∃ k : Nat,
+         (3*n+1)^(oddCount n k) <
+           2^k*n^(oddCount n k)) :
+    ∀ n : Nat, 0<n → CollatzGood n := by
+  intro n
+  induction n using Nat.strongRecOn with
+  | ind n ih =>
+      intro hn
+      by_cases hOne : n=1
+      · subst n
+        exact ⟨0,Or.inl rfl⟩
+      · have hGt : 1<n := by omega
+        obtain ⟨k,hExcess⟩ := hEvery n hGt
+        obtain ⟨p,hp,hLess,hMeet⟩ :=
+          v185_source_exact_coefficient_excess_constructs_lower_meet
+            n k hn hExcess
+        have hpGood : CollatzGood p := ih p hLess hp
+        have hpMeetOne : V155FutureMeet p 1 :=
+          (v155_future_meets_one_iff_good p).mpr hpGood
+        have hnMeetOne : V155FutureMeet n 1 :=
+          v155_future_meet_trans hMeet hpMeetOne
+        exact (v155_future_meets_one_iff_good n).mp hnMeetOne
+
+/-- The terminal source1 illustrates why the all-source event
+condition above must EXEMPT the base case: its genuine 1↔2
+future never drops below source1, so its coefficient excess
+cannot be required as the induction base. -/
+theorem v185_terminal_one_preserves_source_coefficient_guard
+    (k : Nat) :
+    2^k*1^(oddCount 1 k) <=
+      (3*1+1)^(oddCount 1 k) := by
+  apply v185_nondecreasing_prefix_source_exact_power 1 k (by decide)
+  intro t _
+  exact v180_positive_iter 1 t (by decide)
+
+#print axioms v185_collatz_of_universal_source_exact_excess
+#print axioms v185_terminal_one_preserves_source_coefficient_guard
+
 #print axioms v185_actual_odd_source_factor
 #print axioms v185_source_exact_prefix_product
 #print axioms v185_positive_nat_source_cancel
