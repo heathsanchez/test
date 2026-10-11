@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1, nucleus-last-operand-sorts-v1, nucleus-arithmetic-instance-origin-v1, nucleus-typed-conversion-first-v1, nucleus-certified-arithmetic-field-probe-v1, nucleus-nonvacuous-runtime-witness-v1, nucleus-targeted-field-outcomes-v1, nucleus-terminal-projection-causal-v1, nucleus-neutral-receiver-first-rule-v1, nucleus-ten-methods-discriminant-v1, nucleus-source-pair-no-outer-budget-v1, nucleus-post-pair-residual-matrix-v1, nucleus-goal-backward-obligation-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1, nucleus-last-operand-sorts-v1, nucleus-arithmetic-instance-origin-v1, nucleus-typed-conversion-first-v1, nucleus-certified-arithmetic-field-probe-v1, nucleus-nonvacuous-runtime-witness-v1, nucleus-targeted-field-outcomes-v1, nucleus-terminal-projection-causal-v1, nucleus-neutral-receiver-first-rule-v1, nucleus-ten-methods-discriminant-v1, nucleus-source-pair-no-outer-budget-v1, nucleus-post-pair-residual-matrix-v1, nucleus-goal-backward-obligation-v1, nucleus-exact-bidir-captured-app-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -85,6 +85,8 @@ jobs:
                   env['NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL']='1'
                   env['NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F']='1'
                   env['NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA']='1'
+                  env['NUCLEUS_EXPERIMENTAL_EXACT_LAMBDA_ARG']='1'
+                  env['NUCLEUS_TRACE_EXACT_LAMBDA_ARG']='1'
               if mode=='origin_replay' and trace:
                   env['NUCLEUS_TRACE_PROJECTION_CONTEXT']='1'
                   env['NUCLEUS_TRACE_PROJECTION_CROSSFRAME_512']='1'
