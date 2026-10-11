@@ -1,0 +1,36 @@
+name: Quantum Q7 exact self-quotient research gate
+on:
+  push:
+    branches:
+      - research/quantum-q7-self-quotient-v1
+    paths:
+      - 'quantum_q7/**'
+      - '.github/workflows/quantum-q7-self-quotient.yml'
+  workflow_dispatch:
+jobs:
+  exact-finite-qualification:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pin exact symbolic engine
+        run: python -m pip install sympy==1.14.0
+      - name: Source syntax check
+        run: python -m py_compile quantum_q7/experiment.py
+      - name: Exact construction, ablation, tomography, exhaustive oracle and mutation controls
+        run: python quantum_q7/experiment.py | tee quantum_q7/run.txt
+      - name: Frozen result equality
+        run: git diff --exit-code -- quantum_q7/results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quantum-q7-self-quotient-receipt
+          path: |
+            quantum_q7/results.json
+            quantum_q7/run.txt
+          if-no-files-found: warn

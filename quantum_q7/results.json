@@ -1,0 +1,448 @@
+{
+  "boundary": "1-2 ideal qubits; finite Clifford controls, ideal computational readout; exact SymPy algebra",
+  "cases": {
+    "Bell phase (+) vs (-)": {
+      "two_full": {
+        "cheapest_gap": "1",
+        "cheapest_path": [
+          "CX01",
+          "H0"
+        ],
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "XX"
+        ],
+        "max_gap": "1",
+        "max_path": [
+          "CX01",
+          "H0"
+        ],
+        "none_if_saturated": false
+      },
+      "two_no_CNOT": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "ZI"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      },
+      "two_no_H": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "ZI"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      }
+    },
+    "Nonorthogonal |0> vs |+>": {
+      "single_full": {
+        "cheapest_gap": "1/2",
+        "cheapest_path": [],
+        "helstrom": "sqrt(2)/2",
+        "max_effect": [
+          1,
+          "Z"
+        ],
+        "max_gap": "1/2",
+        "max_path": [],
+        "none_if_saturated": false
+      },
+      "single_no_H": {
+        "cheapest_gap": "1/2",
+        "cheapest_path": [],
+        "helstrom": "sqrt(2)/2",
+        "max_effect": [
+          1,
+          "Z"
+        ],
+        "max_gap": "1/2",
+        "max_path": [],
+        "none_if_saturated": false
+      }
+    },
+    "X single qubit": {
+      "single_full": {
+        "cheapest_gap": "1",
+        "cheapest_path": [
+          "H0"
+        ],
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "X"
+        ],
+        "max_gap": "1",
+        "max_path": [
+          "H0"
+        ],
+        "none_if_saturated": false
+      },
+      "single_no_H": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "Z"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      }
+    },
+    "Y single qubit": {
+      "single_full": {
+        "cheapest_gap": "1",
+        "cheapest_path": [
+          "S0",
+          "H0"
+        ],
+        "helstrom": "1",
+        "max_effect": [
+          -1,
+          "Y"
+        ],
+        "max_gap": "1",
+        "max_path": [
+          "S0",
+          "H0"
+        ],
+        "none_if_saturated": false
+      },
+      "single_no_H": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "Z"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      }
+    },
+    "heldout XY": {
+      "two_full": {
+        "cheapest_gap": "1",
+        "cheapest_path": [
+          "S1",
+          "CX01",
+          "H0"
+        ],
+        "helstrom": "1",
+        "max_effect": [
+          -1,
+          "XY"
+        ],
+        "max_gap": "1",
+        "max_path": [
+          "S1",
+          "CX01",
+          "H0"
+        ],
+        "none_if_saturated": false
+      },
+      "two_no_CNOT": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "ZI"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      },
+      "two_no_H": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "ZI"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      }
+    },
+    "heldout YX": {
+      "two_full": {
+        "cheapest_gap": "1",
+        "cheapest_path": [
+          "CX01",
+          "S0",
+          "H0"
+        ],
+        "helstrom": "1",
+        "max_effect": [
+          -1,
+          "YX"
+        ],
+        "max_gap": "1",
+        "max_path": [
+          "CX01",
+          "S0",
+          "H0"
+        ],
+        "none_if_saturated": false
+      },
+      "two_no_CNOT": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "ZI"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      },
+      "two_no_H": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "ZI"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      }
+    },
+    "heldout YY": {
+      "two_full": {
+        "cheapest_gap": "1",
+        "cheapest_path": [
+          "CX01",
+          "H0",
+          "CX10"
+        ],
+        "helstrom": "1",
+        "max_effect": [
+          -1,
+          "YY"
+        ],
+        "max_gap": "1",
+        "max_path": [
+          "CX01",
+          "H0",
+          "CX10"
+        ],
+        "none_if_saturated": false
+      },
+      "two_no_CNOT": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "ZI"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      },
+      "two_no_H": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "ZI"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      }
+    },
+    "heldout ZY": {
+      "two_full": {
+        "cheapest_gap": "1",
+        "cheapest_path": [
+          "S1",
+          "H1",
+          "CX10"
+        ],
+        "helstrom": "1",
+        "max_effect": [
+          -1,
+          "ZY"
+        ],
+        "max_gap": "1",
+        "max_path": [
+          "S1",
+          "H1",
+          "CX10"
+        ],
+        "none_if_saturated": false
+      },
+      "two_no_CNOT": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "ZI"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      },
+      "two_no_H": {
+        "cheapest_gap": 0,
+        "cheapest_path": null,
+        "helstrom": "1",
+        "max_effect": [
+          1,
+          "ZI"
+        ],
+        "max_gap": "0",
+        "max_path": [],
+        "none_if_saturated": true
+      }
+    }
+  },
+  "conclusions": {
+    "REJECTED": "Record-only postprocessing creates inaccessible quantum distinctions; Clifford-only realizes Helstrom optimum for every pair; removing entangling control still separates Bell phases",
+    "UNKNOWN": "Autonomous synthesis of physically new primitive beyond allowed hardware, unrestricted self-improving search-rule invention, independent Stuttgart experimental prediction, speedup over equally cached certified ledger",
+    "WARRANTED": "Closed Clifford effect graph and measurement synthesis with exact independent dense verification; finite future-sufficient quotient of the search engine itself; exact restricted-access no-go witnesses"
+  },
+  "metalevel": {
+    "single_full": {
+      "max_enumerated_length": 7,
+      "operational_effect_classes_within_length": 6,
+      "oracle_equal_to_depth_bounded_quotient": true,
+      "quotient_is_future_congruence": true,
+      "quotient_saturated_effect_classes": 6,
+      "same_ability_as_exact_cached_ledger": true,
+      "syntactic_programs": 3280
+    },
+    "two_full": {
+      "max_enumerated_length": 5,
+      "operational_effect_classes_within_length": 29,
+      "oracle_equal_to_depth_bounded_quotient": true,
+      "quotient_is_future_congruence": true,
+      "quotient_saturated_effect_classes": 30,
+      "same_ability_as_exact_cached_ledger": true,
+      "syntactic_programs": 37449
+    },
+    "two_no_CNOT": {
+      "max_enumerated_length": 6,
+      "operational_effect_classes_within_length": 6,
+      "oracle_equal_to_depth_bounded_quotient": true,
+      "quotient_is_future_congruence": true,
+      "quotient_saturated_effect_classes": 6,
+      "same_ability_as_exact_cached_ledger": true,
+      "syntactic_programs": 55987
+    }
+  },
+  "searches": {
+    "single_full": {
+      "closed_under_all_admissible_gate_extensions": true,
+      "dense_matrix_certificate_replay": true,
+      "effect_classes": 6,
+      "expanded": 6,
+      "gates": [
+        "H0",
+        "S0",
+        "Sdg0"
+      ],
+      "max_shortest_circuit_depth": 4,
+      "sign_mutation_killed": true,
+      "tomographic_probe_count": 4,
+      "transitions_checked": 18,
+      "unique_signatures": 6
+    },
+    "single_no_H": {
+      "closed_under_all_admissible_gate_extensions": true,
+      "dense_matrix_certificate_replay": true,
+      "effect_classes": 1,
+      "expanded": 1,
+      "gates": [
+        "S0",
+        "Sdg0"
+      ],
+      "max_shortest_circuit_depth": 0,
+      "sign_mutation_killed": true,
+      "tomographic_probe_count": 4,
+      "transitions_checked": 2,
+      "unique_signatures": 1
+    },
+    "two_full": {
+      "closed_under_all_admissible_gate_extensions": true,
+      "dense_matrix_certificate_replay": true,
+      "effect_classes": 30,
+      "expanded": 30,
+      "gates": [
+        "H0",
+        "S0",
+        "Sdg0",
+        "H1",
+        "S1",
+        "Sdg1",
+        "CX01",
+        "CX10"
+      ],
+      "max_shortest_circuit_depth": 6,
+      "sign_mutation_killed": true,
+      "tomographic_probe_count": 16,
+      "transitions_checked": 240,
+      "unique_signatures": 30
+    },
+    "two_no_CNOT": {
+      "closed_under_all_admissible_gate_extensions": true,
+      "dense_matrix_certificate_replay": true,
+      "effect_classes": 6,
+      "expanded": 6,
+      "gates": [
+        "H0",
+        "S0",
+        "Sdg0",
+        "H1",
+        "S1",
+        "Sdg1"
+      ],
+      "max_shortest_circuit_depth": 4,
+      "sign_mutation_killed": true,
+      "tomographic_probe_count": 16,
+      "transitions_checked": 36,
+      "unique_signatures": 6
+    },
+    "two_no_H": {
+      "closed_under_all_admissible_gate_extensions": true,
+      "dense_matrix_certificate_replay": true,
+      "effect_classes": 3,
+      "expanded": 3,
+      "gates": [
+        "S0",
+        "Sdg0",
+        "S1",
+        "Sdg1",
+        "CX01",
+        "CX10"
+      ],
+      "max_shortest_circuit_depth": 2,
+      "sign_mutation_killed": true,
+      "tomographic_probe_count": 16,
+      "transitions_checked": 18,
+      "unique_signatures": 3
+    }
+  },
+  "status": "PASS_EXACT_FINITE"
+}
