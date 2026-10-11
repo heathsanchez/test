@@ -53,7 +53,7 @@ theorem v187_positive_mersenne_prefix_never_descends
   have hK : K=k+(K-k) := by omega
   have hPow : 2^K=2^k*2^(K-k) := by
     calc
-      2^K=2^(k+(K-k)) := by rw [hK]
+      2^K=2^(k+(K-k)) := congrArg (fun v : Nat => 2^v) hK
       _=2^k*2^(K-k) := Nat.pow_add 2 k (K-k)
   have hMon :=
     Nat.mul_le_mul_right (2^(K-k))
