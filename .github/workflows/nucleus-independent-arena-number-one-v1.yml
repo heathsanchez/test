@@ -1,4 +1,4 @@
-name: Independent Nucleus Arena #1 protected baseline
+name: Nucleus independent semantic qualification
 on:
   push:
     branches: [nucleus-independent-arena-number-one-v1]
@@ -23,7 +23,7 @@ jobs:
           mkdir -p /tmp/nucleus-independent-evidence
           git rev-parse HEAD > /tmp/nucleus-independent-evidence/commit.txt
           git rev-parse HEAD:metatron-kernel > /tmp/nucleus-independent-evidence/tree.txt
-          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-independent
           sha256sum /tmp/nucleus-independent > /tmp/nucleus-independent-evidence/binary.sha256
