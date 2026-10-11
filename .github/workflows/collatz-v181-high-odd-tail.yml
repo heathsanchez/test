@@ -1,0 +1,149 @@
+name: Collatz V181 all-scale high-odd necessary candidate tail
+on:
+  push:
+    branches: [collatz-v181-all-scale-high-odd-candidate-tail]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-arithmetic-tail:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact real source heights and binomial tail inequality
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v181_high_odd_binomial_audit.py | tee evidence/v181-stdout.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v181-tail.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V181_SOURCE_HEIGHT_CONDITIONED_PARITY_TAIL'
+          assert d['all_m_rational_tail_bound']=='(3125/3456)^m'
+          assert len(d['necessary_high_odd_binomial_tail_rows'])==8
+          assert d['real_natural_source_clock_replays']>8000
+          assert d['independent_parity_word_bijection_replays']>8000
+          assert all(r['exact_integer_binomial_bound_verified'] for r in
+                     d['necessary_high_odd_binomial_tail_rows'])
+          assert not d['binomial_infinite_m_inequality_separately_lean_formalized']
+          assert d['source_height_threshold_not_uniform_in_m']
+          assert d['fixed_bad_integer_does_not_satisfy_height_condition_for_all_m']
+          assert d['synthetic_G7_distinct_future_cycles_protected']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V181_EXACT_TAIL_SEAL',
+                'source_commit':sha,
+                'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                'numerical_tail_bound_is_not_collatz_proof':True,
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v181-exact-seal.json').write_text(
+             json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v181-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-all-scale-barrier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - name: Qualify real all-source high-odd k equals 5m necessary condition
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine UniversalAffineBiasOddBarrier; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/AllScaleHighOddBarrier.lean 2>&1 | tee evidence/v181-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v181-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-22000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          names=['v181_twentyseven_pow_le_thirtytwo_pow',
+                 'v181_twentyseven_pow_lt_thirtytwo_pow',
+                 'v181_three_fifths_power_crossing',
+                 'v181_three_fifths_odd_prefix_forces_descent',
+                 'v181_least_bad_high_odd_all_scales']
+          for name in names:
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V181_FORMAL_ALL_SCALE',
+                'source_commit':sha,'axioms':ax,
+                'source_sha256':hashlib.sha256(pathlib.Path(
+                   'formal/Collatz/AllScaleHighOddBarrier.lean').read_bytes()).hexdigest(),
+                'status':'WARRANTED_TRUE_3_OVER_5_SOURCE_HEIGHT_CONDITIONED_ODD_PREFIX_BARRIER',
+                'unbounded_fixed_bad_source_odd_constraint_without_height_guard_proved':False,
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v181-formal-seal.json').write_text(
+             json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v181-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-independent-seal:
+    needs: [exact-arithmetic-tail,formal-all-scale-barrier]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v181-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v181-formal
+          path: evidence/formal
+      - name: Reconcile source-pinned necessary-only scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          e=json.loads(pathlib.Path('evidence/exact/v181-exact-seal.json').read_text())
+          f=json.loads(pathlib.Path('evidence/formal/v181-formal-seal.json').read_text())
+          p=pathlib.Path('evidence/exact/v181-tail.json')
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert e['source_commit']==f['source_commit']==sha
+          assert e['result_sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
+          assert not f['unbounded_fixed_bad_source_odd_constraint_without_height_guard_proved']
+          assert e['global_collatz']==f['global_collatz']=='UNKNOWN'
+          assert e['qed'] is f['qed'] is False
+          seal={'schema':'COLLATZ_V181_FINAL',
+                'source_commit':sha,
+                'status':'WARRANTED_FORMAL_ALL_SCALE_HEIGHT_CONDITIONED_HIGH_ODD_BARRIER',
+                'tail_bounding_constant':'3125/3456',
+                'all_scale_bad_class_exclusion':'UNKNOWN',
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v181-final.json').write_text(
+             json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v181-final
+          path: evidence/v181-final.json
+          if-no-files-found: error
