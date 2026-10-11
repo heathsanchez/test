@@ -76,7 +76,7 @@ theorem v177_infinite_source_capped_meetings
   have hm : (Lsmall+1)*W ≤ Llarge*W :=
     Nat.mul_le_mul_right W hs
   have he : Lsmall*W + W ≤ Llarge*W := by
-    simpa only [Nat.add_mul, one_mul] using hm
+    simpa [Nat.add_mul] using hm
   have hw : p+1 ≤ W := by dsimp [W]; omega
   have hCap' : p+Lsmall*W < n+Llarge*W := by omega
   have hCap :
@@ -100,7 +100,7 @@ theorem v177_root23_recompiled_from_single_meeting
   have hSame :
       iter shortcut 7 (23+384*w) =
       iter shortcut 1 (3+54*w) := by
-    simpa [hOne,hThree,Nat.mul_assoc] using hAffine
+    simpa [hOne, hThree, ← Nat.mul_assoc] using hAffine
   have hCap : 3+54*w < 23+384*w := by omega
   exact ⟨hCap,7,1,hSame⟩
 
