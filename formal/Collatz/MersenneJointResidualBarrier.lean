@@ -133,6 +133,21 @@ theorem v182_each_positive_scale_has_true_high_odd_source
   · exact (v182_mersenne_passes_every_applicable_v181_guard
       m m hm hm (Nat.le_refl _)).2
 
+/-- The smallest exact original-source grammar-relative survivor
+in the V182 periodic Mersenne family nevertheless reaches terminal2
+after 193 genuine shortcut steps. This prevents promoting
+"irreducible under bank" to "divergent". The bank-residue exclusion
+itself is a SEPARATE source-pinned exact modular audit, not a
+Lean theorem in this module. -/
+theorem v182_smallest_joint_residual_is_actually_good :
+    CollatzGood (2^21-1) := by
+  refine ⟨193, ?_⟩
+  have h : iter shortcut 193 (2^21-1)=2 := by decide
+  rw [h]
+  simp [Terminal]
+
+#print axioms v182_smallest_joint_residual_is_actually_good
+
 #print axioms v182_mersenne_true_initial_prefix
 #print axioms v182_mersenne_odd_at_each_prefix_step
 #print axioms v182_mersenne_all_odd_count
