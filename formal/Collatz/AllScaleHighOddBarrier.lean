@@ -48,7 +48,7 @@ theorem v181_twentyseven_pow_lt_thirtytwo_pow
       have hBound : 32^m*27 < 32^m*32 := by
         have hLT : 27+1 <= 32 := by decide
         have hmule := Nat.mul_le_mul_left (32^m) hLT
-        simp only [Nat.mul_add, mul_one] at hmule
+        simp [Nat.mul_add] at hmule
         omega
       calc
         27^(m+1) = 27^m*27 := by simp [Nat.pow_succ]
