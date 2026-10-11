@@ -109,7 +109,16 @@ theorem v189_defect_one_step_recurrence (n k : Nat) :
       _ = 3^(k+1)*(n+1) := by
         simp only [Nat.pow_succ]
         ac_rfl
-  rw [hNextClock] at hNext
+  have hScaled' :
+      2^(k+1)*(iter shortcut (k+1) n+1) +
+        2^k*V189EvenSlack (iter shortcut k n) =
+          3*(2^k*(iter shortcut k n+1)) := by
+    rw [hNextClock]
+    simpa only [x] using hScaled
+  have hOld' :
+      3*(2^k*(iter shortcut k n+1)) +
+        3*V189HeightDefect n k =3^(k+1)*(n+1) := by
+    simpa only [x] using hOld
   omega
 
 /-- If every original endpoint before clock k is odd, there is
