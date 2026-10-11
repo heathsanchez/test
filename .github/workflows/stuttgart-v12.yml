@@ -1,4 +1,4 @@
-name: Stuttgart V12 published-quantum history quotient and inverse gate
+name: Stuttgart V12 source-qualified real-data and quantum controls
 on:
   push:
     branches: ['research/stuttgart-boundary-v12']
@@ -12,32 +12,35 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Preserve and check V11 sealed experimental holdout
+      - name: Preserve V11 protected holdout
         run: |
           sha256sum research/stuttgart_v11/PREREGISTERED_PROTOCOL.md
-          grep "SEALED HOLDOUT" research/stuttgart_v11/PREREGISTERED_PROTOCOL.md
+          grep 'SEALED HOLDOUT' research/stuttgart_v11/PREREGISTERED_PROTOCOL.md
           if grep -R 'DARUS-3262/13\|Fig3bdata' research/stuttgart_v12/*.py; then exit 1; fi
-      - name: Install pinned numeric library versions
+      - name: Install pinned scientific Python dependencies
         run: python -m pip install --quiet numpy==2.2.6 scipy==1.15.3
-      - name: Independently retrieve the published Supplementary Information
+      - name: Acquire public paper supplement (source not hidden measurement results)
         run: python research/stuttgart_v12/fetch_supplement.py
-      - name: Verify independent public metadata inventory only
+      - name: Verify source inventory metadata only
         run: python research/stuttgart_v12/fetch_public_inventory.py
-      - name: Acquire only published Figure 2 calibration with source checksums
+      - name: Acquire published Fig2 calibration only, check source checksums
         run: python research/stuttgart_v11/fetch_calibration.py
-      - name: Quantum history count sufficiency and noncommutation falsifier
+      - name: Verify quantum count history quotient and noncommuting control
         run: python research/stuttgart_v12/quantum_history_quotient.py
-      - name: Real-data inverse feasibility and two extreme physically admissible spectral witnesses
+      - name: Verify real-data restricted spectrum identifiability residual
         run: OPENBLAS_NUM_THREADS=1 python research/stuttgart_v12/real_data_identifiability.py
-      - name: Preserve source, exact input data and verifiable outputs
+      - name: Source figure display-window sensitivity negative control
+        run: OPENBLAS_NUM_THREADS=1 python research/stuttgart_v12/window_sensitivity.py
+      - name: Preserve exact evidence and failures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stuttgart-v12-source-frozen-evidence
+          name: stuttgart-v12-fully-reproduced
           path: |
             research/stuttgart_v12/supplement_source/
             research/stuttgart_v12/public_inventory.json
             research/stuttgart_v12/history_quotient_results.json
             research/stuttgart_v12/identifiability_results.json
+            research/stuttgart_v12/window_sensitivity_results.json
             research/stuttgart_v11/calibration_data/
           if-no-files-found: warn
