@@ -3,7 +3,7 @@ on:
   push:
     branches: [whole-construction-flash-mda-v1]
     paths:
-      - 'open_development/whole_construction_census.py'
+      - 'open_development/whole_construction_census.py'\n      - 'open_development/whole_construction_reclosure.py'
       - '.github/workflows/whole-construction-census.yml'
   workflow_dispatch:
 permissions:
@@ -30,9 +30,9 @@ jobs:
           assert d["protected_future_verified"]==16
           assert d["independent_cross_domain_edges"]=="NOT_ESTABLISHED"
           PY
-      - uses: actions/upload-artifact@v4
+      - name: Compare incremental dependency-cone revocation to authoritative ledger\n        run: |\n          set -euo pipefail\n          python -m open_development.whole_construction_reclosure | tee whole_construction_reclosure.json\n      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: whole-construction-real-ledger
-          path: whole_construction_evidence.json
+          path: |\n            whole_construction_evidence.json\n            whole_construction_reclosure.json
           if-no-files-found: warn
