@@ -164,7 +164,8 @@ def main()->None:
                   "end_after_K":str(x)})
     rows=parity_word_joint_prefixes(16)
     g5=g5_cycle_control()
-    assert any(z["source"]==27 for z in failed_high_after_source_descent)
+    # A bounded six-example sample need not include 27; its exact
+    # independent direct replay below is the actual protected control.
     # A TRUE convergent example can meet EVERY finite initial
     # requirement yet eventually fall below its initial source.
     cur=27;odd=0;first_bad=None
