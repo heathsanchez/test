@@ -5,6 +5,7 @@ on:
     paths:
       - 'open_development/pinhole_temporal_whole_v1.py'
       - 'open_development/pinhole_whole_time_major.py'
+      - 'open_development/pinhole_cost_future_separator.py'
       - '.github/workflows/pinhole-temporal-whole.yml'
   workflow_dispatch:
 permissions:
@@ -35,6 +36,10 @@ jobs:
           assert d['mda_exact_revocation_shadows']==6
           assert d['mda_protected_future_replays']==16
           PY
+      - name: Test cost-sensitive future identity separator
+        run: |
+          set -euo pipefail
+          python -m open_development.pinhole_cost_future_separator | tee cost_future_separator.json
       - name: Requalify three-world shared construction
         run: |
           set -euo pipefail
@@ -46,5 +51,6 @@ jobs:
           path: |
             temporal_evidence.json
             whole_time_major.json
+            cost_future_separator.json
             three_world_evidence.json
           if-no-files-found: warn
