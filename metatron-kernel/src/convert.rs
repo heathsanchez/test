@@ -1282,6 +1282,32 @@ fn compare_values(
                 // actual source binder depth. This experimental path is
                 // independent of syntactic identity and requires separately
                 // checked equality for every pending application argument.
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_TEN_METHODS").is_some()
+                    && depth==context.len() && (7..=8).contains(&depth)
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static COUNT:AtomicUsize=AtomicUsize::new(0);
+                    if COUNT.fetch_add(1,Ordering::Relaxed)<24 {
+                        let left_typed=checker.checked_source_conversion(
+                            left_structure,left_structure,context,512,
+                        );
+                        let right_typed=checker.checked_source_conversion(
+                            right_structure,right_structure,context,512,
+                        );
+                        let receivers=checker.checked_source_conversion(
+                            left_structure,right_structure,context,2048,
+                        );
+                        let args=same_closure_spine_congruence_in_context(
+                            checker,left_spine,right_spine,512,depth,context,512,
+                        );
+                        eprintln!(
+                            "NUCLEUS_TEN_METHODS:depth={depth}:budget={current_budget}:left_typed={left_typed:?}:right_typed={right_typed:?}:receiver_equality={receivers:?}:spine_equality={args}:left_expr={:?}:right_expr={:?}:left_arity={}:right_arity={}",
+                            left_structure.expr,right_structure.expr,
+                            left_spine.len(),right_spine.len(),
+                        );
+                    }
+                }
                 let source_typed_pair =
                     std::env::var_os("NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8").is_some()
                     && depth == context.len()
