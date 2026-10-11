@@ -1,0 +1,86 @@
+name: Nucleus contextual semantic capability strict A/B
+
+on:
+  push:
+    branches: [nucleus-proof-carrying-context-v1]
+    paths:
+      - ".github/scripts/nucleus_contextual_capability_patch_v1.py"
+      - ".github/scripts/nucleus_contextual_capability_gate_v1.py"
+      - ".github/workflows/nucleus-contextual-capability-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protected-reclosure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      ARENA_SHA: b1d6e91d6de351f9bcf21e6b039f4d51d6b9bb42
+      ARENA_ARTIFACT: "11272848230"
+      CARGO_HTTP_TIMEOUT: "120"
+      CARGO_NET_RETRY: "8"
+      CARGO_HTTP_LOW_SPEED_LIMIT: "0"
+      CARGO_HTTP_MULTIPLEXING: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Freeze source and dependencies
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-context-evidence
+          git rev-parse HEAD > /tmp/nucleus-context-evidence/source-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/nucleus-context-evidence/original-tree.txt
+          sha256sum .github/scripts/nucleus_contextual_capability_*.py > /tmp/nucleus-context-evidence/script-sha256.txt
+          cargo fetch --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Build unmodified independent Nucleus reference
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-original
+          sha256sum /tmp/nucleus-original > /tmp/nucleus-context-evidence/original-binary.txt
+
+      - name: Apply precise source change, run all Rust tests, build candidate
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_contextual_capability_patch_v1.py metatron-kernel
+          git diff --check
+          git diff -- metatron-kernel/src/typecheck.rs metatron-kernel/src/convert.rs > /tmp/nucleus-context-evidence/changed-rust-source.patch
+          sha256sum metatron-kernel/src/typecheck.rs metatron-kernel/src/convert.rs > /tmp/nucleus-context-evidence/patched-file-sha256.txt
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml 2>&1 | tee /tmp/nucleus-context-evidence/cargo-tests.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-context
+          sha256sum /tmp/nucleus-context > /tmp/nucleus-context-evidence/candidate-binary.txt
+
+      - name: Retrieve immutable Arena 196-case authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+          (cd /tmp/arena-tests && find good bad -type f -name '*.ndjson' | sort | wc -l) > /tmp/nucleus-context-evidence/fixture-count.txt
+
+      - name: Protect exact verdicts, source scope, and adversarial negatives
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_contextual_capability_gate_v1.py qualification
+
+      - name: Three-arm native CPU wall memory memo/reuse measurements
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_contextual_capability_gate_v1.py performance
+
+      - name: Publish source and evidence (even if experiment fails)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-contextual-semantic-${{ github.sha }}
+          path: /tmp/nucleus-context-evidence/
+          if-no-files-found: warn
