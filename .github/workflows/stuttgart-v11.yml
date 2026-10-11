@@ -1,4 +1,4 @@
-name: Stuttgart V11 calibration and source-label audit (holdout sealed)
+name: Stuttgart V11 real Fig2 and quantum equivalence (Fig3b sealed)
 on:
   push:
     branches: ['research/stuttgart-quantum-boundary-v11']
@@ -7,25 +7,34 @@ on:
 permissions:
   contents: read
 jobs:
-  fetch-published-calibration-only:
+  full-calibration-and-controls:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Show frozen protocol
+      - name: Check sealed protocol and no Fig3b raw access
         run: |
           sha256sum research/stuttgart_v11/PREREGISTERED_PROTOCOL.md
           grep 'SEALED HOLDOUT' research/stuttgart_v11/PREREGISTERED_PROTOCOL.md
-      - name: Fetch and verify ONLY calibration files
+          ! grep -R 'DARUS-3262/13' research/stuttgart_v11/*.py
+      - name: Install numeric verifier
+        run: python -m pip install --quiet numpy scipy
+      - name: Mathematical joint-to-instrument and cut equivalence
+        run: python research/stuttgart_v11/verify_quantum_equivalence.py
+      - name: Fetch and verify only calibration data
         run: python research/stuttgart_v11/fetch_calibration.py
-      - name: Fetch published Figure 2 visual context only
+      - name: Source-mapped FID ODMR and selective Kraus calibration
+        run: python research/stuttgart_v11/reproduce_calibration.py
+      - name: Fetch published Figure 2 for audit (not held-out Figure 3)
         run: python research/stuttgart_v11/fetch_figure2.py
-      - name: Store acquisition and source audit
+      - name: Save original calibration, source figure and calculation receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stuttgart-v11-calibration-and-figure2
+          name: stuttgart-v11-source-corrected-qualification
           path: |
             research/stuttgart_v11/calibration_data/
             research/stuttgart_v11/source_figures/
+            research/stuttgart_v11/calibration_reproduction_results.json
+            research/stuttgart_v11/quantum_equivalence_results.json
           if-no-files-found: warn
