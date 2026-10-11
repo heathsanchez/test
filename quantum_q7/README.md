@@ -30,6 +30,21 @@ Therefore `E(h1) = E(h2)` implies `E(g;h1) = E(g;h2)`, and, by induction, equali
 - A nonorthogonal control `|0>` vs `|+>` has best achievable Clifford-readout probability difference `1/2`, strictly below the unrestricted Helstrom trace-distance bound `sqrt(2)/2`. The missing optimal basis change is not synthesizable within the declared Clifford readout program language.
 - The source verifier kills sign-flipped/corrupted effect certificate claims. An independent raw program enumeration agrees with the depth-restricted quotient.
 
+## Developmental refinement (Q7 obstruction, exact finite witness)
+
+There are **two different quotients** that must not be conflated:
+
+1. **Measurement-program effects:** if two programs implement the same complete operator `E`, adding further unitary gates *before their original program* cannot distinguish them. Equality of complete operators remains safe under the declared extension rule.
+2. **Prepared-world states under accessible measurements:** two states can make identical predictions for every *currently* available program, while becoming distinguishable if the system later acquires a new gate. This observational quotient **must be refined** as protected future tests expand.
+
+For the six one-qubit preparations `|0>`, `|1>`, `|+>`, `|->`, `|+i>`, `|-i>`, Z-only-access produces **three** classes, including one class containing all four equatorial states. Enabling Hadamard expands the set of readouts, yielding **six** classes. The previously merged four-state class splits four ways. A deterministic perfect future reconstruction from the old class label alone needs an additional **two bits of retained identifying evidence**, or a new measurement/reacquisition of the world.
+
+For two Bell-phase preparations, local Clifford gates plus the first-qubit readout give **one** class. Adding a permitted CNOT yields **two** classes. The old quotient requires at least **one additional bit**, or an independent observation, to recover the newly observable distinction.
+
+**General mathematical obstruction.** If `F ⊆ F'` are families of protected observations, then `~_{F'}` refines `~_F`. If two states coincide modulo `F` but differ modulo `F'`, there cannot be a well-defined deterministic reconstruction map from their old class to *both* correct new classes: the same input would have to produce two outputs. That is not a failure of compression; it is a proof that reversible provenance or new evidence is necessary for expanding developmental capability.
+
+This exact witness explains why the ``minimal warranted present`` for *today's* protected tests cannot always serve as a sufficient source for *tomorrow's* newly accessible tests. A development architecture must retain reconstructible evidence/certificates or accept future `UNKNOWN`, rather than silently inventing lost distinctions.
+
 ## What has **not** been demonstrated
 
 - Reusing the observational quotient as a generator's own search state is a **bounded self-application** of the same reconstruction principle, *not* autonomous invention of the quotient principle or an unsupplied physical gate.

@@ -320,8 +320,82 @@
   },
   "conclusions": {
     "REJECTED": "Record-only postprocessing creates inaccessible quantum distinctions; Clifford-only realizes Helstrom optimum for every pair; removing entangling control still separates Bell phases",
-    "UNKNOWN": "Autonomous synthesis of physically new primitive beyond allowed hardware, unrestricted self-improving search-rule invention, independent Stuttgart experimental prediction, speedup over equally cached certified ledger",
-    "WARRANTED": "Closed Clifford effect graph and measurement synthesis with exact independent dense verification; finite future-sufficient quotient of the search engine itself; exact restricted-access no-go witnesses"
+    "UNKNOWN": "Global lossless representation for unanticipated future operations; autonomous synthesis of physically new primitive beyond allowed hardware, unrestricted self-improving search-rule invention, independent Stuttgart experimental prediction, speedup over equally cached certified ledger",
+    "WARRANTED": "Closed Clifford effect graph and measurement synthesis with exact independent dense verification; finite future-sufficient quotient of the search engine itself; exact restricted-access no-go witnesses; loss-of-information obstruction to lifting old predictive state classes after admissible interventions expand"
+  },
+  "future_expansion": {
+    "bell_pair_add_CNOT": {
+      "cannot_recover_without_persisted_source_or_new_interaction": true,
+      "extra_label_bits_or_fresh_evidence_necessary": 1,
+      "fine_partition_refines_coarse": true,
+      "largest_split_factor": 2,
+      "new_class_count": 2,
+      "new_partitions": [
+        [
+          "Bell+"
+        ],
+        [
+          "Bell-"
+        ]
+      ],
+      "old_class_count": 1,
+      "old_classes_that_split": {
+        "Bell+ Bell-": 2
+      },
+      "old_partitions": [
+        [
+          "Bell+",
+          "Bell-"
+        ]
+      ],
+      "reconstructable_if_exact_source_states_preserved": true
+    },
+    "single_qubit_add_H": {
+      "cannot_recover_without_persisted_source_or_new_interaction": true,
+      "extra_label_bits_or_fresh_evidence_necessary": 2,
+      "fine_partition_refines_coarse": true,
+      "largest_split_factor": 4,
+      "new_class_count": 6,
+      "new_partitions": [
+        [
+          "+"
+        ],
+        [
+          "+i"
+        ],
+        [
+          "-"
+        ],
+        [
+          "-i"
+        ],
+        [
+          "0"
+        ],
+        [
+          "1"
+        ]
+      ],
+      "old_class_count": 3,
+      "old_classes_that_split": {
+        "+ +i - -i": 4
+      },
+      "old_partitions": [
+        [
+          "+",
+          "+i",
+          "-",
+          "-i"
+        ],
+        [
+          "0"
+        ],
+        [
+          "1"
+        ]
+      ],
+      "reconstructable_if_exact_source_states_preserved": true
+    }
   },
   "metalevel": {
     "single_full": {

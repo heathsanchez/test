@@ -279,6 +279,74 @@ def sign_table_mutation_kill(search):
     return True
 
 
+
+def future_signature(search, rho):
+    """Exact signatures of a prepared state against EVERY accessible effect."""
+    d=1<<search.n
+    return tuple(s.simplify(s.trace((s.eye(d)+algebraic_effect(e))*rho/2))
+                 for e in search.paths)
+
+
+def state_partition(search, candidates):
+    """Group states only by physically accessible measurement predictions."""
+    groups={}
+    for label,rho in candidates.items():
+        groups.setdefault(future_signature(search,rho), []).append(label)
+    return tuple(sorted((tuple(sorted(v)) for v in groups.values())))
+
+
+def changing_future_protection(searches):
+    """Independent finite witnesses that expanding available operations refines states.
+
+    The general impossibility of a deterministic old->new class reconstruction
+    follows from the witnessed collisions of the older quotient.
+    """
+    one={k:density(pure_q1(k)) for k in ('0','1','+','-','+i','-i')}
+    two_states=quantum_states()['Bell phase (+) vs (-)']
+    two={'Bell+':two_states[1], 'Bell-':two_states[2]}
+    trials=[('single_qubit_add_H',one,searches['single_no_H'],searches['single_full']),
+            ('bell_pair_add_CNOT',two,searches['two_no_CNOT'],searches['two_full'])]
+    results={}
+    for label,states,old,new in trials:
+        # Access increases: every older effective measurement remains available.
+        assert set(old.paths).issubset(set(new.paths))
+        old_p=state_partition(old,states)
+        new_p=state_partition(new,states)
+        old_index={name:i for i,group in enumerate(old_p) for name in group}
+        new_index={name:i for i,group in enumerate(new_p) for name in group}
+        # A fine class never joins two previously distinct old classes.
+        assert all(len({old_index[name] for name in group})==1 for group in new_p)
+        # A collapsed old class splits under the new admissible measurements.
+        split={
+            ' '.join(group):len({new_index[name] for name in group})
+            for group in old_p
+            if len({new_index[name] for name in group})>1
+        }
+        assert split,(label,old_p,new_p)
+        k=max(split.values())
+        # If only old classes survive, every member of a split group has the
+        # same old data but a distinct required refined answer. No deterministic
+        # right inverse of the quotient map can recover each member.
+        assert k>=2
+        bits=(k-1).bit_length()
+        results[label]={
+            'old_partitions':list(map(list,old_p)),
+            'new_partitions':list(map(list,new_p)),
+            'old_class_count':len(old_p),'new_class_count':len(new_p),
+            'old_classes_that_split':split,
+            'largest_split_factor':k,
+            'extra_label_bits_or_fresh_evidence_necessary':bits,
+            'fine_partition_refines_coarse':True,
+            'cannot_recover_without_persisted_source_or_new_interaction':True,
+            'reconstructable_if_exact_source_states_preserved':True,
+        }
+    assert results['single_qubit_add_H']['largest_split_factor']==4
+    assert results['single_qubit_add_H']['extra_label_bits_or_fresh_evidence_necessary']==2
+    assert results['bell_pair_add_CNOT']['largest_split_factor']==2
+    assert results['bell_pair_add_CNOT']['extra_label_bits_or_fresh_evidence_necessary']==1
+    return results
+
+
 def fmt(obj):
     if isinstance(obj,s.Basic): return str(obj)
     if isinstance(obj,tuple): return list(obj)
@@ -339,10 +407,13 @@ def main():
                                    'quotient_is_future_congruence':True,
                                    'same_ability_as_exact_cached_ledger':True}
         print('META',key,results['metalevel'][key],flush=True)
+    results['future_expansion']=changing_future_protection(searches)
+    for label,outcome in results['future_expansion'].items():
+        print('REFINEMENT',label,outcome,flush=True)
     results['conclusions']={
-        'WARRANTED':'Closed Clifford effect graph and measurement synthesis with exact independent dense verification; finite future-sufficient quotient of the search engine itself; exact restricted-access no-go witnesses',
+        'WARRANTED':'Closed Clifford effect graph and measurement synthesis with exact independent dense verification; finite future-sufficient quotient of the search engine itself; exact restricted-access no-go witnesses; loss-of-information obstruction to lifting old predictive state classes after admissible interventions expand',
         'REJECTED':'Record-only postprocessing creates inaccessible quantum distinctions; Clifford-only realizes Helstrom optimum for every pair; removing entangling control still separates Bell phases',
-        'UNKNOWN':'Autonomous synthesis of physically new primitive beyond allowed hardware, unrestricted self-improving search-rule invention, independent Stuttgart experimental prediction, speedup over equally cached certified ledger',
+        'UNKNOWN':'Global lossless representation for unanticipated future operations; autonomous synthesis of physically new primitive beyond allowed hardware, unrestricted self-improving search-rule invention, independent Stuttgart experimental prediction, speedup over equally cached certified ledger',
     }
     out=Path(__file__).with_name('results.json')
     out.write_text(json.dumps(results,indent=2,ensure_ascii=False,sort_keys=True)+'\n')
