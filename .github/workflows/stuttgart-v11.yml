@@ -1,0 +1,27 @@
+name: Stuttgart V11 calibration (holdout sealed)
+on:
+  push:
+    branches: ['research/stuttgart-quantum-boundary-v11']
+    paths: ['research/stuttgart_v11/**', '.github/workflows/stuttgart-v11.yml']
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  fetch-published-calibration-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show frozen protocol
+        run: |
+          sha256sum research/stuttgart_v11/PREREGISTERED_PROTOCOL.md
+          grep 'SEALED HOLDOUT' research/stuttgart_v11/PREREGISTERED_PROTOCOL.md
+      - name: Fetch and verify ONLY calibration files
+        run: python research/stuttgart_v11/fetch_calibration.py
+      - name: Store acquisition receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stuttgart-v11-calibration-only
+          path: research/stuttgart_v11/calibration_data/
+          if-no-files-found: warn
