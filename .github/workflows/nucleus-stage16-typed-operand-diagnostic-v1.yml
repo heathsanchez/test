@@ -8,6 +8,7 @@ on:
       - ".github/scripts/nucleus_field_premise_trace_patch_v1.py"
       - ".github/scripts/nucleus_argument_premise_triad_patch_v1.py"
       - ".github/scripts/nucleus_stage16_environment_separator_v1.py"
+      - ".github/scripts/nucleus_stage16_typed_operand_patch_v1.py"
   workflow_dispatch:
 permissions:
   contents: read
