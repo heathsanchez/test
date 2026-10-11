@@ -405,7 +405,7 @@ def main():
                                    'quotient_saturated_effect_classes':len(searches[key].paths),
                                    'oracle_equal_to_depth_bounded_quotient':True,
                                    'quotient_is_future_congruence':True,
-                                   'same_ability_as_exact_cached_ledger':True}
+                                   'matched_executable_ledger_cost_comparison':'NOT_RUN'}
         print('META',key,results['metalevel'][key],flush=True)
     results['future_expansion']=changing_future_protection(searches)
     for label,outcome in results['future_expansion'].items():
