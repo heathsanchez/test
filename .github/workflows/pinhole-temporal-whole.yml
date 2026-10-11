@@ -8,6 +8,7 @@ on:
       - 'open_development/pinhole_cost_future_separator.py'
       - 'open_development/pinhole_mda_future_value.py'
       - 'open_development/flash_whole_future_major_stress.py'
+      - 'open_development/WHOLE_FUTURE_GAMBLE_PROTOCOL.md'
       - '.github/workflows/pinhole-temporal-whole.yml'
   workflow_dispatch:
 permissions:
@@ -58,6 +59,16 @@ jobs:
           assert d['single_and_pair_revocation_scenarios']==21
           assert d['protected_source_proofs']==16
           PY
+      - name: Integrated source-backed development economics and role transport
+        run: |
+          set -euo pipefail
+          python -m open_development.whole_construction_suite > integrated_gamble_evidence.json
+          python - <<'PY'
+          import json
+          d=json.load(open('integrated_gamble_evidence.json'))
+          assert d['status']=='PASS_SOURCE_EXACT_INTEGRATED_RUNTIME'
+          assert d['global_optimiser']=='NOT_IMPLEMENTED'
+          PY
       - name: Requalify three-world shared construction
         run: |
           set -euo pipefail
@@ -72,5 +83,6 @@ jobs:
             cost_future_separator.json
             mda_future_value.json
             flash_major_stress.json
+            integrated_gamble_evidence.json
             three_world_evidence.json
           if-no-files-found: warn
