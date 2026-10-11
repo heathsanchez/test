@@ -55,12 +55,12 @@ theorem v183_mersenne_seed_affine_meeting
     (w : Nat) :
     iter shortcut 193 (2097151+2^193*w) =
       2+3^109*w := by
-  have hMeet := v183_real_mersenne_seed_meets_two
-  have hOdd := v183_real_mersenne_seed_odd_count
-  have hLift :=
-    v177_parallel_source_affine_meeting
-      2097151 2 193 0 w hMeet
-  simpa [hOdd, Nat.mul_assoc] using hLift
+  have hLift := v160_exact_cylinder_affine 193 2097151 w
+  have hSeed : iter shortcut 193 2097151=2 := by
+    change iter shortcut 193 2097151=iter shortcut 0 2
+    exact v183_real_mersenne_seed_meets_two
+  rw [hSeed, v183_real_mersenne_seed_odd_count] at hLift
+  exact hLift
 
 /-- The source-rank guard is independent of offset. -/
 theorem v183_all_offsets_strict_earlier_source
