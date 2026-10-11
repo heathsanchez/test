@@ -1,0 +1,28 @@
+name: Stuttgart V12 independent source and identifiability
+on:
+  push:
+    branches: ['research/stuttgart-boundary-v12']
+    paths: ['research/stuttgart_v12/**', '.github/workflows/stuttgart-v12.yml']
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preserve V11 frozen holdout and inspect source provenance
+        run: |
+          sha256sum research/stuttgart_v11/PREREGISTERED_PROTOCOL.md
+          grep "SEALED HOLDOUT" research/stuttgart_v11/PREREGISTERED_PROTOCOL.md
+          if grep -R 'DARUS-3262/13\|Fig3bdata' research/stuttgart_v12/*.py; then exit 1; fi
+      - name: Retrieve published supplement source only
+        run: python research/stuttgart_v12/fetch_supplement.py
+      - name: Preserve independent source receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stuttgart-v12-supplement-source
+          path: research/stuttgart_v12/supplement_source/
+          if-no-files-found: error
