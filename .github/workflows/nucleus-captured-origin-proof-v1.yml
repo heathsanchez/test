@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1, nucleus-last-operand-sorts-v1, nucleus-arithmetic-instance-origin-v1, nucleus-typed-conversion-first-v1, nucleus-certified-arithmetic-field-probe-v1, nucleus-nonvacuous-runtime-witness-v1, nucleus-targeted-field-outcomes-v1, nucleus-terminal-projection-causal-v1, nucleus-neutral-receiver-first-rule-v1, nucleus-ten-methods-discriminant-v1, nucleus-source-pair-no-outer-budget-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1, nucleus-last-operand-sorts-v1, nucleus-arithmetic-instance-origin-v1, nucleus-typed-conversion-first-v1, nucleus-certified-arithmetic-field-probe-v1, nucleus-nonvacuous-runtime-witness-v1, nucleus-targeted-field-outcomes-v1, nucleus-terminal-projection-causal-v1, nucleus-neutral-receiver-first-rule-v1, nucleus-ten-methods-discriminant-v1, nucleus-source-pair-no-outer-budget-v1, nucleus-post-pair-residual-matrix-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -169,6 +169,22 @@ jobs:
                       if line.startswith('NUCLEUS_SOURCE_PAIR_DEPTH8:')]
                   row['source_pair_proven_count']=len(source_pair)
                   row['source_pair_samples']=source_pair[:12]
+                  # The causal suffix after the LAST successful source-pair
+                  # witness, not unrelated earlier diagnostics.
+                  last_pair=max((i for i,line in enumerate(logs)
+                      if line.startswith('NUCLEUS_SOURCE_PAIR_DEPTH8:PROVEN:')),
+                      default=-1)
+                  row['post_pair_tail']=[
+                      line[:1500] for line in logs[last_pair+1:]
+                      if line.startswith('NUCLEUS_POST_IOTA_PROJECTION_GAP:')
+                      or line.startswith('NUCLEUS_TERMINAL_CAUSE:')
+                      or line.startswith('NUCLEUS_DOWNSTREAM:')
+                      or line.startswith('NUCLEUS_APP_DOMAIN_OBLIGATION:')
+                  ][-24:]
+                  row['post_pair_gap_count']=sum(
+                      line.startswith('NUCLEUS_POST_IOTA_PROJECTION_GAP:')
+                      for line in logs[last_pair+1:])
+                  row['post_pair_has_witness']=last_pair>=0
                   methods=[line for line in logs
                       if line.startswith('NUCLEUS_TEN_METHODS:')]
                   row['method_discriminant_count']=len(methods)
