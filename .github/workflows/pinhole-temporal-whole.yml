@@ -6,6 +6,7 @@ on:
       - 'open_development/pinhole_temporal_whole_v1.py'
       - 'open_development/pinhole_whole_time_major.py'
       - 'open_development/pinhole_cost_future_separator.py'
+      - 'open_development/pinhole_mda_future_value.py'
       - '.github/workflows/pinhole-temporal-whole.yml'
   workflow_dispatch:
 permissions:
@@ -40,6 +41,10 @@ jobs:
         run: |
           set -euo pipefail
           python -m open_development.pinhole_cost_future_separator | tee cost_future_separator.json
+      - name: Source-exact MDA future reachability under causal ablation
+        run: |
+          set -euo pipefail
+          python -m open_development.pinhole_mda_future_value | tee mda_future_value.json
       - name: Requalify three-world shared construction
         run: |
           set -euo pipefail
@@ -52,5 +57,6 @@ jobs:
             temporal_evidence.json
             whole_time_major.json
             cost_future_separator.json
+            mda_future_value.json
             three_world_evidence.json
           if-no-files-found: warn
