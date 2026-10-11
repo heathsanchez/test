@@ -70,7 +70,7 @@ def run(binary, source, mode, timeout=180, performance=False, suffix=""):
         "support_warrants_logged":p.stderr.count(b"NUCLEUS_CAPTURE_SUPPORT_CERT:"),
     }
     if performance:
-        user,system,rss=metrics.read_text().split()
+        # GNU time prefixes nonzero checker exit codes (UNKNOWN=2) with a\n        # separate "Command exited with non-zero status" line. Only its\n        # final machine-formatted measurement line contains three numbers.\n        measured=metrics.read_text().splitlines()[-1].split()\n        assert len(measured)==3, (metrics, measured)\n        user,system,rss=measured
         result.update(cpu_seconds=round(float(user)+float(system),4),
                       max_rss_kb=int(rss))
     return result
