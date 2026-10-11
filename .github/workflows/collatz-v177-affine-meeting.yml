@@ -77,7 +77,10 @@ jobs:
                     'v177_infinite_source_capped_meetings',
                     'v177_root23_recompiled_from_single_meeting',
                     'v177_slope_lift_excludes_least_positive_bad',
-                    'v177_root23_progression_excludes_minimal_bad'):
+                    'v177_root23_progression_excludes_minimal_bad',
+                    'v177_unshifted_ordered_affine_lower_merge',
+                    'v177_root21_progression_excludes_minimal_bad',
+                    'v177_root9_progression_excludes_minimal_bad'):
             assert 'CollatzFinal.SourceProduct.'+t in ax,t
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           seal={'schema':'COLLATZ_V177_FORMAL','source_commit':sha,
