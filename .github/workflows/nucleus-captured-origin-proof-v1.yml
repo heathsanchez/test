@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1, nucleus-last-operand-sorts-v1, nucleus-arithmetic-instance-origin-v1, nucleus-typed-conversion-first-v1, nucleus-certified-arithmetic-field-probe-v1, nucleus-nonvacuous-runtime-witness-v1, nucleus-targeted-field-outcomes-v1, nucleus-terminal-projection-causal-v1, nucleus-neutral-receiver-first-rule-v1, nucleus-ten-methods-discriminant-v1, nucleus-source-pair-no-outer-budget-v1, nucleus-post-pair-residual-matrix-v1, nucleus-goal-backward-obligation-v1, nucleus-certified-projection-field-congruence-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1, nucleus-last-operand-sorts-v1, nucleus-arithmetic-instance-origin-v1, nucleus-typed-conversion-first-v1, nucleus-certified-arithmetic-field-probe-v1, nucleus-nonvacuous-runtime-witness-v1, nucleus-targeted-field-outcomes-v1, nucleus-terminal-projection-causal-v1, nucleus-neutral-receiver-first-rule-v1, nucleus-ten-methods-discriminant-v1, nucleus-source-pair-no-outer-budget-v1, nucleus-post-pair-residual-matrix-v1, nucleus-goal-backward-obligation-v1, nucleus-certified-projection-field-congruence-v1, nucleus-first-unsatisfied-obligation-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -287,6 +287,34 @@ jobs:
               }
               obligation_graph.append(graph)
               print('NUCLEUS_GOAL_OBLIGATION='+json.dumps(graph),flush=True)
+          # Earliest unresolved dependency is the decisive experimental target.
+          # This ledger deliberately never promotes a local conversion to
+          # a completed export. Every residual is tied to its source case.
+          first_unsatisfied=[]
+          for name in seven:
+              row=next(r for r in rows if r['case']==name and r['mode']=='origin_replay')
+              terminal=(row.get('downstream') or [''])[-1]
+              field_events=row.get('field_congruence',[])
+              successful=[e for e in field_events
+                  if 'field=Proven' in e and 'args_proven=true' in e]
+              unresolved=(row.get('app_domains') or [])
+              projection=(row.get('post_pair_tail') or [])
+              first_unsatisfied.append({
+                  'case':name,'complete':row['rc']==0,
+                  'terminal':terminal,
+                  'certified_field_congruence_events':len(successful),
+                  'first_application_residual':unresolved[0] if unresolved else None,
+                  'last_application_residual':unresolved[-1] if unresolved else None,
+                  'last_projection_residual':projection[-1] if projection else None,
+                  'classification':('dependent-application-type'
+                      if 'application-function-type' in terminal else
+                      'dependent-value-conversion' if 'lazy-projection' in terminal
+                      else 'other'),
+              })
+          print('NUCLEUS_FIRST_UNSATISFIED='+json.dumps(first_unsatisfied),flush=True)
+          (out/'first-unsatisfied.json').write_text(
+              json.dumps(first_unsatisfied,indent=2))
+          assert all(not x['complete'] for x in first_unsatisfied)
           assert len(obligation_graph)==7
           assert all(g['terminal_declaration'] for g in obligation_graph)
           (out/'goal-obligations.json').write_text(
