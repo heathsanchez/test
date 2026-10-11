@@ -50,6 +50,23 @@ def audit():
         a=3
         assert 3*(a+1)-2*((3*a+c)//2+1) == 1-c  # TRUE +1 ONLY
 
+    # All-K universal Mersenne delay has a simple exact proof:
+    # T^K(2^K-1)=3^K-1 and T(x)>=x/2 at EVERY subsequent clock.
+    # Thus 2^L*(2^K-1)<3^K-1 forbids descent by clock K+L.
+    # The first even step is not an automatic recovery event.
+    for K in range(3, 102, 2):
+        n, x = 2**K-1, 2**K-1
+        for i in range(K):
+            assert x % 2 == 1
+            x=shortcut(x)
+        assert x == 3**K-1 and x % 4 == 2
+        assert shortcut(x)>n  # first positive-defect event still too high
+        for L in range(32):
+            assert (2**L)*x >= 3**K-1
+            if (2**L)*n < 3**K-1:
+                assert x > n
+            x=shortcut(x)
+
     # From V168 saturated-class residue skew, m>=15 and s=2:
     m=15
     R_min=F(1,3)*F(2*m-1,2*m)**2
