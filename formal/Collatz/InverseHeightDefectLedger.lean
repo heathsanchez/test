@@ -168,6 +168,107 @@ theorem v189_true_two_clock_source_budget
       Nat.add_le_add_right hScaled _
     _ = 3^j*2^i*(p+1)+2^j*V189HeightDefect n i := by ac_rfl
 
+/-- EXACT certified, source-locked ceiling on the amount of
+strict earlier-source reduction achievable by an EARLY (j<=i)
+independent companion clock.
+
+Any genuine meeting T^i(n)=T^j(p) with p<=n, j<=i forces
+
+  3^j*2^(i-j)*(n-p) <= D(n,i).
+
+Thus a small inverse-height defect makes large source reductions
+arithmetically IMPOSSIBLE at those companion clocks. This is a
+necessary constraint, never an existence certificate. -/
+theorem v189_early_clock_defect_bounds_source_reduction
+    (n p i j : Nat)
+    (hj : j<=i) (hp : p<=n)
+    (hMeet : iter shortcut i n=iter shortcut j p) :
+    3^j*2^(i-j)*(n-p) <= V189HeightDefect n i := by
+  have hIJ : i=(i-j)+j := by omega
+  have hPow2 : 2^i=2^(i-j)*2^j := by
+    calc
+      2^i=2^((i-j)+j) := congrArg (fun v : Nat =>2^v) hIJ
+      _=2^(i-j)*2^j := Nat.pow_add 2 (i-j) j
+  have hPow3 : 3^i=3^(i-j)*3^j := by
+    calc
+      3^i=3^((i-j)+j) := congrArg (fun v : Nat =>3^v) hIJ
+      _=3^(i-j)*3^j := Nat.pow_add 3 (i-j) j
+  have hCoeff : 3^j*2^i <=3^i*2^j := by
+    calc
+      3^j*2^i=(3^j*2^j)*2^(i-j) := by
+        rw [hPow2]
+        ac_rfl
+      _ <= (3^j*2^j)*3^(i-j) :=
+        Nat.mul_le_mul_left _
+          (v187_two_power_le_three_power (i-j))
+      _ =3^i*2^j := by
+        rw [hPow3]
+        ac_rfl
+  let C : Nat := 3^j*2^i
+  have hMon : C*(n+1)<=3^i*2^j*(n+1) :=
+    Nat.mul_le_mul_right (n+1) hCoeff
+  have hTwo := v189_true_two_clock_source_budget n p i j hMeet
+  have hLimit :
+      C*(n+1) <= C*(p+1)+2^j*V189HeightDefect n i := by
+    calc
+      C*(n+1) <= 3^i*2^j*(n+1) := hMon
+      _ <= 3^j*2^i*(p+1)+2^j*V189HeightDefect n i := hTwo
+      _ = C*(p+1)+2^j*V189HeightDefect n i := by rfl
+  let delta : Nat := n-p
+  have hN : n=p+delta := by
+    dsimp [delta]
+    omega
+  have hSplit : C*(n+1)=C*(p+1)+C*delta := by
+    have hAssoc : n+1=(p+1)+delta := by
+      rw [hN]
+      omega
+    rw [hAssoc,Nat.mul_add]
+  rw [hSplit] at hLimit
+  have hDelta :
+      C*delta <=2^j*V189HeightDefect n i := by omega
+  have hRewrite :
+      C*delta=2^j*(3^j*2^(i-j)*delta) := by
+    dsimp [C]
+    rw [hPow2]
+    ac_rfl
+  rw [hRewrite] at hDelta
+  have hCancel :
+      (3^j*2^(i-j)*delta)*(2^j) <=
+        (V189HeightDefect n i)*(2^j) := by
+    calc
+      (3^j*2^(i-j)*delta)*(2^j) =
+          2^j*(3^j*2^(i-j)*delta) := by ac_rfl
+      _ <= 2^j*V189HeightDefect n i := hDelta
+      _ = (V189HeightDefect n i)*(2^j) := by ac_rfl
+  have hPowPos : 0<2^j := Nat.pow_pos (by decide)
+  exact v185_positive_nat_source_cancel
+    (3^j*2^(i-j)*delta) (V189HeightDefect n i)
+      (2^j) hPowPos hCancel
+
+/-- When the original source has no inverse-height deficit,
+no genuinely EARLIER source can meet it with a companion
+clock j<=original clock i. The zero-defect case is sharp. -/
+theorem v189_zero_defect_forbids_early_smaller_source_meeting
+    (n p i j : Nat)
+    (hj : j<=i) (hp : p<n)
+    (hZero : V189HeightDefect n i=0) :
+    iter shortcut i n != iter shortcut j p := by
+  intro hMeet
+  have hLimit :=
+    v189_early_clock_defect_bounds_source_reduction n p i j
+      hj (Nat.le_of_lt hp) hMeet
+  rw [hZero] at hLimit
+  have hGap : 0<n-p := by omega
+  have hScale : 0<3^j*2^(i-j) :=
+    Nat.mul_pos (Nat.pow_pos (by decide))
+      (Nat.pow_pos (by decide))
+  have hStrict : 0<3^j*2^(i-j)*(n-p) :=
+    Nat.mul_pos hScale hGap
+  omega
+
+#print axioms v189_early_clock_defect_bounds_source_reduction
+#print axioms v189_zero_defect_forbids_early_smaller_source_meeting
+
 /-- All-odd Mersenne prefixes have ZERO defect; we therefore
 recover the V188 sharp early-clock lower-source impossibility
 without allocating a per-parity-step history. -/
