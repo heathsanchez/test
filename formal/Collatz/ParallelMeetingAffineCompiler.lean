@@ -151,6 +151,86 @@ theorem v177_root23_progression_excludes_minimal_bad
   exact (minimal_positive_bad_no_earlier_source_meeting
     hBad (3+54*w) i j hSmallPos hLess) hEq
 
+/-- If the verified BASE source is already greater than its
+verified companion, a nonnegative source-slope ordering suffices to
+retain a strict positive-source reduction at EVERY w>=0, with no
+artificial shift by p+1. This is the exact reusable constructor for
+ordinary rooted arithmetic progressions. -/
+theorem v177_unshifted_ordered_affine_lower_merge
+    (n p i j w : Nat)
+    (hMeet : iter shortcut i n = iter shortcut j p)
+    (hBase : p < n)
+    (hSlope :
+       2^j*3^(oddCount n i) ≤
+         2^i*3^(oddCount p j)) :
+    LowerMerge shortcut
+      (n + 2^i*(3^(oddCount p j)*w))
+      (p + 2^j*(3^(oddCount n i)*w)) := by
+  have hScaled :
+      (2^j*3^(oddCount n i))*w ≤
+        (2^i*3^(oddCount p j))*w :=
+    Nat.mul_le_mul_right w hSlope
+  have hStrict :
+      p + (2^j*3^(oddCount n i))*w <
+        n + (2^i*3^(oddCount p j))*w := by omega
+  have hCap :
+      p + 2^j*(3^(oddCount n i)*w) <
+        n + 2^i*(3^(oddCount p j)*w) := by
+    simpa only [Nat.mul_assoc] using hStrict
+  exact ⟨hCap,i,j,
+    v177_parallel_source_affine_meeting n p i j w hMeet⟩
+
+/-- A genuine n=21, p=3 meeting eliminates every 21+72*w from
+being a least bad source. This says nothing about arbitrary other
+source classes. -/
+theorem v177_root21_progression_excludes_minimal_bad
+    (w : Nat) :
+    ¬ MinimalBad PositiveBad (21+72*w) := by
+  have hMeet : iter shortcut 3 21 = iter shortcut 2 3 := by decide
+  have hCount21 : oddCount 21 3 = 1 := by decide
+  have hCount3 : oddCount 3 2 = 2 := by decide
+  have hSlope :
+      2^2*3^(oddCount 21 3) ≤ 2^3*3^(oddCount 3 2) := by
+    rw [hCount21,hCount3]
+    decide
+  have hRaw :=
+    v177_unshifted_ordered_affine_lower_merge
+      21 3 3 2 w hMeet (by decide) hSlope
+  have hLM : LowerMerge shortcut (21+72*w) (3+12*w) := by
+    simpa [hCount21,hCount3,← Nat.mul_assoc] using hRaw
+  intro hBad
+  obtain ⟨hLess, i, j, hEq⟩ := hLM
+  have hPos : 0<3+12*w := by omega
+  exact (minimal_positive_bad_no_earlier_source_meeting
+    hBad (3+12*w) i j hPos hLess) hEq
+
+/-- Same unbounded least-bad-source exclusion from the previously
+qualified real source9/7 two-clock meeting. -/
+theorem v177_root9_progression_excludes_minimal_bad
+    (w : Nat) :
+    ¬ MinimalBad PositiveBad (9+1728*w) := by
+  have hMeet : iter shortcut 6 9 = iter shortcut 4 7 := by decide
+  have hCount9 : oddCount 9 6 = 4 := by decide
+  have hCount7 : oddCount 7 4 = 3 := by decide
+  have hSlope :
+      2^4*3^(oddCount 9 6) ≤ 2^6*3^(oddCount 7 4) := by
+    rw [hCount9,hCount7]
+    decide
+  have hRaw :=
+    v177_unshifted_ordered_affine_lower_merge
+      9 7 6 4 w hMeet (by decide) hSlope
+  have hLM : LowerMerge shortcut (9+1728*w) (7+1296*w) := by
+    simpa [hCount9,hCount7,← Nat.mul_assoc] using hRaw
+  intro hBad
+  obtain ⟨hLess, i, j, hEq⟩ := hLM
+  have hPos : 0<7+1296*w := by omega
+  exact (minimal_positive_bad_no_earlier_source_meeting
+    hBad (7+1296*w) i j hPos hLess) hEq
+
+#print axioms v177_unshifted_ordered_affine_lower_merge
+#print axioms v177_root21_progression_excludes_minimal_bad
+#print axioms v177_root9_progression_excludes_minimal_bad
+
 #print axioms v177_slope_lift_excludes_least_positive_bad
 #print axioms v177_root23_progression_excludes_minimal_bad
 
