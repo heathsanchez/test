@@ -125,7 +125,7 @@ def trial(depth,width,contexts,sharing,seed):
         t=root if i%3 else xor(root,zero())
         pairs.append((t,m))
     methods={}
-    for name in ("local","dag","diagram"):
+    for name in ("local","dag","canonical","diagram"):
         tracemalloc.start()
         start=time.perf_counter()
         if name=="local":
@@ -134,6 +134,18 @@ def trial(depth,width,contexts,sharing,seed):
         elif name=="dag":
             engine=Dag();values=[engine.run(t,m) for t,m in pairs]
             meter=engine.m;state=len(engine.intern)+len(engine.memo)
+        elif name=="canonical":
+            meter=Meter();memo={};values=[]
+            for t,m in pairs:
+                # Strong classical comparator: normalized affine polynomial over GF(2),
+                # globally memoized by exact contextual dependency signature.
+                key=(t,tuple(m[i] for i in sorted(deps(t))))
+                meter.tick()
+                if key in memo:meter.hits+=1;v=memo[key]
+                else:
+                    meter.misses+=1;v=parity(t,m,meter);memo[key]=v
+                values.append(v)
+            state=len(memo)
         else:
             engine=Diagram();values=[engine.run(t,m) for t,m in pairs]
             meter=engine.m;state=len(engine.signatures)+len(engine.factors)
