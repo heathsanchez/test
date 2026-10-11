@@ -7,6 +7,7 @@ on:
       - 'open_development/pinhole_whole_time_major.py'
       - 'open_development/pinhole_cost_future_separator.py'
       - 'open_development/pinhole_mda_future_value.py'
+      - 'open_development/flash_whole_future_major_stress.py'
       - '.github/workflows/pinhole-temporal-whole.yml'
   workflow_dispatch:
 permissions:
@@ -45,6 +46,18 @@ jobs:
         run: |
           set -euo pipefail
           python -m open_development.pinhole_mda_future_value | tee mda_future_value.json
+      - name: Exhaustive real-ledger all-subsets and revocation stress
+        run: |
+          set -euo pipefail
+          python -m open_development.flash_whole_future_major_stress | tee flash_major_stress.json
+          python - <<'PY'
+          import json
+          d=json.load(open('flash_major_stress.json'))
+          assert d['status']=='PASS_EXACT_REAL_LEDGER_STRESS'
+          assert d['all_capability_subsets']==64
+          assert d['single_and_pair_revocation_scenarios']==21
+          assert d['protected_source_proofs']==16
+          PY
       - name: Requalify three-world shared construction
         run: |
           set -euo pipefail
@@ -58,5 +71,6 @@ jobs:
             whole_time_major.json
             cost_future_separator.json
             mda_future_value.json
+            flash_major_stress.json
             three_world_evidence.json
           if-no-files-found: warn
