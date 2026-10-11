@@ -32,6 +32,8 @@ jobs:
           assert not d['binomial_infinite_m_inequality_separately_lean_formalized']
           assert d['source_height_threshold_not_uniform_in_m']
           assert d['fixed_bad_integer_does_not_satisfy_height_condition_for_all_m']
+          assert d['each_scale_has_an_explicit_positive_high_odd_witness']
+          assert len(d['mersenne_high_odd_finite_scale_witnesses'])==8
           assert d['synthetic_G7_distinct_future_cycles_protected']
           assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
