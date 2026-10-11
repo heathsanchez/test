@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1, nucleus-last-operand-sorts-v1, nucleus-arithmetic-instance-origin-v1, nucleus-typed-conversion-first-v1, nucleus-certified-arithmetic-field-probe-v1, nucleus-nonvacuous-runtime-witness-v1, nucleus-targeted-field-outcomes-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1, nucleus-last-operand-sorts-v1, nucleus-arithmetic-instance-origin-v1, nucleus-typed-conversion-first-v1, nucleus-certified-arithmetic-field-probe-v1, nucleus-nonvacuous-runtime-witness-v1, nucleus-targeted-field-outcomes-v1, nucleus-terminal-projection-causal-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -90,6 +90,7 @@ jobs:
                   env['NUCLEUS_TRACE_TYPED_RECEIVER']='1'
                   env['NUCLEUS_TRACE_CERTIFIED_ARITHMETIC_FIELD']='1'
                   env['NUCLEUS_TRACE_SELECTED_FIELD']='1'
+                  env['NUCLEUS_TRACE_TERMINAL_CAUSE']='1'
                   env['NUCLEUS_TRACE_POLYMORPHIC_PROP_IRREL']='1'
                   env['NUCLEUS_TRACE_PROP_SINGLETON']='1'
                   env['NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION']='1'
@@ -157,6 +158,10 @@ jobs:
                       if line.startswith('NUCLEUS_SELECTED_FIELD:')]
                   row['selected_field_count']=len(selected)
                   row['selected_field_samples']=selected[:12]
+                  terminal=[line for line in logs
+                      if line.startswith('NUCLEUS_TERMINAL_CAUSE:')]
+                  row['terminal_cause_count']=len(terminal)
+                  row['terminal_cause_samples']=terminal[-12:]
                   print('NUCLEUS_ORIGIN_SEVEN='+json.dumps(row),flush=True)
                   assert p.returncode in (0,2),('valid became rejected',row)
                   if mode=='baseline': assert p.returncode==2,('baseline moved',row)
