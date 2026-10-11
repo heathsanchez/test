@@ -31,7 +31,8 @@ for seq in words:
 for seqs in classes.values():
  baseline=run(seqs[0],settings)
  for seq in seqs:
-  assert run(seq,settings)==baseline
+  current=run(seq,settings)
+  assert current[0]==baseline[0] and current[1].tolist()==baseline[1].tolist()
 assert len(words)==256 and len(classes)==35
 # Exact noncommuting rotation. Replace setting b Kraus by K_b U, remains complete.
 U=np.array([[F(3,5),-F(4,5)],[F(4,5),F(3,5)]],dtype=object)
