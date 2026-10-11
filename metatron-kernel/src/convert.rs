@@ -1161,6 +1161,65 @@ fn compare_values(
                     spine: right_spine,
                 },
             ) if left_type == right_type && left_index == right_index => {
+                // Beta projection over a CERTIFIED constructor field,
+                // followed by ordinary congruence of applied arguments.
+                // Unlike requiring the original receivers to be equal,
+                // source-registered projection reduction allows distinct
+                // constructor instances to select convertible fields.
+                // Every field and pending argument must independently pass
+                // source-scoped typing plus value conversion. Never infer
+                // either witness from matching type names or term shape.
+                // Opt-in pending independent full-corpus and mutation gates.
+                if std::env::var_os(
+                    "NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_CONGRUENCE",
+                ).is_some()
+                    && depth==context.len()
+                    && (4..=24).contains(&depth)
+                    && current_budget>=128
+                    && left_spine.len()==right_spine.len()
+                {
+                    let machine=checker.machine();
+                    let selected_left=machine.projection_field_for_conversion(
+                        left_structure.clone(),*left_type,*left_index,
+                        current_budget.min(2048),
+                    );
+                    let selected_right=machine.projection_field_for_conversion(
+                        right_structure.clone(),*right_type,*right_index,
+                        current_budget.min(2048),
+                    );
+                    if let (Some(l),Some(r))=(
+                        selected_left.proven_value(),
+                        selected_right.proven_value(),
+                    ) {
+                        let field=checker.checked_source_conversion(
+                            l,r,context,current_budget.min(2048),
+                        );
+                        let args=field.is_proven()
+                            && left_spine.iter().zip(right_spine).all(|(a,b)|{
+                                checker.checked_source_conversion(
+                                    a,b,context,current_budget.min(1024),
+                                ).is_proven()
+                            });
+                        #[cfg(feature="diagnostics")]
+                        if std::env::var_os(
+                            "NUCLEUS_TRACE_CERTIFIED_FIELD_CONGRUENCE",
+                        ).is_some() {
+                            use std::sync::atomic::{AtomicUsize,Ordering};
+                            static SAMPLES:AtomicUsize=AtomicUsize::new(0);
+                            if SAMPLES.fetch_add(1,Ordering::Relaxed)<28 {
+                                eprintln!(
+                                    "NUCLEUS_CERTIFIED_FIELD_CONGRUENCE:depth={depth}:left_type={left_type:?}:right_type={right_type:?}:field={field:?}:args_proven={args}:left_arity={}:right_arity={}",
+                                    left_spine.len(),right_spine.len(),
+                                );
+                            }
+                        }
+                        if args {
+                            return Judgment::proven(
+                                (),"checked-source-projection-beta-and-application-congruence",
+                            );
+                        }
+                    }
+                }
                 // A checked projection of one fixed field is congruent only
                 // after proving the receiver and all applied arguments equal.
                 // The existing source-level Nat computation never licenses
