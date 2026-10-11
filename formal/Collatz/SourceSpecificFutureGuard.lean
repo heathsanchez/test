@@ -60,7 +60,6 @@ theorem v185_actual_odd_source_factor
     _ <= 3*n*x+x := Nat.add_le_add_left hSource _
     _ = (3*n+1)*x := by
       simp only [Nat.add_mul,Nat.one_mul]
-      ac_rfl
 
 /-- Finite-clock source HEIGHT only: all real prefixes up to k must
 stay above the ACTUAL ORIGINAL source n. No assumption about clocks
