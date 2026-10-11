@@ -31,6 +31,12 @@ needle = "            exposure_cache: new_exposure_cache(),\n"
 assert a.count(needle) == 4, a.count(needle)
 a = a.replace(needle, needle +
     "            contextual_conversion_memo: Rc::new(RefCell::new(HashMap::new())),\n")
+# The diagnostic isolated checker uses the same initializer with compact
+# spacing; its memo must also be empty and authority-scoped.
+compact = "            exposure_cache:new_exposure_cache(),\n"
+assert a.count(compact) == 1, a.count(compact)
+a = a.replace(compact, compact +
+    "            contextual_conversion_memo: Rc::new(RefCell::new(HashMap::new())),\n")
 tc.write_text(a)
 
 s = cv.read_text()
