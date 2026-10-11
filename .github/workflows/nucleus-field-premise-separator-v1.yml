@@ -1,10 +1,11 @@
-name: Nucleus field application exact failed-premise separator
+name: Nucleus field argument left-right-defeq triad separator
 
 on:
   push:
-    branches: [nucleus-field-premise-separator-v1]
+    branches: [nucleus-argument-premise-triad-v1]
     paths:
       - ".github/scripts/nucleus_field_premise_trace_patch_v1.py"
+      - ".github/scripts/nucleus_argument_premise_triad_patch_v1.py"
       - ".github/workflows/nucleus-field-premise-separator-v1.yml"
       - ".github/scripts/nucleus_field_application_patch_v1.py"
   workflow_dispatch:
@@ -36,6 +37,7 @@ jobs:
           python3 .github/scripts/nucleus_contextual_capability_patch_v1.py metatron-kernel
           python3 .github/scripts/nucleus_field_application_patch_v1.py metatron-kernel
           python3 .github/scripts/nucleus_field_premise_trace_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_argument_premise_triad_patch_v1.py metatron-kernel
           git diff --check
           git diff -- metatron-kernel/src/typecheck.rs metatron-kernel/src/convert.rs > /tmp/nucleus-field-premise-evidence/diagnostic-patch.diff
           NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml 2>&1 | tee /tmp/nucleus-field-premise-evidence/tests.txt
