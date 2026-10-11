@@ -42,7 +42,9 @@ def main():
         subsets=[{ids[i] for i in range(len(ids)) if mask>>i&1} for mask in range(1<<len(ids))]
         # Complete lattice of subsets, compare two independent constructions.
         closed_subsets=[s for s in subsets if closed(s)]
-        assert set(ids) in closed_subsets and not closed(set(ids)-set(next(k for k in ids if deps[k])))
+        assert set(ids) in closed_subsets
+        assert all(closed(sub) == all(deps[k] <= sub for k in sub) for sub in subsets)
+        assert any(not closed(sub) for sub in subsets), 'expected at least one dependency-invalid subset'
         checks=0
         for allowed in subsets:
             a=forward(set(),allowed)
