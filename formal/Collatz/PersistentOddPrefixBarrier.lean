@@ -105,8 +105,13 @@ theorem v184_orbit_protected_product
               iter shortcut (k+1) n =
             (2^k*8^(oddCount n k))*(16*shortcut x) := by
               rw [hNext,ha]
-              simp [Nat.pow_succ,Nat.mul_assoc,
-                Nat.mul_comm,Nat.mul_left_comm]
+              calc
+                2^(k+1)*8^(oddCount n k+1)*shortcut x =
+                    (2^k*8^(oddCount n k))*((2*8)*shortcut x) := by
+                  simp only [Nat.pow_succ]
+                  ac_rfl
+                _ = (2^k*8^(oddCount n k))*(16*shortcut x) := by
+                    decide
           _ <= (2^k*8^(oddCount n k))*(25*x) := hLift
           _ <= n*25^(oddCount n (k+1)) := hIH
 
@@ -126,29 +131,38 @@ theorem v184_nondecreasing_orbit_forces_odd_power
     (n k : Nat) (hn : 0<n) (hEight : 8<=n)
     (hNeverBelow : ∀ t : Nat, n<=iter shortcut t n) :
     2^k*8^(oddCount n k) <=25^(oddCount n k) := by
-  let a := oddCount n k
   have hProduct :=
     v184_orbit_protected_product n k
       (fun t => Nat.le_trans hEight (hNeverBelow t))
   have hBelow : n<=iter shortcut k n := hNeverBelow k
   have hMult :
-      (2^k*8^a)*n <= (2^k*8^a)*iter shortcut k n :=
+      (2^k*8^(oddCount n k))*n <=
+        (2^k*8^(oddCount n k))*iter shortcut k n :=
     Nat.mul_le_mul_left _ hBelow
-  have hTotal : (2^k*8^a)*n <= 25^a*n := by
+  have hTotal :
+      (2^k*8^(oddCount n k))*n <=
+        (25^(oddCount n k))*n := by
     calc
-      (2^k*8^a)*n <=
-          (2^k*8^a)*iter shortcut k n := hMult
-      _ <= n*25^a := by simpa only [a,Nat.mul_assoc] using hProduct
-      _ = 25^a*n := by ac_rfl
+      (2^k*8^(oddCount n k))*n <=
+          (2^k*8^(oddCount n k))*iter shortcut k n := hMult
+      _ <= n*25^(oddCount n k) := by
+        simpa only [Nat.mul_assoc] using hProduct
+      _ = (25^(oddCount n k))*n := by ac_rfl
   apply Classical.byContradiction
   intro hNot
-  have hLess : 25^a < 2^k*8^a := by omega
-  have hTimes : 25^a*n < (2^k*8^a)*n := by
-    have hOne : 25^a+1 <= 2^k*8^a := by omega
-    have hWeighted :=
-      Nat.mul_le_mul_right n hOne
-    have hPos : 0<n := hn
-    omega
+  have hLess :
+      25^(oddCount n k) <2^k*8^(oddCount n k) := by omega
+  have hOne :
+      25^(oddCount n k)+1 <=2^k*8^(oddCount n k) := by omega
+  have hWeighted :=
+    Nat.mul_le_mul_right n hOne
+  have hWeighted' :
+      25^(oddCount n k)*n+n <=
+        (2^k*8^(oddCount n k))*n := by
+    simpa [Nat.add_mul] using hWeighted
+  have hStrict :
+      25^(oddCount n k)*n <
+        (2^k*8^(oddCount n k))*n := by omega
   omega
 
 /-- The fully general source-locked least-bad necessary inequality:
