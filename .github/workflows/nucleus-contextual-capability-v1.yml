@@ -51,7 +51,7 @@ jobs:
           git diff --check
           git diff -- metatron-kernel/src/typecheck.rs metatron-kernel/src/convert.rs > /tmp/nucleus-context-evidence/changed-rust-source.patch
           sha256sum metatron-kernel/src/typecheck.rs metatron-kernel/src/convert.rs > /tmp/nucleus-context-evidence/patched-file-sha256.txt
-          NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml 2>&1 | tee /tmp/nucleus-context-evidence/cargo-tests.txt
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml 2>&1 | tee /tmp/nucleus-context-evidence/cargo-tests.txt
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-context
           sha256sum /tmp/nucleus-context > /tmp/nucleus-context-evidence/candidate-binary.txt
