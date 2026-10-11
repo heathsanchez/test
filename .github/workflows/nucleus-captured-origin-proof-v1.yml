@@ -2,7 +2,7 @@ name: Nucleus checked source-origin typed telescope A/B
 
 on:
   push:
-    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1, nucleus-last-operand-sorts-v1, nucleus-arithmetic-instance-origin-v1, nucleus-typed-conversion-first-v1, nucleus-certified-arithmetic-field-probe-v1, nucleus-nonvacuous-runtime-witness-v1, nucleus-targeted-field-outcomes-v1, nucleus-terminal-projection-causal-v1, nucleus-neutral-receiver-first-rule-v1, nucleus-ten-methods-discriminant-v1, nucleus-source-pair-no-outer-budget-v1, nucleus-post-pair-residual-matrix-v1]
+    branches: [nucleus-captured-origin-proof-v1, nucleus-source-scope-replay-v1, nucleus-source-proof-discharge-v1, nucleus-transitive-origin-join-v1, nucleus-projection-first-probe-v1, nucleus-projection-context-congruence-v1, nucleus-projection-crossframe-512-v1, nucleus-polymorphic-proof-irrelevance-v1, nucleus-2p1f-prop-singleton-v1, nucleus-post-wf-app-domain-v1, nucleus-expected-lambda-bidir-v1, nucleus-bidir-body-first-obstruction-v1, nucleus-nested-expected-lambda-v1, nucleus-final-codomain-separator-v1, nucleus-codomain-paired-premises-v1, nucleus-last-operand-sorts-v1, nucleus-arithmetic-instance-origin-v1, nucleus-typed-conversion-first-v1, nucleus-certified-arithmetic-field-probe-v1, nucleus-nonvacuous-runtime-witness-v1, nucleus-targeted-field-outcomes-v1, nucleus-terminal-projection-causal-v1, nucleus-neutral-receiver-first-rule-v1, nucleus-ten-methods-discriminant-v1, nucleus-source-pair-no-outer-budget-v1, nucleus-post-pair-residual-matrix-v1, nucleus-goal-backward-obligation-v1]
     paths:
       - ".github/workflows/nucleus-captured-origin-proof-v1.yml"
       - "metatron-kernel/**"
@@ -254,9 +254,43 @@ jobs:
                   assert (report['accepted'],report['unknown'])==(118,7),'baseline drift'
           changes=[{'case':b['case'],'baseline_rc':b['rc'],'candidate_rc':c['rc']}
                  for b,c in zip(mode_rows['baseline'],mode_rows['origin_replay']) if b['rc']!=c['rc']]
+          # Goal-backward proof obligation inventory. A local rule firing is
+          # not counted as progress unless the enclosing export discharges.
+          obligation_graph=[]
+          for name in seven:
+              row=next(r for r in rows
+                       if r['case']==name and r['mode']=='origin_replay')
+              downstream=row.get('downstream',[])
+              terminal=downstream[-1] if downstream else ''
+              application=row.get('app_domains',[])
+              projection=row.get('post_pair_tail',[])
+              first_app=application[-1] if application else None
+              first_proj=next((x for x in reversed(projection)
+                  if x.startswith('NUCLEUS_POST_IOTA_PROJECTION_GAP:')
+                  or x.startswith('NUCLEUS_TERMINAL_CAUSE:')),None)
+              graph={
+                  'goal':name,
+                  'root_verdict':'ACCEPT' if row['rc']==0 else 'UNKNOWN',
+                  'terminal_declaration':terminal,
+                  'checked_source_pair_count':row.get('source_pair_proven_count',0),
+                  'unresolved_application':first_app,
+                  'unresolved_projection':first_proj,
+                  'candidate_first_obligation':
+                      'dependent-application-type' if 'application-function-type' in terminal
+                      else 'dependent-codomain-conversion' if 'lazy-projection' in terminal
+                      else 'unclassified',
+                  'complete_export_warrant':row['rc']==0,
+              }
+              obligation_graph.append(graph)
+              print('NUCLEUS_GOAL_OBLIGATION='+json.dumps(graph),flush=True)
+          assert len(obligation_graph)==7
+          assert all(g['terminal_declaration'] for g in obligation_graph)
+          (out/'goal-obligations.json').write_text(
+              json.dumps(obligation_graph,indent=2))
           result={'source':os.environ['GITHUB_SHA'],'arena_sha':os.environ['ARENA_SHA'],
                   'artifact':os.environ['ARENA_ARTIFACT'],'seven':rows,
-                  'protected':protected,'full196':counts,'verdict_diffs':changes}
+                  'protected':protected,'full196':counts,'verdict_diffs':changes,
+                  'goal_obligations':obligation_graph}
           (out/'result.json').write_text(json.dumps(result,indent=2))
           print('NUCLEUS_ORIGIN_DIFFS='+json.dumps(changes),flush=True)
           if counts['origin_replay']['accepted']>118:
