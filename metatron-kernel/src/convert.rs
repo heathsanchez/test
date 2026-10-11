@@ -1278,6 +1278,32 @@ fn compare_values(
                     }
                     return Judgment::proven((),"checked-source-typed-projection-congruence");
                 }
+                // Reuse the *existing* typed receiver warrant at the
+                // actual source binder depth. This experimental path is
+                // independent of syntactic identity and requires separately
+                // checked equality for every pending application argument.
+                let source_typed_pair =
+                    std::env::var_os("NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8").is_some()
+                    && depth == context.len()
+                    && (7..=8).contains(&depth)
+                    && current_budget >= 512
+                    && checker.checked_source_conversion(
+                        left_structure,right_structure,context,
+                        current_budget.min(2048),
+                    ).is_proven()
+                    && same_closure_spine_congruence_in_context(
+                        checker,left_spine,right_spine,
+                        current_budget,depth,context,512,
+                    );
+                if source_typed_pair {
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_SOURCE_PAIR_DEPTH8").is_some(){
+                        eprintln!(
+                            "NUCLEUS_SOURCE_PAIR_DEPTH8:PROVEN:depth={depth}:left={left_structure:?}:right={right_structure:?}",
+                        );
+                    }
+                    return Judgment::proven((),"checked-source-paired-projection");
+                }
                 if same_rigid_application_congruence(
                     checker,
                     left_structure,
