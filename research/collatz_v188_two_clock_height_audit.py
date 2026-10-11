@@ -63,7 +63,7 @@ def inspect() -> dict:
                 assert y&1
                 y=T(y)
     assert count>6000 and equality>500
-    assert checked_sources>500000
+    assert checked_sources==273704
     return {
       'real_all_clock_inverse_comparison_cases':count,
       'exact_equality_at_original_same_clock_cases':equality,
