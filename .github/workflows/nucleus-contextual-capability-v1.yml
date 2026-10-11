@@ -1,11 +1,12 @@
-name: Nucleus contextual semantic capability strict A/B
+name: Nucleus complete source support caching strict A/B
 
 on:
   push:
-    branches: [nucleus-proof-carrying-context-v1]
+    branches: [nucleus-cached-support-v1]
     paths:
       - ".github/scripts/nucleus_contextual_capability_patch_v1.py"
       - ".github/scripts/nucleus_contextual_capability_gate_v1.py"
+      - ".github/scripts/nucleus_cached_support_patch_v1.py"
       - ".github/workflows/nucleus-contextual-capability-v1.yml"
       - "metatron-kernel/**"
   workflow_dispatch:
@@ -34,7 +35,7 @@ jobs:
           mkdir -p /tmp/nucleus-context-evidence
           git rev-parse HEAD > /tmp/nucleus-context-evidence/source-commit.txt
           git rev-parse HEAD:metatron-kernel > /tmp/nucleus-context-evidence/original-tree.txt
-          sha256sum .github/scripts/nucleus_contextual_capability_*.py > /tmp/nucleus-context-evidence/script-sha256.txt
+          sha256sum .github/scripts/nucleus_contextual_capability_*.py .github/scripts/nucleus_cached_support_patch_v1.py > /tmp/nucleus-context-evidence/script-sha256.txt
           cargo fetch --locked --manifest-path metatron-kernel/Cargo.toml
 
       - name: Build unmodified independent Nucleus reference
@@ -48,6 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/nucleus_contextual_capability_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_cached_support_patch_v1.py metatron-kernel
           git diff --check
           git diff -- metatron-kernel/src/typecheck.rs metatron-kernel/src/convert.rs > /tmp/nucleus-context-evidence/changed-rust-source.patch
           sha256sum metatron-kernel/src/typecheck.rs metatron-kernel/src/convert.rs > /tmp/nucleus-context-evidence/patched-file-sha256.txt
@@ -81,6 +83,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nucleus-contextual-semantic-${{ github.sha }}
+          name: nucleus-cached-support-${{ github.sha }}
           path: /tmp/nucleus-context-evidence/
           if-no-files-found: warn
