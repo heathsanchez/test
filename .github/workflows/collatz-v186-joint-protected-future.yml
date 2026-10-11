@@ -76,7 +76,7 @@ jobs:
           export PATH="$HOME/.elan/bin:$PATH"
           lake env lean --version | tee evidence/toolchain.txt
           lake build CollatzFinal > evidence/spine.log 2>&1
-          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift BinaryTernaryClassMassTransfer ParallelMeetingAffineCompiler CompactLeastBadCandidateSieve SparseFutureNormalForm UniversalAffineBiasOddBarrier AllScaleHighOddBarrier PersistentOddPrefixBarrier SourceSpecificFutureGuard; do
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift BinaryTernaryClassMassTransfer ParallelMeetingAffineCompiler CompactLeastBadCandidateSieve SparseFutureNormalForm UniversalAffineBiasOddBarrier AllScaleHighOddBarrier PersistentOddPrefixBarrier SourceSpecificFutureGuard GuardedInverseRuleClosure; do
             lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
           done
           lake env lean -DautoImplicit=false formal/Collatz/JointProtectedFutureResidual.lean 2>&1 | tee evidence/v186-lean.log
@@ -95,6 +95,7 @@ jobs:
             'v186_all_positive_sources_below_eight_are_good',
             'v186_hypothetical_least_bad_at_least_eight',
             'v186_hypothetical_least_bad_is_V178_irreducible',
+            'v186_hypothetical_least_bad_is_V180_irreducible',
             'v186_least_bad_joint_protected_future_residual',
             'v186_irreducible_future_equivalence_preserves_good']
           for t in required:
@@ -106,6 +107,7 @@ jobs:
               'formal/Collatz/JointProtectedFutureResidual.lean').read_bytes()).hexdigest(),
             'warrant':'LEAST_BAD_IF_EXISTS_IS_IRREDUCIBLE_AND_ALLPREFIX_ODD_AND_SOURCE_EXACT',
             'all_scale_density_zero_analytic_proof_in_Lean':False,
+            'both_205_and_29_source_compilers_replayed_in_Lean':True,
             'no_proof_that_candidate_set_empty':True,
             'global_collatz':'UNKNOWN','qed':False}
           pathlib.Path('evidence/v186-formal-seal.json').write_text(
@@ -146,12 +148,13 @@ jobs:
           assert a['source_commit']==b['source_commit']==head
           assert a['audit_sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
           assert a['candidate_natural_density_zero_is_not_emptiness']
+          assert b['both_205_and_29_source_compilers_replayed_in_Lean']
           assert b['no_proof_that_candidate_set_empty']
           assert not b['all_scale_density_zero_analytic_proof_in_Lean']
           assert data['global_collatz']==a['global_collatz']==b['global_collatz']=='UNKNOWN'
           assert data['qed'] is a['qed'] is b['qed'] is False
           seal={'schema':'COLLATZ_V186_FINAL','source_commit':head,
-            'status':'WARRANTED_FORMAL_JOINT_NECESSITY_AND_EXACT_FINITE_80_CLOCK_CRT_AUDIT',
+            'status':'WARRANTED_BOTH_SOURCE_BANKS_JOINT_NECESSITY_AND_EXACT_80_CLOCK_CRT_AUDIT',
             'analytic_all_r_density_zero':'ELEMENTARY_NOT_LEAN_FORMALIZED',
             'remaining':'universal source-exact persistence exclusion or future class anti-replenishment',
             'global_collatz':'UNKNOWN','qed':False}
