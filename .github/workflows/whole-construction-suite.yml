@@ -1,0 +1,43 @@
+name: Whole construction integrated real suite
+on:
+  push:
+    branches: [whole-construction-flash-mda-v1]
+    paths:
+      - 'open_development/whole_construction_suite.py'
+      - '.github/workflows/whole-construction-suite.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integrated:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install existing runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if test -f requirements.txt; then python -m pip install -r requirements.txt; fi
+      - name: Run real integrated developmental qualification
+        run: |
+          set -euo pipefail
+          python -m open_development.whole_construction_suite > whole_construction_suite.json
+          python - <<'PY'
+          import json
+          d=json.load(open("whole_construction_suite.json"))
+          assert d["status"]=="PASS_SOURCE_EXACT_INTEGRATED_RUNTIME"
+          assert len(d["tests"])==4
+          assert all(t["returncode"]==0 for t in d["tests"])
+          assert d["global_optimiser"]=="NOT_IMPLEMENTED"
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: whole-construction-integrated-suite
+          path: whole_construction_suite.json
+          if-no-files-found: warn
