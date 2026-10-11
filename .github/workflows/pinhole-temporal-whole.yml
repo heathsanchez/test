@@ -9,6 +9,7 @@ on:
       - 'open_development/pinhole_mda_future_value.py'
       - 'open_development/flash_whole_future_major_stress.py'
       - 'open_development/WHOLE_FUTURE_GAMBLE_PROTOCOL.md'
+      - 'open_development/whole_future_twelve_gambles.py'
       - '.github/workflows/pinhole-temporal-whole.yml'
   workflow_dispatch:
 permissions:
@@ -69,6 +70,18 @@ jobs:
           assert d['status']=='PASS_SOURCE_EXACT_INTEGRATED_RUNTIME'
           assert d['global_optimiser']=='NOT_IMPLEMENTED'
           PY
+      - name: Execute twelve-gamble qualification matrix and 100 whole-time permutations
+        run: |
+          set -euo pipefail
+          python -m open_development.whole_future_twelve_gambles | tee twelve_gamble_evidence.json
+          python - <<'PY'
+          import json
+          d=json.load(open('twelve_gamble_evidence.json'))
+          assert d['status']=='PASS_TWELVE_GAMBLE_CONTROL_MATRIX'
+          assert len(d['tests'])==12
+          assert d['whole_future_permutation_controls']==100
+          assert d['strict_global_economic_win']=='UNKNOWN'
+          PY
       - name: Requalify three-world shared construction
         run: |
           set -euo pipefail
@@ -84,5 +97,6 @@ jobs:
             mda_future_value.json
             flash_major_stress.json
             integrated_gamble_evidence.json
+            twelve_gamble_evidence.json
             three_world_evidence.json
           if-no-files-found: warn
