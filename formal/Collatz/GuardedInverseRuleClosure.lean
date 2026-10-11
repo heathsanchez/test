@@ -78,7 +78,9 @@ theorem v180_inverse_seed_all_offsets_lower
     Nat.mul_le_mul_right w r.liftedSourceSlopeDominates
   have hCap :
       r.earlier + 3^(oddCount r.source (r.priorClock+1))*w <
-      r.source + 2^(r.priorClock+1)*w := by omega
+      r.source + 2^(r.priorClock+1)*w := by
+    have hBase : r.earlier < r.source := r.earlierSmaller
+    omega
   have hAll :
       iter shortcut (r.priorClock+1)
         (r.source+2^(r.priorClock+1)*w) =
