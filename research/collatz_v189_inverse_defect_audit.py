@@ -90,6 +90,7 @@ def audit_meetings(endpoint_map:dict[int,list[tuple[int,int,int]]])->dict:
     true_meetings=0
     zero_defect_meetings=0
     smaller_early_clock_attempts=0
+    quantitative_early_clock_source_ceiling_cases=0
     strict_negative_witness=0
     examples=[]
     for target,entries in endpoint_map.items():
@@ -99,6 +100,9 @@ def audit_meetings(endpoint_map:dict[int,list[tuple[int,int,int]]])->dict:
                     break
                 assert 3**i*2**j*(n+1)<=(
                     3**j*2**i*(p+1)+2**j*d),(n,p,i,j,target,d)
+                if j<=i and p<=n:
+                    assert d>=3**j*2**(i-j)*(n-p),(n,p,i,j,target,d)
+                    quantitative_early_clock_source_ceiling_cases+=1
                 if d==0 and j<=i:
                     assert p>=n,(n,p,i,j,target)
                     zero_defect_meetings+=1
@@ -121,6 +125,7 @@ def audit_meetings(endpoint_map:dict[int,list[tuple[int,int,int]]])->dict:
     return {
       'independent_real_two_clock_meetings_checked':true_meetings,
       'zero_defect_at_earlier_companion_clock_cases':zero_defect_meetings,
+      'quantitative_early_clock_source_reduction_ceiling_cases':quantitative_early_clock_source_ceiling_cases,
       'nonzero_defect_necessary_for_smaller_earlier_clock_cases':smaller_early_clock_attempts,
       'later_clock_smaller_source_cases':strict_negative_witness,
       'sample_smaller_source_with_nonzero_slack':examples
