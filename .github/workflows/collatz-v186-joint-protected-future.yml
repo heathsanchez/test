@@ -1,0 +1,165 @@
+name: Collatz V186 joint protected future source and high-odd reclosure
+on:
+  push:
+    branches: [collatz-v186-joint-protected-future-reclosure]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-joint-candidate-source-population:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconcile source-index rules, all-prefix parity and exact CRT joint candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v186_joint_reclosure_audit | tee evidence/v186-stdout.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v186-joint-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V186_JOINT_PROTECTED_FUTURE_RECONCILIATION'
+          assert d['source_modulus']==5971968
+          assert d['certified_source_position_unexcluded_per_M']==132150
+          a=d['weighted_CRT_suffix_dynamic_program']
+          assert [r['parity_clocks'] for r in a]==[20,40,60,80]
+          assert [int(r['joint_candidate_residue_count']) for r in a]==[
+            10567695,4092614593656,
+            1912173658182124863,983503451589865724218308]
+          check=d['independent_real_shortcut_direct_k20_control']
+          assert check['actual_source_residues_replayed']==1048576
+          assert check['full_20_clock_high_odd_source_residues']==49893
+          assert check['independent_direct_joint_count']==10567695
+          assert check['matches_CRT_weighted_suffix_dp']
+          assert d['unbounded_analytic_source_candidate_natural_density']=='ZERO'
+          assert not d['binomial_all_r_analytic_argument_separately_formalized_in_Lean']
+          assert d['joint_candidate_natural_density_zero_Does_NOT_Eliminate_One_Source']
+          assert not d['all_scale_invariant_bad_basin_excluded']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          source1=pathlib.Path('research/collatz_v178_compact_bank.json').read_bytes()
+          source2=pathlib.Path('research/collatz_v180_inverse_rule_bank.json').read_bytes()
+          assert d['V178_bank_sha256']==hashlib.sha256(source1).hexdigest()
+          assert d['V180_bank_sha256']==hashlib.sha256(source2).hexdigest()
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V186_EXACT_JOINT_POPULATION',
+            'source_commit':head,
+            'audit_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'source_rule_count':234,
+            'joint_20_direct_independent_control':True,
+            'candidate_natural_density_zero_is_not_emptiness':True,
+            'scope':'FULL_PERIOD_MODULAR_CRT_JOINT_THROUGH_80_PARITY_CLOCKS',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v186-exact-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v186-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-joint-source-residual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check true least-bad source irreducible AND all-clock parity and exact coefficient
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift BinaryTernaryClassMassTransfer ParallelMeetingAffineCompiler CompactLeastBadCandidateSieve SparseFutureNormalForm UniversalAffineBiasOddBarrier AllScaleHighOddBarrier PersistentOddPrefixBarrier SourceSpecificFutureGuard; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/JointProtectedFutureResidual.lean 2>&1 | tee evidence/v186-lean.log
+          python3 - <<'PY'
+          import json,re,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v186-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-20000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          required=[
+            'v186_all_positive_sources_below_eight_are_good',
+            'v186_hypothetical_least_bad_at_least_eight',
+            'v186_hypothetical_least_bad_is_V178_irreducible',
+            'v186_least_bad_joint_protected_future_residual',
+            'v186_irreducible_future_equivalence_preserves_good']
+          for t in required:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V186_FORMAL_JOINT_PROTECTED_FUTURE',
+            'source_commit':head,'axioms':ax,
+            'source_sha256':hashlib.sha256(pathlib.Path(
+              'formal/Collatz/JointProtectedFutureResidual.lean').read_bytes()).hexdigest(),
+            'warrant':'LEAST_BAD_IF_EXISTS_IS_IRREDUCIBLE_AND_ALLPREFIX_ODD_AND_SOURCE_EXACT',
+            'all_scale_density_zero_analytic_proof_in_Lean':False,
+            'no_proof_that_candidate_set_empty':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v186-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v186-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-final:
+    needs: [exact-joint-candidate-source-population,formal-joint-source-residual]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v186-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: v186-formal
+          path: evidence/formal
+      - name: Same source and no hidden global convergence claim
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/exact/v186-joint-exact.json')
+          a=json.loads(pathlib.Path('evidence/exact/v186-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v186-formal-seal.json').read_text())
+          data=json.loads(p.read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['audit_sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
+          assert a['candidate_natural_density_zero_is_not_emptiness']
+          assert b['no_proof_that_candidate_set_empty']
+          assert not b['all_scale_density_zero_analytic_proof_in_Lean']
+          assert data['global_collatz']==a['global_collatz']==b['global_collatz']=='UNKNOWN'
+          assert data['qed'] is a['qed'] is b['qed'] is False
+          seal={'schema':'COLLATZ_V186_FINAL','source_commit':head,
+            'status':'WARRANTED_FORMAL_JOINT_NECESSITY_AND_EXACT_FINITE_80_CLOCK_CRT_AUDIT',
+            'analytic_all_r_density_zero':'ELEMENTARY_NOT_LEAN_FORMALIZED',
+            'remaining':'universal source-exact persistence exclusion or future class anti-replenishment',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v186-final.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v186-final
+          path: evidence/v186-final.json
+          if-no-files-found: error
