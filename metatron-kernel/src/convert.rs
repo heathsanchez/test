@@ -1315,6 +1315,28 @@ fn compare_values(
                             "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=pair:depth={depth}:budget={current_budget}:left_type={left_type:?}:left_index={left_index}:left_structure={left_structure:?}:left_exposed={left_value:?}:right_type={right_type:?}:right_index={right_index}:right_structure={right_structure:?}:right_exposed={right_value:?}"
                         );
                     }
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_TERMINAL_CAUSE").is_some()
+                        && (6..=10).contains(&depth)
+                    {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static COUNT:AtomicUsize=AtomicUsize::new(0);
+                        if COUNT.fetch_add(1,Ordering::Relaxed)<48 {
+                            let receiver=checker.machine().expose_for_conversion(
+                                structure.clone(),Transparency::Full,512,
+                            );
+                            let field=checker.machine().projection_field_for_conversion(
+                                structure.clone(),*type_name,*index,512,
+                            );
+                            eprintln!(
+                                "NUCLEUS_TERMINAL_CAUSE:depth={depth}:type={type_name:?}:index={index}:receiver_expr={:?}:receiver_env={}:receiver={}:field={}:pending={}",
+                                structure.expr,structure.env.id(),
+                                format!("{receiver:?}").chars().take(1300).collect::<String>(),
+                                format!("{field:?}").chars().take(1300).collect::<String>(),
+                                spine.len(),
+                            );
+                        }
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
@@ -1370,6 +1392,28 @@ fn compare_values(
                             "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=single:depth={depth}:budget={current_budget}:projection_type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}"
                         );
                     }
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_TERMINAL_CAUSE").is_some()
+                        && (6..=10).contains(&depth)
+                    {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static COUNT:AtomicUsize=AtomicUsize::new(0);
+                        if COUNT.fetch_add(1,Ordering::Relaxed)<48 {
+                            let receiver=checker.machine().expose_for_conversion(
+                                structure.clone(),Transparency::Full,512,
+                            );
+                            let field=checker.machine().projection_field_for_conversion(
+                                structure.clone(),*type_name,*index,512,
+                            );
+                            eprintln!(
+                                "NUCLEUS_TERMINAL_CAUSE:depth={depth}:type={type_name:?}:index={index}:receiver_expr={:?}:receiver_env={}:receiver={}:field={}:pending={}",
+                                structure.expr,structure.env.id(),
+                                format!("{receiver:?}").chars().take(1300).collect::<String>(),
+                                format!("{field:?}").chars().take(1300).collect::<String>(),
+                                spine.len(),
+                            );
+                        }
+                    }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
                 if current_budget == 0 {
@@ -1401,6 +1445,28 @@ fn compare_values(
                         eprintln!(
                             "NUCLEUS_POST_IOTA_PROJECTION_GAP:shape=single:depth={depth}:budget={current_budget}:projection_type={type_name:?}:index={index}:structure={structure:?}:pending={spine:?}"
                         );
+                    }
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_TERMINAL_CAUSE").is_some()
+                        && (6..=10).contains(&depth)
+                    {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static COUNT:AtomicUsize=AtomicUsize::new(0);
+                        if COUNT.fetch_add(1,Ordering::Relaxed)<48 {
+                            let receiver=checker.machine().expose_for_conversion(
+                                structure.clone(),Transparency::Full,512,
+                            );
+                            let field=checker.machine().projection_field_for_conversion(
+                                structure.clone(),*type_name,*index,512,
+                            );
+                            eprintln!(
+                                "NUCLEUS_TERMINAL_CAUSE:depth={depth}:type={type_name:?}:index={index}:receiver_expr={:?}:receiver_env={}:receiver={}:field={}:pending={}",
+                                structure.expr,structure.env.id(),
+                                format!("{receiver:?}").chars().take(1300).collect::<String>(),
+                                format!("{field:?}").chars().take(1300).collect::<String>(),
+                                spine.len(),
+                            );
+                        }
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
