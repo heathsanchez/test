@@ -4,6 +4,7 @@ on:
     branches: [whole-construction-flash-mda-v1]
     paths:
       - 'open_development/pinhole_temporal_whole_v1.py'
+      - 'open_development/pinhole_whole_time_major.py'
       - '.github/workflows/pinhole-temporal-whole.yml'
   workflow_dispatch:
 permissions:
@@ -23,6 +24,17 @@ jobs:
         run: |
           set -euo pipefail
           python -m open_development.pinhole_temporal_whole_v1 | tee temporal_evidence.json
+      - name: Exhaustive whole-time major experiment
+        run: |
+          set -euo pipefail
+          python -m open_development.pinhole_whole_time_major | tee whole_time_major.json
+          python - <<'PY'
+          import json
+          d=json.load(open('whole_time_major.json'))
+          assert d['status']=='PASS_EXACT_BOUNDED_WHOLE_TIME'
+          assert d['mda_exact_revocation_shadows']==6
+          assert d['mda_protected_future_replays']==16
+          PY
       - name: Requalify three-world shared construction
         run: |
           set -euo pipefail
@@ -33,5 +45,6 @@ jobs:
           name: pinhole-whole-time-evidence
           path: |
             temporal_evidence.json
+            whole_time_major.json
             three_world_evidence.json
           if-no-files-found: warn
