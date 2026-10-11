@@ -17,10 +17,18 @@ jobs:
           set -euo pipefail
           mkdir -p evidence
           python3 research/collatz_v177_parallel_affine_audit.py > evidence/v177-exact.json
+          python3 research/collatz_v177_residue_exclusion_audit.py > evidence/v177-excluded-residues.json
           python3 - <<'PY'
           import pathlib,json,hashlib,subprocess
           p=pathlib.Path('evidence/v177-exact.json')
           r=json.loads(p.read_text())
+          residue=json.loads(pathlib.Path('evidence/v177-excluded-residues.json').read_text())
+          assert residue['schema']=='COLLATZ_V177_THREE_INFINITE_LEAST_BAD_EXCLUSION_CLASSES'
+          assert residue['all_three_union_numerator']==59
+          assert residue['all_three_union_denominator']==3456
+          assert residue['pairwise_disjoint_by_congruence']
+          assert residue['not_terminal_certification_of_entire_progressions']
+          assert residue['global_collatz']=='UNKNOWN' and residue['qed'] is False
           assert r['schema']=='COLLATZ_V177_ALL_OFFSET_TWO_CLOCK_CERTIFICATE_COMPILER'
           assert len(r['bases'])==4
           assert r['bases'][0]['n_source_slope']==384
@@ -33,6 +41,7 @@ jobs:
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           seal={'schema':'COLLATZ_V177_EXACT','source_commit':sha,
                 'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                'residue_audit_sha256':hashlib.sha256(pathlib.Path('evidence/v177-excluded-residues.json').read_bytes()).hexdigest(),
                 'scope':'BOUNDED_FOUR_BASE_REPLAY_PLUS_DUAL_BASIN_CONTROL',
                 'global_collatz':'UNKNOWN','qed':False}
           pathlib.Path('evidence/v177-exact-seal.json').write_text(
@@ -125,8 +134,10 @@ jobs:
           assert a['qed'] is b['qed'] is False
           assert a['global_collatz']==b['global_collatz']=='UNKNOWN'
           assert a['scope']=='BOUNDED_FOUR_BASE_REPLAY_PLUS_DUAL_BASIN_CONTROL'
+          assert a['residue_audit_sha256']
           out={'schema':'COLLATZ_V177_FINAL','source_commit':sha,
                'status':'WARRANTED_FORMAL_ALL_OFFSET_TWO_CLOCK_FAMILY_BUT_NO_CERTIFICATE_MASS_GAIN',
+               'least_bad_excluded_periodic_fraction':'59/3456',
                'all_scale_new_certified_mass':'UNKNOWN',
                'global_collatz':'UNKNOWN','qed':False}
           pathlib.Path('evidence/v177-final.json').write_text(
