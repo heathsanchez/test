@@ -89,6 +89,23 @@ def main():
             'rational_upper_bound_denominator':upper.denominator,
             'exact_integer_binomial_bound_verified':True,
         })
+    # For EVERY chosen scale an explicit large POSITIVE Mersenne source
+    # satisfies the high-odd condition, so the NECESSARY inequality
+    # does not eliminate all integer sources at any finite scale.
+    # The witness changes with m; it is never a divergent trajectory.
+    mersenne_controls=[]
+    for m in (1,2,4,8,16,32,64,128):
+        K=10*m+1
+        n=(1<<K)-1
+        endpoint,a=clock(n,5*m)
+        assert n>=1<<(10*m)
+        assert a==5*m>3*m
+        assert endpoint==3**(5*m)*(1<<(5*m+1))-1
+        mersenne_controls.append({
+            'm':m,'source_bit_depth':K,
+            'actual_first_5m_odd_steps':a,
+            'source_exceeds_the_height_threshold':True
+        })
     # Protected generalized other-basin control: not true +1.
     G=lambda x: x//2 if x%2==0 else (3*x+7)//2
     assert [G(x) for x in (5,11,20,10)]==[11,20,10,5]
@@ -103,6 +120,8 @@ def main():
         'all_source_5m_barrier_formally_requested':True,
         'source_height_threshold_not_uniform_in_m':True,
         'fixed_bad_integer_does_not_satisfy_height_condition_for_all_m':True,
+        'mersenne_high_odd_finite_scale_witnesses':mersenne_controls,
+        'each_scale_has_an_explicit_positive_high_odd_witness':True,
         'synthetic_G7_distinct_future_cycles_protected':True,
         'global_collatz':'UNKNOWN','qed':False
     }
