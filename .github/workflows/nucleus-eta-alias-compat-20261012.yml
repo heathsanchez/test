@@ -1,0 +1,169 @@
+name: Nucleus eta-constructor alias compatibility
+on:
+  push:
+    branches: [nucleus-eta-alias-compat-20261012]
+    paths: [".github/workflows/nucleus-eta-alias-compat-20261012.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  soundness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      UPSTREAM_ARENA_SHA: 76ddcf85efcb87c231ad2e5b5103f8f899a70e47
+      UPSTREAM_ARENA_RUN: "38180358622"
+      UPSTREAM_ARENA_ARTIFACT: "11717309790"
+      FROZEN_196_ARTIFACT: "11272848230"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build and test unmodified independent Nucleus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-eta/reports
+          git rev-parse HEAD
+          git rev-parse HEAD:metatron-kernel
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-eta/baseline
+
+      - name: Build the currently investigated source-bound candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_contextual_capability_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_field_application_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_field_premise_trace_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_argument_premise_triad_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_stage16_typed_operand_patch_v1.py metatron-kernel
+          git diff --check
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-eta/candidate
+          git diff -- metatron-kernel/src/typecheck.rs > /tmp/nucleus-eta/reports/source-candidate.patch
+
+      - name: Acquire exact upstream-generated and protected NDJSON corpora
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-eta/upstream-zip /tmp/nucleus-eta/frozen-zip /tmp/nucleus-eta/upstream /tmp/nucleus-eta/frozen
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$UPSTREAM_ARENA_ARTIFACT/zip" > /tmp/nucleus-eta/upstream.zip
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$FROZEN_196_ARTIFACT/zip" > /tmp/nucleus-eta/frozen.zip
+          unzip -q /tmp/nucleus-eta/upstream.zip -d /tmp/nucleus-eta/upstream-zip
+          unzip -q /tmp/nucleus-eta/frozen.zip -d /tmp/nucleus-eta/frozen-zip
+          tar --no-same-owner -xzf /tmp/nucleus-eta/upstream-zip/lean-arena-tests.tar.gz -C /tmp/nucleus-eta/upstream
+          tar --no-same-owner -xzf /tmp/nucleus-eta/frozen-zip/lean-arena-tests.tar.gz -C /tmp/nucleus-eta/frozen
+          test -s /tmp/nucleus-eta/upstream/bad/bugs/eta-ctor-alias.ndjson
+          test -s /tmp/nucleus-eta/frozen/good/init-prelude.ndjson
+
+      - name: Run decisive negative, original 196-case protection and false-index mutant
+        shell: bash
+        run: |
+          set -euo pipefail
+          ulimit -s 8192
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time
+
+          out=pathlib.Path('/tmp/nucleus-eta/reports')
+          old=pathlib.Path('/tmp/nucleus-eta/frozen')
+          new=pathlib.Path('/tmp/nucleus-eta/upstream')
+          source=new/'bad/bugs/eta-ctor-alias.ndjson'
+          raw=source.read_bytes()
+          first=json.loads(raw.splitlines()[0])
+          metadata=first.get('meta')
+          if not metadata:
+              raise AssertionError('The test input lacks official NDJSON metadata')
+          assert metadata['format']['version']=='3.1.0', metadata
+          def sha(data): return hashlib.sha256(data).hexdigest()
+
+          inputs=[(p, 0) for p in sorted((old/'good').rglob('*.ndjson'))]
+          inputs += [(p, 1) for p in sorted((old/'bad').rglob('*.ndjson'))]
+          assert len(inputs)==196, len(inputs)
+          assert sum(want==0 for _,want in inputs)==125
+          assert sum(want==1 for _,want in inputs)==71
+
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          forged=false_index(extract((old/'good/init-prelude.ndjson').read_bytes()))
+          assert sha(forged)=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+
+          result={
+            'schema':'nucleus-eta-ctor-alias-compat-v1',
+            'upstream_arena_sha':os.environ['UPSTREAM_ARENA_SHA'],
+            'upstream_arena_run':os.environ['UPSTREAM_ARENA_RUN'],
+            'upstream_artifact_id':int(os.environ['UPSTREAM_ARENA_ARTIFACT']),
+            'frozen_artifact_id':int(os.environ['FROZEN_196_ARTIFACT']),
+            'nucleus_source_commit':os.environ['GITHUB_SHA'],
+            'format_metadata':metadata,
+            'alias_sha256':sha(raw),
+            'frozen_count':len(inputs),
+            'modes':{}
+          }
+          failures=[]
+          def invoke(exe,data,env,timeout=35):
+              try:
+                  proc=subprocess.run([str(exe)],input=data,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout,env=env)
+                  return {'rc':proc.returncode,'seconds':None,'stderr':proc.stderr.decode(errors='replace')[:500]}
+              except subprocess.TimeoutExpired as exc:
+                  return {'rc':'TIMEOUT','seconds':timeout,'stderr':str(exc)[:500]}
+
+          for mode in ('baseline','candidate'):
+              env=dict(os.environ)
+              if mode=='candidate':
+                  env.update({
+                    'NUCLEUS_EXPERIMENTAL_RELEVANCE':'1',
+                    'NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER':'1',
+                    'NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE':'1',
+                    'NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE':'1',
+                    'NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION':'1',
+                    'NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION':'1'
+                  })
+              exe=pathlib.Path('/tmp/nucleus-eta')/mode
+              b=exe.read_bytes()
+              alias=invoke(exe,raw,env)
+              print('ETA_CTOR_ALIAS='+json.dumps({'mode':mode,'rc':alias['rc'],'sha256':result['alias_sha256'],'format':metadata['format']['version']}),flush=True)
+              rows=[]
+              for path,expected in inputs:
+                  got=invoke(exe,path.read_bytes(),env)
+                  rows.append((str(path.relative_to(old)),expected,got['rc']))
+              counts={
+                  'accept':sum(w==0 and r==0 for _,w,r in rows),
+                  'reject':sum(w==1 and r==1 for _,w,r in rows),
+                  'unknown':sum(r==2 for _,_,r in rows),
+              }
+              wrong=[{'case':p,'expected':w,'actual':r} for p,w,r in rows if r in (0,1) and r!=w]
+              errors=[{'case':p,'actual':r} for p,w,r in rows if r not in (0,1,2)]
+              unknowns=[p for p,_,r in rows if r==2]
+              forged_result=invoke(exe,forged,env)
+              mode_report={
+                  'binary_sha256':sha(b),'alias':alias,'frozen_counts':counts,'wrong':wrong,
+                  'errors':errors,'unknowns':unknowns,'false_index':forged_result,
+                  'frozen_verdicts':[{'case':p,'expected':w,'actual':r} for p,w,r in rows],
+              }
+              result['modes'][mode]=mode_report
+              print('NUCLEUS_ETA_GATE='+json.dumps({'mode':mode,'alias':alias['rc'],'frozen':counts,'wrong':len(wrong),'errors':len(errors),'false_index':forged_result['rc']}),flush=True)
+              if alias['rc'] != 1: failures.append(mode+': eta-ctor-alias was not REJECT')
+              if wrong or errors: failures.append(mode+': regression on 196 cases')
+              if counts != {'accept':118,'reject':71,'unknown':7}:
+                  failures.append(mode+': original frozen corpus differs from 118/71/7')
+              if forged_result['rc'] not in (1,2):
+                  failures.append(mode+': false-index mutant accepted or errored')
+
+          result['failures']=failures
+          (out/'report.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('NUCLEUS_ETA_FINAL='+json.dumps({'passed':not failures,'failures':failures,'report':'report.json'}),flush=True)
+          assert not failures, failures
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-eta-ctor-alias-compat-report
+          path: /tmp/nucleus-eta/reports/
+          if-no-files-found: warn
