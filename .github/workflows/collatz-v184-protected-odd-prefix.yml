@@ -1,0 +1,158 @@
+name: Collatz V184 protected future every-prefix high odd necessity
+on:
+  push:
+    branches: [collatz-v184-persistent-odd-prefix]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-protected-future:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay genuine +1 protected-prefix inequalities and perpetual G5 negative control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v184_persistent_odd_audit | tee evidence/v184-summary.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v184-odd-prefix.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V184_PROTECTED_FUTURE_ALL_PREFIX_ODD_BARRIER'
+          assert d['true_T_odd']=='(3n+1)/2'
+          assert d['number_of_source_clock_product_inequalities_replayed']>100000
+          assert len(d['candidate_parity_word_joint_prefix_language'])==16
+          assert len(d['Mersenne_finite_prefix_controls'])==6
+          g=d['G5_real_dual_cycle_negative_control']
+          assert g['cycle_length']==27 and g['cycle_odd_count']==17
+          assert g['cycle_minimum_source']==187
+          assert g['five_block_inequality_all_positive_r_proved_by_periodic_reduction']
+          assert g['universal_true_plus_one_step_bound_fails_for_synthetic_at_9']
+          assert d['27_first_failed_five_prefix_after_eventual_descent']==70
+          assert d['not_a_global_termination_or_density_proof']
+          assert d['parity_word_rarity_does_not_eliminate_single_least_bad']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V184_EXACT_PROTECTED_FUTURE',
+            'source_commit':sha,
+            'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'scope':'BOUNDED_EXACT_TRUE_SOURCE_PREFIXES_PLUS_INFINITE_G5_CYCLE_COUNTERMODEL',
+            'infinite_G5_countercontrol_symbolically_complete':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v184-exact-seal.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v184-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-all-clock-protected-future:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check EVERY-clock source-protected integer growth and all positive 5r barriers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine UniversalAffineBiasOddBarrier AllScaleHighOddBarrier; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/PersistentOddPrefixBarrier.lean 2>&1 | tee evidence/v184-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v184-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-24000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=[
+            'v184_true_even_shortcut_identity',
+            'v184_true_odd_step_barrier',
+            'v184_orbit_protected_product',
+            'v184_minimal_bad_all_future_bounded_below',
+            'v184_nondecreasing_orbit_forces_odd_power',
+            'v184_least_bad_all_clock_odd_power',
+            'v184_nondecreasing_all_five_block_prefixes',
+            'v184_least_bad_perpetual_three_fifths_odd']
+          for t in targets:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V184_FORMAL_PERSISTENT_ODD',
+            'source_commit':head,'axioms':ax,
+            'lean_sha256':hashlib.sha256(pathlib.Path(
+                'formal/Collatz/PersistentOddPrefixBarrier.lean').read_bytes()).hexdigest(),
+            'height_guard_from_V181_required':False,
+            'protected_future_lower_bound_needed':True,
+            'scope':'ALL_CLOCK_PERSISTENT_8_BARRIER_AND_LEAST_BAD_EVERY_5R_HIGH_ODD',
+            'not_global_Collatz_QED':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v184-formal-seal.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v184-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-evidence:
+    needs: [exact-protected-future,formal-all-clock-protected-future]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v184-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: v184-formal
+          path: evidence/formal
+      - name: Same-source formal versus protected-future numerical scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          e=json.loads(pathlib.Path('evidence/exact/v184-exact-seal.json').read_text())
+          f=json.loads(pathlib.Path('evidence/formal/v184-formal-seal.json').read_text())
+          d=json.loads(pathlib.Path('evidence/exact/v184-odd-prefix.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert e['source_commit']==f['source_commit']==head
+          assert not f['height_guard_from_V181_required']
+          assert f['protected_future_lower_bound_needed']
+          assert e['infinite_G5_countercontrol_symbolically_complete']
+          assert e['global_collatz']==f['global_collatz']==d['global_collatz']=='UNKNOWN'
+          assert e['qed'] is f['qed'] is d['qed'] is False
+          seal={'schema':'COLLATZ_V184_FINAL','source_commit':head,
+            'status':'WARRANTED_TRUE_ALL_PREFIX_LEAST_BAD_HIGH_ODD_NECESSITY_NOT_QED',
+            'protected_future':'true least-bad orbit has no smaller source at any actual clock',
+            'removed_prior_source_height_guard':True,
+            'still_missing':'prove impossibility of a persistent high odd positive source under exact all-source +1 arithmetic',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v184-final.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v184-final
+          path: evidence/v184-final.json
+          if-no-files-found: error
