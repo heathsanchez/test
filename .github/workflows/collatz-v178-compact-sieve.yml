@@ -1,0 +1,162 @@
+name: Collatz V178 compact least-bad original-source sieve
+on:
+  push:
+    branches: [collatz-v178-compact-least-bad-sieve]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-residue-elimination:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct and replay all source/clock base meetings; independently count full periodic residue union
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v178_compact_bank_audit | tee evidence/v178-stdout.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v178-audit.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V178_COMPACT_LEAST_BAD_RESIDUE_ELIMINATION'
+          assert d['source_head_N']==16384
+          assert d['maximum_forward_clock']==12
+          assert d['maximum_earlier_clock']==6
+          assert d['common_period']==2985984
+          assert d['distinct_progressions_before_compaction']==15123
+          assert d['kernel_base_rule_entries']==205
+          assert d['exact_residue_positions_excluded_as_LEAST_bad']==2915346
+          assert d['exact_residue_positions_UNRESOLVED_in_grammar']==70638
+          assert d['selected_base_plus_offset_real_meetings_replayed']==1230
+          assert d['zero_count_of_mod3_equals2_survivors']==0
+          assert d['survivor_residue_mod12_counts']=={'3':43284,'7':27354}
+          assert d['sample_sources_above_activation_checked']>18000
+          assert d['negative_controls']['synthetic_3n_plus7_second_basin_exists']
+          assert d['negative_controls']['least_bad_candidate_exclusion_is_not_terminal_certification']
+          assert not d['all_scale_complete_elimination_proved']
+          assert d['asymptotic_mask_is_not_terminal_good_mass']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V178_EXACT_SIEVE_SEAL',
+            'source_commit':head,
+            'status':'WARRANTED_EXACT_205_TRUE_SOURCE_RULES_EXCLUDE_2915346_OF_2985984_CANDIDATE_RESIDUES',
+            'data_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'bank_sha256':hashlib.sha256(pathlib.Path(
+              'research/collatz_v178_compact_bank.json').read_bytes()).hexdigest(),
+            'survivors_are_valid_residuals_not_divergent_claims':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v178-exact-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v178-exact-sieve
+          path: evidence/
+          if-no-files-found: error
+  formal-205-base-rules:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently kernel-check 205 actual source/clock meetings and unbounded source-capped least-bad exclusion
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift BinaryTernaryClassMassTransfer ParallelMeetingAffineCompiler; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/CompactLeastBadCandidateSieve.lean 2>&1 | tee evidence/v178-lean.log
+          python3 - <<'PY'
+          import pathlib,re,json,hashlib,subprocess
+          log=pathlib.Path('evidence/v178-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-18000:]
+          axioms={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            axioms[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          for t in (
+             'v178_rule_all_offsets_have_real_lower_merge',
+             'v178_rule_excludes_least_bad',
+             'v178_compact_bank_sound',
+             'v178_no_least_bad_source_two_mod_three'):
+            assert 'CollatzFinal.SourceProduct.'+t in axioms,t
+          code=pathlib.Path('formal/Collatz/CompactLeastBadCandidateSieve.lean').read_text()
+          assert code.count('by decide, by decide, by decide, by decide')==205
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V178_FORMAL_ALL_OFFSET_SIEVE',
+            'source_commit':head,'axioms':axioms,
+            'status':'WARRANTED_FORMAL_205_INDIVIDUALLY_PROVED_BASE_SOURCE_MEETINGS_AND_UNIVERSAL_MINIMAL_BAD_EXCLUSION',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'all_205_base_proof_terms_explicit':True,
+            'mask_cardinality_not_compiled_as_Lean_theorem':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v178-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v178-formal-sieve
+          path: evidence/
+          if-no-files-found: error
+
+  final-seal:
+    needs: [exact-residue-elimination,formal-205-base-rules]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v178-exact-sieve
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v178-formal-sieve
+          path: evidence/formal
+      - name: Exact-source reconciliation of Lean rule bank and independent periodic residue audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          x=json.loads(pathlib.Path('evidence/exact/v178-exact-seal.json').read_text())
+          f=json.loads(pathlib.Path('evidence/formal/v178-formal-seal.json').read_text())
+          a=json.loads(pathlib.Path('evidence/exact/v178-audit.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert x['source_commit']==f['source_commit']==head
+          assert f['all_205_base_proof_terms_explicit']
+          assert f['mask_cardinality_not_compiled_as_Lean_theorem']
+          assert a['exact_residue_positions_excluded_as_LEAST_bad']==2915346
+          assert a['exact_residue_positions_UNRESOLVED_in_grammar']==70638
+          assert a['global_collatz']==x['global_collatz']==f['global_collatz']=='UNKNOWN'
+          assert a['qed'] is x['qed'] is f['qed'] is False
+          seal={'schema':'COLLATZ_V178_FINAL','source_commit':head,
+            'status':'WARRANTED_FORMAL_205_REAL_SOURCE_ALL_OFFSET_EXCLUSION_PLUS_EXACT_97_634_PERCENT_RESIDUE_SIEVE_NOT_QED',
+            'period':2985984,
+            'excluded_as_possible_least_bad':2915346,
+            'grammar_residual':70638,
+            'strict_original_source_activation_threshold':16384,
+            'negative_control':'G7 distinct positive future classes retained; no excluded source is asserted terminal-good',
+            'missing':'A universal rule producer or invariant-class mass obstruction closing the genuine residual',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v178-final.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v178-final
+          path: evidence/v178-final.json
+          if-no-files-found: error
