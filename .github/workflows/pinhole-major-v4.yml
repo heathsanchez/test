@@ -1,0 +1,44 @@
+name: Pinhole V4 major three-world qualification
+on:
+  push:
+    branches: [whole-construction-flash-mda-v1]
+    paths:
+      - 'open_development/pinhole_major_v4.py'
+      - '.github/workflows/pinhole-major-v4.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  three-worlds:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact three-world source-bound reconstruction
+        run: |
+          set -euo pipefail
+          python -m open_development.pinhole_major_v4 | tee pinhole_major_v4.json
+          python - <<'PY'
+          import json
+          d=json.load(open('pinhole_major_v4.json'))
+          assert d['status']=='PASS_EXACT_THREE_WORLD_CLOSURE'
+          assert d['mda_protected']==16 and d['mda_nodes']==6
+          assert d['domain_semantics_supplied'] is True
+          PY
+      - name: Existing independent developmental qualification
+        run: |
+          set -euo pipefail
+          python -m open_development.whole_construction_suite > whole_construction_suite.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pinhole-major-v4
+          path: |
+            pinhole_major_v4.json
+            whole_construction_suite.json
+          if-no-files-found: warn
