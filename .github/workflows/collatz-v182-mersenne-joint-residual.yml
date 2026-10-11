@@ -94,7 +94,8 @@ jobs:
             'v182_mersenne_all_odd_count',
             'v182_pow_two_mono',
             'v182_mersenne_passes_every_applicable_v181_guard',
-            'v182_each_positive_scale_has_true_high_odd_source'
+            'v182_each_positive_scale_has_true_high_odd_source',
+            'v182_smallest_joint_residual_is_actually_good'
           ]
           for name in targets:
             assert 'CollatzFinal.SourceProduct.'+name in axioms,name
