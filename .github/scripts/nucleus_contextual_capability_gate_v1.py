@@ -32,11 +32,9 @@ ARMS = {
     "field_application":("/tmp/nucleus-context",{
         "NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION":"1",
     }),
-    "combined":("/tmp/nucleus-context",{
-        "NUCLEUS_EXPERIMENTAL_CONTEXT_MEMO":"1",
-        "NUCLEUS_EXPERIMENTAL_CONTEXT_VISIT":"1",
-        "NUCLEUS_EXPERIMENTAL_CAPTURE_SUPPORT":"1",
+    "proof_irrelevance":("/tmp/nucleus-context",{
         "NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION":"1",
+        "NUCLEUS_EXPERIMENTAL_FIELD_ARG_PROOF_IRREL":"1",
     }),
 }
 CASES = [
@@ -56,6 +54,7 @@ def run(binary, source, mode, timeout=180, performance=False, suffix=""):
         env["NUCLEUS_TRACE_CONTEXT_MEMO"]="1"
         env["NUCLEUS_TRACE_CAPTURE_SUPPORT"]="1"
         env["NUCLEUS_TRACE_CERTIFIED_FIELD_APPLICATION"]="1"
+        env["NUCLEUS_TRACE_FIELD_ARG_PROOF_IRREL"]="1"
     metrics = OUT / ("rusage_"+suffix+".txt")
     cmd = [binary]
     if performance:
@@ -70,6 +69,7 @@ def run(binary, source, mode, timeout=180, performance=False, suffix=""):
         "memo_hits_logged":p.stderr.count(b"NUCLEUS_CONTEXT_MEMO_HIT:"),
         "support_warrants_logged":p.stderr.count(b"NUCLEUS_CAPTURE_SUPPORT_CERT:"),
         "field_app_warrants_logged":p.stderr.count(b"NUCLEUS_FIELD_APP_PROVEN:"),
+        "arg_proof_irrel_warrants_logged":p.stderr.count(b"NUCLEUS_FIELD_ARG_PROOF_IRREL:"),
     }
     if performance:
         # GNU time may prepend an exit-status message for UNKNOWN (exit 2).
@@ -113,7 +113,7 @@ def qualification():
 
     old={r["name"]:r for r in rows if r["mode"]=="original"}
     changes={}
-    for mode in ["field_application","combined"]:
+    for mode in ["field_application","proof_irrelevance"]:
         cand={r["name"]:r for r in rows if r["mode"]==mode}
         diff=[
             {"case":k,"old":r["rc"],"new":cand[k]["rc"]}
@@ -156,7 +156,7 @@ def qualification():
         "frozen_artifact":os.environ.get("ARENA_ARTIFACT"),
         "frontiers":frontiers,"changes":changes,
         "protected_controls":negatives,
-        "new_complete_accept":max(frontiers[mode]["ACCEPT"] for mode in ("field_application","combined"))>118,
+        "new_complete_accept":max(frontiers[mode]["ACCEPT"] for mode in ("field_application","proof_irrelevance"))>118,
         "official_arena_status":"UNKNOWN",
         "mathlib_status":"UNKNOWN",
         "independent_certificate_replay":"UNIMPLEMENTED",
@@ -187,6 +187,7 @@ def performance():
             "logged_memo_hits_max96_per_process":sum(x["memo_hits_logged"] for x in rows if x["mode"]==mode),
             "logged_support_warrants_max96_per_process":sum(x["support_warrants_logged"] for x in rows if x["mode"]==mode),
             "logged_field_app_warrants_max96_per_process":sum(x["field_app_warrants_logged"] for x in rows if x["mode"]==mode),
+            "logged_proof_irrel_warrants_max96_per_process":sum(x["arg_proof_irrel_warrants_logged"] for x in rows if x["mode"]==mode),
         }
         for mode in ARMS
     }
