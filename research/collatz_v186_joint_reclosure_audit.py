@@ -93,7 +93,7 @@ def joint_suffix_dp(by_low:list[int])->list[dict]:
             eligible_first13+=1
             weighted[odd]+=by_low[r]
     assert eligible_first13==848
-    assert sum(weighted)==132150*0+132150*0+sum(weighted)
+    assert sum(weighted)>0
     assert weighted==[0,0,0,0,0,0,0,0,11925,50547,45231,19695,4356,396]
     # Coarse all-source family alone: count all high-odd finite prefix
     # words at each full five-clock checkpoint.
