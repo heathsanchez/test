@@ -1,0 +1,156 @@
+name: Collatz V183 true Mersenne seed reusable affine source reduction
+on:
+  push:
+    branches: [collatz-v183-repair-first-joint-residual]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-source-affine-repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently replay 193-clock true seed and exact all-offset exclusion
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v183_mersenne_affine_repair_audit.py | tee evidence/v183-stdout.json
+          python3 - <<'PY'
+          import pathlib,json,hashlib,subprocess
+          p=pathlib.Path('evidence/v183-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V183_MERSENNE_TERMINAL_SEED_AFFINE_REPAIR'
+          assert d['original_n']==2097151
+          assert d['terminal_clock']==193 and d['terminal_endpoint']==2
+          assert d['source_clock_odd_count']==109
+          assert d['newly_excluded_residues_per_combined_period']==396
+          assert d['already_excluded_residues_per_combined_period']==333
+          assert d['combined_period']=='2^193*729'
+          assert d['all_offset_source_rank_guard']
+          assert d['this_rule_does_NOT_cover_all_mersenne_joint_residuals']
+          assert d['false_G7_and_one_arrow_negative_controls']
+          assert d['rule_is_not_terminal_certification_of_each_member']
+          assert not d['all_source_global_coverage_proved']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          out={'schema':'COLLATZ_V183_EXACT_SOURCE_LIFT',
+               'source_commit':sha,
+               'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+               'status':'EXACT_BOUNDED_TEST_PLUS_ELEMENTARY_PERIODIC_RESIDUE_ACCOUNTING',
+               'all_sources_good_proved':False,
+               'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v183-exact-seal.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v183-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-reusable-mersenne-meeting:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check source-seed all-offset two-clock family and least-bad elimination
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift BinaryTernaryClassMassTransfer ParallelMeetingAffineCompiler UniversalAffineBiasOddBarrier AllScaleHighOddBarrier MersenneJointResidualBarrier; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/FirstMersenneResidualRepair.lean 2>&1 | tee evidence/v183-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v183-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-20000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=[
+            'v183_real_mersenne_seed_meets_two',
+            'v183_real_mersenne_seed_odd_count',
+            'v183_mersenne_source_slope_strict',
+            'v183_mersenne_seed_affine_meeting',
+            'v183_all_offsets_strict_earlier_source',
+            'v183_repaired_residual_source_lower_merge',
+            'v183_repaired_residual_excludes_least_positive_bad',
+            'v183_original_source_good'
+          ]
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V183_FORMAL_TRUE_SEED_REUSE',
+                'source_commit':sha,'axioms':ax,
+                'lean_sha256':hashlib.sha256(pathlib.Path(
+                  'formal/Collatz/FirstMersenneResidualRepair.lean').read_bytes()).hexdigest(),
+                'scope':'ACTUAL_TRUE_TERMINAL_ROOT_TO_INFINITE_STRICT_SMALLER_SOURCE_FAMILY',
+                'whole_progression_terminal_proved':False,
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v183-formal-seal.json').write_text(
+              json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v183-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-final:
+    needs: [exact-source-affine-repair,formal-reusable-mersenne-meeting]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v183-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: v183-formal
+          path: evidence/formal
+      - name: Reconcile actual original-source clocks and strictly scoped first seed lift
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          ex=json.loads(pathlib.Path('evidence/exact/v183-exact-seal.json').read_text())
+          fo=json.loads(pathlib.Path('evidence/formal/v183-formal-seal.json').read_text())
+          p=pathlib.Path('evidence/exact/v183-exact.json')
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert ex['source_commit']==fo['source_commit']==sha
+          assert ex['result_sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
+          assert ex['global_collatz']==fo['global_collatz']=='UNKNOWN'
+          assert ex['qed'] is fo['qed'] is False
+          assert not fo['whole_progression_terminal_proved']
+          out={'schema':'COLLATZ_V183_FINAL',
+               'source_commit':sha,
+               'status':'WARRANTED_FORMAL_ONE_TERMINAL_ROOT_COMPOUNDS_INTO_INFINITE_SOURCE_LOWER_FAMILY',
+               'new_candidate_residues_at_enormous_combined_period':396,
+               'still_not_all_mersenne_joint_residuals_repaired':True,
+               'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v183-final.json').write_text(
+            json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v183-final
+          path: evidence/v183-final.json
+          if-no-files-found: error
