@@ -1,0 +1,158 @@
+name: Collatz V187 joint residual finite shadow and source-grammar separator
+on:
+  push:
+    branches: [collatz-v187-exact-residual-adversary]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-infinite-family-crt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source-locked CRT all-exponent survivor and true Mersenne prefix audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v187_mersenne_joint_shadow_audit > evidence/v187-summary.json
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v187-shadows.json')
+          a=json.loads(p.read_text())
+          assert a['schema']=='COLLATZ_V187_INFINITE_REAL_POSITIVE_JOINT_FINITE_SHADOW'
+          assert a['rule_count_total']==234
+          assert a['common_period_M']==5971968
+          assert a['entire_family_source_mod_M']==2097151
+          assert a['for_all_t_neither_205_nor_29_rules_apply_to_n_t']
+          assert a['for_all_t_true_all_K_odd_prefix_and_never_below_original']
+          assert a['for_all_t_V185_exact_3n_plus1_guard_holds_for_first_K_clocks']
+          assert len(a['finite_source_checks'])==7
+          assert a['first_family_source_2pow21_minus1_terminal_clock']==193
+          assert a['first_family_source_actual_terminal_endpoint']==2
+          assert a['no_fixed_source_proved_infinite_nonterminal']
+          assert a['no_universal_source_declared_divergent']
+          assert a['no_global_Collatz_QED'] and a['global_collatz']=='UNKNOWN'
+          assert a['qed'] is False
+          o=pathlib.Path('research/collatz_v178_compact_bank.json').read_bytes()
+          n=pathlib.Path('research/collatz_v180_inverse_rule_bank.json').read_bytes()
+          assert a['V178_bank_sha256']==hashlib.sha256(o).hexdigest()
+          assert a['V180_bank_sha256']==hashlib.sha256(n).hexdigest()
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V187_EXACT_POSITIVE_FINITE_SHADOW',
+            'source_commit':sha,
+            'audit_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'scope':'INFINITE_ALL_T_CRT_RULE_BANK_EXCLUSION_PLUS_SAMPLED_REAL_SHORTCUT_PREFIXES',
+            'no_fixed_positive_infinite_bad_source':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v187-exact-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v187-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-all-horizon-positive-shadows:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check every finite clock can be shadowed by an actual source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift BinaryTernaryClassMassTransfer ParallelMeetingAffineCompiler CompactLeastBadCandidateSieve SparseFutureNormalForm UniversalAffineBiasOddBarrier AllScaleHighOddBarrier PersistentOddPrefixBarrier SourceSpecificFutureGuard GuardedInverseRuleClosure JointProtectedFutureResidual MersenneJointResidualBarrier; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/MersenneUnboundedJointShadows.lean 2>&1 | tee evidence/v187-lean.log
+          python3 - <<'PY'
+          import json,re,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v187-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-20000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          names=[
+            'v187_two_power_le_three_power',
+            'v187_positive_mersenne_prefix_never_descends',
+            'v187_each_finite_clock_has_positive_joint_shadow',
+            'v187_each_clock_has_a_not_yet_descending_source']
+          for name in names:
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          src=pathlib.Path('formal/Collatz/MersenneUnboundedJointShadows.lean')
+          seal={'schema':'COLLATZ_V187_FORMAL_POSITIVE_SHADOWS',
+            'source_commit':sha,'axioms':ax,
+            'source_sha256':hashlib.sha256(src.read_bytes()).hexdigest(),
+            'warrant':'FOR_EVERY_FINITE_H_EXISTS_POSITIVE_N_WITH_REAL_NONDESCENT_ALL_ODD_AND_PLUS1_GUARD_THROUGH_H',
+            'all_clock_convergence_or_divergence_proved':False,
+            'source_bank_crt_scope_proved_separately_exact':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v187-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v187-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-final:
+    needs: [exact-infinite-family-crt,formal-all-horizon-positive-shadows]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v187-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: v187-formal
+          path: evidence/formal
+      - name: Cross-check exact source and protected non-QED scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/exact/v187-shadows.json')
+          e=json.loads(pathlib.Path('evidence/exact/v187-exact-seal.json').read_text())
+          f=json.loads(pathlib.Path('evidence/formal/v187-formal-seal.json').read_text())
+          d=json.loads(p.read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert e['source_commit']==f['source_commit']==sha
+          assert e['audit_sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
+          assert e['no_fixed_positive_infinite_bad_source']
+          assert not f['all_clock_convergence_or_divergence_proved']
+          assert d['no_global_Collatz_QED']
+          assert e['global_collatz']==f['global_collatz']==d['global_collatz']=='UNKNOWN'
+          assert e['qed'] is f['qed'] is d['qed'] is False
+          seal={'schema':'COLLATZ_V187_FINAL','source_commit':sha,
+            'status':'WARRANTED_ALL_FINITE_H_SHADOW_PLUS_INFINITE_CRT_IRREDUCIBLE_MERSENNE_FAMILY',
+            'needed_future':'a uniform original-source theorem not reducible to stronger finite source-clock tests',
+            'no_positive_source_proved_nonconvergent':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v187-final.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v187-final
+          path: evidence/v187-final.json
+          if-no-files-found: error
