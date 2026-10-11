@@ -1,0 +1,169 @@
+name: Collatz V182 infinite joint least-bad residual adversary
+on:
+  push:
+    branches: [collatz-v182-mersenne-joint-survivor]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-joint-residual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independent exact 205-rule CRT period and true Mersenne clock replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v182_joint_mersenne_residual_audit.py | tee evidence/v182-stdout.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v182-joint-residual.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V182_JOINT_RULE_BANK_AND_HIGH_ODD_MERSENNE_RESIDUAL'
+          assert d['common_residue_period_M']==2985984
+          assert d['rule_count_kernel_qualified_in_upstream_v178']==205
+          assert d['m_period']==243
+          assert d['m_classes_with_no_v178_rule']==153
+          assert d['m_classes_with_any_v178_rule']==90
+          assert d['joint_survivor_source_residue_mod_M']==2097151
+          assert d['infinite_joint_survivor_m']=='m=2+243*t, t>=0'
+          assert d['exact_all_205_rules_exclude_no_joint_family_member']
+          assert d['least_example_actual_terminal_endpoint']==2
+          assert d['least_example_direct_terminal_clock']==193
+          assert d['integer_rule_residue_periodicity_math_not_lean_formalized']
+          assert not d['not_a_nonconvergence_result'] is False
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          bank=pathlib.Path('research/collatz_v178_compact_bank.json')
+          assert hashlib.sha256(bank.read_bytes()).hexdigest()==d['v178_rule_bank_sha256']
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={
+            'schema':'COLLATZ_V182_EXACT_JOINT_RESIDUAL',
+            'source_commit':sha,
+            'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'bank_sha256':d['v178_rule_bank_sha256'],
+            'infinite_grammar_relative_residual_warrant':'ELEMENTARY_CRT_PLUS_KERNEL_VERIFIED_RULE_BANK',
+            'not_a_divergent_positive_source':True,
+            'all_scale_collatz_convergence_proved':False,
+            'global_collatz':'UNKNOWN','qed':False
+          }
+          pathlib.Path('evidence/v182-exact-seal.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v182-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-mersenne-all-applicable-barriers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check true Mersenne all-odd actual clock prefix and height guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine UniversalAffineBiasOddBarrier AllScaleHighOddBarrier; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/MersenneJointResidualBarrier.lean 2>&1 | tee evidence/v182-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v182-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-24000:]
+          axioms={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[a.strip() for a in inside.split(',') if a.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            axioms[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            axioms[name]=[]
+          targets=[
+            'v182_mersenne_true_initial_prefix',
+            'v182_mersenne_odd_at_each_prefix_step',
+            'v182_mersenne_all_odd_count',
+            'v182_pow_two_mono',
+            'v182_mersenne_passes_every_applicable_v181_guard',
+            'v182_each_positive_scale_has_true_high_odd_source'
+          ]
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in axioms,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={
+            'schema':'COLLATZ_V182_FORMAL_MERSENNE_GUARD',
+            'source_commit':sha,
+            'axioms':axioms,
+            'source_sha256':hashlib.sha256(pathlib.Path(
+              'formal/Collatz/MersenneJointResidualBarrier.lean').read_bytes()).hexdigest(),
+            'status':'WARRANTED_ALL_POSITIVE_M_REAL_MERSENNE_PASSES_ALL_APPLICABLE_HIGH_ODD_BARRIERS',
+            'all_bank_modular_irreducibility_formally_reified':False,
+            'global_collatz':'UNKNOWN','qed':False
+          }
+          pathlib.Path('evidence/v182-formal-seal.json').write_text(
+             json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v182-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-independent-source-seal:
+    needs: [exact-joint-residual,formal-mersenne-all-applicable-barriers]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v182-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v182-formal
+          path: evidence/formal
+      - name: Reconcile source-pinned exact periodic and formal high-odd scopes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          ex=json.loads(pathlib.Path('evidence/exact/v182-exact-seal.json').read_text())
+          fo=json.loads(pathlib.Path('evidence/formal/v182-formal-seal.json').read_text())
+          data=pathlib.Path('evidence/exact/v182-joint-residual.json')
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert ex['source_commit']==fo['source_commit']==sha
+          assert ex['result_sha256']==hashlib.sha256(data.read_bytes()).hexdigest()
+          assert ex['not_a_divergent_positive_source']
+          assert not fo['all_bank_modular_irreducibility_formally_reified']
+          assert ex['global_collatz']==fo['global_collatz']=='UNKNOWN'
+          assert ex['qed'] is fo['qed'] is False
+          out={
+            'schema':'COLLATZ_V182_FINAL',
+            'source_commit':sha,
+            'status':'WARRANTED_FORMAL_HIGH_ODD_MERSENNE_AND_EXACT_INFINITE_GRAMMAR_RELATIVE_RESIDUAL',
+            'surviving_m_classes_out_of_243':153,
+            'representative_infinite_family':'m=2+243t, n=2^(10m+1)-1',
+            'not_a_divergence_or_qed_result':True,
+            'unbounded_global_class_elimination':'UNKNOWN',
+            'global_collatz':'UNKNOWN','qed':False
+          }
+          pathlib.Path('evidence/v182-final.json').write_text(
+            json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v182-final
+          path: evidence/v182-final.json
+          if-no-files-found: error
