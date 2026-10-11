@@ -252,7 +252,7 @@ theorem v189_zero_defect_forbids_early_smaller_source_meeting
     (n p i j : Nat)
     (hj : j<=i) (hp : p<n)
     (hZero : V189HeightDefect n i=0) :
-    iter shortcut i n != iter shortcut j p := by
+    iter shortcut i n ≠ iter shortcut j p := by
   intro hMeet
   have hLimit :=
     v189_early_clock_defect_bounds_source_reduction n p i j
