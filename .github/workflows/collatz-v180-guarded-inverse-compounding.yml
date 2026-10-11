@@ -1,0 +1,162 @@
+name: Collatz V180 qualified guarded odd-inverse rule compounding
+on:
+  push:
+    branches: [collatz-v180-guarded-inverse-rule-compounding]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-guarded-inverse-residue:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct 29 new inverse seeds and independently measure novel survivor exclusions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v180_guarded_inverse_audit > evidence/v180-exact.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v180-exact.json')
+          x=json.loads(p.read_text())
+          assert x['schema']=='COLLATZ_V180_GUARDED_INVERSE_NEW_SOURCE_RULES'
+          assert x['old_qualified_rules']==205
+          assert x['new_source_seed_count']==29
+          assert x['new_period']==5971968
+          assert x['old_period_coverage']==5830692
+          assert x['new_previously_uncovered_least_bad_source_positions']==9126
+          assert x['updated_combined_excluded_least_bad_positions']==5839818
+          assert x['updated_unresolved_least_bad_positions']==132150
+          assert x['residual_mod12']=={'3':81003,'7':51147}
+          assert x['all_174_finite_offset_base_replays_passed']
+          assert x['smallest_new_true_mersenne_corridor_seed']['source']==255
+          assert x['negative_control']['G7_distinct_true_positive_basins']
+          assert x['excluded_positions_are_NOT_independently_terminal_certified']
+          assert not x['complete_all_source_least_bad_elimination_proved']
+          assert x['global_collatz']=='UNKNOWN' and x['qed'] is False
+          bank=pathlib.Path('research/collatz_v180_inverse_rule_bank.json').read_bytes()
+          assert hashlib.sha256(bank).hexdigest()==x['new_seed_sha256']
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V180_EXACT_RESIDUE_SEAL',
+                'source_commit':sha,
+                'bank_sha256':x['new_seed_sha256'],
+                'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                'status':'BOUNDED_QUALIFIED_SEED_REPLAY_PLUS_FINITE_EXACT_MODULAR_COVERAGE',
+                'coverage_excludes_least_bad_positions_ONLY':True,
+                'new_all_scale_source_class_elimination_proved':False,
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v180-exact-seal.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v180-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-infinite-inverse-seeds:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check 29 actual source predecessor, prior-clock and all-offset guarded lower-meeting records
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift BinaryTernaryClassMassTransfer ParallelMeetingAffineCompiler CompactLeastBadCandidateSieve SparseFutureNormalForm; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/GuardedInverseRuleClosure.lean 2>&1 | tee evidence/v180-lean.log
+          python3 - <<'PY'
+          import json,re,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v180-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-20000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[p.strip() for p in inside.split(',') if p.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          for name in ('v180_seed_base_meeting',
+                       'v180_inverse_seed_all_offsets_lower',
+                       'v180_inverse_seed_excludes_least_bad',
+                       'v180_bank_each_member_excludes_least_bad',
+                       'v180_mersenne255_guarded_inverse_family',
+                       'v180_mersenne255_excludes_least_bad'):
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          src=pathlib.Path('formal/Collatz/GuardedInverseRuleClosure.lean')
+          assert src.read_text().count('by decide, by decide, by decide, by decide, by decide')==29
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V180_FORMAL_GUARDED_INVERSE',
+                'source_commit':sha,'axioms':ax,
+                'source_sha256':hashlib.sha256(src.read_bytes()).hexdigest(),
+                'rule_seed_count_reified':29,
+                'scope':'EVERY_VERIFIED_SOURCE_INVERSE_SEED_ALL_OFFSETS_REAL_STRICT_LOWER_MEETING',
+                'all_scale_terminal_good_source_coverage_proved':False,
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v180-formal-seal.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v180-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-independent:
+    needs: [exact-guarded-inverse-residue,formal-infinite-inverse-seeds]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v180-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v180-formal
+          path: evidence/formal
+      - name: Source-pinned qualified all-offset proof and non-QED population separation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          ex=json.loads(pathlib.Path('evidence/exact/v180-exact-seal.json').read_text())
+          fo=json.loads(pathlib.Path('evidence/formal/v180-formal-seal.json').read_text())
+          data=json.loads(pathlib.Path('evidence/exact/v180-exact.json').read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert ex['source_commit']==fo['source_commit']==sha
+          assert ex['result_sha256']==hashlib.sha256(
+              pathlib.Path('evidence/exact/v180-exact.json').read_bytes()).hexdigest()
+          assert fo['rule_seed_count_reified']==data['new_source_seed_count']==29
+          assert ex['coverage_excludes_least_bad_positions_ONLY']
+          assert not fo['all_scale_terminal_good_source_coverage_proved']
+          assert not ex['new_all_scale_source_class_elimination_proved']
+          assert ex['global_collatz']==fo['global_collatz']==data['global_collatz']=='UNKNOWN'
+          assert ex['qed'] is fo['qed'] is data['qed'] is False
+          result={'schema':'COLLATZ_V180_FINAL','source_commit':sha,
+              'status':'WARRANTED_GENERIC_GUARDED_INVERSE_FAMILY_AND_29_CERTIFIED_NEW_BASE_SEEDS',
+              'periodic_least_bad_positions_old':'5830692/5971968',
+              'periodic_least_bad_positions_updated':'5839818/5971968',
+              'new_positions':9126,
+              'actual_global_Collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v180-final.json').write_text(
+              json.dumps(result,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v180-final
+          path: evidence/v180-final.json
+          if-no-files-found: error
