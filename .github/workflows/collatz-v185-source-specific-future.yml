@@ -88,7 +88,9 @@ jobs:
             'v185_least_bad_source_exact_all_clock_power',
             'v185_source_exact_coefficient_excess_produces_descent',
             'v185_source_exact_coefficient_excess_constructs_lower_meet',
-            'v185_g5_cycle_187_arithmetic_exposes_missing_plus_one']
+            'v185_g5_cycle_187_arithmetic_exposes_missing_plus_one',
+            'v185_collatz_of_universal_source_exact_excess',
+            'v185_terminal_one_preserves_source_coefficient_guard']
           for t in req:
             assert 'CollatzFinal.SourceProduct.'+t in ax,t
           src=pathlib.Path('formal/Collatz/SourceSpecificFutureGuard.lean')
