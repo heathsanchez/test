@@ -27,7 +27,7 @@ jobs:
           mkdir -p /tmp/nucleus-eta/reports
           git rev-parse HEAD
           git rev-parse HEAD:metatron-kernel
-          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-eta/baseline
 
