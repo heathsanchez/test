@@ -1,4 +1,4 @@
-name: Stuttgart V11 calibration (holdout sealed)
+name: Stuttgart V11 calibration and source-label audit (holdout sealed)
 on:
   push:
     branches: ['research/stuttgart-quantum-boundary-v11']
@@ -18,10 +18,14 @@ jobs:
           grep 'SEALED HOLDOUT' research/stuttgart_v11/PREREGISTERED_PROTOCOL.md
       - name: Fetch and verify ONLY calibration files
         run: python research/stuttgart_v11/fetch_calibration.py
-      - name: Store acquisition receipts
+      - name: Fetch published Figure 2 visual context only
+        run: python research/stuttgart_v11/fetch_figure2.py
+      - name: Store acquisition and source audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stuttgart-v11-calibration-only
-          path: research/stuttgart_v11/calibration_data/
+          name: stuttgart-v11-calibration-and-figure2
+          path: |
+            research/stuttgart_v11/calibration_data/
+            research/stuttgart_v11/source_figures/
           if-no-files-found: warn
