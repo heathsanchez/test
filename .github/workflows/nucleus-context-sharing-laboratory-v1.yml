@@ -1,0 +1,29 @@
+name: Nucleus contextual conversion representation study
+on:
+  push:
+    branches: [nucleus-context-sharing-laboratory-v1]
+    paths:
+      - "metatron-kernel/experiments/context_sharing_lab.py"
+      - ".github/workflows/nucleus-context-sharing-laboratory-v1.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite-study:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact comparison and source capture
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/context-study
+          git rev-parse HEAD > /tmp/context-study/commit.txt
+          sha256sum metatron-kernel/experiments/context_sharing_lab.py > /tmp/context-study/source.sha256
+          python3 metatron-kernel/experiments/context_sharing_lab.py --output /tmp/context-study/report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-contextual-study-${{ github.sha }}
+          path: /tmp/context-study/
+          if-no-files-found: warn
