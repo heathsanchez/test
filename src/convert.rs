@@ -1312,14 +1312,14 @@ fn compare_values(
                     std::env::var_os("NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8").is_some()
                     && depth == context.len()
                     && (7..=8).contains(&depth)
-                    && current_budget >= 512
+                    && current_budget >= 2
                     && checker.checked_source_conversion(
                         left_structure,right_structure,context,
-                        current_budget.min(2048),
+                        2048,
                     ).is_proven()
                     && same_closure_spine_congruence_in_context(
                         checker,left_spine,right_spine,
-                        current_budget,depth,context,512,
+                        512,depth,context,512,
                     );
                 if source_typed_pair {
                     #[cfg(feature="diagnostics")]
