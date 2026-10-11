@@ -1,0 +1,151 @@
+name: Collatz V180 exact affine bias and high-odd residual boundary
+on:
+  push:
+    branches: [collatz-v180-affine-bias-high-odd-boundary]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-bias-and-residual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independent actual parity, bias and 205-rule high-odd audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 research/collatz_v180_exact_bias_odd_audit.py | tee evidence/v180-stdout.json
+          python3 - <<'PY'
+          import pathlib,hashlib,json,subprocess
+          p=pathlib.Path('evidence/v180-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V180_EXACT_AFFINE_INTERCEPT_HIGH_ODD_BARRIER'
+          assert d['residuals_with_at_most_seven_odds']==0
+          assert d['low_odd_parity_words_of_4096']==3302
+          assert d['V178_grammar_residual_positions']==70638
+          assert sum(int(x) for x in d['residual_first_12_odd_count_distribution'].values())==70638
+          assert d['all_12_step_parity_words_reconstructed_exactly']
+          assert d['source_height_threshold_for_formal_12_clock_descent']==8192
+          assert not d['large_source_does_not_imply_all_depth_descent'] is False
+          assert d['residual_still_infinite']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V180_EXACT_BIAS_SEAL',
+                'source_commit':sha,
+                'audit_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                'formal_all_source_semantics_separately_checked':True,
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v180-exact-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v180-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-global-bias:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Core Lean all-n all-k affine bound and necessary high-odd proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/UniversalAffineBiasOddBarrier.lean 2>&1 | tee evidence/v180-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v180-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-24000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[a.strip() for a in inside.split(',') if a.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=['v180_bias_plus_power_le',
+                   'v180_bias_strict',
+                   'v180_descent_of_source_height_and_coefficient',
+                   'v180_large_source_crossing_descends',
+                   'v180_three_power_monotone',
+                   'v180_twelve_clock_low_odd_descends',
+                   'v180_least_bad_high_odd_twelve']
+          for name in targets:
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V180_FORMAL_BIAS_BARRIER',
+                'source_commit':sha,'axioms':ax,
+                'source_sha256':hashlib.sha256(pathlib.Path(
+                  'formal/Collatz/UniversalAffineBiasOddBarrier.lean').read_bytes()).hexdigest(),
+                'warrant':'TRUE_ALL_SOURCE_ALL_DEPTH_AFFINE_BIAS_AND_NECESSARY_12_STEP_HIGH_ODD_LEAST_BAD',
+                'uniform_all_depth_high_odd_exclusion_proved':False,
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v180-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v180-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-independent-seal:
+    needs: [exact-bias-and-residual,formal-global-bias]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v180-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v180-formal
+          path: evidence/formal
+      - name: Reconcile source, bound and no-QED scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          ea=json.loads(pathlib.Path('evidence/exact/v180-exact-seal.json').read_text())
+          fo=json.loads(pathlib.Path('evidence/formal/v180-formal-seal.json').read_text())
+          data=pathlib.Path('evidence/exact/v180-exact.json')
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert ea['source_commit']==fo['source_commit']==sha
+          assert ea['audit_sha256']==hashlib.sha256(data.read_bytes()).hexdigest()
+          assert fo['warrant']=='TRUE_ALL_SOURCE_ALL_DEPTH_AFFINE_BIAS_AND_NECESSARY_12_STEP_HIGH_ODD_LEAST_BAD'
+          assert not fo['uniform_all_depth_high_odd_exclusion_proved']
+          assert ea['global_collatz']==fo['global_collatz']=='UNKNOWN'
+          assert ea['qed'] is fo['qed'] is False
+          seal={'schema':'COLLATZ_V180_FINAL',
+                'source_commit':sha,
+                'status':'WARRANTED_TRUE_AFFINE_BIAS_HIGH_ODD_NECESSARY_BARRIER_NOT_QED',
+                'residual_modulus':2985984,
+                'residual_high_odd_positions':70638,
+                'all_scale_residual_elimination':'UNKNOWN',
+                'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v180-final.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v180-final
+          path: evidence/v180-final.json
+          if-no-files-found: error
