@@ -29,7 +29,7 @@ theorem v182_mersenne_true_initial_prefix
   have hk : K=t+(K-t) := by omega
   have hfactor : 2^K = 2^t*2^(K-t) := by
     calc
-      2^K = 2^(t+(K-t)) := by rw [hk]
+      2^K = 2^(t+(K-t)) := congrArg (fun v : Nat => 2^v) hk
       _ = 2^t*2^(K-t) := Nat.pow_add 2 t (K-t)
   have hpos : 0<2^(K-t) := Nat.pow_pos (by decide)
   rw [hfactor]
@@ -126,6 +126,7 @@ theorem v182_each_positive_scale_has_true_high_odd_source
   refine ⟨2^(10*m+1)-1, ?_, ?_, ?_⟩
   · have hh := v182_mersenne_passes_every_applicable_v181_guard
       m m hm hm (Nat.le_refl _)
+    have hpow : 0<2^(10*m) := Nat.pow_pos (by decide)
     omega
   · exact (v182_mersenne_passes_every_applicable_v181_guard
       m m hm hm (Nat.le_refl _)).1
