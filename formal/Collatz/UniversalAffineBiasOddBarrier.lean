@@ -81,8 +81,9 @@ theorem v180_descent_of_source_height_and_coefficient
     iter shortcut k n < n := by
   let A := 3^(oddCount n k)
   let P := 2^k
-  have hBias : bias n k < n :=
-    lt_of_lt_of_le (v180_bias_strict n k) hHeight
+  have hBias : bias n k < n := by
+    have hh := v180_bias_strict n k
+    omega
   have hSlope : A+1 <= P := by
     dsimp [A,P]
     omega
