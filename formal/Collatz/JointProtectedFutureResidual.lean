@@ -43,19 +43,33 @@ theorem v186_all_positive_sources_below_eight_are_good
       n=5 ∨ n=6 ∨ n=7 := by omega
   rcases hCases with h|h|h|h|h|h|h
   · subst n
-    exact ⟨12, by decide⟩
+    refine ⟨12, ?_⟩
+    change iter shortcut 12 1 = 1 ∨ iter shortcut 12 1 = 2
+    decide
   · subst n
-    exact ⟨12, by decide⟩
+    refine ⟨12, ?_⟩
+    change iter shortcut 12 2 = 1 ∨ iter shortcut 12 2 = 2
+    decide
   · subst n
-    exact ⟨12, by decide⟩
+    refine ⟨12, ?_⟩
+    change iter shortcut 12 3 = 1 ∨ iter shortcut 12 3 = 2
+    decide
   · subst n
-    exact ⟨12, by decide⟩
+    refine ⟨12, ?_⟩
+    change iter shortcut 12 4 = 1 ∨ iter shortcut 12 4 = 2
+    decide
   · subst n
-    exact ⟨12, by decide⟩
+    refine ⟨12, ?_⟩
+    change iter shortcut 12 5 = 1 ∨ iter shortcut 12 5 = 2
+    decide
   · subst n
-    exact ⟨12, by decide⟩
+    refine ⟨12, ?_⟩
+    change iter shortcut 12 6 = 1 ∨ iter shortcut 12 6 = 2
+    decide
   · subst n
-    exact ⟨12, by decide⟩
+    refine ⟨12, ?_⟩
+    change iter shortcut 12 7 = 1 ∨ iter shortcut 12 7 = 2
+    decide
 
 /-- Every hypothetical least bad POSITIVE natural source must
 therefore satisfy the source-height guard used by V184. -/
