@@ -1577,6 +1577,59 @@ impl<'a> TypeChecker<'a> {
                                     context.len(),classify(&lv),classify(&rv),
                                 );
                             }
+                            // Diagnostic only: compare exact source-backed
+                            // constructor fields UNDER THE ORIGINAL CONTEXT.
+                            // The raw fields may not be equal and pending
+                            // application arguments remain independent
+                            // obligations. This report grants no verdict.
+                            if label=="arg1"
+                                && std::env::var_os("NUCLEUS_TRACE_FIELD_PAIR").is_some()
+                                && let (
+                                    Some(Value::StuckProjection{
+                                        type_name:ln,index:li,structure:ls,spine:la,
+                                    }),
+                                    Some(Value::StuckProjection{
+                                        type_name:rn,index:ri,structure:rs,spine:ra,
+                                    }),
+                                )=(a_value.proven_value(),b_value.proven_value())
+                            {
+                                use std::sync::atomic::{AtomicUsize,Ordering};
+                                static FIELD_PAIRS:AtomicUsize=AtomicUsize::new(0);
+                                if FIELD_PAIRS.fetch_add(1,Ordering::Relaxed)<16 {
+                                    let machine=self.machine();
+                                    let left_field=machine.projection_field_for_conversion(
+                                        ls.clone(),*ln,*li,2048,
+                                    );
+                                    let right_field=machine.projection_field_for_conversion(
+                                        rs.clone(),*rn,*ri,2048,
+                                    );
+                                    let field_eq=match (
+                                        left_field.proven_value(),
+                                        right_field.proven_value(),
+                                    ) {
+                                        (Some(x),Some(y))=>Some(
+                                            crate::convert::convert_with_policy_in_context(
+                                                self,&TypeValue::Term(x.clone()),
+                                                &TypeValue::Term(y.clone()),2048,
+                                                crate::convert::DeltaPolicy::PreferredOnly,
+                                                context.len(),context,
+                                            ),
+                                        ),
+                                        _=>None,
+                                    };
+                                    let spine_eq=la.len()==ra.len() && la.iter().zip(ra)
+                                        .all(|(x,y)|crate::convert::convert_with_policy_in_context(
+                                            self,&TypeValue::Term(x.clone()),
+                                            &TypeValue::Term(y.clone()),2048,
+                                            crate::convert::DeltaPolicy::PreferredOnly,
+                                            context.len(),context,
+                                        ).is_proven());
+                                    eprintln!(
+                                        "NUCLEUS_FIELD_PAIR:context={}:lhs_type={ln:?}:rhs_type={rn:?}:lhs_field={left_field:?}:rhs_field={right_field:?}:field_eq={field_eq:?}:lhs_applied={}:rhs_applied={}:spine_eq={spine_eq}:NO_SEMANTIC_ADMISSION",
+                                        context.len(),la.len(),ra.len(),
+                                    );
+                                }
+                            }
                             format!(
                                 "{label}:a={a:?}:b={b:?}:atype={a_ty:?}:btype={b_ty:?}:akind={:?}:bkind={:?}:type_relation={same_type:?}:value_a={}:value_b={}:checked_proof_pair={}",
                                 kind(&a_ty),kind(&b_ty),
