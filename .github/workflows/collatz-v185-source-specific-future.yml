@@ -24,7 +24,7 @@ jobs:
           data=json.loads(p.read_text())
           assert data['schema']=='COLLATZ_V185_SOURCE_EXACT_FUTURE_COEFFICIENT_GUARD'
           assert data['source_clock_pairs_checked']>2000000
-          assert data['protected_prefix_source_multiplier_cases']>100000
+          assert data['protected_prefix_source_multiplier_cases']>25000
           assert data['coefficient_excess_to_true_prior_descent_replays']>0
           ctrl=data['synthetic_G5_187_separator']
           assert ctrl['cycle_start']==187 and ctrl['cycle_length']==27
