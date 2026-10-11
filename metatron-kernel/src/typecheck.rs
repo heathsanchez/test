@@ -1403,16 +1403,19 @@ impl<'a> TypeChecker<'a> {
         conversion_refutation_is_unknown: bool,
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<()> {
-        // Source-ID selection is diagnostic only. No constructor, proof, type
-        // equality, or verdict is inferred from the ID; every positive here
-        // is derived by the ordinary checked bidirectional premises above.
+        // Bounded, general bidirectional lambda checking. Selection is by
+        // source syntax and a previously checked expected Pi, never exported
+        // expression IDs, declaration names, or Arena fixture fingerprints.
+        // A positive requires (1) well-formed annotated domain, (2) checked
+        // domain conversion, and (3) recursive checking of the body under
+        // the exact freshly introduced binder. Failure falls back to the
+        // original infer-and-convert rule, with no weakening of negatives.
+        //
+        // Scope/budget limits keep the experiment narrow; they carry NO
+        // logical authority. This path is opt-in pending adversarial replay.
         if std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_some()
             && (4..=7).contains(&context.len())
-            && matches!(expression.0,
-                11148|11147|11146|11145|
-                7585|7584|7583|7582|
-                7251|7250|7249|7248|
-                5307)
+            && *remaining >= 8
             && matches!(self.expressions.get(expression),Some(Expr::Lam {..}))
         {
             let mut local_budget=(*remaining).min(4096);
