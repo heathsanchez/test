@@ -1,0 +1,153 @@
+name: Collatz V179 sparse future-equivalence normal form
+on:
+  push:
+    branches: [collatz-v179-sparse-future-normal-form]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-normalizer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay strictly decreasing source-to-source two-clock witness chains and synthetic odd-law negative control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v179_future_normal_form_audit | tee evidence/v179-stdout.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v179-exact.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V179_ALL_SOURCE_SPARSE_FUTURE_NORMAL_FORM_AUDIT'
+          assert d['rule_bank_N']==16384
+          assert d['rule_bank_period']==2985984
+          assert d['kernel_checked_rule_count']==205
+          assert d['finite_original_sources_exact_reduced']==(2**18)-1
+          assert d['max_strict_descent_steps_observed']>0
+          assert d['distinct_irreducible_normal_forms_tested']>0
+          assert d['highest_multiplicity_single_normal_form']>1
+          assert len(d['extreme_big_nat_replays'])==4
+          assert d['every_admitted_edge_has_real_clocks_and_strict_smaller_source']
+          assert d['totality_of_reduction_for_all_n_proved_separately_in_Lean']
+          assert not d['terminal_convergence_of_residuals_proved']
+          assert d['source_sample_is_not_universal_Collatz_proof']
+          assert d['synthetic_G7_second_future_basin_protected']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V179_EXACT_SEAL','source_commit':head,
+            'status':'WARRANTED_BOUNDED_REAL_SOURCE_TO_SPARSE_NORMAL_FORM_CHAIN_AUDIT',
+            'audit_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'sparse_representation_not_global_convergence':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v179-exact-seal.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v179-exact-normalizer
+          path: evidence/
+          if-no-files-found: error
+  formal-all-source-normalizer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check unconditional every-positive-source descent to sparse genuine-future representative
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift BinaryTernaryClassMassTransfer ParallelMeetingAffineCompiler CompactLeastBadCandidateSieve; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/SparseFutureNormalForm.lean 2>&1 | tee evidence/v179-lean.log
+          python3 - <<'PY'
+          import re,json,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v179-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-13000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[s.strip() for s in inside.split(',') if s.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=[
+            'v179_reducible_has_smaller_two_clock_witness',
+            'v179_every_positive_source_has_sparse_normal_form',
+            'v179_future_meet_preserves_good',
+            'v179_total_positive_future_outcome_normalization',
+            'v179_any_bad_source_funnels_to_bad_irreducible']
+          for t in targets:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V179_FORMAL_NORMAL_FORM',
+            'source_commit':head,'axioms':ax,
+            'status':'WARRANTED_FORMAL_UNIVERSAL_ALL_POSITIVE_SOURCE_REDUCTION_TO_SPARSE_IRREDUCIBLE_FUTURE_CLASS',
+            'lean_log_sha256':hashlib.sha256(log.encode()).hexdigest(),
+            'terminal_status_only_preserved_not_PROVED':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v179-formal-seal.json').write_text(
+             json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v179-formal-normalizer
+          path: evidence/
+          if-no-files-found: error
+  final-seal:
+    needs: [exact-normalizer,formal-all-source-normalizer]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v179-exact-normalizer
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v179-formal-normalizer
+          path: evidence/formal
+      - name: Independent same-source universal representation and non-QED reconciliation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          ex=json.loads(pathlib.Path('evidence/exact/v179-exact-seal.json').read_text())
+          fo=json.loads(pathlib.Path('evidence/formal/v179-formal-seal.json').read_text())
+          d=json.loads(pathlib.Path('evidence/exact/v179-exact.json').read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert ex['source_commit']==fo['source_commit']==head
+          assert ex['sparse_representation_not_global_convergence']
+          assert fo['terminal_status_only_preserved_not_PROVED']
+          assert d['finite_original_sources_exact_reduced']==262143
+          assert d['kernel_checked_rule_count']==205
+          assert ex['global_collatz']==fo['global_collatz']==d['global_collatz']=='UNKNOWN'
+          assert ex['qed'] is fo['qed'] is d['qed'] is False
+          seal={'schema':'COLLATZ_V179_FINAL',
+            'source_commit':head,
+            'status':'WARRANTED_FORMAL_EVERY_POSITIVE_SOURCE_NORMALIZES_TO_SPARSE_SOURCE_FAITHFUL_FUTURE_REPRESENTATIVE_NOT_QED',
+            'unconditional':'every n>0 admits a finite strictly source-decreasing sequence of qualified real two-clock meetings to irreducible p<=n, with T future equivalence',
+            'preserved_epistemic_distinction':'CollatzGood n iff CollatzGood p; neither independently decided',
+            'exact_period_source_residue_separation':'205 certified progressions eliminate 2915346/2985984 candidate least-bad residue classes above threshold',
+            'remaining':'the infinite irreducible residual still has no independently established universal convergence certificate',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v179-final.json').write_text(
+            json.dumps(seal,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v179-final
+          path: evidence/v179-final.json
+          if-no-files-found: error
