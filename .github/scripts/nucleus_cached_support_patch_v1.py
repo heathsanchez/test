@@ -38,11 +38,13 @@ old=s[start:end]
 # Only the completed sorted indices are eligible for retention.
 def indent(src,spaces):
     return "".join(" "*spaces + line if line.strip() else line for line in src.splitlines(keepends=True))
-inner=old
+inner=old.replace('    let mut fuel = budget.min(2048);\n', '')
+assert inner != old, 'expected exact local traversal fuel declaration'
 # Important: the existing code includes "let mut indices...;indices.sort_unstable();"
 # and completely finishes before the conditional positive-cache insert.
 assert "indices.sort_unstable();" in inner
-new="""    let cache_enabled = std::env::var_os("NUCLEUS_EXPERIMENTAL_SUPPORT_CACHE").is_some();
+new="""    let mut fuel = budget.min(2048);
+    let cache_enabled = std::env::var_os("NUCLEUS_EXPERIMENTAL_SUPPORT_CACHE").is_some();
     let cached_indices = cache_enabled.then(|| {
         checker.contextual_source_support.borrow().get(&left.expr).cloned()
     }).flatten();
