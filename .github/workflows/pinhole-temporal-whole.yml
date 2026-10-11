@@ -1,0 +1,37 @@
+name: Pinhole whole-time continuation qualification
+on:
+  push:
+    branches: [whole-construction-flash-mda-v1]
+    paths:
+      - 'open_development/pinhole_temporal_whole_v1.py'
+      - '.github/workflows/pinhole-temporal-whole.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  whole-continuation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact whole-history future quotient and ablations
+        run: |
+          set -euo pipefail
+          python -m open_development.pinhole_temporal_whole_v1 | tee temporal_evidence.json
+      - name: Requalify three-world shared construction
+        run: |
+          set -euo pipefail
+          python -m open_development.pinhole_major_v4 | tee three_world_evidence.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pinhole-whole-time-evidence
+          path: |
+            temporal_evidence.json
+            three_world_evidence.json
+          if-no-files-found: warn
