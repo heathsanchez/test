@@ -1,0 +1,152 @@
+name: Collatz V189 minimal source-clock inverse-height defect ledger
+on:
+  push:
+    branches: [collatz-v189-inverse-height-defect-ledger]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-source-clock-defect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay exact original-source slack, true meetings and two other-intercept negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v189_inverse_defect_audit > evidence/v189-stdout.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/v189-defect.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V189_MINIMUM_SOURCE_CLOCK_INVERSE_HEIGHT_DEFECT'
+          clock=d['actual_source_clock_audit']
+          assert clock['source_clock_entries_checked']==3201*56
+          meetings=d['real_two_clock_meeting_audit']
+          assert meetings['independent_real_two_clock_meetings_checked']>100000
+          assert meetings['nonzero_defect_necessary_for_smaller_earlier_clock_cases']>0
+          assert meetings['zero_defect_at_earlier_companion_clock_cases']>0
+          assert d['all_odd_source_cylinder_control']['zero_defect_recovers_v188_early_clock_mersenne_barrier']
+          assert d['negative_controls']['G5_and_G7_exact_odd_plus_one_slack_identity_fails']
+          assert not d['all_positive_original_source_convergence_claimed']
+          assert not d['all_actual_two_clock_meeting_existence_claimed']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V189_EXACT_SOURCE_CLOCK_DEFECT',
+            'source_commit':sha,
+            'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'scope':'INDEPENDENT_BOUNDED_TRUE_T_REPLAYS_SUPPORTING_UNIVERSAL_CONDITIONAL_THEOREMS',
+            'no_global_collatz_theorem':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v189-exact-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v189-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-minimal-source-slack:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lean core all-source exact predecessor slack and genuine two-clock inequality
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift BinaryTernaryClassMassTransfer ParallelMeetingAffineCompiler CompactLeastBadCandidateSieve SparseFutureNormalForm UniversalAffineBiasOddBarrier AllScaleHighOddBarrier PersistentOddPrefixBarrier SourceSpecificFutureGuard GuardedInverseRuleClosure JointProtectedFutureResidual MersenneJointResidualBarrier MersenneUnboundedJointShadows TwoClockMersenneHeightSeparator; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/InverseHeightDefectLedger.lean 2>&1 | tee evidence/v189-lean.log
+          python3 - <<'PY'
+          import json,re,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v189-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-25000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[z.strip() for z in inside.split(',') if z.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          for name in [
+            'v189_one_step_exact_slack',
+            'v189_defect_is_nonnegative_and_exact',
+            'v189_defect_one_step_recurrence',
+            'v189_all_odd_prefix_has_zero_defect',
+            'v189_true_two_clock_source_budget',
+            'v189_mersenne_prefix_defect_zero']:
+            assert 'CollatzFinal.SourceProduct.'+name in ax,name
+          src=pathlib.Path('formal/Collatz/InverseHeightDefectLedger.lean')
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V189_FORMAL_MINIMUM_SOURCE_DEFECT',
+            'source_commit':sha,'axioms':ax,
+            'source_sha256':hashlib.sha256(src.read_bytes()).hexdigest(),
+            'warrant':'UNIVERSAL_TRUE_SOURCE_CLOCK_NONNEGATIVE_DEFECT_AND_TWO_CLOCK_NECESSARY_BUDGET',
+            'genuine_source_clock_meeting_guaranteed':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v189-formal-seal.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v189-formal
+          path: evidence/
+          if-no-files-found: error
+
+  independent-final:
+    needs: [exact-source-clock-defect,formal-minimal-source-slack]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v189-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: collatz-v189-formal
+          path: evidence/formal
+      - name: Verify matching source and no universal convergence promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/exact/v189-defect.json')
+          ex=json.loads(pathlib.Path('evidence/exact/v189-exact-seal.json').read_text())
+          fm=json.loads(pathlib.Path('evidence/formal/v189-formal-seal.json').read_text())
+          data=json.loads(p.read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert ex['source_commit']==fm['source_commit']==sha
+          assert ex['result_sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
+          assert ex['no_global_collatz_theorem']
+          assert not fm['genuine_source_clock_meeting_guaranteed']
+          assert ex['global_collatz']==fm['global_collatz']==data['global_collatz']=='UNKNOWN'
+          assert ex['qed'] is fm['qed'] is data['qed'] is False
+          seal={'schema':'COLLATZ_V189_FINAL',
+            'source_commit':sha,
+            'status':'WARRANTED_UNIVERSAL_EXACT_TWO_CLOCK_CONSEQUENTIAL_DEFECT_NOT_QED',
+            'remaining':'independent all-scale production of terminal or genuine earlier-source meeting',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v189-final.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v189-final
+          path: evidence/v189-final.json
+          if-no-files-found: error
