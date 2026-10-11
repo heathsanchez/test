@@ -1319,23 +1319,9 @@ fn compare_values(
                     if std::env::var_os("NUCLEUS_TRACE_TERMINAL_CAUSE").is_some()
                         && (6..=10).contains(&depth)
                     {
-                        use std::sync::atomic::{AtomicUsize,Ordering};
-                        static COUNT:AtomicUsize=AtomicUsize::new(0);
-                        if COUNT.fetch_add(1,Ordering::Relaxed)<48 {
-                            let receiver=checker.machine().expose_for_conversion(
-                                structure.clone(),Transparency::Full,512,
-                            );
-                            let field=checker.machine().projection_field_for_conversion(
-                                structure.clone(),*type_name,*index,512,
-                            );
-                            eprintln!(
-                                "NUCLEUS_TERMINAL_CAUSE:depth={depth}:type={type_name:?}:index={index}:receiver_expr={:?}:receiver_env={}:receiver={}:field={}:pending={}",
-                                structure.expr,structure.env.id(),
-                                format!("{receiver:?}").chars().take(1300).collect::<String>(),
-                                format!("{field:?}").chars().take(1300).collect::<String>(),
-                                spine.len(),
-                            );
-                        }
+                        eprintln!(
+                            "NUCLEUS_TERMINAL_CAUSE:shape=pair:depth={depth}:left_type={left_type:?}:left_index={left_index}:left_receiver={left_structure:?}:left_result={left_value:?}:right_type={right_type:?}:right_index={right_index}:right_receiver={right_structure:?}:right_result={right_value:?}"
+                        );
                     }
                     return Judgment::unknown("lazy-projection-value-exposure");
                 };
