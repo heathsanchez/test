@@ -1,0 +1,27 @@
+name: Collatz V190 odd-core exact controls
+
+on:
+  push:
+    branches:
+      - collatz-v190-odd-core-defect-bridge
+    paths:
+      - research/collatz_v190_odd_core_bridge.py
+      - research/COLLATZ_V190_ODD_CORE_BRIDGE.md
+      - .github/workflows/collatz-v190-odd-core-bridge.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-exact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source exact branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check odd core guarded predecessor and conditional rational bound
+        run: python research/collatz_v190_odd_core_bridge.py
