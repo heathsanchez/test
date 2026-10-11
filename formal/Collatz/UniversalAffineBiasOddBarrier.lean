@@ -36,9 +36,20 @@ theorem v180_bias_plus_power_le (n k : Nat) :
               2^k*3^(oddCount n k) +
               2^k*3^(oddCount n k) :=
           Nat.add_le_add ih hp
-        simpa [bias, oddCount, h, Nat.pow_succ,
-          Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm,
-          Nat.add_assoc] using hh
+        have hb :
+            bias n (k+1)+2^(k+1) =
+              (bias n k+2^k)+2^k := by
+          simp [bias, oddCount, h, Nat.pow_succ]
+          omega
+        have hp2 :
+            2^(k+1)*3^(oddCount n (k+1)) =
+              2^k*3^(oddCount n k)+
+              2^k*3^(oddCount n k) := by
+          simp [oddCount, h, Nat.pow_succ,
+            Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+          omega
+        rw [hb,hp2]
+        exact hh
       · have hthree :
             3*(bias n k+2^k) <=
               3*(2^k*3^(oddCount n k)) :=
@@ -47,6 +58,7 @@ theorem v180_bias_plus_power_le (n k : Nat) :
             3*(bias n k+2^k) := by
           simp [bias, oddCount, h, Nat.pow_succ,
             Nat.mul_add, Nat.add_mul, Nat.mul_assoc]
+          omega
         rw [hBias]
         calc
           3*(bias n k+2^k) <=
@@ -69,10 +81,8 @@ theorem v180_descent_of_source_height_and_coefficient
     iter shortcut k n < n := by
   let A := 3^(oddCount n k)
   let P := 2^k
-  have hBias : bias n k < n := by
-    have hh := v180_bias_strict n k
-    dsimp [A,P] at *
-    omega
+  have hBias : bias n k < n :=
+    lt_of_lt_of_le (v180_bias_strict n k) hHeight
   have hSlope : A+1 <= P := by
     dsimp [A,P]
     omega
@@ -87,7 +97,8 @@ theorem v180_descent_of_source_height_and_coefficient
         Nat.add_lt_add_left hBias _
       _ = (A+1)*n := by simp [Nat.add_mul]
       _ <= P*n := hMult
-  by_contra hnot
+  apply Classical.byContradiction
+  intro hnot
   have hnond : n <= iter shortcut k n :=
     Nat.le_of_not_lt hnot
   have hScale : P*n <= P*iter shortcut k n :=
@@ -100,9 +111,11 @@ theorem v180_large_source_crossing_descends
     (hCoeff : 3^(oddCount n k) < 2^k) :
     iter shortcut k n < n := by
   have hSquare : 2^k*2^k = 2^(2*k) := by
-    rw [← pow_add]
-    congr 1
-    omega
+    calc
+      2^k*2^k = 2^(k+k) := (Nat.pow_add 2 k k).symm
+      _ = 2^(2*k) := by
+        congr 1
+        omega
   have hMult : 2^k*3^(oddCount n k) <= 2^k*2^k :=
     Nat.mul_le_mul_left _ (Nat.le_of_lt hCoeff)
   apply v180_descent_of_source_height_and_coefficient n k
@@ -126,6 +139,7 @@ theorem v180_three_power_monotone (a b : Nat)
             omega
       · have heq : a=b+1 := by omega
         rw [heq]
+        exact Nat.le_refl _
 
 theorem v180_twelve_clock_low_odd_descends (n : Nat)
     (hn : 8192<=n) (hodd : oddCount n 12<=7) :
@@ -154,7 +168,8 @@ theorem v180_twelve_clock_low_odd_descends (n : Nat)
   have hEq : 4096*iter shortcut 12 n =
       A*n + bias n 12 := by
     simpa [A] using exact_affine n 12
-  by_contra hnot
+  apply Classical.byContradiction
+  intro hnot
   have hnond : n<=iter shortcut 12 n :=
     Nat.le_of_not_lt hnot
   have hScale : 4096*n <=4096*iter shortcut 12 n :=
@@ -183,7 +198,8 @@ theorem v180_least_bad_high_odd_twelve
     (n : Nat) (hn : 8192<=n)
     (hbad : MinimalBad PositiveBad n) :
     8<=oddCount n 12 := by
-  by_contra hnot
+  apply Classical.byContradiction
+  intro hnot
   have hlow : oddCount n 12<=7 := by omega
   have hd := v180_twelve_clock_low_odd_descends n hn hlow
   have hp : 0<iter shortcut 12 n :=
