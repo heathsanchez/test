@@ -29,6 +29,7 @@ jobs:
           assert meetings['independent_real_two_clock_meetings_checked']>100000
           assert meetings['nonzero_defect_necessary_for_smaller_earlier_clock_cases']>0
           assert meetings['zero_defect_at_earlier_companion_clock_cases']>0
+          assert meetings['quantitative_early_clock_source_reduction_ceiling_cases']>0
           assert d['all_odd_source_cylinder_control']['zero_defect_recovers_v188_early_clock_mersenne_barrier']
           assert d['negative_controls']['G5_and_G7_exact_odd_plus_one_slack_identity_fails']
           assert not d['all_positive_original_source_convergence_claimed']
@@ -86,6 +87,8 @@ jobs:
             'v189_defect_one_step_recurrence',
             'v189_all_odd_prefix_has_zero_defect',
             'v189_true_two_clock_source_budget',
+            'v189_early_clock_defect_bounds_source_reduction',
+            'v189_zero_defect_forbids_early_smaller_source_meeting',
             'v189_mersenne_prefix_defect_zero']:
             assert 'CollatzFinal.SourceProduct.'+name in ax,name
           src=pathlib.Path('formal/Collatz/InverseHeightDefectLedger.lean')
