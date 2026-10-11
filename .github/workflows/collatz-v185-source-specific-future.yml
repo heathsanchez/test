@@ -1,0 +1,156 @@
+name: Collatz V185 source-locked exact +1 protected future guard
+on:
+  push:
+    branches: [collatz-v185-source-specific-future-guard]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-actual-source-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact source-specific coefficient excess, true earlier-source receipts, and G5 control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v185_source_exact_audit > evidence/v185-stdout.json
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v185-source-exact.json')
+          data=json.loads(p.read_text())
+          assert data['schema']=='COLLATZ_V185_SOURCE_EXACT_FUTURE_COEFFICIENT_GUARD'
+          assert data['source_clock_pairs_checked']>2000000
+          assert data['protected_prefix_source_multiplier_cases']>100000
+          assert data['coefficient_excess_to_true_prior_descent_replays']>0
+          ctrl=data['synthetic_G5_187_separator']
+          assert ctrl['cycle_start']==187 and ctrl['cycle_length']==27
+          assert ctrl['cycle_odds']==17 and ctrl['cycle_minimum']==187
+          assert ctrl['coarse_V184_25_over_8_condition_passes']
+          assert ctrl['exact_TRUE_source_3n_plus_1_condition_fails']
+          assert ctrl['synthetic_3n_plus5_not_original_3n_plus1']
+          assert not data['all_source_true_terminal_convergence_proved']
+          assert data['excess_must_be_produced_on_some_clock_for_global_QED']
+          assert data['global_collatz']=='UNKNOWN' and data['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V185_EXACT_GUARD',
+            'source_commit':sha,
+            'result_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'warrant':'BOUNDED_TRUE_SOURCE_EXACT_PREFIX_REPLAY_PLUS_G5_CYCLE_DISCRIMINATOR',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v185-exact-seal.json').write_text(
+             json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v185-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-source-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Qualify all-source exact +1 multiplier and real lower-merge witness, no apologies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine UniversalAffineBiasOddBarrier AllScaleHighOddBarrier PersistentOddPrefixBarrier; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/$module.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/SourceSpecificFutureGuard.lean 2>&1 | tee evidence/v185-lean.log
+          python3 - <<'PY'
+          import json,re,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v185-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-22000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[z.strip() for z in inside.split(',') if z.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          req=[
+            'v185_actual_odd_source_factor',
+            'v185_source_exact_prefix_product',
+            'v185_positive_nat_source_cancel',
+            'v185_nondecreasing_prefix_source_exact_power',
+            'v185_least_bad_source_exact_all_clock_power',
+            'v185_source_exact_coefficient_excess_produces_descent',
+            'v185_source_exact_coefficient_excess_constructs_lower_meet',
+            'v185_g5_cycle_187_arithmetic_exposes_missing_plus_one']
+          for t in req:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          src=pathlib.Path('formal/Collatz/SourceSpecificFutureGuard.lean')
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V185_FORMAL_SOURCE_GUARD',
+            'source_commit':head,'axioms':ax,
+            'source_sha256':hashlib.sha256(src.read_bytes()).hexdigest(),
+            'warrant':'UNIVERSAL_SOURCE_EXACT_ALL_CLOCK_AND_FINITE_GAP_TO_TRUE_LOWER_MEETING',
+            'intercept_specific_g5_discriminator':True,
+            'all_clock_excess_produced_for_every_source':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v185-formal-seal.json').write_text(
+             json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v185-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-reconcile:
+    needs: [exact-actual-source-guard,formal-source-guard]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v185-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: v185-formal
+          path: evidence/formal
+      - name: Source-consistent exact +1 distinction and unresolved universal status
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/exact/v185-source-exact.json')
+          a=json.loads(pathlib.Path('evidence/exact/v185-exact-seal.json').read_text())
+          b=json.loads(pathlib.Path('evidence/formal/v185-formal-seal.json').read_text())
+          data=json.loads(p.read_text())
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert a['source_commit']==b['source_commit']==head
+          assert a['result_sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
+          assert b['intercept_specific_g5_discriminator']
+          assert not b['all_clock_excess_produced_for_every_source']
+          assert a['global_collatz']==b['global_collatz']==data['global_collatz']=='UNKNOWN'
+          assert a['qed'] is b['qed'] is data['qed'] is False
+          seal={'schema':'COLLATZ_V185_FINAL',
+            'source_commit':head,
+            'status':'WARRANTED_MINIMUM_SOURCE_SPECIFIC_INTERCEPT_AND_CONSEQUENCE_COMPILER',
+            'not_discharge':'NO universal guarantee any hypothetical least bad orbit produces coefficient excess',
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v185-final.json').write_text(
+            json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v185-final
+          path: evidence/v185-final.json
+          if-no-files-found: error
