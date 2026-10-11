@@ -1,0 +1,38 @@
+name: Whole construction real ledger census
+on:
+  push:
+    branches: [whole-construction-flash-mda-v1]
+    paths:
+      - 'open_development/whole_construction_census.py'
+      - '.github/workflows/whole-construction-census.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-ledger:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute actual source-bound MDA capability DAG and 16 protected replays
+        run: |
+          set -euo pipefail
+          python -m open_development.whole_construction_census | tee whole_construction_evidence.json
+          python - <<'PY'
+          import json
+          d=json.load(open("whole_construction_evidence.json"))
+          assert d["live_capability_count"]==6
+          assert d["protected_future_verified"]==16
+          assert d["independent_cross_domain_edges"]=="NOT_ESTABLISHED"
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: whole-construction-real-ledger
+          path: whole_construction_evidence.json
+          if-no-files-found: warn
