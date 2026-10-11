@@ -1,0 +1,150 @@
+name: Collatz V188 true inverse-height and independent two-clock gap
+on:
+  push:
+    branches: [collatz-v188-two-clock-height-separator]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  exact-source-inverse-height:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Original positive sources and true clocks in sharp reverse growth audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 -m research.collatz_v188_two_clock_height_audit > evidence/v188-stdout.json
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          p=pathlib.Path('evidence/v188-two-clock.json')
+          d=json.loads(p.read_text())
+          assert d['schema']=='COLLATZ_V188_TWO_CLOCK_MERSENNE_HEIGHT_SEPARATOR'
+          x=d['finite_exact_independent_audit']
+          assert x['real_all_clock_inverse_comparison_cases']>6000
+          assert x['exact_equality_at_original_same_clock_cases']>500
+          assert x['bruteforce_smaller_positive_source_failure_checks']==273704
+          assert x['all_companion_clock_j_le_original_i_implies_source_at_least_Mersenne']
+          assert d['negative_intercept_controls']['G5_G7_fail_true_plus_one_inverse_growth']
+          assert d['negative_intercept_controls']['same_source_shortcut_T1_satisfies_exact_equality']
+          assert d['no_convergence_of_Mersenne_family_proved']
+          assert d['future_late_companion_meeting_event_unknown']
+          assert d['global_collatz']=='UNKNOWN' and d['qed'] is False
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V188_EXACT_TWO_CLOCK_INVERSE_HEIGHT',
+            'source_commit':sha,
+            'audit_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'scope':'BOUNDED_INDEPENDENT_REPLAY_OF_UNIVERSAL_SOURCE_INVERSE_HEIGHT_FORMULA',
+            'all_scale_later_clock_companion_exists_proved':False,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v188-exact-seal.json').write_text(
+              json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v188-exact
+          path: evidence/
+          if-no-files-found: error
+
+  formal-all-source-two-clock-barrier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 95
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lean core source-locked inverse growth and necessity of strict companion-clock surplus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence .lake/build/lib/lean/Collatz
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env lean --version | tee evidence/toolchain.txt
+          lake build CollatzFinal > evidence/spine.log 2>&1
+          for module in GuardedDyadicSwitch SameCentreMacro DistinctCentreSwitch EpisodeDeterminism ActualEpisode EpisodeBridge ActualEpisodeChain ActualReturnAdmission ActualEpisodeHorizon CoherentEpisodeStream ShiftedActualReturn FreshAnchorBoundary ActualOrbitDichotomy UniversalFutureClassFrontier SourceProductAffine SourceCentreTransportSeparator RationalCentreObservationQuotient PerpetualOddNaturalExclusion ParityCycleResidual ActualRationalCentreDrift SourceRelativeReverseComparison DensityAmplificationClosure ZeroTailTernarySieve SourceLockedDyadicFutureLift BinaryTernaryClassMassTransfer ParallelMeetingAffineCompiler CompactLeastBadCandidateSieve SparseFutureNormalForm UniversalAffineBiasOddBarrier AllScaleHighOddBarrier PersistentOddPrefixBarrier SourceSpecificFutureGuard GuardedInverseRuleClosure JointProtectedFutureResidual MersenneJointResidualBarrier MersenneUnboundedJointShadows; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/${module}.olean" "formal/Collatz/${module}.lean" > "evidence/${module}.log" 2>&1
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/TwoClockMersenneHeightSeparator.lean 2>&1 | tee evidence/v188-lean.log
+          python3 - <<'PY'
+          import json,re,pathlib,hashlib,subprocess
+          log=pathlib.Path('evidence/v188-lean.log').read_text()
+          assert not re.search(r'sorryAx|Lean\.ofReduceBool|error:',log),log[-25000:]
+          ax={}
+          for name,inside in re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]",log,re.S):
+            aa=[x.strip() for x in inside.split(',') if x.strip()]
+            assert set(aa)<={'propext','Classical.choice','Quot.sound'},(name,aa)
+            ax[name]=aa
+          for name in re.findall(r"'([^']+)' does not depend on any axioms",log):
+            ax[name]=[]
+          targets=[
+             'v188_true_one_step_inverse_height',
+             'v188_all_clock_inverse_height',
+             'v188_mersenne_late_companion_clock_necessary',
+             'v188_source_lower_meeting_requires_clock_surplus']
+          for t in targets:
+            assert 'CollatzFinal.SourceProduct.'+t in ax,t
+          src=pathlib.Path('formal/Collatz/TwoClockMersenneHeightSeparator.lean')
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          seal={'schema':'COLLATZ_V188_FORMAL_TRUE_TWO_CLOCK_SOURCE_BOUND',
+            'source_commit':sha,'axioms':ax,
+            'source_sha256':hashlib.sha256(src.read_bytes()).hexdigest(),
+            'warrant':'UNIVERSAL_TRUE_REVERSE_SOURCE_HEIGHT_PLUS_MERSENNE_CLOCK_SURPLUS_NECESSITY',
+            'any_early_strictly_lower_source_meeting_not_claimed_to_exist':True,
+            'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v188-formal-seal.json').write_text(
+             json.dumps(seal,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v188-formal
+          path: evidence/
+          if-no-files-found: error
+
+  final-independent-source-seal:
+    needs: [exact-source-inverse-height,formal-all-source-two-clock-barrier]
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v188-exact
+          path: evidence/exact
+      - uses: actions/download-artifact@v4
+        with:
+          name: v188-formal
+          path: evidence/formal
+      - name: Reconcile same exact source and preserve UNKNOWN outcome
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib,subprocess
+          p=pathlib.Path('evidence/exact/v188-two-clock.json')
+          ex=json.loads(pathlib.Path('evidence/exact/v188-exact-seal.json').read_text())
+          fo=json.loads(pathlib.Path('evidence/formal/v188-formal-seal.json').read_text())
+          data=json.loads(p.read_text())
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          assert ex['source_commit']==fo['source_commit']==sha
+          assert ex['audit_sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
+          assert ex['all_scale_later_clock_companion_exists_proved'] is False
+          assert fo['any_early_strictly_lower_source_meeting_not_claimed_to_exist']
+          assert ex['global_collatz']==fo['global_collatz']==data['global_collatz']=='UNKNOWN'
+          assert ex['qed'] is fo['qed'] is data['qed'] is False
+          result={'schema':'COLLATZ_V188_FINAL','source_commit':sha,
+             'status':'WARRANTED_UNIVERSAL_SOURCE_HEIGHT_INVERSE_BOUND_AND_MERSENNE_COMPANION_CLOCK_SURPLUS',
+             'prunable_search':'any p<2^K-1 meeting an i<=K Mersenne endpoint MUST use companion clock j>i',
+             'still_missing':'unbounded original-source-specific terminal or truly smaller-source merger at unrestricted independent clocks',
+             'global_collatz':'UNKNOWN','qed':False}
+          pathlib.Path('evidence/v188-final.json').write_text(
+             json.dumps(result,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v188-final
+          path: evidence/v188-final.json
+          if-no-files-found: error
