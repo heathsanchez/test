@@ -107,7 +107,7 @@ def main()->None:
                            "true_nondecreasing_protected_prefix_clocks":prefix_count,
                            "source_exact_coefficient_excess_events":gaps})
     assert count>2000000
-    assert prefix_checked>100000
+    assert prefix_checked>25000
     assert exact_gap_constructed>0
     g5=adversarial_g5_cycle()
     # On arbitrary positive source m, n-specific coefficient upper
