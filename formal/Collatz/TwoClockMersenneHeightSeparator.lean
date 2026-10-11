@@ -56,7 +56,7 @@ theorem v188_all_clock_inverse_height
         v188_true_one_step_inverse_height
           (iter shortcut j p)
       have hScaled :
-          2^j*(2*(shortcut(iter shortcut j p)+1)) <=
+          2^j*(2*(shortcut (iter shortcut j p)+1)) <=
             2^j*(3*(iter shortcut j p+1)) :=
         Nat.mul_le_mul_left _ hStep
       have hIH :
@@ -65,7 +65,7 @@ theorem v188_all_clock_inverse_height
         Nat.mul_le_mul_left 3 ih
       calc
         2^(j+1)*(iter shortcut (j+1) p+1) =
-          2^j*(2*(shortcut(iter shortcut j p)+1)) := by
+          2^j*(2*(shortcut (iter shortcut j p)+1)) := by
             rw [iter_succ_last]
             simp only [Nat.pow_succ]
             ac_rfl
@@ -148,7 +148,9 @@ theorem v188_mersenne_late_companion_clock_necessary
       Nat.mul_le_mul_left (3^j) hBound
     have hExact :
         (3^j*(p+1))+3^j <= 3^j*2^K := by
-      simpa only [Nat.mul_add,Nat.one_mul] using hScaled
+      have hp : p+2=(p+1)+1 := by omega
+      rw [hp] at hScaled
+      simpa [Nat.mul_add] using hScaled
     omega
   omega
 
