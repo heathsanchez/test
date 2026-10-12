@@ -29,6 +29,14 @@ jobs:
           test: false
           lint: false
           use-mathlib-cache: true
+      - name: Install cvc5
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y cvc5
+          command -v cvc5
+          cvc5 --version
       - name: Pinned source and trust boundary census
         shell: bash
         run: |
@@ -50,10 +58,8 @@ jobs:
         run: |
           set -euo pipefail
           cat > StrataBoole/StrataBooleTest/BridgeAxiomAudit.lean <<'EOF'
-          import StrataBooleTest.FeatureRequests.mutual_recursion
-          import StrataBooleTest.early_return
-          import StrataBooleTest.quicksort
           import StrataBoole.MetaVerifier
+          #check Strata.smtVCsCorrectBoole
           #print axioms Strata.smtVCsCorrectBoole
           EOF
           cd StrataBoole
