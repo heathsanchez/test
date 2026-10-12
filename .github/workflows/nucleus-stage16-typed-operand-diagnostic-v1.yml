@@ -1,7 +1,7 @@
 name: Nucleus typed operand diagnostic
 on:
   push:
-    branches: [nucleus-stage16-environment-separator-v1]
+    branches: [codex/nucleus-stage16-diagnostic-repair]
     paths:
       - ".github/workflows/nucleus-stage16-typed-operand-diagnostic-v1.yml"
       - ".github/scripts/nucleus_stage16_typed_operand_patch_v1.py"

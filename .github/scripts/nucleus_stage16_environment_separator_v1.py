@@ -42,11 +42,11 @@ replacement="""                #[cfg(feature = "diagnostics")]
                         &TypeValue::Term(larg.clone()),
                         &TypeValue::Term(rarg.clone()),
                         8192,
-                        crate::convert::DeltaPolicy::Unrestricted,
+                        crate::convert::DeltaPolicy::GuardedSemanticFallback,
                         context.len(),
                         context,
                     );
-                    eprintln!("NUCLEUS_STAGE16_CONVERSION_OUTCOME:proven={}:result={:?}:expanded_result={:?}:unrestricted_result={:?}",outcome.is_proven(),outcome,fallback,alternative);
+                    eprintln!("NUCLEUS_STAGE16_CONVERSION_OUTCOME:proven={}:result={:?}:expanded_result={:?}:guarded_fallback_result={:?}",outcome.is_proven(),outcome,fallback,alternative);
                 }
                 return trace_first_failed_field_premise(16);
             }"""
