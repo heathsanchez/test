@@ -43,3 +43,5 @@ jobs:
           lean --version
           lean experiments/bundy_critic_genesis_v2/Target15UnboundedOldObstruction.lean
           lean experiments/bundy_critic_genesis_v2/results/GeneratedProofs.lean
+          cd "$GITHUB_WORKSPACE"
+          lean capstone/InductionGeneralization.lean
