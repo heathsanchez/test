@@ -19,3 +19,4 @@ jobs:
         with:
           python-version: '3.11'
       - run: python3 research/necessary_inquiry_v1/verify.py
+      - run: python3 research/necessary_inquiry_v1/meta_verify.py
