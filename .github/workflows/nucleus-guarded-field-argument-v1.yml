@@ -19,6 +19,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/nucleus-guarded/reports
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-guarded/original
           python3 .github/scripts/nucleus_contextual_capability_patch_v1.py metatron-kernel
           python3 .github/scripts/nucleus_field_application_patch_v1.py metatron-kernel
           python3 .github/scripts/nucleus_field_premise_trace_patch_v1.py metatron-kernel
@@ -26,8 +28,8 @@ jobs:
           python3 .github/scripts/nucleus_guarded_field_argument_patch_v1.py metatron-kernel
           git diff --check
           git diff -- metatron-kernel/src > /tmp/nucleus-guarded/reports/candidate.patch
-          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
-          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 NUCLEUS_EXPERIMENTAL_GUARDED_FIELD_ARGUMENT=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER=1 NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE=1 NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE=1 NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER=1 NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE=1 NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE=1 NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION=1 NUCLEUS_EXPERIMENTAL_GUARDED_FIELD_ARGUMENT=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-guarded/checker
       - name: Acquire exact frozen corpus
@@ -60,29 +62,32 @@ jobs:
           assert hashlib.sha256(forged).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
           report={'source':os.environ['GITHUB_SHA'],'binary_sha256':hashlib.sha256(pathlib.Path(exe).read_bytes()).hexdigest(),'artifact':11272848230,'modes':{}}
           failures=[]
-          def invoke(data,env):
+          def invoke(data,env,binary=exe):
               try:
-                  r=subprocess.run([exe],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=180,env=env)
+                  r=subprocess.run([binary],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=180,env=env)
                   return r.returncode,r.stderr.decode(errors='replace')[-1000:]
               except subprocess.TimeoutExpired:
                   return 'TIMEOUT','TIMEOUT'
-          for mode in ['off','on']:
-              env=common if mode=='off' else common|{'NUCLEUS_EXPERIMENTAL_GUARDED_FIELD_ARGUMENT':'1'}
+          for mode in ['original','off','on']:
+              env=dict(os.environ) if mode=='original' else common if mode=='off' else common|{'NUCLEUS_EXPERIMENTAL_GUARDED_FIELD_ARGUMENT':'1'}
+              binary='/tmp/nucleus-guarded/original' if mode=='original' else exe
               rows=[]
               started=time.monotonic()
               for p,w in items:
-                  rc,stderr=invoke(p.read_bytes(),env)
+                  rc,stderr=invoke(p.read_bytes(),env,binary)
                   rows.append({'case':str(p.relative_to(root)),'expected':w,'rc':rc,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'stderr':stderr})
               counts={'accept':sum(r['rc']==0 for r in rows),'reject':sum(r['rc']==1 for r in rows),'unknown':sum(r['rc']==2 for r in rows),'wrong':sum(r['rc'] in (0,1) and r['rc']!=r['expected'] for r in rows),'errors':sum(r['rc'] not in (0,1,2) for r in rows)}
-              false_rc,_=invoke(forged,env)
-              nested_rc,_=invoke((root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),env)
+              false_rc,_=invoke(forged,env,binary)
+              nested_rc,_=invoke((root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),env,binary)
               report['modes'][mode]={'counts':counts,'false_index':false_rc,'nested':nested_rc,'seconds':time.monotonic()-started,'rows':rows}
               print('GUARDED_FIELD_MODE='+json.dumps({'mode':mode,'counts':counts,'false_index':false_rc,'nested':nested_rc}),flush=True)
               if counts['wrong'] or counts['errors'] or false_rc not in (1,2) or nested_rc!=1:
                   failures.append(mode+': protected safety failure')
-              if mode=='off' and counts!={'accept':118,'reject':71,'unknown':7,'wrong':0,'errors':0}:
+              if mode in ('original','off') and counts!={'accept':118,'reject':71,'unknown':7,'wrong':0,'errors':0}:
                   failures.append('off: incumbent source vector changed')
           before=report['modes']['off']['rows'];after=report['modes']['on']['rows']
+          if any(a['rc']!=b['rc'] for a,b in zip(report['modes']['original']['rows'],before)):
+              failures.append('off differs from original per-case incumbent vector')
           report['diffs']=[{'case':a['case'],'off':a['rc'],'on':b['rc']} for a,b in zip(before,after) if a['rc']!=b['rc']]
           report['gained']=[r['case'] for r in report['diffs'] if r['off']==2 and r['on']==0]
           if any(r['off'] in (0,1) and r['on']!=r['off'] for r in report['diffs']): failures.append('lost incumbent verdict')
