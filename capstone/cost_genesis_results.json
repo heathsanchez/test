@@ -1,0 +1,167 @@
+{
+  "holdout": {
+    "contains101": {
+      "baseline_iterations": 4,
+      "iterations": 3,
+      "pass": true,
+      "saved": 1
+    },
+    "mod5": {
+      "baseline_iterations": 5,
+      "iterations": 2,
+      "pass": true,
+      "saved": 3
+    },
+    "mod7": {
+      "baseline_iterations": 7,
+      "iterations": 3,
+      "pass": true,
+      "saved": 4
+    }
+  },
+  "limitations": [
+    "finite Moore model",
+    "source-supplied predicate grammar",
+    "no independent Lean proof",
+    "no demonstrated economic advantage against equal baseline"
+  ],
+  "new_rule_from_supplied_predicate_grammar": true,
+  "predicates": [
+    {
+      "incorrect": 0,
+      "name": "false",
+      "steps": 17633,
+      "witness": null
+    },
+    {
+      "incorrect": 3026,
+      "name": "true",
+      "steps": 5898,
+      "witness": {
+        "got": [
+          0,
+          0,
+          1
+        ],
+        "obs": [
+          0,
+          0,
+          1
+        ],
+        "tr": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "want": [
+          0,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "incorrect": 0,
+      "name": "equal",
+      "steps": 8927,
+      "witness": null
+    },
+    {
+      "incorrect": 3026,
+      "name": "unequal",
+      "steps": 11578,
+      "witness": {
+        "got": [
+          0,
+          0,
+          1
+        ],
+        "obs": [
+          0,
+          0,
+          1
+        ],
+        "tr": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "want": [
+          0,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "incorrect": 0,
+      "name": "same_count",
+      "steps": 8927,
+      "witness": null
+    },
+    {
+      "incorrect": 3026,
+      "name": "different_count",
+      "steps": 11578,
+      "witness": {
+        "got": [
+          0,
+          0,
+          1
+        ],
+        "obs": [
+          0,
+          0,
+          1
+        ],
+        "tr": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "want": [
+          0,
+          1,
+          2
+        ]
+      }
+    }
+  ],
+  "prior_protected": {
+    "contains11": true,
+    "mod3": true,
+    "parity": true,
+    "suffix2": true
+  },
+  "selected": "equal",
+  "status": "FINITE_VERIFIED_COST_REPAIR",
+  "strong_ledger_same_algorithm_can_match": true,
+  "training_machine_count": 5898
+}
