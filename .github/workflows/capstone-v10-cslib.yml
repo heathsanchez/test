@@ -1,0 +1,71 @@
+name: Capstone V10 CSLib source-pinned simulation
+on:
+  push:
+    branches:
+      - research/capstone-v10-cslib-relation-genesis-20261012
+    paths:
+      - 'capstone/v10/**'
+      - '.github/workflows/capstone-v10-cslib.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite-and-cslib:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source-exact finite synthesis and negative controls
+        run: |
+          set -euo pipefail
+          python capstone/v10/run.py > /tmp/v10-result.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('capstone/v10/generated/results.json').read_text())
+          assert d['strong_oracle_tie']
+          assert len(d['results'])==5
+          assert sum(x['seed_survives'] for x in d['results'])==3
+          assert any(not x['universal_relation_sound'] for x in d['results'])
+          assert d['upstream_sha']=='4b88bcac4c0dec65b3f45b59e85f5397045efd8d'
+          PY
+      - name: Fetch exact upstream CSLib
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/leanprover/cslib.git /tmp/cslib
+          cd /tmp/cslib
+          git checkout --detach 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          test "$(git rev-parse HEAD)" = '4b88bcac4c0dec65b3f45b59e85f5397045efd8d'
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.35.0-rc4'
+          test -f Cslib/Foundations/Semantics/LTS/Simulation.lean
+      - name: Install pinned Lean and Mathlib cache
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          cd /tmp/cslib
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0-rc4
+          "$HOME/.elan/bin/lake" exe cache get
+      - name: Kernel check generated relation certificates against CSLib
+        run: |
+          set -euo pipefail
+          cd /tmp/cslib
+          export PATH="$HOME/.elan/bin:$PATH"
+          test "$(lean --version | grep -o '4.35.0-rc4')" = '4.35.0-rc4'
+          for file in "$GITHUB_WORKSPACE"/capstone/v10/generated/*.lean; do
+            if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom)([^[:alnum:]_]|$)' "$file"; then exit 1; fi
+            lake env lean "$file"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: capstone-v10-cslib-source-bound-evidence
+          path: |
+            capstone/v10/generated/*.json
+            capstone/v10/generated/*.lean
+          if-no-files-found: warn
