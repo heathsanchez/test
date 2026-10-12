@@ -1,0 +1,7 @@
+# Capstone V10 — source-pinned CSLib simulation-relation synthesis
+
+Frozen source: leanprover/cslib at `4b88bcac4c0dec65b3f45b59e85f5397045efd8d`, Lean `v4.35.0-rc4`. The actual semantics are `Cslib.LTS.IsSimulation` (and its source imports), not an invented stand-in. Development and holdout are distinct finite LTS models constructed here, not naturally authored CSLib theorems.
+
+The old candidate relation is the full cross-product. A transition mismatch must reject it. The constructor computes the greatest forward simulation by repeated elimination of violating pairs, requiring that the requested seed survive. Its output is a finite relation enumerated as a Lean proposition. Lean must independently check the actual CSLib `IsSimulation` obligation and seed membership. If the seed cannot survive, return UNKNOWN/REJECTED, not a vacuous empty-relation success.
+
+Baseline: universal relation. Strong baseline: independently implemented fixed-point oracle with the same semantic knowledge (expected tie). Ablations: remove successor checking and disable elimination; both must expose mismatches. Freeze the generator source before opening holdout cases and preserve a manifest receipt. Full CSLib compilation with pinned dependencies is required for any formal promotion; Python finite checks alone are only candidate evidence. No claim of autonomous invention of a general semantic operator or advantage over established bisimulation algorithms.
