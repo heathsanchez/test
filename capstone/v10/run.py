@@ -44,8 +44,9 @@ def sys : LTS (Fin {n}) (Fin {case['labels']}) where
   Tr := fun s a t => {ed}
 def relation (s t : Fin {n}) : Prop := {pairs}
 theorem certified : LTS.IsSimulation sys sys relation := by
-  unfold LTS.IsSimulation
-  decide
+  intro s₁ s₂ hrel μ s₁' htr
+  fin_cases s₁ <;> fin_cases s₂ <;> fin_cases μ <;> fin_cases s₁'
+  all_goals simp_all [sys, relation]
 theorem seed : relation {start} {target} := by
   unfold relation
   decide
