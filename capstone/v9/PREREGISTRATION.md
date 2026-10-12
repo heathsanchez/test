@@ -14,3 +14,9 @@ The full corpus, family labels and negative controls are fixed in `frozen_cases.
 ## Promotion
 
 WARRANTED_BOUNDED_FAILURE_DRIVEN_GENERALIZATION requires: source freeze lineage, failures actually observed, selected rule frozen before heldouts, multiple accepted proofs, no false promotion on controls, ablation and strong-comparator accounting, and green pinned Lean CI. Otherwise record CANDIDATE/REJECTED/UNKNOWN explicitly. Do not merge with production, publish broad claims, or alter unrelated research branches.
+
+## V9b apparatus correction and lineage (frozen before generator)
+
+The first V9 qualification at [run 38231371530](https://github.com/heathsanchez/test/actions/runs/38231371530) failed **before the holdouts were opened**: the development List-fold proof already compiled under the old binder order, so it was not a genuine repair problem. V9b reorders that theorem's binder declaration to test a genuinely failed induction hypothesis. The earlier source and failed run remain recorded. This is an apparatus correction, not evidence of scientific success.
+
+The earlier workflow also ignored `LEAN_TOOLCHAIN` and reported Lean 4.34.1. V9b MUST set `ELAN_TOOLCHAIN=leanprover/lean4:v4.24.0`, verify `lean --version` contains `4.24.0`, and assert that the same toolchain is used for every repair and baseline subprocess. Every holdout retains its previously frozen bytes. The new generator source is absent from the frozen parent commit and may only be added in a later commit.
