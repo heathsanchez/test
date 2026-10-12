@@ -1,5 +1,10 @@
 name: Physlib quantum bridge probe
 on:
+  push:
+    branches:
+      - experiment/physlib-quantum-bridge-v1
+    paths:
+      - '.github/workflows/physlib-quantum-bridge-v1.yml'
   workflow_dispatch:
 jobs:
   physlib-bridge:
