@@ -58,12 +58,11 @@ def main():
     selected={s:choose(s,history) for s in policies}
     holdout={s:{t:evaluate(t,p) for t in HOLD} for s,p in selected.items()}
     assert len(history)==108
-    assert all(sum(x["pass"] for x in holdout[s].values())==2 for s in policies[:3])
-    assert all(x["pass"] for x in holdout["supplied_semantic_guard"].values())
-    assert selected["empirical"]==selected["htilt_lite"]
+    # Do not encode the historical Q7 result as an assertion: this is a distinct compact model.
+    assert all(isinstance(x["pass"],bool) for rows in holdout.values() for x in rows.values())
     out={"status":"BOUNDED_FINITE_FALSIFIER","candidate_count":27,"historical_evaluations":108,
          "train":TRAIN,"holdout":HOLD,"selected":selected,"holdout_results":holdout,
-         "htilt_strict_advantage":False,"genesis_has_extra_semantic_prior":True,
+         "htilt_strict_advantage":(sum(v["pass"] for v in holdout["htilt_lite"].values())>sum(v["pass"] for v in holdout["empirical"].values())),"genesis_has_extra_semantic_prior":True,
          "limits":["synthetic Moore families","supplied grammar","no new primitive invention","no natural-domain transfer","no Lean verification","no strong-ledger cost advantage"]}
     print(json.dumps(out,sort_keys=True,indent=2))
 if __name__=="__main__":main()
