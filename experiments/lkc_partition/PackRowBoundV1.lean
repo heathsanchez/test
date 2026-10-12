@@ -42,9 +42,8 @@ theorem packRow_lt_pow (B : Nat) (f : Nat → Nat) (n : Nat)
               simp only [Nat.mul_add, Nat.mul_one]
               omega
         _ ≤ B ^ (n + 1) * B := Nat.mul_le_mul_left _ hStep
-        _ = B ^ (n + 1 + 1) := by
-              rw [Nat.pow_add_one]
-              ac_rfl
+        _ = B ^ (n + 1 + 1) :=
+              (Nat.pow_add_one B (n + 1)).symm
 
 /-- The topmost coefficient can be extracted by division and modulus.
 This follows from radix digit boundedness; no evaluation shortcuts are used. -/
@@ -54,8 +53,7 @@ theorem packRow_digit_top (B : Nat) (f : Nat → Nat) (n : Nat)
     (packRow B f n / B ^ n) % B = f n := by
   cases n with
   | zero =>
-      simp only [packRow, pow_zero, Nat.div_one]
-      exact Nat.mod_eq_of_lt (hdigits 0 (by omega))
+      simpa [packRow] using Nat.mod_eq_of_lt (hdigits 0 (by omega))
   | succ n =>
       have hp : 0 < B ^ (n + 1) := Nat.pow_pos hB
       have hPrefix : packRow B f n < B ^ (n + 1) :=
