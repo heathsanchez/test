@@ -1,0 +1,1 @@
+Fixed Euler V6: exact 0..240 independent finite checks; no universal Lean proof, no official submission. Four candidate representations and a pinned Callgrind benchmark. Full reproducible bundle: sandbox artifact in the originating conversation.
