@@ -134,7 +134,7 @@ def main()->None:
         target.write_text(source)
         tested[name]={"checks":241,"source_sha256":hashlib.sha256(source.encode()).hexdigest(),
                       "bytes":len(source.encode()),"samples":samples}
-    assert kernel_model(1,1)[0]!=reference(1)
+    assert kernel_model(2,1)[0]!=reference(2)
     result={"status":"FINITE_EXACT_PASS","domain":"0..240 inclusive",
             "independent_oracle":"partition row DP",
             "arms":tested,"negative_bad_width":True,
