@@ -37,7 +37,16 @@ replacement="""                #[cfg(feature = "diagnostics")]
                         context.len(),
                         context,
                     );
-                    eprintln!("NUCLEUS_STAGE16_CONVERSION_OUTCOME:proven={}:result={:?}:expanded_result={:?}",outcome.is_proven(),outcome,fallback);
+                    let alternative = crate::convert::convert_with_policy_in_context(
+                        self,
+                        &TypeValue::Term(larg.clone()),
+                        &TypeValue::Term(rarg.clone()),
+                        8192,
+                        crate::convert::DeltaPolicy::Unrestricted,
+                        context.len(),
+                        context,
+                    );
+                    eprintln!("NUCLEUS_STAGE16_CONVERSION_OUTCOME:proven={}:result={:?}:expanded_result={:?}:unrestricted_result={:?}",outcome.is_proven(),outcome,fallback,alternative);
                 }
                 return trace_first_failed_field_premise(16);
             }"""
