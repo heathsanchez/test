@@ -1,0 +1,17 @@
+name: Capstone finite falsifier
+on:
+  push:
+    branches:
+      - research/capstone-selection-genesis-falsifier-20261012
+  workflow_dispatch:
+jobs:
+  finite-falsifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run frozen finite falsifier
+        run: python capstone/falsifier.py
