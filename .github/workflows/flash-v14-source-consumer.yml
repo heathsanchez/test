@@ -1,0 +1,93 @@
+name: FLASH V14 source-verified executable to protected consumer
+
+on:
+  push:
+    branches:
+      - research/flash-v14-source-consumer-gate-20261012
+    paths:
+      - 'research/flash_v14/**'
+      - '.github/workflows/flash-v14-source-consumer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-source-to-consumer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check source, consumer and prospectively frozen target lineage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          root=Path('research/flash_v14')
+          lock=json.loads((root/'SOURCE_LOCK.json').read_text())
+          assert lock['frozen_protected_commit']=='2fc9bde482de22e3398a2f9d308ddbfadab59cc6'
+          assert lock['frozen_protocol_commit']=='f94b9c9be2ba4f42e5c10c0d7e6789feec954a3c'
+          for name,sha in lock['sha256'].items():
+              got=hashlib.sha256((root/name).read_bytes()).hexdigest()
+              assert got==sha,(name,got,sha)
+          print('PASS_PRE_REPAIR_SOURCE_AND_TARGET_BYTES')
+          PY
+          git diff --exit-code 2fc9bde482de22e3398a2f9d308ddbfadab59cc6 -- research/flash_v14/protected_domains.py
+      - name: Independently requalify original V12b producer source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_genesis_v12/verify_v12b.py | tee /tmp/source_v12b.json
+          git diff --exit-code -- research/flash_genesis_v12/v12b_results.json
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          root=Path('research/flash_genesis_v12')
+          expected={
+            'learned_objective.py':'eb736c72c3acc5bc152fe811be8d3892d88ac0e1932bb2fb47ef5d562fe49a3f',
+            'verify_v12b.py':'6358e8d893aebcb27f3d94861ec86baedf2857b0f0f920241b089d92d65906c9',
+            'v12b_results.json':'9b7328e386ff9c47bf9504f8955d267a12dcefbdca345c10d3d52d3e89f1e191'}
+          for name,sha in expected.items():
+              assert hashlib.sha256((root/name).read_bytes()).hexdigest()==sha
+          assert json.loads((root/'v12b_results.json').read_text())['valid_families']==6
+          print('PASS_REQUALIFIED_PRODUCER')
+          PY
+      - name: Source-warranted event alters two actual consumer computations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_v14/verify_v14.py | tee /tmp/flash_v14_output.json
+          git diff --exit-code -- research/flash_v14/results.json
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          r=json.loads(Path('research/flash_v14/results.json').read_text())
+          assert r['status']=='PASS_V14_SOURCE_TO_CONSUMER_FINITE'
+          assert r['protected_positive_families']==5
+          assert r['protected_negative_families']==3
+          assert r['costs']['source_learned_execution_feasibility_calls']==r['costs']['informed_stateless_feasibility_calls']==1198
+          assert r['costs']['consumer_guard_raw_evaluations']==6656
+          assert len(r['old_objective_ablation_examples'])>=2
+          assert all(r['capability_events'].values())
+          print('PASS_SOURCE_TO_CONSUMER_CAUSAL_GATE')
+          PY
+      - name: Retain independent source, target and executable evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: flash-v14-source-consumer-evidence
+          path: |
+            research/flash_v14/PROTOCOL.md
+            research/flash_v14/protected_domains.py
+            research/flash_v14/source_consumer.py
+            research/flash_v14/independent_reference.py
+            research/flash_v14/verify_v14.py
+            research/flash_v14/results.json
+            research/flash_v14/SOURCE_LOCK.json
+          if-no-files-found: error
