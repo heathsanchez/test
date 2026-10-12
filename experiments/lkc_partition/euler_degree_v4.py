@@ -65,7 +65,7 @@ def compile_degree(bool_branch:bool)->str:
        "  (num / denom) &&& mask",
        ""
     ])
-    candidate=source[:start]+"\n".join(lines)+source[finish:]
+    candidate=source[:start]+"\n".join(lines)+"\n"+source[finish:]
     return candidate
 
 ARMS={
