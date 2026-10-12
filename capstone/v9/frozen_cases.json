@@ -1,0 +1,68 @@
+{
+  "schema": "capstone-v9-frozen-cases-v1",
+  "cases": [
+    {
+      "id": "orbit_nat_dev",
+      "split": "development",
+      "family": "explicit Nat recursion",
+      "expected": "repairable",
+      "source": "import Std\nnamespace CapstoneV9NatDev\n\ndef orbit (next : Nat → Nat) : Nat → Nat → Nat\n  | 0, initial => initial\n  | k + 1, initial => orbit next k (next initial)\n\ntheorem orbit_add (next : Nat → Nat) (steps tail : Nat) (initial : Nat) :\n    orbit next (steps + tail) initial = orbit next tail (orbit next steps initial) := by\n  induction steps with\n  | zero => simp [orbit]\n  | succ steps ih =>\n      simpa [Nat.succ_add, orbit] using ih (next initial)\n\nend CapstoneV9NatDev\n"
+    },
+    {
+      "id": "foldl_append_dev",
+      "split": "development",
+      "family": "Std List.foldl append",
+      "expected": "repairable",
+      "source": "import Std\nnamespace CapstoneV9FoldDev\n\n\n\ntheorem foldl_append (f : Nat → Nat → Nat) (acc : Nat) (xs ys : List Nat) :\n    List.foldl f acc (xs ++ ys) = List.foldl f (List.foldl f acc xs) ys := by\n  induction xs with\n  | nil => simp\n  | cons head tail ih =>\n      simpa [List.foldl] using ih (f acc head)\n\nend CapstoneV9FoldDev\n"
+    },
+    {
+      "id": "advance_list_holdout",
+      "split": "holdout",
+      "family": "explicit List recursion",
+      "expected": "repairable",
+      "source": "import Std\nnamespace CapstoneV9ListHold\n\ndef advance (step : List Nat → List Nat) : List Nat → List Nat → List Nat\n  | [], payload => payload\n  | _ :: rest, payload => advance step rest (step payload)\n\ntheorem advance_append (step : List Nat → List Nat)\n    (first second : List Nat) (payload : List Nat) :\n    advance step (first ++ second) payload =\n    advance step second (advance step first payload) := by\n  induction first with\n  | nil => simp [advance]\n  | cons head tail ih =>\n      simpa [advance] using ih (step payload)\n\nend CapstoneV9ListHold\n"
+    },
+    {
+      "id": "rotate_pair_holdout",
+      "split": "holdout",
+      "family": "Nat recursion on pair-valued state",
+      "expected": "repairable",
+      "source": "import Std\nnamespace CapstoneV9PairHold\n\ndef rotate (change : Nat × Nat → Nat × Nat) : Nat → Nat × Nat → Nat × Nat\n  | 0, position => position\n  | k + 1, position => rotate change k (change position)\n\ntheorem rotate_add (change : Nat × Nat → Nat × Nat)\n    (a b : Nat) (position : Nat × Nat) :\n    rotate change (a + b) position = rotate change b (rotate change a position) := by\n  induction a with\n  | zero => simp [rotate]\n  | succ a ih =>\n      simpa [Nat.succ_add, rotate] using ih (change position)\n\nend CapstoneV9PairHold\n"
+    },
+    {
+      "id": "foldl_map_holdout",
+      "split": "holdout",
+      "family": "Std List.map plus foldl",
+      "expected": "repairable",
+      "source": "import Std\nnamespace CapstoneV9MapHold\n\n\n\ntheorem foldl_map (f : Nat → Nat → Nat) (mapValue : Nat → Nat)\n    (initial : Nat) (items : List Nat) :\n    List.foldl f initial (items.map mapValue) =\n    List.foldl (fun acc item => f acc (mapValue item)) initial items := by\n  induction items with\n  | nil => rfl\n  | cons head tail ih =>\n      simpa [List.foldl, List.map] using ih (f initial (mapValue head))\n\nend CapstoneV9MapHold\n"
+    },
+    {
+      "id": "iter_bool_holdout",
+      "split": "holdout",
+      "family": "explicit Nat recursion over Bool",
+      "expected": "repairable",
+      "source": "import Std\nnamespace CapstoneV9BoolHold\n\ndef pulse (flip : Bool → Bool) : Nat → Bool → Bool\n  | 0, bit => bit\n  | j + 1, bit => pulse flip j (flip bit)\n\ntheorem pulse_add (flip : Bool → Bool)\n    (first second : Nat) (bit : Bool) :\n    pulse flip (first + second) bit = pulse flip second (pulse flip first bit) := by\n  induction first with\n  | zero => simp [pulse]\n  | succ first ih =>\n      simpa [Nat.succ_add, pulse] using ih (flip bit)\n\nend CapstoneV9BoolHold\n"
+    },
+    {
+      "id": "already_proved_control",
+      "split": "control",
+      "family": "valid baseline no repair",
+      "expected": "already_valid",
+      "source": "import Std\nnamespace CapstoneV9Already\ntheorem symmetric_refl (x : Nat) : x = x := by\n  induction x with\n  | zero => rfl\n  | succ x ih => rfl\nend CapstoneV9Already\n"
+    },
+    {
+      "id": "false_nat_control",
+      "split": "control",
+      "family": "false equality",
+      "expected": "unrepairable",
+      "source": "import Std\nnamespace CapstoneV9False\ntheorem successor_fixed (n : Nat) (seed : Nat) : n + 1 = n := by\n  induction n with\n  | zero => rfl\n  | succ n ih => simpa using ih (seed + 1)\nend CapstoneV9False\n"
+    },
+    {
+      "id": "false_recursion_control",
+      "split": "control",
+      "family": "false invariant with same induction failure",
+      "expected": "unrepairable",
+      "source": "import Std\nnamespace CapstoneV9FalseRec\n\ndef pulse (flip : Bool → Bool) : Nat → Bool → Bool\n  | 0, bit => bit\n  | j + 1, bit => pulse flip j (flip bit)\n\ntheorem false_preservation (flip : Bool → Bool) (count : Nat) (bit : Bool) :\n    pulse flip count bit = bit := by\n  induction count with\n  | zero => rfl\n  | succ count ih =>\n      simpa [pulse] using ih (flip bit)\n\nend CapstoneV9FalseRec\n"
+    }
+  ]
+}
