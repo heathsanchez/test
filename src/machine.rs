@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -138,8 +138,19 @@ impl VisitSet {
     }
 }
 
+struct ConstructorFuelScope<'a> { fuel: &'a Cell<Option<usize>> }
+impl Drop for ConstructorFuelScope<'_> { fn drop(&mut self) { self.fuel.set(None); } }
+
+struct ExposureFuelScope<'a> { fuel: &'a Cell<Option<usize>>, depth: &'a Cell<usize>, owner: bool }
+impl Drop for ExposureFuelScope<'_> {
+    fn drop(&mut self) { self.depth.set(self.depth.get().saturating_sub(1)); if self.owner { self.fuel.set(None); } }
+}
+
 pub struct Machine<'a> {
     authority: AuthorityId,
+    demand_major: bool,
+    exposure_fuel: Cell<Option<usize>>,
+    exposure_depth: Cell<usize>,
     exposure_cache: Option<ExposureCache>,
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
@@ -161,6 +172,9 @@ impl<'a> Machine<'a> {
     ) -> Self {
         Self {
             authority,
+            demand_major: std::env::var_os("NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR").is_some(),
+            exposure_fuel: Cell::new(None),
+            exposure_depth: Cell::new(0),
             exposure_cache: None,
             expressions,
             levels,
@@ -251,7 +265,7 @@ impl<'a> Machine<'a> {
             match self.expressions.get(closure.expr)? {
                 Expr::BVar(index) => match closure.env.lookup(*index)? {
                     EnvBinding::Closure(bound) => closure = bound,
-                    EnvBinding::Free(_) | EnvBinding::Neutral(_) => return None,
+                    EnvBinding::Free(_) | EnvBinding::Neutral(_) | EnvBinding::NatLit(_) => return None,
                 },
                 Expr::Let { value, body, .. } => {
                     let value = closure.sibling(*value, closure.env.clone());
@@ -385,8 +399,28 @@ impl<'a> Machine<'a> {
         spine: &[Closure],
         budget: usize,
     ) -> Judgment<Value> {
-        let field = self.projection_field_for_conversion(structure, type_name, index, budget);
+        let field = self.projection_field_for_conversion(structure.clone(), type_name, index, budget);
         let Some(field) = field.proven_value() else {
+            let Some(spec) = self.projection_specs.get(&type_name) else {
+                return Judgment::unknown("unsupported-projection");
+            };
+            if index >= spec.field_types.len() {
+                return Judgment::unknown("projection-index-out-of-range");
+            }
+            // Full source delta/iota can stop at a legitimate neutral
+            // recursor or opaque constant. Retain the projection itself;
+            // do not select or synthesize a constructor field.
+            let receiver = self.expose(structure, Transparency::Full, budget.saturating_sub(1));
+            if let Some(Value::Neutral(neutral)) = receiver.proven_value()
+                && !matches!(&neutral.head, NeutralHead::Const { name, .. } if *name == spec.constructor)
+            {
+                return Judgment::proven(Value::Neutral(Neutral {
+                    head: NeutralHead::Projection {
+                        type_name, index, structure: Box::new(neutral.clone()),
+                    },
+                    spine: spine.to_vec(),
+                }), "source-reduced-neutral-projection");
+            }
             return Judgment::unknown("lazy-projection-field-exposure");
         };
         // Do not eagerly normalize a fully applied projection field through
@@ -440,7 +474,10 @@ impl<'a> Machine<'a> {
         preserve_stuck_projection: bool,
         pending: Vec<Closure>,
     ) -> Judgment<Exposure> {
-        if budget == 0 {
+        if self.exposure_fuel.get().is_some() && self.exposure_depth.get() >= 64 { return Judgment::unknown("constructor-demand-depth-exhausted"); }
+        self.exposure_depth.set(self.exposure_depth.get() + 1);
+        let _fuel_scope = ExposureFuelScope { fuel: &self.exposure_fuel, depth: &self.exposure_depth, owner: false };
+        if budget == 0 || self.exposure_fuel.get() == Some(0) {
             return Judgment::unknown("reduction-budget-exhausted");
         }
         let Some(cache) = self.exposure_cache.as_ref().filter(|_| !record_witnesses) else {
@@ -458,6 +495,7 @@ impl<'a> Machine<'a> {
         );
         let cached = cache.borrow().get(&key).cloned();
         if let Some(value) = cached {
+            if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel.saturating_sub(1))); }
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_EXPOSURE_CACHE").is_some() {
                 eprintln!("NUCLEUS_EXPOSURE_CACHE:hit:expression={:?}", closure.expr);
@@ -471,7 +509,14 @@ impl<'a> Machine<'a> {
             closure, transparency, budget, false,
             preserve_stuck_projection, pending,
         );
-        if let Some(established) = result.proven_value() {
+        if let Some(established) = result.proven_value()
+            // A certified recursor stopped because its major did not expose.
+            // This is not a budget-independent normal form; permit a later
+            // constructor demand to evaluate the same exact lexical closure.
+            && !(self.demand_major && matches!(&established.value,
+                Value::Neutral(Neutral { head: NeutralHead::Const {name,..}, .. })
+                    if self.recursor_reductions.contains_key(name)))
+        {
             let mut entries = cache.borrow_mut();
             // Bound memory across large Arena exports. Eviction affects only
             // performance and never creates a judgment.
@@ -496,10 +541,11 @@ impl<'a> Machine<'a> {
         let mut transitions = Vec::new();
 
         loop {
-            if budget == 0 {
+            if budget == 0 || self.exposure_fuel.get() == Some(0) {
                 return Judgment::unknown("reduction-budget-exhausted");
             }
             budget -= 1;
+            if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel - 1)); }
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
             }
@@ -531,6 +577,10 @@ impl<'a> Machine<'a> {
                                     }),
                                     transitions,
                                 );
+                            }
+                            EnvBinding::NatLit(number) => {
+                                if !pending.is_empty() { return Judgment::unknown("native-nat-literal-applied-as-function"); }
+                                return exposed(Value::NatLit(number), transitions);
                             }
                             EnvBinding::Neutral(mut neutral) => {
                                 append_pending(&mut neutral.spine, &mut pending);
@@ -1405,7 +1455,7 @@ impl<'a> Machine<'a> {
                     EnvBinding::Closure(bound) => {
                         closure = bound;
                     }
-                    EnvBinding::Free(_) | EnvBinding::Neutral(_) => return None,
+                    EnvBinding::Free(_) | EnvBinding::Neutral(_) | EnvBinding::NatLit(_) => return None,
                 },
                 Expr::Const { name, .. } => {
                     arguments.reverse();
@@ -1659,9 +1709,16 @@ impl<'a> Machine<'a> {
         {
             return Some((constructor, arguments));
         }
-        if transparency != Transparency::Full {
-            return None;
-        }
+        // Only a new constructor demand owns shared fuel. Ordinary beta
+        // exposure keeps its established budget semantics; recursive major
+        // demands share and decrease this exact owner's budget.
+        let _constructor_fuel = if self.demand_major && self.exposure_fuel.get().is_none() {
+            self.exposure_fuel.set(Some(budget));
+            Some(ConstructorFuelScope { fuel: &self.exposure_fuel })
+        } else { None };
+        // Iota is independent of delta transparency. Expose the exact major
+        // using the caller's policy, so native literals and beta/zeta majors
+        // can select checked rules even when definition unfolding is opaque.
         // Allocate extra constructor exposure only for the certified
         // Bool.rec over a checked, fully applied Nat.beq.  This does not
         // infer the major constructor: exposure must produce the registered
@@ -1698,8 +1755,8 @@ impl<'a> Machine<'a> {
         let exposed = self
             .expose_internal(
                 target.clone(),
-                Transparency::Full,
-                budget.saturating_sub(1).min(major_cap),
+                transparency,
+                if self.demand_major { budget.saturating_sub(1) } else { budget.saturating_sub(1).min(major_cap) },
                 false,
                 false,
             )
@@ -1714,8 +1771,8 @@ impl<'a> Machine<'a> {
             // Lean's trusted Nat numeral representation is definitionally
             // constructor-shaped. A recursor with independently installed
             // Nat.zero/Nat.succ iota rules may inspect that exact numeral.
-            // Only reuse a predecessor that exists in the checked export;
-            // no synthetic expression or rule is fabricated.
+            // Carry the exact native predecessor through a fresh immutable
+            // value binding when the export has no corresponding literal.
             Value::NatLit(number) => {
                 let nat = self.nat_primitives.as_ref()?;
                 if std::env::var_os("NUCLEUS_TRACE_NAT_IOTA").is_some() { eprintln!("NUCLEUS_NAT_LITERAL_IOTA:major={number:?}:zero_rule={}:succ_rule={}", matches_rule(nat.zero,0), matches_rule(nat.succ,1)); }
@@ -1739,9 +1796,18 @@ impl<'a> Machine<'a> {
                         Expr::NatLit(candidate) if candidate == &predecessor => Some(ExprId(id)),
                         _ => None,
                     }
-                }))?;
+                }));
+                let predecessor_closure = if let Some(pred_id) = pred_id {
+                    Closure::new(pred_id, EnvFrame::empty())
+                } else {
+                    // Nat's independently certified numeral extension supplies
+                    // the exact predecessor value. The source BVar(0) is only
+                    // a closure carrier, and never changes any source binder.
+                    let bvar0 = nat.virtual_bvar_zero?;
+                    Closure::new(bvar0, EnvFrame::empty().extend_nat_literal(predecessor))
+                };
                 if std::env::var_os("NUCLEUS_TRACE_NAT_IOTA").is_some() { eprintln!("NUCLEUS_NAT_LITERAL_IOTA:constructor_succ:pred_id={pred_id:?}"); }
-                Some((nat.succ, vec![Closure::new(pred_id, EnvFrame::empty())]))
+                Some((nat.succ, vec![predecessor_closure]))
             }
             _ => None,
         }
@@ -1784,4 +1850,34 @@ fn record_transition(
 
 fn exposed(value: Value, transitions: Vec<TransitionWitness>) -> Judgment<Exposure> {
     Judgment::proven(Exposure { value, transitions }, "explicit-closure-machine")
+}
+
+#[cfg(test)]
+mod neutral_projection_tests {
+    use super::*;
+
+    #[test]
+    fn projection_conversion_preserves_a_constant_neutral_receiver() {
+        let mut expressions = IdTable::default();
+        let levels = IdTable::default();
+        expressions.insert(ExprId(0), Expr::Const { name: NameId(3), levels: vec![] }).unwrap();
+        expressions.insert(ExprId(1), Expr::BVar(0)).unwrap();
+        let machine = Machine::new(AuthorityId(1), &expressions, &levels, HashMap::new())
+            .with_projection_specs(HashMap::from([(NameId(1), ProjectionSpec {
+                constructor: NameId(2), num_params: 0,
+                field_types: vec![ProjectionFieldType::Derived(ExprId(1))],
+                eta_expandable: false,
+            })]));
+        let receiver = Closure::new(ExprId(0), EnvFrame::empty());
+        let argument = Closure::new(ExprId(1), EnvFrame::empty().extend_free(FreeId(0)));
+        let result = machine.projection_value_for_conversion(receiver.clone(), NameId(1), 0, &[argument.clone()], 128);
+        let Some(Value::Neutral(Neutral { head: NeutralHead::Projection { type_name, index, structure }, spine })) = result.proven_value() else {
+            panic!("legitimate neutral receiver projection was discarded: {result:?}");
+        };
+        assert_eq!((*type_name, *index), (NameId(1), 0));
+        assert_eq!(structure.head, NeutralHead::Const { name: NameId(3), levels: vec![] });
+        assert_eq!(spine, &[argument]);
+        assert!(machine.projection_value_for_conversion(receiver.clone(), NameId(1), 1, &[], 128).is_unknown());
+        assert!(machine.projection_value_for_conversion(receiver, NameId(9), 0, &[], 128).is_unknown());
+    }
 }

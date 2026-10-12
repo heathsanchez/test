@@ -27,6 +27,7 @@ pub enum EnvBinding {
     Closure(Closure),
     Free(FreeId),
     Neutral(Neutral),
+    NatLit(BigNat),
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -43,6 +44,10 @@ impl EnvFrame {
 
     pub fn extend_free(&self, free: FreeId) -> Self {
         self.extend_binding(EnvBinding::Free(free))
+    }
+
+    pub(crate) fn extend_nat_literal(&self, number: BigNat) -> Self {
+        self.extend_binding(EnvBinding::NatLit(number))
     }
 
     pub fn extend_neutral(&self, neutral: Neutral) -> Self {
@@ -296,6 +301,7 @@ impl Closure {
                     EnvBinding::Free(f) if *f == self.source =>
                         Some((EnvBinding::Closure(self.actual.clone()), true)),
                     EnvBinding::Free(f) => Some((EnvBinding::Free(*f), false)),
+                    EnvBinding::NatLit(n) => Some((EnvBinding::NatLit(n.clone()), false)),
                     EnvBinding::Closure(c) => {
                         let (c, changed) = self.closure(c)?;
                         Some((EnvBinding::Closure(c), changed))

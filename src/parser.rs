@@ -201,6 +201,17 @@ fn parse_record(export: &mut ParsedExport, value: Value, line: usize) -> Result<
         export.declarations.push(parse_definition(value, line)?);
         return Ok(());
     }
+    if let Some(value) = object.get("opaque") {
+        export.declarations.push(Declaration::Opaque {
+            all: nested_numbers(value, "all", line)?.into_iter().map(NameId).collect(),
+            name: NameId(nested_number(value, "name", line)?),
+            level_params: nested_numbers(value, "levelParams", line)?.into_iter().map(NameId).collect(),
+            ty: ExprId(nested_number(value, "type", line)?),
+            value: ExprId(nested_number(value, "value", line)?),
+            is_unsafe: nested_bool(value, "isUnsafe", line)?,
+        });
+        return Ok(());
+    }
     if let Some(value) = object.get("thm") {
         export.declarations.push(parse_theorem(value, line)?);
         return Ok(());
@@ -548,6 +559,7 @@ fn resolve_declaration(export: &ParsedExport, declaration: &Declaration) -> Resu
             value,
             ..
         } => (*name, level_params, &[], &[*ty, *value]),
+        Declaration::Opaque { all, name, level_params, ty, value, .. } => (*name, level_params, all, &[*ty, *value]),
         Declaration::Theorem {
             all,
             name,

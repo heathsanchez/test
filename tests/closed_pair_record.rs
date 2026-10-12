@@ -5,6 +5,16 @@ use metatron_kernel::verdict::Verdict;
 
 const WITNESS: &str = include_str!("fixtures/good-closed-pair-v434.ndjson");
 
+#[test]
+fn closed_record_arity_is_checked_by_its_general_telescope() {
+    for source in [include_str!("fixtures/good-closed-record-3.ndjson"), include_str!("fixtures/good-closed-record-4.ndjson")] {
+        assert_eq!(verdict(source), Verdict::Accept);
+    }
+    for source in [include_str!("fixtures/bad-closed-record-3-universe.ndjson"), include_str!("fixtures/bad-closed-record-3-rule.ndjson")] {
+        assert_ne!(verdict(source), Verdict::Accept);
+    }
+}
+
 fn verdict(text: &str) -> Verdict {
     check_export(parse(Cursor::new(text)).unwrap().resolve().unwrap(), Limits::default())
 }

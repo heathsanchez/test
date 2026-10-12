@@ -1,0 +1,39 @@
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2155:20
+     |
+2155 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2156 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2155 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2156 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: `metatron-kernel` (lib) generated 1 warning (run `cargo fix --lib -p metatron-kernel` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 0.06s
+     Running tests/residual_closure.rs (metatron-kernel/target/release/deps/residual_closure-c6231369d60d6772)
+
+running 1 test
+test all_seven_complete_positive_exports_accept ... FAILED
+
+failures:
+
+---- all_seven_complete_positive_exports_accept stdout ----
+
+thread 'all_seven_complete_positive_exports_accept' (14994499) panicked at tests/residual_closure.rs:20:9:
+assertion `left == right` failed: complete export remains unresolved: init-prelude
+  left: Unknown
+ right: Accept
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    all_seven_complete_positive_exports_accept
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.51s
+
+error: test failed, to rerun pass `--test residual_closure`

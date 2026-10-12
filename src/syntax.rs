@@ -72,6 +72,14 @@ pub enum Declaration {
         value: ExprId,
         preferred_for_reduction: bool,
     },
+    Opaque {
+        all: Vec<NameId>,
+        name: NameId,
+        level_params: Vec<NameId>,
+        ty: ExprId,
+        value: ExprId,
+        is_unsafe: bool,
+    },
     Theorem {
         all: Vec<NameId>,
         name: NameId,
