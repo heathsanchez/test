@@ -1,0 +1,93 @@
+name: FLASH V13 prospective global reclosure
+
+on:
+  push:
+    branches:
+      - research/flash-v13-incremental-reclosure-20261012
+    paths:
+      - 'research/flash_v13/**'
+      - '.github/workflows/flash-genesis-v13.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  six-gate-independent-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate immutable paper-protocol and pre-engine fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          root=Path('research/flash_v13')
+          lock=json.loads((root/'SOURCE_LOCK.json').read_text())
+          assert lock['frozen_fixture_commit']=='b8236e3605a702e5d1215217b02709b02e45d47a'
+          assert len(lock['sha256'])==9
+          for name,expected in lock['sha256'].items():
+              observed=hashlib.sha256((root/name).read_bytes()).hexdigest()
+              assert observed==expected,(name,observed,expected)
+          print('PASS_SOURCE_LOCK')
+          PY
+          git diff --exit-code b8236e3605a702e5d1215217b02709b02e45d47a -- research/flash_v13/fixture.json
+      - name: Independently regenerate frozen source fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_v13/make_fixture.py
+          git diff --exit-code -- research/flash_v13/fixture.json
+      - name: Verify six original FLASH operational gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_v13/verify_v13.py | tee /tmp/flash_v13_summary.json
+          git diff --exit-code -- research/flash_v13/results.json
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          r=json.loads(Path('research/flash_v13/results.json').read_text())
+          assert r['status']=='PASS_FLASH_V13_FINITE_PROSPECTIVE'
+          assert len(r['main_six_gates'])==6 and all(r['main_six_gates'].values())
+          assert r['main_controls']['fixed_points_equivalent']==20
+          assert r['randomized_stress']['randomized_events']==4200
+          assert r['independent_generated_graphs']['independent_checks']==6200
+          assert r['main_incremental']['rule_evaluations']==213
+          assert r['main_batch_baseline']['rule_evaluations']==1328
+          print('PASS_WARRANTED_FINITE_REPLAY')
+          PY
+      - name: Re-run equal-information batch comparison with actual wall time
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_v13/benchmark_v13.py | tee /tmp/flash_v13_benchmark.json
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('research/flash_v13/benchmark_results.json')
+          r=json.loads(p.read_text())
+          assert r['status']=='PASS_BOUNDED_LOCAL_WALL_COMPARISON'
+          assert r['event_count']==16000 and r['repetitions']==8
+          assert len(r['times_seconds']['batch'])==len(r['times_seconds']['incremental'])==8
+          print('BENCHMARK_RECORDED_NOT_GENERAL_SPEED_THEOREM')
+          PY
+      - name: Preserve replayable source and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: flash-v13-six-gate-evidence
+          path: |
+            research/flash_v13/fixture.json
+            research/flash_v13/SOURCE_LOCK.json
+            research/flash_v13/results.json
+            research/flash_v13/benchmark_results.json
+            research/flash_v13/flash_engine.py
+            research/flash_v13/reference_oracle.py
+            research/flash_v13/verify_v13.py
+          if-no-files-found: error
