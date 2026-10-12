@@ -22,7 +22,7 @@ def packRow (B : Nat) (f : Nat → Nat) : Nat → Nat
 
 /-- A packed prefix with digits below B fits into its allocated radix width. -/
 theorem packRow_lt_pow (B : Nat) (f : Nat → Nat) (n : Nat)
-    (hB : 0 < B)
+    (_hB : 0 < B)
     (hdigits : ∀ i, i ≤ n → f i < B) :
     packRow B f n < B ^ (n + 1) := by
   induction n with
