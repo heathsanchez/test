@@ -1,0 +1,173 @@
+name: LKC Partition packed phase-change V1
+
+on:
+  push:
+    branches: [lkc-partition-packed-phase-v1-20261012]
+    paths:
+      - '.github/workflows/lkc-partition-packed-phase-v1.yml'
+      - 'experiments/lkc_partition/packed_phase_v1.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lkc-partition-packed-phase-v1
+  cancel-in-progress: false
+
+env:
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independent finite arithmetic differential and negative control
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile experiments/lkc_partition/packed_phase_v1.py
+          python3 experiments/lkc_partition/packed_phase_v1.py --self-test
+          python3 experiments/lkc_partition/threecompiled_v13.py
+          sha256sum experiments/lkc_partition/generated/Submission_v13.lean
+          test "$(sha256sum experiments/lkc_partition/generated/Submission_v13.lean | cut -d' ' -f1)" = "bcb6325b9d0ca5c7259b0de76d903ba5cb20e05fdb60938b5201745d00491085"
+          mkdir -p packed-phase-v1
+          cp experiments/lkc_partition/generated/packed_phase_v1_finite_results.json packed-phase-v1/
+          sha256sum experiments/lkc_partition/generated/Submission_{v13,packed_division_probe,packed_geometric_probe}.lean > packed-phase-v1/sources.sha256
+      - name: Checkout pinned independent evaluator
+        shell: bash
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install pinned Lean environment
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Set up official Lean 4.33.1 benchmark with source pin control
+        shell: bash
+        working-directory: bench
+        run: |
+          set -euo pipefail
+          python3 benchmark.py setup --problem partition
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+
+      - name: Actual Lean kernel wall-time screen on identical source-independent targets
+        shell: bash
+        run: |
+          set -u
+          root="$GITHUB_WORKSPACE/packed-phase-v1"
+          for who in v13 packed_division packed_geometric; do
+            case "$who" in
+              v13) sub="$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Submission_v13.lean" ;;
+              packed_division) sub="$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Submission_packed_division_probe.lean" ;;
+              packed_geometric) sub="$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Submission_packed_geometric_probe.lean" ;;
+            esac
+            echo "KERNEL_SCREEN_BEGIN $who"
+            python3 bench/benchmark.py diagnostic --problem partition --submission "$sub" \
+              --metric wall-time --repetitions 3 --timeout 180 --memory-mb 4096 \
+              --inputs 14 22 32 36 --output "$root/$who"
+            code=$?
+            echo "$code" > "$root/$who.exit"
+            echo "KERNEL_SCREEN_EXIT $who $code"
+          done
+          exit 0
+
+      - name: Diagnose phase-change result and select a cost-warranted instruction probe
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          root=Path("packed-phase-v1")
+          results={}
+          for name in ["v13","packed_division","packed_geometric"]:
+              path=root/name/"diagnostic.json"
+              exit_path=root/(name+".exit")
+              rec={"exit_code":int(exit_path.read_text()) if exit_path.exists() else None,
+                   "complete":False,"sum_wall_ns":None}
+              if path.exists():
+                  obj=json.loads(path.read_text())
+                  rec.update({"complete":bool(obj.get("complete")),
+                              "metric":obj.get("metric"),
+                              "sum_wall_ns":obj.get("totals",{}).get("candidate"),
+                              "universal_correctness_checked":obj.get("universal_correctness_checked"),
+                              "case_statuses": [x.get("status") for row in obj.get("runs",[]) if row.get("role")=="candidate" for x in row.get("cases",[])],
+                              "case_inputs":[x.get("n") for row in obj.get("runs",[]) if row.get("role")=="candidate" for x in row.get("cases",[])]})
+              results[name]=rec
+          base=results["v13"]
+          winner=None;best_ratio=None
+          if base["complete"] and base["sum_wall_ns"] and base["exit_code"]==0:
+              for name in ["packed_division","packed_geometric"]:
+                  v=results[name]
+                  if v["complete"] and v["sum_wall_ns"] and v["exit_code"]==0:
+                      v["ratio_to_v13"]=float(v["sum_wall_ns"])/float(base["sum_wall_ns"])
+                      if best_ratio is None or v["ratio_to_v13"]<best_ratio:
+                          winner=name;best_ratio=v["ratio_to_v13"]
+          score={
+              "status":"COMPLETE_BOUNDED_SCREEN" if base["complete"] else "UNKNOWN_BASELINE_OR_INFRA",
+              "arms":results,
+              "best_complete_candidate":winner,
+              "best_ratio":best_ratio,
+              "candidate_for_instruction_probe":winner if best_ratio is not None and best_ratio<0.40 else None,
+              "semantic_boundary":"0..80 independent finite Python test; no universal Lean proof for new arms",
+              "scoring_boundary":"Pinned local wall-time only; cannot imply official PMU/rank",
+              "official_submission":"NONE",
+          }
+          (root/"decision.json").write_text(json.dumps(score,indent=2)+"\n")
+          print(json.dumps(score,indent=2))
+          chosen=score["candidate_for_instruction_probe"] or "none"
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
+              f.write(f"winner={chosen}\n")
+          PY
+      - name: Paired Callgrind instruction gate on qualifying phase-change candidate
+        if: steps.decide.outputs.winner != 'none'
+        shell: bash
+        run: |
+          set -u
+          who="${{ steps.decide.outputs.winner }}"
+          case "$who" in
+            packed_division) file="Submission_packed_division_probe.lean" ;;
+            packed_geometric) file="Submission_packed_geometric_probe.lean" ;;
+            *) exit 2 ;;
+          esac
+          root="$GITHUB_WORKSPACE/packed-phase-v1/ir"
+          for arm in baseline candidate; do
+            if [ "$arm" = baseline ]; then
+              sub="$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Submission_v13.lean"
+            else
+              sub="$GITHUB_WORKSPACE/experiments/lkc_partition/generated/$file"
+            fi
+            python3 bench/benchmark.py diagnostic --problem partition --submission "$sub" \
+              --metric callgrind --repetitions 2 --timeout 600 --memory-mb 4096 \
+              --inputs 14 22 32 --output "$root/$arm"
+            echo "$?" > "$GITHUB_WORKSPACE/packed-phase-v1/ir-$arm.exit"
+          done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("packed-phase-v1/ir")
+          vals={}
+          for arm in ["baseline","candidate"]:
+              o=json.loads((p/arm/"diagnostic.json").read_text())
+              vals[arm]={"complete":o["complete"],"total":o["totals"]["candidate"]}
+          ratio=float(vals["candidate"]["total"])/float(vals["baseline"]["total"]) if all(v["complete"] and v["total"] for v in vals.values()) else None
+          data={"metric":"Callgrind-Ir-development-proxy","arms":vals,"ratio":ratio,
+                "accepted_for_proof_work":ratio is not None and ratio<0.4,
+                "note":"Not official hardware PMU or universal proof."}
+          Path("packed-phase-v1/instruction-decision.json").write_text(json.dumps(data,indent=2)+"\n")
+          print(json.dumps(data,indent=2))
+          PY
+      - name: Archive all competing evidence and failed arms
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lkc-partition-packed-phase-v1
+          path: packed-phase-v1/
+          if-no-files-found: error
