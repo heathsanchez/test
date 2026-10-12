@@ -146,11 +146,13 @@ theorem shiftMany_spec (f : Nat → Nat) :
           change shiftMany k f n =
             if k + 1 ≤ n + 1 then f (n + 1 - (k + 1)) else 0
           rw [ih n]
-          have hle : (k + 1 ≤ n + 1) = (k ≤ n) := by
-            simp
-          rw [hle]
-          congr 1
-          omega
+          by_cases h : k ≤ n
+          · have h' : k + 1 ≤ n + 1 := by omega
+            simp only [if_pos h, if_pos h']
+            congr 1
+            omega
+          · have h' : ¬ k + 1 ≤ n + 1 := by omega
+            simp only [if_neg h, if_neg h']
 
 /-- A universal k-degree shift is exact radix multiplication on complete
 coefficient-prefix rows; no coefficient bound is required for this equality. -/
