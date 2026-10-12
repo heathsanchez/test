@@ -1,0 +1,26 @@
+{
+  "schema": "v9-control-v1",
+  "cases": [
+    {
+      "id": "already_proved_control",
+      "split": "control",
+      "family": "valid baseline no repair",
+      "expected": "already_valid",
+      "source": "import Std\nnamespace CapstoneV9Already\ntheorem symmetric_refl (x : Nat) : x = x := by\n  induction x with\n  | zero => rfl\n  | succ x ih => rfl\nend CapstoneV9Already\n"
+    },
+    {
+      "id": "false_nat_control",
+      "split": "control",
+      "family": "false equality",
+      "expected": "unrepairable",
+      "source": "import Std\nnamespace CapstoneV9False\ntheorem successor_fixed (n : Nat) (seed : Nat) : n + 1 = n := by\n  induction n with\n  | zero => rfl\n  | succ n ih => simpa using ih (seed + 1)\nend CapstoneV9False\n"
+    },
+    {
+      "id": "false_recursion_control",
+      "split": "control",
+      "family": "false invariant with same induction failure",
+      "expected": "unrepairable",
+      "source": "import Std\nnamespace CapstoneV9FalseRec\n\ndef pulse (flip : Bool → Bool) : Nat → Bool → Bool\n  | 0, bit => bit\n  | j + 1, bit => pulse flip j (flip bit)\n\ntheorem false_preservation (flip : Bool → Bool) (count : Nat) (bit : Bool) :\n    pulse flip count bit = bit := by\n  induction count with\n  | zero => rfl\n  | succ count ih =>\n      simpa [pulse] using ih (flip bit)\n\nend CapstoneV9FalseRec\n"
+    }
+  ]
+}
