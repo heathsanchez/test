@@ -12,15 +12,19 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: leanprover/lean-action@v1
-        with:
-          auto-config: false
       - name: Clone pinned Physlib
         run: |
           git clone https://github.com/leanprover-community/physlib.git /tmp/physlib
           cd /tmp/physlib
           git checkout 215aefe06c59d45c1ebcc8c845fb6a5551e2087a
           cat lean-toolchain
+      - name: Install pinned Lean toolchain
+        working-directory: /tmp/physlib
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          "$HOME/.elan/bin/lake" --version
       - name: Compile Physlib native Stinespring and CPTP modules
         working-directory: /tmp/physlib
         run: |
