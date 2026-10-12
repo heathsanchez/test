@@ -1,0 +1,67 @@
+name: CSLib bridge baseline preflight
+on:
+  push:
+    branches: [research/cslib-bridge-preflight-20261012]
+  workflow_dispatch:
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned Strata-Boole
+        uses: actions/checkout@v4
+        with:
+          repository: strata-org/Strata-Boole
+          ref: 9c9fcae584db53d1fd01cfee64220a9b01cb81e1
+          path: StrataBoole
+      - name: Checkout pinned CSLib historical seed
+        uses: actions/checkout@v4
+        with:
+          repository: leanprover/cslib
+          ref: d4c7863a61b8c21fe0f05a06d094ce043e0317f8
+          path: cslib-legacy
+      - name: Install Lean toolchain
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: StrataBoole
+          build: false
+          test: false
+          lint: false
+          use-mathlib-cache: true
+      - name: Pinned source and trust boundary census
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          printf 'Strata-Boole HEAD: ' | tee evidence/summary.txt
+          git -C StrataBoole rev-parse HEAD | tee -a evidence/summary.txt
+          printf 'CSLib legacy HEAD: ' | tee -a evidence/summary.txt
+          git -C cslib-legacy rev-parse HEAD | tee -a evidence/summary.txt
+          grep -n -A 4 'bridgeName.*_genSMTVCsBoole_tcbBridge' StrataBoole/StrataBoole/MetaVerifier.lean | tee evidence/boole-bridge.txt
+          grep -n 'axiomDecl' StrataBoole/StrataBoole/MetaVerifier.lean | tee -a evidence/boole-bridge.txt
+          cp cslib-legacy/Cslib/Languages/Boole/examples/MaxExample.lean evidence/MaxExample-legacy.lean
+          cd StrataBoole
+          lake env lean --version | tee ../evidence/lean-version.txt
+          lake build StrataBooleTest 2>&1 | tee ../evidence/baseline-build.log
+      - name: Audit exact axiom dependencies
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > StrataBoole/StrataBooleTest/BridgeAxiomAudit.lean <<'EOF'
+          import StrataBooleTest.FeatureRequests.mutual_recursion
+          import StrataBooleTest.early_return
+          import StrataBooleTest.quicksort
+          import StrataBoole.MetaVerifier
+          #print axioms Strata.smtVCsCorrectBoole
+          EOF
+          cd StrataBoole
+          lake env lean StrataBooleTest/BridgeAxiomAudit.lean 2>&1 | tee ../evidence/axiom-audit.log
+      - name: Preserve baseline logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cslib-bridge-preflight
+          path: evidence/
+          if-no-files-found: warn
