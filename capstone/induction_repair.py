@@ -15,7 +15,7 @@ recursion=re.search(r'\| n \+ 1, x => iterate f n \(f x\)',original)
 goal=re.search(r'theorem iterate_add .*?\(x : Nat\)',original)
 assert recursion and goal
 binder=re.search(r'\((\w+) : Nat\)',goal.group(0)).group(1)
-candidate=bad.replace('induction m\n',f'induction m generalizing {binder}\n')
+candidate=bad.replace('induction m with',f'induction m generalizing {binder} with')
 assert candidate==original
 (ROOT/'InductionGenerated.lean').write_text(candidate)
 print(json.dumps({'status':'SYNTACTIC_REPAIR_CANDIDATE','derived_binder':binder,'old_source_has_no_generalization':True,'candidate_equals_known_reference':True,'external_lean_verification_required':True,'scope':'single iteration composition theorem; syntax-directed binder extraction'},sort_keys=True))
