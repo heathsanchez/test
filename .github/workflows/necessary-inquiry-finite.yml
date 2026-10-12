@@ -1,0 +1,21 @@
+name: Necessary inquiry finite qualification
+on:
+  push:
+    branches:
+      - research/necessary-inquiry-dual-obstruction-v1-20261012
+    paths:
+      - 'research/necessary_inquiry_v1/**'
+      - '.github/workflows/necessary-inquiry-finite.yml'
+  workflow_dispatch:
+jobs:
+  exact-finite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python3 research/necessary_inquiry_v1/verify.py
