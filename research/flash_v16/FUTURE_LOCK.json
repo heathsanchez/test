@@ -1,0 +1,58 @@
+{
+  "status": "FROZEN_BEFORE_V16_TRANSFER_CODE",
+  "source": {
+    "repo": "heathsanchez/test",
+    "commit": "5b10a853240356b2b00258334ef378e0850eb42c",
+    "path": "research/flash_genesis_v11/learned_repair.py",
+    "git_blob": "0f7fb6b837cd65aa86b5fef7c097196fc0df4845",
+    "qualified_run": 38201499353
+  },
+  "target": {
+    "repo": "metalogiclabs/mathgraph",
+    "commit": "280b0200af53033d6f4ee0e1c31e7c2f4f32c172",
+    "path": "research/mathgraph_check_machine_oracle_v1.py",
+    "git_blob": "0434f24b64dbff3c70a570e3d3de1b9260986875",
+    "corpus_sha256": "a8c05bda6e6bbfb15fdfe21bc8954fd9c5d790f8a31b2df04c8a3ef83b04b609",
+    "verified_run": 38012157151
+  },
+  "development_seed": "0x4D475632",
+  "future_seeds": [
+    "0x4D475649",
+    "0x4D475650"
+  ],
+  "adversarial_future": {
+    "id": "v16_alltrue_corner",
+    "source": {
+      "const": false
+    },
+    "formal": {
+      "and": [
+        {
+          "var": "p"
+        },
+        {
+          "and": [
+            {
+              "var": "q"
+            },
+            {
+              "var": "r"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "contract_modes": [
+    "verdict_only",
+    "verdict_plus_exact_first_witness"
+  ],
+  "source_generator_must_remain_byte_identical": true,
+  "comparison": {
+    "source_v10_greedy_complete_only_if_matroid": false,
+    "independently_exhaustive_256_subsets": true,
+    "old_mathgraph_full8_remains_valid": true,
+    "strong_stateless_must_tie": true
+  },
+  "no_programming_grammar_invention_claim": true
+}
