@@ -1,0 +1,62 @@
+name: Capstone V9 failure-driven induction transfer
+on:
+  push:
+    branches:
+      - research/capstone-v9-induction-critic-genesis-20261012
+    paths:
+      - 'capstone/v9/**'
+      - '.github/workflows/capstone-v9-induction.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pinned-lean-repair-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check source-frozen development, holdout, controls and protocol
+        run: |
+          set -euo pipefail
+          test "$(git hash-object capstone/v9/development.json)" = 'f94c2d560422ba3f7dc7126392b22a143c1dfdd7'
+          test "$(git hash-object capstone/v9/holdout.json)" = '82908b663672fe821015c4788f700e19d4bd806b'
+          test "$(git hash-object capstone/v9/control.json)" = 'ad46c5cd1fc94a9dd10e7521c4919504c428153d'
+          test "$(git hash-object capstone/v9/PREREGISTRATION.md)" = 'cca804a24e8464dc1fe09a440008736aba367955'
+          test -f capstone/v9/run.py
+          python -m py_compile capstone/v9/run.py
+      - name: Install exact pinned Lean 4.24.0
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Execute failing baseline diagnostics, developmental policy selection and untouched holdouts
+        env:
+          CAPSTONE_V9_WORK: /tmp/capstone_v9
+          LEAN_TOOLCHAIN: leanprover/lean4:v4.24.0
+        run: |
+          set -euo pipefail
+          lean --version
+          python capstone/v9/run.py
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/capstone_v9/RESULTS.json'))
+          assert all(d['gates'].values()),d['gates']
+          assert d['heldout_success']==4
+          assert d['strong_baseline_success']==4
+          assert d['heldout_count']==4
+          assert d['source_freeze_commit']=='2131dd4c12a96e47f5c81769962816a303243127'
+          print('V9_GATES_GREEN_AT_PINNED_LEAN_BOUNDARY')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: capstone-v9-pinned-induction-critic-evidence
+          path: |
+            /tmp/capstone_v9/RESULTS.json
+            /tmp/capstone_v9/PRE_HOLDOUT_FREEZE.json
+          if-no-files-found: warn
