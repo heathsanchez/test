@@ -39,7 +39,7 @@ This theorem does NOT establish the required numerator identity.
 -/
 theorem packed_quotient_digit
     (base divisor high digit remainder numerator : Nat)
-    (hBase : 0 < base)
+    (_hBase : 0 < base)
     (hDivisor : 0 < divisor)
     (hDigit : digit < base)
     (hRem : remainder < divisor)
