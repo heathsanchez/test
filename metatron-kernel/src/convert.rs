@@ -254,14 +254,27 @@ fn convert_in_context_with_congruence(
                 TypeValue::Pi {
                     domain: left_domain,
                     body: left_body,
-                    binder: _left_binder,
+                    binder: left_binder,
                 },
                 TypeValue::Pi {
                     domain: right_domain,
                     body: right_body,
-                    binder: _right_binder,
+                    binder: right_binder,
                 },
             ) => {
+                let Some(free) = fresh_local(depth) else {
+                    return Judgment::unknown("binder-depth-overflow");
+                };
+                let Some(left_body) = checker.reopen_fixed_pi_body(
+                    &left_body, left_binder, free, &mut remaining,
+                ) else {
+                    return Judgment::unknown("fixed-pi-alpha-reopening");
+                };
+                let Some(right_body) = checker.reopen_fixed_pi_body(
+                    &right_body, right_binder, free, &mut remaining,
+                ) else {
+                    return Judgment::unknown("fixed-pi-alpha-reopening");
+                };
                 if let Some(free) = fresh_local(depth) {
                     if let (Some(left_key), Some(right_key)) = (
                         checker.unit_like_type_key(&left_domain, remaining),
@@ -297,8 +310,8 @@ fn convert_in_context_with_congruence(
                     body_context.push((*left_domain).clone());
                 }
                 work.push((
-                    *left_body,
-                    *right_body,
+                    left_body,
+                    right_body,
                     depth.saturating_add(1),
                     body_context,
                 ));
@@ -2036,6 +2049,43 @@ fn compare_neutral_heads(
             && left_structure == right_structure =>
         {
             Judgment::proven((), "same-neutral-projection")
+        }
+        (
+            NeutralHead::Projection {
+                type_name: left_type,
+                index: left_index,
+                structure: left_structure,
+            },
+            NeutralHead::Projection {
+                type_name: right_type,
+                index: right_index,
+                structure: right_structure,
+            },
+        ) if left_type == right_type && left_index == right_index
+            && depth == context.len() =>
+        {
+            // Congruence requires equal receiver values, not identical
+            // capture-frame allocations. This is only a sufficient equality
+            // rule: failure does not prove unequal selected fields.
+            if budget < 8 || left_structure.spine.len() != right_structure.spine.len() {
+                return Judgment::unknown("neutral-projection-receiver-congruence");
+            }
+            let probe = budget.saturating_sub(1) / 2;
+            if !compare_neutral_heads(
+                checker, left_structure, right_structure, probe, depth, context,
+            ).is_proven() {
+                return Judgment::unknown("neutral-projection-receiver-congruence");
+            }
+            let argument_budget = probe / left_structure.spine.len().max(1);
+            for (lhs, rhs) in left_structure.spine.iter().zip(&right_structure.spine) {
+                if !convert_with_policy_in_context(
+                    checker, &TypeValue::Term(lhs.clone()), &TypeValue::Term(rhs.clone()),
+                    argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
+                ).is_proven() {
+                    return Judgment::unknown("neutral-projection-receiver-congruence");
+                }
+            }
+            Judgment::proven((), "neutral-projection-receiver-congruence")
         }
         (
             NeutralHead::Const {
