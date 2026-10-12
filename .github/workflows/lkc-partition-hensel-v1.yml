@@ -5,6 +5,7 @@ on:
     branches: [lkc-partition-euler-hensel-v1-20261012]
     paths:
       - '.github/workflows/lkc-partition-hensel-v1.yml'
+      - 'experiments/lkc_partition/euler_hensel_v1.py'
   workflow_dispatch:
 
 permissions:
