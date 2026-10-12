@@ -1,0 +1,212 @@
+{
+  "boundary": "source-only finite typed branch-policy grammar; no unrestricted invention",
+  "old_matroid_greedy_witness": {
+    "A": 1,
+    "B": 6
+  },
+  "parent_v10": "cd6a5ea393dd286290d3e5f037754af767d798d5",
+  "selected": {
+    "first_failure": null,
+    "pass": true,
+    "policy": {
+      "bound": true,
+      "include_first": true,
+      "mode": "both_branches",
+      "prune": false
+    },
+    "source_cases": 14534,
+    "source_oracle_calls": 227481
+  },
+  "source_candidates": [
+    {
+      "first_failure": {
+        "family": "source_v10_knapsack",
+        "got": 1,
+        "mask": 7,
+        "order": [
+          0,
+          1,
+          2
+        ],
+        "want": 2
+      },
+      "pass": false,
+      "policy": {
+        "bound": false,
+        "include_first": true,
+        "mode": "greedy",
+        "prune": false
+      },
+      "source_cases": 11,
+      "source_oracle_calls": 18
+    },
+    {
+      "first_failure": null,
+      "pass": true,
+      "policy": {
+        "bound": false,
+        "include_first": true,
+        "mode": "rotated_greedy",
+        "prune": false
+      },
+      "source_cases": 14534,
+      "source_oracle_calls": 412750
+    },
+    {
+      "first_failure": null,
+      "pass": true,
+      "policy": {
+        "bound": false,
+        "include_first": false,
+        "mode": "both_branches",
+        "prune": false
+      },
+      "source_cases": 14534,
+      "source_oracle_calls": 646806
+    },
+    {
+      "first_failure": null,
+      "pass": true,
+      "policy": {
+        "bound": false,
+        "include_first": true,
+        "mode": "both_branches",
+        "prune": false
+      },
+      "source_cases": 14534,
+      "source_oracle_calls": 646806
+    },
+    {
+      "first_failure": null,
+      "pass": true,
+      "policy": {
+        "bound": true,
+        "include_first": false,
+        "mode": "both_branches",
+        "prune": false
+      },
+      "source_cases": 14534,
+      "source_oracle_calls": 244144
+    },
+    {
+      "first_failure": null,
+      "pass": true,
+      "policy": {
+        "bound": true,
+        "include_first": true,
+        "mode": "both_branches",
+        "prune": false
+      },
+      "source_cases": 14534,
+      "source_oracle_calls": 227481
+    },
+    {
+      "first_failure": null,
+      "pass": true,
+      "policy": {
+        "bound": false,
+        "include_first": false,
+        "mode": "both_branches",
+        "prune": true
+      },
+      "source_cases": 14534,
+      "source_oracle_calls": 1293944
+    },
+    {
+      "first_failure": null,
+      "pass": true,
+      "policy": {
+        "bound": false,
+        "include_first": true,
+        "mode": "both_branches",
+        "prune": true
+      },
+      "source_cases": 14534,
+      "source_oracle_calls": 1293944
+    },
+    {
+      "first_failure": null,
+      "pass": true,
+      "policy": {
+        "bound": true,
+        "include_first": false,
+        "mode": "both_branches",
+        "prune": true
+      },
+      "source_cases": 14534,
+      "source_oracle_calls": 735576
+    },
+    {
+      "first_failure": null,
+      "pass": true,
+      "policy": {
+        "bound": true,
+        "include_first": true,
+        "mode": "both_branches",
+        "prune": true
+      },
+      "source_cases": 14534,
+      "source_oracle_calls": 504765
+    }
+  ],
+  "source_guard_checks": [
+    {
+      "kind": "HEREDITARY_NONMATROID",
+      "name": "source_v10_knapsack",
+      "witness": {
+        "exchange_counterexample": [
+          1,
+          6
+        ]
+      }
+    },
+    {
+      "kind": "HEREDITARY_NONMATROID",
+      "name": "source_conflict",
+      "witness": {
+        "exchange_counterexample": [
+          1,
+          6
+        ]
+      }
+    },
+    {
+      "kind": "HEREDITARY_NONMATROID",
+      "name": "source_two_capacity",
+      "witness": {
+        "exchange_counterexample": [
+          1,
+          6
+        ]
+      }
+    },
+    {
+      "kind": "MATROID",
+      "name": "source_uniform_matroid",
+      "witness": {}
+    }
+  ],
+  "source_old_obstructions": [
+    {
+      "family": "source_v10_knapsack",
+      "mask": 3
+    },
+    {
+      "family": "source_conflict",
+      "mask": 3
+    },
+    {
+      "family": "source_two_capacity",
+      "mask": 3
+    },
+    {
+      "family": "source_uniform_matroid",
+      "mask": 15
+    }
+  ],
+  "source_sha256": "1200898dfafa0c431c49f4eeab23f500e8dca92d0fdebfa72d6aca2ec9861506",
+  "source_total_candidate_calls": 6006234,
+  "source_total_candidate_cases": 130817,
+  "source_truth_oracle_calls": 320,
+  "status": "SOURCE_RULE_FROZEN"
+}
