@@ -40,7 +40,7 @@ jobs:
           LEAN_TOOLCHAIN: leanprover/lean4:v4.24.0
         run: |
           set -euo pipefail
-          lean --version
+          test "$(LEAN_TOOLCHAIN=leanprover/lean4:v4.24.0 lean --version | grep -o '4.24.0')" = '4.24.0'
           python capstone/v9/run.py
           python - <<'PY'
           import json
