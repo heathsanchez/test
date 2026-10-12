@@ -1,0 +1,28 @@
+name: Physlib quantum bridge probe
+on:
+  workflow_dispatch:
+jobs:
+  physlib-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+      - name: Clone pinned Physlib
+        run: |
+          git clone https://github.com/leanprover-community/physlib.git /tmp/physlib
+          cd /tmp/physlib
+          git checkout 215aefe06c59d45c1ebcc8c845fb6a5551e2087a
+          cat lean-toolchain
+      - name: Compile Physlib native Stinespring and CPTP modules
+        working-directory: /tmp/physlib
+        run: |
+          lake exe cache get
+          lake build QuantumInfo.Channels.CPTP PhyslibAlpha.QuantumMechanics.StinespringDilation
+      - name: Record proof declarations and duplication
+        working-directory: /tmp/physlib
+        run: |
+          grep -nE '^(theorem|lemma|def) (stinespringForm_eq|stinespringGeneralForm_works|stinespringUnitaryForm_works|purify|krausApply)' PhyslibAlpha/QuantumMechanics/StinespringDilation.lean QuantumInfo/Channels/CPTP.lean || true
+          grep -n 'There is a different version' PhyslibAlpha/QuantumMechanics/StinespringDilation.lean
