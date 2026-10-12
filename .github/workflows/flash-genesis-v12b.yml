@@ -1,0 +1,90 @@
+name: FLASH Genesis V12b unbiased source and prospective weighted transfer
+
+on:
+  push:
+    branches:
+      - research/flash-genesis-v12-objective-refinement-20261012
+    paths:
+      - 'research/flash_genesis_v12/**'
+      - '.github/workflows/flash-genesis-v12b.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-v12b:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify frozen source and protected bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          root=Path('research/flash_genesis_v12')
+          frozen=json.loads((root/'V12B_PRE_PROTECTED_FREEZE.json').read_text())
+          assert frozen['status']=='V12B_CORRECTED_SOURCE_FROZEN_BEFORE_PROTECTED_REPLAY'
+          assert frozen['v12b_protected_frozen_commit']=='d7f810214ded20afb7f8fca67c334fb9727296a9'
+          expected={
+            'protected_v12b.py':'2b39b11d551206201cd3cc0145c732b3a572a91258f5a9d7b6387e5f18701a4a',
+            'learned_objective.py':'eb736c72c3acc5bc152fe811be8d3892d88ac0e1932bb2fb47ef5d562fe49a3f',
+            'synthesize_objective_v2.py':'deaaa46a36210dab62bd1dcd448cd9d4e4f70425605adb250b7c4019f52ac7a9',
+            'source_receipt.json':'d394d88879f28b78bbe7498d46abfbc42f67c2d59304bbd7a3f73de23428ac1f',
+            'source_weighted.py':'8fa8df70b553224359ac3802ddc175d691d704991be2450988037ea079b89adf'}
+          for name,sha in expected.items():
+              got=hashlib.sha256((root/name).read_bytes()).hexdigest()
+              assert got==sha,(name,got)
+          print('PASS_FROZEN_SHA256')
+          PY
+      - name: Regenerate unbiased source rule without importing protected tasks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_genesis_v12/synthesize_objective_v2.py > /tmp/v12b-source.json
+          git diff --exit-code -- research/flash_genesis_v12/learned_objective.py research/flash_genesis_v12/source_receipt.json research/flash_genesis_v12/qualified_policy.json
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          r=json.loads(Path('research/flash_genesis_v12/source_receipt.json').read_text())
+          assert r['selector_version']=='unbiased_v2_all_source_qualifying_candidates'
+          assert len([x for x in r['warm']['tested_candidates'] if x['pass']])==8
+          assert r['warm']['selected']['policy']==r['cold']['selected']['policy']
+          assert r['warm']['total_feasibility_calls']==700507
+          assert r['cold']['total_feasibility_calls']==856747
+          print('PASS_UNBIASED_SOURCE_REPLAY')
+          PY
+      - name: Qualify separately frozen V12b weighted families
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_genesis_v12/verify_v12b.py | tee /tmp/v12b-verifier.json
+          git diff --exit-code -- research/flash_genesis_v12/v12b_results.json
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          r=json.loads(Path('research/flash_genesis_v12/v12b_results.json').read_text())
+          assert r['status']=='PASS_V12B_PROSPECTIVE_FINITE'
+          assert (r['valid_families'],r['unsupported_families'])==(6,3)
+          assert r['totals']['protected_comparisons']==7914
+          assert r['totals']['learned_execution_calls']==r['totals']['stateless_execution_calls']==79332
+          assert r['acquisition']['two_generation_net']==-5849994
+          print('PASS_FRESH_PROTECTED_REPLAY')
+          PY
+      - name: Retain exact artifact evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: flash-genesis-v12b-evidence
+          path: |
+            research/flash_genesis_v12/V12B_PRE_PROTECTED_FREEZE.json
+            research/flash_genesis_v12/learned_objective.py
+            research/flash_genesis_v12/source_receipt.json
+            research/flash_genesis_v12/v12b_results.json
+            research/flash_genesis_v12/verify_v12b.py
+          if-no-files-found: error
