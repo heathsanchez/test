@@ -13,7 +13,7 @@
       "split": "development",
       "family": "Std List.foldl append",
       "expected": "repairable",
-      "source": "import Std\nnamespace CapstoneV9FoldDev\n\n\n\ntheorem foldl_append (f : Nat → Nat → Nat) (acc : Nat) (xs ys : List Nat) :\n    List.foldl f acc (xs ++ ys) = List.foldl f (List.foldl f acc xs) ys := by\n  induction xs with\n  | nil => simp\n  | cons head tail ih =>\n      simpa [List.foldl] using ih (f acc head)\n\nend CapstoneV9FoldDev\n"
+      "source": "import Std\nnamespace CapstoneV9FoldDev\n\n\n\ntheorem foldl_append (f : Nat → Nat → Nat) (xs ys : List Nat) (acc : Nat) :\n    List.foldl f acc (xs ++ ys) = List.foldl f (List.foldl f acc xs) ys := by\n  induction xs with\n  | nil => simp\n  | cons head tail ih =>\n      simpa [List.foldl] using ih (f acc head)\n\nend CapstoneV9FoldDev\n"
     }
   ]
 }
