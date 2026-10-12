@@ -1,0 +1,37 @@
+{
+  "status": "V12B_CORRECTED_SOURCE_FROZEN_BEFORE_PROTECTED_REPLAY",
+  "objective": "Unbiased source-only selection of objective repair from all source-correct candidates, followed by prospectively frozen independent V12b transfer",
+  "source_prev_v11": "5b10a853240356b2b00258334ef378e0850eb42c",
+  "old_v12a_holdout_status": "RETROSPECTIVE_AFTER_AUDIT",
+  "original_v12_source_commit": "81fdbe88e929edc47ab6b5a367244713db8ee74b",
+  "v12b_protected_frozen_commit": "d7f810214ded20afb7f8fca67c334fb9727296a9",
+  "v12b_repaired_source_commit": "32c8a2e86e8210909deef8704d9e40ec5f944ebc",
+  "source_sha256": {
+    "synthesize_objective_v2": "deaaa46a36210dab62bd1dcd448cd9d4e4f70425605adb250b7c4019f52ac7a9",
+    "learned_objective": "eb736c72c3acc5bc152fe811be8d3892d88ac0e1932bb2fb47ef5d562fe49a3f",
+    "source_receipt": "d394d88879f28b78bbe7498d46abfbc42f67c2d59304bbd7a3f73de23428ac1f",
+    "source_weighted": "8fa8df70b553224359ac3802ddc175d691d704991be2450988037ea079b89adf"
+  },
+  "learned_rule": {
+    "topology": "both",
+    "objective": "sum_weights",
+    "bound": "positive_weights",
+    "include_first": true
+  },
+  "warm_vs_cold": {
+    "candidate_count": [
+      24,
+      60
+    ],
+    "feasibility_calls": [
+      700507,
+      856747
+    ],
+    "score_callback_calls": [
+      416850,
+      429276
+    ],
+    "parent_v11_source_cost": 6006234
+  },
+  "limitations": "Typed grammar supplied; parent acquisition cost not recouped; V12b prospective limited to these frozen worlds; strongest stateless remains a tie."
+}
