@@ -1,0 +1,56 @@
+[
+  {
+    "case": "perf/magma-list-pair-n7",
+    "rc": 2,
+    "elapsed": 1.32,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "case": "init-prelude",
+    "rc": 0,
+    "elapsed": 6.718,
+    "trace": []
+  },
+  {
+    "case": "perf/grind-ring-5",
+    "rc": 2,
+    "elapsed": 5.123,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=Lean.Omega.Constraint.isImpossible._sparseCasesOn_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "case": "perf/magma-list-pair-n21",
+    "rc": 2,
+    "elapsed": 0.959,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "case": "perf/magma-list-deep-n21",
+    "rc": 2,
+    "elapsed": 1.942,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=List.get?Internal._sparseCasesOn_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "case": "perf/magma-list-deep-n36",
+    "rc": 2,
+    "elapsed": 1.912,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=List.get?Internal._sparseCasesOn_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "case": "perf/fueled-chain",
+    "rc": 2,
+    "elapsed": 24.07,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  }
+]

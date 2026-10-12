@@ -84,12 +84,18 @@ pub fn level_equal(left: LevelTerm, right: LevelTerm, budget: usize) -> Judgment
     }
 
     let Some(left_canonical) = canonical(&left, &mut budget) else {
+        if opaque_max_equal(&left, &right, &mut budget) == Some(true) {
+            return Judgment::proven((), "max-successor-algebra-with-opaque-imax-atoms");
+        }
         if std::env::var_os("NUCLEUS_TRACE_IMAX").is_some() {
             eprintln!("NUCLEUS_IMAX side=left left={left:?} right={right:?}");
         }
         return Judgment::unknown("unresolved-imax-case");
     };
     let Some(right_canonical) = canonical(&right, &mut budget) else {
+        if opaque_max_equal(&left, &right, &mut budget) == Some(true) {
+            return Judgment::proven((), "max-successor-algebra-with-opaque-imax-atoms");
+        }
         if std::env::var_os("NUCLEUS_TRACE_IMAX").is_some() {
             eprintln!("NUCLEUS_IMAX side=right left={left:?} right={right:?}");
         }
@@ -323,6 +329,60 @@ fn collect(
 struct Budget {
     remaining: usize,
     exhausted: bool,
+}
+
+/// An unresolved imax is a nonnegative natural-valued atom. Max and
+/// successor laws remain valid around identical atoms, without deciding
+/// their zero cases. Unequal atom maps prove nothing: distinct atoms can
+/// denote the same universe, so this fallback never refutes equality.
+fn opaque_max_equal(left: &LevelTerm, right: &LevelTerm, budget: &mut Budget) -> Option<bool> {
+    fn collect_atoms(
+        term: &LevelTerm, offset: usize, constant: &mut usize,
+        atoms: &mut HashMap<LevelTerm, usize>, budget: &mut Budget,
+    ) -> Option<()> {
+        budget.tick().ok()?;
+        match term {
+            LevelTerm::Zero => *constant = (*constant).max(offset),
+            LevelTerm::Succ(inner) => collect_atoms(inner, offset.checked_add(1)?, constant, atoms, budget)?,
+            LevelTerm::Max(a,b) => {
+                collect_atoms(a,offset,constant,atoms,budget)?;
+                collect_atoms(b,offset,constant,atoms,budget)?;
+            }
+            LevelTerm::Param(_) | LevelTerm::IMax(_,_) => {
+                let entry=atoms.entry(term.clone()).or_default();
+                *entry=(*entry).max(offset);
+            }
+        }
+        Some(())
+    }
+    let normalize=|term: &LevelTerm, budget: &mut Budget| {
+        let mut constant=0;let mut atoms=HashMap::new();
+        collect_atoms(term,0,&mut constant,&mut atoms,budget)?;
+        if atoms.values().any(|offset| *offset>=constant) {constant=0;}
+        Some((constant,atoms))
+    };
+    let (left_constant,left_atoms)=normalize(left,budget)?;
+    let (right_constant,right_atoms)=normalize(right,budget)?;
+    if left_constant!=right_constant || left_atoms.len()!=right_atoms.len() {return Some(false);}
+    let mut unmatched=right_atoms.into_iter().collect::<Vec<_>>();
+    for (left_atom,left_offset) in left_atoms {
+        let mut matched=None;
+        for (index,(right_atom,right_offset)) in unmatched.iter().enumerate() {
+            budget.tick().ok()?;
+            if left_offset!=*right_offset {continue;}
+            let same=if left_atom==*right_atom {true} else {
+                match (&left_atom,right_atom) {
+                    (LevelTerm::IMax(a,b),LevelTerm::IMax(c,d)) =>
+                        opaque_max_equal(a,c,budget)? && opaque_max_equal(b,d,budget)?,
+                    _=>false,
+                }
+            };
+            if same {matched=Some(index);break;}
+        }
+        let Some(index)=matched else{return Some(false);};
+        unmatched.swap_remove(index);
+    }
+    Some(true)
 }
 
 impl Budget {

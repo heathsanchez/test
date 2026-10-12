@@ -38,8 +38,9 @@ pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
         .exprs
         .values()
         .any(|expression| matches!(expression, Expr::StrLit(_)));
+    let qualified_string_source=export.declarations.iter().any(|d|matches!(d,Declaration::Inductive(b) if qualified_string_literal_type(&export,b).is_some()));
     let verdict = check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback);
-    if has_unqualified_string_literal && matches!(verdict, Verdict::Accept | Verdict::Reject) {
+    if has_unqualified_string_literal && !qualified_string_source && matches!(verdict, Verdict::Accept | Verdict::Reject) {
         if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
             eprintln!(
                 "NUCLEUS_DOWNSTREAM:name=<string-literal-guard>:stage=string-literal-guard:inner={verdict:?}:verdict=Unknown"
@@ -58,8 +59,28 @@ fn trace_direct_reject(stage: &str) -> Verdict {
     Verdict::Reject
 }
 
+/// Literal typing is the pinned kernel extension for the exact String
+/// carrier. This shape alone installs nothing: its complete inductive block
+/// must first pass the ordinary source-derived admission checks.
+fn qualified_string_literal_type(export:&ResolvedExport,block:&InductiveBlock)->Option<ExprId> {
+    let ([inductive],[constructor],[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return None;};
+    if !name_is_root_str(export,inductive.name,"String") || !name_is_child_str(export,constructor.name,inductive.name,"ofByteArray")
+        || !inductive.level_params.is_empty() || inductive.num_params!=0 || inductive.num_indices!=0 || inductive.num_nested!=0
+        || inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe
+        || !constructor.level_params.is_empty() || constructor.num_params!=0 || constructor.num_fields!=2 || constructor.is_unsafe {return None;}
+    let Some(Expr::Sort(level))=export.exprs.get(inductive.ty) else{return None;};
+    if !matches!(crate::level::instantiate_level(&export.levels,*level,&HashMap::new(),128),Ok(LevelTerm::Succ(inner)) if *inner==LevelTerm::Zero) {return None;}
+    let (fields,result)=pi_spine(export,constructor.ty,2)?;
+    let Some(Expr::Const{name:byte_array,levels})=export.exprs.get(fields[0]) else{return None;};
+    if !levels.is_empty() || !name_is_root_str(export,*byte_array,"ByteArray") || !is_empty_constant(export,result,inductive.name) {return None;}
+    let (head,args)=application_spine(export,fields[1]);
+    let Some(Expr::Const{name:valid,levels})=export.exprs.get(head) else{return None;};
+    if !levels.is_empty() || !name_is_child_str(export,*valid,*byte_array,"IsValidUTF8") || args.len()!=1 || !is_bvar(export,args[0],0) {return None;}
+    Some(result)
+}
+
 fn check_export_with_policy(
-    mut export: ResolvedExport,
+    export: ResolvedExport,
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Verdict {
@@ -198,9 +219,20 @@ fn check_export_with_policy(
 
     let mut environment = Environment::empty();
 
-    // Keep the resolved tables available while consuming declaration records.
-    let declarations = std::mem::take(&mut export.declarations);
-    for declaration in declarations {
+    // Preserve the immutable source catalogue for structural contract
+    // derivation. Only the progressively checked environment supplies typing
+    // authority; retaining future source records does not admit them.
+    for declaration_index in 0..export.declarations.len() {
+        let declaration = export.declarations[declaration_index].clone();
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_DECLARATION_PROGRESS").is_some() {
+            let name=match &declaration {
+                Declaration::Axiom{name,..}|Declaration::Definition{name,..}|Declaration::Theorem{name,..}|Declaration::Opaque{name,..}|Declaration::Quot{name,..}=>Some(*name),
+                Declaration::Inductive(b)=>b.types.first().map(|t|t.name),
+                _=>None,
+            };
+            if let Some(name)=name {eprintln!("NUCLEUS_DECLARATION:index={declaration_index}:name={}",trace_name(&export,name));}
+        }
         #[cfg(feature = "diagnostics")]
         crate::diagnostics::declaration();
         let level_parameters = match &declaration {
@@ -275,8 +307,10 @@ fn check_export_with_policy(
                 )
             }
             Declaration::Opaque { all, name, level_params, ty, value, is_unsafe } => {
-                // Mutual or unsafe opaque blocks require their own derivation.
-                if is_unsafe || all != [name] { return Verdict::Unknown; }
+                // Group labels grant no forward or recursive authority.
+                // Admit this one opaque only when its type and body check
+                // against the preceding environment, without its own name.
+                if is_unsafe || !all.contains(&name) || has_duplicate_parameter(&all) { return Verdict::Unknown; }
                 let checker = TypeChecker::with_level_substitution(
                     &export.exprs, &export.levels, &environment, parameter_substitution(&level_params),
                 ).with_delta_policy(delta_policy);
@@ -353,6 +387,10 @@ fn check_export_with_policy(
                 match check_inductive(&export, &environment, &block, limits, delta_policy) {
                     Ok(extended) => {
                         environment = extended;
+                        if let Some(ty)=qualified_string_literal_type(&export,&block) {
+                            let Ok(extended)=environment.install_string_literal_type(ty) else{return Verdict::Reject;};
+                            environment=extended;
+                        }
                         continue;
                     }
                     Err(verdict) => {
@@ -392,6 +430,10 @@ fn check_export_with_policy(
         if let Some(nat) = environment.nat_primitives().cloned() {
             let operation = if name_is_child_str(&export, name, nat.type_name, "add") {
                 Some(NatOperation::Add)
+            } else if name_is_root_str(&export,nat.type_name,"Nat") && name_is_child_str(&export, name, nat.type_name, "mul") {
+                Some(NatOperation::Mul)
+            } else if name_is_root_str(&export,nat.type_name,"Nat") && name_is_child_str(&export, name, nat.type_name, "pow") {
+                Some(NatOperation::Pow)
             } else if name_is_child_str(&export, name, nat.type_name, "sub") {
                 Some(NatOperation::Sub)
             } else if name_is_child_str(&export, name, nat.type_name, "pred") {
@@ -926,8 +968,8 @@ fn check_generated_nested_family(
     // the export.  Rechecking them *after staging the inductive type* is the
     // critical soundness separator: malformed erased nested parameters (the
     // #14576 class) are rejected here, while legitimate nested carriers pass.
-    // Generated recursors remain opaque: this grants declaration authority,
-    // never nested iota computation.
+    // Other nested equations remain opaque. Only independently derived
+    // closed nullary minor-selection equations gain computation below.
     let inductive = &block.types[0];
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
     derivation.promote(
@@ -952,7 +994,7 @@ fn check_generated_nested_family(
             delta_policy,
         )?;
     }
-    Ok(derivation.finish())
+    install_derived_nested_nullary(export,block,derivation.finish(),limits,delta_policy)
 }
 
 fn exact_lean_syntax_nested_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
@@ -1367,7 +1409,7 @@ fn check_exact_lean_syntax_nested(
             delta_policy,
         )?;
     }
-    Ok(derivation.finish())
+    install_derived_nested_nullary(export,block,derivation.finish(),limits,delta_policy)
 }
 
 fn quotient_parent(export: &ResolvedExport, name: NameId, suffix: &str) -> Option<NameId> {
@@ -2509,6 +2551,14 @@ fn check_inductive(
     if closed_direct_recursive_contract(export, environment, block, limits, delta_policy) {
         return check_closed_direct_recursive(export, environment, block, limits, delta_policy);
     }
+    if parameter_direct_recursive_contract(export,environment,block,limits,delta_policy) {
+        let inductive=&block.types[0];let recursor=&block.recursors[0];
+        let mut signatures=vec![derived_polymorphic_type(inductive.name,&inductive.level_params,inductive.ty)];
+        signatures.extend(block.constructors.iter().map(derived_constructor));signatures.push(derived_recursor(recursor));
+        let mut derivation=ClosedNonrecursiveDerivation::begin(environment);
+        derivation.promote_all(export,signatures,limits.judgment_steps,delta_policy)?;
+        return install_certified_recursor_reduction(derivation.finish(),&block.constructors,recursor);
+    }
 
     if exact_closed_binary_tree_candidate(export, block) {
         return check_exact_closed_binary_tree(export, environment, block, limits, delta_policy);
@@ -2638,6 +2688,68 @@ fn closed_field_enum_candidate(
     true
 }
 
+fn same_universe_pair_candidate(export:&ResolvedExport,block:&InductiveBlock)->bool {
+    let ([inductive],[constructor],[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+    let [universe]=inductive.level_params.as_slice() else{return false;};
+    if inductive.num_params!=2 || constructor.num_params!=2 || constructor.num_fields!=2 {return false;}
+    let Some((parameters,result))=pi_spine(export,inductive.ty,2) else{return false;};
+    let Some((fields,_))=pi_spine(export,constructor.ty,4) else{return false;};
+    parameters.iter().all(|p|is_sort_succ_parameter(export,*p,*universe))
+        && is_sort_succ_parameter(export,result,*universe)
+        && parameters.iter().zip(&fields[..2]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+        && is_bvar(export,fields[2],1) && is_bvar(export,fields[3],1)
+}
+
+fn parameter_record_candidate(export:&ResolvedExport,block:&InductiveBlock)->bool {
+    let ([inductive],[constructor],[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+    let [universe]=inductive.level_params.as_slice() else{return false;};
+    if inductive.num_params!=1 || constructor.num_params!=1 || !(2..=64).contains(&constructor.num_fields) {return false;}
+    let Some((parameters,result))=pi_spine(export,inductive.ty,1) else{return false;};
+    let Some((fields,_))=pi_spine(export,constructor.ty,1+constructor.num_fields as usize) else{return false;};
+    is_sort_succ_parameter(export,parameters[0],*universe) && is_sort_succ_parameter(export,result,*universe)
+        && expr_eq_with_bvar_shift(export,parameters[0],fields[0],0,0)
+        && fields[1..].iter().all(|field|!expression_contains_constant(export,*field,inductive.name))
+}
+
+fn parameter_record_obligations(export:&ResolvedExport,environment:&Environment,block:&InductiveBlock,limits:Limits,policy:DeltaPolicy)->bool {
+    let ([inductive],[constructor],[recursor])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+    let count=constructor.num_fields as usize;
+    let Some((parameters,result))=pi_spine(export,inductive.ty,1) else{return false;};
+    let Some(Expr::Sort(level))=export.exprs.get(result) else{return false;};
+    let substitution=parameter_substitution(&inductive.level_params);
+    let Ok(carrier)=crate::level::instantiate_level(&export.levels,*level,&substitution,limits.judgment_steps) else{return false;};
+    let checker=TypeChecker::with_level_substitution(&export.exprs,&export.levels,environment,substitution).with_delta_policy(policy);
+    let Some((fields,_))=pi_spine(export,constructor.ty,count+1) else{return false;};
+    let mut frame=EnvFrame::empty().extend_free(FreeId(0));
+    let mut context=vec![TypeValue::Term(checker.closure(parameters[0],EnvFrame::empty()))];
+    for (k,field) in fields[1..].iter().enumerate() {
+        let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*field,&context,&frame,limits.judgment_steps) else{return false;};
+        // Field universes must fit the declared carrier, including proof
+        // fields. Merely checking the constructor telescope is insufficient.
+        if !crate::level::level_equal(crate::level::max(sort,carrier.clone()),carrier.clone(),limits.judgment_steps).is_proven() {return false;}
+        context.push(TypeValue::Term(checker.closure(*field,frame.clone())));
+        frame=frame.extend_free(FreeId((k+1) as u64));
+    }
+    let Some((rec_domains,_))=pi_spine(export,recursor.ty,4) else{return false;};
+    let [rule]=recursor.rules.as_slice() else{return false;};
+    let Some((annotations,_))=lam_spine(export,rule.rhs,count+3) else{return false;};
+    rec_domains[..3].iter().zip(&annotations[..3]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+        && fields[1..].iter().zip(&annotations[3..]).enumerate().all(|(k,(a,b))|
+            expr_eq_with_bvar_shift(export,*a,*b,k as u64,2)
+                || expr_eq_with_bvar_shift(export,checked_erased_closed_field(export,environment,*a),*b,k as u64,2))
+}
+
+fn same_universe_pair_obligations(export:&ResolvedExport,block:&InductiveBlock)->bool {
+    let ([inductive],[constructor],[recursor])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+    let Some((ctor_domains,_))=pi_spine(export,constructor.ty,4) else{return false;};
+    let Some((rec_domains,_))=pi_spine(export,recursor.ty,5) else{return false;};
+    let [rule]=recursor.rules.as_slice() else{return false;};
+    let Some((annotations,_))=lam_spine(export,rule.rhs,6) else{return false;};
+    inductive.num_params==2
+        && rec_domains[..4].iter().zip(&annotations[..4]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+        && ctor_domains[2..].iter().zip(&annotations[4..]).enumerate().all(|(i,(a,b))|expr_eq_with_bvar_shift(export,*a,*b,i as u64,2))
+}
+
 fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
     let ([inductive], [constructor], [recursor]) = (
         block.types.as_slice(),
@@ -2711,6 +2823,8 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         && !relation_proof_structure
         && !closed_pair_structure
         && !closed_record
+        && !same_universe_pair_candidate(export,block)
+        && !parameter_record_candidate(export,block)
         && !unary_type_constructor_operations
     {
         return false;
@@ -2921,7 +3035,7 @@ fn generic_optional_value_candidate(export: &ResolvedExport, block: &InductiveBl
     is_bvar(export, value_domains[1], 0)
 }
 
-// Two fields with the same closed type need no new dependent telescope law.
+// Two independently closed fields need no new dependent telescope law.
 // Selection alone grants nothing: the field universe and every rule annotation
 // are independently checked before the existing constructor contract is used.
 fn closed_pair_record_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
@@ -2932,7 +3046,8 @@ fn closed_pair_record_candidate(export: &ResolvedExport, block: &InductiveBlock)
         return false;
     }
     let Some((fields, _)) = pi_spine(export, constructor.ty, 2) else { return false; };
-    fields[0] == fields[1] && !expression_contains_constant(export, fields[0], inductive.name)
+    fields.iter().all(|field|!expression_contains_constant(export,*field,inductive.name)
+        && !expression_contains_bvar(export,*field,0))
 }
 
 fn closed_pair_record_obligations(
@@ -2949,10 +3064,12 @@ fn closed_pair_record_obligations(
     let checker = TypeChecker::with_level_substitution(&export.exprs, &export.levels, environment, substitution)
         .with_delta_policy(delta_policy);
     let Some((fields, _)) = pi_spine(export, constructor.ty, 2) else { return false; };
-    let Judgment::Proven { value: field_type, .. } = checker.infer(fields[0], limits.judgment_steps)
-        else { return false; };
-    if !checker.convert(&field_type, &TypeValue::Sort(carrier_level), limits.judgment_steps).is_proven() {
-        return false;
+    for field in &fields {
+        let Judgment::Proven { value: field_type, .. } = checker.infer(*field, limits.judgment_steps)
+            else { return false; };
+        if !checker.convert(&field_type, &TypeValue::Sort(carrier_level.clone()), limits.judgment_steps).is_proven() {
+            return false;
+        }
     }
     let Some((rec_domains, _)) = pi_spine(export, recursor.ty, 3) else { return false; };
     let [rule] = recursor.rules.as_slice() else { return false; };
@@ -3217,7 +3334,7 @@ fn generic_nonrecursive_recursor_shape(
         let Some((ctor_domains,_))=pi_spine(export,ctor.ty,p+f) else{return false;};
         let Some((minor_fields,minor_result))=pi_spine(export,domains[p+1+j],f) else{return false;};
         for (k,(cd,md)) in ctor_domains[p..].iter().zip(&minor_fields).enumerate(){
-            let cd = if p == 0 { checked_erased_closed_field(export, environment, *cd) } else { *cd };
+            let cd = if p == 0 || (p==1 && c==1 && (2..=64).contains(&f)) { checked_erased_closed_field(export, environment, *cd) } else { *cd };
             let md = if p == 0 { checked_erased_closed_field(export, environment, *md) } else { *md };
             if !expr_eq_with_bvar_shift(export,cd,md,k as u64,(1+j) as u64){return false;}
         }
@@ -4075,6 +4192,8 @@ fn check_generic_nonrecursive_type(
     {
         return Err(Verdict::Unknown);
     }
+    if same_universe_pair_candidate(export,block) && !same_universe_pair_obligations(export,block) {return Err(Verdict::Unknown);}
+    if parameter_record_candidate(export,block) && !parameter_record_obligations(export,environment,block,limits,delta_policy) {return Err(Verdict::Unknown);}
     if parametric_field_enum_candidate(export, block)
         && !parametric_field_enum_obligations(export, environment, block, limits, delta_policy) { return Err(Verdict::Unknown); }
     if closed_pair_record_candidate(export, block)
@@ -4406,7 +4525,7 @@ fn check_exact_ofnat(
         limits.judgment_steps,
         delta_policy,
     )?;
-    derivation
+    let environment = derivation
         .finish()
         .install_projection_spec(
             inductive.name,
@@ -4417,7 +4536,8 @@ fn check_exact_ofnat(
                 eta_expandable: false,
             },
         )
-        .map_err(|_| Verdict::Reject)
+        .map_err(|_| Verdict::Reject)?;
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
 fn is_nat_constant(export: &ResolvedExport, expression: ExprId) -> bool {
@@ -5617,7 +5737,8 @@ fn check_single_derived_field_structure(
             constructor: constructor.name,
             num_params: p,
             field_types: vec![ProjectionFieldType::Derived(field_type)],
-            eta_expandable: false,
+            eta_expandable: pi_spine(export,inductive.ty,p).is_some_and(|(_,result)|
+                matches!(export.exprs.get(result),Some(Expr::Sort(level)) if exported_level_is_definitely_nonzero(export,*level,128))),
         },
     ) {
         Ok(environment) => environment,
@@ -7463,6 +7584,31 @@ fn check_empty_inductive(
         return Err(Verdict::Reject);
     }
 
+    if let [owner_level] = inductive.level_params.as_slice()
+        && matches!(export.exprs.get(inductive.ty), Some(Expr::Sort(level))
+            if matches!(export.levels.get(*level), Some(Level::Param(name)) if name == owner_level))
+    {
+        let [recursor] = block.recursors.as_slice() else { return Err(Verdict::Unknown) };
+        let [motive_level, recursor_owner_level] = recursor.level_params.as_slice() else { return Err(Verdict::Unknown) };
+        if inductive.num_params != 0 || inductive.num_indices != 0 || inductive.num_nested != 0
+            || inductive.all != [inductive.name] || !inductive.constructors.is_empty()
+            || inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe
+            || recursor.is_unsafe || motive_level == owner_level || recursor_owner_level != owner_level
+            || !recursor_metadata_admissible(export, inductive, &[], recursor, false, true)
+            || !empty_recursor_obligation_at(export, inductive.name, &inductive.level_params, recursor)
+        {
+            return Err(Verdict::Unknown);
+        }
+        // No constructor or computation equation is introduced. An empty
+        // carrier admits the exact source-derived motive/major eliminator.
+        let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+        derivation.promote_all(export, [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_recursor(recursor),
+        ], limits.judgment_steps, delta_policy)?;
+        return Ok(derivation.finish());
+    }
+
     // This is the G9 family discriminator, not a general empty inductive
     // rule: a nullary type living structurally in either Prop or Type.  Prop
     // is included because the extra/orphan-rec falsifiers target `False`.
@@ -7527,6 +7673,15 @@ fn empty_recursor_obligation(
     inductive: NameId,
     recursor: &Recursor,
 ) -> bool {
+    empty_recursor_obligation_at(export, inductive, &[], recursor)
+}
+
+fn empty_recursor_obligation_at(
+    export: &ResolvedExport,
+    inductive: NameId,
+    owner_levels: &[NameId],
+    recursor: &Recursor,
+) -> bool {
     let Some((domains, result)) = pi_spine(export, recursor.ty, 2) else {
         return false;
     };
@@ -7540,8 +7695,12 @@ fn empty_recursor_obligation(
     else {
         return false;
     };
-    is_empty_constant(export, *motive_argument, inductive)
-        && is_empty_constant(export, *target, inductive)
+    let owner = |expression| matches!(export.exprs.get(expression), Some(Expr::Const { name, levels })
+        if *name == inductive && levels.len() == owner_levels.len()
+            && levels.iter().zip(owner_levels).all(|(level, expected)|
+                matches!(export.levels.get(*level), Some(Level::Param(actual)) if actual == expected)));
+    owner(*motive_argument)
+        && owner(*target)
         && matches!(
             export.exprs.get(*motive_sort),
             Some(Expr::Sort(level)) if matches!(
@@ -9172,7 +9331,7 @@ fn check_exact_nat(
             zero: zero.name,
             succ: succ.name,
             recursor: recursor.name,
-            add: None,
+            add: None, mul:None, pow:None,
             sub: None,
             pred: None,
             virtual_bvar_zero: export.exprs.iter_raw().find_map(|(raw, e)| {
@@ -10373,6 +10532,75 @@ fn reflexive_tree_recursor_obligations(
 /// Derive the recursor of a closed Type 0 inductive with direct recursive
 /// fields and independently closed Type 0 payloads. Occurrences under any
 /// other type former are excluded rather than trusted as positive.
+/// Direct recursion over one fixed Type-u parameter. Every recursive field
+/// preserves that parameter, and every IH/source recursive call is derived
+/// from the corresponding field position. Other fields are independently
+/// formed in their exact constructor context and bounded by the carrier.
+fn parameter_direct_recursive_contract(export:&ResolvedExport,environment:&Environment,block:&InductiveBlock,limits:Limits,policy:DeltaPolicy)->bool {
+    let ([inductive],ctors,[recursor])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+    let [universe]=inductive.level_params.as_slice() else{return false;};
+    if ctors.is_empty() || ctors.len()>16 || inductive.num_params!=1 || inductive.num_indices!=0 || inductive.num_nested!=0
+        || !inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe || inductive.all!=[inductive.name]
+        || inductive.constructors!=ctors.iter().map(|c|c.name).collect::<Vec<_>>() || recursor.is_unsafe || recursor.k
+        || !recursor_metadata_admissible(export,inductive,ctors,recursor,false,recursor.level_params.len()==2)
+        || recursor.level_params.get(1)!=Some(universe) {return false;}
+    let Some((parameters,result))=pi_spine(export,inductive.ty,1) else{return false;};
+    if !is_sort_succ_parameter(export,parameters[0],*universe) || !is_sort_succ_parameter(export,result,*universe) {return false;}
+    let Some(Expr::Sort(carrier_id))=export.exprs.get(result) else{return false;};
+    let substitution=parameter_substitution(&inductive.level_params);
+    let Ok(carrier)=crate::level::instantiate_level(&export.levels,*carrier_id,&substitution,limits.judgment_steps) else{return false;};
+    let checker=TypeChecker::with_level_substitution(&export.exprs,&export.levels,environment,substitution).with_delta_policy(policy);
+    let owner=|expression:ExprId,parameter:u64| {
+        let (head,args)=application_spine(export,expression);
+        is_declared_level_constant(export,head,inductive.name,&inductive.level_params) && args.len()==1 && is_bvar(export,args[0],parameter)
+    };
+    let prefix=ctors.len()+2;
+    let Some((rec_domains,rec_result))=pi_spine(export,recursor.ty,prefix+1) else{return false;};
+    if !expr_eq_with_bvar_shift(export,parameters[0],rec_domains[0],0,0)
+        || !matches!(export.exprs.get(rec_domains[1]),Some(Expr::Pi{domain,body}) if owner(*domain,0) && is_sort_parameter(export,*body,recursor.level_params[0]))
+        || !owner(rec_domains[prefix],(prefix-1) as u64) || !is_bvar_application(export,rec_result,(prefix-1) as u64,0) {return false;}
+    let mut seen=false;
+    for (c,ctor) in ctors.iter().enumerate() {
+        if ctor.index!=c as u64 || ctor.inductive!=inductive.name || ctor.is_unsafe || ctor.level_params!=inductive.level_params || ctor.num_params!=1 || ctor.num_fields>16 {return false;}
+        let f=ctor.num_fields as usize;
+        let Some((domains,result))=pi_spine(export,ctor.ty,f+1) else{return false;};
+        if !expr_eq_with_bvar_shift(export,parameters[0],domains[0],0,0) || !owner(result,f as u64) {return false;}
+        let fields=&domains[1..];let mut recursive=Vec::new();
+        let mut frame=EnvFrame::empty().extend_free(FreeId(0));
+        let mut context=vec![TypeValue::Term(checker.closure(parameters[0],EnvFrame::empty()))];
+        for (j,field) in fields.iter().enumerate() {
+            if owner(*field,j as u64) {recursive.push(j);seen=true;}
+            else {
+                if expression_contains_constant(export,*field,inductive.name) {return false;}
+                let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*field,&context,&frame,limits.judgment_steps) else{return false;};
+                if !crate::level::level_equal(crate::level::max(sort,carrier.clone()),carrier.clone(),limits.judgment_steps).is_proven() {return false;}
+            }
+            context.push(TypeValue::Term(checker.closure(*field,frame.clone())));frame=frame.extend_free(FreeId((j+1) as u64));
+        }
+        let r=recursive.len();
+        let Some((minor_domains,minor_result))=pi_spine(export,rec_domains[c+2],f+r) else{return false;};
+        if !fields.iter().zip(&minor_domains[..f]).enumerate().all(|(j,(a,b))|expr_eq_with_bvar_shift(export,*a,*b,j as u64,(c+1) as u64)) {return false;}
+        for (k,j) in recursive.iter().enumerate() {if !is_bvar_application(export,minor_domains[f+k],(c+f+k) as u64,(f+k-1-j) as u64) {return false;}}
+        let (mh,ma)=application_spine(export,minor_result);
+        if ma.len()!=1 || !is_bvar(export,mh,(c+f+r) as u64) {return false;}
+        let (ch,ca)=application_spine(export,ma[0]);
+        if !is_declared_level_constant(export,ch,ctor.name,&ctor.level_params) || ca.len()!=f+1 || !is_bvar(export,ca[0],(c+f+r+1) as u64)
+            || !ca[1..].iter().enumerate().all(|(j,a)|is_bvar(export,*a,(f+r-1-j) as u64)) {return false;}
+        let Some(rule)=recursor.rules.get(c) else{return false;};
+        let Some((annotations,rhs))=lam_spine(export,rule.rhs,prefix+f) else{return false;};
+        if !annotations[..prefix].iter().zip(&rec_domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+            || !fields.iter().zip(&annotations[prefix..]).enumerate().all(|(j,(a,b))|expr_eq_with_bvar_shift(export,*a,*b,j as u64,(prefix-1) as u64)) {return false;}
+        let (minor,args)=application_spine(export,rhs);
+        if !is_bvar(export,minor,(f+ctors.len()-1-c) as u64) || args.len()!=f+r || !args[..f].iter().enumerate().all(|(j,a)|is_bvar(export,*a,(f-1-j) as u64)) {return false;}
+        for (k,j) in recursive.iter().enumerate() {
+            let (head,call)=application_spine(export,args[f+k]);
+            if !is_declared_level_constant(export,head,recursor.name,&recursor.level_params) || call.len()!=prefix+1
+                || !call[..prefix].iter().enumerate().all(|(i,a)|is_bvar(export,*a,(prefix+f-1-i) as u64)) || !is_bvar(export,call[prefix],(f-1-j) as u64) {return false;}
+        }
+    }
+    seen
+}
+
 fn closed_direct_recursive_contract(
     export: &ResolvedExport, environment: &Environment, block: &InductiveBlock,
     limits: Limits, delta_policy: DeltaPolicy,
@@ -10392,6 +10620,16 @@ fn closed_direct_recursive_contract(
     if !matches!(export.levels.get(*carrier), Some(Level::Succ(z)) if matches!(export.levels.get(*z), Some(Level::Zero))) { return false; }
     let Ok(carrier) = crate::level::instantiate_level(&export.levels, *carrier, &HashMap::new(), limits.judgment_steps) else { return false; };
     let checker = TypeChecker::new(&export.exprs, &export.levels, environment).with_delta_policy(delta_policy);
+    let equivalent_field = |a:ExprId,b:ExprId| {
+        // Erasure is permitted only after the exported annotation itself
+        // forms a closed Type 0. The direct recursive owner is separately
+        // staged at that same universe before signature admission.
+        if !is_empty_constant(export,b,inductive.name) {
+            let Judgment::Proven{value,..}=checker.infer(b,limits.judgment_steps) else{return false;};
+            if !checker.convert(&value,&TypeValue::Sort(carrier.clone()),limits.judgment_steps).is_proven() {return false;}
+        }
+        expr_eq_with_bvar_shift(export,checked_erased_closed_field(export,environment,a),checked_erased_closed_field(export,environment,b),0,0)
+    };
     let prefix = constructors.len() + 1;
     let Some((rec_domains, rec_result)) = pi_spine(export, recursor.ty, prefix + 1) else { return false; };
     let motive_level = recursor.level_params[0];
@@ -10420,7 +10658,7 @@ fn closed_direct_recursive_contract(
         // Constructor fields precede all induction hypotheses in Lean's minor.
         let r = recursive.len();
         let Some((minor_domains,minor_result)) = pi_spine(export,rec_domains[c+1],f+r) else { return false; };
-        if !fields.iter().zip(&minor_domains[..f]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0)) { return false; }
+        if !fields.iter().zip(&minor_domains[..f]).all(|(a,b)|equivalent_field(*a,*b)) { return false; }
         for (k,j) in recursive.iter().enumerate() {
             if !is_bvar_application(export,minor_domains[f+k],(c+f+k) as u64,(f+k-1-j) as u64) { return false; }
         }
@@ -10432,7 +10670,7 @@ fn closed_direct_recursive_contract(
         let rule = &recursor.rules[c];
         let Some((rule_domains,rule_result)) = lam_spine(export,rule.rhs,prefix+f) else { return false; };
         if !rec_domains[..prefix].iter().zip(&rule_domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
-            || !fields.iter().zip(&rule_domains[prefix..]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0)) { return false; }
+            || !fields.iter().zip(&rule_domains[prefix..]).all(|(a,b)|equivalent_field(*a,*b)) { return false; }
         let (rh,ra) = application_spine(export,rule_result);
         if !is_bvar(export,rh,(f+constructors.len()-1-c) as u64) || ra.len()!=f+r
             || !ra[..f].iter().enumerate().all(|(j,a)|is_bvar(export,*a,(f-1-j) as u64)) { return false; }
@@ -11423,12 +11661,12 @@ impl ExactBinaryProductDerivation<'_> {
             environment
         };
 
-        // Reuse constructor-iota authority for exact Prod and the separately
-        // checked exact Eq recursor. The exported K bit remains guarded by
+        // Reuse constructor-iota authority for exact Prod/PProd and the
+        // separately checked exact Eq recursor. The exported K bit remains guarded by
         // typed compatibility at the conversion boundary.
         if matches!(
             self.law,
-            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::Eq { .. }
+            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::PProd { .. } | BinaryProductSortLaw::Eq { .. }
         ) {
             let [rule] = self.recursor.rules.as_slice() else {
                 return Err(Verdict::Reject);
@@ -12529,4 +12767,306 @@ mod tests {
             BinaryProductSortLaw::And,
         ));
     }
+}
+
+#[cfg(test)]
+mod nested_nullary_source_tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    #[ignore = "requires pinned frozen196 NUCLEUS_FROZEN196"]
+    fn source_checked_multi_motive_nullary_rule_is_derived() {
+        let root=std::env::var("NUCLEUS_FROZEN196").expect("pinned corpus path");
+        let raw=std::fs::read_to_string(format!("{root}/good/init-prelude.ndjson")).unwrap();
+        let export=crate::parser::parse(Cursor::new(&raw)).unwrap().resolve().unwrap();
+        let block=export.declarations.iter().find_map(|d|match d {
+            Declaration::Inductive(b) if trace_name(&export,b.types[0].name)=="Lean.Syntax"=>Some(b),_=>None,
+        }).unwrap();
+        let rec=block.recursors.iter().find(|r|trace_name(&export,r.name)=="Lean.Syntax.rec").unwrap();
+        let rules=derive_nested_nullary_rules(&export,block,rec);
+        assert_eq!(rules.len(),1,"checked Syntax.missing minor equation must have computation authority");
+        assert_eq!(rules[0].prefix_len,10);
+        assert_eq!(rules[0].minor_argument,3);
+        let mut forged=rec.clone();
+        let bad=export.exprs.iter_raw().find_map(|(id,e)|matches!(e,Expr::BVar(0)).then_some(ExprId(id))).unwrap();
+        forged.rules.iter_mut().find(|r|r.num_fields==0).unwrap().rhs=bad;
+        assert!(derive_nested_nullary_rules(&export,block,&forged).is_empty());
+        let other=block.recursors.iter().flat_map(|r|&r.rules).find(|r|r.num_fields==0 && r.constructor!=rules[0].constructor).unwrap();
+        let mut wrong_minor=rec.clone();
+        wrong_minor.rules.iter_mut().find(|r|r.num_fields==0).unwrap().rhs=other.rhs;
+        assert!(derive_nested_nullary_rules(&export,block,&wrong_minor).is_empty());
+        let mut wrong_motive=rec.clone();
+        wrong_motive.ty=block.recursors.iter().find(|r|r.name!=rec.name).unwrap().ty;
+        assert!(derive_nested_nullary_rules(&export,block,&wrong_motive).is_empty());
+        let renamed=crate::parser::parse(Cursor::new(raw.replace("\"str\":\"Syntax\"","\"str\":\"RenamedSyntax\""))).unwrap().resolve().unwrap();
+        let renamed_block=renamed.declarations.iter().find_map(|d|match d {Declaration::Inductive(b) if b.types[0].name==block.types[0].name=>Some(b),_=>None}).unwrap();
+        let renamed_rec=renamed_block.recursors.iter().find(|r|r.name==rec.name).unwrap();
+        assert_eq!(derive_nested_nullary_rules(&renamed,renamed_block,renamed_rec).len(),1);
+        // Test the generalized rule derivation against the same source
+        // environment signatures. Runtime admission still follows full checks.
+        let mut signatures=Environment::empty();
+        for declaration in &export.declarations {
+            if matches!(declaration,Declaration::Inductive(b) if b.types[0].name==block.types[0].name) {break;}
+            let mut entries=Vec::new();
+            match declaration {
+                Declaration::Axiom{name,level_params,ty}=>entries.push((*name,ConstantDecl::axiom(level_params.clone(),*ty))),
+                Declaration::Definition{name,level_params,ty,value,preferred_for_reduction}=>entries.push((*name,ConstantDecl::definition(level_params.clone(),*ty,*value,*preferred_for_reduction))),
+                Declaration::Theorem{name,level_params,ty,..}|Declaration::Opaque{name,level_params,ty,..}=>entries.push((*name,ConstantDecl::theorem(level_params.clone(),*ty))),
+                Declaration::Inductive(b)=>{
+                    for t in &b.types {entries.push((t.name,ConstantDecl::inductive_type(t.level_params.clone(),t.ty)));}
+                    for c in &b.constructors {entries.push((c.name,ConstantDecl::constructor(c.level_params.clone(),c.ty)));}
+                    for r in &b.recursors {entries.push((r.name,ConstantDecl::recursor(r.level_params.clone(),r.ty)));}
+                }
+                Declaration::Quot{name,level_params,ty,..}=>entries.push((*name,ConstantDecl::axiom(level_params.clone(),*ty))),
+                _=>{},
+            }
+            for (name,decl) in entries {signatures=signatures.extend(name,decl).unwrap();}
+        }
+        for t in &block.types {signatures=signatures.extend(t.name,ConstantDecl::inductive_type(t.level_params.clone(),t.ty)).unwrap();}
+        for c in &block.constructors {signatures=signatures.extend(c.name,ConstantDecl::constructor(c.level_params.clone(),c.ty)).unwrap();}
+        for r in &block.recursors {signatures=signatures.extend(r.name,ConstantDecl::recursor(r.level_params.clone(),r.ty)).unwrap();}
+        let full=derive_closed_nested_rules(&export,&signatures,block,rec,Limits::default(),DeltaPolicy::GuardedSemanticFallback);
+        assert_eq!(full.len(),4,"every closed Syntax constructor equation must be independently derived");
+        let node=rec.rules.iter().find(|r|r.num_fields==3).unwrap();
+        let (_,body)=lam_spine(&export,node.rhs,13).unwrap();
+        let (_,arguments)=application_spine(&export,body);
+        let recursive_call=*arguments.last().unwrap();
+        let Some(Expr::App{fun,..})=export.exprs.get(recursive_call) else{panic!("recursive major application");};
+        let wrong_field=export.exprs.iter_raw().find_map(|(id,e)|matches!(e,Expr::BVar(1)).then_some(ExprId(id))).unwrap();
+        let replace_expression=|id:ExprId,replacement:Expr| {
+            let mut changed=export.clone();
+            let mut expressions=crate::id::IdTable::default();
+            for (raw,e) in export.exprs.iter_raw() {
+                expressions.insert(ExprId(raw),if raw==id.0 {replacement.clone()} else {e.clone()}).unwrap();
+            }
+            changed.exprs=expressions;changed
+        };
+        let wrong_ih=replace_expression(recursive_call,Expr::App{fun:*fun,arg:wrong_field});
+        assert_eq!(derive_closed_nested_rules(&wrong_ih,&signatures,block,rec,Limits::default(),DeltaPolicy::GuardedSemanticFallback).len(),3,"IH must recur on its own constructor field");
+        let Some(Expr::Lam{body,..})=export.exprs.get(node.rhs) else{panic!("rule annotation");};
+        let wrong_annotation=replace_expression(node.rhs,Expr::Lam{domain:bad,body:*body});
+        assert_eq!(derive_closed_nested_rules(&wrong_annotation,&signatures,block,rec,Limits::default(),DeltaPolicy::GuardedSemanticFallback).len(),3,"rule annotation must match its checked prefix");
+        for target in &block.recursors {
+            let derived=derive_closed_nested_rules(&export,&signatures,block,target,Limits::default(),DeltaPolicy::GuardedSemanticFallback);
+            assert_eq!(derived.len(),target.rules.len(),"every corresponding carrier rule must check: {}",trace_name(&export,target.name));
+        }
+        let rows=raw.lines().collect::<Vec<_>>();
+        let end=rows.iter().position(|line| {
+            let row:serde_json::Value=serde_json::from_str(line).unwrap();
+            row["inductive"]["types"][0]["name"].as_u64()==Some(block.types[0].name.0)
+        }).unwrap();
+        let prefix=rows[..=end].join("\n")+"\n";
+        let renamed_prefix=prefix.replace("\"str\":\"Syntax\"","\"str\":\"RenamedSyntax\"");
+        let renamed_export=crate::parser::parse(Cursor::new(renamed_prefix)).unwrap().resolve().unwrap();
+        assert_eq!(check_export(renamed_export,Limits::default()),Verdict::Accept,"live checking must retain its source catalogue and independently admit a renamed nested family");
+
+
+    }
+}
+
+/// Certify only a closed nullary constructor of the admitted nested owner.
+/// The source minor telescope determines its position; neither constructor
+/// name nor the desired conversion result chooses the branch.
+fn derive_nested_nullary_rules(
+    export:&ResolvedExport, block:&InductiveBlock, recursor:&Recursor,
+)->Vec<crate::machine::NullaryMinorReduction> {
+    let [inductive]=block.types.as_slice() else {return Vec::new();};
+    if inductive.num_params!=0 || inductive.num_indices!=0 || !inductive.level_params.is_empty()
+        || recursor.num_params!=0 || recursor.num_indices!=0 || recursor.is_unsafe || recursor.k
+        || recursor.level_params.len()!=1 || recursor.num_motives<2
+        || recursor.num_motives>16 || recursor.num_minors>64 {return Vec::new();}
+    let motives=recursor.num_motives as usize;
+    let prefix=motives+recursor.num_minors as usize;
+    let Some((domains,result))=pi_spine(export,recursor.ty,prefix+1) else {return Vec::new();};
+    if !is_empty_constant(export,domains[prefix],inductive.name) {return Vec::new();}
+    let owner_motives=(0..motives).filter(|i|matches!(export.exprs.get(domains[*i]),
+        Some(Expr::Pi {domain,body}) if is_empty_constant(export,*domain,inductive.name)
+            && is_sort_parameter(export,*body,recursor.level_params[0]))).collect::<Vec<_>>();
+    let [owner_motive]=owner_motives.as_slice() else {return Vec::new();};
+    if !is_bvar_application(export,result,(prefix-owner_motive) as u64,0) {return Vec::new();}
+    let mut certified=Vec::new();
+    for constructor in &block.constructors {
+        if constructor.inductive!=inductive.name || constructor.num_params!=0 || constructor.num_fields!=0
+            || constructor.is_unsafe || !constructor.level_params.is_empty()
+            || !is_empty_constant(export,constructor.ty,inductive.name) {continue;}
+        let candidate_minors=(0..recursor.num_minors as usize).filter(|j|
+            is_bvar_applied_to_constant(export,domains[motives+j],(motives+j-1-owner_motive) as u64,constructor.name)
+        ).collect::<Vec<_>>();
+        let [minor]=candidate_minors.as_slice() else {continue;};
+        let rules=recursor.rules.iter().filter(|r|r.constructor==constructor.name).collect::<Vec<_>>();
+        let [rule]=rules.as_slice() else {continue;};
+        if rule.num_fields!=0 {continue;}
+        let Some((annotations,body))=lam_spine(export,rule.rhs,prefix) else {continue;};
+        let minor_argument=motives+minor;
+        if !annotations.iter().zip(&domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+            || !is_bvar(export,body,(prefix-1-minor_argument) as u64) {continue;}
+        certified.push(crate::machine::NullaryMinorReduction {
+            constructor:constructor.name,level_arity:recursor.level_params.len(),prefix_len:prefix,minor_argument,
+        });
+    }
+    certified
+}
+
+fn install_derived_nested_nullary(export:&ResolvedExport,block:&InductiveBlock,mut established:Environment,limits:Limits,policy:DeltaPolicy)->Result<Environment,Verdict> {
+    for recursor in &block.recursors {
+        let rules=derive_nested_nullary_rules(export,block,recursor);
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_NULLARY_MINOR").is_some() {eprintln!("NUCLEUS_NULLARY_CERT:recursor={}:rules={}",trace_name(export,recursor.name),rules.len());}
+        if !rules.is_empty() {established=established.install_nullary_minor_reductions(recursor.name,rules).map_err(|_|Verdict::Reject)?;}
+        let nested=derive_closed_nested_rules(export,&established,block,recursor,limits,policy);
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_NULLARY_MINOR").is_some() {eprintln!("NUCLEUS_CLOSED_NESTED_CERT:recursor={}:rules={}",trace_name(export,recursor.name),nested.len());}
+        if !nested.is_empty() {established=established.install_closed_nested_minor_reductions(recursor.name,nested).map_err(|_|Verdict::Reject)?;}
+    }
+    Ok(established)
+}
+
+fn closed_nested_carrier(
+    export:&ResolvedExport, expression:ExprId,
+)->Option<(NameId,Vec<LevelTerm>,Vec<(NameId,Vec<LevelTerm>)>)> {
+    let (head,args)=application_spine(export,expression);
+    let Some(Expr::Const{name,levels})=export.exprs.get(head) else{return None;};
+    let resolve=|ids:&[LevelId]|ids.iter().map(|l|crate::level::instantiate_level(&export.levels,*l,&HashMap::new(),128).ok()).collect::<Option<Vec<_>>>();
+    let mut parameters=Vec::new();
+    for arg in args {
+        let Some(Expr::Const{name,levels})=export.exprs.get(arg) else{return None;};
+        parameters.push((*name,resolve(levels)?));
+    }
+    Some((*name,resolve(levels)?,parameters))
+}
+
+/// A conservative simultaneous first-order equation contract: each motive
+/// carrier is a closed Type 0 specialization; recursive fields must match
+/// one of those carriers exactly. Every IH and recursive source call is
+/// derived from that field position and preserves the full checked prefix.
+fn derive_closed_nested_rules(
+    export:&ResolvedExport, environment:&Environment, block:&InductiveBlock,
+    recursor:&Recursor, limits:Limits, policy:DeltaPolicy,
+)->Vec<crate::machine::ClosedNestedMinorReduction> {
+    use crate::value::{Closure,LevelSubstitution};
+    if block.types.len()!=1 || block.types[0].num_params!=0 || block.types[0].num_indices!=0
+        || !block.types[0].level_params.is_empty() || recursor.num_params!=0 || recursor.num_indices!=0
+        || recursor.is_unsafe || recursor.k || recursor.level_params.len()!=1
+        || !(2..=16).contains(&recursor.num_motives) || recursor.num_minors>64 {return Vec::new();}
+    let nm=recursor.num_motives as usize;
+    let prefix=nm+recursor.num_minors as usize;
+    let Some((domains,result))=pi_spine(export,recursor.ty,prefix+1) else{return Vec::new();};
+    let checker=TypeChecker::with_level_substitution(&export.exprs,&export.levels,environment,parameter_substitution(&recursor.level_params)).with_delta_policy(policy);
+    let mut carriers=Vec::new();
+    for motive in &domains[..nm] {
+        let Some(Expr::Pi{domain,body})=export.exprs.get(*motive) else{return Vec::new();};
+        if !is_sort_parameter(export,*body,recursor.level_params[0]) || closed_nested_carrier(export,*domain).is_none() {return Vec::new();}
+        let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*domain,&[],&EnvFrame::empty(),limits.judgment_steps) else{return Vec::new();};
+        if !crate::level::level_equal(sort,crate::level::succ(LevelTerm::Zero),limits.judgment_steps).is_proven() {return Vec::new();}
+        carriers.push(*domain);
+    }
+    let owners=(0..nm).filter(|i|expr_eq_with_bvar_shift(export,carriers[*i],domains[prefix],0,0)).collect::<Vec<_>>();
+    let [owner_motive]=owners.as_slice() else{return Vec::new();};
+    if !is_bvar_application(export,result,(prefix-owner_motive) as u64,0) {return Vec::new();}
+    let Some((owner,owner_levels,parameters))=closed_nested_carrier(export,domains[prefix]) else{return Vec::new();};
+    let mut certified=Vec::new();
+    for rule in &recursor.rules {
+        let candidate=(||->Option<crate::machine::ClosedNestedMinorReduction>{
+            let ctor=export.declarations.iter().filter_map(|d|match d {Declaration::Inductive(b)=>Some(b),_=>None}).flat_map(|b|&b.constructors).find(|c|c.name==rule.constructor)?;
+            if ctor.inductive!=owner || ctor.is_unsafe || ctor.num_fields!=rule.num_fields || ctor.num_fields>16
+                || ctor.num_params as usize!=parameters.len() {return None;}
+            let admitted=environment.get(ctor.name)?;
+            if admitted.ty!=ctor.ty || admitted.level_params!=ctor.level_params {return None;}
+            let p=ctor.num_params as usize;let f=ctor.num_fields as usize;
+            let (ctor_domains,ctor_result)=pi_spine(export,ctor.ty,p+f)?;
+            let (cth,cta)=application_spine(export,ctor_result);
+            if !is_declared_level_constant(export,cth,owner,&ctor.level_params) || cta.len()!=p
+                || !cta.iter().enumerate().all(|(i,a)|is_bvar(export,*a,(f+p-1-i) as u64)) {return None;}
+            // Locate the minor by its owner motive and full specialized ctor.
+            let mut matches=Vec::new();
+            for j in 0..recursor.num_minors as usize {
+                let mut terminal=domains[nm+j];
+                for _ in 0..32 {
+                    if let Some(Expr::Pi{body,..})=export.exprs.get(terminal) {terminal=*body;} else {break;}
+                }
+                let Some(Expr::App{arg,..})=export.exprs.get(terminal) else{continue;};
+                let (head,_)=application_spine(export,*arg);
+                if matches!(export.exprs.get(head),Some(Expr::Const{name,..}) if *name==ctor.name) {matches.push(j);}
+            }
+            let [j]=matches.as_slice() else{return None;};let j=*j;
+            let mut field_frame=EnvFrame::empty();
+            let (_,minor_terminal)=pi_spine(export,domains[nm+j],f)?;
+            let mut terminal=minor_terminal;
+            for _ in 0..16 {if let Some(Expr::Pi{body,..})=export.exprs.get(terminal) {terminal=*body;} else {break;}}
+            let Some(Expr::App{arg:constructed,..})=export.exprs.get(terminal) else{return None;};
+            let (ch,ca)=application_spine(export,*constructed);
+            let Some(Expr::Const{name:constructor,levels:ctor_level_ids})=export.exprs.get(ch) else{return None;};
+            if *constructor!=ctor.name || ctor_level_ids.len()!=ctor.level_params.len() {return None;}
+            let ctor_levels=ctor_level_ids.iter().map(|l|crate::level::instantiate_level(&export.levels,*l,&HashMap::new(),128).ok()).collect::<Option<Vec<_>>>()?;
+            if ctor_levels!=owner_levels || ca.len()<p {return None;}
+            let specialization=LevelSubstitution::new(ctor.level_params.iter().copied().zip(ctor_levels.iter().cloned()).collect());
+            for (i,arg) in ca[..p].iter().enumerate() {
+                let Some(Expr::Const{name,levels})=export.exprs.get(*arg) else{return None;};
+                let actual=levels.iter().map(|l|crate::level::instantiate_level(&export.levels,*l,&HashMap::new(),128).ok()).collect::<Option<Vec<_>>>()?;
+                if (*name,actual)!=parameters[i] {return None;}
+                field_frame=field_frame.extend(Closure::new(*arg,EnvFrame::empty()));
+            }
+            let mut recursive=Vec::new();
+            let mut actual_fields=Vec::new();
+            for (k,domain) in ctor_domains[p..].iter().enumerate() {
+                let field=Closure::with_levels(*domain,field_frame.clone(),specialization.clone());
+                let positions=(0..nm).filter(|i|checker.convert(&TypeValue::Term(field.clone()),&TypeValue::Term(checker.closure(carriers[*i],EnvFrame::empty())),limits.judgment_steps).is_proven()).collect::<Vec<_>>();
+                match positions.as_slice() {
+                    [i]=>recursive.push((k,*i)),
+                    []=>{
+                        // Closed owner payloads are checked independently;
+                        // specialized external fields must be direct carriers.
+                        if p!=0 || expression_contains_constant(export,*domain,block.types[0].name) {return None;}
+                        let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*domain,&[],&EnvFrame::empty(),limits.judgment_steps) else{return None;};
+                        if !crate::level::level_equal(sort,crate::level::succ(LevelTerm::Zero),limits.judgment_steps).is_proven() {return None;}
+                    }
+                    _=>return None,
+                }
+                actual_fields.push(field);
+                field_frame=field_frame.extend_free(FreeId(k as u64));
+            }
+            let r=recursive.len();
+            let (minor_domains,minor_result)=pi_spine(export,domains[nm+j],f+r)?;
+            for (a,b) in actual_fields.iter().zip(&minor_domains[..f]) {
+                if !checker.convert(&TypeValue::Term(a.clone()),&TypeValue::Term(checker.closure(*b,EnvFrame::empty())),limits.judgment_steps).is_proven() {return None;}
+            }
+            for (k,(position,motive)) in recursive.iter().enumerate() {
+                if !is_bvar_application(export,minor_domains[f+k],(nm+j+f+k-1-motive) as u64,(f+k-1-position) as u64) {return None;}
+            }
+            let Some(Expr::App{fun:motive,arg:constructed})=export.exprs.get(minor_result) else{return None;};
+            if !is_bvar(export,*motive,(nm+j+f+r-1-owner_motive) as u64) {return None;}
+            let (head,args)=application_spine(export,*constructed);
+            if !expr_eq_with_bvar_shift(export,head,ch,0,0) || args.len()!=p+f
+                || !args[..p].iter().zip(&ca[..p]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+                || !args[p..].iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f+r-1-k) as u64)) {return None;}
+            let (annotations,rhs)=lam_spine(export,rule.rhs,prefix+f)?;
+            if !annotations[..prefix].iter().zip(&domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0)) {return None;}
+            for (a,b) in actual_fields.iter().zip(&annotations[prefix..]) {
+                let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*b,&[],&EnvFrame::empty(),limits.judgment_steps) else{return None;};
+                if !crate::level::level_equal(sort,crate::level::succ(LevelTerm::Zero),limits.judgment_steps).is_proven() {return None;}
+                if !checker.convert(&TypeValue::Term(a.clone()),&TypeValue::Term(checker.closure(*b,EnvFrame::empty())),limits.judgment_steps).is_proven() {return None;}
+            }
+            let (minor,args)=application_spine(export,rhs);
+            if !is_bvar(export,minor,(f+recursor.num_minors as usize-1-j) as u64) || args.len()!=f+r
+                || !args[..f].iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f-1-k) as u64)) {return None;}
+            for (k,(position,motive)) in recursive.iter().enumerate() {
+                let callees=block.recursors.iter().filter(|callee| {
+                    if callee.num_params!=0 || callee.num_indices!=0 || callee.num_motives!=recursor.num_motives || callee.num_minors!=recursor.num_minors || callee.level_params!=recursor.level_params {return false;}
+                    let Some((cd,cr))=pi_spine(export,callee.ty,prefix+1) else{return false;};
+                    cd[..prefix].iter().zip(&domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+                        && expr_eq_with_bvar_shift(export,cd[prefix],carriers[*motive],0,0)
+                        && is_bvar_application(export,cr,(prefix-motive) as u64,0)
+                }).collect::<Vec<_>>();
+                let [callee]=callees.as_slice() else{return None;};
+                let (head,arguments)=application_spine(export,args[f+k]);
+                if !is_unary_polymorphic_constant(export,head,callee.name,recursor.level_params[0]) || arguments.len()!=prefix+1
+                    || !arguments[..prefix].iter().enumerate().all(|(i,a)|is_bvar(export,*a,(prefix+f-1-i) as u64))
+                    || !is_bvar(export,arguments[prefix],(f-1-position) as u64) {return None;}
+            }
+            Some(crate::machine::ClosedNestedMinorReduction {constructor:ctor.name,constructor_levels:ctor_levels,constructor_parameters:parameters.clone(),num_fields:f,rhs:rule.rhs,level_params:recursor.level_params.clone(),prefix_len:prefix,minor_argument:nm+j})
+        })();
+        if let Some(rule)=candidate {certified.push(rule);}
+    }
+    certified
 }

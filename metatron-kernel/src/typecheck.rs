@@ -596,7 +596,7 @@ impl<'a> TypeChecker<'a> {
                 }
                 Some(TypeValue::Term(result))
             }
-            Expr::StrLit(_) => None,
+            Expr::StrLit(_) => self.environment.string_literal_type().map(|ty|TypeValue::Term(self.closure(ty,EnvFrame::empty()))),
         }
     }
 
@@ -667,9 +667,14 @@ impl<'a> TypeChecker<'a> {
             }).collect::<Vec<_>>()
         });
         let mut chain = Vec::new();
-        let mut current = neutral.spine.last().cloned();
+        let major_of=|n:&Neutral| {
+            let NeutralHead::Const{name,..}=&n.head else{return None;};
+            let r=self.environment.recursor_reduction(*name)?;
+            n.spine.get(r.num_params+1+r.rules.len()+r.num_indices).cloned()
+        };
+        let mut current = major_of(neutral);
         let machine = self.machine();
-        for step in 0..5 {
+        for step in 0..12 {
             let Some(closure) = current.take() else { break };
             let syntax = self.expressions.get(closure.expr);
             let binding = match syntax {
@@ -705,11 +710,11 @@ impl<'a> TypeChecker<'a> {
                 closure.expr,closure.env.id(),
             ));
             current = match value {
-                Some(Value::Neutral(Neutral {
-                    head: NeutralHead::Const { name: inner, .. }, spine,
-                })) if self.environment.recursor_reduction(*inner).is_some()
-                        && !spine.is_empty() => spine.last().cloned(),
-                _ => None,
+                Some(Value::Neutral(inner)) if major_of(inner).is_some()=>major_of(inner),
+                _ => match binding {
+                    Some(crate::value::EnvBinding::Closure(inner))=>Some(inner),
+                    _=>None,
+                },
             };
             if current.as_ref() == Some(&closure) {
                 chain.push("cyclic-major-closure".to_string());
@@ -909,7 +914,10 @@ impl<'a> TypeChecker<'a> {
                     "qualified-Nat-literal-type",
                 )
             }
-            Expr::StrLit(_) => Judgment::unknown("string-literal-type-not-qualified"),
+            Expr::StrLit(_) => match self.environment.string_literal_type() {
+                Some(ty)=>Judgment::proven(TypeValue::Term(self.closure(ty,EnvFrame::empty())),"qualified-native-String-literal-type"),
+                None=>Judgment::unknown("string-literal-type-not-qualified"),
+            },
             Expr::BVar(index) => {
                 if let Some(EnvBinding::NatLit(_)) = frame.lookup(*index) {
                     let Some(nat) = self.environment.nat_primitives() else { return Judgment::unknown("native-nat-binding-without-qualified-Nat"); };
@@ -1058,7 +1066,19 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
-                let Some((domain, body)) = self.pi_view(function_type.clone(), *remaining) else {
+                let ordinary_view = self.pi_view(function_type.clone(), *remaining);
+                let checked_view = ordinary_view.or_else(|| {
+                    if self.delta_policy != crate::convert::DeltaPolicy::GuardedSemanticFallback {
+                        return None;
+                    }
+                    let TypeValue::Term(term) = function_type.proven_value()? else { return None };
+                    let reduced = crate::convert::checked_source_type_value(
+                        self, term.clone(), context, *remaining,
+                    );
+                    let Value::Pi { domain, body } = reduced.proven_value()? else { return None };
+                    Some((TypeValue::Term(domain.clone()), PiBody::Closure(body.clone())))
+                });
+                let Some((domain, body)) = checked_view else {
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
                         let mut reducible = None;
@@ -2305,6 +2325,31 @@ impl<'a> TypeChecker<'a> {
 
     pub(crate) fn expression(&self, expression: ExprId) -> Option<&Expr> {
         self.expressions.get(expression)
+    }
+
+    pub(crate) fn captured_string_literal(&self, term: &Closure, budget: usize) -> Option<String> {
+        self.environment.string_literal_type()?;
+        let mut term = term.clone();
+        for _ in 0..budget.min(64) {
+            match self.expression(term.expr)? {
+                Expr::StrLit(value) => return Some(value.clone()),
+                Expr::BVar(index) => match term.env.lookup(*index)? {
+                    EnvBinding::Closure(bound) => term = bound,
+                    _ => return None,
+                },
+                Expr::Let { value, body, .. } => {
+                    let value = term.sibling(*value, term.env.clone());
+                    term = term.sibling(*body, term.env.extend(value));
+                }
+                Expr::Const { name, levels } if levels.is_empty() => {
+                    let declaration = self.environment.get(*name)?;
+                    if !declaration.level_params.is_empty() { return None; }
+                    term = self.closure(declaration.value?, EnvFrame::empty());
+                }
+                _ => return None,
+            }
+        }
+        None
     }
 
     /// Kernel proof irrelevance for a source-checked theorem application
@@ -4294,9 +4339,11 @@ impl<'a> TypeChecker<'a> {
             self.levels,
             self.environment.definition_bodies(),
         )
-        .with_singleton_recursor_reductions(self.environment.singleton_recursor_reductions())
-        .with_recursor_reductions(self.environment.recursor_reductions())
-        .with_projection_specs(self.environment.projection_specs())
+        .with_singleton_recursor_reductions(self.environment.shared_singleton_recursor_reductions())
+        .with_nullary_minor_reductions(self.environment.nullary_minor_reductions())
+        .with_closed_nested_minor_reductions(self.environment.closed_nested_minor_reductions())
+        .with_recursor_reductions(self.environment.shared_recursor_reductions())
+        .with_projection_specs(self.environment.shared_projection_specs())
         .with_nat_primitives(self.environment.nat_primitives().cloned())
         .with_bool_primitives(self.environment.bool_primitives().cloned())
         .with_quot_primitives(self.environment.quot_primitives().cloned())

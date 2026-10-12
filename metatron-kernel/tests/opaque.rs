@@ -27,3 +27,13 @@ fn checked_opaque_bodies_are_not_delta_reduction_rules() {
 "#;
     assert_ne!(metatron_kernel::run(Cursor::new(source)),Verdict::Accept);
 }
+
+#[test]
+fn opaque_group_metadata_does_not_block_an_independently_closed_body() {
+    let grouped=BASE.replace("{\"opaque\":", "{\"in\":4,\"str\":{\"pre\":0,\"str\":\"pending\"}}\n{\"opaque\":").replace("\"all\":[3]","\"all\":[3,4]");
+    assert_eq!(metatron_kernel::run(Cursor::new(&grouped)),Verdict::Accept);
+    for target in [3,4] {
+        let circular=grouped.replace("{\"opaque\":",&format!("{{\"ie\":3,\"const\":{{\"name\":{target},\"us\":[]}}}}\n{{\"opaque\":" )).replace("\"value\":2","\"value\":3");
+        assert_ne!(metatron_kernel::run(Cursor::new(circular)),Verdict::Accept);
+    }
+}

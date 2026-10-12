@@ -43,3 +43,23 @@ fn checks_recursive_metadata_and_every_exported_binder() {
         assert_ne!(verdict(&v.iter().map(|r|format!("{r}\n")).collect::<String>()), Verdict::Accept);
     }
 }
+
+#[test]
+fn recursive_payload_alias_uses_only_its_admitted_erasure() {
+    assert_eq!(verdict(include_str!("fixtures/good-direct-recursive-alias.ndjson")),Verdict::Accept);
+}
+
+#[test]
+fn erasing_a_payload_type_does_not_excuse_an_ill_typed_rule_annotation() {
+    let mut rows:Vec<serde_json::Value>=include_str!("fixtures/good-direct-recursive-alias.ndjson").lines().map(|s|serde_json::from_str(s).unwrap()).collect();
+    let last=rows.len()-1;
+    let ctor=rows[last]["inductive"]["ctors"][2]["type"].as_u64().unwrap();
+    let alias=rows.iter().find(|r|r["ie"].as_u64()==Some(ctor)).unwrap()["forallE"]["type"].as_u64().unwrap();
+    let partial=rows.iter().find(|r|r["ie"].as_u64()==Some(alias)).unwrap()["app"]["fn"].as_u64().unwrap();
+    let bad=rows.iter().filter_map(|r|r["ie"].as_u64()).max().unwrap()+1;
+    rows.insert(last,serde_json::json!({"ie":bad,"app":{"fn":partial,"arg":0}}));
+    let mut rule=rows.last().unwrap()["inductive"]["recs"][0]["rules"][2]["rhs"].as_u64().unwrap();
+    for _ in 0..4 {rule=rows.iter().find(|r|r["ie"].as_u64()==Some(rule)).unwrap()["lam"]["body"].as_u64().unwrap();}
+    rows.iter_mut().find(|r|r["ie"].as_u64()==Some(rule)).unwrap()["lam"]["type"]=serde_json::json!(bad);
+    assert_ne!(verdict(&rows.iter().map(|r|format!("{r}\n")).collect::<String>()),Verdict::Accept);
+}
