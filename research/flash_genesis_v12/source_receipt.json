@@ -998,3 +998,962 @@
         "pass": false,
         "policy": {
           "bound": "none",
+          "include_first": true,
+          "objective": "max_singleton",
+          "topology": "only_include"
+        },
+        "stats": {
+          "cases": 7,
+          "feasibility_calls": 7,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 3,
+          "order": [
+            0,
+            1
+          ],
+          "predicted": 0,
+          "source": "future_weighted_conflict",
+          "true": 1
+        },
+        "pass": false,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": true,
+          "objective": "max_singleton",
+          "topology": "only_include"
+        },
+        "stats": {
+          "cases": 7,
+          "feasibility_calls": 7,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 3,
+          "order": [
+            0,
+            1
+          ],
+          "predicted": 0,
+          "source": "future_weighted_conflict",
+          "true": 1
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": true,
+          "objective": "sum_weights",
+          "topology": "only_include"
+        },
+        "stats": {
+          "cases": 7,
+          "feasibility_calls": 7,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 3,
+          "order": [
+            0,
+            1
+          ],
+          "predicted": 0,
+          "source": "future_weighted_conflict",
+          "true": 1
+        },
+        "pass": false,
+        "policy": {
+          "bound": "none",
+          "include_first": true,
+          "objective": "sum_weights",
+          "topology": "only_include"
+        },
+        "stats": {
+          "cases": 7,
+          "feasibility_calls": 7,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 3,
+          "order": [
+            0,
+            1
+          ],
+          "predicted": 0,
+          "source": "future_weighted_conflict",
+          "true": 1
+        },
+        "pass": false,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": true,
+          "objective": "sum_weights",
+          "topology": "only_include"
+        },
+        "stats": {
+          "cases": 7,
+          "feasibility_calls": 7,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 391,
+          "order": [
+            0,
+            1,
+            2,
+            7,
+            8
+          ],
+          "predicted": 16,
+          "source": "future_weighted_conflict",
+          "true": 17
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": true,
+          "objective": "callback",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 940,
+          "feasibility_calls": 19933,
+          "score_callback_calls": 4121
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 391,
+          "order": [
+            0,
+            1,
+            2,
+            7,
+            8
+          ],
+          "predicted": 16,
+          "source": "future_weighted_conflict",
+          "true": 17
+        },
+        "pass": false,
+        "policy": {
+          "bound": "none",
+          "include_first": true,
+          "objective": "callback",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 940,
+          "feasibility_calls": 19933,
+          "score_callback_calls": 4121
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 391,
+          "order": [
+            0,
+            1,
+            2,
+            7,
+            8
+          ],
+          "predicted": 16,
+          "source": "future_weighted_conflict",
+          "true": 17
+        },
+        "pass": false,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": true,
+          "objective": "callback",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 940,
+          "feasibility_calls": 19933,
+          "score_callback_calls": 4121
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 256,
+          "order": [
+            8
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 15
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": true,
+          "objective": "count",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 606,
+          "feasibility_calls": 12081,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 256,
+          "order": [
+            8
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 15
+        },
+        "pass": false,
+        "policy": {
+          "bound": "none",
+          "include_first": true,
+          "objective": "count",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 606,
+          "feasibility_calls": 12081,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 256,
+          "order": [
+            8
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 15
+        },
+        "pass": false,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": true,
+          "objective": "count",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 606,
+          "feasibility_calls": 12081,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 6,
+          "order": [
+            1,
+            2
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 2
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": true,
+          "objective": "max_singleton",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 13,
+          "feasibility_calls": 26,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 6,
+          "order": [
+            1,
+            2
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 2
+        },
+        "pass": false,
+        "policy": {
+          "bound": "none",
+          "include_first": true,
+          "objective": "max_singleton",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 13,
+          "feasibility_calls": 26,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 6,
+          "order": [
+            1,
+            2
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 2
+        },
+        "pass": false,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": true,
+          "objective": "max_singleton",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 13,
+          "feasibility_calls": 26,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 391,
+          "order": [
+            0,
+            1,
+            2,
+            7,
+            8
+          ],
+          "predicted": 16,
+          "source": "future_weighted_conflict",
+          "true": 17
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": true,
+          "objective": "sum_weights",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 940,
+          "feasibility_calls": 19933,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 391,
+          "order": [
+            0,
+            1,
+            2,
+            7,
+            8
+          ],
+          "predicted": 16,
+          "source": "future_weighted_conflict",
+          "true": 17
+        },
+        "pass": false,
+        "policy": {
+          "bound": "none",
+          "include_first": true,
+          "objective": "sum_weights",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 940,
+          "feasibility_calls": 19933,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 391,
+          "order": [
+            0,
+            1,
+            2,
+            7,
+            8
+          ],
+          "predicted": 16,
+          "source": "future_weighted_conflict",
+          "true": 17
+        },
+        "pass": false,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": true,
+          "objective": "sum_weights",
+          "topology": "rotate_greedy"
+        },
+        "stats": {
+          "cases": 940,
+          "feasibility_calls": 19933,
+          "score_callback_calls": 0
+        }
+      }
+    ],
+    "total_cases": 35485,
+    "total_feasibility_calls": 856747,
+    "total_score_callback_calls": 429276
+  },
+  "learned_source_sha256": "eb736c72c3acc5bc152fe811be8d3892d88ac0e1932bb2fb47ef5d562fe49a3f",
+  "limitations": "typed objective and additive bound grammar supplied; warm has structurally selected V11 topology; source weighted families had been opened in V11; no independent invention of new meta-grammar",
+  "parent_compiled_source_sha256": "1200898dfafa0c431c49f4eeab23f500e8dca92d0fdebfa72d6aca2ec9861506",
+  "selected": {
+    "bound": "positive_weights",
+    "include_first": true,
+    "objective": "sum_weights",
+    "topology": "both"
+  },
+  "selector_version": "unbiased_v2_all_source_qualifying_candidates",
+  "source_names": [
+    "future_weighted_conflict",
+    "future_weighted_capacity",
+    "source_weighted_uniform"
+  ],
+  "source_truth_table_calls": 2176,
+  "status": "SOURCE_OBJECTIVE_REPAIR_FROZEN",
+  "v11_parent": "5b10a853240356b2b00258334ef378e0850eb42c",
+  "v12a_retrospective_due_selector_filter": true,
+  "warm": {
+    "candidate_count": 24,
+    "selected": {
+      "first_failure": null,
+      "pass": true,
+      "policy": {
+        "bound": "positive_weights",
+        "include_first": true,
+        "objective": "sum_weights",
+        "topology": "both"
+      },
+      "stats": {
+        "cases": 2695,
+        "feasibility_calls": 38509,
+        "score_callback_calls": 0
+      }
+    },
+    "tested_candidates": [
+      {
+        "first_failure": {
+          "allowed": 257,
+          "order": [
+            0,
+            8
+          ],
+          "predicted": 15,
+          "source": "future_weighted_conflict",
+          "true": 16
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": false,
+          "objective": "callback",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 608,
+          "feasibility_calls": 5652,
+          "score_callback_calls": 1889
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 263,
+          "order": [
+            0,
+            1,
+            2,
+            8
+          ],
+          "predicted": 16,
+          "source": "future_weighted_conflict",
+          "true": 17
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": true,
+          "objective": "callback",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 620,
+          "feasibility_calls": 5383,
+          "score_callback_calls": 722
+        }
+      },
+      {
+        "first_failure": null,
+        "pass": true,
+        "policy": {
+          "bound": "none",
+          "include_first": false,
+          "objective": "callback",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 2695,
+          "feasibility_calls": 114110,
+          "score_callback_calls": 61286
+        }
+      },
+      {
+        "first_failure": null,
+        "pass": true,
+        "policy": {
+          "bound": "none",
+          "include_first": true,
+          "objective": "callback",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 2695,
+          "feasibility_calls": 114110,
+          "score_callback_calls": 61286
+        }
+      },
+      {
+        "first_failure": null,
+        "pass": true,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": false,
+          "objective": "callback",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 2695,
+          "feasibility_calls": 43432,
+          "score_callback_calls": 174177
+        }
+      },
+      {
+        "first_failure": null,
+        "pass": true,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": true,
+          "objective": "callback",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 2695,
+          "feasibility_calls": 38509,
+          "score_callback_calls": 117490
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 256,
+          "order": [
+            8
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 15
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": false,
+          "objective": "count",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 606,
+          "feasibility_calls": 5650,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 256,
+          "order": [
+            8
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 15
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": true,
+          "objective": "count",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 606,
+          "feasibility_calls": 5357,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 256,
+          "order": [
+            8
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 15
+        },
+        "pass": false,
+        "policy": {
+          "bound": "none",
+          "include_first": false,
+          "objective": "count",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 606,
+          "feasibility_calls": 17988,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 256,
+          "order": [
+            8
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 15
+        },
+        "pass": false,
+        "policy": {
+          "bound": "none",
+          "include_first": true,
+          "objective": "count",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 606,
+          "feasibility_calls": 17988,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 256,
+          "order": [
+            8
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 15
+        },
+        "pass": false,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": false,
+          "objective": "count",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 606,
+          "feasibility_calls": 5650,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 256,
+          "order": [
+            8
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 15
+        },
+        "pass": false,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": true,
+          "objective": "count",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 606,
+          "feasibility_calls": 5357,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 6,
+          "order": [
+            1,
+            2
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 2
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": false,
+          "objective": "max_singleton",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 13,
+          "feasibility_calls": 16,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 6,
+          "order": [
+            1,
+            2
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 2
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": true,
+          "objective": "max_singleton",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 13,
+          "feasibility_calls": 15,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 6,
+          "order": [
+            1,
+            2
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 2
+        },
+        "pass": false,
+        "policy": {
+          "bound": "none",
+          "include_first": false,
+          "objective": "max_singleton",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 13,
+          "feasibility_calls": 34,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 6,
+          "order": [
+            1,
+            2
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 2
+        },
+        "pass": false,
+        "policy": {
+          "bound": "none",
+          "include_first": true,
+          "objective": "max_singleton",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 13,
+          "feasibility_calls": 34,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 6,
+          "order": [
+            1,
+            2
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 2
+        },
+        "pass": false,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": false,
+          "objective": "max_singleton",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 13,
+          "feasibility_calls": 11,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 6,
+          "order": [
+            1,
+            2
+          ],
+          "predicted": 1,
+          "source": "future_weighted_conflict",
+          "true": 2
+        },
+        "pass": false,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": true,
+          "objective": "max_singleton",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 13,
+          "feasibility_calls": 15,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 257,
+          "order": [
+            0,
+            8
+          ],
+          "predicted": 15,
+          "source": "future_weighted_conflict",
+          "true": 16
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": false,
+          "objective": "sum_weights",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 608,
+          "feasibility_calls": 5652,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": {
+          "allowed": 263,
+          "order": [
+            0,
+            1,
+            2,
+            8
+          ],
+          "predicted": 16,
+          "source": "future_weighted_conflict",
+          "true": 17
+        },
+        "pass": false,
+        "policy": {
+          "bound": "count",
+          "include_first": true,
+          "objective": "sum_weights",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 620,
+          "feasibility_calls": 5383,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": null,
+        "pass": true,
+        "policy": {
+          "bound": "none",
+          "include_first": false,
+          "objective": "sum_weights",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 2695,
+          "feasibility_calls": 114110,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": null,
+        "pass": true,
+        "policy": {
+          "bound": "none",
+          "include_first": true,
+          "objective": "sum_weights",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 2695,
+          "feasibility_calls": 114110,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": null,
+        "pass": true,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": false,
+          "objective": "sum_weights",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 2695,
+          "feasibility_calls": 43432,
+          "score_callback_calls": 0
+        }
+      },
+      {
+        "first_failure": null,
+        "pass": true,
+        "policy": {
+          "bound": "positive_weights",
+          "include_first": true,
+          "objective": "sum_weights",
+          "topology": "both"
+        },
+        "stats": {
+          "cases": 2695,
+          "feasibility_calls": 38509,
+          "score_callback_calls": 0
+        }
+      }
+    ],
+    "total_cases": 27730,
+    "total_feasibility_calls": 700507,
+    "total_score_callback_calls": 416850
+  }
+}
