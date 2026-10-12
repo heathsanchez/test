@@ -47,3 +47,5 @@ jobs:
           lean capstone/InductionGeneralization.lean
           python capstone/induction_repair.py
           lean capstone/InductionGenerated.lean
+          python capstone/induction_holdout_repair.py
+          lean capstone/InductionHoldoutGenerated.lean
