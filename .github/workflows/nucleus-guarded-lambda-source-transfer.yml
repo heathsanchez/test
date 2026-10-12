@@ -1,0 +1,177 @@
+name: Nucleus typed guarded lambda source transfer
+
+on:
+  push:
+    branches:
+      - research/nucleus-guarded-lambda-source-transfer-20261012
+    paths:
+      - .github/workflows/nucleus-guarded-lambda-source-transfer.yml
+      - .github/scripts/nucleus_guarded_lambda_argument_patch_v1.py
+      - research/nucleus_lambda_transfer/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-red-green:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CARGO_HTTP_TIMEOUT: '120'
+      CARGO_NET_RETRY: '8'
+      CARGO_HTTP_LOW_SPEED_LIMIT: '0'
+      CARGO_HTTP_MULTIPLEXING: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Assert exact frozen Nucleus parent and build baseline before any patch
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-lambda-transfer
+          test "$(git rev-parse HEAD:metatron-kernel)" = 311cf82ae95e5bdff55e4529892209da6d85e5bd
+          sha256sum .github/scripts/nucleus_contextual_capability_patch_v1.py .github/scripts/nucleus_field_application_patch_v1.py .github/scripts/nucleus_guarded_lambda_argument_patch_v1.py              > /tmp/nucleus-lambda-transfer/source-sha256.txt
+          cargo fetch --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-lambda-transfer/original
+          echo BASELINE_CHECKER_NATIVE_SOURCE_FROZEN
+      - name: Apply source-exact field congruence plus only typed guarded lambda obligation
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_contextual_capability_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_field_application_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_guarded_lambda_argument_patch_v1.py metatron-kernel
+          git diff --check
+          git diff -- metatron-kernel/src/typecheck.rs metatron-kernel/src/convert.rs             > /tmp/nucleus-lambda-transfer/native-source-change.patch
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1              cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml              > /tmp/nucleus-lambda-transfer/cargo-tests.log 2>&1 || {
+               tail -100 /tmp/nucleus-lambda-transfer/cargo-tests.log; exit 1;
+             }
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-lambda-transfer/candidate
+          sha256sum /tmp/nucleus-lambda-transfer/{original,candidate}
+          echo CANDIDATE_BUILT_STRICT_SOURCE_CHECKED_LAMBDA_FALLBACK
+      - name: Download the exact original Arena 196 corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-lambda-transfer/archive /tmp/nucleus-lambda-transfer/arena
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip             > /tmp/nucleus-lambda-transfer/arena.zip
+          echo "f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2  /tmp/nucleus-lambda-transfer/arena.zip" | sha256sum -c -
+          unzip -q /tmp/nucleus-lambda-transfer/arena.zip -d /tmp/nucleus-lambda-transfer/archive
+          tar -xzf /tmp/nucleus-lambda-transfer/archive/lean-arena-tests.tar.gz             -C /tmp/nucleus-lambda-transfer/arena
+      - name: Check original/off/on native target and complete 196 with adversarial negatives
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/nucleus-lambda-transfer/arena')
+          out=pathlib.Path('/tmp/nucleus-lambda-transfer')
+          base_flags={
+            'NUCLEUS_EXPERIMENTAL_RELEVANCE':'1',
+            'NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER':'1',
+            'NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE':'1',
+            'NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE':'1',
+            'NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION':'1'}
+          modes={
+            'original':(out/'original',{}),
+            'field_only':(out/'candidate',{'NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION':'1'}),
+            'guarded_lambda':(out/'candidate',{
+                'NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION':'1',
+                'NUCLEUS_EXPERIMENTAL_GUARDED_LAMBDA_ARGUMENT':'1'})}
+          cases=[(str(p.relative_to(root/bucket)),p,expected) for bucket,expected in
+                 (('good',0),('bad',1))
+                 for p in sorted((root/bucket).rglob('*.ndjson'))]
+          assert len(cases)==196,len(cases)
+          special=['init-prelude','perf/grind-ring-5','perf/magma-list-pair-n7',
+                    'perf/magma-list-pair-n21','perf/magma-list-deep-n21',
+                    'perf/magma-list-deep-n36','perf/fueled-chain']
+          witness={}
+          for name in special:
+            p=root/'good'/(name+'.ndjson')
+            mode='guarded_lambda'
+            bin,extra=modes[mode]
+            with p.open('rb') as f:
+              proc=subprocess.run([str(bin)],stdin=f,stdout=subprocess.DEVNULL,
+                 stderr=subprocess.PIPE,timeout=150,
+                 env=os.environ|base_flags|extra|{'NUCLEUS_TRACE_GUARDED_LAMBDA_ARGUMENT':'1'})
+            lines=proc.stderr.decode(errors='replace').splitlines()
+            records=[line for line in lines if line.startswith('NUCLEUS_GUARDED_LAMBDA_ARG_PROVEN:')]
+            witness[name]={'rc':proc.returncode,'source_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                           'guarded_lambda_warrants':len(records),'first':records[:5]}
+            print('NATIVE_GUARDED_LAMBDA_TRACE='+json.dumps({'case':name,'rc':proc.returncode,'warrants':len(records)}),flush=True)
+          all_rows={}
+          counts={}
+          for mode,(bin,extra) in modes.items():
+            rows=[]
+            for name,p,expected in cases:
+              with p.open('rb') as f:
+                proc=subprocess.run([str(bin)],stdin=f,stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,timeout=150,
+                    env=os.environ|base_flags|extra)
+              row={'case':name,'expected':expected,'rc':proc.returncode}
+              rows.append(row)
+            all_rows[mode]=rows
+            counts[mode]={
+              'accept':sum(r['rc']==0 for r in rows),
+              'reject':sum(r['rc']==1 for r in rows),
+              'unknown':sum(r['rc']==2 for r in rows),
+              'wrong':sum(r['rc'] in (0,1) and r['rc']!=r['expected'] for r in rows),
+              'errors':sum(r['rc'] not in (0,1,2) for r in rows)}
+            print('NATIVE_GUARDED_LAMBDA_MODE='+json.dumps({'mode':mode,'counts':counts[mode]}),flush=True)
+          original=all_rows['original']
+          off=all_rows['field_only']
+          on=all_rows['guarded_lambda']
+          assert counts['original']==counts['field_only']=={
+            'accept':118,'reject':71,'unknown':7,'wrong':0,'errors':0}, counts
+          original_map={r['case']:r['rc'] for r in original}
+          off_map={r['case']:r['rc'] for r in off}
+          on_map={r['case']:r['rc'] for r in on}
+          assert original_map==off_map,'INCUMBENT_FIELD_ONLY_NOT_BIT_EXACT'
+          changed=[{'case':k,'old':old,'on':on_map[k]} for k,old in original_map.items() if old!=on_map[k]]
+          gained=[r['case'] for r in on if original_map[r['case']]==2 and r['expected']==0 and r['rc']==0]
+          regress=[r for r in on if original_map[r['case']] in (0,1) and r['rc']!=original_map[r['case']]]
+          false_index_input=false_index(extract((root/'good/init-prelude.ndjson').read_bytes()))
+          assert hashlib.sha256(false_index_input).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          controls={}
+          for mode,(bin,extra) in modes.items():
+            for tag,data,allowed in (
+              ('false_index',false_index_input,(1,2)),
+              ('nested_unused',(root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),(1,))):
+              proc=subprocess.run([str(bin)],input=data,stdout=subprocess.DEVNULL,
+                         stderr=subprocess.PIPE,timeout=90,env=os.environ|base_flags|extra)
+              controls[mode+':'+tag]=proc.returncode
+              assert proc.returncode in allowed,(mode,tag,proc.returncode)
+          report={
+            'status':'PASS_NATIVE_FAILURE_TO_SUCCESS' if gained and not regress
+                     and counts['guarded_lambda']['wrong']==0 and counts['guarded_lambda']['errors']==0
+                     else 'REJECTED_AS_COMPLETE_NATIVE_GAIN',
+            'source_base':'684d761244e95b8bf0ea98fb4821b1d248f03d5d',
+            'arena_artifact':11272848230,
+            'source_stage16_artifact':11724049727,
+            'counts':counts,'gained':gained,'changed':changed,'regressions':regress,
+            'source_guards':{'strict_argument_typing':True,
+               'typed_dependent_domain_checks':True,
+               'both_source_arguments_syntactic_lambdas':True,
+               'guarded_policy_requires_independent_proven_conversion':True},
+            'focused_native_warrants':witness,
+            'protected_mutants':controls}
+          (out/'native-report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          print('NATIVE_GUARDED_LAMBDA_FINAL='+json.dumps({
+            'status':report['status'],'gained':gained,'changed':changed,
+            'regressions':regress,'counts':counts,'focused':witness['perf/fueled-chain']['guarded_lambda_warrants']}),flush=True)
+          assert not regress and counts['guarded_lambda']['wrong']==0 and counts['guarded_lambda']['errors']==0
+          assert gained,'NO_COMPLETE_EXPORT_ACCEPT_GAIN__KEEP_NEGATIVE_ARTIFACT'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-guarded-lambda-exact-native-experiment
+          path: |
+            /tmp/nucleus-lambda-transfer/native-report.json
+            /tmp/nucleus-lambda-transfer/native-source-change.patch
+            /tmp/nucleus-lambda-transfer/source-sha256.txt
+            /tmp/nucleus-lambda-transfer/cargo-tests.log
+          if-no-files-found: warn
