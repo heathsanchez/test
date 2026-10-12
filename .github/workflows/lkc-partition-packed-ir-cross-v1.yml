@@ -1,0 +1,127 @@
+name: SAIR Partition cross-representation instruction tournament V1
+
+on:
+  push:
+    branches: [lkc-partition-packed-ir-cross-20261012]
+    paths:
+      - '.github/workflows/lkc-partition-packed-ir-cross-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lkc-partition-packed-ir-cross-v1
+  cancel-in-progress: false
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reproduce independent finite tests and exact source hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/lkc_partition/packed_phase_v1.py --self-test
+          python3 experiments/lkc_partition/euler_sparse_quotient_v1.py
+          python3 experiments/lkc_partition/threecompiled_v13.py
+          echo 'bcb6325b9d0ca5c7259b0de76d903ba5cb20e05fdb60938b5201745d00491085  experiments/lkc_partition/generated/Submission_v13.lean' | sha256sum -c -
+          mkdir -p packed-ir-cross-v1
+          cp experiments/lkc_partition/generated/packed_phase_v1_finite_results.json packed-ir-cross-v1/
+          cp experiments/lkc_partition/generated/packed_euler_sparse_finite.json packed-ir-cross-v1/
+          sha256sum experiments/lkc_partition/generated/Submission_v13.lean \
+                    experiments/lkc_partition/generated/Submission_packed_{division,geometric,euler_sparse}_probe.lean > packed-ir-cross-v1/sources.sha256
+      - name: Install Valgrind and Lean prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install pinned evaluator
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench
+          python3 benchmark.py setup --problem partition
+          python3 benchmark.py doctor --problem partition --metric callgrind
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Callgrind instruction measurements on all four candidates
+        shell: bash
+        run: |
+          set +e
+          set -u
+          root="$GITHUB_WORKSPACE/packed-ir-cross-v1"
+          for arm in v13 packed_division packed_geometric packed_euler_sparse; do
+            case "$arm" in
+              v13) file="Submission_v13.lean" ;;
+              packed_division) file="Submission_packed_division_probe.lean" ;;
+              packed_geometric) file="Submission_packed_geometric_probe.lean" ;;
+              packed_euler_sparse) file="Submission_packed_euler_sparse_probe.lean" ;;
+            esac
+            echo "CALLGRIND_BEGIN $arm"
+            python3 bench/benchmark.py diagnostic --problem partition \
+              --submission "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/$file" \
+              --metric callgrind --repetitions 2 --timeout 600 --memory-mb 4096 \
+              --inputs 14 22 32 36 --output "$root/$arm"
+            code=$?
+            echo "$code" > "$root/$arm.exit"
+            echo "CALLGRIND_EXIT $arm $code"
+          done
+          exit 0
+      - name: Deterministic candidate-specific instruction verdict
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('packed-ir-cross-v1')
+          arms={}
+          for a in ('v13','packed_division','packed_geometric','packed_euler_sparse'):
+              rec={'qualified':False,'ir':None,'cases':[]}
+              p=root/a/'diagnostic.json'
+              if p.exists():
+                  d=json.loads(p.read_text())
+                  c=next((r for r in d['runs'] if r['role']=='candidate'),{})
+                  cases=c.get('cases',[])
+                  rec.update({'qualified':len(cases)==4 and all(x['status']=='complete' for x in cases),
+                              'ir':d['totals']['candidate'],
+                              'source_sha256':c.get('source_sha256'),
+                              'cases':[{'n':x['n'],'status':x['status'],'instruction_median':x.get('median')} for x in cases],
+                              'global_complete':d.get('complete')})
+              arms[a]=rec
+          base=arms['v13']
+          scored=[]
+          for name,v in arms.items():
+              if name=='v13':continue
+              if v['qualified'] and base['qualified'] and v['ir'] and base['ir']:
+                  v['ratio']=float(v['ir'])/float(base['ir'])
+                  scored.append((v['ratio'],name))
+          scored.sort()
+          best=scored[0] if scored else None
+          report={'metric':'Callgrind Ir development proxy','inputs':[14,22,32,36],
+                  'arms':arms,'winner':best[1] if best else None,
+                  'winning_ratio':best[0] if best else None,
+                  'result':'CANDIDATE_STRONG' if best and best[0]<0.1 else 'NO_ORDER_OF_MAGNITUDE_WARRANT',
+                  'universal_lean_proof':False,'official_hardware_PMU':False,'submitted':False}
+          (root/'ir-decision.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report,indent=2))
+          PY
+      - name: Preserve all negative and positive evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sair-lkc-partition-packed-instructions
+          path: packed-ir-cross-v1/
+          if-no-files-found: error
