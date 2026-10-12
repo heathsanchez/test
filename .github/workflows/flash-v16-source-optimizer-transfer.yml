@@ -1,0 +1,127 @@
+name: FLASH V16 — unchanged qualified V11 rule transfers to MathGraph native verifier
+
+on:
+  push:
+    branches: [research/flash-v16-qualified-optimizer-transfer]
+    paths:
+      - 'research/flash_v16/**'
+      - '.github/workflows/flash-v16-source-optimizer-transfer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actual-crossrepo-executable-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fetch exact MSI, MathGraph and V11 source program without modifications
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p external/msi/tests external/msi/lean external/v11 external/mathgraph evidence-out
+          git -C external/mathgraph init -q
+          git -C external/mathgraph fetch --quiet --depth=1 https://github.com/metalogiclabs/mathgraph.git 280b0200af53033d6f4ee0e1c31e7c2f4f32c172
+          git -C external/mathgraph checkout --quiet --detach FETCH_HEAD
+          test "$(git -C external/mathgraph rev-parse HEAD)" = 280b0200af53033d6f4ee0e1c31e7c2f4f32c172
+          curl -fsSL --retry 3 --max-time 90 "https://raw.githubusercontent.com/heathsanchez/test/5b10a853240356b2b00258334ef378e0850eb42c/research/flash_genesis_v11/learned_repair.py" -o external/v11/learned_repair.py
+          curl -fsSL --retry 3 --max-time 90 "https://raw.githubusercontent.com/heathsanchez/Minimal-Sufficient-Interface/7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154/tests/test_observation_language_genesis.py" -o external/msi/tests/test_observation_language_genesis.py
+          curl -fsSL --retry 3 --max-time 90 "https://raw.githubusercontent.com/heathsanchez/Minimal-Sufficient-Interface/7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154/lean/ObservationalSeparation.lean" -o external/msi/lean/ObservationalSeparation.lean
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          expected={
+            'external/v11/learned_repair.py':'0f7fb6b837cd65aa86b5fef7c097196fc0df4845',
+            'external/msi/tests/test_observation_language_genesis.py':'601d9e6a2c575054abb71dab580ee844ee2724af',
+            'external/msi/lean/ObservationalSeparation.lean':'38faf9ad5576cf1b8ba60c4553783dc90c539179',
+            'external/mathgraph/research/mathgraph_check_machine_oracle_v1.py':'0434f24b64dbff3c70a570e3d3de1b9260986875',
+            'external/mathgraph/mathgraph_check/finite_logic.py':'d4a3beaa4998b9ba6a0df4395331a713a10eae86'}
+          for file,sha in expected.items():
+            raw=Path(file).read_bytes()
+            blob=hashlib.sha1(b'blob '+str(len(raw)).encode()+b'\x00'+raw).hexdigest()
+            assert blob==sha,(file,blob)
+          print('PASS_THREE_PROJECT_EXACT_SOURCE_IDENTITIES')
+          PY
+      - name: Protect target native Boolean semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/external/mathgraph"
+          python -m unittest discover -s external/mathgraph/tests -p test_finite_logic.py -v \
+             2>&1 | tee evidence-out/native-target-tests.txt
+          python -m unittest discover -s external/msi/tests -p test_observation_language_genesis.py -v \
+             2>&1 | tee evidence-out/native-source-observations.txt
+          python external/mathgraph/research/mathgraph_check_machine_oracle_v1.py --out evidence-out/native-420 \
+             | tee evidence-out/native-target-source.txt
+      - name: Reuse V11 byte-identical solver on source 420 and untouched future cohorts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_v16/execute.py \
+             --msi-root external/msi \
+             --target-root external/mathgraph \
+             --source-repair external/v11/learned_repair.py \
+             --output evidence-out/source-to-target-generative-transfer.json \
+             | tee evidence-out/transfer-summary.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt=json.loads(Path('evidence-out/source-to-target-generative-transfer.json').read_text())
+          assert receipt['status']=='PASS_V16_UNCHANGED_SOURCE_QUALIFIED_CONSTRUCTOR_TRANSFER'
+          source=receipt['cross_project_results']['native_development_420']
+          assert source[0]['optimum_basis_size']==6
+          assert source[1]['optimum_basis_size']==7
+          assert source[0]['greedy_failure'] is not None
+          assert source[0]['matroid_exchange_counterexample'] is not None
+          assert source[0]['native_outcome']['first_witness_changes']>0
+          assert source[1]['native_outcome']['scoped_native_status_and_witness_matches']==420
+          futures={k:v for k,v in receipt['cross_project_results'].items() if k!='native_development_420'}
+          assert len(futures)==3
+          assert all(len(v)==2 and all(c['original_source_v11_reused_byte_identical'] and
+            c['optimal_removed_count']==c['strong_stateless_optimum'] for c in v)
+            for v in futures.values())
+          assert all(v[1]['native_outcome']['scoped_native_status_and_witness_matches']==v[1]['native_cases'] for v in futures.values())
+          print('PASS_UNCHANGED_V11_NATIVE_TARGET_PROTECTED_TRANSFER')
+          PY
+      - name: Source deletion and counterfeit mutation rejection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,sys
+          sys.path.insert(0,'research/flash_v16')
+          from execute import load_v11
+          correct=Path('external/v11/learned_repair.py')
+          obj=load_v11(correct)
+          assert obj.learned_exact_rank(2,lambda mask:mask.bit_count()<=1)==1
+          import tempfile
+          with tempfile.TemporaryDirectory() as t:
+              fake=Path(t)/'counterfeit.py'
+              fake.write_bytes(correct.read_bytes()+b'\n# forged')
+              try: load_v11(fake)
+              except ValueError:pass
+              else:raise AssertionError('FORGED_SOURCE_ADMITTED')
+          print('PASS_MUTATED_TRANSFERRED_CAPABILITY_REJECTED')
+          PY
+          {
+            echo "EXACT_HEAD=$(git rev-parse HEAD)"
+            echo "SOURCE_V11_PREVIOUS_CI=38201499353"
+            echo "MSI_SOURCE_REV=7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154"
+            echo "MATHGRAPH_TARGET_REV=280b0200af53033d6f4ee0e1c31e7c2f4f32c172"
+            echo "LIMITATION=no new theorem; source V11 grammar supplied; no full lifetime/stateless improvement"
+            sha256sum external/v11/learned_repair.py research/flash_v16/execute.py evidence-out/source-to-target-generative-transfer.json
+          } > evidence-out/provenance.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flash-v16-unchanged-v11-crossproject-evidence
+          path: evidence-out/
+          if-no-files-found: warn
