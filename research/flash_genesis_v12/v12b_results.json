@@ -1,0 +1,202 @@
+{
+  "acquisition": {
+    "cold_candidates": 60,
+    "cold_source_calls": 856747,
+    "note": "Cached truth-table accesses, not physical cost; baseline is differently acquisition-informed; saved candidate evaluation only, not execution or independent validation cost.",
+    "optimistic_repeat_jobs_to_offset_v11": 39,
+    "source_calls_saved": 156240,
+    "source_saving_pct": 18.2364,
+    "two_generation_net": -5849994,
+    "v11_source_calls_sunk": 6006234,
+    "warm_candidates": 24,
+    "warm_source_calls": 700507
+  },
+  "cases": [
+    {
+      "boundary": "NONNEGATIVE_MODULAR",
+      "counterexample": null,
+      "executed_learned": true,
+      "final_optimum": 39,
+      "guard_raw_reads": 1024,
+      "hereditary": true,
+      "independent_reference_checks": 19683,
+      "learned_calls": 16950,
+      "modular_nonnegative": true,
+      "n": 9,
+      "name": "weighted_partition_quota",
+      "old_objective_ablation": {
+        "cardinality_value": 2,
+        "mask": 3,
+        "weighted_optimum": 13
+      },
+      "protected_cases": 1443,
+      "stateless_calls": 16950,
+      "status": "PASS_PROSPECTIVE_WEIGHTED"
+    },
+    {
+      "boundary": "NONNEGATIVE_MODULAR",
+      "counterexample": null,
+      "executed_learned": true,
+      "final_optimum": 52,
+      "guard_raw_reads": 1024,
+      "hereditary": true,
+      "independent_reference_checks": 19683,
+      "learned_calls": 4921,
+      "modular_nonnegative": true,
+      "n": 9,
+      "name": "weighted_overlapping_intervals",
+      "old_objective_ablation": {
+        "cardinality_value": 12,
+        "mask": 19,
+        "weighted_optimum": 19
+      },
+      "protected_cases": 1443,
+      "stateless_calls": 4921,
+      "status": "PASS_PROSPECTIVE_WEIGHTED"
+    },
+    {
+      "boundary": "NONNEGATIVE_MODULAR",
+      "counterexample": null,
+      "executed_learned": true,
+      "final_optimum": 32,
+      "guard_raw_reads": 1024,
+      "hereditary": true,
+      "independent_reference_checks": 19683,
+      "learned_calls": 26545,
+      "modular_nonnegative": true,
+      "n": 9,
+      "name": "weighted_hypergraph_packing",
+      "old_objective_ablation": {
+        "cardinality_value": 4,
+        "mask": 3,
+        "weighted_optimum": 18
+      },
+      "protected_cases": 1443,
+      "stateless_calls": 26545,
+      "status": "PASS_PROSPECTIVE_WEIGHTED"
+    },
+    {
+      "boundary": "NONNEGATIVE_MODULAR",
+      "counterexample": null,
+      "executed_learned": true,
+      "final_optimum": 27,
+      "guard_raw_reads": 1024,
+      "hereditary": true,
+      "independent_reference_checks": 19683,
+      "learned_calls": 24718,
+      "modular_nonnegative": true,
+      "n": 9,
+      "name": "weighted_single_capacity",
+      "old_objective_ablation": {
+        "cardinality_value": 11,
+        "mask": 3,
+        "weighted_optimum": 13
+      },
+      "protected_cases": 1443,
+      "stateless_calls": 24718,
+      "status": "PASS_PROSPECTIVE_WEIGHTED"
+    },
+    {
+      "boundary": "NONNEGATIVE_MODULAR",
+      "counterexample": null,
+      "executed_learned": true,
+      "final_optimum": 44,
+      "guard_raw_reads": 512,
+      "hereditary": true,
+      "independent_reference_checks": 6561,
+      "learned_calls": 1224,
+      "modular_nonnegative": true,
+      "n": 8,
+      "name": "weighted_transversal",
+      "old_objective_ablation": {
+        "cardinality_value": 32,
+        "mask": 126,
+        "weighted_optimum": 36
+      },
+      "protected_cases": 699,
+      "stateless_calls": 1224,
+      "status": "PASS_PROSPECTIVE_WEIGHTED"
+    },
+    {
+      "boundary": "NONNEGATIVE_MODULAR",
+      "counterexample": null,
+      "executed_learned": true,
+      "final_optimum": 48,
+      "guard_raw_reads": 1024,
+      "hereditary": true,
+      "independent_reference_checks": 19683,
+      "learned_calls": 4974,
+      "modular_nonnegative": true,
+      "n": 9,
+      "name": "weighted_forest",
+      "old_objective_ablation": {
+        "cardinality_value": 10,
+        "mask": 112,
+        "weighted_optimum": 17
+      },
+      "protected_cases": 1443,
+      "stateless_calls": 4974,
+      "status": "PASS_PROSPECTIVE_WEIGHTED"
+    },
+    {
+      "boundary": "NONMODULAR",
+      "counterexample": [
+        5,
+        29,
+        10
+      ],
+      "executed_learned": false,
+      "guard_raw_reads": 512,
+      "hereditary": true,
+      "modular_nonnegative": false,
+      "n": 8,
+      "name": "negative_nonmodular_bonus",
+      "status": "UNKNOWN_UNSUPPORTED_BOUNDARY"
+    },
+    {
+      "boundary": "NEGATIVE_WEIGHT",
+      "counterexample": [
+        "negative",
+        3
+      ],
+      "executed_learned": false,
+      "guard_raw_reads": 512,
+      "hereditary": true,
+      "modular_nonnegative": false,
+      "n": 8,
+      "name": "negative_negative_coefficient",
+      "status": "UNKNOWN_UNSUPPORTED_BOUNDARY"
+    },
+    {
+      "boundary": "NONHEREDITARY",
+      "counterexample": [
+        3,
+        2
+      ],
+      "executed_learned": false,
+      "guard_raw_reads": 512,
+      "hereditary": false,
+      "modular_nonnegative": true,
+      "n": 8,
+      "name": "negative_nonhereditary",
+      "status": "UNKNOWN_UNSUPPORTED_BOUNDARY"
+    }
+  ],
+  "protected_source_sha256": "2b39b11d551206201cd3cc0145c732b3a572a91258f5a9d7b6387e5f18701a4a",
+  "source_policy_sha256": "eb736c72c3acc5bc152fe811be8d3892d88ac0e1932bb2fb47ef5d562fe49a3f",
+  "status": "PASS_V12B_PROSPECTIVE_FINITE",
+  "totals": {
+    "guard_raw_reads": 7168,
+    "learned_execution_calls": 79332,
+    "protected_comparisons": 7914,
+    "reference_subset_checks": 104976,
+    "stateless_execution_calls": 79332
+  },
+  "unsupported_families": 3,
+  "valid_families": 6,
+  "verdict": {
+    "rejected": "Strict performance win over informed stateless; one-reuse lifetime amortization; unrestricted grammar invention.",
+    "unknown": "Lifetime gain after complete provenance and validation costs, new third-class rule invention or open-ended recursion.",
+    "warranted": "Source-selected unprivileged score-aware branch optimizer passed newly frozen unrelated objective families after guarded transport."
+  }
+}
