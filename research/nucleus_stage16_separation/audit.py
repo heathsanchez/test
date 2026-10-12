@@ -117,7 +117,7 @@ def main():
       'inference':'Universally identifying the observed Nat.succ neutral with an unrelated free neutral is invalid. The failed strict field-application route cannot justify acceptance; other kernel-valid routes remain UNKNOWN.'
     }
     dest=Path(a.output);dest.parent.mkdir(parents=True,exist_ok=True)
-    dest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\\n')
+    dest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
     print(json.dumps({k:receipt[k] for k in ('status','checked_six_case_pairs','complete_nucleus_accepts_gained','mutation_controls')},sort_keys=True))
 
 if __name__=='__main__':main()
