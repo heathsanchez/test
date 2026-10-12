@@ -5,6 +5,7 @@ on:
     branches: [lkc-partition-euler-spine-v3-20261012]
     paths:
       - '.github/workflows/lkc-partition-euler-spine-v3.yml'
+      - 'experiments/lkc_partition/euler_spine_v3.py'
   workflow_dispatch:
 
 permissions:
@@ -83,7 +84,7 @@ jobs:
               "cases":[14,22,36],"arms":arms,
               "best_ratio":winners[0][0] if winners else None,
               "best_candidate":winners[0][1] if winners else None,
-              "promotion":"CANDIDATE_SPEED_ONLY" if winners and winners[0][0]<0.90 else "REJECTED_AS_INSUFFICIENT",
+              "promotion":"CANDIDATE_SPEED_ONLY" if winners and winners[0][0]<0.90 else ("UNKNOWN_NO_QUALIFIED_SOURCE" if not winners else "REJECTED_AS_INSUFFICIENT"),
               "universal_Lean_proof":False,
               "official_SAIR_submission":False}
           (root/"decision.json").write_text(json.dumps(report,indent=2)+"\n")
