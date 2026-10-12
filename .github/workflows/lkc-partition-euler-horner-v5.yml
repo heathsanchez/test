@@ -27,6 +27,7 @@ jobs:
           set -euo pipefail
           python3 -m py_compile experiments/lkc_partition/euler_horner_v5.py experiments/lkc_partition/euler_horner_ir_v5.py
           python3 experiments/lkc_partition/euler_sparse_quotient_v1.py
+          python3 experiments/lkc_partition/euler_degree_v4.py
           python3 experiments/lkc_partition/euler_horner_v5.py
           mkdir -p horner-ir-v5
           cp experiments/lkc_partition/generated/packed_euler_sparse_finite.json horner-ir-v5/
