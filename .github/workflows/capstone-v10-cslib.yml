@@ -51,6 +51,7 @@ jobs:
           cd /tmp/cslib
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0-rc4
           "$HOME/.elan/bin/lake" exe cache get
+          "$HOME/.elan/bin/lake" build Cslib.Foundations.Semantics.LTS.Simulation
       - name: Kernel check generated relation certificates against CSLib
         run: |
           set -euo pipefail
