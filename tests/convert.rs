@@ -15,6 +15,69 @@ struct Fixture {
 }
 
 #[test]
+fn inferred_dependent_pi_compares_its_explicit_binder() {
+    use metatron_kernel::value::FreeId;
+    let mut expressions = IdTable::default();
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(0), Level::Zero).unwrap();
+    expressions.insert(ExprId(0), Expr::BVar(0)).unwrap();
+    let environment = Environment::empty();
+    let checker = TypeChecker::new(&expressions, &levels, &environment);
+    let pi = |binder, body_free| TypeValue::Pi {
+        domain: Box::new(TypeValue::Sort(LevelTerm::Zero)),
+        body: Box::new(TypeValue::Term(Closure::new(
+            ExprId(0), EnvFrame::empty().extend_free(FreeId(body_free)),
+        ))),
+        binder: FreeId(binder),
+    };
+    assert!(checker.convert(&pi(1, 1), &pi(2, 2), 256).is_proven(),
+        "dependent Pi bodies must be opened with the same fresh binder");
+    assert!(!checker.convert(&pi(1, 1), &pi(2, 3), 256).is_proven(),
+        "an unrelated captured local cannot be renamed as the Pi binder");
+    assert!(!checker.convert(&pi(1, 0), &pi(2, 2), 256).is_proven(),
+        "reopening must not capture an existing target local");
+    let nested = |outer, inner, body_free| TypeValue::Pi {
+        domain: Box::new(TypeValue::Sort(LevelTerm::Zero)),
+        body: Box::new(pi(inner, body_free)),
+        binder: FreeId(outer),
+    };
+    assert!(!checker.convert(&nested(2, 0, 2), &nested(3, 1, 1), 1024).is_proven(),
+        "an unused inner binder must not capture an outer reference during reopening");
+}
+
+#[test]
+fn neutral_projection_compares_captured_receiver_arguments() {
+    use metatron_kernel::value::FreeId;
+    let mut expressions = IdTable::default();
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(0), Level::Zero).unwrap();
+    expressions.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
+    expressions.insert(ExprId(1), Expr::BVar(0)).unwrap();
+    expressions.insert(ExprId(2), Expr::BVar(1)).unwrap();
+    expressions.insert(ExprId(3), Expr::App { fun: ExprId(2), arg: ExprId(1) }).unwrap();
+    expressions.insert(ExprId(4), Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(3) }).unwrap();
+    expressions.insert(ExprId(5), Expr::Proj { type_name: NameId(1), index: 1, structure: ExprId(3) }).unwrap();
+    let environment = Environment::empty()
+        .extend(NameId(1), ConstantDecl::axiom(Vec::new(), ExprId(0))).unwrap()
+        .extend(NameId(2), ConstantDecl::axiom(Vec::new(), ExprId(0))).unwrap()
+        .install_projection_spec(NameId(1), ProjectionSpec {
+            constructor: NameId(2), num_params: 0,
+            field_types: vec![ProjectionFieldType::Derived(ExprId(0)); 2],
+            eta_expandable: false,
+        }).unwrap();
+    let checker = TypeChecker::new(&expressions, &levels, &environment);
+    let capture = |argument| EnvFrame::empty().extend_free(FreeId(0)).extend_free(FreeId(argument));
+    let left = TypeValue::Term(Closure::new(ExprId(4), capture(1)));
+    let right = TypeValue::Term(Closure::new(ExprId(4), capture(1)));
+    assert!(checker.convert(&left, &right, 256).is_proven(),
+        "same projection of equal neutral receiver applications must be convertible across capture frames");
+    let different_argument = TypeValue::Term(Closure::new(ExprId(4), capture(2)));
+    assert!(!checker.convert(&left, &different_argument, 256).is_proven());
+    let different_field = TypeValue::Term(Closure::new(ExprId(5), capture(1)));
+    assert!(!checker.convert(&left, &different_field, 256).is_proven());
+}
+
+#[test]
 fn application_congruence_checks_universe_arguments() {
     let mut fixture = Fixture::conversion();
     fixture.expressions.insert(ExprId(20), Expr::Sort(LevelId(2))).unwrap();

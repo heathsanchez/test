@@ -2059,6 +2059,44 @@ impl<'a> TypeChecker<'a> {
     /// to its opened lexical local even when an outer Let hides the lambda
     /// syntactically. Instantiate only that local, within immutable closures.
     /// Unknown substitution shapes or exhausted fuel never justify acceptance.
+    pub(crate) fn reopen_fixed_pi_body(
+        &self,
+        body: &TypeValue,
+        binder: FreeId,
+        fresh: FreeId,
+        remaining: &mut usize,
+    ) -> Option<TypeValue> {
+        if binder == fresh {
+            return Some(body.clone());
+        }
+        fn target_binder_present(ty: &TypeValue, target: FreeId, fuel: &mut usize) -> Option<bool> {
+            if !take_step(fuel) {
+                return None;
+            }
+            match ty {
+                TypeValue::Pi { domain, body, binder } => Some(
+                    *binder == target
+                        || target_binder_present(domain, target, fuel)?
+                        || target_binder_present(body, target, fuel)?,
+                ),
+                TypeValue::Sort(_) | TypeValue::Term(_) => Some(false),
+            }
+        }
+        if target_binder_present(body, fresh, remaining)? {
+            return None;
+        }
+        // Do not capture an unrelated local or an inner binder already
+        // using the target identity. An unproved absence stays UNKNOWN.
+        if self.type_depends_on_free(body, fresh, (*remaining).min(4096)) != Some(false) {
+            return None;
+        }
+        let bvar = self.expressions.iter_raw().find_map(|(id, expression)| {
+            matches!(expression, Expr::BVar(0)).then_some(ExprId(id))
+        })?;
+        let actual = Closure::new(bvar, EnvFrame::empty().extend_free(fresh));
+        self.instantiate_fixed_pi_body(body, binder, &actual, remaining)
+    }
+
     fn instantiate_fixed_pi_body(
         &self,
         body: &TypeValue,
