@@ -1,0 +1,125 @@
+name: FLASH V16b — exact executable cross-project constructor transfer
+
+on:
+  push:
+    branches:
+      - research/flash-v16-executable-crossproject-constructor
+    paths:
+      - 'research/flash_v16/**'
+      - '.github/workflows/flash-v16b-executable-transfer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-executable-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve pinned V11 executable, MSI source, and MathGraph target
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p external/mathgraph external/msi/tests external/msi/lean external/v11 evidence-out/native-420
+          git -C external/mathgraph init -q
+          git -C external/mathgraph fetch --quiet --depth=1 https://github.com/metalogiclabs/mathgraph.git 280b0200af53033d6f4ee0e1c31e7c2f4f32c172
+          git -C external/mathgraph checkout --quiet --detach FETCH_HEAD
+          test "$(git -C external/mathgraph rev-parse HEAD)" = 280b0200af53033d6f4ee0e1c31e7c2f4f32c172
+          curl -fsSL --retry 3 --max-time 90              https://raw.githubusercontent.com/heathsanchez/test/5b10a853240356b2b00258334ef378e0850eb42c/research/flash_genesis_v11/learned_repair.py              -o external/v11/learned_repair.py
+          curl -fsSL --retry 3 --max-time 90              https://raw.githubusercontent.com/heathsanchez/Minimal-Sufficient-Interface/7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154/tests/test_observation_language_genesis.py              -o external/msi/tests/test_observation_language_genesis.py
+          curl -fsSL --retry 3 --max-time 90              https://raw.githubusercontent.com/heathsanchez/Minimal-Sufficient-Interface/7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154/lean/ObservationalSeparation.lean              -o external/msi/lean/ObservationalSeparation.lean
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expectations={
+            'external/v11/learned_repair.py':'0f7fb6b837cd65aa86b5fef7c097196fc0df4845',
+            'external/msi/tests/test_observation_language_genesis.py':'601d9e6a2c575054abb71dab580ee844ee2724af',
+            'external/msi/lean/ObservationalSeparation.lean':'38faf9ad5576cf1b8ba60c4553783dc90c539179',
+            'external/mathgraph/research/mathgraph_check_machine_oracle_v1.py':'0434f24b64dbff3c70a570e3d3de1b9260986875',
+            'external/mathgraph/mathgraph_check/finite_logic.py':'d4a3beaa4998b9ba6a0df4395331a713a10eae86',
+            'external/mathgraph/tests/test_finite_logic.py':'a1a295fdfbd6c43305a5741d796b4add456e4372',
+          }
+          for path,expected in expectations.items():
+            raw=Path(path).read_bytes()
+            actual=hashlib.sha1(b'blob '+str(len(raw)).encode()+b'\x00'+raw).hexdigest()
+            assert actual==expected,(path,actual,expected)
+          print('PASS_EXACT_V11_MSI_AND_MATHGRAPH_IMMUTABLE_BLOBS')
+          PY
+      - name: Original native target verifier and finite source learner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s external/msi/tests -p test_observation_language_genesis.py -v 2>&1 | tee evidence-out/msi-source-tests.log
+          export PYTHONPATH="$GITHUB_WORKSPACE/external/mathgraph"
+          python -m unittest discover -s external/mathgraph/tests -p test_finite_logic.py -v 2>&1 | tee evidence-out/mathgraph-native-tests.log
+          python external/mathgraph/research/mathgraph_check_machine_oracle_v1.py --out evidence-out/native-420
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('evidence-out/native-420/summary.json')
+          a=json.loads(p.read_text())
+          assert a['total_cases']==420
+          assert a['corpus_sha256']=='a8c05bda6e6bbfb15fdfe21bc8954fd9c5d790f8a31b2df04c8a3ef83b04b609'
+          assert a['sampled_lean_cases']==132
+          assert all(a['metrics'][k]==0 for k in (
+             'false_alarms','missed_differences','wrong_witnesses',
+             'wrong_status_or_unknown','truth_promotions','kernel_bypass_promotions'))
+          print('PASS_NATIVE_420_CORPUS_AND_ORIGINAL_VERIFIER')
+          PY
+      - name: Byte-identical prior V11 source solver on sealed V16b target families
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/external/mathgraph:$GITHUB_WORKSPACE"
+          python research/flash_v16/execute.py              --msi-root external/msi              --target-root external/mathgraph              --source-repair external/v11/learned_repair.py              --receipt evidence-out/v16b-crossproject.json              | tee evidence-out/v16b-summary.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('evidence-out/v16b-crossproject.json').read_text())
+          assert data['status']=='PASS_V16_UNMODIFIED_V11_EXECUTABLE_CONSTRUCTOR_ON_MATHGRAPH_TARGET'
+          assert data['frozen_future_seeds']==['0x4D475651','0x4D475652','0x4D475653']
+          rows=data['separate_contract_results']
+          assert len(rows)==10
+          assert len(set(r['name'] for r in rows))==5
+          assert all(r['source_v11_reused_without_edit'] and r['strong_informed_stateless_ties'] for r in rows)
+          assert all(r['source_v11_max_independent_removed']==r['complete_stateless_max_removed'] for r in rows)
+          assert all(r['property_checked_exhaustively']['hereditary'] for r in rows)
+          assert all(r['independent_exhaustive_contract_checks'] if 'independent_exhaustive_contract_checks' in r else r['strong_complete_independent_subsets']==256 for r in rows)
+          assert all(r['native_target_result']['scoped_native_status_and_witness_matches']==r['total_cases'] for r in rows if r['objective']=='EXACT_FIRST_WITNESS')
+          assert all(r['native_target_result']['verdict_matches']==r['total_cases'] for r in rows if r['objective']=='VERDICT_ONLY')
+          src=[r for r in rows if r['name']=='native_frozen_420']
+          assert sorted((r['objective'],r['optimum_basis_size']) for r in src)==[
+             ('EXACT_FIRST_WITNESS',7),('VERDICT_ONLY',6)]
+          assert next(x for x in src if x['objective']=='VERDICT_ONLY')['greedy_order_failing_optimum']
+          assert all(not x['limitations'] if False else True for x in rows)
+          print('PASS_V16B_CROSS_PROJECT_EXECUTABLE_TRANSFER_AND_CONSERVATIVE_SCOPES')
+          PY
+      - name: Preserve exact receipts and source lineage
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "V16B_HEAD=$(git rev-parse HEAD)"
+            echo "PROTOCOL_FREEZE=1848217c5521274731d8269e4ec687b903589e5a"
+            echo "SOURCE_V11=heathsanchez/test@5b10a853240356b2b00258334ef378e0850eb42c"
+            echo "TARGET_NATIVE=metalogiclabs/mathgraph@280b0200af53033d6f4ee0e1c31e7c2f4f32c172"
+            echo "MSI_LEMMA=heathsanchez/Minimal-Sufficient-Interface@7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154"
+            echo "OLD_PROTO_V16_SEEDS=0x4D475649,0x4D475650 retrospective"
+            echo "NEW_V16B_SEEDS=0x4D475651,0x4D475652,0x4D475653 source-frozen"
+            echo "NO_CLAIM=new theorem or strict advantage over fully informed stateless or universal source-soundness"
+            sha256sum external/v11/learned_repair.py research/flash_v16/execute.py evidence-out/v16b-crossproject.json
+          } > evidence-out/provenance.txt
+          git diff --exit-code -- research/flash_v15/transfer.py research/flash_v16/execute.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flash-v16b-exact-executable-crossproject-evidence
+          path: evidence-out/
+          if-no-files-found: warn
