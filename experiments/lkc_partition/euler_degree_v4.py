@@ -46,19 +46,19 @@ def compile_degree(bool_branch:bool)->str:
            "     the generic recursive tail remains for arbitrary n. -/",
            "  let denom : Nat :="]
     active=[]
-    for g,sign in terms:
+    for idx,(g,sign) in enumerate(terms):
         cond=f"n < {g}"
         if bool_branch:cond="decide ("+cond+")"
         leader="bif" if bool_branch else "if"
-        lines.append("    "+leader+" "+cond+" then "+denom_expr(active))
-        lines.append("    else")
+        branch=("    " if idx==0 else "    else ")+leader+" "+cond+" then "+denom_expr(active)
+        lines.append(branch)
         active.append((g,sign))
     # For n<next term (g=70), all 12 compiled terms are complete.
     leader="bif" if bool_branch else "if"
     last="decide (n < 70)" if bool_branch else "n < 70"
-    lines.append("      "+leader+" "+last+" then "+denom_expr(active))
-    lines.append("      else")
-    lines.append("        "+denom_expr(active,tail=True).replace("\n","\n        "))
+    lines.append("    else "+leader+" "+last+" then "+denom_expr(active))
+    lines.append("    else")
+    lines.append("      "+denom_expr(active,tail=True).replace("\n","\n      "))
     lines.extend([
        "  let num := (1 : Nat) <<< (w * (2 * n))",
        "  let mask := ((1 : Nat) <<< w) - 1",
