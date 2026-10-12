@@ -35,7 +35,7 @@ def denom_expr(active:list[tuple[int,int]],tail:bool=False)->str:
     neg_expr=" + ".join(neg) if neg else "0"
     if tail:
         return ("let (posTail, negTail) := pentagonalParts n w (n + 1) 6 0 0\n"
-                "      (baseTerm + ("+pos_expr+") + posTail) - (("+neg_expr+") + negTail)")
+                "(baseTerm + ("+pos_expr+") + posTail) - (("+neg_expr+") + negTail)")
     return f"(baseTerm + ({pos_expr})) - ({neg_expr})"
 
 def compile_degree(bool_branch:bool)->str:
