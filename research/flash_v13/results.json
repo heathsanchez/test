@@ -1,0 +1,1499 @@
+{
+  "compiled_restart_snapshot": {
+    "event_chain_sha256": "658a69c8f12ee25c3d6d01360b0f9394208b2932d35cb691d18ad06bf03ffc58",
+    "event_count": 7,
+    "fixture_sha256": "0a321e08726564fca68d8ff0770b9969577e18e2f616c313b57ea3bbdc24df71",
+    "metrics": {
+      "events": 7,
+      "fact_dirty_visits": 60,
+      "frontier_evaluations": 21,
+      "noops": 1,
+      "reclosure_passes": 18,
+      "rule_evaluations": 92
+    },
+    "sha256": "6ac60f713ec80a0ffc8c90825aa30cea6af3ffdca00e66863338196f3011a6bf",
+    "state": {
+      "active": [
+        "always",
+        "available_stateless",
+        "cap_advanced",
+        "cap_complete",
+        "cap_frontier_cross",
+        "cap_genesis",
+        "cap_greedy",
+        "cap_joint",
+        "cap_merged",
+        "cap_revived",
+        "cap_sensor",
+        "cap_sep_reuse",
+        "cap_split",
+        "cap_unused",
+        "cap_viability",
+        "cap_weighted",
+        "cap_weighted_safe",
+        "event_nonmatroid_obstruction",
+        "event_sensor",
+        "event_separator",
+        "event_unrelated",
+        "event_viability",
+        "external_verifier",
+        "goal_future",
+        "hereditary_scope_guard",
+        "matroid_scope_guard",
+        "new_future_requires_structure",
+        "protected_equivalence",
+        "resources_safe",
+        "source_access",
+        "source_archive",
+        "v12_direct",
+        "verified_v10",
+        "verified_v11",
+        "verified_v12"
+      ],
+      "base": [
+        "always",
+        "available_stateless",
+        "event_nonmatroid_obstruction",
+        "event_sensor",
+        "event_separator",
+        "event_unrelated",
+        "event_viability",
+        "external_verifier",
+        "goal_future",
+        "hereditary_scope_guard",
+        "matroid_scope_guard",
+        "new_future_requires_structure",
+        "protected_equivalence",
+        "resources_safe",
+        "source_access",
+        "source_archive",
+        "v12_direct",
+        "verified_v10",
+        "verified_v11",
+        "verified_v12"
+      ],
+      "frontiers": {
+        "F_cross_capability": {
+          "candidates": [
+            {
+              "cost": 2,
+              "eligible": true,
+              "forbidden": [],
+              "id": "joint_warranted",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "joint_warranted",
+          "selected_cost": 2,
+          "status": "SELECTED"
+        },
+        "F_dependent_search": {
+          "candidates": [
+            {
+              "cost": 5,
+              "eligible": true,
+              "forbidden": [],
+              "id": "construction_with_separator",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "construction_with_separator",
+          "selected_cost": 5,
+          "status": "SELECTED"
+        },
+        "F_dormant_reuse": {
+          "candidates": [
+            {
+              "cost": 3,
+              "eligible": true,
+              "forbidden": [],
+              "id": "repurposed_greedy",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "repurposed_greedy",
+          "selected_cost": 3,
+          "status": "SELECTED"
+        },
+        "F_joint_genesis": {
+          "candidates": [
+            {
+              "cost": 20,
+              "eligible": false,
+              "forbidden": [],
+              "id": "old_expensive",
+              "missing": [],
+              "over_budget": true
+            },
+            {
+              "cost": 6,
+              "eligible": true,
+              "forbidden": [],
+              "id": "safe_generated",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "safe_generated",
+          "selected_cost": 6,
+          "status": "SELECTED"
+        },
+        "F_matroid": {
+          "candidates": [
+            {
+              "cost": 9,
+              "eligible": true,
+              "forbidden": [],
+              "id": "complete_fallback",
+              "missing": [],
+              "over_budget": false
+            },
+            {
+              "cost": 3,
+              "eligible": true,
+              "forbidden": [],
+              "id": "source_qualified_greedy",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "source_qualified_greedy",
+          "selected_cost": 3,
+          "status": "SELECTED"
+        },
+        "F_nonmatroid": {
+          "candidates": [
+            {
+              "cost": 8,
+              "eligible": true,
+              "forbidden": [],
+              "id": "source_checked_complete",
+              "missing": [],
+              "over_budget": false
+            },
+            {
+              "cost": 12,
+              "eligible": true,
+              "forbidden": [],
+              "id": "stateless_safe",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "source_checked_complete",
+          "selected_cost": 8,
+          "status": "SELECTED"
+        },
+        "F_observation": {
+          "candidates": [
+            {
+              "cost": 6,
+              "eligible": true,
+              "forbidden": [],
+              "id": "constructive_sensor",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "constructive_sensor",
+          "selected_cost": 6,
+          "status": "SELECTED"
+        },
+        "F_quotient": {
+          "candidates": [
+            {
+              "cost": 1,
+              "eligible": false,
+              "forbidden": [
+                "event_separator"
+              ],
+              "id": "merged",
+              "missing": [],
+              "over_budget": false
+            },
+            {
+              "cost": 3,
+              "eligible": true,
+              "forbidden": [],
+              "id": "split",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "split",
+          "selected_cost": 3,
+          "status": "SELECTED"
+        },
+        "F_scope_obstruction": {
+          "candidates": [
+            {
+              "cost": 1,
+              "eligible": false,
+              "forbidden": [
+                "event_nonmatroid_obstruction"
+              ],
+              "id": "old_assumption",
+              "missing": [],
+              "over_budget": false
+            },
+            {
+              "cost": 4,
+              "eligible": true,
+              "forbidden": [],
+              "id": "repaired_scope",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "repaired_scope",
+          "selected_cost": 4,
+          "status": "SELECTED"
+        },
+        "F_unreachable": {
+          "candidates": [
+            {
+              "cost": 1,
+              "eligible": false,
+              "forbidden": [],
+              "id": "unsupported",
+              "missing": [
+                "never_verified"
+              ],
+              "over_budget": false
+            }
+          ],
+          "selected": null,
+          "selected_cost": null,
+          "status": "UNKNOWN"
+        },
+        "F_unrelated_control": {
+          "candidates": [
+            {
+              "cost": 1,
+              "eligible": true,
+              "forbidden": [],
+              "id": "constant",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "constant",
+          "selected_cost": 1,
+          "status": "SELECTED"
+        },
+        "F_weighted": {
+          "candidates": [
+            {
+              "cost": 5,
+              "eligible": true,
+              "forbidden": [],
+              "id": "compiled_modular",
+              "missing": [],
+              "over_budget": false
+            },
+            {
+              "cost": 13,
+              "eligible": true,
+              "forbidden": [],
+              "id": "independent_stateless",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "compiled_modular",
+          "selected_cost": 5,
+          "status": "SELECTED"
+        },
+        "F_weighted_viability": {
+          "candidates": [
+            {
+              "cost": 5,
+              "eligible": true,
+              "forbidden": [],
+              "id": "viable_modular",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "viable_modular",
+          "selected_cost": 5,
+          "status": "SELECTED"
+        }
+      },
+      "supports": {
+        "always": [
+          "BASE:always"
+        ],
+        "available_stateless": [
+          "BASE:available_stateless"
+        ],
+        "cap_advanced": [
+          "RULE:advanced"
+        ],
+        "cap_complete": [
+          "RULE:hereditary"
+        ],
+        "cap_frontier_cross": [
+          "RULE:frontier_cross"
+        ],
+        "cap_genesis": [
+          "RULE:genesis"
+        ],
+        "cap_greedy": [
+          "RULE:matroid"
+        ],
+        "cap_joint": [
+          "RULE:joint"
+        ],
+        "cap_merged": [
+          "RULE:merged"
+        ],
+        "cap_revived": [
+          "RULE:revival"
+        ],
+        "cap_sensor": [
+          "RULE:sensor"
+        ],
+        "cap_sep_reuse": [
+          "RULE:sep_reuse"
+        ],
+        "cap_split": [
+          "RULE:split"
+        ],
+        "cap_unused": [
+          "RULE:unrelated"
+        ],
+        "cap_viability": [
+          "RULE:viability"
+        ],
+        "cap_weighted": [
+          "RULE:modular_direct",
+          "RULE:modular_lineage"
+        ],
+        "cap_weighted_safe": [
+          "RULE:weighted_safe"
+        ],
+        "event_nonmatroid_obstruction": [
+          "BASE:event_nonmatroid_obstruction"
+        ],
+        "event_sensor": [
+          "BASE:event_sensor"
+        ],
+        "event_separator": [
+          "BASE:event_separator"
+        ],
+        "event_unrelated": [
+          "BASE:event_unrelated"
+        ],
+        "event_viability": [
+          "BASE:event_viability"
+        ],
+        "external_verifier": [
+          "BASE:external_verifier"
+        ],
+        "goal_future": [
+          "BASE:goal_future"
+        ],
+        "hereditary_scope_guard": [
+          "BASE:hereditary_scope_guard"
+        ],
+        "matroid_scope_guard": [
+          "BASE:matroid_scope_guard"
+        ],
+        "new_future_requires_structure": [
+          "BASE:new_future_requires_structure"
+        ],
+        "protected_equivalence": [
+          "BASE:protected_equivalence"
+        ],
+        "resources_safe": [
+          "BASE:resources_safe"
+        ],
+        "source_access": [
+          "BASE:source_access"
+        ],
+        "source_archive": [
+          "BASE:source_archive"
+        ],
+        "v12_direct": [
+          "BASE:v12_direct"
+        ],
+        "verified_v10": [
+          "BASE:verified_v10"
+        ],
+        "verified_v11": [
+          "BASE:verified_v11"
+        ],
+        "verified_v12": [
+          "BASE:verified_v12"
+        ]
+      }
+    },
+    "version": 1
+  },
+  "final_compiled_snapshot": {
+    "event_chain_sha256": "d7ca79db49bda982c261311cf5d4ec7e8ec8ca827fa5a71ad4bb62f9535fdcf7",
+    "event_count": 19,
+    "fixture_sha256": "0a321e08726564fca68d8ff0770b9969577e18e2f616c313b57ea3bbdc24df71",
+    "metrics": {
+      "events": 19,
+      "fact_dirty_visits": 115,
+      "frontier_evaluations": 56,
+      "noops": 1,
+      "reclosure_passes": 44,
+      "rule_evaluations": 213
+    },
+    "sha256": "203ac9951aa94e958fab8e559313aa03e9ec45707c9ad074c8f0f4d0e164c4a0",
+    "state": {
+      "active": [
+        "always",
+        "available_stateless",
+        "cap_complete",
+        "cap_genesis",
+        "cap_greedy",
+        "cap_joint",
+        "cap_merged",
+        "cap_revived",
+        "cap_sensor",
+        "cap_unused",
+        "cap_viability",
+        "cap_weighted",
+        "cap_weighted_safe",
+        "event_nonmatroid_obstruction",
+        "event_sensor",
+        "event_unrelated",
+        "event_viability",
+        "external_verifier",
+        "goal_future",
+        "hereditary_scope_guard",
+        "matroid_scope_guard",
+        "new_future_requires_structure",
+        "protected_equivalence",
+        "resources_safe",
+        "source_access",
+        "source_archive",
+        "verified_v10",
+        "verified_v11",
+        "verified_v12"
+      ],
+      "base": [
+        "always",
+        "available_stateless",
+        "event_nonmatroid_obstruction",
+        "event_sensor",
+        "event_unrelated",
+        "event_viability",
+        "external_verifier",
+        "goal_future",
+        "hereditary_scope_guard",
+        "matroid_scope_guard",
+        "new_future_requires_structure",
+        "protected_equivalence",
+        "resources_safe",
+        "source_access",
+        "source_archive",
+        "verified_v10",
+        "verified_v11",
+        "verified_v12"
+      ],
+      "frontiers": {
+        "F_cross_capability": {
+          "candidates": [
+            {
+              "cost": 2,
+              "eligible": false,
+              "forbidden": [],
+              "id": "joint_warranted",
+              "missing": [
+                "cap_frontier_cross"
+              ],
+              "over_budget": false
+            }
+          ],
+          "selected": null,
+          "selected_cost": null,
+          "status": "UNKNOWN"
+        },
+        "F_dependent_search": {
+          "candidates": [
+            {
+              "cost": 5,
+              "eligible": false,
+              "forbidden": [],
+              "id": "construction_with_separator",
+              "missing": [
+                "cap_advanced"
+              ],
+              "over_budget": false
+            }
+          ],
+          "selected": null,
+          "selected_cost": null,
+          "status": "UNKNOWN"
+        },
+        "F_dormant_reuse": {
+          "candidates": [
+            {
+              "cost": 3,
+              "eligible": true,
+              "forbidden": [],
+              "id": "repurposed_greedy",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "repurposed_greedy",
+          "selected_cost": 3,
+          "status": "SELECTED"
+        },
+        "F_joint_genesis": {
+          "candidates": [
+            {
+              "cost": 20,
+              "eligible": false,
+              "forbidden": [],
+              "id": "old_expensive",
+              "missing": [],
+              "over_budget": true
+            },
+            {
+              "cost": 6,
+              "eligible": true,
+              "forbidden": [],
+              "id": "safe_generated",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "safe_generated",
+          "selected_cost": 6,
+          "status": "SELECTED"
+        },
+        "F_matroid": {
+          "candidates": [
+            {
+              "cost": 9,
+              "eligible": true,
+              "forbidden": [],
+              "id": "complete_fallback",
+              "missing": [],
+              "over_budget": false
+            },
+            {
+              "cost": 3,
+              "eligible": true,
+              "forbidden": [],
+              "id": "source_qualified_greedy",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "source_qualified_greedy",
+          "selected_cost": 3,
+          "status": "SELECTED"
+        },
+        "F_nonmatroid": {
+          "candidates": [
+            {
+              "cost": 8,
+              "eligible": true,
+              "forbidden": [],
+              "id": "source_checked_complete",
+              "missing": [],
+              "over_budget": false
+            },
+            {
+              "cost": 12,
+              "eligible": true,
+              "forbidden": [],
+              "id": "stateless_safe",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "source_checked_complete",
+          "selected_cost": 8,
+          "status": "SELECTED"
+        },
+        "F_observation": {
+          "candidates": [
+            {
+              "cost": 6,
+              "eligible": true,
+              "forbidden": [],
+              "id": "constructive_sensor",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "constructive_sensor",
+          "selected_cost": 6,
+          "status": "SELECTED"
+        },
+        "F_quotient": {
+          "candidates": [
+            {
+              "cost": 1,
+              "eligible": true,
+              "forbidden": [],
+              "id": "merged",
+              "missing": [],
+              "over_budget": false
+            },
+            {
+              "cost": 3,
+              "eligible": false,
+              "forbidden": [],
+              "id": "split",
+              "missing": [
+                "cap_split"
+              ],
+              "over_budget": false
+            }
+          ],
+          "selected": "merged",
+          "selected_cost": 1,
+          "status": "SELECTED"
+        },
+        "F_scope_obstruction": {
+          "candidates": [
+            {
+              "cost": 1,
+              "eligible": false,
+              "forbidden": [
+                "event_nonmatroid_obstruction"
+              ],
+              "id": "old_assumption",
+              "missing": [],
+              "over_budget": false
+            },
+            {
+              "cost": 4,
+              "eligible": true,
+              "forbidden": [],
+              "id": "repaired_scope",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "repaired_scope",
+          "selected_cost": 4,
+          "status": "SELECTED"
+        },
+        "F_unreachable": {
+          "candidates": [
+            {
+              "cost": 1,
+              "eligible": false,
+              "forbidden": [],
+              "id": "unsupported",
+              "missing": [
+                "never_verified"
+              ],
+              "over_budget": false
+            }
+          ],
+          "selected": null,
+          "selected_cost": null,
+          "status": "UNKNOWN"
+        },
+        "F_unrelated_control": {
+          "candidates": [
+            {
+              "cost": 1,
+              "eligible": true,
+              "forbidden": [],
+              "id": "constant",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "constant",
+          "selected_cost": 1,
+          "status": "SELECTED"
+        },
+        "F_weighted": {
+          "candidates": [
+            {
+              "cost": 5,
+              "eligible": true,
+              "forbidden": [],
+              "id": "compiled_modular",
+              "missing": [],
+              "over_budget": false
+            },
+            {
+              "cost": 13,
+              "eligible": true,
+              "forbidden": [],
+              "id": "independent_stateless",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "compiled_modular",
+          "selected_cost": 5,
+          "status": "SELECTED"
+        },
+        "F_weighted_viability": {
+          "candidates": [
+            {
+              "cost": 5,
+              "eligible": true,
+              "forbidden": [],
+              "id": "viable_modular",
+              "missing": [],
+              "over_budget": false
+            }
+          ],
+          "selected": "viable_modular",
+          "selected_cost": 5,
+          "status": "SELECTED"
+        }
+      },
+      "supports": {
+        "always": [
+          "BASE:always"
+        ],
+        "available_stateless": [
+          "BASE:available_stateless"
+        ],
+        "cap_complete": [
+          "RULE:hereditary"
+        ],
+        "cap_genesis": [
+          "RULE:genesis"
+        ],
+        "cap_greedy": [
+          "RULE:matroid"
+        ],
+        "cap_joint": [
+          "RULE:joint"
+        ],
+        "cap_merged": [
+          "RULE:merged"
+        ],
+        "cap_revived": [
+          "RULE:revival"
+        ],
+        "cap_sensor": [
+          "RULE:sensor"
+        ],
+        "cap_unused": [
+          "RULE:unrelated"
+        ],
+        "cap_viability": [
+          "RULE:viability"
+        ],
+        "cap_weighted": [
+          "RULE:modular_lineage"
+        ],
+        "cap_weighted_safe": [
+          "RULE:weighted_safe"
+        ],
+        "event_nonmatroid_obstruction": [
+          "BASE:event_nonmatroid_obstruction"
+        ],
+        "event_sensor": [
+          "BASE:event_sensor"
+        ],
+        "event_unrelated": [
+          "BASE:event_unrelated"
+        ],
+        "event_viability": [
+          "BASE:event_viability"
+        ],
+        "external_verifier": [
+          "BASE:external_verifier"
+        ],
+        "goal_future": [
+          "BASE:goal_future"
+        ],
+        "hereditary_scope_guard": [
+          "BASE:hereditary_scope_guard"
+        ],
+        "matroid_scope_guard": [
+          "BASE:matroid_scope_guard"
+        ],
+        "new_future_requires_structure": [
+          "BASE:new_future_requires_structure"
+        ],
+        "protected_equivalence": [
+          "BASE:protected_equivalence"
+        ],
+        "resources_safe": [
+          "BASE:resources_safe"
+        ],
+        "source_access": [
+          "BASE:source_access"
+        ],
+        "source_archive": [
+          "BASE:source_archive"
+        ],
+        "verified_v10": [
+          "BASE:verified_v10"
+        ],
+        "verified_v11": [
+          "BASE:verified_v11"
+        ],
+        "verified_v12": [
+          "BASE:verified_v12"
+        ]
+      }
+    },
+    "version": 1
+  },
+  "frozen_fixture_sha256": "64060c4cbb419ef8ebe295449c19100a8b227ff07c8c12102096092c8bd2cbf9",
+  "independent_generated_graphs": {
+    "generated_graphs": 200,
+    "independent_checks": 6200,
+    "source_generated_cycles_allowed": true
+  },
+  "interpretation": {
+    "economic_boundary": "Dirty dependency-cone work is lower than full batch recomputation on this fixture; full system implementation and original acquisition costs excluded.",
+    "not_warranted": "Unrestricted self-inventing research grammar, real cross-project causal dependency, universal productivity, strict semantic advantage over complete batch planner, external physical prediction.",
+    "warranted": "Finite synthetic source-pinned incremental consequence reclosure, exact batch equivalence, six operational gates, restart and safe revocation."
+  },
+  "main_batch_baseline": {
+    "frontier_evaluations": 260,
+    "rebuilds": 20,
+    "rule_evaluations": 1328
+  },
+  "main_controls": {
+    "cross_fixture_rejected": true,
+    "fixed_points_equivalent": 20,
+    "forged_events": 3,
+    "order_invariance": true,
+    "tampered_snapshot_rejected": true
+  },
+  "main_event_receipts": [
+    {
+      "changed_facts": [
+        "cap_sensor",
+        "event_sensor"
+      ],
+      "changed_frontiers": [
+        "F_observation"
+      ],
+      "changed_supports": [
+        "cap_sensor",
+        "event_sensor"
+      ],
+      "checked_frontiers": [
+        "F_observation"
+      ],
+      "dirty_facts": 7,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "event_sensor",
+        "kind": "promote"
+      },
+      "event_index": 0,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 12
+    },
+    {
+      "changed_facts": [
+        "cap_genesis",
+        "cap_joint",
+        "cap_viability",
+        "cap_weighted_safe",
+        "event_viability"
+      ],
+      "changed_frontiers": [
+        "F_joint_genesis",
+        "F_weighted_viability"
+      ],
+      "changed_supports": [
+        "cap_genesis",
+        "cap_joint",
+        "cap_viability",
+        "cap_weighted_safe",
+        "event_viability"
+      ],
+      "checked_frontiers": [
+        "F_joint_genesis",
+        "F_weighted_viability"
+      ],
+      "dirty_facts": 7,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "event_viability",
+        "kind": "promote"
+      },
+      "event_index": 1,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 24
+    },
+    {
+      "changed_facts": [
+        "cap_revived",
+        "new_future_requires_structure"
+      ],
+      "changed_frontiers": [
+        "F_dormant_reuse"
+      ],
+      "changed_supports": [
+        "cap_revived",
+        "new_future_requires_structure"
+      ],
+      "checked_frontiers": [
+        "F_dormant_reuse"
+      ],
+      "dirty_facts": 2,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "new_future_requires_structure",
+        "kind": "promote"
+      },
+      "event_index": 2,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 2
+    },
+    {
+      "changed_facts": [
+        "cap_advanced",
+        "cap_frontier_cross",
+        "cap_sep_reuse",
+        "cap_split",
+        "event_separator"
+      ],
+      "changed_frontiers": [
+        "F_cross_capability",
+        "F_dependent_search",
+        "F_quotient"
+      ],
+      "changed_supports": [
+        "cap_advanced",
+        "cap_frontier_cross",
+        "cap_sep_reuse",
+        "cap_split",
+        "event_separator"
+      ],
+      "checked_frontiers": [
+        "F_cross_capability",
+        "F_dependent_search",
+        "F_quotient"
+      ],
+      "dirty_facts": 5,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "event_separator",
+        "kind": "promote"
+      },
+      "event_index": 3,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 20
+    },
+    {
+      "changed_facts": [
+        "event_nonmatroid_obstruction"
+      ],
+      "changed_frontiers": [
+        "F_scope_obstruction"
+      ],
+      "changed_supports": [
+        "event_nonmatroid_obstruction"
+      ],
+      "checked_frontiers": [
+        "F_scope_obstruction"
+      ],
+      "dirty_facts": 1,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "event_nonmatroid_obstruction",
+        "kind": "promote"
+      },
+      "event_index": 4,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 0
+    },
+    {
+      "changed_facts": [
+        "cap_unused",
+        "event_unrelated"
+      ],
+      "changed_frontiers": [],
+      "changed_supports": [
+        "cap_unused",
+        "event_unrelated"
+      ],
+      "checked_frontiers": [],
+      "dirty_facts": 2,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "event_unrelated",
+        "kind": "promote"
+      },
+      "event_index": 5,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 2
+    },
+    {
+      "changed_facts": [],
+      "changed_frontiers": [],
+      "changed_supports": [],
+      "checked_frontiers": [],
+      "dirty_facts": 0,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "event_sensor",
+        "kind": "promote"
+      },
+      "event_index": 6,
+      "fixed_point": true,
+      "noop": true,
+      "rule_checks": 0
+    },
+    {
+      "changed_facts": [
+        "cap_advanced",
+        "cap_complete",
+        "cap_frontier_cross",
+        "cap_genesis",
+        "verified_v11"
+      ],
+      "changed_frontiers": [
+        "F_cross_capability",
+        "F_dependent_search",
+        "F_joint_genesis",
+        "F_matroid",
+        "F_nonmatroid",
+        "F_scope_obstruction"
+      ],
+      "changed_supports": [
+        "cap_advanced",
+        "cap_complete",
+        "cap_frontier_cross",
+        "cap_genesis",
+        "cap_weighted",
+        "verified_v11"
+      ],
+      "checked_frontiers": [
+        "F_cross_capability",
+        "F_dependent_search",
+        "F_joint_genesis",
+        "F_matroid",
+        "F_nonmatroid",
+        "F_scope_obstruction"
+      ],
+      "dirty_facts": 7,
+      "event": {
+        "authority": "synthetic_revoker",
+        "fact": "verified_v11",
+        "kind": "revoke"
+      },
+      "event_index": 7,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 21
+    },
+    {
+      "changed_facts": [
+        "cap_weighted",
+        "cap_weighted_safe",
+        "v12_direct"
+      ],
+      "changed_frontiers": [
+        "F_weighted",
+        "F_weighted_viability"
+      ],
+      "changed_supports": [
+        "cap_weighted",
+        "cap_weighted_safe",
+        "v12_direct"
+      ],
+      "checked_frontiers": [
+        "F_weighted",
+        "F_weighted_viability"
+      ],
+      "dirty_facts": 4,
+      "event": {
+        "authority": "synthetic_revoker",
+        "fact": "v12_direct",
+        "kind": "revoke"
+      },
+      "event_index": 8,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 4
+    },
+    {
+      "changed_facts": [
+        "cap_advanced",
+        "cap_complete",
+        "cap_frontier_cross",
+        "cap_genesis",
+        "cap_weighted",
+        "cap_weighted_safe",
+        "verified_v11"
+      ],
+      "changed_frontiers": [
+        "F_cross_capability",
+        "F_dependent_search",
+        "F_joint_genesis",
+        "F_matroid",
+        "F_nonmatroid",
+        "F_scope_obstruction",
+        "F_weighted",
+        "F_weighted_viability"
+      ],
+      "changed_supports": [
+        "cap_advanced",
+        "cap_complete",
+        "cap_frontier_cross",
+        "cap_genesis",
+        "cap_weighted",
+        "cap_weighted_safe",
+        "verified_v11"
+      ],
+      "checked_frontiers": [
+        "F_cross_capability",
+        "F_dependent_search",
+        "F_joint_genesis",
+        "F_matroid",
+        "F_nonmatroid",
+        "F_scope_obstruction",
+        "F_weighted",
+        "F_weighted_viability"
+      ],
+      "dirty_facts": 7,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "verified_v11",
+        "kind": "promote"
+      },
+      "event_index": 9,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 35
+    },
+    {
+      "changed_facts": [
+        "cap_advanced",
+        "cap_frontier_cross",
+        "cap_sep_reuse",
+        "cap_split",
+        "event_separator"
+      ],
+      "changed_frontiers": [
+        "F_cross_capability",
+        "F_dependent_search",
+        "F_quotient"
+      ],
+      "changed_supports": [
+        "cap_advanced",
+        "cap_frontier_cross",
+        "cap_sep_reuse",
+        "cap_split",
+        "event_separator"
+      ],
+      "checked_frontiers": [
+        "F_cross_capability",
+        "F_dependent_search",
+        "F_quotient"
+      ],
+      "dirty_facts": 5,
+      "event": {
+        "authority": "synthetic_revoker",
+        "fact": "event_separator",
+        "kind": "revoke"
+      },
+      "event_index": 10,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 4
+    },
+    {
+      "changed_facts": [
+        "cap_greedy",
+        "cap_revived",
+        "verified_v10"
+      ],
+      "changed_frontiers": [
+        "F_dormant_reuse",
+        "F_matroid",
+        "F_scope_obstruction"
+      ],
+      "changed_supports": [
+        "cap_greedy",
+        "cap_revived",
+        "verified_v10"
+      ],
+      "checked_frontiers": [
+        "F_dormant_reuse",
+        "F_matroid",
+        "F_scope_obstruction"
+      ],
+      "dirty_facts": 3,
+      "event": {
+        "authority": "synthetic_revoker",
+        "fact": "verified_v10",
+        "kind": "revoke"
+      },
+      "event_index": 11,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 2
+    },
+    {
+      "changed_facts": [
+        "cap_greedy",
+        "cap_revived",
+        "verified_v10"
+      ],
+      "changed_frontiers": [
+        "F_dormant_reuse",
+        "F_matroid",
+        "F_scope_obstruction"
+      ],
+      "changed_supports": [
+        "cap_greedy",
+        "cap_revived",
+        "verified_v10"
+      ],
+      "checked_frontiers": [
+        "F_dormant_reuse",
+        "F_matroid",
+        "F_scope_obstruction"
+      ],
+      "dirty_facts": 3,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "verified_v10",
+        "kind": "promote"
+      },
+      "event_index": 12,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 6
+    },
+    {
+      "changed_facts": [
+        "cap_merged",
+        "protected_equivalence"
+      ],
+      "changed_frontiers": [
+        "F_quotient"
+      ],
+      "changed_supports": [
+        "cap_merged",
+        "protected_equivalence"
+      ],
+      "checked_frontiers": [
+        "F_quotient"
+      ],
+      "dirty_facts": 2,
+      "event": {
+        "authority": "synthetic_revoker",
+        "fact": "protected_equivalence",
+        "kind": "revoke"
+      },
+      "event_index": 13,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 1
+    },
+    {
+      "changed_facts": [
+        "cap_merged",
+        "protected_equivalence"
+      ],
+      "changed_frontiers": [
+        "F_quotient"
+      ],
+      "changed_supports": [
+        "cap_merged",
+        "protected_equivalence"
+      ],
+      "checked_frontiers": [
+        "F_quotient"
+      ],
+      "dirty_facts": 2,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "protected_equivalence",
+        "kind": "promote"
+      },
+      "event_index": 14,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 2
+    },
+    {
+      "changed_facts": [
+        "cap_weighted",
+        "cap_weighted_safe",
+        "verified_v12"
+      ],
+      "changed_frontiers": [
+        "F_weighted",
+        "F_weighted_viability"
+      ],
+      "changed_supports": [
+        "cap_weighted",
+        "cap_weighted_safe",
+        "verified_v12"
+      ],
+      "checked_frontiers": [
+        "F_weighted",
+        "F_weighted_viability"
+      ],
+      "dirty_facts": 4,
+      "event": {
+        "authority": "synthetic_revoker",
+        "fact": "verified_v12",
+        "kind": "revoke"
+      },
+      "event_index": 15,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 4
+    },
+    {
+      "changed_facts": [
+        "cap_weighted",
+        "cap_weighted_safe",
+        "verified_v12"
+      ],
+      "changed_frontiers": [
+        "F_weighted",
+        "F_weighted_viability"
+      ],
+      "changed_supports": [
+        "cap_weighted",
+        "cap_weighted_safe",
+        "verified_v12"
+      ],
+      "checked_frontiers": [
+        "F_weighted",
+        "F_weighted_viability"
+      ],
+      "dirty_facts": 4,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "verified_v12",
+        "kind": "promote"
+      },
+      "event_index": 16,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 12
+    },
+    {
+      "changed_facts": [
+        "cap_genesis",
+        "cap_joint",
+        "cap_sensor",
+        "event_sensor"
+      ],
+      "changed_frontiers": [
+        "F_joint_genesis",
+        "F_observation"
+      ],
+      "changed_supports": [
+        "cap_genesis",
+        "cap_joint",
+        "cap_sensor",
+        "event_sensor"
+      ],
+      "checked_frontiers": [
+        "F_joint_genesis",
+        "F_observation"
+      ],
+      "dirty_facts": 7,
+      "event": {
+        "authority": "synthetic_revoker",
+        "fact": "event_sensor",
+        "kind": "revoke"
+      },
+      "event_index": 17,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 6
+    },
+    {
+      "changed_facts": [
+        "cap_genesis",
+        "cap_joint",
+        "cap_sensor",
+        "event_sensor"
+      ],
+      "changed_frontiers": [
+        "F_joint_genesis",
+        "F_observation"
+      ],
+      "changed_supports": [
+        "cap_genesis",
+        "cap_joint",
+        "cap_sensor",
+        "event_sensor"
+      ],
+      "checked_frontiers": [
+        "F_joint_genesis",
+        "F_observation"
+      ],
+      "dirty_facts": 7,
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "event_sensor",
+        "kind": "promote"
+      },
+      "event_index": 18,
+      "fixed_point": true,
+      "noop": false,
+      "rule_checks": 24
+    }
+  ],
+  "main_incremental": {
+    "events": 19,
+    "fact_dirty_visits": 115,
+    "frontier_evaluations": 56,
+    "noops": 1,
+    "reclosure_passes": 44,
+    "rule_evaluations": 213
+  },
+  "main_six_gates": {
+    "cross_frontier": true,
+    "dormant_revived": true,
+    "incremental_local_cone": true,
+    "negative_separator": true,
+    "restart_without_prior_event_replay": true,
+    "revocation_with_alternative_support": true
+  },
+  "randomized_stress": {
+    "batch_evaluated_frontiers": 54600,
+    "batch_rule_evaluations": 189904,
+    "incremental_evaluated_frontiers": 2795,
+    "incremental_rule_evaluations": 12647,
+    "randomized_events": 4200,
+    "randomized_restarts": 12
+  },
+  "source_authority_claims": {
+    "v10": {
+      "claim": "bounded six-matroid guarded greedy-transfer; no stateless superiority",
+      "repo": "heathsanchez/test",
+      "run": 38199516805
+    },
+    "v11": {
+      "claim": "bounded complete hereditary branch rule; weighted objective unsupported",
+      "repo": "heathsanchez/test",
+      "run": 38201499353
+    },
+    "v12": {
+      "claim": "bounded source-selected modular-weight optimizer; 6/6 fresh weighted; 3/3 unsupported abstentions",
+      "repo": "heathsanchez/test",
+      "run": 38202495321
+    }
+  },
+  "status": "PASS_FLASH_V13_FINITE_PROSPECTIVE"
+}
