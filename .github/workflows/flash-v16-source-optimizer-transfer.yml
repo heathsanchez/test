@@ -76,8 +76,8 @@ jobs:
           receipt=json.loads(Path('evidence-out/source-to-target-generative-transfer.json').read_text())
           assert receipt['status']=='PASS_V16_UNCHANGED_SOURCE_QUALIFIED_CONSTRUCTOR_TRANSFER'
           source=receipt['cross_project_results']['native_development_420']
-          assert source[0]['optimum_basis_size']==6
-          assert source[1]['optimum_basis_size']==7
+          assert source[0]['optimal_basis_size']==6
+          assert source[1]['optimal_basis_size']==7
           assert source[0]['greedy_failure'] is not None
           assert source[0]['matroid_exchange_counterexample'] is not None
           assert source[0]['native_outcome']['first_witness_changes']>0
