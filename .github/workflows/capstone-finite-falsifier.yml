@@ -7,7 +7,7 @@ on:
 jobs:
   finite-falsifier:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,3 +20,26 @@ jobs:
           python capstone/cost_genesis.py > /tmp/capstone_v3_results.json
           diff -u capstone/cost_genesis_results.json /tmp/capstone_v3_results.json
           python capstone/dependent_gate.py
+      - name: Fetch pinned independent proof-critic source
+        run: |
+          git clone --filter=blob:none https://github.com/heathsanchez/Minimal-Sufficient-Interface.git /tmp/msi
+          cd /tmp/msi
+          git checkout --detach 7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154
+          test "$(git rev-parse HEAD)" = '7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154'
+          echo 'a7ae7f4a98d782598b9fdd81e051700cbaca27d71c4000500ce3198d14bad3ff  experiments/bundy_critic_genesis_v2/heldout.py' | sha256sum -c -
+          echo 'bf840facde6e28afd4ba6534e161b5f695d86831c78688afcfbcaaa80ec7c179  experiments/bundy_critic_genesis_v2/PREREGISTRATION.md' | sha256sum -c -
+      - name: Run independent proof-critic source
+        run: |
+          cd /tmp/msi
+          PYTHONPATH=experiments python -m bundy_critic_genesis_v2.run > /tmp/bundy_result.json
+      - name: Install pinned Lean
+        run: |
+          test "$(cat /tmp/msi/lean-toolchain)" = 'leanprover/lean4:v4.24.0'
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check external formal obstruction and generated proof terms
+        run: |
+          cd /tmp/msi
+          lean --version
+          lean experiments/bundy_critic_genesis_v2/Target15UnboundedOldObstruction.lean
+          lean experiments/bundy_critic_genesis_v2/results/GeneratedProofs.lean
