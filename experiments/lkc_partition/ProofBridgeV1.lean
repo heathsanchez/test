@@ -88,6 +88,26 @@ theorem radix_geometric_factor (base count : Nat) (hBase : 0 < base) :
         _ = base * base ^ count := by rw [ih]
         _ = base ^ (count + 1) := by rw [Nat.pow_add_one]; ac_rfl
 
+
+/-- The exact natural geometric quotient: no rationals or infinite sums.
+This is a reusable sub-identity in the packed partition product formula. -/
+theorem radix_geometric_div (base count : Nat) (hBase : 1 < base) :
+    (base ^ count - 1) / (base - 1) = radixGeometric base count := by
+  have hPositive : 0 < base - 1 := by omega
+  have hFactor := radix_geometric_factor base count (by omega)
+  have hMul :
+      (base - 1) * radixGeometric base count = base ^ count - 1 := by
+    omega
+  calc
+    (base ^ count - 1) / (base - 1)
+        = ((base - 1) * radixGeometric base count) / (base - 1) := by
+            rw [hMul]
+    _ = radixGeometric base count :=
+          Nat.mul_div_cancel_left (radixGeometric base count) hPositive
+
+#check radix_geometric_div
+#print axioms radix_geometric_div
+
 #check radix_geometric_factor
 #print axioms radix_geometric_factor
 
