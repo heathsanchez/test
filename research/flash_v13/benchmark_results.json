@@ -1,0 +1,34 @@
+{
+  "event_count": 16000,
+  "fixture": "flash_v13_20261012",
+  "limitations": "Same Python interpreter and frozen synthetic fixture; not a hardware benchmark, throughput guarantee, or adversarial optimized batch competitor. Source acquisition and formal qualification costs excluded.",
+  "medians_seconds": {
+    "batch": 0.700087,
+    "incremental": 0.228918
+  },
+  "repetitions": 8,
+  "speed_ratio_batch_over_incremental": 3.05825,
+  "status": "PASS_BOUNDED_LOCAL_WALL_COMPARISON",
+  "times_seconds": {
+    "batch": [
+      0.674332,
+      0.687979,
+      0.714709,
+      0.681498,
+      0.718675,
+      0.687327,
+      0.774216,
+      0.712196
+    ],
+    "incremental": [
+      0.262335,
+      0.221173,
+      0.225779,
+      0.229989,
+      0.237866,
+      0.21368,
+      0.227847,
+      0.230708
+    ]
+  }
+}
