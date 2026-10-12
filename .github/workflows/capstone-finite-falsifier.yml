@@ -17,3 +17,5 @@ jobs:
         run: |
           python capstone/falsifier.py
           python capstone/test_falsifier.py
+          python capstone/cost_genesis.py > /tmp/capstone_v3_results.json
+          diff -u capstone/cost_genesis_results.json /tmp/capstone_v3_results.json
