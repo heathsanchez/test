@@ -84,9 +84,9 @@ theorem radix_geometric_factor (base count : Nat) (hBase : 0 < base) :
                   _ = base * ((base - 1) * radixGeometric base count)
                         + base := by rw [hb]
                   _ = base * ((base - 1) * radixGeometric base count + 1) := by
-                        simp [Nat.mul_add]
+                        simp
         _ = base * base ^ count := by rw [ih]
-        _ = base ^ (count + 1) := by rw [pow_succ]; ac_rfl
+        _ = base ^ (count + 1) := by rw [Nat.pow_add_one]; ac_rfl
 
 #check radix_geometric_factor
 #print axioms radix_geometric_factor
