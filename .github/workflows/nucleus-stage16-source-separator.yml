@@ -1,0 +1,145 @@
+name: Nucleus stage16 real-source rigid neutral separator
+
+on:
+  push:
+    branches:
+      - research/nucleus-stage16-neutral-separator-20261012
+    paths:
+      - research/nucleus_stage16_separation/**
+      - .github/workflows/nucleus-stage16-source-separator.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checked-source-countermodel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assert zero Nucleus semantic source changes
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = 311cf82ae95e5bdff55e4529892209da6d85e5bd
+          echo PASS_NATIVE_CHECKER_SOURCE_UNCHANGED
+      - name: Obtain independently pinned Arena corpus and diagnostic trace
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source-qualified-native
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/source-qualified-native/arena.zip
+          gh api repos/heathsanchez/test/actions/artifacts/11724049727/zip > /tmp/source-qualified-native/trace.zip
+          echo "f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2  /tmp/source-qualified-native/arena.zip" | sha256sum -c -
+          echo "3282352b1ae86dd5e2e8cadd15009bc2e845a52ef54f6c51d34938139769e990  /tmp/source-qualified-native/trace.zip" | sha256sum -c -
+      - name: Decode exact six cross-repository original Lean exports and three falsifiers
+        run: |
+          set -euo pipefail
+          python3 research/nucleus_stage16_separation/audit.py \
+            --arena-zip /tmp/source-qualified-native/arena.zip \
+            --trace-zip /tmp/source-qualified-native/trace.zip \
+            --output /tmp/source-qualified-native/source-bound-separator.json \
+            | tee /tmp/source-qualified-native/audit.out
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/source-qualified-native/source-bound-separator.json').read_text())
+          assert r['status']=='PASS_SOURCE_BOUND_STAGE16_RIGID_NEUTRAL_NO_GO'
+          assert r['checked_six_case_pairs']==12
+          assert r['complete_nucleus_accepts_gained']==0
+          assert len(r['cases'])==6
+          assert set(r['mutation_controls'])=={'wrong_head','wrong_free','changed_source'}
+          assert all(x=='REJECTED' for x in r['mutation_controls'].values())
+          assert all(x['verdict']=='UNKNOWN' for x in r['cases'])
+          print('PASS_PINNED_NATIVE_RIGID_NEUTRAL_COUNTEREXAMPLES')
+          PY
+      - name: Kernel check non-universal successor/free equality countermodel
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.34.1
+          "$HOME/.elan/bin/lean" --version | tee /tmp/source-qualified-native/lean-version.txt
+          "$HOME/.elan/bin/lean" research/nucleus_stage16_separation/RigidNeutralCountermodel.lean
+          grep 'Lean (version 4.34.1' /tmp/source-qualified-native/lean-version.txt
+          echo PASS_PINNED_LEAN_RIGID_RULE_COUNTERMODEL
+      - name: Preserve source and negative lineage
+        run: |
+          set -euo pipefail
+          {
+            echo "QUALIFIED_COMMIT=$(git rev-parse HEAD)"
+            echo "NATIVE_CHECKER_TREE=$(git rev-parse HEAD:metatron-kernel)"
+            echo "SOURCE_ARTIFACT=leanprover/lean-kernel-arena#11272848230"
+            echo "DIAGNOSTIC_ARTIFACT=heathsanchez/test#11724049727"
+            echo "SOURCE_MEANING=old attempted field-application premise is unwarranted"
+            echo "NO_CLAIM=new native ACCEPT or original theorem refutation"
+            sha256sum research/nucleus_stage16_separation/audit.py research/nucleus_stage16_separation/RigidNeutralCountermodel.lean /tmp/source-qualified-native/source-bound-separator.json
+          } > /tmp/source-qualified-native/source-receipt.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-stage16-real-source-separation
+          path: |
+            /tmp/source-qualified-native/source-bound-separator.json
+            /tmp/source-qualified-native/source-receipt.txt
+            /tmp/source-qualified-native/lean-version.txt
+            /tmp/source-qualified-native/audit.out
+          if-no-files-found: warn
+
+  unchanged-native-196:
+    needs: checked-source-countermodel
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build original unchanged Nucleus checker
+        env:
+          CARGO_HTTP_TIMEOUT: '120'
+          CARGO_NET_RETRY: '8'
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel)" = 311cf82ae95e5bdff55e4529892209da6d85e5bd
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-stg16
+          echo BASELINE_BINARY_BUILT_UNCHANGED
+      - name: Independently replay full native frozen 196
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-separation/untar /tmp/arena-separation/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/arena-separation/source.zip
+          echo "f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2  /tmp/arena-separation/source.zip" | sha256sum -c -
+          unzip -q /tmp/arena-separation/source.zip -d /tmp/arena-separation/untar
+          tar -xzf /tmp/arena-separation/untar/lean-arena-tests.tar.gz -C /tmp/arena-separation/tests
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          base=pathlib.Path('/tmp/arena-separation/tests')
+          verdicts={0:0,1:0,2:0}
+          rows=[]
+          for bucket,exp in (('good',0),('bad',1)):
+            for p in sorted((base/bucket).rglob('*.ndjson')):
+              with p.open('rb') as f:
+                r=subprocess.run(['/tmp/nucleus-stg16'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90)
+              rows.append({'case':str(p.relative_to(base/bucket)),'expected':exp,'rc':r.returncode})
+              assert r.returncode in (0,1,2),('ERROR',p,r.returncode)
+              assert r.returncode not in (0,1) or r.returncode==exp,('WRONG',p,r.returncode)
+              verdicts[r.returncode]+=1
+          assert len(rows)==196,len(rows)
+          assert verdicts=={0:118,1:71,2:7},verdicts
+          json_path=base/'native196-replay.json'
+          json_path.write_text(json.dumps({'status':'PASS_UNCHANGED_NATIVE_196','counts':verdicts,'rows':rows},indent=2))
+          print('PASS_NATIVE_196_UNCHANGED='+json.dumps(verdicts))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-stage16-native-196-baseline
+          path: /tmp/arena-separation/tests/native196-replay.json
+          if-no-files-found: warn
