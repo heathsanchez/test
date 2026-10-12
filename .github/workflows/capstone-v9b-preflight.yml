@@ -1,0 +1,50 @@
+name: Capstone V9b frozen development preflight
+on:
+  push:
+    branches:
+      - research/capstone-v9b-source-frozen-induction-20261012
+    paths:
+      - 'capstone/v9/development.json'
+      - '.github/workflows/capstone-v9b-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-baseline-errors:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install and prove the exact Lean version
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Test genuine failures in BOTH frozen development obligations
+        env:
+          ELAN_TOOLCHAIN: leanprover/lean4:v4.24.0
+        run: |
+          set -euo pipefail
+          lean --version | tee /tmp/v9b-lean-version.txt
+          grep -q 'version 4.24.0' /tmp/v9b-lean-version.txt
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+          cases=json.load(open('capstone/v9/development.json'))['cases']
+          assert len(cases)==2
+          for case in cases:
+              p=pathlib.Path('/tmp/'+case['id']+'.lean')
+              p.write_text(case['source'])
+              r=subprocess.run(['lean',str(p)],capture_output=True,text=True,
+                               env={**os.environ,'ELAN_TOOLCHAIN':'leanprover/lean4:v4.24.0'})
+              text=r.stdout+r.stderr
+              print('PRE_REGISTERED_CASE',case['id'],'EXIT',r.returncode)
+              print('DIAGNOSTIC',text[-900:])
+              assert r.returncode!=0, 'Not a failure-driven obligation: '+case['id']
+              assert 'error' in text.lower(), 'Missing Lean proof diagnostic'
+          print('V9B_FROZEN_DEVELOPMENT_FAILURES_CONFIRMED')
+          PY
