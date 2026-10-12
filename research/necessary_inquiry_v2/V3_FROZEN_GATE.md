@@ -1,0 +1,11 @@
+# V3 repaired generator — prospective quartic-transfer gate
+
+2026-10-12, before opening task outcomes. Isolated GitHub source for the repaired generator: research/necessary_inquiry_v2/generator_v3.py at commit 05c55279f2a84b836eea47ca303064872789b575, exact Git blob 05f329bf309e1548337fca0436a31c520e2c7cda, SHA256 9b604161e65d4bc47b7600ee6231939937bc6a2cac102df8ea524909ae00f505.
+
+V2 unchanged-generator cubic transfer REJECTED: original code asserted nuisance rank n+1, a specialization to affine nuisance. V3 repair replaces that asserted fixed rank with the actual rank of source-supplied nuisance evaluation features. The repaired algorithm must remain unchanged between cubic DEVELOPMENT and quartic PROTECTED tests. Do not reclassify the V2 transfer as positive.
+
+Cubic DEVELOPMENT: n=5,6,8; arbitrary degree<=2 coefficients are nuisance, arbitrary degree-3 terms are targets. Derive nullspace observation rows using the frozen generic generator; check exact rank, independent oracle replay for >=128 seeded functions per n, and 8-observation minimal-support where demonstrated. Independently compare to the full cubic interpolation baseline. Report failures.
+
+Quartic PROTECTED: without modifying generator code, n=5,6,8; arbitrary degree<=3 coefficients are nuisance, arbitrary degree-4 terms are targets. Frozen seeds: 20261012+4000*n and 128 worlds (n=5,6), 256 worlds (n=8); independently compute raw f from coefficient subsets. Check source-rank, every nuisance-null equation, full target rank, exact binary-sensor count C(n,4), exact ablation, source interpreter parity replay, outside-language alias, strong same-information stateless interpolation comparator. n=5 exhaustively enumerate all 2^5 target coefficient sets, and rank-certify larger domains. All disambiguating probe supports and unique raw inputs must be counted separately; physical cost is not one per aggregate sensor. If unexpectedly unqualified, record UNKNOWN/REJECTED without per-task repair.
+
+Interpretation: warrants are only finite GF(2), source-specified feature semantics and sensor grammar. A source-supplied target feature evaluation table is NOT autonomous invention of an interaction grammar. A completed higher-degree family cannot establish universal self-development or independent real-world physics.
