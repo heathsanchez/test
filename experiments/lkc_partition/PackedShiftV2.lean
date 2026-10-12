@@ -168,7 +168,7 @@ theorem packRow_shiftMany (B : Nat) (f : Nat → Nat) :
       change
         packRow B (shiftOne (shiftMany k f)) (n + k + 1) =
           B ^ (k + 1) * packRow B f n
-      rw [h, ih k n]
+      rw [h, ih n]
       rw [Nat.pow_add_one]
       ac_rfl
 
