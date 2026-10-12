@@ -85,3 +85,42 @@ fn instantiation_rejects_cycles_missing_parameters_and_exhausted_budget() {
         Err(LevelError::BudgetExhausted)
     );
 }
+
+#[test]
+fn max_algebra_preserves_opaque_imax_atoms() {
+    let atom=imax(succ(LevelTerm::param("u")),imax(succ(LevelTerm::param("u")),LevelTerm::param("v")));
+    let left=max(atom.clone(),max(atom.clone(),succ(LevelTerm::Zero)));
+    let right=max(succ(LevelTerm::Zero),atom);
+    assert!(level_equal(left,right,256).is_proven());
+}
+
+#[test]
+fn opaque_imax_atoms_do_not_license_universe_inequality() {
+    let u=LevelTerm::param("u");let v=LevelTerm::param("v");
+    assert!(level_equal(max(imax(u.clone(),v.clone()),succ(LevelTerm::Zero)),max(max(u,v),succ(LevelTerm::Zero)),256).is_unknown());
+}
+
+#[test]
+fn max_algebra_is_congruent_inside_nested_imax() {
+    let a=LevelTerm::param("a");let b=LevelTerm::param("b");let c=LevelTerm::param("c");let v=LevelTerm::param("v");
+    let left=imax(max(max(succ(a.clone()),b.clone()),c.clone()),imax(max(b.clone(),c.clone()),v.clone()));
+    let right=imax(max(b.clone(),max(c.clone(),succ(a))),imax(max(c,b),v));
+    assert!(level_equal(left,right,512).is_proven());
+}
+
+#[test]
+fn opaque_max_successor_distribution_and_constant_absorption() {
+    let a=imax(LevelTerm::param("u"),LevelTerm::param("v"));
+    assert!(level_equal(succ(max(a.clone(),LevelTerm::param("w"))),max(succ(a.clone()),succ(LevelTerm::param("w"))),256).is_proven());
+    assert!(level_equal(max(succ(a.clone()),succ(LevelTerm::Zero)),succ(a.clone()),256).is_proven());
+    assert!(!level_equal(max(a.clone(),succ(LevelTerm::Zero)),a,256).is_proven());
+    let a=imax(LevelTerm::param("u"),LevelTerm::param("v"));
+    assert!(level_equal(max(a.clone(),succ(LevelTerm::Zero)),max(succ(LevelTerm::Zero),a),1).is_unknown());
+}
+
+#[test]
+fn nested_imax_congruence_does_not_drop_or_swap_its_arguments() {
+    let a=LevelTerm::param("a");let b=LevelTerm::param("b");let c=LevelTerm::param("c");
+    assert!(!level_equal(imax(max(a.clone(),b.clone()),c.clone()),imax(a.clone(),c.clone()),512).is_proven());
+    assert!(!level_equal(imax(max(a.clone(),b.clone()),c.clone()),imax(c,max(a,b)),512).is_proven());
+}

@@ -318,6 +318,15 @@ fn convert_in_context_with_congruence(
                 work.push((*left_domain, *right_domain, depth, local_context));
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
+                if delta_policy == DeltaPolicy::GuardedSemanticFallback
+                    && let (Some(left_literal), Some(right_literal)) = (
+                        checker.captured_string_literal(&left, remaining),
+                        checker.captured_string_literal(&right, remaining),
+                    )
+                    && left_literal == right_literal
+                {
+                    continue;
+                }
                 let machine = checker.machine();
                 // Positive congruence before unfolding. Failed premises only
                 // decline this rule; all nested probes share an attempt limit.
@@ -449,6 +458,10 @@ fn convert_in_context_with_congruence(
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_LITERAL_CONVERSION").is_some() {
+                        eprintln!("NUCLEUS_LITERAL_CONVERSION:left={left:?}:syntax={:?}:result={cheap_left:?}:right={right:?}:syntax={:?}:result={cheap_right:?}",checker.expression(left.expr),checker.expression(right.expr));
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
                 match compare_values(
@@ -502,17 +515,45 @@ fn convert_in_context_with_congruence(
             (TypeValue::Term(term), other) | (other, TypeValue::Term(term)) => {
                 let machine = checker.machine();
                 let exposed = machine.expose(term.clone(), Transparency::Reducible, remaining);
+                let exposed = if exposed.is_unknown() && depth == context.len()
+                    && delta_policy == DeltaPolicy::GuardedSemanticFallback
+                {
+                    checked_source_type_value(checker, term.clone(), context, remaining)
+                } else {
+                    exposed
+                };
                 let Some(exposed) = exposed.proven_value() else {
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_RIGID_TYPE_MISMATCH").is_some() {
+                        eprintln!("NUCLEUS_TYPE_EXPOSURE_UNKNOWN:term={term:?}:budget={remaining}:result={exposed:?}");
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
                 let exposed = if let Some(exposed) = value_as_type(exposed, depth) {
                     exposed
                 } else if delta_policy == DeltaPolicy::GuardedSemanticFallback {
-                    let full = machine.expose(term, Transparency::Full, remaining);
+                    let full = machine.expose(term.clone(), Transparency::Full, remaining);
                     let Some(full) = full.proven_value() else {
                         return Judgment::unknown("full-conversion-exposure");
                     };
+                    let recovered = if depth == context.len() && value_as_type(full, depth).is_none() {
+                        checked_source_type_value(checker, term.clone(), context, remaining)
+                    } else {
+                        Judgment::unknown("checked-source-type-recovery-not-needed")
+                    };
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_SOURCE_TYPE_RECOVERY").is_some() {
+                        eprintln!("NUCLEUS_SOURCE_TYPE_RECOVERY:term={:?}:result={recovered:?}",term.expr);
+                    }
+                    let full = recovered.proven_value().unwrap_or(full);
                     let Some(full) = value_as_type(full, depth) else {
+                        #[cfg(feature="diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_RIGID_TYPE_MISMATCH").is_some() {
+                            eprintln!("NUCLEUS_RIGID_TYPE_MISMATCH:depth={depth}:context={}:exposed={full:?}:expected={other:?}:budget={remaining}",context.len());
+                            if let Value::Neutral(n)=full {
+                                eprintln!("NUCLEUS_RIGID_TYPE_MAJOR:{}",checker.diagnostic_captured_recursor_major_chain(n,remaining));
+                            }
+                        }
                         return Judgment::refuted("rigid-type-constructor-mismatch");
                     };
                     full
@@ -904,14 +945,14 @@ fn certified_structure_eta(
     work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
     context: &[TypeValue],
 ) -> bool {
-    if !target.spine.is_empty() {
+    if depth!=context.len() || !target.spine.is_empty() {
         return false;
     }
     let NeutralHead::Free(free) = &target.head else {
         return false;
     };
     let NeutralHead::Const {
-        name: constructor, ..
+        name: constructor, levels:constructor_levels,
     } = &constructed.head
     else {
         return false;
@@ -939,7 +980,7 @@ fn certified_structure_eta(
         return false;
     };
     let NeutralHead::Const {
-        name: actual_type, ..
+        name: actual_type, levels:type_levels,
     } = &target_type.head
     else {
         return false;
@@ -947,6 +988,8 @@ fn certified_structure_eta(
     if *actual_type != type_name || target_type.spine.len() != num_params {
         return false;
     }
+    if constructor_levels.len()!=type_levels.len() || !constructor_levels.iter().zip(type_levels).all(|(a,b)|
+        level_equal(a.clone(),b.clone(),budget).is_proven()) {return false;}
 
     for (index, field) in constructed.spine[num_params..].iter().enumerate() {
         if !checker
@@ -2179,6 +2222,16 @@ fn compare_neutral_heads(
             }
             if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR").is_some() { eprintln!("NUCLEUS_RECURSOR_MAJOR:left={:?}:right={:?}", left.spine.last(), right.spine.last()); if let Some(c) = right.spine.last() { eprintln!("NUCLEUS_RECURSOR_MAJOR_VALUE:{:?}", checker.machine().expose(c.clone(), Transparency::Full, budget.min(64))); } }
             #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_CHECKED_MAJOR_CHAIN").is_some() && left.spine.len()>=4 && context.len()<=24 {
+                eprintln!("NUCLEUS_CHECKED_MAJOR_CHAIN:{}",checker.diagnostic_captured_recursor_major_chain(left,budget));
+            }
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_LEFT_DECIDABLE_MAJOR_CHAIN").is_some()
+                && left.spine.len()==5 && context.len()==3
+            {
+                eprintln!("NUCLEUS_LEFT_DECIDABLE_MAJOR_CHAIN:{}",checker.diagnostic_captured_recursor_major_chain(left,budget));
+            }
+            #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_DECIDABLE_MAJOR_CHAIN").is_some()
                 && matches!(&right.head, NeutralHead::Const { .. })
                 && right.spine.len() == 5
@@ -2355,6 +2408,41 @@ fn certified_local_proof_irrelevance(
 
 fn one_neutral_head_is_free(left: &Neutral, right: &Neutral) -> bool {
     matches!(left.head, NeutralHead::Free(_)) ^ matches!(right.head, NeutralHead::Free(_))
+}
+
+pub(crate) fn checked_source_type_value(
+    checker: &TypeChecker<'_>,
+    term: Closure,
+    context: &[TypeValue],
+    budget: usize,
+) -> Judgment<Value> {
+    if budget < 128 {
+        return Judgment::unknown("checked-transport-projection-budget");
+    }
+    let machine = checker.machine();
+    let preserved = machine.expose_for_conversion(term, Transparency::Full, budget);
+    #[cfg(feature="diagnostics")]
+    if std::env::var_os("NUCLEUS_TRACE_SOURCE_TYPE_RECOVERY").is_some() {
+        eprintln!("NUCLEUS_SOURCE_TYPE_PRESERVED:{preserved:?}");
+    }
+    let preserved = if let Some(Value::Neutral(neutral)) = preserved.proven_value() {
+        machine.qualified_nested_recursor_result(neutral, budget)
+    } else {
+        preserved
+    };
+    let Some(Value::StuckProjection { type_name, index, structure, spine }) = preserved.proven_value() else {
+        return preserved;
+    };
+    let receiver = machine.expose(structure.clone(), Transparency::Full, budget / 2);
+    let Some(Value::Neutral(neutral)) = receiver.proven_value() else {
+        return Judgment::unknown("checked-transport-projection-receiver");
+    };
+    let RuleKAttempt::Reduced(reduced) = checker.rule_k_reduce_neutral(neutral, context, budget / 2) else {
+        return Judgment::unknown("checked-transport-projection-premise");
+    };
+    // Select only a field of the actual source-registered constructor after
+    // the existing typed K premise succeeds; retain all projection arguments.
+    machine.projection_value_for_conversion(reduced, *type_name, *index, spine, budget / 2)
 }
 
 fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {

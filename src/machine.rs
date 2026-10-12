@@ -50,6 +50,26 @@ pub struct RecursorRule {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ClosedNestedMinorReduction {
+    pub constructor: NameId,
+    pub constructor_levels: Vec<crate::level::LevelTerm>,
+    pub constructor_parameters: Vec<(NameId,Vec<crate::level::LevelTerm>)>,
+    pub num_fields: usize,
+    pub rhs: ExprId,
+    pub level_params: Vec<NameId>,
+    pub prefix_len: usize,
+    pub minor_argument: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NullaryMinorReduction {
+    pub constructor: NameId,
+    pub level_arity: usize,
+    pub prefix_len: usize,
+    pub minor_argument: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RecursorReduction {
     pub k: bool,
     pub num_params: usize,
@@ -155,9 +175,11 @@ pub struct Machine<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
     definitions: Rc<HashMap<NameId, DefinitionBody>>,
-    singleton_recursor_reductions: HashSet<NameId>,
-    recursor_reductions: HashMap<NameId, RecursorReduction>,
-    projection_specs: HashMap<NameId, ProjectionSpec>,
+    singleton_recursor_reductions: Rc<HashSet<NameId>>,
+    nullary_minor_reductions: Rc<HashMap<NameId, Vec<NullaryMinorReduction>>>,
+    closed_nested_minor_reductions: Rc<HashMap<NameId,Vec<ClosedNestedMinorReduction>>>,
+    recursor_reductions: Rc<HashMap<NameId, RecursorReduction>>,
+    projection_specs: Rc<HashMap<NameId, ProjectionSpec>>,
     nat_primitives: Option<NatPrimitives>,
     bool_primitives: Option<BoolPrimitives>,
     quot_primitives: Option<QuotPrimitives>,
@@ -179,30 +201,42 @@ impl<'a> Machine<'a> {
             expressions,
             levels,
             definitions: definitions.into(),
-            singleton_recursor_reductions: HashSet::new(),
-            recursor_reductions: HashMap::new(),
-            projection_specs: HashMap::new(),
+            singleton_recursor_reductions: Rc::new(HashSet::new()),
+            nullary_minor_reductions: Rc::new(HashMap::new()),
+            closed_nested_minor_reductions: Rc::new(HashMap::new()),
+            recursor_reductions: Rc::new(HashMap::new()),
+            projection_specs: Rc::new(HashMap::new()),
             nat_primitives: None,
             bool_primitives: None,
             quot_primitives: None,
         }
     }
 
-    pub fn with_singleton_recursor_reductions(mut self, reductions: HashSet<NameId>) -> Self {
-        self.singleton_recursor_reductions = reductions;
+    pub fn with_singleton_recursor_reductions(mut self, reductions: impl Into<Rc<HashSet<NameId>>>) -> Self {
+        self.singleton_recursor_reductions = reductions.into();
+        self
+    }
+
+    pub fn with_nullary_minor_reductions(mut self, reductions:impl Into<Rc<HashMap<NameId,Vec<NullaryMinorReduction>>>>)->Self {
+        self.nullary_minor_reductions=reductions.into();
+        self
+    }
+
+    pub fn with_closed_nested_minor_reductions(mut self,reductions:impl Into<Rc<HashMap<NameId,Vec<ClosedNestedMinorReduction>>>>)->Self {
+        self.closed_nested_minor_reductions=reductions.into();
         self
     }
 
     pub fn with_recursor_reductions(
         mut self,
-        reductions: HashMap<NameId, RecursorReduction>,
+        reductions: impl Into<Rc<HashMap<NameId, RecursorReduction>>>,
     ) -> Self {
-        self.recursor_reductions = reductions;
+        self.recursor_reductions = reductions.into();
         self
     }
 
-    pub fn with_projection_specs(mut self, specs: HashMap<NameId, ProjectionSpec>) -> Self {
-        self.projection_specs = specs;
+    pub fn with_projection_specs(mut self, specs: impl Into<Rc<HashMap<NameId, ProjectionSpec>>>) -> Self {
+        self.projection_specs = specs.into();
         self
     }
 
@@ -683,6 +717,16 @@ impl<'a> Machine<'a> {
                     closure = closure.sibling(*fun, closure.env.clone());
                 }
                 Expr::Const { name, levels } => {
+                    if let Some(arithmetic)=self.try_native_bounded_arithmetic(*name,levels,&mut pending,transparency,budget) {
+                        return match arithmetic {
+                            Judgment::Proven{value,..}=>{
+                                record_transition(&mut transitions,record_witnesses,TransitionWitness::NatExtension);
+                                exposed(value,transitions)
+                            }
+                            Judgment::Unknown{residual}=>Judgment::Unknown{residual},
+                            Judgment::Refuted{obstruction}=>Judgment::Refuted{obstruction},
+                        };
+                    }
                     if let Some(native) = self.try_native_nat_reduction(
                         *name,
                         levels,
@@ -708,6 +752,67 @@ impl<'a> Machine<'a> {
                         closure = next;
                         continue;
                     }
+
+                    let mut nullary_selected=false;
+                    if let Some(rules)=self.nullary_minor_reductions.get(name) {
+                        for rule in rules {
+                            let required=rule.prefix_len+1;
+                            if pending.len()<required || levels.len()!=rule.level_arity || rule.minor_argument>=rule.prefix_len {continue;}
+                            let offset=pending.len()-required;
+                            let args=pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
+                            let major=self.expose_internal(args[rule.prefix_len].clone(),Transparency::Opaque,budget.min(16),false,false);
+                            if matches!(major.proven_value(),Some(Exposure {value:Value::Neutral(Neutral {head:NeutralHead::Const {name:ctor,levels},spine}),..})
+                                if *ctor==rule.constructor && levels.is_empty() && spine.is_empty()) {
+                                let selected=args[rule.minor_argument].clone();
+                                pending.truncate(offset);
+                                visited.clear();
+                                closure=selected;
+                                nullary_selected=true;
+                                #[cfg(feature="diagnostics")]
+                                if std::env::var_os("NUCLEUS_TRACE_NULLARY_MINOR").is_some() {eprintln!("NUCLEUS_NULLARY_IOTA:recursor={name:?}:constructor={:?}:minor={}",rule.constructor,rule.minor_argument);}
+                                record_transition(&mut transitions,record_witnesses,TransitionWitness::ConstructorRecursor);
+                                break;
+                            }
+                        }
+                        // A selected source minor changes the current closure;
+                        // resume evaluation with every surplus argument intact.
+                        if nullary_selected {continue;}
+                    }
+
+                    let mut nested_selected=false;
+                    if let Some(rules)=self.closed_nested_minor_reductions.get(name) {
+                        for rule in rules {
+                            let required=rule.prefix_len+1;
+                            if pending.len()<required || levels.len()!=rule.level_params.len() {continue;}
+                            let offset=pending.len()-required;
+                            let args=pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
+                            let major=self.expose_internal(args[rule.prefix_len].clone(),transparency,budget.min(64),false,false);
+                            let Some(Exposure{value:Value::Neutral(Neutral{head:NeutralHead::Const{name:ctor,levels:ctor_levels},spine}),..})=major.proven_value() else{continue;};
+                            let p=rule.constructor_parameters.len();
+                            if *ctor!=rule.constructor || *ctor_levels!=rule.constructor_levels || spine.len()!=p+rule.num_fields {continue;}
+                            if !spine[..p].iter().zip(&rule.constructor_parameters).all(|(actual,(expected_name,expected_levels))| {
+                                matches!(self.expose_internal(actual.clone(),Transparency::Opaque,budget.min(64),false,false).proven_value(),Some(Exposure{value:Value::Neutral(Neutral{head:NeutralHead::Const{name,levels},spine}),..})
+                                    if name==expected_name && levels==expected_levels && spine.is_empty())
+                            }) {continue;}
+                            let mut substitution=closure.levels.to_map();
+                            let mut valid=true;
+                            for (parameter,level) in rule.level_params.iter().zip(levels) {
+                                if let Some(actual)=self.resolve_level(*level,&closure,budget) {substitution.insert(*parameter,actual);} else {valid=false;break;}
+                            }
+                            if !valid {continue;}
+                            let mut substitution=substitution.into_iter().collect::<Vec<_>>();substitution.sort_by_key(|(name,_)|name.0);
+                            let mut actuals=args[..rule.prefix_len].to_vec();actuals.extend_from_slice(&spine[p..]);
+                            pending.truncate(offset);
+                            for actual in actuals.iter().rev() {pending.push(actual.clone());}
+                            closure=Closure::with_levels(rule.rhs,EnvFrame::empty(),LevelSubstitution::new(substitution));
+                            visited.clear();nested_selected=true;
+                            record_transition(&mut transitions,record_witnesses,TransitionWitness::ConstructorRecursor);
+                            #[cfg(feature="diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_NULLARY_MINOR").is_some() {eprintln!("NUCLEUS_CLOSED_NESTED_IOTA:recursor={name:?}:constructor={:?}:fields={}",rule.constructor,rule.num_fields);}
+                            break;
+                        }
+                    }
+                    if nested_selected {continue;}
 
                     // G28: a separately qualified nullary-singleton recursor
                     // ignores its target and returns its sole minor.  This is
@@ -907,6 +1012,10 @@ impl<'a> Machine<'a> {
                             continue;
                         }
                         NeutralHead::Const { .. } => {
+                            #[cfg(feature="diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_PROJECTION_FIELD_FAILURE").is_some() {
+                                eprintln!("NUCLEUS_PROJECTION_CONST_MISMATCH:type={type_name:?}:index={index}:expected={:?}:actual={neutral:?}:transparency={transparency:?}",spec.constructor);
+                            }
                             if preserve_stuck_projection {
                                 let mut spine = Vec::new();
                                 append_pending(&mut spine, &mut pending);
@@ -983,6 +1092,21 @@ impl<'a> Machine<'a> {
         pending.truncate(offset);
         pending.push(value);
         Some(function)
+    }
+
+    fn try_native_bounded_arithmetic(&self,name:NameId,levels:&[LevelId],pending:&mut Vec<Closure>,transparency:Transparency,budget:usize)->Option<Judgment<Value>> {
+        let nat=self.nat_primitives.as_ref()?;
+        let power=nat.pow==Some(name);
+        if (!power && nat.mul!=Some(name)) || !levels.is_empty() || pending.len()!=2 {return None;}
+        let left=self.expose_internal(pending[1].clone(),transparency,budget.saturating_sub(1),false,false);
+        let right=self.expose_internal(pending[0].clone(),transparency,budget.saturating_sub(1),false,false);
+        let (Some(Value::NatLit(left)),Some(Value::NatLit(right)))=(left.proven_value().map(|e|&e.value),right.proven_value().map(|e|&e.value)) else{return None;};
+        let mut work=budget;
+        let result=if power {left.pow_bounded(right,&mut work)} else {left.mul_bounded(right,&mut work)};
+        Some(match result {
+            Some(number)=>{pending.clear();Judgment::proven(Value::NatLit(number),"qualified-bounded-native-Nat-arithmetic")}
+            None=>Judgment::unknown("native-Nat-arithmetic-budget"),
+        })
     }
 
     fn try_native_nat_reduction(
@@ -1258,9 +1382,12 @@ impl<'a> Machine<'a> {
             let right = self.expose_internal(
                 second.clone(), transparency, budget.saturating_sub(1), false, false,
             ).proven_value()?.value.clone();
-            if let (Value::NatLit(n), Value::NatLit(m)) = (&left, &right) {
+            if let (Some(n), Some(m)) = (
+                self.certified_nat_numeral(&left,transparency,budget.saturating_sub(1)),
+                self.certified_nat_numeral(&right,transparency,budget.saturating_sub(1)),
+            ) {
                 pending.clear();
-                return Some(boolean(n.compare(m) != std::cmp::Ordering::Greater));
+                return Some(boolean(n.compare(&m) != std::cmp::Ordering::Greater));
             }
             match (as_constructor(&left), as_constructor(&right)) {
                 (Some((true, Some(_))), Some((false, None))) => {
@@ -1442,6 +1569,27 @@ impl<'a> Machine<'a> {
         })
     }
 
+    /// Read an exact certified zero/successor chain ending in a numeral.
+    /// Cached constructor WHNFs remain valid inputs; no neutral predecessor
+    /// or desired comparison result is interpreted as numeral evidence.
+    fn certified_nat_numeral(&self,value:&Value,transparency:Transparency,mut budget:usize)->Option<crate::nat::BigNat> {
+        let nat=self.nat_primitives.as_ref()?;
+        let mut current=value.clone();let mut successors=crate::nat::BigNat::zero();
+        let one=crate::nat::BigNat::parse_decimal("1")?;
+        loop {
+            if budget==0 {return None;}budget-=1;
+            match current {
+                Value::NatLit(number)=>return Some(number.add(&successors)),
+                Value::Neutral(Neutral{head:NeutralHead::Const{name,levels},spine}) if levels.is_empty() && name==nat.zero && spine.is_empty()=>return Some(successors),
+                Value::Neutral(Neutral{head:NeutralHead::Const{name,levels},spine}) if levels.is_empty() && name==nat.succ && spine.len()==1=>{
+                    successors=successors.add(&one);
+                    current=self.expose_internal(spine[0].clone(),transparency,budget,false,false).proven_value()?.value.clone();
+                }
+                _=>return None,
+            }
+        }
+    }
+
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
         let mut closure = target.clone();
         let mut arguments = Vec::new();
@@ -1592,10 +1740,10 @@ impl<'a> Machine<'a> {
             .saturating_add(reduction.rules.len())
             .saturating_add(reduction.num_indices)
             .saturating_add(1);
-        if neutral.spine.len() != required {
+        if neutral.spine.len() < required {
             return Judgment::unknown("nested-recursor-iota-arity");
         }
-        let major = neutral.spine.last().expect("required arity includes major");
+        let major = &neutral.spine[required - 1];
         let major_result = self.expose(
             major.clone(), Transparency::Full, budget.min(256),
         );
@@ -1688,7 +1836,10 @@ impl<'a> Machine<'a> {
                 );
             }
         }
-        self.expose(result, Transparency::Full, budget.saturating_sub(24).min(512))
+        self.expose_internal_with_pending(
+            result, Transparency::Full, budget.saturating_sub(24).min(512),
+            false, true, neutral.spine[required..].iter().rev().cloned().collect(),
+        ).map(|exposure| exposure.value)
     }
 
     fn rule_constructor_application(
@@ -1719,38 +1870,25 @@ impl<'a> Machine<'a> {
         // Iota is independent of delta transparency. Expose the exact major
         // using the caller's policy, so native literals and beta/zeta majors
         // can select checked rules even when definition unfolding is opaque.
-        // Allocate extra constructor exposure only for the certified
-        // Bool.rec over a checked, fully applied Nat.beq.  This does not
-        // infer the major constructor: exposure must produce the registered
-        // Bool.false/Bool.true constructor and exact arity below.
+        // A checked Bool recursor may receive its computed major through
+        // captured beta/zeta bindings. The bounded probe must still expose
+        // the exact registered constructor; syntax shape selects no branch.
         let bool_rules = self.bool_primitives.as_ref().is_some_and(|bools| {
             reduction.rules.len() == 2
                 && reduction.rules.iter().any(|r| r.constructor == bools.false_ctor)
                 && reduction.rules.iter().any(|r| r.constructor == bools.true_ctor)
-        });
-        let mut head = target.expr;
-        let mut arity = 0usize;
-        while let Some(Expr::App { fun, .. }) = self.expressions.get(head) {
-            arity += 1;
-            if arity > 2 { break; }
-            head = *fun;
-        }
-        let nat_beq_major = arity == 2 && self.nat_primitives.as_ref().is_some_and(|nat| {
-            matches!(self.expressions.get(head),
-                Some(Expr::Const { name, levels })
-                    if Some(*name) == nat.beq && levels.is_empty())
         });
         let certified_nat_rec = self.nat_primitives.as_ref().is_some_and(|nat| {
             reduction.rules.len() == 2
                 && matches_rule(nat.zero, 0)
                 && matches_rule(nat.succ, 1)
         });
-        let major_cap = if bool_rules && nat_beq_major {
+        let major_cap = if bool_rules {
             256
         } else if certified_nat_rec {
             128
         } else {
-            16
+            128
         };
         let exposed = self
             .expose_internal(
@@ -1879,5 +2017,39 @@ mod neutral_projection_tests {
         assert_eq!(spine, &[argument]);
         assert!(machine.projection_value_for_conversion(receiver.clone(), NameId(1), 1, &[], 128).is_unknown());
         assert!(machine.projection_value_for_conversion(receiver, NameId(9), 0, &[], 128).is_unknown());
+    }
+}
+
+#[cfg(test)]
+mod captured_recursor_spine_tests {
+    use super::*;
+    #[test]
+    fn checked_neutral_iota_retains_surplus_arguments_and_actual_major_position() {
+        let mut expressions=IdTable::default();
+        let mut levels=IdTable::default();levels.insert(LevelId(0),Level::Zero).unwrap();
+        for (id,expr) in [
+            (0,Expr::Sort(LevelId(0))), (1,Expr::BVar(0)),
+            (2,Expr::Lam {domain:ExprId(0),body:ExprId(1)}),
+            (3,Expr::Lam {domain:ExprId(0),body:ExprId(2)}),
+            (4,Expr::Const {name:NameId(2),levels:vec![]}),
+            (5,Expr::Const {name:NameId(99),levels:vec![]}),
+        ] {expressions.insert(ExprId(id),expr).unwrap();}
+        let machine=Machine::new(AuthorityId(1),&expressions,&levels,HashMap::new())
+            .with_recursor_reductions(HashMap::from([(NameId(1),RecursorReduction {
+                k:false,num_params:0,num_indices:0,level_params:vec![],rules:vec![RecursorRule {
+                    constructor:NameId(2),constructor_level_params:vec![],num_params:0,num_fields:0,rhs:ExprId(3),
+                }],
+            })]));
+        let closure=|id|Closure::new(ExprId(id),EnvFrame::empty());
+        let neutral=Neutral {head:NeutralHead::Const {name:NameId(1),levels:vec![]},spine:vec![closure(0),closure(2),closure(4),closure(5)]};
+        let result=machine.qualified_nested_recursor_result(&neutral,512);
+        assert!(matches!(result.proven_value(),Some(Value::Neutral(n)) if n.head==NeutralHead::Const {name:NameId(99),levels:vec![]} && n.spine.is_empty()),"{result:?}");
+        let mut wrong=neutral.clone();wrong.spine[2]=closure(5);
+        assert!(machine.qualified_nested_recursor_result(&wrong,512).is_unknown());
+        let mut short=neutral.clone();short.spine.truncate(2);
+        assert!(machine.qualified_nested_recursor_result(&short,512).is_unknown());
+        assert!(machine.qualified_nested_recursor_result(&neutral,12).is_unknown());
+        let mut surplus=neutral.clone();surplus.spine.push(closure(0));
+        assert!(matches!(machine.qualified_nested_recursor_result(&surplus,512).proven_value(),Some(Value::Neutral(n)) if n.spine==[closure(0)]));
     }
 }

@@ -1,5 +1,5 @@
 //! Conservative reconstruction of single indexed Prop families with direct
-//! recursive fields and Prop-only elimination. No exported recursor body is
+//! recursive or nonrecursive fields and Prop-only elimination. No exported recursor body is
 //! trusted: both its signature and every iota rule are derived independently.
 use crate::id::{ExprId, LevelId, NameId};
 use crate::parser::ResolvedExport;
@@ -161,10 +161,9 @@ pub(crate) fn contracts(e: &ResolvedExport, b: &InductiveBlock) -> Option<()> {
     if p > 64
         || n == 0
         || n > 64
-        || c < 2
+        || c == 0
         || c > 64
         || i.num_nested != 0
-        || !i.is_recursive
         || i.is_reflexive
         || i.is_unsafe
         || r.is_unsafe
@@ -308,7 +307,7 @@ pub(crate) fn contracts(e: &ResolvedExport, b: &InductiveBlock) -> Option<()> {
         rule_prefix.push((minor, minor_type));
         ctor_data.push((fields, recursive, field_args));
     }
-    if !has_recursive {
+    if has_recursive != i.is_recursive {
         return None;
     }
     rec_binders.extend(indices.clone());

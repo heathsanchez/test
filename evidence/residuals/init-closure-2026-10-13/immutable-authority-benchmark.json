@@ -1,0 +1,94 @@
+[
+  {
+    "case": "perf/beta-ladder",
+    "mode": "deepcopy",
+    "rc": 0,
+    "elapsed": 1.2851,
+    "user_cpu": 0.4163,
+    "system_cpu": 0.2183,
+    "trace": [],
+    "binary_sha256": "2b7975d66b89278d1113ef4bbe63652ea1673646e6a798a1121cce8beabc0563"
+  },
+  {
+    "case": "perf/beta-ladder",
+    "mode": "shared",
+    "rc": 0,
+    "elapsed": 0.7654,
+    "user_cpu": 0.3481,
+    "system_cpu": 0.111,
+    "trace": [],
+    "binary_sha256": "9e42afd25d0bcbb9d394af52ee643914f5ca6c90574d0eaf42e2c6f9ea205b17"
+  },
+  {
+    "case": "init-prelude",
+    "mode": "deepcopy",
+    "rc": 2,
+    "elapsed": 29.3726,
+    "user_cpu": 23.8326,
+    "system_cpu": 0.3911,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=PEmpty:stage=inductive:verdict=Unknown"
+    ],
+    "binary_sha256": "2b7975d66b89278d1113ef4bbe63652ea1673646e6a798a1121cce8beabc0563"
+  },
+  {
+    "case": "init-prelude",
+    "mode": "shared",
+    "rc": 2,
+    "elapsed": 4.1237,
+    "user_cpu": 2.9229,
+    "system_cpu": 0.0647,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=PEmpty:stage=inductive:verdict=Unknown"
+    ],
+    "binary_sha256": "9e42afd25d0bcbb9d394af52ee643914f5ca6c90574d0eaf42e2c6f9ea205b17"
+  },
+  {
+    "case": "perf/grind-ring-5",
+    "mode": "deepcopy",
+    "rc": 2,
+    "elapsed": 42.0287,
+    "user_cpu": 33.072,
+    "system_cpu": 0.2046,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=Lean.Omega.Constraint.isImpossible._sparseCasesOn_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ],
+    "binary_sha256": "2b7975d66b89278d1113ef4bbe63652ea1673646e6a798a1121cce8beabc0563"
+  },
+  {
+    "case": "perf/grind-ring-5",
+    "mode": "shared",
+    "rc": 2,
+    "elapsed": 4.7591,
+    "user_cpu": 4.3776,
+    "system_cpu": 0.0304,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=Lean.Omega.Constraint.isImpossible._sparseCasesOn_1:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ],
+    "binary_sha256": "9e42afd25d0bcbb9d394af52ee643914f5ca6c90574d0eaf42e2c6f9ea205b17"
+  },
+  {
+    "case": "perf/fueled-chain",
+    "mode": "deepcopy",
+    "rc": 2,
+    "elapsed": 72.0447,
+    "user_cpu": 70.4818,
+    "system_cpu": 0.2269,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+    ],
+    "binary_sha256": "2b7975d66b89278d1113ef4bbe63652ea1673646e6a798a1121cce8beabc0563"
+  },
+  {
+    "case": "perf/fueled-chain",
+    "mode": "shared",
+    "rc": 2,
+    "elapsed": 19.3257,
+    "user_cpu": 18.8894,
+    "system_cpu": 0.069,
+    "trace": [
+      "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+    ],
+    "binary_sha256": "9e42afd25d0bcbb9d394af52ee643914f5ca6c90574d0eaf42e2c6f9ea205b17"
+  }
+]

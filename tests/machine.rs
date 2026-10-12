@@ -505,7 +505,7 @@ fn symbolic_nat_ble_respects_pinned_constructor_equations() {
         .with_nat_primitives(Some(NatPrimitives {
             type_name: NameId(65), type_expr: ExprId(0),
             zero, succ, recursor: NameId(66),
-            add: None, sub: None, pred: None, virtual_bvar_zero: None, ble: Some(ble), beq: None,
+            add: None, mul:None, pow:None, sub: None, pred: None, virtual_bvar_zero: None, ble: Some(ble), beq: None,
         }))
         .with_bool_primitives(Some(BoolPrimitives { true_ctor, false_ctor }));
     let env = EnvFrame::empty().extend_free(FreeId(73)).extend_free(FreeId(74));
@@ -551,7 +551,7 @@ fn symbolic_nat_sub_successor_is_exact_predicate_computation() {
         .with_nat_primitives(Some(NatPrimitives {
             type_name: NameId(65), type_expr: ExprId(0),
             zero: NameId(10), succ: NameId(11), recursor: NameId(66),
-            add: None, sub: Some(NameId(12)), pred: Some(NameId(13)),
+            add: None, mul:None, pow:None, sub: Some(NameId(12)), pred: Some(NameId(13)),
             virtual_bvar_zero: Some(ExprId(1)),
             ble: None, beq: None,
         }));
@@ -592,7 +592,7 @@ fn nat_add_symbolic_right_successor_zero_is_succ_without_index_assumption() {
     let machine=Machine::new(AuthorityId(8), &exprs, &levels, HashMap::new())
       .with_nat_primitives(Some(NatPrimitives {
         type_name:NameId(65),type_expr:ExprId(0),zero:NameId(10),
-        succ:NameId(11),recursor:NameId(66),add:Some(NameId(20)),
+        succ:NameId(11),recursor:NameId(66),add:Some(NameId(20)),mul:None,pow:None,
         sub:None,pred:None,virtual_bvar_zero:Some(ExprId(0)),ble:None,beq:None,
       }));
     let frame=EnvFrame::empty().extend_free(FreeId(17));
@@ -627,7 +627,7 @@ fn symbolic_nat_sub_succ_zero_is_exact_source_equation() {
         .with_nat_primitives(Some(NatPrimitives {
             type_name: NameId(65), type_expr: ExprId(1),
             zero: NameId(10), succ: NameId(11), recursor: NameId(66),
-            add: None, sub: Some(NameId(12)), pred: Some(NameId(13)),
+            add: None, mul:None, pow:None, sub: Some(NameId(12)), pred: Some(NameId(13)),
             virtual_bvar_zero: Some(ExprId(0)), ble: None, beq: None,
         }));
     let env = EnvFrame::empty().extend_free(FreeId(18)).extend_free(FreeId(17));
@@ -668,16 +668,132 @@ fn constructor_demand_follows_computed_lexical_major_and_respects_fuel() {
     let build=|defs|Machine::new(AuthorityId(1),&exprs,&levels,defs).with_recursor_reductions(HashMap::from([(NameId(12),RecursorReduction{k:false,num_params:0,num_indices:0,level_params:vec![],rules:rules.clone()})]));
     let major=Closure::new(ExprId(100),EnvFrame::empty());
     let source=Closure::new(term,EnvFrame::empty().extend(major));
+    let bool_machine=build(definitions.clone()).with_bool_primitives(Some(BoolPrimitives{false_ctor:NameId(10),true_ctor:NameId(11)}));
+    assert!(matches!(bool_machine.expose(source.clone(),Transparency::Full,256).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(20),..},..}))),"certified Bool iota must follow the exact captured computed major");
+    assert!(!matches!(bool_machine.expose(source.clone(),Transparency::Full,12).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(20),..},..}))));
+    assert!(matches!(bool_machine.expose(Closure::new(term,EnvFrame::empty().extend_free(FreeId(0))),Transparency::Full,256).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(12),..},..}))));
     let machine=build(definitions.clone());
     let true_value=machine.expose(source.clone(),Transparency::Full,256);
-    if std::env::var_os("NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR").is_none() {
-        assert!(matches!(true_value.proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(12),..},..}))));
-        return;
-    }
     assert!(matches!(true_value.proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(20),..},..}))),"{true_value:?}");
     assert!(!matches!(machine.expose(source.clone(),Transparency::Full,12).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(20),..},..}))));
     let neutral=Closure::new(term,EnvFrame::empty().extend_free(FreeId(0)));
     assert!(matches!(machine.expose(neutral,Transparency::Full,256).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(12),..},..}))));
     definitions.get_mut(&NameId(139)).unwrap().value=ExprId(4);
     assert!(matches!(build(definitions).expose(source,Transparency::Full,256).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(21),..},..}))));
+}
+
+#[test]
+fn multi_motive_nullary_selection_preserves_exact_major_and_surplus_arguments() {
+    use metatron_kernel::machine::NullaryMinorReduction;
+    let mut exprs=IdTable::default();
+    for (i,e) in [
+        (0,Expr::Sort(LevelId(0))),
+        (1,Expr::Const{name:NameId(10),levels:vec![]}),
+        (2,Expr::Const{name:NameId(11),levels:vec![]}),
+        (3,Expr::Const{name:NameId(12),levels:vec![LevelId(0)]}),
+        (4,Expr::Const{name:NameId(20),levels:vec![]}),
+        (5,Expr::Const{name:NameId(21),levels:vec![]}),
+        (6,Expr::Const{name:NameId(22),levels:vec![]}),
+        (7,Expr::BVar(0)),
+        (8,Expr::Const{name:NameId(12),levels:vec![]}),
+    ] {exprs.insert(ExprId(i),e).unwrap();}
+    let mut build=|head:u64,start:u64,args:&[u64]| {
+        let mut term=ExprId(head);
+        for (i,arg) in args.iter().enumerate() {let id=ExprId(start+i as u64);exprs.insert(id,Expr::App{fun:term,arg:ExprId(*arg)}).unwrap();term=id;}
+        term
+    };
+    let term=build(3,20,&[0,0,4,5,6,7]);
+    let short=build(3,30,&[0,0,4,5,6]);
+    let extra=build(3,40,&[0,0,4,5,6,7,0]);
+    let bad_levels=build(8,50,&[0,0,4,5,6,7]);
+    let levels=zero_levels();
+    let machine=Machine::new(AuthorityId(1),&exprs,&levels,HashMap::new()).with_nullary_minor_reductions(HashMap::from([(NameId(12),vec![NullaryMinorReduction{constructor:NameId(10),level_arity:1,prefix_len:5,minor_argument:3}])]));
+    let correct=EnvFrame::empty().extend(Closure::new(ExprId(1),EnvFrame::empty()));
+    let wrong=EnvFrame::empty().extend(Closure::new(ExprId(2),EnvFrame::empty()));
+    for policy in [Transparency::Opaque,Transparency::Reducible,Transparency::Full] {
+        assert!(matches!(machine.expose(Closure::new(term,correct.clone()),policy,128).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(21),..},spine})) if spine.is_empty()));
+        assert!(matches!(machine.expose(Closure::new(extra,correct.clone()),policy,128).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(21),..},spine})) if spine.len()==1));
+        for (expression,frame) in [(term,wrong.clone()),(short,correct.clone()),(bad_levels,correct.clone())] {
+            assert!(matches!(machine.expose(Closure::new(expression,frame),policy,128).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(12),..},..}))));
+        }
+    }
+}
+
+#[test]
+fn closed_nested_iota_checks_constructor_specialization_and_preserves_field_closures() {
+    use metatron_kernel::machine::ClosedNestedMinorReduction;
+    let mut expressions=IdTable::default();let mut levels=zero_levels();
+    levels.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
+    for (id,e) in [
+        (0,Expr::Sort(LevelId(0))), (1,Expr::BVar(0)), (2,Expr::BVar(2)),
+        (3,Expr::Const{name:NameId(12),levels:vec![LevelId(0)]}),
+        (4,Expr::Const{name:NameId(10),levels:vec![LevelId(0)]}),
+        (5,Expr::Const{name:NameId(10),levels:vec![LevelId(1)]}),
+        (6,Expr::Const{name:NameId(30),levels:vec![]}),
+        (7,Expr::Const{name:NameId(31),levels:vec![]}),
+        (8,Expr::Const{name:NameId(20),levels:vec![]}),
+        (9,Expr::Const{name:NameId(21),levels:vec![]}),
+        (10,Expr::App{fun:ExprId(2),arg:ExprId(1)}),
+    ] {expressions.insert(ExprId(id),e).unwrap();}
+    let mut body=ExprId(10);
+    for id in 20..26 {expressions.insert(ExprId(id),Expr::Lam{domain:ExprId(0),body}).unwrap();body=ExprId(id);}
+    let rhs=body;
+    let mut build=|head:u64,start:u64,args:&[u64]|{
+        let mut term=ExprId(head);
+        for (i,arg) in args.iter().enumerate() {let id=ExprId(start+i as u64);expressions.insert(id,Expr::App{fun:term,arg:ExprId(*arg)}).unwrap();term=id;}
+        term
+    };
+    let correct=build(4,30,&[6,1]);let wrong_parameter=build(4,40,&[7,1]);let wrong_universe=build(5,50,&[6,1]);
+    let call=build(3,60,&[0,0,8,9,8,correct.0]);
+    let parameter_call=build(3,70,&[0,0,8,9,8,wrong_parameter.0]);
+    let universe_call=build(3,80,&[0,0,8,9,8,wrong_universe.0]);
+    let machine=Machine::new(AuthorityId(1),&expressions,&levels,HashMap::new()).with_closed_nested_minor_reductions(HashMap::from([(NameId(12),vec![ClosedNestedMinorReduction{constructor:NameId(10),constructor_levels:vec![LevelTerm::Zero],constructor_parameters:vec![(NameId(30),vec![])],num_fields:1,rhs,level_params:vec![NameId(40)],prefix_len:5,minor_argument:3}])]));
+    let frame=EnvFrame::empty().extend(Closure::new(ExprId(8),EnvFrame::empty()));
+    for policy in [Transparency::Opaque,Transparency::Reducible,Transparency::Full] {
+        let result=machine.expose(Closure::new(call,frame.clone()),policy,256);
+        let Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(21),..},spine}))=result.proven_value() else{panic!("{result:?}");};
+        assert_eq!(spine.len(),1);
+        assert!(matches!(machine.expose(spine[0].clone(),policy,64).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(20),..},spine})) if spine.is_empty()));
+        for expression in [parameter_call,universe_call] {
+            assert!(matches!(machine.expose(Closure::new(expression,frame.clone()),policy,256).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(12),..},..}))));
+        }
+    }
+}
+
+#[test]
+fn certified_successor_of_native_numeral_keeps_numeric_comparisons_exact() {
+    use metatron_kernel::nat::BigNat;
+    let mut exprs=IdTable::default();
+    for (i,n) in [(0,10),(1,11),(2,12)] {exprs.insert(ExprId(i),Expr::Const{name:NameId(n),levels:vec![]}).unwrap();}
+    for (i,n) in [(3,"55296"),(4,"4294967296"),(5,"4294967296")] {exprs.insert(ExprId(i),Expr::NatLit(BigNat::parse_decimal(n).unwrap())).unwrap();}
+    exprs.insert(ExprId(6),Expr::BVar(0)).unwrap();
+    for (i,f,a) in [(7,1,3),(8,1,5),(9,1,6),(10,2,7),(11,10,4),(12,2,8),(13,12,4)] {exprs.insert(ExprId(i),Expr::App{fun:ExprId(f),arg:ExprId(a)}).unwrap();}
+    let levels=zero_levels();
+    let nat=NatPrimitives{type_name:NameId(20),type_expr:ExprId(0),zero:NameId(10),succ:NameId(11),recursor:NameId(21),add:None,mul:None,pow:None,sub:None,pred:None,virtual_bvar_zero:Some(ExprId(6)),ble:Some(NameId(12)),beq:None};
+    let machine=Machine::new(AuthorityId(51),&exprs,&levels,HashMap::new()).with_nat_primitives(Some(nat)).with_bool_primitives(Some(BoolPrimitives{true_ctor:NameId(30),false_ctor:NameId(31)}));
+    for transparency in [Transparency::Opaque,Transparency::Reducible,Transparency::Full] {
+        let success=machine.expose(Closure::new(ExprId(11),EnvFrame::empty()),transparency,128);
+        assert!(matches!(success.proven_value(),Some(Value::Neutral(n)) if n.head==NeutralHead::Const{name:NameId(30),levels:vec![]}));
+        let failure=machine.expose(Closure::new(ExprId(13),EnvFrame::empty()),transparency,128);
+        assert!(matches!(failure.proven_value(),Some(Value::Neutral(n)) if n.head==NeutralHead::Const{name:NameId(31),levels:vec![]}));
+        let neutral=machine.expose(Closure::new(ExprId(9),EnvFrame::empty().extend_free(FreeId(99))),transparency,128);
+        assert!(matches!(neutral.proven_value(),Some(Value::Neutral(n)) if n.head==NeutralHead::Const{name:NameId(11),levels:vec![]} && n.spine.len()==1));
+    }
+    let uncertified=Machine::new(AuthorityId(52),&exprs,&levels,HashMap::new()).expose(Closure::new(ExprId(7),EnvFrame::empty()),Transparency::Full,128);
+    assert!(matches!(uncertified.proven_value(),Some(Value::Neutral(_))));
+}
+
+#[test]
+fn native_power_computes_the_exact_uint32_carrier_bound() {
+    use metatron_kernel::nat::BigNat;
+    let mut exprs=IdTable::default();
+    exprs.insert(ExprId(0),Expr::Const{name:NameId(40),levels:vec![]}).unwrap();
+    for (i,n) in [(1,"2"),(2,"32")] {exprs.insert(ExprId(i),Expr::NatLit(BigNat::parse_decimal(n).unwrap())).unwrap();}
+    exprs.insert(ExprId(3),Expr::App{fun:ExprId(0),arg:ExprId(1)}).unwrap();
+    exprs.insert(ExprId(4),Expr::App{fun:ExprId(3),arg:ExprId(2)}).unwrap();
+    let levels=zero_levels();
+    let nat=NatPrimitives{type_name:NameId(20),type_expr:ExprId(0),zero:NameId(10),succ:NameId(11),recursor:NameId(21),add:None,mul:None,pow:Some(NameId(40)),sub:None,pred:None,virtual_bvar_zero:None,ble:None,beq:None};
+    let machine=Machine::new(AuthorityId(53),&exprs,&levels,HashMap::new()).with_nat_primitives(Some(nat));
+    let result=machine.expose(Closure::new(ExprId(4),EnvFrame::empty()),Transparency::Opaque,128);
+    assert_eq!(result.proven_value(),Some(&Value::NatLit(BigNat::parse_decimal("4294967296").unwrap())));
 }

@@ -4,7 +4,7 @@ use std::fmt;
 use std::rc::Rc;
 
 use crate::id::{ExprId, NameId};
-use crate::machine::{AuthorityId, DefinitionBody, ProjectionSpec, RecursorReduction};
+use crate::machine::{AuthorityId, DefinitionBody, ClosedNestedMinorReduction, NullaryMinorReduction, ProjectionSpec, RecursorReduction};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstantDecl {
@@ -75,6 +75,8 @@ pub struct NatPrimitives {
     pub succ: NameId,
     pub recursor: NameId,
     pub add: Option<NameId>,
+    pub mul: Option<NameId>,
+    pub pow: Option<NameId>,
     pub sub: Option<NameId>,
     pub pred: Option<NameId>,
     /// A checked export binder variable used solely to represent a
@@ -104,9 +106,12 @@ pub struct Environment {
     constants: Rc<HashMap<NameId, ConstantDecl>>,
     definitions: Rc<HashMap<NameId, DefinitionBody>>,
     singleton_recursor_reductions: Rc<HashSet<NameId>>,
+    nullary_minor_reductions: Rc<HashMap<NameId,Vec<NullaryMinorReduction>>>,
+    closed_nested_minor_reductions: Rc<HashMap<NameId,Vec<ClosedNestedMinorReduction>>>,
     recursor_reductions: Rc<HashMap<NameId, RecursorReduction>>,
     projection_specs: Rc<HashMap<NameId, ProjectionSpec>>,
     nat_primitives: Option<NatPrimitives>,
+    string_literal_type:Option<ExprId>,
     bool_primitives: Option<BoolPrimitives>,
     quot_primitives: Option<QuotPrimitives>,
     unit_like_types: Rc<HashSet<NameId>>,
@@ -119,13 +124,24 @@ impl Environment {
             constants: Rc::new(HashMap::new()),
             definitions: Rc::new(HashMap::new()),
             singleton_recursor_reductions: Rc::new(HashSet::new()),
+            nullary_minor_reductions: Rc::new(HashMap::new()),
+            closed_nested_minor_reductions: Rc::new(HashMap::new()),
             recursor_reductions: Rc::new(HashMap::new()),
             projection_specs: Rc::new(HashMap::new()),
             nat_primitives: None,
+            string_literal_type:None,
             bool_primitives: None,
             quot_primitives: None,
             unit_like_types: Rc::new(HashSet::new()),
         }
+    }
+
+    pub(crate) fn string_literal_type(&self)->Option<ExprId> {self.string_literal_type}
+
+    pub(crate) fn install_string_literal_type(&self,ty:ExprId)->Result<Self,EnvironmentError> {
+        let mut result=self.clone();
+        result.authority=AuthorityId(self.authority.0.checked_add(1).ok_or(EnvironmentError::AuthorityOverflow)?);
+        result.string_literal_type=Some(ty);Ok(result)
     }
 
     pub fn authority(&self) -> AuthorityId {
@@ -167,9 +183,12 @@ impl Environment {
             constants: Rc::new(constants),
             definitions: Rc::new(definitions),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            nullary_minor_reductions: self.nullary_minor_reductions.clone(),
+            closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
+            string_literal_type:self.string_literal_type,
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
@@ -178,6 +197,33 @@ impl Environment {
 
     /// Install the independently qualified nullary-singleton recursor
     /// computation rule for an already admitted recursor constant.
+    pub(crate) fn install_closed_nested_minor_reductions(&self,name:NameId,rules:Vec<ClosedNestedMinorReduction>)->Result<Self,EnvironmentError> {
+        if !self.constants.contains_key(&name) {return Err(EnvironmentError::MissingConstant(name));}
+        if self.closed_nested_minor_reductions.contains_key(&name) {return Err(EnvironmentError::DuplicateReduction(name));}
+        let mut result=self.clone();
+        result.authority=AuthorityId(self.authority.0.checked_add(1).ok_or(EnvironmentError::AuthorityOverflow)?);
+        let mut reductions=self.closed_nested_minor_reductions.as_ref().clone();reductions.insert(name,rules);
+        result.closed_nested_minor_reductions=Rc::new(reductions);Ok(result)
+    }
+
+    pub(crate) fn closed_nested_minor_reductions(&self)->Rc<HashMap<NameId,Vec<ClosedNestedMinorReduction>>> {
+        self.closed_nested_minor_reductions.clone()
+    }
+
+    pub(crate) fn install_nullary_minor_reductions(&self,name:NameId,rules:Vec<NullaryMinorReduction>)->Result<Self,EnvironmentError> {
+        if !self.constants.contains_key(&name) {return Err(EnvironmentError::MissingConstant(name));}
+        if self.nullary_minor_reductions.contains_key(&name) {return Err(EnvironmentError::DuplicateReduction(name));}
+        let mut result=self.clone();
+        result.authority=AuthorityId(self.authority.0.checked_add(1).ok_or(EnvironmentError::AuthorityOverflow)?);
+        let mut reductions=self.nullary_minor_reductions.as_ref().clone();reductions.insert(name,rules);
+        result.nullary_minor_reductions=Rc::new(reductions);
+        Ok(result)
+    }
+
+    pub(crate) fn nullary_minor_reductions(&self)->Rc<HashMap<NameId,Vec<NullaryMinorReduction>>> {
+        self.nullary_minor_reductions.clone()
+    }
+
     pub fn install_singleton_recursor_reduction(
         &self,
         name: NameId,
@@ -200,9 +246,12 @@ impl Environment {
             constants: self.constants.clone(),
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: Rc::new(reductions),
+            nullary_minor_reductions: self.nullary_minor_reductions.clone(),
+            closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
+            string_literal_type:self.string_literal_type,
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
@@ -234,13 +283,28 @@ impl Environment {
             constants: self.constants.clone(),
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            nullary_minor_reductions: self.nullary_minor_reductions.clone(),
+            closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
             recursor_reductions: Rc::new(reductions),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
+            string_literal_type:self.string_literal_type,
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
         })
+    }
+
+    pub(crate) fn shared_singleton_recursor_reductions(&self) -> Rc<HashSet<NameId>> {
+        self.singleton_recursor_reductions.clone()
+    }
+
+    pub(crate) fn shared_recursor_reductions(&self) -> Rc<HashMap<NameId, RecursorReduction>> {
+        self.recursor_reductions.clone()
+    }
+
+    pub(crate) fn shared_projection_specs(&self) -> Rc<HashMap<NameId, ProjectionSpec>> {
+        self.projection_specs.clone()
     }
 
     pub fn singleton_recursor_reductions(&self) -> HashSet<NameId> {
@@ -284,9 +348,12 @@ impl Environment {
             constants: self.constants.clone(),
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            nullary_minor_reductions: self.nullary_minor_reductions.clone(),
+            closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: Rc::new(specs),
             nat_primitives: self.nat_primitives.clone(),
+            string_literal_type:self.string_literal_type,
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
@@ -324,9 +391,12 @@ impl Environment {
             constants: self.constants.clone(),
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            nullary_minor_reductions: self.nullary_minor_reductions.clone(),
+            closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: Some(primitives),
+            string_literal_type:self.string_literal_type,
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
@@ -350,6 +420,8 @@ impl Environment {
         };
         let slot = match operation {
             NatOperation::Add => &mut primitives.add,
+            NatOperation::Mul => &mut primitives.mul,
+            NatOperation::Pow => &mut primitives.pow,
             NatOperation::Sub => &mut primitives.sub,
             NatOperation::Pred => &mut primitives.pred,
             NatOperation::Ble => &mut primitives.ble,
@@ -369,9 +441,12 @@ impl Environment {
             constants: self.constants.clone(),
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            nullary_minor_reductions: self.nullary_minor_reductions.clone(),
+            closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: Some(primitives),
+            string_literal_type:self.string_literal_type,
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
@@ -400,9 +475,12 @@ impl Environment {
             constants: self.constants.clone(),
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            nullary_minor_reductions: self.nullary_minor_reductions.clone(),
+            closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
+            string_literal_type:self.string_literal_type,
             bool_primitives: Some(primitives),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
@@ -440,9 +518,12 @@ impl Environment {
             constants: self.constants.clone(),
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            nullary_minor_reductions: self.nullary_minor_reductions.clone(),
+            closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
+            string_literal_type:self.string_literal_type,
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: Some(primitives),
             unit_like_types: self.unit_like_types.clone(),
@@ -472,9 +553,12 @@ impl Environment {
             constants: self.constants.clone(),
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            nullary_minor_reductions: self.nullary_minor_reductions.clone(),
+            closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
+            string_literal_type:self.string_literal_type,
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: Rc::new(unit_like_types),
@@ -499,6 +583,8 @@ impl Default for Environment {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum NatOperation {
     Add,
+    Mul,
+    Pow,
     Sub,
     Pred,
     Ble,

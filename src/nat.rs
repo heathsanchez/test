@@ -101,6 +101,38 @@ impl BigNat {
         }
     }
 
+    pub fn mul_bounded(&self,other:&Self,work:&mut usize)->Option<Self> {
+        let cost=self.0.len().checked_mul(other.0.len())?.checked_add(1)?;
+        *work=work.checked_sub(cost)?;
+        if self.is_zero() || other.is_zero() {return Some(Self::zero());}
+        let mut out=vec![0u32;self.0.len().checked_add(other.0.len())?];
+        for (i,left) in self.0.iter().enumerate() {
+            let mut carry=0u64;
+            for (j,right) in other.0.iter().enumerate() {
+                let total=u64::from(out[i+j])+u64::from(*left)*u64::from(*right)+carry;
+                out[i+j]=(total%BASE) as u32;carry=total/BASE;
+            }
+            out[i+other.0.len()]=carry as u32;
+        }
+        let mut result=Self(out);result.normalize();Some(result)
+    }
+
+    pub fn pow_bounded(&self,exponent:&Self,work:&mut usize)->Option<Self> {
+        // Match the pinned kernel's 32-bit exponent limit, then account for
+        // each limb multiplication before allocating its result.
+        let mut count=0u64;
+        for limb in exponent.0.iter().rev() {count=count.checked_mul(BASE)?.checked_add(u64::from(*limb))?;}
+        if count>u64::from(u32::MAX) {return None;}
+        let mut result=Self(vec![1]);let mut base=self.clone();
+        while count!=0 {
+            *work=work.checked_sub(1)?;
+            if count&1==1 {result=result.mul_bounded(&base,work)?;}
+            count>>=1;
+            if count!=0 {base=base.mul_bounded(&base,work)?;}
+        }
+        Some(result)
+    }
+
     fn normalize(&mut self) {
         while self.0.last() == Some(&0) {
             self.0.pop();
@@ -126,5 +158,26 @@ mod tests {
         let a = BigNat::parse_decimal("1000000").unwrap();
         let b = BigNat::parse_decimal("1000001").unwrap();
         assert!(a.sub_trunc(&b).is_zero());
+    }
+
+    #[test]
+    fn bounded_products_and_powers_are_exact_beyond_machine_words() {
+        let n=|s:&str|BigNat::parse_decimal(s).unwrap();
+        assert_eq!(n("999999999999999999").mul_bounded(&n("999999999999999999"),&mut 64),Some(n("999999999999999998000000000000000001")));
+        assert_eq!(n("2").pow_bounded(&n("64"),&mut 128),Some(n("18446744073709551616")));
+        assert_eq!(n("0").pow_bounded(&n("0"),&mut 1),Some(n("1")));
+        assert_eq!(n("0").pow_bounded(&n("9"),&mut 64),Some(n("0")));
+        assert_eq!(n("12").mul_bounded(&n("0"),&mut 1),Some(n("0")));
+        assert_eq!(n("2").pow_bounded(&n("32"),&mut 1),None);
+        assert_eq!(n("2").pow_bounded(&n("4294967296"),&mut 65536),None);
+        assert_eq!(n("999999999999999999").mul_bounded(&n("999999999999999999"),&mut 4),None);
+        for a in 0u128..30 {
+            for b in 0u128..30 {
+                assert_eq!(n(&a.to_string()).mul_bounded(&n(&b.to_string()),&mut 16),Some(n(&(a*b).to_string())));
+            }
+            for b in 0u32..8 {
+                assert_eq!(n(&a.to_string()).pow_bounded(&n(&b.to_string()),&mut 64),Some(n(&a.pow(b).to_string())));
+            }
+        }
     }
 }
