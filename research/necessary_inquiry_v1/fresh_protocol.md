@@ -1,0 +1,3 @@
+# Frozen prospective transfer protocol — 2026-10-12
+
+Rule-generator source was committed first at 2f00c75d0f97e469b097dacd342baae51dd25616. Evaluate it unchanged on new dimensions n=12,20,40,60 with six tasks each for 0, 1, and 2 hidden pair interactions. Task seed is 995000 + n*1000 + k*100 + j, k=0,1,2, j=0..5. Seventy-two synthetic tasks total. Freeze parameters before running target evaluations. No target-specific changes to the rule generator or transport. Use complete quadratic interpolation as comparator and affine-only as ablation. Verify exact sparse signatures before observations. Any failures remain failures. Scope is Boolean GF(2) with declared query/XOR and quadratic control language, not autonomous grammar invention or empirical physics.
