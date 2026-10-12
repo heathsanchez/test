@@ -1,0 +1,42 @@
+name: FLASH Genesis V10 independent qualification
+
+on:
+  push:
+    branches:
+      - research/flash-genesis-v10-independence-transfer
+    paths:
+      - 'research/flash_genesis_v10/**'
+      - '.github/workflows/flash-genesis-v10.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-finite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check frozen protected source and protocol
+        run: |
+          git log -n 4 --oneline
+          git cat-file -e 94a00420e5bb94307e83818ea26d77990e4a5cb0^{commit}
+          git cat-file -e 9ceecf45f41bb474ceadfb9d708153b7c9edd976^{commit}
+          sha256sum research/flash_genesis_v10/protected_oracles.py
+      - name: Source-synthesize rule and replay protected oracles
+        run: |
+          set -euo pipefail
+          python research/flash_genesis_v10/verify_v10.py | tee /tmp/v10_report.log
+          grep -q PASS_INDEPENDENT_FINITE_REPLAY /tmp/v10_report.log
+      - name: Store exact finite evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: flash-genesis-v10-qualified
+          path: |
+            research/flash_genesis_v10/v10_induced_policy.json
+            research/flash_genesis_v10/v10_ci_receipt.json
+          if-no-files-found: error
