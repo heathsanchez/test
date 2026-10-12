@@ -1,0 +1,178 @@
+name: FLASH V15 — MSI to MathGraph constructive observation transfer
+
+on:
+  push:
+    branches:
+      - research/flash-v15-crossproject-observation-genesis
+    paths:
+      - 'research/flash_v15/**'
+      - '.github/workflows/flash-v15-crossproject-observation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-source-target-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fetch immutable MSI source and independently qualified MathGraph target
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p external/msi/tests external/msi/lean external/mathgraph evidence-out
+          git -C external/mathgraph init -q
+          git -C external/mathgraph fetch --quiet --depth=1 https://github.com/metalogiclabs/mathgraph.git 280b0200af53033d6f4ee0e1c31e7c2f4f32c172
+          git -C external/mathgraph checkout --quiet --detach FETCH_HEAD
+          test "$(git -C external/mathgraph rev-parse HEAD)" = 280b0200af53033d6f4ee0e1c31e7c2f4f32c172
+          curl -fsSL --retry 3 --max-time 90 "https://raw.githubusercontent.com/heathsanchez/Minimal-Sufficient-Interface/7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154/tests/test_observation_language_genesis.py" -o external/msi/tests/test_observation_language_genesis.py
+          curl -fsSL --retry 3 --max-time 90 "https://raw.githubusercontent.com/heathsanchez/Minimal-Sufficient-Interface/7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154/lean/ObservationalSeparation.lean" -o external/msi/lean/ObservationalSeparation.lean
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected={
+            'external/msi/tests/test_observation_language_genesis.py':'601d9e6a2c575054abb71dab580ee844ee2724af',
+            'external/msi/lean/ObservationalSeparation.lean':'38faf9ad5576cf1b8ba60c4553783dc90c539179',
+            'external/mathgraph/research/mathgraph_check_machine_oracle_v1.py':'0434f24b64dbff3c70a570e3d3de1b9260986875',
+            'external/mathgraph/mathgraph_check/finite_logic.py':'d4a3beaa4998b9ba6a0df4395331a713a10eae86',
+            'external/mathgraph/tests/test_finite_logic.py':'a1a295fdfbd6c43305a5741d796b4add456e4372'}
+          for filename,sha in expected.items():
+              raw=Path(filename).read_bytes()
+              actual=hashlib.sha1(b'blob '+str(len(raw)).encode()+b'\x00'+raw).hexdigest()
+              assert actual==sha,(filename,actual,sha)
+          print('PASS_EXACT_MSI_MATHGRAPH_NATIVE_GIT_BLOBS')
+          PY
+      - name: Re-run unchanged MSI source observation learner and target finite verifier tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s external/msi/tests -p test_observation_language_genesis.py -v 2>&1 | tee evidence-out/native-msi-tests.log
+          export PYTHONPATH="$GITHUB_WORKSPACE/external/mathgraph"
+          python -m unittest discover -s external/mathgraph/tests -p test_finite_logic.py -v 2>&1 | tee evidence-out/native-mathgraph-tests.log
+      - name: Re-run original full MathGraph 420-case machine oracle and retain Lean challenge
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/external/mathgraph"
+          python external/mathgraph/research/mathgraph_check_machine_oracle_v1.py --out evidence-out/native-420
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('evidence-out/native-420/summary.json').read_text())
+          assert x['total_cases']==420
+          assert x['corpus_sha256']=='a8c05bda6e6bbfb15fdfe21bc8954fd9c5d790f8a31b2df04c8a3ef83b04b609'
+          assert x['sampled_lean_cases']==132
+          assert all(x['metrics'][k]==0 for k in (
+            'false_alarms','missed_differences','wrong_witnesses',
+            'wrong_status_or_unknown','truth_promotions','kernel_bypass_promotions'))
+          print('PASS_UNMODIFIED_MATHGRAPH_420_NATIVE_ORACLE')
+          PY
+      - name: SOURCE ONLY — compile minimum sufficient basis using MSI residual constructor
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_v15/transfer.py learn \
+            --msi-root external/msi --target-root external/mathgraph --out evidence-out/transfer \
+            | tee evidence-out/learn.log
+          test -s evidence-out/transfer/policy.json
+          test -s evidence-out/transfer/source_archive.json
+          sha256sum evidence-out/transfer/policy.json evidence-out/transfer/source_archive.json \
+            > evidence-out/active-policy-pre-future.sha256
+      - name: PROTECTED — independent next family, source requalification and future refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum -c evidence-out/active-policy-pre-future.sha256
+          python research/flash_v15/transfer.py test \
+            --msi-root external/msi --target-root external/mathgraph --out evidence-out/transfer \
+            | tee evidence-out/protected.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=Path('evidence-out/transfer')
+          a=json.loads((d/'source_result.json').read_text())
+          b=json.loads((d/'protected_results.json').read_text())
+          assert a['status']=='PASS_SOURCE_CORPUS_SCOPED_CONSTRUCTIVE_BASIS'
+          assert b['status']=='PASS_SCOPED_CROSS_PROJECT_OBSERVATION_CONSTRUCTOR_AND_FUTURE_REFINEMENT'
+          assert b['source_reserve_restart']
+          assert b['source_mutation_rejected'] and b['forged_scope_rejected']
+          assert b['full_union_stateless_ties']
+          assert b['future_native_target_replay']['scoped_native_status_and_witness_matches']==b['future_corpus_cases']
+          assert not b['cost_economics']['claim_of_total_lifetime_speedup']
+          print('PASS_CROSS_REPOSITORY_SCOPED_CONSTRUCTIVE_BASIS')
+          PY
+      - name: Exact source and economic receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "EXACT_BRIDGE_HEAD=$(git rev-parse HEAD)"
+            echo "MSI_SOURCE=heathsanchez/Minimal-Sufficient-Interface@7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154"
+            echo "NATIVE_TARGET=metalogiclabs/mathgraph@280b0200af53033d6f4ee0e1c31e7c2f4f32c172"
+            echo "OLD_TARGET_CI=38012157151"
+            echo "SCOPE=source-restricted minimum observation certification, not universal Boolean truth or new Lean theorem"
+            sha256sum research/flash_v15/transfer.py evidence-out/transfer/*.json
+          } > evidence-out/provenance.txt
+          git diff --exit-code -- research/flash_v15/transfer.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flash-v15-cross-project-observation-evidence
+          path: evidence-out/
+          if-no-files-found: warn
+
+  native-lean-replay:
+    needs: native-source-target-transfer
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fetch exact source Lean theorem and MathGraph native challenge
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p external/msi/lean external/mathgraph evidence-lean
+          git -C external/mathgraph init -q
+          git -C external/mathgraph fetch --quiet --depth=1 https://github.com/metalogiclabs/mathgraph.git 280b0200af53033d6f4ee0e1c31e7c2f4f32c172
+          git -C external/mathgraph checkout --quiet --detach FETCH_HEAD
+          curl -fsSL --retry 3 --max-time 90 "https://raw.githubusercontent.com/heathsanchez/Minimal-Sufficient-Interface/7d4c040aaaaa10518fd0cc8ad2eccdfc9a13f154/lean/ObservationalSeparation.lean" -o external/msi/lean/ObservationalSeparation.lean
+          export PYTHONPATH="$GITHUB_WORKSPACE/external/mathgraph"
+          python external/mathgraph/research/mathgraph_check_machine_oracle_v1.py --out evidence-lean/native-420
+      - name: Run pinned Lean proof qualification over source lemma and native target
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.35.0-rc2
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.35.0-rc2
+          "$HOME/.elan/bin/lean" --version | tee evidence-lean/lean-version.txt
+          "$HOME/.elan/bin/lean" external/msi/lean/ObservationalSeparation.lean
+          "$HOME/.elan/bin/lean" evidence-lean/native-420/MachineOracleV1.lean
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('evidence-lean/native-420/summary.json').read_text())
+          assert x['sampled_lean_cases']==132
+          assert x['false_truth_promotion'] is False
+          print('PASS_PINNED_MSI_SEPARATOR_LEAN_AND_MATHGRAPH_132_NATIVE_LEAN')
+          PY
+          sha256sum external/msi/lean/ObservationalSeparation.lean evidence-lean/native-420/MachineOracleV1.lean > evidence-lean/lean-evidence.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flash-v15-source-and-target-lean-evidence
+          path: evidence-lean/
+          if-no-files-found: warn
