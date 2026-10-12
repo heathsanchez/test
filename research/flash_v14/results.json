@@ -1,0 +1,203 @@
+{
+  "capability_events": {
+    "compiled_restart_preserved": true,
+    "initial_no_warrant": true,
+    "promoted_source_changes_real_consumer_output": true,
+    "reattest_restores": true,
+    "simulated_revocation_retracts": true,
+    "unrelated_frontiers_unchanged": true,
+    "unsupported_fails_closed": true
+  },
+  "closure_protocol_run": 38203812704,
+  "constraints": {
+    "dependent_tasks_are_separately_frozen_synthetic_mathematical_families": true,
+    "matched_stateless_execution_ties": true,
+    "no_full_lifecycle_cost_win": true,
+    "no_unrestricted_autonomous_new_grammar": true,
+    "not_cross_repository_producer_consumer": true,
+    "revocation_is_simulated_not_real_github_warrant_withdrawal": true,
+    "source_is_actual_independently_checked_program": true
+  },
+  "costs": {
+    "complete_reference_feasibility_calls": 2560,
+    "consumer_guard_raw_evaluations": 6656,
+    "guard_validation_expensive_vs_task_execution": true,
+    "historic_v11_acquisition_source_calls": 6006234,
+    "informed_stateless_feasibility_calls": 1198,
+    "producer_source_verification_excluded_from_incremental_runtime": true,
+    "source_learned_execution_feasibility_calls": 1198
+  },
+  "final_engine_chain_sha256": "332c192f5691498e36b837ef2b8297999877b147639fd1399108e69dc53d814e",
+  "frozen_protected_sha256": "36753698faecf6dce3ef3c786883d85ac810bec841415427b82eccd36d18ba0c",
+  "old_objective_ablation_examples": [
+    {
+      "canonical_rank_witness_score": 14,
+      "max_cardinality": 5,
+      "name": "graph_conflict_A",
+      "weighted_optimum": 30
+    },
+    {
+      "canonical_rank_witness_score": 21,
+      "max_cardinality": 5,
+      "name": "resource_capacity_A",
+      "weighted_optimum": 22
+    },
+    {
+      "canonical_rank_witness_score": 28,
+      "max_cardinality": 6,
+      "name": "packing_disjoint_A",
+      "weighted_optimum": 30
+    },
+    {
+      "canonical_rank_witness_score": 38,
+      "max_cardinality": 6,
+      "name": "matroid_graphic_A",
+      "weighted_optimum": 43
+    }
+  ],
+  "producer_replay_status": "QUALIFIED_EXACT_SOURCE_RERUN",
+  "protected_consumer_groups": {
+    "graph_and_schedule": 3,
+    "resources_and_packing": 2
+  },
+  "protected_negative_families": 3,
+  "protected_positive_families": 5,
+  "qualified_producer_sha256": "eb736c72c3acc5bc152fe811be8d3892d88ac0e1932bb2fb47ef5d562fe49a3f",
+  "results": [
+    {
+      "class": "graph",
+      "complete_enumeration_feasibility_calls": 512,
+      "informed_stateless_feasibility_calls": 256,
+      "name": "graph_conflict_A",
+      "optimum": 30,
+      "source_learned_feasibility_calls": 256
+    },
+    {
+      "class": "resources",
+      "complete_enumeration_feasibility_calls": 512,
+      "informed_stateless_feasibility_calls": 283,
+      "name": "resource_capacity_A",
+      "optimum": 22,
+      "source_learned_feasibility_calls": 283
+    },
+    {
+      "class": "intervals",
+      "complete_enumeration_feasibility_calls": 512,
+      "informed_stateless_feasibility_calls": 283,
+      "name": "intervals_weighted_A",
+      "optimum": 35,
+      "source_learned_feasibility_calls": 283
+    },
+    {
+      "class": "packing",
+      "complete_enumeration_feasibility_calls": 512,
+      "informed_stateless_feasibility_calls": 290,
+      "name": "packing_disjoint_A",
+      "optimum": 30,
+      "source_learned_feasibility_calls": 290
+    },
+    {
+      "class": "matroid",
+      "complete_enumeration_feasibility_calls": 512,
+      "informed_stateless_feasibility_calls": 86,
+      "name": "matroid_graphic_A",
+      "optimum": 43,
+      "source_learned_feasibility_calls": 86
+    }
+  ],
+  "source_attestation": {
+    "qualifier_run": 38202495321,
+    "read_only_source_sha256": "eb736c72c3acc5bc152fe811be8d3892d88ac0e1932bb2fb47ef5d562fe49a3f",
+    "retained_evidence_archive": "source bytes, qualified replay and lineage are retained",
+    "source_receipt_sha256": "d394d88879f28b78bbe7498d46abfbc42f67c2d59304bbd7a3f73de23428ac1f",
+    "source_scope": "finite supplied nonnegative modular objective and typed hereditary feasibility interface"
+  },
+  "source_event_ledger": [
+    {
+      "changed_facts": [
+        "cap_weighted",
+        "verified_v12"
+      ],
+      "changed_frontiers": [
+        "F_weighted"
+      ],
+      "engine_chain": "db570f5870596dd188a67e970629fc2439bac5c7c5701075ee48019b9bebc16e",
+      "event": {
+        "authority": "synthetic_revoker",
+        "fact": "verified_v12",
+        "kind": "revoke"
+      },
+      "ordinal": 0,
+      "source_note": {
+        "reason": "initial_consumer_restricted_before_source_attestation"
+      }
+    },
+    {
+      "changed_facts": [
+        "cap_weighted",
+        "verified_v12"
+      ],
+      "changed_frontiers": [
+        "F_weighted"
+      ],
+      "engine_chain": "fdd2e4982d9483df8e3fe59b5f98ed080e721c74688b851f4fcd4f7c84e53b73",
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "verified_v12",
+        "kind": "promote"
+      },
+      "ordinal": 1,
+      "source_note": {
+        "qualifier_run": 38202495321,
+        "read_only_source_sha256": "eb736c72c3acc5bc152fe811be8d3892d88ac0e1932bb2fb47ef5d562fe49a3f",
+        "retained_evidence_archive": "source bytes, qualified replay and lineage are retained",
+        "source_receipt_sha256": "d394d88879f28b78bbe7498d46abfbc42f67c2d59304bbd7a3f73de23428ac1f",
+        "source_scope": "finite supplied nonnegative modular objective and typed hereditary feasibility interface"
+      }
+    },
+    {
+      "changed_facts": [
+        "cap_weighted",
+        "verified_v12"
+      ],
+      "changed_frontiers": [
+        "F_weighted"
+      ],
+      "engine_chain": "754cf0beb72cc4970e52d7c099650b9eb85e99455629cac6616f88d19849e992",
+      "event": {
+        "authority": "synthetic_revoker",
+        "fact": "verified_v12",
+        "kind": "revoke"
+      },
+      "ordinal": 2,
+      "source_note": {
+        "simulation": "source warrant temporarily withdrawn; no actual GitHub revocation"
+      }
+    },
+    {
+      "changed_facts": [
+        "cap_weighted",
+        "verified_v12"
+      ],
+      "changed_frontiers": [
+        "F_weighted"
+      ],
+      "engine_chain": "332c192f5691498e36b837ef2b8297999877b147639fd1399108e69dc53d814e",
+      "event": {
+        "authority": "synthetic_event",
+        "fact": "verified_v12",
+        "kind": "promote"
+      },
+      "ordinal": 3,
+      "source_note": {
+        "qualifier_run": 38202495321,
+        "read_only_source_sha256": "eb736c72c3acc5bc152fe811be8d3892d88ac0e1932bb2fb47ef5d562fe49a3f",
+        "retained_evidence_archive": "source bytes, qualified replay and lineage are retained",
+        "source_receipt_sha256": "d394d88879f28b78bbe7498d46abfbc42f67c2d59304bbd7a3f73de23428ac1f",
+        "source_scope": "finite supplied nonnegative modular objective and typed hereditary feasibility interface"
+      }
+    }
+  ],
+  "source_protocol_run": 38202495321,
+  "status": "PASS_V14_SOURCE_TO_CONSUMER_FINITE"
+}
