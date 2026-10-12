@@ -33,7 +33,7 @@ def compile_source(k:int)->str:
         else:neg.extend([t1,t2])
     nxt=generalized(k+1)[0]
     code=[
-      f"  /-- First {k} universal Euler-pentagonal pairs, partially evaluated at source generation. -/",
+      f"  /- First {k} universal Euler-pentagonal pairs, partially evaluated at source generation. -/",
       "  let posHead := "+(" +\n      ".join(pos) if pos else "(0 : Nat)"),
       "  let negHead := "+(" +\n      ".join(neg) if neg else "(0 : Nat)"),
       f"  let (posTail, negTail) : Nat × Nat :=",
