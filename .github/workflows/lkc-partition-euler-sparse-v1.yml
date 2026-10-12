@@ -1,0 +1,152 @@
+name: LKC Partition sparse Euler quotient V1
+
+on:
+  push:
+    branches: [lkc-partition-euler-sparse-quotient-v1-20261012]
+    paths:
+      - '.github/workflows/lkc-partition-euler-sparse-v1.yml'
+      - 'experiments/lkc_partition/euler_sparse_quotient_v1.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lkc-partition-euler-sparse-v1
+  cancel-in-progress: false
+
+env:
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  sparse-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate exact arithmetic candidate and pinned V13 baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile experiments/lkc_partition/euler_sparse_quotient_v1.py
+          python3 experiments/lkc_partition/euler_sparse_quotient_v1.py
+          python3 experiments/lkc_partition/threecompiled_v13.py
+          echo 'bcb6325b9d0ca5c7259b0de76d903ba5cb20e05fdb60938b5201745d00491085  experiments/lkc_partition/generated/Submission_v13.lean' | sha256sum -c -
+          mkdir -p euler-sparse-v1
+          cp experiments/lkc_partition/generated/packed_euler_sparse_finite.json euler-sparse-v1/
+          sha256sum experiments/lkc_partition/generated/Submission_v13.lean experiments/lkc_partition/generated/Submission_packed_euler_sparse_probe.lean > euler-sparse-v1/sources.sha256
+      - name: Clone pinned benchmark
+        shell: bash
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install exact Lean
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Lock source and prepare kernel
+        working-directory: bench
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 benchmark.py setup --problem partition
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Independent source-bound kernel checks and paired wall-time
+        shell: bash
+        run: |
+          set +e
+          set -u
+          for arm in v13 sparse_euler; do
+            if [ "$arm" = "v13" ]; then file=Submission_v13.lean; else file=Submission_packed_euler_sparse_probe.lean; fi
+            echo "SCREEN $arm"
+            python3 bench/benchmark.py diagnostic --problem partition \
+              --submission "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/$file" \
+              --metric wall-time --repetitions 3 --timeout 180 --memory-mb 4096 \
+              --inputs 14 22 32 36 --output "$GITHUB_WORKSPACE/euler-sparse-v1/$arm"
+            code="$?"
+            echo "$code" > "$GITHUB_WORKSPACE/euler-sparse-v1/$arm.exit"
+            echo "ARM_EXIT $arm $code"
+          done
+          exit 0
+      - name: Score candidate-specific cost despite failed built-in reference
+        shell: bash
+        id: decide
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,os
+          p=Path('euler-sparse-v1')
+          out={}
+          for arm in ('v13','sparse_euler'):
+              path=p/arm/'diagnostic.json'
+              rec={'valid_same_target_kernel':False,'cost':None}
+              if path.exists():
+                  d=json.loads(path.read_text())
+                  c=next((r for r in d['runs'] if r['role']=='candidate'),{})
+                  cases=c.get('cases',[])
+                  rec.update({'valid_same_target_kernel':len(cases)==4 and all(z['status']=='complete' for z in cases),
+                              'cost':d['totals']['candidate'],
+                              'candidate_source_sha256':c.get('source_sha256'),
+                              'built_in_reference_complete':d['complete'],
+                              'per_input':[{'n':z['n'],'status':z['status'],'median_ns':z.get('median')} for z in cases]})
+              out[arm]=rec
+          ratio=None
+          if all(out[x]['valid_same_target_kernel'] and out[x]['cost'] for x in out):
+              ratio=float(out['sparse_euler']['cost'])/float(out['v13']['cost'])
+          best=ratio is not None and ratio<0.40
+          result={'arms':out,'ratio_euler_to_v13':ratio,'instruction_gate_earned':best,
+                  'epistemic_state':'CANDIDATE_PERFORMANCE' if best else 'REJECTED_OR_UNKNOWN_BOUNDED',
+                  'universal_lean_proof':False,
+                  'official_pmu_measured':False,'official_submission':False}
+          (p/'decision.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('instruction_gate='+('yes' if best else 'no')+'\n')
+          PY
+      - name: Cost boundary — paired Callgrind only if major wall advantage
+        if: steps.decide.outputs.instruction_gate == 'yes'
+        shell: bash
+        run: |
+          set +e
+          for arm in v13 sparse_euler; do
+            if [ "$arm" = "v13" ]; then file=Submission_v13.lean; else file=Submission_packed_euler_sparse_probe.lean; fi
+            python3 bench/benchmark.py diagnostic --problem partition \
+              --submission "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/$file" \
+              --metric callgrind --repetitions 2 --timeout 600 --memory-mb 4096 \
+              --inputs 14 22 32 --output "$GITHUB_WORKSPACE/euler-sparse-v1/ir-$arm"
+            echo "$?" > "$GITHUB_WORKSPACE/euler-sparse-v1/ir-$arm.exit"
+          done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('euler-sparse-v1')
+          vals={}
+          for arm in ('v13','sparse_euler'):
+              path=root/('ir-'+arm)/'diagnostic.json'
+              if not path.exists():
+                  vals[arm]=None
+                  continue
+              d=json.loads(path.read_text())
+              c=next((r for r in d['runs'] if r['role']=='candidate'),{})
+              cases=c.get('cases',[])
+              vals[arm]={'qualified':len(cases)==3 and all(z['status']=='complete' for z in cases),
+                         'total':d['totals']['candidate']}
+          ratio=None
+          if all(vals.get(x) and vals[x]['qualified'] and vals[x]['total'] for x in vals):
+              ratio=float(vals['sparse_euler']['total'])/float(vals['v13']['total'])
+          result={'metric':'Callgrind Ir development proxy','arms':vals,'ratio':ratio,
+                  'proof_research_justified':ratio is not None and ratio<0.4}
+          (root/'instruction_decision.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2))
+          PY
+      - name: Archive all arms and error lineage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lkc-partition-euler-sparse-quotient-v1
+          path: euler-sparse-v1/
+          if-no-files-found: error
