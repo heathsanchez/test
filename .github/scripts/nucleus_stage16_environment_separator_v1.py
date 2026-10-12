@@ -4,25 +4,7 @@ from pathlib import Path
 import sys
 p=Path(sys.argv[1])/"src/typecheck.rs"
 s=p.read_text()
-needle="""                #[cfg(feature = "diagnostics")]
-                if std::env::var_os("NUCLEUS_TRACE_STAGE16_CONVERSION_OUTCOME").is_some() {
-                    // Reuse the existing bounded, nonrecursive conversion authority.
-                    // Diagnostic only: never convert an inconclusive result into equality.
-                    let outcome = crate::convert::convert_with_policy_in_context(
-                        self,
-                        &TypeValue::Term(larg.clone()),
-                        &TypeValue::Term(rarg.clone()),
-                        2048,
-                        crate::convert::DeltaPolicy::PreferredOnly,
-                        context.len(),
-                        context,
-                    );
-                    eprintln!(
-                        "NUCLEUS_STAGE16_CONVERSION_OUTCOME:proven={}:result={:?}",
-                        outcome.is_proven(), outcome
-                    );
-                }
-                return trace_first_failed_field_premise(16);
+needle="""                return trace_first_failed_field_premise(16);
             }"""
 assert s.count(needle)==1, f"STAGE16_ENV_SOURCE_MISMATCH:{s.count(needle)}"
 replacement="""                #[cfg(feature = "diagnostics")]
@@ -34,6 +16,19 @@ replacement="""                #[cfg(feature = "diagnostics")]
                         larg.levels == rarg.levels,
                         larg.expr, rarg.expr, larg.env, rarg.env
                     );
+                }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_STAGE16_CONVERSION_OUTCOME").is_some() {
+                    let outcome = crate::convert::convert_with_policy_in_context(
+                        self,
+                        &TypeValue::Term(larg.clone()),
+                        &TypeValue::Term(rarg.clone()),
+                        2048,
+                        crate::convert::DeltaPolicy::PreferredOnly,
+                        context.len(),
+                        context,
+                    );
+                    eprintln!("NUCLEUS_STAGE16_CONVERSION_OUTCOME:proven={}:result={:?}",outcome.is_proven(),outcome);
                 }
                 return trace_first_failed_field_premise(16);
             }"""
