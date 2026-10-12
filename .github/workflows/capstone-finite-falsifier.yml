@@ -45,3 +45,5 @@ jobs:
           lean experiments/bundy_critic_genesis_v2/results/GeneratedProofs.lean
           cd "$GITHUB_WORKSPACE"
           lean capstone/InductionGeneralization.lean
+          python capstone/induction_repair.py
+          lean capstone/InductionGenerated.lean
