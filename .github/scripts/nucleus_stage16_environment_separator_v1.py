@@ -16,6 +16,16 @@ replacement="""                #[cfg(feature = "diagnostics")]
                         larg.levels == rarg.levels,
                         larg.expr, rarg.expr, larg.env, rarg.env
                     );
+                    let bindings = |c: &Closure| {
+                        (0..8).filter_map(|i| c.env.lookup_with_node_id(i)
+                            .map(|binding| (i, binding))).collect::<Vec<_>>()
+                    };
+                    eprintln!("NUCLEUS_STAGE16_SOURCE_CONTEXT:context={:?}:left_syntax={:?}:right_syntax={:?}:left_bindings={:?}:right_bindings={:?}",
+                        context, self.expression(larg.expr), self.expression(rarg.expr),
+                        bindings(larg), bindings(rarg));
+                    eprintln!("NUCLEUS_STAGE16_WHNF:left={:?}:right={:?}",
+                        self.machine().expose(larg.clone(), Transparency::Reducible, 2048),
+                        self.machine().expose(rarg.clone(), Transparency::Reducible, 2048));
                 }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_STAGE16_CONVERSION_OUTCOME").is_some() {

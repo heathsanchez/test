@@ -55,11 +55,15 @@ jobs:
           observations=[x for x in logs if x.startswith('NUCLEUS_STAGE16_TYPED_OPERAND:')]
           env_observations=[x for x in logs if x.startswith('NUCLEUS_STAGE16_ENV_SEPARATOR:')]
           conversion_observations=[x for x in logs if x.startswith('NUCLEUS_STAGE16_CONVERSION_OUTCOME:')]
+          source_context_observations=[x for x in logs if x.startswith('NUCLEUS_STAGE16_SOURCE_CONTEXT:')]
+          whnf_observations=[x for x in logs if x.startswith('NUCLEUS_STAGE16_WHNF:')]
           assert r.returncode==2,r.returncode
           assert observations, 'NO_STAGE16_OBSERVATIONS'
           assert env_observations, 'NO_ENV_SEPARATOR_OBSERVATIONS'
           assert conversion_observations, 'NO_CONVERSION_OUTCOME_OBSERVATIONS'
-          report={'source_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'verdict':r.returncode,'observations':observations[:8],'env_observations':env_observations[:8],'conversion_observations':conversion_observations[:8]}
+          assert source_context_observations, 'NO_SOURCE_CONTEXT_OBSERVATIONS'
+          assert whnf_observations, 'NO_WHNF_OBSERVATIONS'
+          report={'source_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'verdict':r.returncode,'observations':observations[:8],'env_observations':env_observations[:8],'conversion_observations':conversion_observations[:8],'source_context_observations':source_context_observations[:8],'whnf_observations':whnf_observations[:8]}
           print('NUCLEUS_STAGE16_TYPED_REPORT='+json.dumps(report),flush=True)
           pathlib.Path('/tmp/nucleus-stage16/report.json').write_text(json.dumps(report,indent=2))
           PY
