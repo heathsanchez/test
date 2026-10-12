@@ -53,9 +53,11 @@ jobs:
               r=subprocess.run(['/tmp/nucleus-stage16/checker'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=180,env=os.environ|{'NUCLEUS_EXPERIMENTAL_RELEVANCE':'1','NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER':'1','NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE':'1','NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE':'1','NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION':'1','NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION':'1','NUCLEUS_TRACE_FIELD_APP_FIRST_FAIL':'1','NUCLEUS_TRACE_STAGE16_TYPED_OPERAND':'1','NUCLEUS_TRACE_STAGE16_ENV_SEPARATOR':'1'})
           logs=r.stderr.decode(errors='replace').splitlines()
           observations=[x for x in logs if x.startswith('NUCLEUS_STAGE16_TYPED_OPERAND:')]
+          env_observations=[x for x in logs if x.startswith('NUCLEUS_STAGE16_ENV_SEPARATOR:')]
           assert r.returncode==2,r.returncode
           assert observations, 'NO_STAGE16_OBSERVATIONS'
-          report={'source_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'verdict':r.returncode,'observations':observations[:8]}
+          assert env_observations, 'NO_ENV_SEPARATOR_OBSERVATIONS'
+          report={'source_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'verdict':r.returncode,'observations':observations[:8],'env_observations':env_observations[:8]}
           print('NUCLEUS_STAGE16_TYPED_REPORT='+json.dumps(report),flush=True)
           pathlib.Path('/tmp/nucleus-stage16/report.json').write_text(json.dumps(report,indent=2))
           PY
