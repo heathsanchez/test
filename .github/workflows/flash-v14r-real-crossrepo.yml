@@ -1,0 +1,132 @@
+name: FLASH V14R — genuine MathGraph-to-RealityGraph warrant event
+
+on:
+  push:
+    branches:
+      - research/flash-v14-real-crossrepo-warrant
+    paths:
+      - 'research/flash_v14_real/**'
+      - '.github/workflows/flash-v14r-real-crossrepo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-source-consumer-event:
+    name: exact-pins-native-target-and-flash-reclosure
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch exact independent source and consuming code at immutable Git revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p external/realitygraph/research external/realitygraph/tests external/warrant evidence-out
+          curl -fsSL --retry 3 --max-time 90 \
+            "https://raw.githubusercontent.com/metalogiclabs/mathgraph/040456fc8862c79c8b384ce63846628274b678be/evidence/living_warrant_openai_jpl_20261010.json" \
+            -o external/warrant/living.json
+          curl -fsSL --retry 3 --max-time 90 \
+            "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/history.md" \
+            -o external/warrant/openai-history.md
+          curl -fsSL --retry 3 --max-time 90 \
+            "https://raw.githubusercontent.com/heathsanchez/realitygraph/9b3189a64825e2cb6ebc7b5c17f5f193bdf5cfe3/research/mathgraph_warrant_consumer_v1.py" \
+            -o external/realitygraph/research/mathgraph_warrant_consumer_v1.py
+          curl -fsSL --retry 3 --max-time 90 \
+            "https://raw.githubusercontent.com/heathsanchez/realitygraph/9b3189a64825e2cb6ebc7b5c17f5f193bdf5cfe3/tests/test_mathgraph_warrant_consumer_v1.py" \
+            -o external/realitygraph/tests/test_mathgraph_warrant_consumer_v1.py
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected_sha={
+             "external/warrant/living.json":"0a850b112cce200f2fa97f0d861db712f3752712a6326e62f4c0d56996a95d87",
+             "external/warrant/openai-history.md":"41c2a2d470014b3628695c7aabf5fd0c93f6f687621fca172062f22b59ed6a1e"}
+          expected_blob={
+             "external/realitygraph/research/mathgraph_warrant_consumer_v1.py":"c1e97c05acfe4bf57f880eabc9c079f3f2cf59ab",
+             "external/realitygraph/tests/test_mathgraph_warrant_consumer_v1.py":"70c822163aed47895c90be35782e6483553ec261",
+             "research/flash_v13/flash_engine.py":"081d7599b7806dfd7d0de5e670cbf39d1ebda69a"}
+          for p,h in expected_sha.items():
+              actual=hashlib.sha256(Path(p).read_bytes()).hexdigest()
+              assert actual==h,(p,actual,h)
+          for p,h in expected_blob.items():
+              raw=Path(p).read_bytes()
+              blob=hashlib.sha1(b"blob "+str(len(raw)).encode()+b"\0"+raw).hexdigest()
+              assert blob==h,(p,blob,h)
+          print("EXACT_CROSS_REPOSITORY_SOURCE_AND_TARGET_BYTES_VERIFIED")
+          PY
+          echo "MATHGRAPH_WARRANT_SNAPSHOT=$GITHUB_WORKSPACE/external/warrant/living.json" >> "$GITHUB_ENV"
+          echo "MATHGRAPH_OPENAI_HISTORY=$GITHUB_WORKSPACE/external/warrant/openai-history.md" >> "$GITHUB_ENV"
+      - name: Execute unmodified RealityGraph target repository verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/external/realitygraph"
+          python -m unittest discover -s external/realitygraph/tests -p 'test_mathgraph_warrant_consumer_v1.py' -v \
+            2>&1 | tee evidence-out/native-realitygraph-tests.log
+          grep -Eq '^Ran 11 tests?' evidence-out/native-realitygraph-tests.log
+          python external/realitygraph/research/mathgraph_warrant_consumer_v1.py \
+             --snapshot "$MATHGRAPH_WARRANT_SNAPSHOT" \
+             --history "$MATHGRAPH_OPENAI_HISTORY" | tee evidence-out/native-realitygraph-replay.json
+      - name: Qualify real source-to-consumer FLASH event, local trust revocation, restart, adversarial controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_v14_real/crossrepo_event.py \
+            --consumer-root "$GITHUB_WORKSPACE/external/realitygraph" \
+            --flash-root "$GITHUB_WORKSPACE/research/flash_v13" \
+            --manifest "$MATHGRAPH_WARRANT_SNAPSHOT" \
+            --history "$MATHGRAPH_OPENAI_HISTORY" \
+            --output evidence-out/crossrepo-reclosure.json \
+            | tee evidence-out/flash-v14r-summary.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path("evidence-out/crossrepo-reclosure.json").read_text())
+          b=json.loads(Path("evidence-out/native-realitygraph-replay.json").read_text())
+          assert a["status"]=="PASS_FLASH_V14R_REAL_CROSS_REPO_WARRANT_RECLOSURE"
+          assert a["actual_deltas"]=={
+              "initial_unknown_to_bounded_warrant":1,
+              "controlled_revocation_retracted_warrant":1,
+              "source_reverification_restored_warrant":1,
+              "unaffected_claims":6}
+          assert a["source_routes_compiled_without_extra_edges"]==4
+          assert b["status"]=="WARRANTED_BOUNDED_CONSUMER_REPLAY"
+          assert b["checked_claims"]==7
+          assert b["stale_documentary_paths"]==3
+          assert b["unknown_mathematical_truths"]==3
+          assert a["scoped_results"]["source_reverified_after_recovery"][
+                "jpl.l4yaml.finite_parser_acceptance"]=="WARRANTED_BOUNDED"
+          print("PASS_CROSS_REPO_EVENT_SOURCE_AND_TARGET_VERIFIER")
+          PY
+      - name: Preserve checkable receipts, provenance and negative lineage
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "FLASH_V14R_HEAD=$(git rev-parse HEAD)"
+            echo "PRODUCER_PIN=metalogiclabs/mathgraph@040456fc8862c79c8b384ce63846628274b678be"
+            echo "CONSUMER_PIN=heathsanchez/realitygraph@9b3189a64825e2cb6ebc7b5c17f5f193bdf5cfe3"
+            echo "EXTERNAL_NOTICE=openai/math@fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb"
+            echo "V13_ENGINE=heathsanchez/test@90d167031bba230399a686252ae5573d57100b94"
+            echo "HISTORICAL_PRODUCER_CI=38025044631"
+            echo "HISTORICAL_CONSUMER_CI=38025236380"
+            echo "NO_CLAIM=new formal theorem or new Lean proof; local revocation is controlled simulation"
+            sha256sum research/flash_v14_real/crossrepo_event.py \
+              external/warrant/living.json external/warrant/openai-history.md \
+              external/realitygraph/research/mathgraph_warrant_consumer_v1.py \
+              external/realitygraph/tests/test_mathgraph_warrant_consumer_v1.py \
+              evidence-out/crossrepo-reclosure.json
+          } > evidence-out/source-receipt.txt
+          git diff --exit-code -- research/flash_v13/flash_engine.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flash-v14r-real-crossrepo-reclosure
+          path: evidence-out/
+          if-no-files-found: warn
