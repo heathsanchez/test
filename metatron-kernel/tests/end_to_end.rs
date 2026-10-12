@@ -1484,10 +1484,12 @@ fn nat_broader_neighbors_preserve_unknown() {
 }
 
 #[test]
-fn g18_nat_law_does_not_authorize_a_renamed_family() {
+fn closed_direct_recursive_derivation_is_independent_of_the_family_name() {
     let nat = include_str!("../evidence/residuals/G18-001/fixture.ndjson");
     let renamed = nat.replacen("\"str\":\"N\"", "\"str\":\"N2\"", 1);
-    assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
+    // The renamed family earns generic recursor authority from its source
+    // equations; it does not receive the primitive Nat arithmetic package.
+    assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Accept);
 }
 
 #[test]

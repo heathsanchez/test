@@ -87,6 +87,7 @@ fn declared_name_uniqueness(export: &ResolvedExport) -> Option<Verdict> {
             Declaration::Axiom { name, .. }
             | Declaration::Definition { name, .. }
             | Declaration::Theorem { name, .. }
+            | Declaration::Opaque { name, .. }
             | Declaration::Quot { name, .. } => {
                 if let Some(verdict) = insert(*name) {
                     return Some(verdict);
@@ -331,7 +332,7 @@ fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {
         let mut roots = Vec::new();
         match declaration {
             Declaration::Axiom { ty, .. } | Declaration::Quot { ty, .. } => roots.push(*ty),
-            Declaration::Definition { ty, value, .. } | Declaration::Theorem { ty, value, .. } => {
+            Declaration::Definition { ty, value, .. } | Declaration::Theorem { ty, value, .. } | Declaration::Opaque { ty, value, .. } => {
                 roots.push(*ty);
                 roots.push(*value);
             }
@@ -759,6 +760,7 @@ fn declaration_type(export: &ResolvedExport, name: NameId) -> Option<(Vec<NameId
                 ty,
                 ..
             }
+            | Declaration::Opaque { name: candidate, level_params, ty, .. }
             | Declaration::Theorem {
                 name: candidate,
                 level_params,

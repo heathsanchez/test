@@ -92,3 +92,30 @@ fn captured_projection_wrong_inductive_receiver_must_never_certify() {
     );
     assert!(!result.is_proven(), "wrong receiver inductive must not certify: {result:?}");
 }
+
+#[test]
+fn dependent_field_of_an_opaque_receiver_keeps_its_exact_prior_projection() {
+    let (mut exprs,levels,environment)=projection_warrant_fixture();
+    for (id,e) in [
+        (30,Expr::Const{name:NameId(9),levels:vec![]}),
+        (31,Expr::Const{name:NameId(10),levels:vec![]}),
+        (32,Expr::BVar(0)),
+        (33,Expr::App{fun:ExprId(9),arg:ExprId(32)}),
+        (34,Expr::App{fun:ExprId(33),arg:ExprId(32)}),
+        (35,Expr::Proj{type_name:NameId(9),index:1,structure:ExprId(31)}),
+        (36,Expr::Proj{type_name:NameId(9),index:0,structure:ExprId(31)}),
+        (37,Expr::Pi{domain:ExprId(34),body:ExprId(30)}),
+        (38,Expr::Pi{domain:ExprId(2),body:ExprId(37)}),
+        (39,Expr::App{fun:ExprId(9),arg:ExprId(36)}),
+        (40,Expr::App{fun:ExprId(39),arg:ExprId(36)}),
+    ] {exprs.insert(ExprId(id),e).unwrap();}
+    let env=environment.extend(NameId(9),ConstantDecl::inductive_type(vec![],ExprId(1))).unwrap()
+        .extend(NameId(10),ConstantDecl::axiom(vec![],ExprId(30))).unwrap()
+        .extend(NameId(11),ConstantDecl::constructor(vec![],ExprId(38))).unwrap()
+        .install_projection_spec(NameId(9),ProjectionSpec{constructor:NameId(11),num_params:0,field_types:vec![ProjectionFieldType::Derived(ExprId(2)),ProjectionFieldType::Derived(ExprId(34))],eta_expandable:false}).unwrap();
+    let checker=TypeChecker::new(&exprs,&levels,&env);
+    let actual=checker.infer(ExprId(35),4096);
+    assert!(actual.is_proven(),"{actual:?}");
+    let expected=metatron_kernel::typecheck::TypeValue::Term(Closure::new(ExprId(40),EnvFrame::empty()));
+    assert!(checker.convert(actual.proven_value().unwrap(),&expected,4096).is_proven());
+}

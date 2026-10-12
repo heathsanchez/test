@@ -1,0 +1,402 @@
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2155:20
+     |
+2155 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2156 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2155 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2156 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+   Compiling metatron-kernel v0.1.0 (/Users/heath/Documents/ChatGPT/Nucleus Lean Kernel/nucleus/metatron-kernel)
+warning: `metatron-kernel` (lib) generated 1 warning (run `cargo fix --lib -p metatron-kernel` to apply 1 suggestion)
+warning: `metatron-kernel` (lib test) generated 1 warning (1 duplicate)
+    Finished `release` profile [optimized] target(s) in 10.77s
+     Running unittests src/lib.rs (metatron-kernel/target/release/deps/metatron_kernel-a50f2c24596fd181)
+
+running 22 tests
+test capability::tests::duplicate_declared_names_reject ... ok
+test capability::tests::distinct_declared_names_do_not_fire ... ok
+test checker::tests::universe_parameter_uniqueness_keeps_distinct_binders ... ok
+test nat::tests::parses_beyond_u64_and_steps_exactly ... ok
+test machine::neutral_projection_tests::projection_conversion_preserves_a_constant_neutral_receiver ... ok
+test checker::tests::exact_and_fixture_satisfies_each_independently_derived_claim ... ok
+test checker::tests::good_beta_definition_has_one_trusted_conversion_call ... ok
+test checker::tests::g26_rejects_impossible_owned_recursor_metadata ... ok
+test typecheck::checked_binding_lineage_tests::a_different_typing_prefix_is_a_protected_future_separator ... ignored, explicit source-scoped binding authority A/B only
+test nat::tests::subtraction_truncates_at_zero ... ok
+test typecheck::checked_binding_lineage_tests::captured_typed_substitution_uses_validated_source_domain_without_reinfer ... ignored, explicit checked value substitution witness A/B only
+test typecheck::checked_binding_lineage_tests::checked_pi_elimination_registers_its_actual_typed_substitution ... ignored, explicit checked source substitution reclosure A/B
+test checker::tests::rejected_twobool_block_cannot_partially_extend_authority ... ok
+test typecheck::checked_binding_lineage_tests::conflicting_or_absent_witnesses_do_not_grant_type_authority ... ignored, explicit source-scoped binding authority A/B only
+test checker::tests::g25_boolprop_reconstructs_prop_only_binary_recursor ... ok
+test typecheck::checked_binding_lineage_tests::strict_origin_requires_immutable_checked_binding_and_exact_context ... ok
+test typecheck::checked_binding_lineage_tests::typed_binder_uses_its_witness_not_unrelated_latest_context_type ... ignored, explicit source-scoped binding authority A/B only
+test typecheck::minimal_context_binder_tests::actual_missing_bvar_still_rejected ... ignored, explicit bounded binder-context transport A/B
+test typecheck::minimal_context_binder_tests::actual_source_captured_free_zero_overrules_unrelated_latest_context_entry ... ignored, explicit bounded binder-context transport A/B
+test checker::tests::g3_001_ablation_requires_guarded_semantic_delta ... ok
+test typecheck::minimal_context_binder_tests::high_synthetic_free_id_does_not_claim_unproved_context_correspondence ... ignored, explicit bounded binder-context transport A/B
+test typecheck::minimal_context_binder_tests::source_captured_free_one_retains_different_data_type ... ignored, explicit bounded binder-context transport A/B
+
+test result: ok. 13 passed; 0 failed; 9 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (metatron-kernel/target/release/deps/metatron_kernel-65e38e8604b68d01)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/captured_projection_warrant.rs (metatron-kernel/target/release/deps/captured_projection_warrant-c48b953d935b94db)
+
+running 4 tests
+test captured_projection_wrong_inductive_receiver_must_never_certify ... ok
+test captured_projection_out_of_range_must_never_certify ... ok
+test captured_projection_field_is_typed_from_checked_constructor_telescope ... ok
+test dependent_field_of_an_opaque_receiver_keeps_its_exact_prior_projection ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/checked_relevance_signature.rs (metatron-kernel/target/release/deps/checked_relevance_signature-36ee912ae909c8df)
+
+running 3 tests
+test distinct_proof_arguments_of_same_checked_proposition_are_convertible ... ok
+test an_ill_typed_proposition_argument_does_not_count_as_a_proof ... ok
+test mismatched_data_arguments_stay_distinct ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cli_verdict.rs (metatron-kernel/target/release/deps/cli_verdict-6c22173d909c277d)
+
+running 1 test
+test arena_exit_codes_preserve_unknown ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/closed_direct_recursive.rs (metatron-kernel/target/release/deps/closed_direct_recursive-3fa203eda4f983ea)
+
+running 3 tests
+test malformed_recursive_equations_are_not_certified ... ok
+test derives_direct_recursive_positions_and_equations ... ok
+test checks_recursive_metadata_and_every_exported_binder ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/closed_field_enum.rs (metatron-kernel/target/release/deps/closed_field_enum-d3f5a52f9b14f20d)
+
+running 1 test
+test closed_field_enum_derives_all_constructor_equations ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/closed_pair_record.rs (metatron-kernel/target/release/deps/closed_pair_record-55d51a94f552ec43)
+
+running 6 tests
+test closed_pair_record_does_not_depend_on_its_name ... ok
+test closed_pair_record_has_a_derived_contract ... ok
+test closed_pair_record_checks_field_universe_even_when_annotations_agree ... ok
+test closed_pair_record_does_not_admit_recursive_metadata ... ok
+test closed_pair_record_checks_rule_field_annotations ... ok
+test closed_record_arity_is_checked_by_its_general_telescope ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/convert.rs (metatron-kernel/target/release/deps/convert-a10af2a39f5e79f2)
+
+running 14 tests
+test conversion_budget_exhaustion_preserves_unknown ... ok
+test matching_definition_applications_preserve_unforced_arguments ... ok
+test beta_zeta_and_reducible_delta_are_convertible ... ok
+test failed_definition_argument_congruence_falls_back_to_its_body ... ok
+test matching_projections_compare_only_the_selected_fields ... ok
+test application_congruence_checks_universe_arguments ... ok
+test inferred_dependent_pi_compares_its_explicit_binder ... ok
+test neutral_projection_compares_captured_receiver_arguments ... ok
+test projection_congruence_failure_does_not_force_unused_structure_arguments ... ok
+test rigid_pi_values_compare_relationally ... ok
+test syntactic_identity_is_proven_before_reduction ... ok
+test unresolved_imax_comparison_preserves_unknown ... ok
+test unequal_supported_sorts_are_refuted ... ok
+test stuck_projection_preserves_its_application_spine ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/diagnostics.rs (metatron-kernel/target/release/deps/diagnostics-1fed9707ca9f733a)
+
+running 1 test
+test operation_counters_are_deterministic_and_observational_only ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/end_to_end.rs (metatron-kernel/target/release/deps/end_to_end-7defcf53ba850994)
+
+running 83 tests
+test beta_checked_definition_is_accepted ... ok
+test binary_enum_constructor_index_is_checked_not_trusted ... ok
+test binary_enum_recursor_rules_are_derived_not_axiomatized ... ok
+test definition_is_not_installed_before_its_value_is_checked ... ok
+test closed_direct_recursive_derivation_is_independent_of_the_family_name ... ok
+test and_broader_neighbors_preserve_unknown ... ok
+test empty_recursor_metadata_is_checked_not_trusted ... ok
+test and_parameter_and_field_order_are_derived_not_trusted ... ok
+test derived_empty_recursor_is_available_as_an_opaque_constant ... ok
+test g10_001_derived_binary_enum_authority_is_accepted ... ok
+test fabricated_extra_and_orphan_recursors_are_rejected ... ok
+test eq_broader_neighbors_preserve_unknown ... ok
+test g11_001_derived_twobool_authority_is_accepted ... ok
+test and_recursor_rule_and_metadata_are_derived_not_trusted ... ok
+test g13_candidate_preserves_the_sealed_g12_behavior_vector ... ok
+test g12_001_exact_and_authority_is_accepted ... ok
+test g15_shared_representation_earns_no_fourth_family ... ok
+test g16_001_exact_punit_authority_is_accepted ... ok
+test g13_001_exact_prod_authority_is_accepted ... ok
+test g16_punit_law_does_not_authorize_a_renamed_family ... ok
+test g14_001_exact_pprod_authority_is_accepted ... ok
+test eq_index_constructor_recursor_and_rule_are_derived_not_trusted ... ok
+test g14_candidate_preserves_the_sealed_g13_behavior_vector ... ok
+test g17_eq_law_does_not_authorize_a_renamed_family ... ok
+test g21_constructor_result_coherence_rejects_malformed_corridor ... ok
+test g20_inductive_arity_law_rejects_first_malformed_corridor ... ok
+test g21_does_not_preempt_conversion_sensitive_constructor_parameters ... ok
+test g22_preserves_conversion_sensitive_constructor_control ... ok
+test g18_001_exact_nat_authority_is_accepted ... ok
+test g22_definite_negative_recursive_field_is_rejected ... ok
+test g23_does_not_authorize_a_renamed_family ... ok
+test g23_conversion_is_required_not_syntactic_parameter_matching ... ok
+test g19_rbtree_does_not_authorize_a_renamed_family ... ok
+test g3_001_opaque_hint_does_not_make_a_definition_semantically_inaccessible ... ok
+test g17_001_exact_eq_authority_is_accepted ... ok
+test g4_001_dependent_bodies_are_related_under_a_shared_binder ... ok
+test g7_001_duplicate_universe_parameters_are_rejected ... ok
+test g5_001_rigid_nonsort_is_refuted_not_erased_to_unknown ... ok
+test g6_001_non_propositional_theorem_is_rejected ... ok
+test g9_001_derived_empty_inductive_authority_is_accepted ... ok
+test g23_001_conversion_lifted_unary_recursive_authority_is_accepted ... ok
+test g8_001_imax_idempotence_decides_the_peano_type ... ok
+test generic_two_parameter_sum_accepts_exact_except_contract ... ok
+test generic_two_parameter_sum_preserves_unknown_outside_its_derived_contract ... ok
+test nat_broader_neighbors_preserve_unknown ... ok
+test nat_recursive_constructor_recursor_and_rules_are_derived_not_trusted ... ok
+test nested_block_cannot_claim_an_external_constructor_rule ... ok
+test out_of_order_level_axiom_is_accepted ... ok
+test pprod_broader_neighbors_preserve_unknown ... ok
+test g19_001_exact_rbtree_authority_is_accepted ... ok
+test pprod_constructor_recursor_rule_and_metadata_are_derived_not_trusted ... ok
+test pprod_sort_telescope_and_result_level_are_derived_not_trusted ... ok
+test prod_broader_neighbors_preserve_unknown ... ok
+test prod_constructor_recursor_rule_and_metadata_are_derived_not_trusted ... ok
+test prod_universe_telescope_and_result_level_are_derived_not_trusted ... ok
+test punit_broader_neighbors_preserve_unknown ... ok
+test punit_sort_constructor_recursor_and_rule_are_derived_not_trusted ... ok
+test indexed_singletons_without_eta_are_rejected ... ok
+test indexed_recursive_proposition_checks_exact_list_perm_contract ... ok
+test rbtree_broader_neighbors_remain_unknown ... ok
+test sparse_name_axiom_is_accepted ... ok
+test theorem_is_not_installed_before_its_proof_is_checked ... ok
+test twobool_does_not_earn_indexed_inductive_authority ... ok
+test shared_closed_inductive_engine_matches_sealed_g9_g10_g11_verdict_vector ... ok
+test twobool_constructor_claims_are_derived_not_trusted ... ok
+test twobool_does_not_earn_recursive_or_unsafe_authority ... ok
+test twobool_recursor_and_rule_claims_are_derived_not_trusted ... ok
+test rbtree_recursor_type_and_rules_are_derived_not_trusted ... ok
+test certified_product_structure_eta_is_accepted ... ok
+test typed_rule_k_rejects_an_invalid_target ... ok
+test typed_rule_k_accepts_the_certified_eq_recursor_case ... ok
+test unary_type_constructor_operation_record_accepts_exact_functor_contract ... ok
+test unary_type_constructor_operation_record_accepts_exact_applicative_contract ... ok
+test unbound_axiom_type_is_rejected ... ok
+test unsupported_inductive_is_unknown ... ok
+test valid_theorem_can_be_used_by_a_later_theorem ... ok
+test generic_optional_value_family_accepts_exact_option_contract ... ok
+test unary_type_constructor_operation_record_preserves_unknown_outside_its_contract ... ok
+test unary_type_constructor_operation_record_accepts_exact_monad_except_of_contract ... ok
+test unary_type_constructor_operation_record_checks_monad_except_of_rule ... ok
+test unary_type_constructor_operation_record_checks_applicative_metadata_and_rule ... ok
+test certified_stuck_recursors_are_not_equal_to_rigid_locals_or_constructors ... ok
+test generic_optional_value_family_preserves_unknown_outside_its_contract ... ok
+
+test result: ok. 83 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/environment.rs (metatron-kernel/target/release/deps/environment-2cc5d212f1835b4b)
+
+running 3 tests
+test constructor_signature_has_no_delta_body ... ok
+test theorem_signature_has_no_delta_body ... ok
+test recursor_signature_has_no_delta_or_iota_body ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/id_table.rs (metatron-kernel/target/release/deps/id_table-af06a319f5eb2d08)
+
+running 2 tests
+test duplicate_id_is_rejected_with_table_kind_and_numeric_id ... ok
+test sparse_and_out_of_order_ids_are_independent ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/indexed_prop.rs (metatron-kernel/target/release/deps/indexed_prop-938c8a155e7e7481)
+
+running 7 tests
+test recursive_prop_refuses_out_of_range_variables_without_panicking ... ok
+test recursive_prop_refuses_a_rule_that_drops_recursive_calls ... ok
+test recursive_prop_refuses_false_index_metadata ... ok
+test recursive_prop_refuses_large_elimination_even_with_unchanged_metadata ... ok
+test recursive_prop_refuses_a_false_nonrecursive_annotation ... ok
+test admitted_recursive_prop_rules_execute_cons_and_both_trans_hypotheses ... ok
+test recursive_prop_contract_is_independent_of_the_family_name ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/inference_sharing.rs (metatron-kernel/target/release/deps/inference_sharing-8770750f3bbc526e)
+
+running 2 tests
+test shared_bvar_syntax_retains_its_own_binder_type ... ok
+test shared_lambda_dag_is_checked_once_per_typing_frame ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/level.rs (metatron-kernel/target/release/deps/level-89a9e1f79b1d9fa2)
+
+running 7 tests
+test imax_is_idempotent_without_parameter_case_enumeration ... ok
+test equality_over_26_parameters_does_not_enumerate_boolean_cases ... ok
+test max_is_commutative_and_idempotent ... ok
+test instantiation_rejects_cycles_missing_parameters_and_exhausted_budget ... ok
+test unresolved_imax_does_not_guess ... ok
+test imax_with_successor_right_is_max ... ok
+test instantiation_expands_sparse_level_graph_with_explicit_substitution ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/machine.rs (metatron-kernel/target/release/deps/machine-d3cccfcd4bfcdfef)
+
+running 17 tests
+test full_transparency_keeps_a_nonpreferred_delta_cycle_unknown ... ok
+test conversion_projection_probe_does_not_delta_reduce_its_structure ... ok
+test full_transparency_can_request_a_nonpreferred_definition_body ... ok
+test delta_requires_reducible_transparency_and_records_its_witness ... ok
+test beta_uses_explicit_environment_extension ... ok
+test exhausted_reduction_budget_preserves_unknown ... ok
+test cyclic_delta_returns_unknown ... ok
+test constructor_demand_follows_computed_lexical_major_and_respects_fuel ... ok
+test nat_add_symbolic_right_successor_zero_is_succ_without_index_assumption ... ok
+test polymorphic_delta_preserves_unknown_until_level_instantiation_is_explicit ... ok
+test recursor_output_constructor_does_not_identify_its_symbolic_major ... ok
+test revisiting_shared_syntax_after_beta_is_not_a_cycle ... ok
+test semantic_locals_use_explicit_identity_not_source_index_aliasing ... ok
+test symbolic_nat_ble_respects_pinned_constructor_equations ... ok
+test symbolic_nat_sub_succ_zero_is_exact_source_equation ... ok
+test symbolic_nat_sub_successor_is_exact_predicate_computation ... ok
+test zeta_uses_let_value_without_substitution_copy ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/opaque.rs (metatron-kernel/target/release/deps/opaque-771d6c01136a92d6)
+
+running 2 tests
+test checks_opaque_type_and_value_before_admission ... ok
+test checked_opaque_bodies_are_not_delta_reduction_rules ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/parametric_field_enum.rs (metatron-kernel/target/release/deps/parametric_field_enum-ef84714db2a00a9a)
+
+running 3 tests
+test missing_rules_decline_without_panicking ... ok
+test parametric_enum_checks_field_universes_and_rules ... ok
+test parametric_enum_declines_binder_and_universe_mutants ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/parser.rs (metatron-kernel/target/release/deps/parser-f9fac0492b113bc7)
+
+running 11 tests
+test missing_reference_is_malformed_not_unknown ... ok
+test missing_theorem_expression_reference_is_malformed ... ok
+test missing_nested_inductive_type_reference_is_malformed ... ok
+test missing_theorem_all_name_reference_is_malformed ... ok
+test parses_the_complete_empty_inductive_contract ... ok
+test preserves_unsupported_declaration_for_semantic_unknown ... ok
+test parses_theorem_as_a_distinct_supported_declaration ... ok
+test parses_sparse_name_index ... ok
+test resolves_forward_referenced_levels ... ok
+test unknown_structural_table_record_is_malformed ... ok
+test run_separates_malformed_input_from_supported_and_unimplemented_semantics ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/relation_record.rs (metatron-kernel/target/release/deps/relation_record-ff1f2cc60ea07d7e)
+
+running 5 tests
+test relation_record_recursor_cannot_lie_about_field_annotation ... ok
+test relation_record_requires_proof_even_when_all_annotations_agree ... ok
+test relation_record_requires_the_correct_result_universe ... ok
+test relation_and_proof_record_checks_exact_exported_setoid ... ok
+test relation_and_proof_record_does_not_depend_on_type_name ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/residual_closure.rs (metatron-kernel/target/release/deps/residual_closure-c6231369d60d6772)
+
+running 1 test
+test all_seven_complete_positive_exports_accept ... ignored, requires pinned Arena artifact 11272848230 in NUCLEUS_FROZEN196
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/rigid_locals.rs (metatron-kernel/target/release/deps/rigid_locals-5efc10fe7f858b73)
+
+running 2 tests
+test distinct_locals_of_a_rigid_type_variable_are_definitely_unequal ... ok
+test proof_locals_remain_irrelevant_and_same_data_local_remains_equal ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/sparse_native_nat_rec.rs (metatron-kernel/target/release/deps/sparse_native_nat_rec-af1c55823357ee8c)
+
+running 1 test
+test native_nat_iota_does_not_require_exported_predecessor_literals ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/typecheck.rs (metatron-kernel/target/release/deps/typecheck-46237e98019d116c)
+
+running 9 tests
+test sort_u_has_type_sort_successor_u ... ok
+test annotated_identity_lambda_infers_a_pi_type ... ok
+test pi_sort_uses_imax_of_domain_and_body_sorts ... ok
+test let_inference_uses_the_established_annotation ... ok
+test identity_application_checks_its_argument ... ok
+test dependent_application_instantiates_the_pi_body_with_the_argument_closure ... ok
+test captured_two_argument_relation_requires_checked_domains ... ok
+test dependent_let_wrapped_lambda_substitutes_proposition_binder ... ok
+test unbound_bvar_is_refuted ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests metatron_kernel
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2155:20
+     |
+2155 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2156 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2155 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2156 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: 1 warning emitted
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

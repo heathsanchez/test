@@ -1,0 +1,22 @@
+{
+  "counts": {
+    "accept": 117,
+    "reject": 71,
+    "unknown": 8,
+    "errors": 0,
+    "wrong": 0
+  },
+  "diffs": [
+    {
+      "case": "good/perf/beta-ladder.ndjson",
+      "rc": 2,
+      "baseline": 0,
+      "elapsed": 0.286,
+      "sha256": "9e31c146f590cd29a464f45eb2a9ec6aec092dfd0d146a3c5f744b3fc674133a",
+      "trace": [
+        "NUCLEUS_DOWNSTREAM:name=beta_ladder:stage=theorem.value:verdict=UNKNOWN:reason=conversion-exposure"
+      ]
+    }
+  ],
+  "promotion": "REJECTED_INCUMBENT_DECLINE"
+}

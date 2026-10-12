@@ -357,6 +357,7 @@ impl<'a> TypeChecker<'a> {
                             &value, context, remaining, depth + 1,
                         ),
                     EnvBinding::Neutral(_) => None,
+                    EnvBinding::NatLit(_) => self.environment.nat_primitives().map(|nat|TypeValue::Term(self.closure(nat.type_expr,EnvFrame::empty()))),
                 }
             },
             Expr::Sort(level) => Some(TypeValue::Sort(succ(
@@ -910,6 +911,10 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::StrLit(_) => Judgment::unknown("string-literal-type-not-qualified"),
             Expr::BVar(index) => {
+                if let Some(EnvBinding::NatLit(_)) = frame.lookup(*index) {
+                    let Some(nat) = self.environment.nat_primitives() else { return Judgment::unknown("native-nat-binding-without-qualified-Nat"); };
+                    return Judgment::proven(TypeValue::Term(self.closure(nat.type_expr,EnvFrame::empty())),"qualified-native-Nat-binding-type");
+                }
                 let Some(offset) = usize::try_from(*index).ok() else {
                     return Judgment::refuted("unbound-bvar");
                 };
@@ -1272,12 +1277,11 @@ impl<'a> TypeChecker<'a> {
                                     };
                                     field_frame = field_frame.extend(prior_field);
                                 }
-                                NeutralHead::Const { .. } => {
-                                    return Judgment::unknown(
-                                        "projection-dependent-constructor-mismatch",
-                                    );
-                                }
-                                NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
+                                // The receiver's type has already matched
+                                // the declared structure above. A constant-
+                                // headed neutral has the same dependent
+                                // projection telescope as any other neutral.
+                                NeutralHead::Const { .. } | NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
                                     field_frame = field_frame.extend_neutral(Neutral {
                                         head: NeutralHead::Projection {
                                             type_name: *type_name,
@@ -1379,9 +1383,12 @@ impl<'a> TypeChecker<'a> {
         let target=match codomain {
             PiBody::Closure(expected_body)=>
                 TypeValue::Term(expected_body.under_free(free)),
-            PiBody::Fixed(binder,value) if binder==free => value,
-            PiBody::Fixed(_,_) =>
-                return Judgment::unknown("bidir-lambda-fixed-binder-not-aligned"),
+            PiBody::Fixed(binder,value) => {
+                let Some(reopened) = self.reopen_fixed_pi_body(&value, binder, free, remaining) else {
+                    return Judgment::unknown("bidir-lambda-fixed-binder-not-aligned");
+                };
+                reopened
+            },
         };
         let mut extended=context.to_vec();
         extended.push(annotated.clone());
@@ -1403,38 +1410,6 @@ impl<'a> TypeChecker<'a> {
         conversion_refutation_is_unknown: bool,
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<()> {
-        // Source-ID selection is diagnostic only. No constructor, proof, type
-        // equality, or verdict is inferred from the ID; every positive here
-        // is derived by the ordinary checked bidirectional premises above.
-        if std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_some()
-            && (4..=7).contains(&context.len())
-            && matches!(expression.0,
-                11148|11147|11146|11145|
-                7585|7584|7583|7582|
-                7251|7250|7249|7248|
-                5307)
-            && matches!(self.expressions.get(expression),Some(Expr::Lam {..}))
-        {
-            let mut local_budget=(*remaining).min(4096);
-            let candidate=self.check_expected_lambda_in(
-                expression,expected,context,frame,&mut local_budget,
-                conversion_refutation_is_unknown,cache,
-            );
-            #[cfg(feature="diagnostics")]
-            if std::env::var_os("NUCLEUS_TRACE_EXPECTED_LAMBDA").is_some() {
-                use std::sync::atomic::{AtomicUsize,Ordering};
-                static COUNT:AtomicUsize=AtomicUsize::new(0);
-                if COUNT.fetch_add(1,Ordering::Relaxed)<40 {
-                    eprintln!(
-                        "NUCLEUS_EXPECTED_LAMBDA:expr={expression:?}:context={}:result={candidate:?}:remaining={local_budget}:expected={expected:?}",
-                        context.len(),
-                    );
-                }
-            }
-            if candidate.is_proven() {
-                return Judgment::proven((),"certified-expected-dependent-lambda");
-            }
-        }
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_BIDIR_BODY_GAP").is_some()
@@ -1446,7 +1421,7 @@ impl<'a> TypeChecker<'a> {
                 context.len(),frame.id(),self.expressions.get(expression),*remaining,
             );
         }
-        match inferred {
+        let ordinary = match inferred {
             Judgment::Proven { value, .. } => {
                 let conversion = crate::convert::convert_with_policy_in_context(
                     self,
@@ -1983,7 +1958,35 @@ impl<'a> TypeChecker<'a> {
             }
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
             Judgment::Unknown { residual } => Judgment::Unknown { residual },
+        };
+        // A source lambda may be checked against an already established Pi
+        // at any lexical depth. Eligibility depends on syntax and typing,
+        // never an expression ID, theorem name or benchmark family.
+        if ordinary.is_unknown() && std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_some()
+            && matches!(self.expressions.get(expression),Some(Expr::Lam {..}))
+        {
+            let mut local_budget=(*remaining).min(4096);
+            let candidate=self.check_expected_lambda_in(
+                expression,expected,context,frame,&mut local_budget,
+                conversion_refutation_is_unknown,cache,
+            );
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_EXPECTED_LAMBDA").is_some() {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static COUNT:AtomicUsize=AtomicUsize::new(0);
+                if COUNT.fetch_add(1,Ordering::Relaxed)<40 {
+                    eprintln!(
+                        "NUCLEUS_EXPECTED_LAMBDA:expr={expression:?}:context={}:result={candidate:?}:remaining={local_budget}:expected={expected:?}",
+                        context.len(),
+                    );
+                }
+            }
+            if candidate.is_proven() {
+                *remaining = remaining.saturating_sub((*remaining).min(4096) - local_budget);
+                return Judgment::proven((),"certified-expected-dependent-lambda");
+            }
         }
+        ordinary
     }
 
     // Whole-function inference has already succeeded. Reconstruct the
@@ -2200,6 +2203,7 @@ impl<'a> TypeChecker<'a> {
                         } else {
                             match frame.lookup(u64::try_from(k - depth).ok()?)? {
                                 EnvBinding::Free(f) => f == self.free,
+                                EnvBinding::NatLit(_) => false,
                                 EnvBinding::Closure(c) => self.closure(&c)?,
                                 EnvBinding::Neutral(n) => self.neutral(&n)?,
                             }
@@ -4063,7 +4067,7 @@ impl<'a> TypeChecker<'a> {
                         head: NeutralHead::Free(_),
                         spine,
                     })) => return spine.is_empty(),
-                    Some(EnvBinding::Neutral(_)) | None => return false,
+                    Some(EnvBinding::Neutral(_)) | Some(EnvBinding::NatLit(_)) | None => return false,
                 },
                 Some(Expr::Let { value, body, .. }) => {
                     let value = current.sibling(*value, current.env.clone());
@@ -4143,7 +4147,8 @@ impl<'a> TypeChecker<'a> {
                     match binding {
                         crate::value::EnvBinding::Closure(bound) => closure = bound,
                         crate::value::EnvBinding::Free(_)
-                        | crate::value::EnvBinding::Neutral(_) => return false,
+                        | crate::value::EnvBinding::Neutral(_)
+                        | crate::value::EnvBinding::NatLit(_) => return false,
                     }
                 }
                 Expr::Const { name, levels } => break (*name, levels.clone()),

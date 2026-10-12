@@ -8,7 +8,7 @@ use metatron_kernel::machine::{
     TransitionWitness, Transparency,
 };
 use metatron_kernel::syntax::{Expr, Level};
-use metatron_kernel::value::{Closure, EnvFrame, FreeId, NeutralHead, Value};
+use metatron_kernel::value::{Closure, EnvFrame, FreeId, Neutral, NeutralHead, Value};
 
 fn zero_levels() -> IdTable<LevelId, Level> {
     let mut levels = IdTable::default();
@@ -639,4 +639,45 @@ fn symbolic_nat_sub_succ_zero_is_exact_source_equation() {
     assert!(matches!(negative.proven_value(),
         Some(Value::Neutral(v)) if v.head == NeutralHead::Const { name: NameId(13), levels: vec![] }
     ), "sub (succ x) (succ y) must not be rewritten to x for unknown y: {negative:?}");
+}
+
+#[test]
+fn constructor_demand_follows_computed_lexical_major_and_respects_fuel() {
+    use metatron_kernel::machine::{RecursorReduction, RecursorRule};
+    let mut exprs=IdTable::default();
+    exprs.insert(ExprId(0),Expr::BVar(0)).unwrap();
+    exprs.insert(ExprId(1),Expr::BVar(1)).unwrap();
+    exprs.insert(ExprId(2),Expr::Sort(LevelId(0))).unwrap();
+    exprs.insert(ExprId(3),Expr::Const{name:NameId(10),levels:vec![]}).unwrap();
+    exprs.insert(ExprId(4),Expr::Const{name:NameId(11),levels:vec![]}).unwrap();
+    exprs.insert(ExprId(5),Expr::Const{name:NameId(12),levels:vec![]}).unwrap();
+    exprs.insert(ExprId(6),Expr::Const{name:NameId(20),levels:vec![]}).unwrap();
+    exprs.insert(ExprId(7),Expr::Const{name:NameId(21),levels:vec![]}).unwrap();
+    for (i,body) in [(8,1),(9,0)] {
+        let mut b=ExprId(body);
+        for k in 0..3 { let id=ExprId(20+i*3+k);exprs.insert(id,Expr::Lam{domain:ExprId(2),body:b}).unwrap();b=id; }
+        exprs.insert(ExprId(i),Expr::Lam{domain:ExprId(2),body:b}).unwrap();
+    }
+    // Rules bind motive and two minors (three lambdas).
+    let rules=vec![RecursorRule{constructor:NameId(10),constructor_level_params:vec![],num_params:0,num_fields:0,rhs:ExprId(46)},RecursorRule{constructor:NameId(11),constructor_level_params:vec![],num_params:0,num_fields:0,rhs:ExprId(49)}];
+    let mut term=ExprId(5);
+    for (i,arg) in [2,6,7,0].into_iter().enumerate() {let id=ExprId(60+i as u64);exprs.insert(id,Expr::App{fun:term,arg:ExprId(arg)}).unwrap();term=id;}
+    let mut definitions=HashMap::new();
+    for i in 0..40 {exprs.insert(ExprId(100+i),Expr::Const{name:NameId(100+i),levels:vec![]}).unwrap();definitions.insert(NameId(100+i),DefinitionBody{value:ExprId(if i==39 {3}else{101+i}),level_params:vec![],preferred_for_reduction:true});}
+    let levels=zero_levels();
+    let build=|defs|Machine::new(AuthorityId(1),&exprs,&levels,defs).with_recursor_reductions(HashMap::from([(NameId(12),RecursorReduction{k:false,num_params:0,num_indices:0,level_params:vec![],rules:rules.clone()})]));
+    let major=Closure::new(ExprId(100),EnvFrame::empty());
+    let source=Closure::new(term,EnvFrame::empty().extend(major));
+    let machine=build(definitions.clone());
+    let true_value=machine.expose(source.clone(),Transparency::Full,256);
+    if std::env::var_os("NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR").is_none() {
+        assert!(matches!(true_value.proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(12),..},..}))));
+        return;
+    }
+    assert!(matches!(true_value.proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(20),..},..}))),"{true_value:?}");
+    assert!(!matches!(machine.expose(source.clone(),Transparency::Full,12).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(20),..},..}))));
+    let neutral=Closure::new(term,EnvFrame::empty().extend_free(FreeId(0)));
+    assert!(matches!(machine.expose(neutral,Transparency::Full,256).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(12),..},..}))));
+    definitions.get_mut(&NameId(139)).unwrap().value=ExprId(4);
+    assert!(matches!(build(definitions).expose(source,Transparency::Full,256).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(21),..},..}))));
 }
