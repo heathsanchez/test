@@ -1,0 +1,19 @@
+{
+  "schema": "v9-development-v1",
+  "cases": [
+    {
+      "id": "orbit_nat_dev",
+      "split": "development",
+      "family": "explicit Nat recursion",
+      "expected": "repairable",
+      "source": "import Std\nnamespace CapstoneV9NatDev\n\ndef orbit (next : Nat → Nat) : Nat → Nat → Nat\n  | 0, initial => initial\n  | k + 1, initial => orbit next k (next initial)\n\ntheorem orbit_add (next : Nat → Nat) (steps tail : Nat) (initial : Nat) :\n    orbit next (steps + tail) initial = orbit next tail (orbit next steps initial) := by\n  induction steps with\n  | zero => simp [orbit]\n  | succ steps ih =>\n      simpa [Nat.succ_add, orbit] using ih (next initial)\n\nend CapstoneV9NatDev\n"
+    },
+    {
+      "id": "foldl_append_dev",
+      "split": "development",
+      "family": "Std List.foldl append",
+      "expected": "repairable",
+      "source": "import Std\nnamespace CapstoneV9FoldDev\n\n\n\ntheorem foldl_append (f : Nat → Nat → Nat) (acc : Nat) (xs ys : List Nat) :\n    List.foldl f acc (xs ++ ys) = List.foldl f (List.foldl f acc xs) ys := by\n  induction xs with\n  | nil => simp\n  | cons head tail ih =>\n      simpa [List.foldl] using ih (f acc head)\n\nend CapstoneV9FoldDev\n"
+    }
+  ]
+}
