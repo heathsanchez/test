@@ -55,6 +55,42 @@ theorem packed_quotient_digit
   rw [Nat.add_comm (base * high) digit]
   exact packed_digit_mod base digit high hDigit
 
+
+/-- Exact geometric expansion with a *natural-number* invariant.
+Useful for replacing a denominator 2^k-1 with a finite polynomial
+without invoking any infinite-series or analytic axioms. -/
+def radixGeometric (base : Nat) : Nat → Nat
+  | 0 => 0
+  | count + 1 => base * radixGeometric base count + 1
+
+theorem radix_geometric_factor (base count : Nat) (hBase : 0 < base) :
+    (base - 1) * radixGeometric base count + 1 = base ^ count := by
+  induction count with
+  | zero =>
+      simp [radixGeometric]
+  | succ count ih =>
+      change
+        (base - 1) * (base * radixGeometric base count + 1) + 1 =
+          base ^ (count + 1)
+      have hb : base - 1 + 1 = base := by omega
+      calc
+        (base - 1) * (base * radixGeometric base count + 1) + 1
+            = base * ((base - 1) * radixGeometric base count + 1) := by
+                calc
+                  _ = base * ((base - 1) * radixGeometric base count)
+                        + ((base - 1) + 1) := by
+                          simp only [Nat.mul_add, Nat.mul_one, Nat.mul_assoc]
+                          ac_rfl
+                  _ = base * ((base - 1) * radixGeometric base count)
+                        + base := by rw [hb]
+                  _ = base * ((base - 1) * radixGeometric base count + 1) := by
+                        simp [Nat.mul_add]
+        _ = base * base ^ count := by rw [ih]
+        _ = base ^ (count + 1) := by rw [pow_succ]; ac_rfl
+
+#check radix_geometric_factor
+#print axioms radix_geometric_factor
+
 #check packed_digit_mod
 #check packed_digit_div
 #check packed_quotient_digit
