@@ -122,4 +122,41 @@ theorem partAux_coinchange (k n : Nat) :
 #print axioms partAux_as_geometricStep
 #print axioms partAux_coinchange
 
+
+/-- Formal coefficient family of a finite product of geometric factors.
+A coefficient row is constructed by repeatedly adding one allowed part size. -/
+def geometricProductCoeff : Nat → Nat → Nat
+  | 0, 0 => 1
+  | 0, _ + 1 => 0
+  | k + 1, n => geometricStep (k + 1) (geometricProductCoeff k) n
+
+/-- Exact agreement of the factor-coefficient grammar with locked SAIR partAux,
+for all part limits and all target degrees. This theorem does not yet assert
+that evaluating the product numerically in radix B recovers these coefficients. -/
+theorem geometricProductCoeff_eq_partAux :
+    ∀ k n, geometricProductCoeff k n = partAux k n := by
+  intro k
+  induction k with
+  | zero =>
+      intro n
+      cases n with
+      | zero => rfl
+      | succ n => rfl
+  | succ k ih =>
+      intro n
+      change geometricStep (k + 1) (geometricProductCoeff k) n =
+        partAux (k + 1) n
+      rw [partAux_as_geometricStep]
+      unfold geometricStep
+      apply sumFold_congr
+      intro j hj
+      exact ih (n - j * (k + 1))
+
+theorem geometricProductCoeff_diagonal (n : Nat) :
+    geometricProductCoeff n n = partitionSpec n := by
+  exact geometricProductCoeff_eq_partAux n n
+
+#print axioms geometricProductCoeff_eq_partAux
+#print axioms geometricProductCoeff_diagonal
+
 end Submission
