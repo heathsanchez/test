@@ -1,0 +1,40 @@
+name: Necessary inquiry V2-V3 exact finite qualification
+
+on:
+  push:
+    branches:
+      - research/necessity-driven-inquiry-v2-20261012
+    paths:
+      - 'research/necessary_inquiry_v2/**'
+      - '.github/workflows/necessary-inquiry-v2-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finite-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prove finite rank and replay protected transfer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python --version
+          python research/necessary_inquiry_v2/verify_v3.py | tee research/necessary_inquiry_v2/ci_receipt.json
+          grep -q PASS_EXACT_BOUNDED research/necessary_inquiry_v2/ci_receipt.json
+      - name: Pin source and verifier bytes
+        shell: bash
+        run: |
+          sha256sum research/necessary_inquiry_v2/generator_v3.py research/necessary_inquiry_v2/verify_v3.py research/necessary_inquiry_v2/V3_FROZEN_GATE.md
+      - name: Retain exact qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: necessary-inquiry-v3-ci-receipt
+          path: research/necessary_inquiry_v2/ci_receipt.json
+          if-no-files-found: error
