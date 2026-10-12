@@ -1,0 +1,100 @@
+name: Nucleus guarded field argument qualification
+on:
+  push:
+    branches: [codex/nucleus-stage16-diagnostic-repair]
+    paths:
+      - .github/scripts/nucleus_guarded_field_argument_patch_v1.py
+      - .github/workflows/nucleus-guarded-field-argument-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build source-bound off/on candidate and test all Rust controls
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-guarded/reports
+          python3 .github/scripts/nucleus_contextual_capability_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_field_application_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_field_premise_trace_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_argument_premise_triad_patch_v1.py metatron-kernel
+          python3 .github/scripts/nucleus_guarded_field_argument_patch_v1.py metatron-kernel
+          git diff --check
+          git diff -- metatron-kernel/src > /tmp/nucleus-guarded/reports/candidate.patch
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION=1 NUCLEUS_EXPERIMENTAL_GUARDED_FIELD_ARGUMENT=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-guarded/checker
+      - name: Acquire exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-guarded/archive /tmp/nucleus-guarded/arena
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/nucleus-guarded/source.zip
+          unzip -q /tmp/nucleus-guarded/source.zip -d /tmp/nucleus-guarded/archive
+          tar --no-same-owner -xzf /tmp/nucleus-guarded/archive/lean-arena-tests.tar.gz -C /tmp/nucleus-guarded/arena
+      - name: Qualify frozen196 and protected adversaries with complete-case gate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time
+          sys.path.insert(0,'.github/scripts')
+          from nucleus_succle_separator import extract,false_index
+          root=pathlib.Path('/tmp/nucleus-guarded/arena')
+          out=pathlib.Path('/tmp/nucleus-guarded/reports')
+          exe='/tmp/nucleus-guarded/checker'
+          flags=['NUCLEUS_EXPERIMENTAL_RELEVANCE','NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER',
+                 'NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE','NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE',
+                 'NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION','NUCLEUS_EXPERIMENTAL_CERTIFIED_FIELD_APPLICATION']
+          common=os.environ|dict.fromkeys(flags,'1')
+          common.pop('NUCLEUS_EXPERIMENTAL_GUARDED_FIELD_ARGUMENT',None)
+          items=[(p,0) for p in sorted((root/'good').rglob('*.ndjson'))]+[(p,1) for p in sorted((root/'bad').rglob('*.ndjson'))]
+          assert len(items)==196 and sum(w==1 for _,w in items)==71
+          forged=false_index(extract((root/'good/init-prelude.ndjson').read_bytes()))
+          assert hashlib.sha256(forged).hexdigest()=='2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688'
+          report={'source':os.environ['GITHUB_SHA'],'binary_sha256':hashlib.sha256(pathlib.Path(exe).read_bytes()).hexdigest(),'artifact':11272848230,'modes':{}}
+          failures=[]
+          def invoke(data,env):
+              try:
+                  r=subprocess.run([exe],input=data,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=180,env=env)
+                  return r.returncode,r.stderr.decode(errors='replace')[-1000:]
+              except subprocess.TimeoutExpired:
+                  return 'TIMEOUT','TIMEOUT'
+          for mode in ['off','on']:
+              env=common if mode=='off' else common|{'NUCLEUS_EXPERIMENTAL_GUARDED_FIELD_ARGUMENT':'1'}
+              rows=[]
+              started=time.monotonic()
+              for p,w in items:
+                  rc,stderr=invoke(p.read_bytes(),env)
+                  rows.append({'case':str(p.relative_to(root)),'expected':w,'rc':rc,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'stderr':stderr})
+              counts={'accept':sum(r['rc']==0 for r in rows),'reject':sum(r['rc']==1 for r in rows),'unknown':sum(r['rc']==2 for r in rows),'wrong':sum(r['rc'] in (0,1) and r['rc']!=r['expected'] for r in rows),'errors':sum(r['rc'] not in (0,1,2) for r in rows)}
+              false_rc,_=invoke(forged,env)
+              nested_rc,_=invoke((root/'bad/bugs/nested-unused-param.ndjson').read_bytes(),env)
+              report['modes'][mode]={'counts':counts,'false_index':false_rc,'nested':nested_rc,'seconds':time.monotonic()-started,'rows':rows}
+              print('GUARDED_FIELD_MODE='+json.dumps({'mode':mode,'counts':counts,'false_index':false_rc,'nested':nested_rc}),flush=True)
+              if counts['wrong'] or counts['errors'] or false_rc not in (1,2) or nested_rc!=1:
+                  failures.append(mode+': protected safety failure')
+              if mode=='off' and counts!={'accept':118,'reject':71,'unknown':7,'wrong':0,'errors':0}:
+                  failures.append('off: incumbent source vector changed')
+          before=report['modes']['off']['rows'];after=report['modes']['on']['rows']
+          report['diffs']=[{'case':a['case'],'off':a['rc'],'on':b['rc']} for a,b in zip(before,after) if a['rc']!=b['rc']]
+          report['gained']=[r['case'] for r in report['diffs'] if r['off']==2 and r['on']==0]
+          if any(r['off'] in (0,1) and r['on']!=r['off'] for r in report['diffs']): failures.append('lost incumbent verdict')
+          if not report['gained']:failures.append('NO_COMPLETE_EXPORT_ACCEPT_GAIN')
+          report['failures']=failures
+          (out/'report.json').write_text(json.dumps(report,indent=2))
+          print('GUARDED_FIELD_FINAL='+json.dumps({'gained':report['gained'],'diffs':report['diffs'],'failures':failures}),flush=True)
+          assert not failures,failures
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-guarded-field-argument-${{ github.sha }}
+          path: /tmp/nucleus-guarded/reports
+          if-no-files-found: error
