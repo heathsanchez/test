@@ -34,7 +34,7 @@ def independent(case):
 def lean(case,rel):
     n=case['n']; edges=case['edges']
     ed=' ∨ '.join(f'(s = {s} ∧ a = {a} ∧ t = {t})' for s,a,t in edges) or 'false'
-    pairs=' || '.join(f'(s = {s} ∧ t = {t})' for s,t in sorted(rel)) or 'false'
+    pairs=' ∨ '.join(f'(s = {s} ∧ t = {t})' for s,t in sorted(rel)) or 'false'
     start,target=case['seed']
     name='V10_'+case['id']
     return f"""import Cslib.Foundations.Semantics.LTS.Simulation
@@ -43,8 +43,12 @@ open Cslib
 def sys : LTS (Fin {n}) (Fin {case['labels']}) where
   Tr := fun s a t => {ed}
 def relation (s t : Fin {n}) : Prop := {pairs}
-theorem certified : LTS.IsSimulation sys sys relation := by decide
-theorem seed : relation {start} {target} := by decide
+theorem certified : LTS.IsSimulation sys sys relation := by
+  unfold LTS.IsSimulation
+  decide
+theorem seed : relation {start} {target} := by
+  unfold relation
+  decide
 end {name}
 """
 def main():
