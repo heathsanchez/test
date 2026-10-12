@@ -8,7 +8,7 @@ theorem; it falsifies a proposed unchecked conversion axiom.
 -/
 namespace NucleusStage16RigidNeutral
 
-theorem succ_zero_ne_zero : Nat.succ 0 != 0 := by decide
+theorem succ_zero_ne_zero : Nat.succ 0 ≠ 0 := by decide
 
 theorem no_universal_succ_free :
     ¬ (∀ (a b : Nat), Nat.succ a = b) := by
