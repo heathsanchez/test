@@ -1,0 +1,199 @@
+{
+  "schema": "v10-cslib-frozen-v1",
+  "upstream_repo": "leanprover/cslib",
+  "upstream_sha": "4b88bcac4c0dec65b3f45b59e85f5397045efd8d",
+  "upstream_toolchain": "leanprover/lean4:v4.35.0-rc4",
+  "source_files": [
+    "Cslib/Foundations/Semantics/LTS/Basic.lean",
+    "Cslib/Foundations/Semantics/LTS/Simulation.lean",
+    "Cslib/Foundations/Semantics/LTS/Bisimulation.lean"
+  ],
+  "development": [
+    {
+      "id": "branch",
+      "n": 3,
+      "labels": 2,
+      "edges": [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ]
+      ],
+      "seed": [
+        0,
+        1
+      ],
+      "expect": true
+    }
+  ],
+  "holdout": [
+    {
+      "id": "two_step",
+      "n": 4,
+      "labels": 2,
+      "edges": [
+        [
+          0,
+          0,
+          2
+        ],
+        [
+          1,
+          0,
+          3
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          3
+        ]
+      ],
+      "seed": [
+        0,
+        1
+      ],
+      "expect": true
+    },
+    {
+      "id": "cycle",
+      "n": 4,
+      "labels": 2,
+      "edges": [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          1,
+          0
+        ],
+        [
+          2,
+          0,
+          3
+        ],
+        [
+          3,
+          1,
+          2
+        ]
+      ],
+      "seed": [
+        0,
+        2
+      ],
+      "expect": true
+    },
+    {
+      "id": "nondeterministic",
+      "n": 4,
+      "labels": 2,
+      "edges": [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          2
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          0,
+          3
+        ]
+      ],
+      "seed": [
+        0,
+        3
+      ],
+      "expect": false
+    }
+  ],
+  "controls": [
+    {
+      "id": "mismatch",
+      "n": 3,
+      "labels": 2,
+      "edges": [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          0,
+          2
+        ]
+      ],
+      "seed": [
+        0,
+        1
+      ],
+      "expect": false
+    },
+    {
+      "id": "self",
+      "n": 3,
+      "labels": 2,
+      "edges": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          0,
+          2
+        ]
+      ],
+      "seed": [
+        2,
+        2
+      ],
+      "expect": true
+    }
+  ]
+}
