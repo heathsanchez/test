@@ -1,0 +1,88 @@
+name: FLASH Genesis V11 source-to-protected qualification
+
+on:
+  push:
+    branches:
+      - research/flash-genesis-v11-obstruction-repair-20261012
+    paths:
+      - 'research/flash_genesis_v11/**'
+      - '.github/workflows/flash-genesis-v11.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-source-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assert pinned historical V10 and protected-source hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, pathlib
+          root=pathlib.Path('research/flash_genesis_v11')
+          expected={
+            'protected_oracles.py':'06bc47505d4cb8619dd829699c6658b005bc558c62b737325e3a4ec8b69f2dba',
+            'learned_repair.py':'1200898dfafa0c431c49f4eeab23f500e8dca92d0fdebfa72d6aca2ec9861506',
+            'source_oracles.py':'eaecc34018bb990bdbccbb7099ec3ac11b803170b231b1839cb16630c02947af',
+            'synthesize.py':'577253a119d2088ec14ea349734d99652fed5f5b9fa17efeb220ac0bc49d4988',
+            'verify_protected.py':'6c20f66877b17628596ad9e5231063f14d04e3e3d4dcea2da5a5863c21239984'
+          }
+          for name,correct in expected.items():
+            actual=hashlib.sha256((root/name).read_bytes()).hexdigest()
+            assert actual==correct,(name,actual,correct)
+          print('PASS_PINNED_SOURCE_SHA256')
+          PY
+      - name: Re-run source-only synthesis before protected import
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_genesis_v11/synthesize.py > /tmp/source_v11_stdout.json
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('research/flash_genesis_v11')
+          r=json.loads((p/'source_receipt.json').read_text())
+          assert r['status']=='SOURCE_RULE_FROZEN'
+          assert r['source_total_candidate_calls']==6006234
+          assert r['selected']['source_cases']==14534
+          assert r['selected']['policy']=={'bound':True,'include_first':True,'mode':'both_branches','prune':False}
+          print('PASS_SOURCE_SYNTHESIS')
+          PY
+      - name: Independent protected exact transfer and future no-go
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/flash_genesis_v11/verify_protected.py | tee /tmp/protected_v11_stdout.json
+          python - <<'PY'
+          import json,pathlib
+          r=json.loads(pathlib.Path('research/flash_genesis_v11/results.json').read_text())
+          assert r['status']=='PASS_EXACT_FINITE_PROTECTED_TRANSFER'
+          assert r['total']['protected_case_comparisons']==36022
+          assert r['total']['protected_generated_calls']==r['total']['protected_matched_stateless_calls']==182489
+          assert sum(x['status']=='UNKNOWN_UNSUPPORTED_CONTRACT' for x in r['protected_families'])==2
+          assert len(r['third_generation_changed_objective'])==2
+          assert all(x['status']=='UNKNOWN_OBJECTIVE_LANGUAGE_NOT_SUPPORTED' for x in r['third_generation_changed_objective'])
+          print('PASS_V11_BOUNDED_PROTECTED')
+          PY
+      - name: Check reproduced bytes and retain exact receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- research/flash_genesis_v11/learned_repair.py research/flash_genesis_v11/source_receipt.json research/flash_genesis_v11/qualified_policy.json research/flash_genesis_v11/results.json
+          sha256sum research/flash_genesis_v11/{synthesize.py,source_receipt.json,learned_repair.py,protected_oracles.py,verify_protected.py,results.json}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flash-genesis-v11-exact-replay
+          path: |
+            research/flash_genesis_v11/source_receipt.json
+            research/flash_genesis_v11/qualified_policy.json
+            research/flash_genesis_v11/results.json
+            research/flash_genesis_v11/learned_repair.py
+          if-no-files-found: error
