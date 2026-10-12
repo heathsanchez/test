@@ -107,7 +107,7 @@ jobs:
               fake=Path(t)/'counterfeit.py'
               fake.write_bytes(correct.read_bytes()+b'\n# forged')
               try: load_v11(fake)
-              except ValueError:pass
+              except (ValueError,AssertionError):pass
               else:raise AssertionError('FORGED_SOURCE_ADMITTED')
           print('PASS_MUTATED_TRANSFERRED_CAPABILITY_REJECTED')
           PY
