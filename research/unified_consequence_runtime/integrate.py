@@ -76,6 +76,8 @@ def main():
     ap.add_argument("--mathgraph-replay", type=Path, required=True)
     ap.add_argument("--catalogue-replay", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--previous-flash", type=Path)
+    ap.add_argument("--previous-ledger", type=Path)
     args = ap.parse_args()
 
     manifest = read(args.manifest)
@@ -117,7 +119,9 @@ def main():
     # The frozen native FLASH loader verifies each actual event's evidence bytes.
     bundles = sorted(p.parent for p in args.source_bundles.rglob("event.json"))
     assert len(bundles) >= 4, "no genuine source-bound events"
-    flash = update_live_state(None, bundles)
+    preceding_flash = (args.previous_flash.read_text(encoding="utf-8")
+                      if args.previous_flash and args.previous_flash.is_file() else None)
+    flash = update_live_state(preceding_flash, bundles)
     summary = flash["summary"]
     cold, _ = restore_state_bundle(flash["state_bundle_text"])
     for key in ("external_events", "event_ids", "active_capability_ids",
@@ -140,10 +144,24 @@ def main():
             "emitter_source_commit": emitter_head,
             "source_evidence_sha256": event["source_evidence_sha256"]
         })
-    assert len(source_events) == summary["external_events"]
+    assert len(source_events) <= summary["external_events"]
     assert len({item["id"] for item in source_events}) == len(source_events)
+    retained_ids = set(flash["retained_past_event_ids"])
+    previous_ids = set()
+    if preceding_flash is not None:
+        old = read(args.previous_flash)
+        previous_ids = {item["event_id"] for item in old["events"]}
+        assert previous_ids <= set(summary["event_ids"])
+        assert retained_ids <= previous_ids
+    assert (set(flash["new_event_ids"]) | set(flash["unchanged_event_ids"])
+            ) == {item["id"] for item in source_events}
+    assert not (set(flash["new_event_ids"]) & set(flash["unchanged_event_ids"]))
 
-    log = ()
+    preceding_log = (args.previous_ledger.read_text(encoding="utf-8")
+                     if args.previous_ledger and args.previous_ledger.is_file() else None)
+    log = mt.loads(preceding_log) if preceding_log is not None else ()
+    old_log_ids = set(mt.ids(log))
+    assert set(mt.live_ids(log)) == independent_live(log)
     roots = {}
     for family in ("components", "emitters"):
         for key, (repo, commit) in sorted(manifest[family].items()):
@@ -226,6 +244,10 @@ def main():
             "current_applicability": source_index["current_applicability"]},
         "flash": {
             "events": summary["external_events"],
+            "new_event_ids": flash["new_event_ids"],
+            "unchanged_event_ids": flash["unchanged_event_ids"],
+            "retained_past_event_ids": flash["retained_past_event_ids"],
+            "past_restored": preceding_flash is not None,
             "repositories": summary["repositories"],
             "source_events": source_events,
             "active_capabilities": summary["active_capability_ids"],
@@ -234,6 +256,8 @@ def main():
             "restart": "PASS"},
         "metatron": {
             "nodes": len(log), "live": len(mt.live_ids(log)),
+            "past_restored": preceding_log is not None,
+            "prior_node_ids_retained": len(old_log_ids),
             "restart": "PASS", "dependency_oracle": "PASS",
             "source_revocation": "PASS", "unrelated_lineage": "PRESERVED"},
         "frontier": frontier.payload,
@@ -248,6 +272,7 @@ def main():
             "flash_cold_restart": "PASS",
             "metatron_live_restart": "PASS",
             "metatron_ablation": "PASS",
+            "prior_research_history_retained": "PASS" if preceding_flash is not None and preceding_log is not None else "COLD_BOOTSTRAP",
             "previously_failing_native_goal_solved": "UNKNOWN",
             "new_generator_native_transfer": "UNKNOWN",
             "full_lifecycle_advantage": "NOT_MEASURED"}
