@@ -1,0 +1,136 @@
+name: CSLib native certificate continuation
+
+on:
+  push:
+    branches: [research/unified-consequence-runtime-20261013]
+    paths:
+      - 'research/unified_consequence_runtime/cslib_native_method.py'
+      - '.github/workflows/unified-cslib-native-continuation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  native-lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: a50f199082da91845115efb77844603dee55a465
+          path: original-v10
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check old actual native failed target and immutable source
+        run: |
+          set -euo pipefail
+          test "$(git -C original-v10 rev-parse HEAD)" = a50f199082da91845115efb77844603dee55a465
+          gh api repos/heathsanchez/test/actions/runs/38237298379 > /tmp/old-native.json
+          python - <<'PY'
+          import json
+          old=json.load(open('/tmp/old-native.json'))
+          assert old['head_sha']=='a50f199082da91845115efb77844603dee55a465'
+          assert old['status']=='completed' and old['conclusion']=='failure'
+          print('PREEXISTING_NATIVE_FAILURE_PINNED')
+          PY
+
+      - name: Generate certificates from the original frozen semantic solver
+        run: |
+          set -euo pipefail
+          python coordinator/research/unified_consequence_runtime/cslib_native_method.py \
+            --original original-v10/capstone/v10 --out coordinator/native-output
+          python - <<'PY'
+          import json
+          d=json.load(open('coordinator/native-output/manifest.json'))
+          assert len(d['cases'])==6
+          assert sum(x['seed_proven'] for x in d['cases'])==4
+          assert sum(x['seed_refuted'] for x in d['cases'])==2
+          assert d['source_commit']=='4b88bcac4c0dec65b3f45b59e85f5397045efd8d'
+          PY
+
+      - name: Fetch independent CSLib semantics at exact upstream commit
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/leanprover/cslib.git /tmp/cslib
+          git -C /tmp/cslib checkout --detach 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          test "$(git -C /tmp/cslib rev-parse HEAD)" = 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          test "$(cat /tmp/cslib/lean-toolchain)" = leanprover/lean4:v4.35.0-rc4
+
+      - name: Install exact source compiler and library dependencies
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          cd /tmp/cslib
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0-rc4
+          "$HOME/.elan/bin/lake" exe cache get
+          "$HOME/.elan/bin/lake" build Cslib.Foundations.Semantics.LTS.Bisimulation
+
+      - name: Native Lean check every generated proof and exact failed cycle repair
+        run: |
+          set -euo pipefail
+          cd /tmp/cslib
+          export PATH="$HOME/.elan/bin:$PATH"
+          test "$(lean --version | grep -o '4.35.0-rc4')" = '4.35.0-rc4'
+          count=0
+          for file in "$GITHUB_WORKSPACE"/coordinator/native-output/{development,holdout,controls}_*.lean; do
+            test -f "$file"
+            if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom)([^[:alnum:]_]|$)' "$file"; then exit 1; fi
+            echo "NATIVE_CHECK=$(basename "$file")"
+            lake env lean "$file"
+            count=$((count+1))
+          done
+          test "$count" -eq 6
+          test -f "$GITHUB_WORKSPACE/coordinator/native-output/holdout_cycle.lean"
+          echo 'NATIVE_CSLIB_FINITE_CERTIFICATE_PASS'
+
+      - name: Verify a forged universal relation is rejected by actual Lean
+        run: |
+          set -euo pipefail
+          cd /tmp/cslib
+          export PATH="$HOME/.elan/bin:$PATH"
+          if lake env lean "$GITHUB_WORKSPACE/coordinator/native-output/control_unsound_universal.lean" \
+              > /tmp/unsound-out.log 2>&1; then
+            echo 'UNSOUND_CERTIFICATE_ACCEPTED'
+            exit 1
+          fi
+          grep -E 'error:|tactic.*failed' /tmp/unsound-out.log
+          echo 'NATIVE_UNSOUND_CERTIFICATE_REJECTED'
+
+      - name: Seal exact source-bound native qualification
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('coordinator/native-output')
+          p=root/'manifest.json'
+          data=json.loads(p.read_text())
+          for row in data['cases']:
+              b=(root/row['proof_filename']).read_bytes()
+              assert hashlib.sha256(b).hexdigest()==row['proof_sha256']
+              row['native_lean']='PASS'
+          data['native_verdict']='NATIVE_CSLIB_SOURCE_PINNED_PASS'
+          data['scientific_method_genesis']='UNKNOWN'
+          data['claim_boundary']='REPAIRED_NATIVE_CERTIFICATE_BACKEND_ON_FROZEN_FINITE_INPUT'
+          p.write_text(json.dumps(data,sort_keys=True,indent=2)+'\n')
+          print('NATIVE_CSLIB_QUALIFICATION_SEALED')
+          PY
+      - name: Publish exact generated Lean proofs and manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cslib-native-source-certificates
+          path: coordinator/native-output
+          if-no-files-found: warn
