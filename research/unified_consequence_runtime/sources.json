@@ -16,6 +16,10 @@
     "msi": [
       "heathsanchez/Minimal-Sufficient-Interface",
       "5d448c0ecc82ff3945d009963064ebbb67d2f308"
+    ],
+    "v10": [
+      "heathsanchez/test",
+      "a50f199082da91845115efb77844603dee55a465"
     ]
   },
   "emitters": {
@@ -34,6 +38,10 @@
     "sair": [
       "heathsanchez/equational-theories-lean-stage2",
       "6821d765fc33da95a6cf5bef32b0a43b2ee39522"
+    ],
+    "native": [
+      "heathsanchez/test",
+      "dd0d53ff3ce198aaac9f4537f418682efd6a3f79"
     ]
   },
   "runs": [
@@ -85,20 +93,31 @@
       38237298379,
       "a50f199082da91845115efb77844603dee55a465",
       "failure"
+    ],
+    [
+      "CSLIB_NATIVE_PASS",
+      "heathsanchez/test",
+      38466549740,
+      "dd0d53ff3ce198aaac9f4537f418682efd6a3f79",
+      "success"
     ]
   ],
   "mathgraph_policy_sha256": "7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89",
   "protected_claims": {
     "open_native_target": "CSLIB_NATIVE_FAIL",
     "system_e2e": "UNKNOWN",
-    "recursive_native_development": "UNKNOWN"
+    "recursive_native_development": "UNKNOWN",
+    "native_certificate_backend": "PASS_SCOPED"
   },
   "interpretation": "Historical runs are provider-checked pointers, not fresh theorem verifications. Original source scientific scopes prevail.",
   "event_origin_allowlist": {
     "collatz": [
       "7fe10392f2865a008ff8642f4da64d93378c780f",
       "c444e21e15557126fae555ddbdfa1e04016e1573"
+    ],
+    "native": [
+      "dd0d53ff3ce198aaac9f4537f418682efd6a3f79"
     ]
   },
-  "source_note": "An emitter head does not equal every event's original evidence commit. Validate each typed event's own repository and source SHA. Collatz has two source-distinct historical events."
+  "source_note": "An emitter head does not equal every event's original evidence commit. Validate each typed event's own repository and source SHA. Collatz has two source-distinct historical events. New CSLib native scope-qualified event is distinct from both historical Collatz events and cannot attest unrelated native goal success."
 }
