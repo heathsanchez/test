@@ -74,6 +74,7 @@ def main():
     ap.add_argument("--run-data", type=Path, required=True)
     ap.add_argument("--source-bundles", type=Path, required=True)
     ap.add_argument("--mathgraph-replay", type=Path, required=True)
+    ap.add_argument("--catalogue-replay", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args()
 
@@ -97,6 +98,21 @@ def main():
     mg = check_mathgraph_replay(
         read(args.mathgraph_replay), args.components / "mathgraph",
         manifest["mathgraph_policy_sha256"])
+    source_index = read(args.catalogue_replay)
+    published = read(args.components / "mathgraph" / "website" / "public"
+                     / "catalogues" / "mathlib" / "v4.34.1" / "manifest.json")
+    assert source_index == {
+        "source_status": "SOURCE_INDEXED",
+        "independent_verification": "NOT_CHECKED",
+        "current_applicability": "NOT_CHECKED",
+        "freshness": "PINNED_HISTORICAL_SOURCE",
+        "authorization": "NONE",
+        "authority": "NONE"}, "source-index authority changed"
+    assert published["counts"]["objects"] == 2345
+    assert published["counts"]["relations"] == 3571
+    assert published["counts"]["modules"] == 13
+    assert published["authority"] == published["authorization"] == "NONE"
+
 
     # The frozen native FLASH loader verifies each actual event's evidence bytes.
     bundles = sorted(p.parent for p in args.source_bundles.rglob("event.json"))
@@ -144,6 +160,17 @@ def main():
     qualification = mt.Node("bounded_profile_replay", mg,
                             (roots[("components", "mathgraph")].id,))
     log = mt.append(log, qualification)
+    source_catalogue = mt.Node("independently_checked_source_index",
+        {"scope": "13 pinned Mathlib modules",
+         "objects": published["counts"]["objects"],
+         "structural_relations": published["counts"]["relations"],
+         "source_status": source_index["source_status"],
+         "independent_verification": source_index["independent_verification"],
+         "current_applicability": source_index["current_applicability"],
+         "authority": source_index["authority"],
+         "action_authorization": source_index["authorization"]},
+        (roots[("components", "mathgraph")].id,))
+    log = mt.append(log, source_catalogue)
     flash_event = mt.Node(
         "native_flash_event_reclosure",
         {"event_ids": summary["event_ids"],
@@ -168,7 +195,7 @@ def main():
         "action_authorization": "NONE",
         "system_e2e": manifest["protected_claims"]["system_e2e"],
         "recursive_native_development": manifest["protected_claims"]["recursive_native_development"]},
-        (qualification.id, flash_event.id, residual.id))
+        (qualification.id, source_catalogue.id, flash_event.id, residual.id))
     log = mt.append(log, frontier)
 
     serialized = mt.dumps(log)
@@ -191,6 +218,12 @@ def main():
         "sources": manifest["components"],
         "runs": runs,
         "mathgraph": mg,
+        "mathgraph_source_catalogue": {
+            "counts": published["counts"],
+            "source_status": source_index["source_status"],
+            "independent_verification": source_index["independent_verification"],
+            "action_authorization": source_index["authorization"],
+            "current_applicability": source_index["current_applicability"]},
         "flash": {
             "events": summary["external_events"],
             "repositories": summary["repositories"],
@@ -210,6 +243,7 @@ def main():
             "source_pins": "PASS",
             "provider_runs": "PASS",
             "independent_mathgraph_replay": "PASS",
+            "independent_mathgraph_source_index_replay": "PASS",
             "flash_source_reclosure": "PASS",
             "flash_cold_restart": "PASS",
             "metatron_live_restart": "PASS",
