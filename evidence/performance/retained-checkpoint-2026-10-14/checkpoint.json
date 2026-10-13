@@ -1,0 +1,57 @@
+{
+  "status": "QUALIFIED_RETAINED_SOURCE; SIX_TARGETED_FULL_EXPORTS_UNKNOWN",
+  "base_commit": "0c4767b",
+  "snapshot_binary_sha256": "588ecfd86ea35d23c97b580d825baa59b56e74ecabad140eed9736072ae8743c",
+  "fresh_release_tests": {
+    "passed": 325,
+    "failed": 0,
+    "ignored": 17
+  },
+  "frozen196": {
+    "default": {
+      "accept": 118,
+      "reject": 71,
+      "unknown": 7,
+      "wrong": 0
+    },
+    "origin": {
+      "accept": 119,
+      "reject": 71,
+      "unknown": 6,
+      "wrong": 0
+    },
+    "demand": {
+      "accept": 119,
+      "reject": 71,
+      "unknown": 6,
+      "wrong": 0
+    }
+  },
+  "source_equals_qualified_snapshot": true,
+  "full_mathlib": "NOT_QUALIFIED",
+  "arena_rank": "NOT_QUALIFIED",
+  "full_mathlib_input_ci": "https://github.com/heathsanchez/test/actions/runs/38473651955",
+  "review": "Targeted independent COW/source-scope/cache review; no blocking findings; not complete semantic audit",
+  "source_sha256": {
+    "Cargo.toml": "6c468f969d98044d06290e04ed471e8d26e721f28192c7d22bb34db34f0cf670",
+    "src/capability.rs": "465c7b8f6a8e23f7e6900320aebb356f2f6291795a5923565685022e3d730953",
+    "src/checker.rs": "fb1a54ed44db5ed75d08cbf952cd299de9aa6fd186597d3046eaaf983627cfa4",
+    "src/convert.rs": "492b2d953b818698e6c4074094fff3ca80ecc56718adc77206e9a7e6fd21c1a0",
+    "src/diagnostics.rs": "2d94c257aa27566aaa6dbdd45a9b5f7beed41e4eda054176b026116c6cfedfdc",
+    "src/environment.rs": "c4dd73062d4f269098af1bb38f5de00b2cf1d13fd20bd390e98304996191a09a",
+    "src/id.rs": "79f7d6e2c32b0f50a391d197e4eee32dc0bf9bc4ec96d27a1e31eed833dd215b",
+    "src/indexed_prop.rs": "ab9f35c77c8c285e12f60bca2b50d40faa8ae1673e1a6bfb300f00e1fd683e76",
+    "src/inductive.rs": "f8111184a6c4a37ebfa362679d4c79d2a9f3297c41fd524cc45b71ca7b39e1dd",
+    "src/judgment.rs": "41714ffe0ba04ae42a1329f0a083f632eec6ae3102d1cc9e0c7ab3ca8c082f6d",
+    "src/level.rs": "9ba7db039f7793f9cd794d6a2a9e30d92313c093d6b4506fd6db1449a002aef5",
+    "src/lib.rs": "220c4510c23dbed492432e1f53913133468e0f572e5d97e04046084a17c06f83",
+    "src/machine.rs": "7826c2276e2a9f50fd284184d4d824338c6a8fd758d27b20b47c6a329094c276",
+    "src/main.rs": "0e10bfafdc3395ca48b3e7bd33d096e542feffb02e66840915ed70fb552601ec",
+    "src/nat.rs": "b1767ff422548733e756056e2470771bfa9eed2bcbb71082e8d494cfa1869b88",
+    "src/parser.rs": "c65393a6fba7da46f5bd9bef14608d7a47c4cca3041442d3c96eccdcabbe7161",
+    "src/syntax.rs": "6ba86a3b6820d9739f8cb5ad1ede3906f456cf2a16119d712a85795cda376116",
+    "src/typecheck.rs": "16925aed52e1b20441a184cee70d8bdd839618c7461990e3f0045f8f4b8f2c7b",
+    "src/value.rs": "38483901bce088eae740626e5865181e4e2fe4e9dc075547f55c0708da128e9b",
+    "src/verdict.rs": "e2154540cb78dee760db6800999d6d134bec90ae6c03a0a1bd297efb0eb5885c"
+  }
+}

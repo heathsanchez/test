@@ -34,6 +34,56 @@ struct CheckedBinderWitness {
     protected_prefix: Vec<TypeValue>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+enum CheckedFrameRole { InferPi, InferLambda, ExpectedLambda, LambdaIntro, LiteralBeta, Let, ExactPiSubstitution }
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum CheckedFrameBinding { Free(FreeId), Actual(Closure) }
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct CheckedFrameKey {
+    source: ExprId,
+    role: CheckedFrameRole,
+    parent: u64,
+    domain: TypeValue,
+    protected_context: Vec<TypeValue>,
+    binding: CheckedFrameBinding,
+    captured_codomain: Option<Closure>,
+    substitution_lineage_enabled: bool,
+    lineage_enabled: bool,
+    strict_origin: bool,
+}
+
+#[cfg(feature = "diagnostics")]
+thread_local! {
+    static CAPTURE_SOURCE_FAILURE: RefCell<Option<Option<String>>> = const { RefCell::new(None) };
+}
+#[cfg(feature = "diagnostics")]
+struct CaptureSourceFailureScope(Option<Option<String>>);
+#[cfg(feature = "diagnostics")]
+impl CaptureSourceFailureScope {
+    fn enter() -> Self { Self(CAPTURE_SOURCE_FAILURE.with(|failure| failure.replace(Some(None)))) }
+    fn first() -> Option<String> {
+        CAPTURE_SOURCE_FAILURE.with(|failure| failure.borrow().as_ref().and_then(Clone::clone))
+    }
+}
+#[cfg(feature = "diagnostics")]
+impl Drop for CaptureSourceFailureScope {
+    fn drop(&mut self) { CAPTURE_SOURCE_FAILURE.with(|failure| { failure.replace(self.0.take()); }); }
+}
+
+#[derive(Clone, Default)]
+struct LambdaTrialState {
+    quota: usize,
+    active: usize,
+    started: usize,
+    proven: usize,
+    declined: usize,
+    spent: usize,
+    nested_direct: usize,
+    skipped: usize,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum RuleKAttempt {
     NotApplicable,
@@ -48,6 +98,17 @@ pub struct TypeChecker<'a> {
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
     exposure_cache: ExposureCache,
+    // Eligibility is structural; typing proofs stay in the per-judgment cache.
+    closed_spine_eligibility: RefCell<HashMap<ExprId, bool>>,
+    source_support: RefCell<HashMap<ExprId, Vec<u64>>>,
+    paired_source_support: RefCell<HashMap<(ExprId, ExprId), Vec<(u64, u64)>>>,
+    checked_frames: RefCell<HashMap<CheckedFrameKey, EnvFrame>>,
+    // Completed pure source-freshness proofs, local to these borrowed immutable
+    // source tables. Retained closures pin frame and level allocation identity.
+    source_opening_proofs: RefCell<HashMap<(ExprId,u64,usize,FreeId),Closure>>,
+    // Closed source types admitted by this checker's actual formation judgment.
+    formed_expected: RefCell<std::collections::HashSet<Closure>>,
+    lambda_trials: RefCell<LambdaTrialState>,
     checked_binding_lineage: Rc<RefCell<HashMap<u64,Option<CheckedBinderWitness>>>>,
     // Diagnostic-only strictness: a FreeId is typed solely by its checked
     // immutable binder node under the identical protected source scope.
@@ -55,6 +116,33 @@ pub struct TypeChecker<'a> {
 }
 
 impl<'a> TypeChecker<'a> {
+    fn reset_lambda_trials(&self, budget: usize) {
+        *self.lambda_trials.borrow_mut() = LambdaTrialState {
+            quota: budget.min(4096), ..LambdaTrialState::default()
+        };
+    }
+
+    fn begin_lambda_trial(&self, remaining: usize) -> Option<usize> {
+        let mut trials = self.lambda_trials.borrow_mut();
+        if trials.active != 0 || trials.quota == 0 || remaining == 0 {
+            trials.skipped += 1;
+            return None;
+        }
+        let budget = remaining.min(4096).min(trials.quota);
+        trials.quota -= budget;
+        trials.started += 1;
+        trials.active += 1;
+        Some(budget)
+    }
+
+    fn finish_lambda_trial(&self, budget: usize, remaining: usize, proven: bool) {
+        let mut trials = self.lambda_trials.borrow_mut();
+        trials.active -= 1;
+        let spent = budget.saturating_sub(remaining);
+        trials.spent += spent;
+        trials.quota += remaining.min(budget);
+        if proven { trials.proven += 1; } else { trials.declined += 1; }
+    }
     pub fn new(
         expressions: &'a IdTable<ExprId, Expr>,
         levels: &'a IdTable<LevelId, Level>,
@@ -67,6 +155,13 @@ impl<'a> TypeChecker<'a> {
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
             exposure_cache: new_exposure_cache(),
+            closed_spine_eligibility: RefCell::new(HashMap::new()),
+            source_support: RefCell::new(HashMap::new()),
+            paired_source_support: RefCell::new(HashMap::new()),
+            checked_frames: RefCell::new(HashMap::new()),
+            source_opening_proofs:RefCell::new(HashMap::new()),
+            formed_expected: RefCell::new(std::collections::HashSet::new()),
+            lambda_trials: RefCell::new(LambdaTrialState::default()),
             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
             strict_origin_probe: false,
         }
@@ -85,12 +180,20 @@ impl<'a> TypeChecker<'a> {
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
             exposure_cache: new_exposure_cache(),
+            closed_spine_eligibility: RefCell::new(HashMap::new()),
+            source_support: RefCell::new(HashMap::new()),
+            paired_source_support: RefCell::new(HashMap::new()),
+            checked_frames: RefCell::new(HashMap::new()),
+            source_opening_proofs:RefCell::new(HashMap::new()),
+            formed_expected: RefCell::new(std::collections::HashSet::new()),
+            lambda_trials: RefCell::new(LambdaTrialState::default()),
             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
             strict_origin_probe: false,
         }
     }
 
     pub fn with_delta_policy(mut self, policy: crate::convert::DeltaPolicy) -> Self {
+        self.formed_expected.borrow_mut().clear();
         self.delta_policy = policy;
         self
     }
@@ -125,6 +228,97 @@ impl<'a> TypeChecker<'a> {
                 }
             }
         }
+    }
+
+    /// Called only after domain formation and, for actual substitutions,
+    /// argument typing. Exact source and full Γ equality preserve the scope
+    /// of each retained witness; no local or context quotient is involved.
+    fn checked_source_frame(
+        &self, source: ExprId, role: CheckedFrameRole, parent: &EnvFrame,
+        domain: TypeValue, protected_context: &[TypeValue], binding: CheckedFrameBinding,
+    ) -> EnvFrame {
+        self.checked_source_frame_with_codomain(source, role, parent, domain,
+            protected_context, binding, None)
+    }
+
+    fn checked_captured_pi_frame(
+        &self, codomain: &Closure, argument: &Closure, domain: TypeValue,
+        protected_context: &[TypeValue],
+    ) -> EnvFrame {
+        self.checked_source_frame_with_codomain(codomain.expr,
+            CheckedFrameRole::ExactPiSubstitution, &codomain.env, domain,
+            protected_context, CheckedFrameBinding::Actual(argument.clone()),
+            Some(codomain.clone()))
+    }
+
+    fn checked_source_frame_with_codomain(
+        &self, source: ExprId, role: CheckedFrameRole, parent: &EnvFrame,
+        domain: TypeValue, protected_context: &[TypeValue], binding: CheckedFrameBinding,
+        captured_codomain: Option<Closure>,
+    ) -> EnvFrame {
+        let substitution_lineage_enabled =
+            std::env::var_os("NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE").is_some();
+        let lineage_enabled = self.strict_origin_probe
+            || std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE").is_some();
+        let retain = |frame: &EnvFrame, domain| {
+            if role == CheckedFrameRole::ExactPiSubstitution {
+                self.retain_checked_elimination(frame, domain, protected_context);
+            } else {
+                self.retain_checked_binding(frame, domain, protected_context);
+            }
+        };
+        // Avoid recursive fixed-Pi hashing and bound retained scope vectors.
+        let eligible = protected_context.len() <= 128
+            && !matches!(&domain, TypeValue::Pi { .. })
+            && protected_context.iter().all(|ty| !matches!(ty, TypeValue::Pi { .. }));
+        // Both lambda routes independently prove the source annotation's
+        // formation before reaching this constructor. They introduce the
+        // same annotated domain and fresh local under the exact full Γ.
+        // Only that certified Free introduction has a shared cache role.
+        let cache_role=if matches!(role,CheckedFrameRole::InferLambda|CheckedFrameRole::ExpectedLambda)
+            && captured_codomain.is_none()
+            && protected_context.last()==Some(&domain)
+            && matches!(&binding,CheckedFrameBinding::Free(free) if !protected_context.is_empty() && fresh_local(protected_context.len()-1)==Some(*free))
+            && matches!((self.expressions.get(source),&domain),
+                (Some(Expr::Lam{domain:annotation,..}),TypeValue::Term(term))
+                    if term.expr==*annotation && term.env.id()==parent.id())
+        {CheckedFrameRole::LambdaIntro}else{role};
+        let key = eligible.then(|| CheckedFrameKey {
+            source, role:cache_role, parent: parent.id(), domain: domain.clone(),
+            protected_context: protected_context.to_vec(), binding: binding.clone(),
+            captured_codomain, substitution_lineage_enabled,
+            lineage_enabled, strict_origin: self.strict_origin_probe,
+        });
+        if let Some(key) = &key {
+            let existing = self.checked_frames.borrow().get(key).cloned();
+            if let Some(frame) = existing {
+                let reusable = match self.checked_binding_lineage.borrow().get(&frame.id()) {
+                    Some(Some(witness)) => witness.domain == domain
+                        && witness.protected_prefix == protected_context,
+                    Some(None) => false,
+                    None => !lineage_enabled || (role == CheckedFrameRole::ExactPiSubstitution
+                        && !substitution_lineage_enabled),
+                };
+                if reusable {
+                    retain(&frame, domain);
+                    return frame;
+                }
+            }
+        }
+        let frame = match binding {
+            CheckedFrameBinding::Free(free) => parent.extend_free(free),
+            CheckedFrameBinding::Actual(actual) => parent.extend(actual),
+        };
+        retain(&frame, domain);
+        if let Some(key) = key {
+            let mut frames = self.checked_frames.borrow_mut();
+            // Saturation preserves existing immutable proofs and falls back
+            // to ordinary fresh allocation for new source tuples.
+            if frames.len() < 8192 || frames.contains_key(&key) {
+                frames.insert(key, frame.clone());
+            }
+        }
+        frame
     }
 
     fn retain_checked_elimination(
@@ -184,6 +378,7 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub fn infer(&self, expression: ExprId, budget: usize) -> Judgment<TypeValue> {
+        self.reset_lambda_trials(budget);
         let mut remaining = budget;
         self.infer_in(
             expression,
@@ -195,6 +390,7 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub fn check(&self, expression: ExprId, expected: &TypeValue, budget: usize) -> Judgment<()> {
+        self.reset_lambda_trials(budget);
         let mut remaining = budget;
         self.check_in(
             expression,
@@ -207,10 +403,41 @@ impl<'a> TypeChecker<'a> {
         )
     }
 
+    /// Check against an exact closed source type previously proved formed by
+    /// `is_type` or `is_proposition` on this checker. A Pi shape is no warrant.
+    pub fn check_formed(&self, expression: ExprId, expected: &TypeValue, budget: usize) -> Judgment<()> {
+        self.reset_lambda_trials(budget);
+        let TypeValue::Term(expected_source) = expected else {
+            return Judgment::unknown("formed-expected-source-missing");
+        };
+        if !self.formed_expected.borrow().contains(expected_source) {
+            return Judgment::unknown("expected-type-formation-warrant-missing");
+        }
+        let mut remaining = budget;
+        let result = self.check_with_formation(expression, expected, &[], &EnvFrame::empty(),
+            &mut remaining, self.delta_policy == crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            &mut HashMap::new(), true);
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_LAMBDA_TRIAL_WORK").is_some() {
+            let trials = self.lambda_trials.borrow();
+            eprintln!("lambda-trial-work expression={expression:?} budget={budget} remaining={remaining} started={} proven={} declined={} spent={} nested_direct={} skipped={} quota={}",
+                trials.started, trials.proven, trials.declined, trials.spent,
+                trials.nested_direct, trials.skipped, trials.quota);
+        }
+        result
+    }
+
+    fn retain_formed_expected(&self, expression: ExprId) {
+        let mut formed = self.formed_expected.borrow_mut();
+        if formed.len() < 128 {
+            formed.insert(self.closure(expression, EnvFrame::empty()));
+        }
+    }
+
     pub fn is_type(&self, expression: ExprId, budget: usize) -> Judgment<()> {
         #[cfg(feature = "diagnostics")]
         crate::diagnostics::type_judgment();
-        match self.infer(expression, budget) {
+        let result = match self.infer(expression, budget) {
             Judgment::Proven {
                 value: TypeValue::Sort(_),
                 ..
@@ -236,7 +463,9 @@ impl<'a> TypeChecker<'a> {
             } => Judgment::refuted("term-is-not-a-type"),
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
             Judgment::Unknown { residual } => Judgment::Unknown { residual },
-        }
+        };
+        if result.is_proven() { self.retain_formed_expected(expression); }
+        result
     }
 
     /// Establish that `expression` itself inhabits `Prop` (`Sort 0`).
@@ -244,8 +473,9 @@ impl<'a> TypeChecker<'a> {
     /// This remains three-valued: unresolved universe equality or reduction
     /// is not a refutation.
     pub fn is_proposition(&self, expression: ExprId, budget: usize) -> Judgment<()> {
+        self.reset_lambda_trials(budget);
         let mut remaining = budget;
-        self.check_in(
+        let result = self.check_in(
             expression,
             &TypeValue::Sort(LevelTerm::Zero),
             &[],
@@ -253,7 +483,9 @@ impl<'a> TypeChecker<'a> {
             &mut remaining,
             false,
             &mut HashMap::new(),
-        )
+        );
+        if result.is_proven() { self.retain_formed_expected(expression); }
+        result
     }
 
     /// Independently reconstruct the type of a two-argument relation in its
@@ -305,6 +537,16 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    #[cfg(feature = "diagnostics")]
+    fn record_capture_source_failure(&self, term: &Closure, context: &[TypeValue], remaining: usize, depth: usize, reason: &str) {
+        CAPTURE_SOURCE_FAILURE.with(|failure| {
+            let mut failure = failure.borrow_mut();
+            if let Some(first @ None) = failure.as_mut() {
+                *first = Some(format!("reason={reason}:source={term:?}:syntax={:?}:context_len={}:depth={depth}:remaining={remaining}", self.expressions.get(term.expr), context.len()));
+            }
+        });
+    }
+
     /// A deliberately partial *typing derivation* for evaluated closures.
     /// In contrast to inferring just the normalized neutral head, this
     /// reconstructs the original expression's typing through its capture
@@ -317,7 +559,14 @@ impl<'a> TypeChecker<'a> {
         remaining: &mut usize,
         depth: usize,
     ) -> Option<TypeValue> {
-        if depth >= 48 || !take_step(remaining) {
+        if depth >= 48 {
+            #[cfg(feature = "diagnostics")]
+            self.record_capture_source_failure(term, context, *remaining, depth, "source-depth-limit");
+            return None;
+        }
+        if !take_step(remaining) {
+            #[cfg(feature = "diagnostics")]
+            self.record_capture_source_failure(term, context, *remaining, depth, "source-fuel-exhausted");
             return None;
         }
         match self.expressions.get(term.expr)? {
@@ -338,10 +587,18 @@ impl<'a> TypeChecker<'a> {
                 // checked binder witness with EXACT protected scope is needed.
                 if self.strict_origin_probe {
                     match term.env.lookup(*index)? {
-                        EnvBinding::Free(_) => return None,
+                        EnvBinding::Free(_) => {
+                            #[cfg(feature = "diagnostics")]
+                            self.record_capture_source_failure(term, context, *remaining, depth, "strict-free-witness-unavailable");
+                            return None;
+                        }
                         EnvBinding::Neutral(Neutral {
                             head: NeutralHead::Free(_), spine,
-                        }) if spine.is_empty() => return None,
+                        }) if spine.is_empty() => {
+                            #[cfg(feature = "diagnostics")]
+                            self.record_capture_source_failure(term, context, *remaining, depth, "strict-neutral-free-witness-unavailable");
+                            return None;
+                        }
                         _ => {}
                     }
                 }
@@ -386,10 +643,14 @@ impl<'a> TypeChecker<'a> {
                 let function_ty = self.infer_exact_closure_in_context(
                     &function, context, remaining, depth + 1,
                 )?;
-                let (domain, body) = self.pi_view(
+                let Some((domain, body)) = self.pi_view(
                     Judgment::proven(function_ty, "exact-captured-function-type"),
                     (*remaining).min(512),
-                )?;
+                ) else {
+                    #[cfg(feature = "diagnostics")]
+                    self.record_capture_source_failure(term, context, *remaining, depth, "function-Pi-view-unavailable");
+                    return None;
+                };
                 let argument_ty = self.infer_exact_closure_in_context(
                     &argument, context, remaining, depth + 1,
                 )?;
@@ -398,7 +659,14 @@ impl<'a> TypeChecker<'a> {
                     crate::convert::DeltaPolicy::PreferredOnly,
                     context.len(), context,
                 );
-                if !domain_check.is_proven() || !take_step(remaining) {
+                if !domain_check.is_proven() {
+                    #[cfg(feature = "diagnostics")]
+                    self.record_capture_source_failure(term, context, *remaining, depth, &format!("argument-domain-relation:{domain_check:?}"));
+                    return None;
+                }
+                if !take_step(remaining) {
+                    #[cfg(feature = "diagnostics")]
+                    self.record_capture_source_failure(term, context, *remaining, depth, "argument-substitution-fuel-exhausted");
                     return None;
                 }
                 match body {
@@ -408,11 +676,13 @@ impl<'a> TypeChecker<'a> {
                         )
                     }
                     PiBody::Closure(body) => {
-                        let extended=body.env.extend(argument);
-                        // The argument type and dependent Pi domain were
-                        // independently established above. Retain that exact
-                        // substitution as a typed environment-node warrant.
-                        self.retain_checked_elimination(&extended,domain,context);
+                        // Reuse only the complete captured codomain, actual
+                        // argument, checked domain and actual Gamma tuple.
+                        // Both argument premises were established above;
+                        // elimination lineage is retained on every cache hit.
+                        let extended = self.checked_captured_pi_frame(
+                            &body, &argument, domain, context,
+                        );
                         Some(TypeValue::Term(Closure::with_levels(
                             body.expr,extended,body.levels,
                         )))
@@ -463,11 +733,24 @@ impl<'a> TypeChecker<'a> {
                 let domain_ty = self.infer_exact_closure_in_context(
                     &domain, context, remaining, depth + 1,
                 )?;
-                let domain_sort = self.sort_level(
+                let domain_sort_result = self.sort_level(
                     Judgment::proven(domain_ty, "captured-binder-domain"),
                     (*remaining).min(512),
-                ).proven_value()?.clone();
+                );
+                let Some(domain_sort) = domain_sort_result.proven_value().cloned() else {
+                    #[cfg(feature = "diagnostics")]
+                    self.record_capture_source_failure(term, context, *remaining, depth, &format!("binder-domain-formation:{domain_sort_result:?}"));
+                    return None;
+                };
                 let binder = FreeId(u64::try_from(context.len()).ok()?);
+                let source_body = term.sibling(*body, term.env.clone());
+                let allowance = (*remaining).min(1024);
+                let mut opening_budget = allowance;
+                let safe = crate::convert::source_opening_avoids_capture(
+                    self, &source_body, binder, &mut opening_budget,
+                );
+                *remaining -= allowance - opening_budget;
+                if !safe { return None; }
                 let mut extended = context.to_vec();
                 extended.push(TypeValue::Term(domain.clone()));
                 let body_frame=term.env.extend_free(binder);
@@ -654,6 +937,67 @@ impl<'a> TypeChecker<'a> {
     /// Read-only recursor certificate and captured major chain. Never changes
     /// a conversion verdict; no application shape is itself a reduction rule.
     #[cfg(feature = "diagnostics")]
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_receiver_capture_pair(
+        &self, left: &Closure, right: &Closure, context: &[TypeValue], budget: usize,
+    ) -> String {
+        fn chain(checker: &TypeChecker<'_>, closure: Closure, limit: usize) -> String {
+            let mut pending = vec![(closure, 0u64)];
+            let mut seen = std::collections::HashSet::new();
+            let mut lines = Vec::new();
+            for _ in 0..limit.min(128) {
+                let Some((term, local_depth)) = pending.pop() else { break };
+                if !seen.insert((term.clone(), local_depth)) { continue }
+                let syntax = checker.expressions.get(term.expr);
+                lines.push(format!("source={term:?}:local_depth={local_depth}:syntax={syntax:?}"));
+                match syntax {
+                    Some(Expr::BVar(index)) if *index >= local_depth => {
+                        let binding = term.env.lookup_with_node_id(*index - local_depth);
+                        lines.push(format!("external_index={}:binding={binding:?}", *index - local_depth));
+                        if let Some((_, EnvBinding::Closure(captured))) = binding {
+                            pending.push((captured, 0));
+                        }
+                    }
+                    Some(Expr::App { fun, arg }) => {
+                        pending.push((Closure::with_levels(*arg, term.env.clone(), term.levels.clone()), local_depth));
+                        pending.push((Closure::with_levels(*fun, term.env, term.levels), local_depth));
+                    }
+                    Some(Expr::Lam { domain, body }) | Some(Expr::Pi { domain, body }) => {
+                        pending.push((Closure::with_levels(*body, term.env.clone(), term.levels.clone()), local_depth + 1));
+                        pending.push((Closure::with_levels(*domain, term.env, term.levels), local_depth));
+                    }
+                    Some(Expr::Let { ty, value, body }) => {
+                        pending.push((Closure::with_levels(*body, term.env.clone(), term.levels.clone()), local_depth + 1));
+                        pending.push((Closure::with_levels(*value, term.env.clone(), term.levels.clone()), local_depth));
+                        pending.push((Closure::with_levels(*ty, term.env, term.levels), local_depth));
+                    }
+                    Some(Expr::Proj { structure, .. }) =>
+                        pending.push((Closure::with_levels(*structure, term.env, term.levels), local_depth)),
+                    _ => {}
+                }
+            }
+            lines.push(format!("unfinished_nodes={}", pending.len()));
+            lines.join(" | ")
+        }
+        let mut output = vec![format!("left={left:?}:right={right:?}:context={context:?}")];
+        for index in [4, 1] {
+            let lhs = left.env.lookup_with_node_id(index);
+            let rhs = right.env.lookup_with_node_id(index);
+            output.push(format!("capture_index={index}:left_binding={lhs:?}:right_binding={rhs:?}"));
+            match (lhs, rhs) {
+                (Some((_, EnvBinding::Closure(a))), Some((_, EnvBinding::Closure(b)))) => {
+                    output.push(format!("left_chain={}", chain(self, a.clone(), budget)));
+                    output.push(format!("right_chain={}", chain(self, b.clone(), budget)));
+                    let _scope = CaptureSourceFailureScope::enter();
+                    let relation = self.checked_source_conversion(&a, &b, context, budget.min(128));
+                    output.push(format!("independently_typed_capture_relation={relation:?}:first_source_failure={:?}", CaptureSourceFailureScope::first()));
+                }
+                _ => output.push("typed_capture_relation=unavailable-nonclosure-binding".to_string()),
+            }
+        }
+        output.join(" || ")
+    }
+
     pub(crate) fn diagnostic_captured_recursor_major_chain(
         &self, neutral: &Neutral, budget: usize,
     ) -> String {
@@ -674,7 +1018,7 @@ impl<'a> TypeChecker<'a> {
         };
         let mut current = major_of(neutral);
         let machine = self.machine();
-        for step in 0..12 {
+        for step in 0..64 {
             let Some(closure) = current.take() else { break };
             let syntax = self.expressions.get(closure.expr);
             let binding = match syntax {
@@ -844,6 +1188,312 @@ impl<'a> TypeChecker<'a> {
         )
     }
 
+    // A complete structural support certificate carries no typing authority.
+    pub(crate) fn complete_source_support(&self, expression: ExprId, remaining: &mut usize) -> Option<Vec<u64>> {
+        let mut pending = vec![(expression, false)];
+        let mut active = std::collections::HashSet::new();
+        let mut complete = HashMap::<ExprId, Vec<u64>>::new();
+        while let Some((id, finish)) = pending.pop() {
+            if !finish {
+                if !take_step(remaining) { return None }
+                if complete.contains_key(&id) { continue }
+                if let Some(support) = self.source_support.borrow().get(&id).cloned() {
+                    complete.insert(id, support);
+                    continue;
+                }
+                if !active.insert(id) { return None } // no cyclic coinduction
+                pending.push((id, true));
+                match self.expressions.get(id)? {
+                    Expr::App { fun, arg } => {
+                        pending.push((*arg, false)); pending.push((*fun, false));
+                    }
+                    Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                        pending.push((*body, false)); pending.push((*domain, false));
+                    }
+                    Expr::Let { ty, value, body } => {
+                        pending.push((*body, false)); pending.push((*value, false)); pending.push((*ty, false));
+                    }
+                    Expr::Proj { structure, .. } => pending.push((*structure, false)),
+                    Expr::BVar(_) | Expr::Const { .. } | Expr::Sort(_)
+                    | Expr::NatLit(_) | Expr::StrLit(_) => {}
+                }
+            } else {
+                let mut support = std::collections::BTreeSet::new();
+                let mut add = |child: ExprId, under_binder: bool| -> Option<()> {
+                    for index in complete.get(&child)? {
+                        if !take_step(remaining) { return None }
+                        if !under_binder || *index > 0 {
+                            support.insert(if under_binder { index - 1 } else { *index });
+                            if support.len() > 128 { return None }
+                        }
+                    }
+                    Some(())
+                };
+                match self.expressions.get(id)? {
+                    Expr::BVar(index) => { support.insert(*index); }
+                    Expr::App { fun, arg } => { add(*fun, false)?; add(*arg, false)?; }
+                    Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                        add(*domain, false)?; add(*body, true)?;
+                    }
+                    Expr::Let { ty, value, body } => {
+                        add(*ty, false)?; add(*value, false)?; add(*body, true)?;
+                    }
+                    Expr::Proj { structure, .. } => { add(*structure, false)?; }
+                    Expr::Const { .. } | Expr::Sort(_) | Expr::NatLit(_) | Expr::StrLit(_) => {}
+                }
+                active.remove(&id);
+                let support: Vec<_> = support.into_iter().collect();
+                if self.source_support.borrow().len() < 8192 {
+                    self.source_support.borrow_mut().insert(id, support.clone());
+                }
+                complete.insert(id, support);
+            }
+        }
+        let support = complete.remove(&expression)?;
+        if *remaining < support.len() { return None }
+        *remaining -= support.len();
+        Some(support)
+    }
+
+    // Intrinsic alpha support: indices are relative to the paired source roots.
+    // The memo records syntax only, never a captured value or typing witness.
+    fn complete_paired_source_support(&self, left: ExprId, right: ExprId, remaining: &mut usize) -> Option<Vec<(u64, u64)>> {
+        if left == right {
+            return self.complete_source_support(left, remaining).map(|indices| indices.into_iter().map(|i| (i, i)).collect());
+        }
+        let root = (left, right);
+        let mut pending = vec![(root, false)];
+        let mut active = std::collections::HashSet::new();
+        let mut complete = HashMap::<(ExprId, ExprId), Vec<(u64, u64)>>::new();
+        while let Some((pair @ (a, b), finish)) = pending.pop() {
+            if !finish {
+                if !take_step(remaining) { return None }
+                if complete.contains_key(&pair) { continue }
+                if let Some(support) = self.paired_source_support.borrow().get(&pair).cloned() {
+                    complete.insert(pair, support); continue;
+                }
+                if a == b {
+                    let support = self.complete_source_support(a, remaining)?;
+                    complete.insert(pair, support.into_iter().map(|i| (i, i)).collect());
+                    continue;
+                }
+                if !active.insert(pair) { return None }
+                pending.push((pair, true));
+                match (self.expressions.get(a)?, self.expressions.get(b)?) {
+                    (Expr::BVar(_), Expr::BVar(_)) => {}
+                    (Expr::Const { name: x, levels: u }, Expr::Const { name: y, levels: v }) => {
+                        if x != y || u.len() != v.len() || *remaining < u.len() { return None }
+                        *remaining -= u.len();
+                        if u != v { return None }
+                    }
+                    (Expr::Sort(x), Expr::Sort(y)) if x == y => {}
+                    (Expr::NatLit(x), Expr::NatLit(y)) => {
+                        let cost = x.limb_count().max(y.limb_count());
+                        if *remaining < cost { return None }
+                        *remaining -= cost;
+                        if x != y { return None }
+                    }
+                    (Expr::StrLit(x), Expr::StrLit(y)) => {
+                        let cost = x.len().max(y.len());
+                        if *remaining < cost { return None }
+                        *remaining -= cost;
+                        if x != y { return None }
+                    }
+                    (Expr::App { fun: x, arg: u }, Expr::App { fun: y, arg: v }) => {
+                        pending.push(((*u, *v), false)); pending.push(((*x, *y), false));
+                    }
+                    (Expr::Lam { domain: x, body: u }, Expr::Lam { domain: y, body: v })
+                    | (Expr::Pi { domain: x, body: u }, Expr::Pi { domain: y, body: v }) => {
+                        pending.push(((*u, *v), false)); pending.push(((*x, *y), false));
+                    }
+                    (Expr::Let { ty: x, value: u, body: m }, Expr::Let { ty: y, value: v, body: n }) => {
+                        pending.push(((*m, *n), false)); pending.push(((*u, *v), false)); pending.push(((*x, *y), false));
+                    }
+                    (Expr::Proj { type_name: x, index: i, structure: u }, Expr::Proj { type_name: y, index: j, structure: v }) if x == y && i == j => {
+                        pending.push(((*u, *v), false));
+                    }
+                    _ => return None,
+                }
+            } else {
+                let mut support = std::collections::BTreeSet::new();
+                let mut add = |child: (ExprId, ExprId), binder: bool| -> Option<()> {
+                    for (x, y) in complete.get(&child)? {
+                        if !take_step(remaining) { return None }
+                        if binder {
+                            match (*x, *y) {
+                                (0, 0) => continue,
+                                (0, _) | (_, 0) => return None,
+                                _ => { support.insert((x - 1, y - 1)); }
+                            }
+                        } else { support.insert((*x, *y)); }
+                        if support.len() > 128 { return None }
+                    }
+                    Some(())
+                };
+                match (self.expressions.get(a)?, self.expressions.get(b)?) {
+                    (Expr::BVar(x), Expr::BVar(y)) => { support.insert((*x, *y)); }
+                    (Expr::App { fun: x, arg: u }, Expr::App { fun: y, arg: v }) => { add((*x, *y), false)?; add((*u, *v), false)?; }
+                    (Expr::Lam { domain: x, body: u }, Expr::Lam { domain: y, body: v })
+                    | (Expr::Pi { domain: x, body: u }, Expr::Pi { domain: y, body: v }) => { add((*x, *y), false)?; add((*u, *v), true)?; }
+                    (Expr::Let { ty: x, value: u, body: m }, Expr::Let { ty: y, value: v, body: n }) => { add((*x, *y), false)?; add((*u, *v), false)?; add((*m, *n), true)?; }
+                    (Expr::Proj { structure: x, .. }, Expr::Proj { structure: y, .. }) => { add((*x, *y), false)?; }
+                    _ => {}
+                }
+                active.remove(&pair);
+                let support: Vec<_> = support.into_iter().collect();
+                if self.paired_source_support.borrow().len() < 8192 {
+                    self.paired_source_support.borrow_mut().insert(pair, support.clone());
+                }
+                complete.insert(pair, support);
+            }
+        }
+        let support = complete.remove(&root)?;
+        if *remaining < support.len() { return None }
+        *remaining -= support.len();
+        Some(support)
+    }
+
+    fn exact_source_levels(left: &LevelSubstitution, right: &LevelSubstitution, remaining: &mut usize) -> bool {
+        let mut left_entries = left.entries();
+        let mut right_entries = right.entries();
+        loop {
+            let pair = (left_entries.next(), right_entries.next());
+            match pair {
+                (None, None) => return true,
+                (Some((a, x)), Some((b, y))) if a == b => {
+                    let mut pending = vec![(x, y)];
+                    while let Some((x, y)) = pending.pop() {
+                        if !take_step(remaining) { return false }
+                        match (x, y) {
+                            (LevelTerm::Zero, LevelTerm::Zero) => {}
+                            (LevelTerm::Param(a), LevelTerm::Param(b)) => {
+                                let cost = a.len().max(b.len());
+                                if *remaining < cost { return false }
+                                *remaining -= cost;
+                                if a != b { return false }
+                            }
+                            (LevelTerm::Succ(a), LevelTerm::Succ(b)) => pending.push((a, b)),
+                            (LevelTerm::Max(a, b), LevelTerm::Max(c, d))
+                            | (LevelTerm::IMax(a, b), LevelTerm::IMax(c, d)) => {
+                                pending.push((b, d)); pending.push((a, c));
+                            }
+                            _ => return false,
+                        }
+                    }
+                }
+                _ => return false,
+            }
+        }
+    }
+
+    pub(crate) fn exact_source_capture_identity(
+        &self, left: &Closure, right: &Closure, remaining: &mut usize,
+    ) -> bool {
+        enum Capture { Free(FreeId), Closure(Closure), Nat(crate::nat::BigNat) }
+        fn resolve(checker: &TypeChecker<'_>, term: &Closure, index: u64, remaining: &mut usize) -> Option<Capture> {
+            let mut frame = term.env.clone();
+            let mut index = index;
+            let mut seen = std::collections::HashSet::new();
+            loop {
+                let cost = usize::try_from(index).ok()?.checked_add(1)?;
+                if *remaining < cost { return None }
+                *remaining -= cost;
+                if !seen.insert((frame.id(), index)) { return None }
+                match frame.lookup_binding_ref(index)? {
+                    EnvBinding::Free(free) => return Some(Capture::Free(*free)),
+                    EnvBinding::Neutral(Neutral { head: NeutralHead::Free(free), spine }) if spine.is_empty() =>
+                        return Some(Capture::Free(*free)),
+                    EnvBinding::Neutral(_) => return None,
+                    EnvBinding::NatLit(number) => {
+                        if *remaining < number.limb_count() { return None }
+                        *remaining -= number.limb_count();
+                        return Some(Capture::Nat(number.clone()));
+                    }
+                    EnvBinding::Closure(value) => {
+                        let next = value.clone();
+                        match checker.expressions.get(next.expr)? {
+                            Expr::BVar(next_index) => { frame = next.env; index = *next_index; }
+                            _ => return Some(Capture::Closure(next)),
+                        }
+                    }
+                }
+            }
+        }
+        // Root BVars refer to actual stored values, outside any virtual
+        // AST binder. Their stored closures own both scope and universes.
+        // Intrinsic paired AST BVars remain untouched by this normalization.
+        fn root_source(checker: &TypeChecker<'_>, mut source: Closure, remaining: &mut usize) -> Option<Closure> {
+            let mut seen = std::collections::HashSet::new();
+            let mut retained = Vec::new();
+            while let Expr::BVar(index) = checker.expressions.get(source.expr)? {
+                if !take_step(remaining) { return None; }
+                let cost = usize::try_from(*index).ok()?.checked_add(1)?;
+                if *remaining < cost { return None; }
+                *remaining -= cost;
+                let key = (source.expr, source.env.id(), source.levels.identity());
+                if !seen.insert(key) { return None; }
+                let next = match source.env.lookup_binding_ref(*index)? {
+                    EnvBinding::Closure(actual) => actual.clone(),
+                    EnvBinding::Neutral(Neutral { head: NeutralHead::Free(_), spine }) if spine.is_empty() => break,
+                    EnvBinding::Neutral(_) => return None,
+                    EnvBinding::Free(_) | EnvBinding::NatLit(_) => break,
+                };
+                retained.push(source);
+                source = next;
+            }
+            Some(source)
+        }
+
+        // Level allocation identities are retained by the owning Closure
+        // pairs; no recursive LevelTerm hashing or dangling pointer keys.
+        let key = |a: &Closure, b: &Closure| (a.expr, a.env.id(), a.levels.identity(), b.expr, b.env.id(), b.levels.identity());
+        let mut pending = vec![(left.clone(), right.clone(), false)];
+        let mut active = std::collections::HashSet::new();
+        let mut complete = std::collections::HashSet::new();
+        let mut retained = Vec::new();
+        while let Some((a, b, finish)) = pending.pop() {
+            #[cfg(feature = "diagnostics")]
+            if !finish && std::env::var("NUCLEUS_TRACE_SOURCE_CAPTURE_TARGET").ok()
+                .and_then(|value| value.parse::<u64>().ok()) == Some(a.expr.0)
+            {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static TARGETS: AtomicUsize = AtomicUsize::new(0);
+                if TARGETS.fetch_add(1, Ordering::Relaxed) < 16 {
+                    eprintln!("NUCLEUS_SOURCE_CAPTURE_TARGET:left={a:?}:right={b:?}:remaining={remaining}:support_cached={}", self.source_support.borrow().contains_key(&a.expr));
+                }
+            }
+            let (a, b) = if finish { (a, b) } else {
+                let Some(a) = root_source(self, a, remaining) else { return false; };
+                let Some(b) = root_source(self, b, remaining) else { return false; };
+                (a, b)
+            };
+            let pair = key(&a, &b);
+            if finish { active.remove(&pair); complete.insert(pair); retained.push((a, b)); continue }
+            if !take_step(remaining)
+                || !Self::exact_source_levels(&a.levels, &b.levels, remaining) { return false }
+            if complete.contains(&pair) { continue }
+            if !active.insert(pair) { return false }
+            let Some(support) = self.complete_paired_source_support(a.expr, b.expr, remaining) else { return false };
+            pending.push((a.clone(), b.clone(), true));
+            for (left_index, right_index) in support {
+                let Some(lhs) = resolve(self, &a, left_index, remaining) else { return false };
+                let Some(rhs) = resolve(self, &b, right_index, remaining) else { return false };
+                match (lhs, rhs) {
+                    (Capture::Free(x), Capture::Free(y)) if x == y => {}
+                    (Capture::Nat(x), Capture::Nat(y)) => {
+                        let cost = x.limb_count().max(y.limb_count());
+                        if *remaining < cost { return false }
+                        *remaining -= cost;
+                        if x != y { return false }
+                    }
+                    (Capture::Closure(x), Capture::Closure(y)) => pending.push((x, y, false)),
+                    _ => return false,
+                }
+            }
+        }
+        true
+    }
+
     pub fn convert(&self, left: &TypeValue, right: &TypeValue, budget: usize) -> Judgment<()> {
         crate::convert::convert_with_policy_at_depth(
             self,
@@ -865,6 +1515,51 @@ impl<'a> TypeChecker<'a> {
         crate::convert::convert_with_policy(self, left, right, budget, policy)
     }
 
+    /// Prove a narrow grammar of ambient-independent expression subjects.
+    /// Incomplete traversals retain only individually established child facts.
+    fn closed_spine_eligible(&self, expression: ExprId, mut budget: usize) -> Option<bool> {
+        let mut facts = self.closed_spine_eligibility.borrow_mut();
+        if let Some(answer) = facts.get(&expression) {
+            return Some(*answer);
+        }
+        let mut stack = vec![(expression, false)];
+        let mut active = std::collections::HashSet::new();
+        while let Some((current, returning)) = stack.pop() {
+            if facts.contains_key(&current) {
+                continue;
+            }
+            if !take_step(&mut budget) {
+                return None;
+            }
+            let node = self.expressions.get(current)?;
+            if returning {
+                let Expr::App { fun, arg } = node else { return None };
+                let eligible = *facts.get(fun)? && *facts.get(arg)?;
+                facts.insert(current, eligible);
+                active.remove(&current);
+            } else {
+                match node {
+                    Expr::Const { .. } | Expr::Sort(_) | Expr::NatLit(_) | Expr::StrLit(_) => {
+                        facts.insert(current, true);
+                    }
+                    Expr::App { fun, arg } => {
+                        if !active.insert(current) {
+                            return None;
+                        }
+                        stack.push((current, true));
+                        stack.push((*arg, false));
+                        stack.push((*fun, false));
+                    }
+                    Expr::BVar(_) | Expr::Lam { .. } | Expr::Pi { .. }
+                        | Expr::Let { .. } | Expr::Proj { .. } => {
+                        facts.insert(current, false);
+                    }
+                }
+            }
+        }
+        facts.get(&expression).copied()
+    }
+
     fn infer_in(
         &self,
         expression: ExprId,
@@ -873,10 +1568,17 @@ impl<'a> TypeChecker<'a> {
         remaining: &mut usize,
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<TypeValue> {
-        // Share only certified results inside one public judgment. Frame
-        // identity keeps equal syntax under distinct binders separate.
+        // Closed spines are checked under empty Γ, so their elimination
+        // witnesses protect the empty prefix and admit arbitrary extension.
+        // Open subjects retain their exact source frame.
+        let canonical = self.closed_spine_eligible(expression, (*remaining).min(4096)) == Some(true);
+        let empty_frame = EnvFrame::empty();
+        let (context, frame) = if canonical { (&[][..], &empty_frame) } else { (context, frame) };
         let key = (expression, frame.id());
         if let Some(value) = cache.get(&key) {
+            if canonical && matches!(value, TypeValue::Pi { .. }) {
+                return Judgment::unknown("closed-spine-returned-fixed-pi");
+            }
             return if take_step(remaining) {
                 Judgment::proven(value.clone(), "shared-expression-inference")
             } else {
@@ -884,6 +1586,11 @@ impl<'a> TypeChecker<'a> {
             };
         }
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
+        // This grammar cannot synthesize an opened lambda Pi. Do not extend
+        // cross-scope reuse to that representation if a future rule adds it.
+        if canonical && matches!(&result, Judgment::Proven { value: TypeValue::Pi { .. }, .. }) {
+            return Judgment::unknown("closed-spine-returned-fixed-pi");
+        }
         if let Judgment::Proven { value, .. } = &result {
             cache.insert(key, value.clone());
         }
@@ -1008,9 +1715,10 @@ impl<'a> TypeChecker<'a> {
                 let Some(free) = fresh_local(context.len()) else {
                     return Judgment::unknown("binder-depth-overflow");
                 };
-                let body_frame = frame.extend_free(free);
-                self.retain_checked_binding(
-                    &body_frame,TypeValue::Term(self.closure(*domain,frame.clone())),&extended,
+                let body_frame = self.checked_source_frame(
+                    expression, CheckedFrameRole::InferPi, frame,
+                    TypeValue::Term(self.closure(*domain,frame.clone())), &extended,
+                    CheckedFrameBinding::Free(free),
                 );
                 let body_type = self.infer_in(*body, &extended, &body_frame, remaining, cache);
                 let body_sort = match self.sort_level(body_type, *remaining) {
@@ -1040,8 +1748,10 @@ impl<'a> TypeChecker<'a> {
                 let Some(free) = fresh_local(context.len()) else {
                     return Judgment::unknown("binder-depth-overflow");
                 };
-                let body_frame = frame.extend_free(free);
-                self.retain_checked_binding(&body_frame,domain_type.clone(),&extended);
+                let body_frame = self.checked_source_frame(
+                    expression, CheckedFrameRole::InferLambda, frame, domain_type.clone(),
+                    &extended, CheckedFrameBinding::Free(free),
+                );
                 #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_SOURCE_PROOF_BETA").is_some()
                     && matches!((expression.0,domain.0),
@@ -1120,8 +1830,10 @@ impl<'a> TypeChecker<'a> {
                     }
                     return Judgment::unknown("application-function-type");
                 };
-                let argument_judgment=self.check_in(
-                    *arg, &domain, context, frame, remaining, true, cache,
+                // Proven function inference in the checked caller Γ yields
+                // a formed Pi domain; pi_view only exposes that proved type.
+                let argument_judgment=self.check_with_formation(
+                    *arg, &domain, context, frame, remaining, true, cache, true,
                 );
                 #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION").is_some()
@@ -1340,7 +2052,8 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
                 let established = TypeValue::Term(self.closure(*ty, frame.clone()));
-                match self.check_in(*value, &established, context, frame, remaining, true, cache) {
+                // Annotation formation was independently proved above.
+                match self.check_with_formation(*value, &established, context, frame, remaining, true, cache, true) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
@@ -1349,8 +2062,10 @@ impl<'a> TypeChecker<'a> {
                 }
                 let mut extended = context.to_vec();
                 extended.push(established.clone());
-                let extended_frame = frame.extend(self.closure(*value, frame.clone()));
-                self.retain_checked_binding(&extended_frame,established,&extended);
+                let extended_frame = self.checked_source_frame(
+                    expression, CheckedFrameRole::Let, frame, established, &extended,
+                    CheckedFrameBinding::Actual(self.closure(*value, frame.clone())),
+                );
                 self.infer_in(*body, &extended, &extended_frame, remaining, cache)
             }
         }
@@ -1370,6 +2085,7 @@ impl<'a> TypeChecker<'a> {
         remaining: &mut usize,
         conversion_refutation_is_unknown: bool,
         cache: &mut HashMap<(ExprId,u64),TypeValue>,
+        expected_formed: bool,
     ) -> Judgment<()> {
         if !take_step(remaining) {
             return Judgment::unknown("bidir-lambda-budget");
@@ -1401,8 +2117,18 @@ impl<'a> TypeChecker<'a> {
             return Judgment::unknown("bidir-lambda-fresh-binder-overflow")
         };
         let target=match codomain {
-            PiBody::Closure(expected_body)=>
-                TypeValue::Term(expected_body.under_free(free)),
+            PiBody::Closure(expected_body) => {
+                let allowance = (*remaining).min(1024);
+                let mut opening_budget = allowance;
+                let safe = crate::convert::source_opening_avoids_capture(
+                    self, &expected_body, free, &mut opening_budget,
+                );
+                *remaining -= allowance - opening_budget;
+                if !safe {
+                    return Judgment::unknown("bidir-lambda-source-binder-capture-or-support-unavailable");
+                }
+                TypeValue::Term(expected_body.under_free(free))
+            },
             PiBody::Fixed(binder,value) => {
                 let Some(reopened) = self.reopen_fixed_pi_body(&value, binder, free, remaining) else {
                     return Judgment::unknown("bidir-lambda-fixed-binder-not-aligned");
@@ -1412,11 +2138,15 @@ impl<'a> TypeChecker<'a> {
         };
         let mut extended=context.to_vec();
         extended.push(annotated.clone());
-        let body_frame=frame.extend_free(free);
-        self.retain_checked_binding(&body_frame,annotated,&extended);
-        self.check_in(
+        let body_frame=self.checked_source_frame(
+            expression, CheckedFrameRole::ExpectedLambda, frame, annotated,
+            &extended, CheckedFrameBinding::Free(free),
+        );
+        // A formed expected Pi and the proved annotation-domain equality
+        // establish its instantiated codomain under this checked fresh binder.
+        self.check_with_formation(
             *body,&target,&extended,&body_frame,remaining,
-            conversion_refutation_is_unknown,cache,
+            conversion_refutation_is_unknown,cache,expected_formed,
         )
     }
 
@@ -1430,6 +2160,47 @@ impl<'a> TypeChecker<'a> {
         conversion_refutation_is_unknown: bool,
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<()> {
+        self.check_with_formation(expression, expected, context, frame, remaining,
+            conversion_refutation_is_unknown, cache, false)
+    }
+
+    fn check_with_formation(
+        &self,
+        expression: ExprId,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        conversion_refutation_is_unknown: bool,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        expected_formed: bool,
+    ) -> Judgment<()> {
+        // This rule is tried first only with a real formation premise.
+        // Successful checking consumes its actual fuel; a declined bounded
+        // trial leaves the ordinary inference path its original budget.
+        if expected_formed
+            && std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_some()
+            && matches!(self.expressions.get(expression), Some(Expr::Lam { .. }))
+        {
+            if self.lambda_trials.borrow().active != 0 {
+                // Nested formed lambdas are part of this one bounded trial.
+                // A declined child exits the trial rather than starting a
+                // fresh speculative branch with a restored budget.
+                self.lambda_trials.borrow_mut().nested_direct += 1;
+                return self.check_expected_lambda_in(expression, expected, context, frame,
+                    remaining, conversion_refutation_is_unknown, cache, true);
+            }
+            if let Some(budget) = self.begin_lambda_trial(*remaining) {
+                let mut trial_budget = budget;
+                let candidate = self.check_expected_lambda_in(expression, expected, context, frame,
+                    &mut trial_budget, conversion_refutation_is_unknown, cache, true);
+                self.finish_lambda_trial(budget, trial_budget, candidate.is_proven());
+                if candidate.is_proven() {
+                    *remaining = remaining.saturating_sub(budget - trial_budget);
+                    return Judgment::proven((), "formed-expected-lambda-checking");
+                }
+            }
+        }
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_BIDIR_BODY_GAP").is_some()
@@ -1452,6 +2223,20 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION").is_some()
+                    && matches!(&conversion, Judgment::Unknown { residual }
+                        if residual.0 == "neutral-projection-receiver-congruence")
+                {
+                    let machine = self.machine();
+                    let expose = |ty: &TypeValue| match ty {
+                        TypeValue::Term(term) => Some(machine.expose_for_conversion(
+                            term.clone(), Transparency::Full, (*remaining).min(2048))),
+                        _ => None,
+                    };
+                    eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
+                        context.len(), frame.id(), *remaining, expose(&value), expose(expected));
+                }
                 #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_BIDIR_BODY_GAP").is_some()
                     && context.len()==5
@@ -1769,8 +2554,12 @@ impl<'a> TypeChecker<'a> {
                             first_expected_normal = Some(self.machine().expose(
                                 anticipated_domain.clone(), Transparency::Full, 512,
                             ));
+                            let mut diagnostic_opening_budget = 512;
                             if check.is_proven()
                                 && *binder == FreeId(context.len() as u64)
+                                && crate::convert::source_opening_avoids_capture(
+                                    self, anticipated_body, *binder, &mut diagnostic_opening_budget,
+                                )
                             {
                                 let mut ext = context.to_vec();
                                 ext.push(actual_domain.as_ref().clone());
@@ -1814,8 +2603,13 @@ impl<'a> TypeChecker<'a> {
                                     let mut last_relation = None;
                                     let mut actual_final_whnf = None;
                                     let mut expected_final_whnf = None;
+                                    let mut diagnostic_inner_opening_budget = 512;
                                     if inner_domain_relation.is_proven()
                                         && *inner_binder == FreeId(ext.len() as u64)
+                                        && crate::convert::source_opening_avoids_capture(
+                                            self, inner_expected_body, *inner_binder,
+                                            &mut diagnostic_inner_opening_budget,
+                                        )
                                     {
                                         let mut inner_context = ext.clone();
                                         inner_context.push(inner_actual_domain.as_ref().clone());
@@ -1984,12 +2778,15 @@ impl<'a> TypeChecker<'a> {
         // never an expression ID, theorem name or benchmark family.
         if ordinary.is_unknown() && std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_some()
             && matches!(self.expressions.get(expression),Some(Expr::Lam {..}))
+            && self.lambda_trials.borrow().active == 0
         {
-            let mut local_budget=(*remaining).min(4096);
+            let Some(budget) = self.begin_lambda_trial(*remaining) else { return ordinary };
+            let mut local_budget=budget;
             let candidate=self.check_expected_lambda_in(
                 expression,expected,context,frame,&mut local_budget,
-                conversion_refutation_is_unknown,cache,
+                conversion_refutation_is_unknown,cache,expected_formed,
             );
+            self.finish_lambda_trial(budget, local_budget, candidate.is_proven());
             #[cfg(feature="diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_EXPECTED_LAMBDA").is_some() {
                 use std::sync::atomic::{AtomicUsize,Ordering};
@@ -2002,7 +2799,7 @@ impl<'a> TypeChecker<'a> {
                 }
             }
             if candidate.is_proven() {
-                *remaining = remaining.saturating_sub((*remaining).min(4096) - local_budget);
+                *remaining = remaining.saturating_sub(budget - local_budget);
                 return Judgment::proven((),"certified-expected-dependent-lambda");
             }
         }
@@ -2063,7 +2860,8 @@ impl<'a> TypeChecker<'a> {
                 Judgment::Unknown { residual } => return Some(Judgment::Unknown { residual }),
             }
             let domain = TypeValue::Term(self.closure(*domain, lexical_frame.clone()));
-            match self.check_in(arg, &domain, context, frame, remaining, true, cache) {
+            // This exact lexical annotation was proved to have a sort above.
+            match self.check_with_formation(arg, &domain, context, frame, remaining, true, cache, true) {
                 Judgment::Proven { .. } => {}
                 Judgment::Refuted { obstruction } => {
                     return Some(Judgment::Refuted { obstruction });
@@ -2071,8 +2869,10 @@ impl<'a> TypeChecker<'a> {
                 Judgment::Unknown { residual } => return Some(Judgment::Unknown { residual }),
             }
             lexical_context.push(domain.clone());
-            lexical_frame = lexical_frame.extend(self.closure(arg, frame.clone()));
-            self.retain_checked_binding(&lexical_frame,domain,&lexical_context);
+            lexical_frame = self.checked_source_frame(
+                head, CheckedFrameRole::LiteralBeta, &lexical_frame, domain,
+                &lexical_context, CheckedFrameBinding::Actual(self.closure(arg, frame.clone())),
+            );
             head = *body;
         }
         Some(self.infer_in(head, &lexical_context, &lexical_frame, remaining, cache))
@@ -2143,6 +2943,16 @@ impl<'a> TypeChecker<'a> {
                 term.substitute_local_free(binder, actual, remaining)?
             )),
             TypeValue::Pi { domain, body, binder: inner } => {
+                // A stored function may retain a binder from a shallower
+                // scope. Its identity must not capture a free local in the
+                // caller's actual argument. Unknown support declines reuse.
+                if *inner != binder
+                    && self.type_depends_on_free(
+                        &TypeValue::Term(actual.clone()), *inner, (*remaining).min(4096),
+                    ) != Some(false)
+                {
+                    return None;
+                }
                 let domain = self.instantiate_fixed_pi_body(
                     domain, binder, actual, remaining,
                 )?;
@@ -3346,6 +4156,13 @@ impl<'a> TypeChecker<'a> {
             level_substitution:self.level_substitution.clone(),
             delta_policy:self.delta_policy,
             exposure_cache:new_exposure_cache(),
+            closed_spine_eligibility: RefCell::new(HashMap::new()),
+            source_support: RefCell::new(HashMap::new()),
+            paired_source_support: RefCell::new(HashMap::new()),
+            checked_frames: RefCell::new(HashMap::new()),
+            source_opening_proofs:RefCell::new(HashMap::new()),
+            formed_expected: RefCell::new(std::collections::HashSet::new()),
+            lambda_trials: RefCell::new(LambdaTrialState::default()),
             checked_binding_lineage:Rc::new(RefCell::new(
                 self.checked_binding_lineage.borrow().clone(),
             )),
@@ -3503,6 +4320,13 @@ impl<'a> TypeChecker<'a> {
             level_substitution: self.level_substitution.clone(),
             delta_policy: self.delta_policy,
             exposure_cache: new_exposure_cache(),
+            closed_spine_eligibility: RefCell::new(HashMap::new()),
+            source_support: RefCell::new(HashMap::new()),
+            paired_source_support: RefCell::new(HashMap::new()),
+            checked_frames: RefCell::new(HashMap::new()),
+            source_opening_proofs:RefCell::new(HashMap::new()),
+            formed_expected: RefCell::new(std::collections::HashSet::new()),
+            lambda_trials: RefCell::new(LambdaTrialState::default()),
             checked_binding_lineage: Rc::new(RefCell::new(
                 self.checked_binding_lineage.borrow().clone(),
             )),
@@ -3545,6 +4369,13 @@ impl<'a> TypeChecker<'a> {
             level_substitution: self.level_substitution.clone(),
             delta_policy: self.delta_policy,
             exposure_cache: new_exposure_cache(),
+            closed_spine_eligibility: RefCell::new(HashMap::new()),
+            source_support: RefCell::new(HashMap::new()),
+            paired_source_support: RefCell::new(HashMap::new()),
+            checked_frames: RefCell::new(HashMap::new()),
+            source_opening_proofs:RefCell::new(HashMap::new()),
+            formed_expected: RefCell::new(std::collections::HashSet::new()),
+            lambda_trials: RefCell::new(LambdaTrialState::default()),
             checked_binding_lineage: Rc::new(RefCell::new(
                 self.checked_binding_lineage.borrow().clone(),
             )),
@@ -4128,6 +4959,10 @@ impl<'a> TypeChecker<'a> {
         self.environment.is_certified_constructor(name)
     }
 
+    pub(crate) fn has_qualified_recursor(&self, name: NameId) -> bool {
+        self.environment.recursor_reduction(name).is_some()
+    }
+
     pub(crate) fn eta_projection_spec_for_constructor(
         &self,
         constructor: NameId,
@@ -4295,6 +5130,14 @@ impl<'a> TypeChecker<'a> {
 
         // A distinguished free witness detects dependence on the function
         // argument. Only a fixed proposition codomain is admitted here.
+        // Its identity must also be absent from every actual used capture.
+        let allowance = budget.min(1024);
+        let mut opening_budget = allowance;
+        let safe = crate::convert::source_opening_avoids_capture(
+            self, body, FreeId(u64::MAX), &mut opening_budget,
+        );
+        let budget = budget - (allowance - opening_budget);
+        if !safe { return None; }
         let codomain = machine.expose(
             body.under_free(FreeId(u64::MAX)),
             Transparency::Reducible,
@@ -4352,6 +5195,17 @@ impl<'a> TypeChecker<'a> {
 
     pub(crate) fn instantiate(&self, level: LevelId, budget: usize) -> Result<LevelTerm, ()> {
         instantiate_level(self.levels, level, &self.level_substitution, budget).map_err(|_| ())
+    }
+
+    pub(crate) fn has_source_opening_proof(&self,body:&Closure,free:FreeId)->bool {
+        self.source_opening_proofs.borrow().contains_key(&(body.expr,body.env.id(),body.levels.identity(),free))
+    }
+
+    pub(crate) fn retain_source_opening_proof(&self,body:&Closure,free:FreeId) {
+        let mut proofs=self.source_opening_proofs.borrow_mut();
+        if proofs.len()<8192 {
+            proofs.entry((body.expr,body.env.id(),body.levels.identity(),free)).or_insert_with(||body.clone());
+        }
     }
 
     pub(crate) fn authority(&self) -> crate::machine::AuthorityId {
@@ -4698,4 +5552,785 @@ mod checked_binding_lineage_tests {
         assert!(checker.checked_type_of_bound_source(&frame,0,&[p]).is_none(),
             "conflicting purported types revoke the reusable judgment");
     }
+}
+
+#[cfg(test)]
+mod fixed_pi_capture_tests {
+    use super::*;
+
+    #[test]
+    fn fixed_pi_substitution_refuses_actual_captured_by_unrelated_inner_binder() {
+        let mut expressions = IdTable::default();
+        expressions.insert(ExprId(0), Expr::BVar(0)).unwrap();
+        let levels = IdTable::default();
+        let environment = Environment::empty();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let source = TypeValue::Term(Closure::new(ExprId(0),
+            EnvFrame::empty().extend_free(FreeId(0))));
+        let stored = TypeValue::Pi {
+            domain: Box::new(source.clone()), body: Box::new(source), binder: FreeId(1),
+        };
+        let actual = Closure::new(ExprId(0), EnvFrame::empty().extend_free(FreeId(1)));
+        let mut fuel = 128;
+        assert!(checker.instantiate_fixed_pi_body(&stored, FreeId(0), &actual, &mut fuel).is_none(),
+            "a stored shallow function type cannot capture the caller's ambient local");
+    }
+    #[test]
+    fn fixed_pi_substitution_preserves_shadowing_and_refuses_unsupported_or_low_fuel() {
+        let mut expressions = IdTable::default();
+        expressions.insert(ExprId(0), Expr::BVar(0)).unwrap();
+        let levels = IdTable::default();
+        let environment = Environment::empty();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let source = TypeValue::Term(Closure::new(ExprId(0),
+            EnvFrame::empty().extend_free(FreeId(0))));
+        let actual = Closure::new(ExprId(0), EnvFrame::empty().extend_free(FreeId(1)));
+        let shadowed = TypeValue::Pi { domain: Box::new(source.clone()),
+            body: Box::new(source.clone()), binder: FreeId(0) };
+        let mut fuel = 128;
+        let Some(TypeValue::Pi { domain, body, binder }) = checker.instantiate_fixed_pi_body(
+            &shadowed, FreeId(0), &actual, &mut fuel) else { panic!("shadowing must remain supported") };
+        assert_eq!(binder, FreeId(0));
+        assert_eq!(*body, source, "inner body shadows the source binder");
+        assert_eq!(checker.type_depends_on_free(&domain, FreeId(1), 128), Some(true));
+        let mut fuel = 0;
+        assert!(checker.instantiate_fixed_pi_body(&source, FreeId(0), &actual, &mut fuel).is_none());
+        let unsupported = TypeValue::Term(Closure::new(ExprId(0),
+            EnvFrame::empty().extend_neutral(Neutral {
+                head: NeutralHead::Free(FreeId(0)), spine: vec![actual.clone()],
+            })));
+        let mut fuel = 128;
+        assert!(checker.instantiate_fixed_pi_body(&unsupported, FreeId(0), &actual, &mut fuel).is_none());
+    }
+
+}
+
+#[cfg(test)]
+mod closed_spine_inference_tests {
+    use super::*;
+
+    fn fixture() -> (IdTable<ExprId, Expr>, IdTable<LevelId, Level>, Environment, ExprId) {
+        let mut expressions = IdTable::default();
+        let mut levels = IdTable::default();
+        levels.insert(LevelId(0), Level::Zero).unwrap();
+        for (id, expression) in [
+            (0, Expr::Sort(LevelId(0))),
+            (1, Expr::Const { name: NameId(1), levels: vec![] }), // A
+            (2, Expr::Pi { domain: ExprId(1), body: ExprId(1) }),
+            (3, Expr::Const { name: NameId(2), levels: vec![] }), // id : A -> A
+            (4, Expr::Const { name: NameId(3), levels: vec![] }), // p : A
+            (5, Expr::BVar(0)),
+            (6, Expr::Const { name: NameId(4), levels: vec![] }), // B
+            (7, Expr::App { fun: ExprId(3), arg: ExprId(1) }), // wrong closed argument
+        ] { expressions.insert(ExprId(id), expression).unwrap(); }
+        let mut spine = ExprId(4);
+        for id in 8..24 {
+            expressions.insert(ExprId(id), Expr::App { fun: ExprId(3), arg: spine }).unwrap();
+            spine = ExprId(id);
+        }
+        let environment = Environment::empty()
+            .extend(NameId(1), crate::environment::ConstantDecl::axiom(vec![], ExprId(0))).unwrap()
+            .extend(NameId(2), crate::environment::ConstantDecl::axiom(vec![], ExprId(2))).unwrap()
+            .extend(NameId(3), crate::environment::ConstantDecl::axiom(vec![], ExprId(1))).unwrap()
+            .extend(NameId(4), crate::environment::ConstantDecl::axiom(vec![], ExprId(0))).unwrap();
+        expressions.insert(ExprId(24), Expr::App { fun: ExprId(3), arg: ExprId(5) }).unwrap();
+        (expressions, levels, environment, spine)
+    }
+
+    #[test]
+    fn exact_captured_pi_substitution_reuses_only_completed_same_scope_bindings() {
+        let (mut expressions, levels, environment, _) = fixture();
+        expressions.insert(ExprId(60), Expr::Const { name: NameId(5), levels: vec![] }).unwrap();
+        expressions.insert(ExprId(61), Expr::App { fun: ExprId(3), arg: ExprId(60) }).unwrap();
+        let environment = environment.extend(NameId(5),
+            crate::environment::ConstantDecl::axiom(vec![], ExprId(1))).unwrap();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let source = |id| Closure::new(ExprId(id), EnvFrame::empty());
+        let context_a = [TypeValue::Term(source(1))];
+        let context_b = [TypeValue::Term(source(6))];
+        let infer = |id, context: &[TypeValue], fuel| {
+            checker.infer_exact_closure_in_context(&source(id), context, &mut {fuel}, 0)
+        };
+        let frame = |value: TypeValue| match value { TypeValue::Term(c) => c.env.id(), _ => panic!("expected captured codomain") };
+        let first = frame(infer(8, &context_a, 256).expect("argument typing and domain relation"));
+        let repeat = frame(infer(8, &context_a, 256).expect("same complete source judgment"));
+        assert_eq!(first, repeat, "exact source substitution must stabilize downstream inference frame keys");
+        assert_ne!(first, frame(infer(61, &context_a, 256).unwrap()), "different actual argument remains distinct");
+        assert_ne!(first, frame(infer(8, &context_b, 256).unwrap()), "different actual Gamma remains distinct");
+        let before = checker.checked_frames.borrow().len();
+        assert!(infer(7, &context_a, 256).is_none(), "wrong argument fails before registering a substitution frame");
+        assert!(infer(8, &context_a, 0).is_none());
+        assert_eq!(before, checker.checked_frames.borrow().len());
+    }
+
+    #[test]
+    fn captured_pi_frame_key_preserves_own_codomain_levels_domain_and_quarantine() {
+        let (expressions, levels, environment, _) = fixture();
+        let mut checker = TypeChecker::new(&expressions, &levels, &environment);
+        checker.strict_origin_probe = true;
+        assert!(checker.is_type(ExprId(1), 256).is_proven());
+        assert!(checker.is_type(ExprId(6), 256).is_proven());
+        assert!(checker.infer(ExprId(4), 256).is_proven());
+        let parent = EnvFrame::empty();
+        let source = |id| Closure::new(ExprId(id), parent.clone());
+        let domain = TypeValue::Term(source(1));
+        let argument = source(4);
+        let codomain = source(1);
+        let context = [domain.clone()];
+        let first = checker.checked_captured_pi_frame(&codomain, &argument, domain.clone(), &context);
+        assert_eq!(first.id(), checker.checked_captured_pi_frame(&codomain, &argument, domain.clone(), &context).id());
+        let other_levels = Closure::with_levels(codomain.expr, parent.clone(),
+            LevelSubstitution::new(vec![(NameId(7), LevelTerm::Succ(Box::new(LevelTerm::Zero)))]));
+        assert_ne!(first.id(), checker.checked_captured_pi_frame(&other_levels, &argument, domain.clone(), &context).id(), "full captured codomain own universe map belongs to the key");
+        assert_ne!(first.id(), checker.checked_captured_pi_frame(&source(6), &argument, domain.clone(), &context).id(), "codomain source is part of exact scope");
+        let other_domain = TypeValue::Term(source(6));
+        assert_ne!(first.id(), checker.checked_captured_pi_frame(&codomain, &argument, other_domain.clone(), &context).id(), "checked domain remains exact");
+        let other_parent = EnvFrame::empty().extend_free(FreeId(9));
+        let other_codomain = Closure::new(codomain.expr, other_parent);
+        assert_ne!(first.id(), checker.checked_captured_pi_frame(&other_codomain, &argument, domain.clone(), &context).id(), "actual captured parent identity remains exact");
+        // A sibling/source conflict must never revive an old cached witness,
+        // even when the substitution lineage capability is disabled.
+        checker.retain_checked_binding(&first, domain.clone(), &context);
+        checker.retain_checked_binding(&first, other_domain, &context);
+        assert!(checker.checked_binding_lineage.borrow().get(&first.id()).unwrap().is_none());
+        let replacement = checker.checked_captured_pi_frame(&codomain, &argument, domain.clone(), &context);
+        assert_ne!(first.id(), replacement.id());
+        assert!(checker.checked_binding_lineage.borrow().get(&first.id()).unwrap().is_none());
+        let fixed = TypeValue::Pi { domain: Box::new(domain.clone()), body: Box::new(domain.clone()), binder: FreeId(0) };
+        let before = checker.checked_frames.borrow().len();
+        let a = checker.checked_captured_pi_frame(&codomain, &argument, fixed.clone(), &context);
+        let b = checker.checked_captured_pi_frame(&codomain, &argument, fixed, &context);
+        assert_ne!(a.id(), b.id(), "unsupported recursive fixed-Pi key shapes fall back fresh");
+        assert_eq!(before, checker.checked_frames.borrow().len());
+    }
+
+    #[test]
+    fn closed_spine_is_shared_across_distinct_lexical_binders_with_one_step() {
+        let (expressions, levels, environment, spine) = fixture();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let prop = TypeValue::Term(Closure::new(ExprId(0), EnvFrame::empty()));
+        let first_frame = EnvFrame::empty().extend_free(FreeId(0));
+        let second_frame = first_frame.extend_free(FreeId(1));
+        let mut cache = HashMap::new();
+        let mut budget = 1024;
+        let first = checker.infer_in(spine, &[prop.clone()], &first_frame, &mut budget, &mut cache);
+        assert!(first.is_proven(), "source closed spine must independently type: {first:?}");
+        let mut one_step = 1;
+        let second = checker.infer_in(spine, &[prop.clone(), prop], &second_frame, &mut one_step, &mut cache);
+        assert!(second.is_proven(), "closed judgment reuse across binder scopes: {second:?}");
+        assert_eq!(second.proven_value(), first.proven_value());
+        assert_eq!(one_step, 0, "cached proof reuse still consumes a step");
+        assert_eq!(EnvFrame::empty().id(), 0);
+        let mut one_step = 1;
+        assert!(checker.infer_in(spine, &[], &second_frame, &mut one_step, &mut cache).is_proven(),
+            "closedness licenses empty Γ even with a nonempty caller frame");
+        let mut exhausted = 0;
+        assert!(!checker.infer_in(spine, &[], &EnvFrame::empty(), &mut exhausted, &mut cache).is_proven());
+    }
+
+    #[test]
+    fn open_spines_keep_their_distinct_typed_binders_and_wrong_closed_arguments_fail() {
+        let (expressions, levels, environment, _) = fixture();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let a = TypeValue::Term(Closure::new(ExprId(1), EnvFrame::empty()));
+        let b = TypeValue::Term(Closure::new(ExprId(6), EnvFrame::empty()));
+        let mut cache = HashMap::new();
+        let mut budget = 128;
+        let first = checker.infer_in(ExprId(5), &[a.clone()], &EnvFrame::empty().extend_free(FreeId(0)),
+            &mut budget, &mut cache);
+        let second = checker.infer_in(ExprId(5), &[b.clone()], &EnvFrame::empty().extend_free(FreeId(0)),
+            &mut budget, &mut cache);
+        assert_eq!(first.proven_value(), Some(&a));
+        assert_eq!(second.proven_value(), Some(&b));
+        let mut budget = 1024;
+        let first = checker.infer_in(ExprId(24), &[a], &EnvFrame::empty().extend_free(FreeId(0)),
+            &mut budget, &mut cache);
+        let second = checker.infer_in(ExprId(24), &[b], &EnvFrame::empty().extend_free(FreeId(0)),
+            &mut budget, &mut cache);
+        assert!(first.is_proven());
+        assert!(!second.is_proven(), "an App containing BVar cannot reuse the other scope's proof");
+        assert!(!checker.infer(ExprId(7), 128).is_proven(), "closed syntax is not a typing warrant");
+    }
+
+    #[test]
+    fn closed_spine_eligibility_exhaustion_does_not_poison_a_later_proof() {
+        let (expressions, levels, environment, spine) = fixture();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        assert_eq!(checker.closed_spine_eligible(spine, 1), None);
+        assert!(!checker.closed_spine_eligibility.borrow().contains_key(&spine));
+        assert_eq!(checker.closed_spine_eligible(spine, 1024), Some(true));
+        assert_eq!(checker.closed_spine_eligible(ExprId(24), 1024), Some(false));
+        assert_eq!(checker.closed_spine_eligible(ExprId(2), 1024), Some(false));
+    }
+
+    #[test]
+    fn repeated_literal_beta_spine_reuses_only_its_exact_checked_source_frame() {
+        let (mut expressions, levels, environment, _) = fixture();
+        expressions.insert(ExprId(25), Expr::BVar(1)).unwrap();
+        let mut body = ExprId(25);
+        for id in 26..42 {
+            expressions.insert(ExprId(id), Expr::App { fun: ExprId(3), arg: body }).unwrap();
+            body = ExprId(id);
+        }
+        expressions.insert(ExprId(42), Expr::Lam { domain: ExprId(1), body }).unwrap();
+        expressions.insert(ExprId(43), Expr::App { fun: ExprId(42), arg: ExprId(4) }).unwrap();
+        expressions.insert(ExprId(44), Expr::App { fun: ExprId(42), arg: ExprId(1) }).unwrap();
+        let mut checker = TypeChecker::new(&expressions, &levels, &environment);
+        checker.strict_origin_probe = true;
+        let domain = TypeValue::Term(Closure::new(ExprId(1), EnvFrame::empty()));
+        let frame = EnvFrame::empty().extend_free(FreeId(0));
+        checker.retain_checked_binding(&frame, domain.clone(), &[domain.clone()]);
+        let mut cache = HashMap::new();
+        let mut fuel = 1024;
+        assert!(checker.infer_in(ExprId(42), &[domain.clone()], &frame, &mut fuel, &mut cache).is_proven());
+        let mut fuel = 1024;
+        let first = checker.infer_literal_beta_spine(ExprId(43), &[domain.clone()], &frame,
+            &mut fuel, &mut cache).expect("literal source spine");
+        assert!(first.is_proven(), "first body must be independently typed: {first:?}");
+        let mut fuel = 8;
+        let second = checker.infer_literal_beta_spine(ExprId(43), &[domain.clone()], &frame,
+            &mut fuel, &mut cache).expect("same literal source spine");
+        assert!(second.is_proven(), "bounded repeated checked body: {second:?}");
+        assert_eq!(first.proven_value(), second.proven_value());
+        let mut fuel = 1024;
+        assert!(!checker.infer_literal_beta_spine(ExprId(44), &[domain.clone()], &frame,
+            &mut fuel, &mut cache).unwrap().is_proven(), "wrong actual argument cannot reuse a typed frame");
+        let mut fuel = 0;
+        assert!(checker.infer_literal_beta_spine(ExprId(43), &[domain], &frame,
+            &mut fuel, &mut cache).is_none());
+    }
+
+    #[test]
+    fn checked_frame_tuple_separates_source_role_context_domain_actual_and_authority() {
+        let (mut expressions, levels, environment, _) = fixture();
+        expressions.insert(ExprId(99), Expr::Const { name: NameId(5), levels: vec![] }).unwrap();
+        let environment = environment.extend(NameId(5),
+            crate::environment::ConstantDecl::axiom(vec![], ExprId(1))).unwrap();
+        let mut checker = TypeChecker::new(&expressions, &levels, &environment);
+        assert!(checker.is_type(ExprId(1), 128).is_proven());
+        assert!(checker.is_type(ExprId(6), 128).is_proven());
+        let parent = EnvFrame::empty();
+        let a = TypeValue::Term(Closure::new(ExprId(1), parent.clone()));
+        let b = TypeValue::Term(Closure::new(ExprId(6), parent.clone()));
+        let binding = CheckedFrameBinding::Free(FreeId(0));
+        let first = checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+            &parent, a.clone(), &[a.clone()], binding.clone());
+        checker.strict_origin_probe = true;
+        let exact = checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+            &parent, a.clone(), &[a.clone()], binding.clone());
+        assert_ne!(first.id(), exact.id(), "different authority mode must get a fresh source frame");
+        assert_eq!(checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+            &parent, a.clone(), &[a.clone()], binding.clone()).id(), exact.id());
+        for other in [
+            checker.checked_source_frame(ExprId(26), CheckedFrameRole::InferLambda,
+                &parent, a.clone(), &[a.clone()], binding.clone()),
+            checker.checked_source_frame(ExprId(25), CheckedFrameRole::ExpectedLambda,
+                &parent, a.clone(), &[a.clone()], binding.clone()),
+            checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+                &parent, b.clone(), &[b.clone()], binding.clone()),
+            checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+                &parent, a.clone(), &[b.clone(), a.clone()], binding.clone()),
+            checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+                &parent, a.clone(), &[a.clone()], CheckedFrameBinding::Free(FreeId(1))),
+        ] { assert_ne!(other.id(), exact.id(), "a changed checked source tuple must remain distinct"); }
+        let actual_a = Closure::new(ExprId(4), parent.clone());
+        assert!(checker.infer(ExprId(99), 128).is_proven());
+        let actual_b = Closure::new(ExprId(99), parent.clone());
+        let applied = checker.checked_source_frame(ExprId(25), CheckedFrameRole::LiteralBeta,
+            &parent, a.clone(), &[a.clone()], CheckedFrameBinding::Actual(actual_a.clone()));
+        assert_eq!(checker.checked_source_frame(ExprId(25), CheckedFrameRole::LiteralBeta,
+            &parent, a.clone(), &[a.clone()], CheckedFrameBinding::Actual(actual_a)).id(), applied.id());
+        assert_ne!(checker.checked_source_frame(ExprId(25), CheckedFrameRole::LiteralBeta,
+            &parent, a.clone(), &[a.clone()], CheckedFrameBinding::Actual(actual_b)).id(), applied.id());
+        checker.retain_checked_binding(&exact, b, &[a.clone()]);
+        assert!(checker.checked_binding_lineage.borrow().get(&exact.id()).unwrap().is_none());
+        let fresh = checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+            &parent, a.clone(), &[a], binding);
+        assert_ne!(fresh.id(), exact.id(), "a quarantined frame cannot lend its cached judgments");
+        assert!(checker.checked_binding_lineage.borrow().get(&exact.id()).unwrap().is_none());
+    }
+
+    #[test]
+    fn failed_binder_formation_and_argument_typing_do_not_create_checked_frames() {
+        let (mut expressions, levels, environment, _) = fixture();
+        expressions.insert(ExprId(25), Expr::Lam { domain: ExprId(4), body: ExprId(5) }).unwrap();
+        expressions.insert(ExprId(26), Expr::Lam { domain: ExprId(1), body: ExprId(5) }).unwrap();
+        expressions.insert(ExprId(27), Expr::App { fun: ExprId(26), arg: ExprId(1) }).unwrap();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        assert!(!checker.infer(ExprId(25), 1024).is_proven());
+        assert!(checker.checked_frames.borrow().is_empty(), "formation failed before source-frame registration");
+        assert!(checker.infer(ExprId(26), 1024).is_proven());
+        let prior = checker.checked_frames.borrow().len();
+        let mut budget = 1024;
+        assert!(!checker.infer_literal_beta_spine(ExprId(27), &[], &EnvFrame::empty(),
+            &mut budget, &mut HashMap::new()).unwrap().is_proven());
+        assert_eq!(checker.checked_frames.borrow().len(), prior, "wrong argument cannot obtain a substitution frame");
+    }
+
+    #[test]
+    fn checked_frame_saturation_preserves_old_scopes_and_uses_fresh_fallback() {
+        let (expressions, levels, environment, _) = fixture();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        assert!(checker.is_type(ExprId(1), 128).is_proven());
+        let domain = TypeValue::Term(Closure::new(ExprId(1), EnvFrame::empty()));
+        let mut first = None;
+        let mut last_parent = EnvFrame::empty();
+        for _ in 0..8193 {
+            let parent = EnvFrame::empty().extend_free(FreeId(0));
+            let frame = checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+                &parent, domain.clone(), &[domain.clone(), domain.clone()], CheckedFrameBinding::Free(FreeId(1)));
+            if first.is_none() { first = Some((parent.clone(), frame)); }
+            last_parent = parent;
+        }
+        assert_eq!(checker.checked_frames.borrow().len(), 8192);
+        let (parent, frame) = first.unwrap();
+        assert_eq!(checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+            &parent, domain.clone(), &[domain.clone(), domain.clone()], CheckedFrameBinding::Free(FreeId(1))).id(), frame.id());
+        let one = checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+            &last_parent, domain.clone(), &[domain.clone(), domain.clone()], CheckedFrameBinding::Free(FreeId(1)));
+        let two = checker.checked_source_frame(ExprId(25), CheckedFrameRole::InferLambda,
+            &last_parent, domain.clone(), &[domain.clone(), domain], CheckedFrameBinding::Free(FreeId(1)));
+        assert_ne!(one.id(), two.id(), "saturation declines sharing instead of merging unrelated source scopes");
+    }
+
+    #[test]
+    fn formed_dependent_literal_lambda_checks_before_whole_function_inference_at_bounded_fuel() {
+        let (mut expressions, levels, environment, _) = fixture();
+        expressions.insert(ExprId(200), Expr::BVar(24)).unwrap();
+        let mut value = ExprId(5);
+        let mut expected = ExprId(200);
+        let mut next = 201;
+        for depth in (1..=24).rev() {
+            let domain = ExprId(next); next += 1;
+            expressions.insert(domain, Expr::BVar(depth - 1)).unwrap();
+            let lambda = ExprId(next); next += 1;
+            expressions.insert(lambda, Expr::Lam { domain, body: value }).unwrap();
+            value = lambda;
+            let pi = ExprId(next); next += 1;
+            expressions.insert(pi, Expr::Pi { domain, body: expected }).unwrap();
+            expected = pi;
+        }
+        let lambda = ExprId(next); next += 1;
+        expressions.insert(lambda, Expr::Lam { domain: ExprId(0), body: value }).unwrap();
+        let pi = ExprId(next);
+        expressions.insert(pi, Expr::Pi { domain: ExprId(0), body: expected }).unwrap();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let expected = TypeValue::Term(checker.closure(pi, EnvFrame::empty()));
+        assert!(!checker.check_formed(lambda, &expected, 64).is_proven(), "a Pi shape is not formation authority");
+        assert!(checker.is_type(pi, 4096).is_proven(), "expected dependent telescope must be formed first");
+        assert!(!checker.check(lambda, &expected, 64).is_proven(), "unchecked public entry remains ordinary-first");
+        let ordinary = TypeChecker::new(&expressions, &levels, &environment);
+        let ordinary_expected = TypeValue::Term(ordinary.closure(pi, EnvFrame::empty()));
+        assert!(!ordinary.check(lambda, &ordinary_expected, 768).is_proven(), "ordinary whole-function inference still exceeds the guarded bounded resource envelope");
+        // Complete source support and actual capture freshness now consume
+        // real work. Keep the guided rule bounded without raising kernel caps.
+        let bounded = checker.check_formed(lambda, &expected, 768);
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_some() {
+            assert!(bounded.is_proven(), "formed expected telescope should guide checked lambda: {bounded:?}");
+        } else {
+            assert!(!bounded.is_proven(), "formation cannot enable a disabled capability");
+        }
+        assert!(!checker.check_formed(lambda, &expected, 0).is_proven());
+    }
+
+    #[test]
+    fn formed_lambda_entry_rejects_failed_expected_formation_bad_bodies_and_wrong_domains() {
+        let (mut expressions, levels, environment, _) = fixture();
+        for (id, expression) in [
+            (60, Expr::Lam { domain: ExprId(0), body: ExprId(1) }),
+            (61, Expr::Pi { domain: ExprId(0), body: ExprId(0) }),
+            (62, Expr::Lam { domain: ExprId(4), body: ExprId(5) }),
+            (63, Expr::Lam { domain: ExprId(0), body: ExprId(4) }),
+            (64, Expr::Pi { domain: ExprId(4), body: ExprId(0) }),
+            (65, Expr::Pi { domain: ExprId(0), body: ExprId(4) }),
+            (66, Expr::Let { ty: ExprId(1), value: ExprId(1), body: ExprId(0) }),
+            (67, Expr::Pi { domain: ExprId(0), body: ExprId(66) }),
+            (68, Expr::Lam { domain: ExprId(2), body: ExprId(4) }),
+            (69, Expr::App { fun: ExprId(68), arg: ExprId(60) }),
+        ] { expressions.insert(ExprId(id), expression).unwrap(); }
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        for malformed in [64, 65, 67] {
+            assert!(!checker.is_type(ExprId(malformed), 4096).is_proven(), "malformed Pi must actually fail formation");
+            let expected = TypeValue::Term(checker.closure(ExprId(malformed), EnvFrame::empty()));
+            assert!(!checker.check_formed(ExprId(60), &expected, 4096).is_proven(), "failed formation cannot register a checking warrant");
+        }
+        assert!(checker.is_type(ExprId(61), 4096).is_proven());
+        let expected = TypeValue::Term(checker.closure(ExprId(61), EnvFrame::empty()));
+        assert!(checker.check_formed(ExprId(60), &expected, 4096).is_proven());
+        for invalid in [62, 63] {
+            assert!(!checker.check_formed(ExprId(invalid), &expected, 4096).is_proven(), "bad annotation or body must still fail");
+        }
+        assert!(!checker.infer(ExprId(69), 4096).is_proven(), "lambda argument must check its actual expected function domain");
+        let changed_scope = TypeValue::Term(checker.closure(ExprId(61), EnvFrame::empty().extend_free(FreeId(0))));
+        assert!(!checker.check_formed(ExprId(60), &changed_scope, 4096).is_proven(), "closed formation does not certify a different captured scope");
+        let non_pi = TypeValue::Term(checker.closure(ExprId(1), EnvFrame::empty()));
+        assert!(checker.is_type(ExprId(1), 4096).is_proven());
+        assert!(!checker.check_formed(ExprId(60), &non_pi, 4096).is_proven(), "lambda shape alone cannot replace a Pi premise");
+    }
+
+    #[test]
+    fn formed_fixed_pi_checking_does_not_bypass_capture_safe_reopening() {
+        let (mut expressions, levels, environment, _) = fixture();
+        expressions.insert(ExprId(60), Expr::Lam { domain: ExprId(5), body: ExprId(5) }).unwrap();
+        expressions.insert(ExprId(61), Expr::Lam { domain: ExprId(0), body: ExprId(60) }).unwrap();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let inferred = checker.infer(ExprId(61), 4096);
+        let expected = inferred.proven_value().expect("closed dependent lambda is independently typed");
+        let a = TypeValue::Term(checker.closure(ExprId(1), EnvFrame::empty()));
+        let frame = EnvFrame::empty().extend_free(FreeId(0));
+        checker.retain_checked_binding(&frame, a.clone(), &[a.clone()]);
+        let mut fuel = 4096;
+        let result = checker.check_with_formation(ExprId(61), expected, &[a], &frame,
+            &mut fuel, true, &mut HashMap::new(), true);
+        assert!(!result.is_proven(), "reopening outer binder 0 as 1 collides with its retained inner binder 1");
+    }
+
+    #[test]
+    fn repeated_checked_open_let_reuses_only_its_exact_source_scope() {
+        let (mut expressions, levels, environment, _) = fixture();
+        expressions.insert(ExprId(100), Expr::BVar(1)).unwrap();
+        let mut body = ExprId(100);
+        for id in 101..125 {
+            expressions.insert(ExprId(id), Expr::App { fun: ExprId(3), arg: body }).unwrap();
+            body = ExprId(id);
+        }
+        expressions.insert(ExprId(125), Expr::Let { ty: ExprId(1), value: ExprId(5), body }).unwrap();
+        expressions.insert(ExprId(126), Expr::Let { ty: ExprId(1), value: ExprId(1), body }).unwrap();
+        let mut checker = TypeChecker::new(&expressions, &levels, &environment);
+        checker.strict_origin_probe = true;
+        let a = TypeValue::Term(checker.closure(ExprId(1), EnvFrame::empty()));
+        let frame = EnvFrame::empty().extend_free(FreeId(0));
+        checker.retain_checked_binding(&frame, a.clone(), &[a.clone()]);
+        let mut cache = HashMap::new();
+        let mut fuel = 4096;
+        let first = checker.infer_uncached(ExprId(125), &[a.clone()], &frame, &mut fuel, &mut cache);
+        assert!(first.is_proven(), "first Let must independently check its premises: {first:?}");
+        let mut fuel = 8;
+        let second = checker.infer_uncached(ExprId(125), &[a.clone()], &frame, &mut fuel, &mut cache);
+        assert!(second.is_proven(), "same checked Let body within budget: {second:?}");
+        assert_eq!(first.proven_value(), second.proven_value());
+        let retained = checker.checked_frames.borrow().len();
+        let mut fuel = 4096;
+        assert!(!checker.infer_uncached(ExprId(126), &[a.clone()], &frame, &mut fuel, &mut cache).is_proven());
+        assert_eq!(retained, checker.checked_frames.borrow().len(), "failed value typing must not retain a frame");
+        let mut fuel = 0;
+        assert!(!checker.infer_uncached(ExprId(125), &[a], &frame, &mut fuel, &mut cache).is_proven());
+    }
+
+    #[test]
+    fn failed_nested_lambda_trials_have_shared_bounded_work_and_preserve_ordinary_budget() {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_none() { return; }
+        let (mut expressions, levels, environment, _) = fixture();
+        let mut value = ExprId(4); // p : A, never a proposition expression
+        let mut expected = ExprId(0); // codomain Prop
+        let mut next = 100;
+        for _ in 0..12 {
+            let lambda = ExprId(next); next += 1;
+            expressions.insert(lambda, Expr::Lam { domain: ExprId(0), body: value }).unwrap();
+            value = lambda;
+            let pi = ExprId(next); next += 1;
+            expressions.insert(pi, Expr::Pi { domain: ExprId(0), body: expected }).unwrap();
+            expected = pi;
+        }
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        assert!(checker.is_type(expected, 4096).is_proven());
+        let expected = TypeValue::Term(checker.closure(expected, EnvFrame::empty()));
+        assert!(!checker.check_formed(value, &expected, 128).is_proven());
+        let state = checker.lambda_trials.borrow().clone();
+        assert!(state.declined > 0, "the negative must really exercise speculative failure");
+        assert!(state.nested_direct > 0, "nested formed lambdas must use their active root trial");
+        assert_eq!(state.active, 0);
+        assert_eq!(state.spent + state.quota, 128, "reservation must refund only unused trial fuel");
+        assert!(state.spent <= 128, "aggregate speculative inference work exceeded quota: started={}, declined={}, spent={}",
+            state.started, state.declined, state.spent);
+    }
+
+    #[test]
+    fn closed_spine_universe_instantiation_stays_with_its_checker() {
+        let mut expressions = IdTable::default();
+        let mut levels = IdTable::default();
+        levels.insert(LevelId(0), Level::Param(NameId(9))).unwrap();
+        expressions.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
+        expressions.insert(ExprId(1), Expr::Const { name: NameId(1), levels: vec![LevelId(0)] }).unwrap();
+        let environment = Environment::empty().extend(NameId(1),
+            crate::environment::ConstantDecl::axiom(vec![NameId(9)], ExprId(0))).unwrap();
+        let check = |level| TypeChecker::with_level_substitution(&expressions, &levels, &environment,
+            HashMap::from([(NameId(9), level)]));
+        let low_checker = check(LevelTerm::Zero);
+        let high_checker = check(succ(LevelTerm::Zero));
+        let low = low_checker.infer(ExprId(1), 128);
+        let high = high_checker.infer(ExprId(1), 128);
+        assert!(low.is_proven() && high.is_proven());
+        assert_ne!(low.proven_value(), high.proven_value(), "universes do not inherit another checker cache");
+        let parent = EnvFrame::empty();
+        let low_domain = TypeValue::Term(low_checker.closure(ExprId(1), parent.clone()));
+        let high_domain = TypeValue::Term(high_checker.closure(ExprId(1), parent.clone()));
+        let low_frame = low_checker.checked_source_frame(ExprId(2), CheckedFrameRole::InferLambda,
+            &parent, low_domain.clone(), &[low_domain], CheckedFrameBinding::Free(FreeId(0)));
+        let high_frame = high_checker.checked_source_frame(ExprId(2), CheckedFrameRole::InferLambda,
+            &parent, high_domain.clone(), &[high_domain], CheckedFrameBinding::Free(FreeId(0)));
+        assert_ne!(low_frame.id(), high_frame.id(), "distinct checker universes have separate frame stores");
+    }
+}
+
+#[cfg(test)]
+mod exact_source_support_controls {
+    use super::*;
+
+    #[test]
+    fn root_source_alias_uses_the_captured_lambda_and_its_own_level_map() {
+        let mut expressions = IdTable::default();
+        let mut levels = IdTable::default();
+        levels.insert(LevelId(0), crate::syntax::Level::Zero).unwrap();
+        for (id, node) in [
+            (0, Expr::Sort(LevelId(0))), (1, Expr::BVar(0)), (2, Expr::BVar(1)),
+            (3, Expr::Lam { domain: ExprId(0), body: ExprId(2) }),
+        ] { expressions.insert(ExprId(id), node).unwrap(); }
+        let environment = Environment::empty();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let payload = |free| Closure::new(ExprId(3), EnvFrame::empty().extend_free(FreeId(free)));
+        let alias = |captured: Closure| {
+            let mut value = captured;
+            for _ in 0..37 { value = Closure::new(ExprId(1), EnvFrame::empty().extend(value)); }
+            Closure::with_levels(ExprId(1), EnvFrame::empty().extend(value),
+                LevelSubstitution::new(vec![(NameId(7), LevelTerm::Succ(Box::new(LevelTerm::Zero)))]))
+        };
+        assert!(checker.exact_source_capture_identity(&alias(payload(9)), &payload(9), &mut 128), "actual root alias discards outer BVar level map, preserving the stored lambda map");
+        assert!(!checker.exact_source_capture_identity(&alias(payload(10)), &payload(9), &mut 128));
+        assert!(!checker.exact_source_capture_identity(&alias(payload(9)), &payload(9), &mut 0));
+        let changed = Closure::with_levels(ExprId(3), EnvFrame::empty().extend_free(FreeId(9)),
+            LevelSubstitution::new(vec![(NameId(7), LevelTerm::Succ(Box::new(LevelTerm::Zero)))]));
+        assert!(!checker.exact_source_capture_identity(&alias(changed), &payload(9), &mut 128));
+        let free0 = Closure::new(ExprId(1), EnvFrame::empty().extend_free(FreeId(0)));
+        assert!(!checker.exact_source_capture_identity(&free0, &payload(0), &mut 128));
+    }
+
+    #[test]
+    fn captured_source_inference_cannot_type_an_ambient_local_by_opening_a_binder() {
+        let mut expressions = IdTable::default();
+        let mut levels = IdTable::default();
+        levels.insert(LevelId(0), crate::syntax::Level::Zero).unwrap();
+        for (id, node) in [
+            (0, Expr::Sort(LevelId(0))), (1, Expr::BVar(0)), (2, Expr::BVar(1)),
+            (3, Expr::Lam { domain: ExprId(0), body: ExprId(1) }),
+            (4, Expr::Lam { domain: ExprId(0), body: ExprId(2) }),
+        ] { expressions.insert(ExprId(id), node).unwrap(); }
+        let environment = Environment::empty();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let source = |id| Closure::new(ExprId(id), EnvFrame::empty().extend_free(FreeId(0)));
+        assert!(checker.infer_exact_closure_in_context(&source(3), &[], &mut 256, 0).is_some());
+        assert!(checker.infer_exact_closure_in_context(&source(4), &[], &mut 256, 0).is_none(), "untyped ambient Free0 is not the newly introduced source binder");
+    }
+
+    #[test]
+    fn paired_support_preserves_binder_capture_constructor_and_level_distinctions() {
+        let mut expressions = IdTable::default();
+        let mut levels = IdTable::default();
+        levels.insert(LevelId(0), crate::syntax::Level::Zero).unwrap();
+        levels.insert(LevelId(1), crate::syntax::Level::Succ(LevelId(0))).unwrap();
+        for (id, node) in [
+            (0, Expr::Sort(LevelId(0))), (1, Expr::BVar(0)), (2, Expr::BVar(1)),
+            (3, Expr::Lam { domain: ExprId(0), body: ExprId(1) }),
+            (4, Expr::Lam { domain: ExprId(0), body: ExprId(2) }),
+            (5, Expr::Sort(LevelId(1))),
+            (6, Expr::Const { name: NameId(1), levels: vec![LevelId(0)] }),
+            (7, Expr::Const { name: NameId(1), levels: vec![LevelId(1)] }),
+            (8, Expr::Const { name: NameId(2), levels: vec![LevelId(0)] }),
+            (9, Expr::Pi { domain: ExprId(1), body: ExprId(1) }),
+            (10, Expr::Pi { domain: ExprId(2), body: ExprId(1) }),
+            (11, Expr::Let { ty: ExprId(0), value: ExprId(1), body: ExprId(1) }),
+            (12, Expr::Let { ty: ExprId(0), value: ExprId(2), body: ExprId(1) }),
+            (13, Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(1) }),
+            (14, Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(2) }),
+            (15, Expr::Proj { type_name: NameId(1), index: 1, structure: ExprId(2) }),
+            (16, Expr::Lam { domain: ExprId(0), body: ExprId(16) }),
+            (17, Expr::Lam { domain: ExprId(0), body: ExprId(17) }),
+            (18, Expr::StrLit("left".into())), (19, Expr::StrLit("right".into())),
+        ] { expressions.insert(ExprId(id), node).unwrap(); }
+        let environment = Environment::empty();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let left = |id| Closure::new(ExprId(id), EnvFrame::empty().extend_free(FreeId(0)));
+        let right = |id, used| Closure::new(ExprId(id), EnvFrame::empty().extend_free(FreeId(used)).extend_free(FreeId(99)));
+        assert!(!checker.exact_source_capture_identity(&left(3), &left(4), &mut 128), "bound variable must not identify ambient Free0");
+        assert!(!checker.exact_source_capture_identity(&left(9), &right(10, 0), &mut 0));
+        assert!(checker.exact_source_capture_identity(&left(9), &right(10, 0), &mut 128), "exhaustion must not cache an incomplete paired proof");
+        for (a, b) in [(0, 5), (6, 7), (6, 8), (13, 15), (18, 19), (16, 17)] {
+            assert!(!checker.exact_source_capture_identity(&left(a), &right(b, 0), &mut 128), "structural distinction or cycle {a}/{b}");
+        }
+        for (a, b) in [(9, 10), (11, 12), (13, 14)] {
+            assert!(checker.exact_source_capture_identity(&left(a), &right(b, 0), &mut 128), "all used captures match at {a}/{b}");
+            assert!(!checker.exact_source_capture_identity(&left(a), &right(b, 1), &mut 128), "used capture changed at {a}/{b}");
+        }
+        assert!(checker.complete_paired_source_support(ExprId(3), ExprId(4), &mut 0).is_none());
+        assert!(checker.complete_paired_source_support(ExprId(3), ExprId(4), &mut 128).is_none());
+    }
+
+    #[test]
+    fn every_annotation_value_projection_and_external_capture_is_accounted_for() {
+        let mut expressions = IdTable::default();
+        let mut levels = IdTable::default();
+        levels.insert(LevelId(0), crate::syntax::Level::Zero).unwrap();
+        for (id, node) in [
+            (0, Expr::Sort(LevelId(0))), (1, Expr::BVar(0)), (2, Expr::BVar(1)),
+            (3, Expr::Lam { domain: ExprId(0), body: ExprId(1) }),
+            (4, Expr::Lam { domain: ExprId(1), body: ExprId(1) }),
+            (5, Expr::Pi { domain: ExprId(0), body: ExprId(2) }),
+            (6, Expr::Let { ty: ExprId(1), value: ExprId(0), body: ExprId(0) }),
+            (7, Expr::Let { ty: ExprId(0), value: ExprId(1), body: ExprId(0) }),
+            (8, Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(1) }),
+            (9, Expr::Lam { domain: ExprId(0), body: ExprId(9) }),
+        ] { expressions.insert(ExprId(id), node).unwrap(); }
+        let environment = Environment::empty();
+        let checker = TypeChecker::new(&expressions, &levels, &environment);
+        let term = |id, free| Closure::new(ExprId(id), EnvFrame::empty().extend_free(FreeId(free)));
+        assert!(checker.exact_source_capture_identity(&term(3, 1), &term(3, 2), &mut 128), "internally bound variables mask unused external frames");
+        for id in [4, 5, 6, 7, 8] {
+            assert!(!checker.exact_source_capture_identity(&term(id, 1), &term(id, 2), &mut 128), "used capture cannot be ignored at source{id}");
+        }
+        assert!(!checker.exact_source_capture_identity(&term(9, 1), &term(9, 1), &mut 128), "source cycles are not coinductive equality proofs");
+        assert!(!checker.exact_source_capture_identity(&term(4, 1), &term(4, 1), &mut 0));
+        assert!(checker.exact_source_capture_identity(&term(4, 1), &term(4, 1), &mut 128), "exhaustion must not memoize incomplete support");
+    }
+}
+
+#[cfg(test)]
+mod opening_memo_tests {
+    use super::*;
+    fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
+        let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();
+        for (id,node) in [(0,Expr::Sort(LevelId(0))),(1,Expr::BVar(0)),(2,Expr::BVar(1)),(3,Expr::BVar(2)),(4,Expr::Lam{domain:ExprId(4),body:ExprId(1)})] {e.insert(ExprId(id),node).unwrap();}(e,l,Environment::empty())
+    }
+    #[test]
+    fn completed_exact_freshness_proof_reuses_at_paid_one_step() {
+        let(e,l,env)=fixture();let checker=TypeChecker::new(&e,&l,&env);
+        let mut captured=Closure::new(ExprId(1),EnvFrame::empty().extend_free(FreeId(9)));
+        for _ in 0..12{captured=Closure::new(ExprId(1),EnvFrame::empty().extend(captured));}
+        let body=Closure::new(ExprId(2),EnvFrame::empty().extend(captured));
+        assert!(!crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(0),&mut 1));
+        assert!(crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(0),&mut 128));
+        let mut fuel=1;assert!(crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(0),&mut fuel),"completed exact capture proof should avoid repeating its transitive walk");assert_eq!(fuel,0);
+        assert!(!crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(0),&mut 0));
+    }
+    #[test]
+    fn freshness_memo_separates_source_frame_level_instance_and_actual_free() {
+        let(e,l,env)=fixture();let checker=TypeChecker::new(&e,&l,&env);
+        let parent=EnvFrame::empty().extend_free(FreeId(9));let body=Closure::new(ExprId(2),parent.clone());
+        assert!(crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(0),&mut 32));
+        for changed in [
+            Closure::new(ExprId(3),parent.clone()),
+            Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(9))),
+            Closure::with_levels(ExprId(2),parent.clone(),LevelSubstitution::new(vec![])),
+            Closure::with_levels(ExprId(2),parent.clone(),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Succ(Box::new(LevelTerm::Zero)))])),
+        ] {assert!(!crate::convert::source_opening_avoids_capture(&checker,&changed,FreeId(0),&mut 1));}
+        assert!(!crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(9),&mut 32));
+        let collision=Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(0)));
+        assert!(!crate::convert::source_opening_avoids_capture(&checker,&collision,FreeId(0),&mut 32));
+        for malformed in [Closure::new(ExprId(999),parent.clone()),Closure::new(ExprId(4),parent.clone()),Closure::new(ExprId(2),EnvFrame::empty())] {
+            assert!(!crate::convert::source_opening_avoids_capture(&checker,&malformed,FreeId(0),&mut 32));
+            assert!(!checker.has_source_opening_proof(&malformed,FreeId(0)));
+        }
+        let other=TypeChecker::new(&e,&l,&env);assert!(!crate::convert::source_opening_avoids_capture(&other,&body,FreeId(0),&mut 1),"proofs do not cross checker/source scope");
+        assert!(crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(0),&mut 1));
+    }
+    #[test]
+    fn cold_freshness_cost_and_saturation_preserve_original_guard() {
+        let(e,l,env)=fixture();let checker=TypeChecker::new(&e,&l,&env);let body=Closure::new(ExprId(1),EnvFrame::empty());
+        assert!(!crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(0),&mut 0));
+        assert!(!crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(0),&mut 1));
+        let mut cold=3;assert!(crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(0),&mut cold));assert_eq!(cold,0,"cold lookup replaces root step, not additional work");
+        for _ in 1..8192 {let distinct=Closure::new(ExprId(1),EnvFrame::empty().extend_free(FreeId(9)));assert!(crate::convert::source_opening_avoids_capture(&checker,&distinct,FreeId(0),&mut 8));}
+        assert_eq!(checker.source_opening_proofs.borrow().len(),8192);
+        assert!(crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(0),&mut 1));
+        let overflow=Closure::new(ExprId(1),EnvFrame::empty().extend_free(FreeId(9)));
+        assert!(crate::convert::source_opening_avoids_capture(&checker,&overflow,FreeId(0),&mut 8));
+        assert!(!crate::convert::source_opening_avoids_capture(&checker,&overflow,FreeId(0),&mut 1));
+        assert_eq!(checker.source_opening_proofs.borrow().len(),8192);
+    }
+
+}
+
+#[cfg(test)]
+mod lambda_role_sharing_tests {
+    use super::*;
+    fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
+        let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();
+        for (id,node) in [(0,Expr::Sort(LevelId(0))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::Const{name:NameId(2),levels:vec![]}),(3,Expr::BVar(0)),(4,Expr::Pi{domain:ExprId(1),body:ExprId(1)}),(5,Expr::Const{name:NameId(3),levels:vec![]}),(6,Expr::App{fun:ExprId(5),arg:ExprId(3)}),(7,Expr::App{fun:ExprId(5),arg:ExprId(6)}),(8,Expr::Lam{domain:ExprId(1),body:ExprId(7)}),(9,Expr::Pi{domain:ExprId(1),body:ExprId(2)}),(10,Expr::Lam{domain:ExprId(1),body:ExprId(7)})] {e.insert(ExprId(id),node).unwrap();}
+        let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(3),crate::environment::ConstantDecl::axiom(vec![],ExprId(4))).unwrap();(e,l,env)
+    }
+    #[test]
+    fn declined_goal_keeps_proven_subject_types_in_the_identical_lambda_scope() {
+        let (e,l,env)=fixture();let checker=TypeChecker::new(&e,&l,&env);let root=EnvFrame::empty();
+        assert!(checker.is_type(ExprId(9),128).is_proven());
+        let wrong=TypeValue::Term(checker.closure(ExprId(9),root.clone()));let mut memo=HashMap::new();
+        let declined=checker.check_expected_lambda_in(ExprId(8),&wrong,&[],&root,&mut 256,true,&mut memo,true);assert!(!declined.is_proven(),"a valid subject type does not prove a different expected goal");
+        let old=checker.checked_frames.borrow().iter().find(|(key,_)|key.source==ExprId(8)).unwrap().1.clone();assert!(memo.contains_key(&(ExprId(7),old.id())));
+        let inferred=checker.infer_in(ExprId(8),&[],&root,&mut 4,&mut memo);
+        assert!(inferred.is_proven(),"the ordinary route must reuse independently proved types under the identical introduced binder: {inferred:?}");
+        assert_eq!(checker.checked_frames.borrow().keys().filter(|key|key.source==ExprId(8)).count(),1,"role-only differences cannot reopen the same certified lambda scope");
+        let inferred_ample=checker.infer(ExprId(8),256);assert!(checker.convert(inferred.proven_value().unwrap(),inferred_ample.proven_value().unwrap(),256).is_proven());
+        let wrong_again=checker.check_expected_lambda_in(ExprId(8),&wrong,&[],&root,&mut 256,true,&mut memo,true);assert!(!wrong_again.is_proven(),"inference memo must not cache acceptance of an unrelated expected goal");
+    }
+    #[test]
+    fn lambda_role_sharing_preserves_every_scope_field_and_other_roles() {
+        let (e,l,env)=fixture();let checker=TypeChecker::new(&e,&l,&env);let root=EnvFrame::empty();
+        assert!(checker.is_type(ExprId(1),128).is_proven());
+        let a=TypeValue::Term(checker.closure(ExprId(1),root.clone()));
+        let b=TypeValue::Term(checker.closure(ExprId(2),root.clone()));
+        let frame=|source,role,parent:&EnvFrame,domain:TypeValue,ctx:&[TypeValue],binding|checker.checked_source_frame(source,role,parent,domain,ctx,binding);
+        let first=frame(ExprId(8),CheckedFrameRole::ExpectedLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0)));
+        assert_eq!(first.id(),frame(ExprId(8),CheckedFrameRole::InferLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0))).id());
+        let parent=root.extend_free(FreeId(9));
+        let changed_levels=TypeValue::Term(Closure::with_levels(ExprId(1),root.clone(),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Succ(Box::new(LevelTerm::Zero)))])));
+        for other in [
+            frame(ExprId(10),CheckedFrameRole::InferLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0))),
+            frame(ExprId(8),CheckedFrameRole::InferLambda,&root,b.clone(),&[b.clone()],CheckedFrameBinding::Free(FreeId(0))),
+            frame(ExprId(8),CheckedFrameRole::InferLambda,&root,a.clone(),&[b.clone(),a.clone()],CheckedFrameBinding::Free(FreeId(1))),
+            frame(ExprId(8),CheckedFrameRole::InferLambda,&parent,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0))),
+            frame(ExprId(8),CheckedFrameRole::InferLambda,&root,changed_levels.clone(),&[changed_levels],CheckedFrameBinding::Free(FreeId(0))),
+            frame(ExprId(8),CheckedFrameRole::InferLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(1))),
+        ] {assert_ne!(first.id(),other.id());}
+        for role in [CheckedFrameRole::InferPi,CheckedFrameRole::LiteralBeta,CheckedFrameRole::Let,CheckedFrameRole::ExactPiSubstitution] {
+            assert_ne!(first.id(),frame(ExprId(8),role,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0))).id());
+        }
+        for source in [ExprId(4),ExprId(999)] {
+            assert_ne!(frame(source,CheckedFrameRole::ExpectedLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0))).id(),frame(source,CheckedFrameRole::InferLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0))).id());
+        }
+        let actual=checker.closure(ExprId(1),root.clone());
+        assert_ne!(frame(ExprId(8),CheckedFrameRole::ExpectedLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Actual(actual.clone())).id(),frame(ExprId(8),CheckedFrameRole::InferLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Actual(actual.clone())).id());
+        assert_ne!(first.id(),checker.checked_source_frame_with_codomain(ExprId(8),CheckedFrameRole::InferLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0)),Some(actual)).id());
+    }
+
+    #[test]
+    fn lambda_shared_scope_obeys_quarantine_fixed_pi_and_configuration() {
+        let (e,l,env)=fixture();let mut checker=TypeChecker::new(&e,&l,&env);checker.strict_origin_probe=true;
+        let root=EnvFrame::empty();let a=TypeValue::Term(checker.closure(ExprId(1),root.clone()));let b=TypeValue::Term(checker.closure(ExprId(2),root.clone()));
+        let first=checker.checked_source_frame(ExprId(8),CheckedFrameRole::ExpectedLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0)));
+        checker.retain_checked_binding(&first,b.clone(),&[a.clone()]);
+        assert!(checker.checked_binding_lineage.borrow().get(&first.id()).unwrap().is_none());
+        let fresh=checker.checked_source_frame(ExprId(8),CheckedFrameRole::InferLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0)));
+        assert_ne!(first.id(),fresh.id());
+        checker.strict_origin_probe=false;
+        let ordinary=checker.checked_source_frame(ExprId(8),CheckedFrameRole::ExpectedLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0)));
+        assert_ne!(ordinary.id(),fresh.id());
+        let pi=TypeValue::Pi{domain:Box::new(a.clone()),body:Box::new(b),binder:FreeId(0)};
+        for (domain,ctx) in [(pi.clone(),vec![pi.clone()]),(a.clone(),vec![pi,a])] {
+            let one=checker.checked_source_frame(ExprId(8),CheckedFrameRole::ExpectedLambda,&root,domain.clone(),&ctx,CheckedFrameBinding::Free(FreeId(0)));
+            let two=checker.checked_source_frame(ExprId(8),CheckedFrameRole::InferLambda,&root,domain,&ctx,CheckedFrameBinding::Free(FreeId(0)));
+            assert_ne!(one.id(),two.id(),"fixed Pi scopes remain fresh and capture protected");
+        }
+    }
+
+    #[test]
+    fn lambda_shared_scope_saturation_preserves_exact_old_proofs() {
+        let (e,l,env)=fixture();let checker=TypeChecker::new(&e,&l,&env);let root=EnvFrame::empty();let a=TypeValue::Term(checker.closure(ExprId(1),root.clone()));
+        let first=checker.checked_source_frame(ExprId(8),CheckedFrameRole::ExpectedLambda,&root,a.clone(),&[a.clone()],CheckedFrameBinding::Free(FreeId(0)));
+        for _ in 1..8192 {let parent=root.extend_free(FreeId(9));let domain=TypeValue::Term(checker.closure(ExprId(1),parent.clone()));checker.checked_source_frame(ExprId(8),CheckedFrameRole::InferLambda,&parent,domain.clone(),&[domain],CheckedFrameBinding::Free(FreeId(0)));}
+        assert_eq!(checker.checked_frames.borrow().len(),8192);
+        assert_eq!(first.id(),checker.checked_source_frame(ExprId(8),CheckedFrameRole::InferLambda,&root,a.clone(),&[a],CheckedFrameBinding::Free(FreeId(0))).id());
+        let parent=root.extend_free(FreeId(9));let domain=TypeValue::Term(checker.closure(ExprId(1),parent.clone()));
+        let one=checker.checked_source_frame(ExprId(8),CheckedFrameRole::ExpectedLambda,&parent,domain.clone(),&[domain.clone()],CheckedFrameBinding::Free(FreeId(0)));
+        let two=checker.checked_source_frame(ExprId(8),CheckedFrameRole::InferLambda,&parent,domain.clone(),&[domain],CheckedFrameBinding::Free(FreeId(0)));
+        assert_ne!(one.id(),two.id());assert_eq!(checker.checked_frames.borrow().len(),8192);
+    }
+
 }

@@ -1,0 +1,55 @@
+{
+  "binary_sha256": "a9c2f862761799ffbc68603422b3c27f9b5c85e905fcad04dc62a7dce97e31d6",
+  "profile": "release thinLTO/codegen1 diagnostics",
+  "scope": "container-only, not whole export/arena instructions",
+  "rows": [
+    {
+      "mode": "borrowed",
+      "count": 1000,
+      "rc": 0,
+      "wall": 0.4893142920045648,
+      "child_cpu": 0.011406,
+      "output": "mode=borrowed count=1000 authority=1000 elapsed_ns=6604292 definitions=1000"
+    },
+    {
+      "mode": "owned",
+      "count": 1000,
+      "rc": 0,
+      "wall": 0.0075034160108771175,
+      "child_cpu": 0.0027739999999999983,
+      "output": "mode=owned count=1000 authority=1000 elapsed_ns=215375 definitions=1000"
+    },
+    {
+      "mode": "borrowed",
+      "count": 2000,
+      "rc": 0,
+      "wall": 0.022890541004016995,
+      "child_cpu": 0.021712000000000002,
+      "output": "mode=borrowed count=2000 authority=2000 elapsed_ns=19176333 definitions=2000"
+    },
+    {
+      "mode": "owned",
+      "count": 2000,
+      "rc": 0,
+      "wall": 0.004265625000698492,
+      "child_cpu": 0.003075000000000002,
+      "output": "mode=owned count=2000 authority=2000 elapsed_ns=539583 definitions=2000"
+    },
+    {
+      "mode": "borrowed",
+      "count": 4000,
+      "rc": 0,
+      "wall": 0.07426283399399836,
+      "child_cpu": 0.07312099999999999,
+      "output": "mode=borrowed count=4000 authority=4000 elapsed_ns=70746667 definitions=4000"
+    },
+    {
+      "mode": "owned",
+      "count": 4000,
+      "rc": 0,
+      "wall": 0.0036345830012578517,
+      "child_cpu": 0.0026339999999999975,
+      "output": "mode=owned count=4000 authority=4000 elapsed_ns=635834 definitions=4000"
+    }
+  ]
+}

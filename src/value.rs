@@ -79,6 +79,18 @@ impl EnvFrame {
         }
     }
 
+    /// Borrow an immutable capture without recursively cloning its payload.
+    pub(crate) fn lookup_binding_ref(&self, mut index: u64) -> Option<&EnvBinding> {
+        let mut frame = self;
+        loop {
+            match frame.0.as_ref() {
+                EnvNode::Empty => return None,
+                EnvNode::Extend { value, .. } if index == 0 => return Some(value),
+                EnvNode::Extend { parent, .. } => { index -= 1; frame = parent; }
+            }
+        }
+    }
+
     /// Retrieve the *identity of the immutable binding node* read by one
     /// de Bruijn index, in addition to its value. Typed binder authority is
     /// attached to the node when a checked Pi/Lam/Let introduces it. The
@@ -150,6 +162,11 @@ impl LevelSubstitution {
     pub fn new(entries: Vec<(NameId, LevelTerm)>) -> Self {
         Self(Rc::new(entries))
     }
+
+    pub(crate) fn entries(&self) -> impl Iterator<Item=&(NameId,LevelTerm)> { self.0.iter() }
+    /// Identity of this immutable substitution allocation. Callers using it
+    /// as a witness must retain a clone to prevent address recycling.
+    pub(crate) fn identity(&self)->usize {Rc::as_ptr(&self.0) as usize}
 
     pub fn to_map(&self) -> std::collections::HashMap<NameId, LevelTerm> {
         self.0.iter().cloned().collect()

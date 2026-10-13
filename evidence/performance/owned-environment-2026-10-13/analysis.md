@@ -1,0 +1,11 @@
+# Isolated owned environment append
+
+Base /tmp/nucleus-opening-role-source with current Cargo.toml thinLTO/codegen1. Only production changes: Environment::extend_owned consumed-self COW append and borrowed extend clone+delegate; checker.rs root publication call extend->extend_owned after completed match-arm checker scopes. No mem::take or borrowed Quot/inductive route changes. Duplicate and authorityoverflow validations precede writes; actual body appends Rc::make_mut definitions; constants Rc::make_mut; no-body append shares unchanged definitions under incremented authority. Pinned strong Rc snapshots/Machine witnesses force COW and prevent allocation recycling. Other metadata unchanged. No shared edits.
+
+Baseline forwarding-owned scaffold RED on unchanged2048 mapallocation regression; real implementation4focused testsGREEN: unique2048definitions preserve bothRc allocations, borrowed/snapshot/definition preservation, retainedMachine witness does not see newbody, duplicate/overflow before sharedwrites, sameauthority siblingdifferentbody maps distinct. Currentprofile active release325pass0fail17ignored. Root actualpatch review no blocker.
+
+Container-only example samebinary borrowed/owned1000,2000,4000 actual definitions; elapsedinner borrowed6.60,19.18,70.75ms vsowned.215,.540,.636ms. Demonstrates eliminated full-map copies on unique-owner path; not wholeprogram/rank.
+
+Frozen candidate588ecfd86ea35d23c97b580d825baa59b56e74ecabad140eed9736072ae8743c. Baseline5aff70a1118a8a283fa3f9c86221a3d3a6439a068a7675bbe6eb78f8041c0928. Three alternating fresh-process Init pairs, identical qualified origin12flags and SHAeac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5, unchanged limits. All6CLIrc0ACCEPT. BaselineCPU1.784640,1.838565,1.790430s; candidate1.720055,1.689705,1.666971s. Median1.790430->1.689705 (-5.63%); mean1.804545->1.692244 (-6.22%). Candidate lower in allpairs. Firstcandidatewallstartup2.34s atypical; CPUreport exact. No rootwholeCPUprobe, anotheragentbuild mayoverlap noted; no retiredinstruction/RSS metric.
+
+Patches /tmp/nucleus-owned-environment-environment.patch and -checker.patch; source/manifests/testlogs/microbenchmark/pairedJSON preserved. Candidate is ready for rootFrozen196+protected qualification before any sharedpromotion. No fullMathlib/submission/network operation.

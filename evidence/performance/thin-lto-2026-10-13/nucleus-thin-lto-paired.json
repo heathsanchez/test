@@ -1,0 +1,260 @@
+{
+  "binary_sha256": {
+    "baseline": "5cf5ca34fee6c5d384852f14399cea7f64a227dcd49b85c4491fd03428e5b7ad",
+    "candidate": "32b6fafb312c59a076334048dfddf055c25daee1c350faa2a870bfbd2d7d8986"
+  },
+  "rows": [
+    {
+      "case": "init-prelude",
+      "trial": 0,
+      "label": "baseline",
+      "rc": 0,
+      "wall": 1.996265083012986,
+      "cpu": 1.944582,
+      "terminal": []
+    },
+    {
+      "case": "init-prelude",
+      "trial": 0,
+      "label": "candidate",
+      "rc": 0,
+      "wall": 2.369205292008701,
+      "cpu": 1.880814,
+      "terminal": []
+    },
+    {
+      "case": "init-prelude",
+      "trial": 1,
+      "label": "candidate",
+      "rc": 0,
+      "wall": 1.863014792004833,
+      "cpu": 1.8393279999999996,
+      "terminal": []
+    },
+    {
+      "case": "init-prelude",
+      "trial": 1,
+      "label": "baseline",
+      "rc": 0,
+      "wall": 1.939704292002716,
+      "cpu": 1.9155419999999999,
+      "terminal": []
+    },
+    {
+      "case": "init-prelude",
+      "trial": 2,
+      "label": "baseline",
+      "rc": 0,
+      "wall": 2.222864583003684,
+      "cpu": 1.9908309999999998,
+      "terminal": []
+    },
+    {
+      "case": "init-prelude",
+      "trial": 2,
+      "label": "candidate",
+      "rc": 0,
+      "wall": 1.9502392499998678,
+      "cpu": 1.918315,
+      "terminal": []
+    },
+    {
+      "case": "perf/fueled-chain",
+      "trial": 0,
+      "label": "baseline",
+      "rc": 2,
+      "wall": 1.6465582910022931,
+      "cpu": 1.5658340000000004,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/fueled-chain",
+      "trial": 0,
+      "label": "candidate",
+      "rc": 2,
+      "wall": 1.633833500003675,
+      "cpu": 1.4939420000000008,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/fueled-chain",
+      "trial": 1,
+      "label": "candidate",
+      "rc": 2,
+      "wall": 1.4854706670012092,
+      "cpu": 1.4784669999999984,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/fueled-chain",
+      "trial": 1,
+      "label": "baseline",
+      "rc": 2,
+      "wall": 1.5448082910006633,
+      "cpu": 1.5352349999999988,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/fueled-chain",
+      "trial": 2,
+      "label": "baseline",
+      "rc": 2,
+      "wall": 1.5728631670062896,
+      "cpu": 1.5476510000000023,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/fueled-chain",
+      "trial": 2,
+      "label": "candidate",
+      "rc": 2,
+      "wall": 1.4412562500074273,
+      "cpu": 1.436648999999999,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/magma-list-pair-n7",
+      "trial": 0,
+      "label": "baseline",
+      "rc": 2,
+      "wall": 0.3038399999932153,
+      "cpu": 0.302103,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/magma-list-pair-n7",
+      "trial": 0,
+      "label": "candidate",
+      "rc": 2,
+      "wall": 0.2936840000038501,
+      "cpu": 0.29200899999999885,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/magma-list-pair-n7",
+      "trial": 1,
+      "label": "candidate",
+      "rc": 2,
+      "wall": 0.2996806250012014,
+      "cpu": 0.2943429999999977,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/magma-list-pair-n7",
+      "trial": 1,
+      "label": "baseline",
+      "rc": 2,
+      "wall": 0.30297395899833646,
+      "cpu": 0.3014620000000031,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/magma-list-pair-n7",
+      "trial": 2,
+      "label": "baseline",
+      "rc": 2,
+      "wall": 0.3059131670015631,
+      "cpu": 0.30257299999999954,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/magma-list-pair-n7",
+      "trial": 2,
+      "label": "candidate",
+      "rc": 2,
+      "wall": 0.4134920840006089,
+      "cpu": 0.3152660000000005,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/magma-list-deep-n21",
+      "trial": 0,
+      "label": "baseline",
+      "rc": 2,
+      "wall": 0.747566125006415,
+      "cpu": 0.7387029999999991,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "case": "perf/magma-list-deep-n21",
+      "trial": 0,
+      "label": "candidate",
+      "rc": 2,
+      "wall": 0.72624479199294,
+      "cpu": 0.7157830000000016,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "case": "perf/magma-list-deep-n21",
+      "trial": 1,
+      "label": "candidate",
+      "rc": 2,
+      "wall": 0.7230832089990145,
+      "cpu": 0.7096050000000007,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "case": "perf/magma-list-deep-n21",
+      "trial": 1,
+      "label": "baseline",
+      "rc": 2,
+      "wall": 0.7344712920021266,
+      "cpu": 0.7295639999999968,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "case": "perf/magma-list-deep-n21",
+      "trial": 2,
+      "label": "baseline",
+      "rc": 2,
+      "wall": 0.7349228749953909,
+      "cpu": 0.7298400000000016,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "case": "perf/magma-list-deep-n21",
+      "trial": 2,
+      "label": "candidate",
+      "rc": 2,
+      "wall": 0.7265589169983286,
+      "cpu": 0.7199950000000002,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    }
+  ]
+}
