@@ -37,7 +37,7 @@ def lean(case,rel):
     pairs=' ∨ '.join(f'(s = {s} ∧ t = {t})' for s,t in sorted(rel)) or 'false'
     start,target=case['seed']
     name='V10_'+case['id']
-    return f"""import Cslib.Foundations.Semantics.LTS.Simulation
+    return f"""import Cslib.Foundations.Semantics.LTS.Simulation\nimport Mathlib.Tactic.FinCases
 namespace {name}
 open Cslib
 def sys : LTS (Fin {n}) (Fin {case['labels']}) where
