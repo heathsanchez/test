@@ -220,6 +220,63 @@ def main():
             raise AssertionError("REVOKED_PROOF_DID_NOT_REOPEN_NATIVE_OBLIGATION")
         native_revocation = "PASS_SIMULATED_TYPED_REVOCATION"
 
+    # Real independent source-to-native transfer qualified in the pinned
+    # upstream CSLib checker. It is a two-source guarded proof capability,
+    # NOT general autonomous generator revision.
+    method_done = "CSLIB_SOURCE_METHOD_PASS" in runs and "source_bisim" in manifest["emitters"]
+    method_id = "cslib:two-original-inductives:native-source-derived-bisimulation:v1"
+    method_ablation = "NOT_CHECKED"
+    method_revocation = "NOT_CHECKED"
+    if method_done:
+        active = set(summary["active_capability_ids"])
+        if method_id not in active or "external:" + method_id not in summary["discharged_obligation_ids"]:
+            raise AssertionError("SOURCE_NATIVE_METHOD_NOT_ACTUALLY_ADMITTED")
+        without_method = [
+            p for p in bundles
+            if p.relative_to(args.source_bundles).parts[0] != "source_bisim"
+        ]
+        other = update_live_state(None, without_method)["summary"]
+        if set(other["active_capability_ids"]) | {method_id} != active:
+            raise AssertionError("SOURCE_METHOD_ABLATION_CHANGED_OTHER_CAPABILITIES")
+        if set(other["obstruction_ids"]) != set(summary["obstruction_ids"]):
+            raise AssertionError("SOURCE_METHOD_ABLATION_CHANGED_OTHER_OBSTRUCTIONS")
+        if method_id in other["active_capability_ids"]:
+            raise AssertionError("SOURCE_METHOD_SURVIVED_ANCESTOR_DELETION")
+        method_ablation = "PASS_NATIVE_SOURCE_CAPABILITY_DELETION"
+
+        # Additional cross-method revocation uses the existing FLASH typed
+        # event language and is NOT persisted as a real source revocation.
+        from realitygraph.flash import ExternalEventEnvelope
+        from tempfile import TemporaryDirectory
+        source = next(p for p in bundles
+                      if p.relative_to(args.source_bundles).parts[0] == "source_bisim")
+        event = read(source / "event.json")
+        simulation = b'{"controlled":true,"real_revocation":false,"source_method":"cslib"}'
+        rev = ExternalEventEnvelope.capability_revocation(
+            event_id="cslib:source-derived:simulated-revocation:negative-only",
+            repository=event["repository"],
+            commit=event["commit"],
+            authority_snapshot=event["authority_snapshot"],
+            verifier_id=event["verifier_id"],
+            source_evidence=simulation,
+            capability_id=method_id,
+            reason="isolated source-method revocation; original Lean proofs remain valid",
+        )
+        with TemporaryDirectory(prefix="source-method-revoke-") as path:
+            attack_dir = Path(path)
+            (attack_dir / "event.json").write_text(rev.to_text())
+            (attack_dir / "evidence.json").write_bytes(simulation)
+            attacked = update_live_state(None, list(bundles) + [attack_dir])["summary"]
+        if method_id in attacked["active_capability_ids"]:
+            raise AssertionError("REVOKED_METHOD_REMAINED_LIVE")
+        if set(attacked["active_capability_ids"]) != set(other["active_capability_ids"]):
+            raise AssertionError("METHOD_REVOCATION_AFFECTED_UNRELATED_CAPABILITY")
+        if "external:" + method_id not in attacked["open_obligation_ids"]:
+            raise AssertionError("METHOD_REVOCATION_FAILED_TO_REOPEN_SOURCE_OBLIGATION")
+        if set(attacked["obstruction_ids"]) != set(summary["obstruction_ids"]):
+            raise AssertionError("METHOD_REVOCATION_AFFECTED_UNRELATED_OBSTRUCTIONS")
+        method_revocation = "PASS_SIMULATED_TYPED_METHOD_REVOCATION"
+
     preceding_log = (args.previous_ledger.read_text(encoding="utf-8")
                      if args.previous_ledger and args.previous_ledger.is_file() else None)
     log = mt.loads(preceding_log) if preceding_log is not None else ()
@@ -287,16 +344,38 @@ def main():
              roots[("emitters", "native")].id,
              flash_event.id))
         log = mt.append(log, native_node)
+    native_method_node = None
+    if method_done:
+        source_qualification = runs["CSLIB_SOURCE_METHOD_PASS"]
+        native_method_node = mt.Node("original_source_scoped_native_method", {
+            "run": source_qualification["url"],
+            "head": source_qualification["commit"],
+            "capability_id": method_id,
+            "original_sources": ["CslibTests/LTS.lean", "CslibTests/Bisimulation.lean"],
+            "relation_pair_counts": [4, 24],
+            "human_authored_general_extractor": True,
+            "source_deletion_ablation": method_ablation,
+            "controlled_revocation": method_revocation,
+            "general_generator_invention": "UNKNOWN",
+            "native_new_open_theorem": "UNKNOWN",
+            "action_authorization": "NONE"},
+            (anchors["CSLIB_SOURCE_METHOD_PASS"].id,
+             roots[("emitters", "source_bisim")].id,
+             flash_event.id))
+        log = mt.append(log, native_method_node)
     future_dependencies = (qualification.id, source_catalogue.id, flash_event.id, residual.id)
     if native_done:
         future_dependencies += (native_node.id,)
+    if method_done:
+        future_dependencies += (native_method_node.id,)
     future_name = (
-        "source_distinct_native_generator_invention_still_open"
+        "autonomous_source_distinct_native_generator_invention_still_open"
         if native_done else "diagnose_native_failure_and_test_new_semantic_repair")
     future_payload = {
         "candidate": future_name,
         "protected_target": bad["url"],
         "native_certificate_backend": "PASS_SCOPED" if native_done else "UNKNOWN",
+        "source_native_method_transfer": "PASS_SCOPED" if method_done else "UNKNOWN",
         "action_authorization": "NONE",
         "system_e2e": manifest["protected_claims"]["system_e2e"],
         "recursive_native_development": manifest["protected_claims"]["recursive_native_development"]}
@@ -323,6 +402,17 @@ def main():
     assert residual.id in independent_live(revoked)
     assert flash_event.id in independent_live(revoked)
     assert mt.loads(serialized) == log, "archived past must not change"
+    if method_done:
+        method_withdrawal = mt.append(log, mt.Node("revoke", {
+            "target": native_method_node.id,
+            "reason": "simulated historical proof-support removal without revoking original Lean",
+        }))
+        after = independent_live(method_withdrawal)
+        if native_method_node.id in after or frontier.id in after:
+            raise AssertionError("METATRON_METHOD_SUPPORT_WITHDRAWAL_DID_NOT_RECLOSE")
+        if qualification.id not in after or residual.id not in after:
+            raise AssertionError("UNRELATED_WARRANT_REVOKED_WITH_METHOD")
+        assert set(mt.live_ids(method_withdrawal)) == after
     if native_done:
         simulated_native_withdrawal = mt.append(log, mt.Node("revoke", {
             "target": native_node.id,
@@ -367,6 +457,14 @@ def main():
             "restart": "PASS", "dependency_oracle": "PASS",
             "source_revocation": "PASS", "unrelated_lineage": "PRESERVED"},
         "frontier": frontier.payload,
+        "source_native_method": {
+            "verdict": "PASS_SCOPED" if method_done else "UNKNOWN",
+            "capability_id": method_id if method_done else None,
+            "source_deletion_ablation": method_ablation,
+            "controlled_revocation": method_revocation,
+            "human_authored_method": True,
+            "scientific_autonomous_genesis": "UNKNOWN",
+            "source_distinct_new_open_theorem": "UNKNOWN"},
         "native_scoped_proof": {
             "verdict": "PASS_SCOPED" if native_done else "UNKNOWN",
             "run": runs["CSLIB_NATIVE_PASS"]["url"] if native_done else None,
@@ -386,6 +484,9 @@ def main():
             "metatron_live_restart": "PASS",
             "metatron_ablation": "PASS",
             "source_bound_native_scoped_certificate": "PASS" if native_done else "UNKNOWN",
+            "source_distinct_upstream_native_semantics": "PASS_SCOPED" if method_done else "UNKNOWN",
+            "source_method_causal_ablation": method_ablation,
+            "source_method_typed_revocation": method_revocation,
             "native_semantic_event_ablation": native_causal,
             "native_typed_revocation_control": native_revocation,
             "prior_research_history_retained": "PASS" if preceding_flash is not None and preceding_log is not None else "COLD_BOOTSTRAP",
