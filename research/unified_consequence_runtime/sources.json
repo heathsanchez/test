@@ -93,5 +93,12 @@
     "system_e2e": "UNKNOWN",
     "recursive_native_development": "UNKNOWN"
   },
-  "interpretation": "Historical runs are provider-checked pointers, not fresh theorem verifications. Original source scientific scopes prevail."
+  "interpretation": "Historical runs are provider-checked pointers, not fresh theorem verifications. Original source scientific scopes prevail.",
+  "event_origin_allowlist": {
+    "collatz": [
+      "7fe10392f2865a008ff8642f4da64d93378c780f",
+      "c444e21e15557126fae555ddbdfa1e04016e1573"
+    ]
+  },
+  "source_note": "An emitter head does not equal every event's original evidence commit. Validate each typed event's own repository and source SHA. Collatz has two source-distinct historical events."
 }
