@@ -157,6 +157,26 @@ def main():
             ) == {item["id"] for item in source_events}
     assert not (set(flash["new_event_ids"]) & set(flash["unchanged_event_ids"]))
 
+    # New source-qualified native proof is OPTIONAL until its separate Lean
+    # verification succeeds. Its capability affects only its matching scope.
+    native_done = "CSLIB_NATIVE_PASS" in runs and "native" in manifest["emitters"]
+    native_causal = "NOT_CHECKED"
+    native_id = "cslib:cycle:native-source-checked-simulation:v1"
+    if native_done:
+        if native_id not in summary["active_capability_ids"]:
+            raise AssertionError("QUALIFIED_NATIVE_PROOF_NOT_IN_ACTIVE_FLASH")
+        without = [p for p in bundles if p.relative_to(args.source_bundles).parts[0] != "native"]
+        ablated = update_live_state(None, without)["summary"]
+        if native_id in ablated["active_capability_ids"]:
+            raise AssertionError("NATIVE_PROOF_ABLATION_DID_NOT_REMOVE_CAPABILITY")
+        old_active = set(ablated["active_capability_ids"])
+        current_active = set(summary["active_capability_ids"])
+        if current_active != old_active | {native_id}:
+            raise AssertionError("UNRELATED_CAPABILITY_CHANGED_WITH_NATIVE_EVENT")
+        if set(ablated["obstruction_ids"]) != set(summary["obstruction_ids"]):
+            raise AssertionError("UNRELATED_RESEARCH_OBSTRUCTION_CHANGED")
+        native_causal = "PASS_SCOPED_ADMISSION_ABLATION"
+
     preceding_log = (args.previous_ledger.read_text(encoding="utf-8")
                      if args.previous_ledger and args.previous_ledger.is_file() else None)
     log = mt.loads(preceding_log) if preceding_log is not None else ()
@@ -207,13 +227,43 @@ def main():
         "cause": "actual_generated_Lean_certificate_rejected"},
         (anchors[bad["key"]].id,))
     log = mt.append(log, residual)
-    frontier = mt.Node("advisory_future", {
-        "candidate": "diagnose_native_failure_and_test_new_semantic_repair",
+    native_node = None
+    if native_done:
+        success = runs["CSLIB_NATIVE_PASS"]
+        assert success["conclusion"] == "success"
+        native_node = mt.Node("scoped_native_lean_proof_product", {
+            "native_run": success["url"],
+            "head": success["commit"],
+            "prior_failed_run": bad["url"],
+            "verified_scope": "pinned finite CSLib LTS simulation certificate",
+            "new_general_generator": "UNKNOWN",
+            "current_action_authorization": "NONE",
+            "verified_source_capability_id": native_id},
+            (anchors["CSLIB_NATIVE_PASS"].id,
+             roots[("emitters", "native")].id,
+             flash_event.id))
+        log = mt.append(log, native_node)
+    future_dependencies = (qualification.id, source_catalogue.id, flash_event.id, residual.id)
+    if native_done:
+        future_dependencies += (native_node.id,)
+    future_name = (
+        "source_distinct_native_generator_invention_still_open"
+        if native_done else "diagnose_native_failure_and_test_new_semantic_repair")
+    future_payload = {
+        "candidate": future_name,
         "protected_target": bad["url"],
+        "native_certificate_backend": "PASS_SCOPED" if native_done else "UNKNOWN",
         "action_authorization": "NONE",
         "system_e2e": manifest["protected_claims"]["system_e2e"],
-        "recursive_native_development": manifest["protected_claims"]["recursive_native_development"]},
-        (qualification.id, source_catalogue.id, flash_event.id, residual.id))
+        "recursive_native_development": manifest["protected_claims"]["recursive_native_development"]}
+    frontier = mt.Node("advisory_future", future_payload, future_dependencies)
+    if frontier.id not in set(mt.live_ids(log)):
+        for old_id, old_node in mt.live(log, "advisory_future"):
+            if old_id != frontier.id:
+                log = mt.append(log, mt.Node("revoke", {
+                    "target": old_id,
+                    "reason": "new source-qualified evidence superseded advisory focus"
+                }))
     log = mt.append(log, frontier)
 
     serialized = mt.dumps(log)
@@ -261,6 +311,12 @@ def main():
             "restart": "PASS", "dependency_oracle": "PASS",
             "source_revocation": "PASS", "unrelated_lineage": "PRESERVED"},
         "frontier": frontier.payload,
+        "native_scoped_proof": {
+            "verdict": "PASS_SCOPED" if native_done else "UNKNOWN",
+            "run": runs["CSLIB_NATIVE_PASS"]["url"] if native_done else None,
+            "capability_id": native_id if native_done else None,
+            "source_deletion_ablation": native_causal,
+            "scientific_genesis": "UNKNOWN"},
         "scientific_closure": "UNKNOWN",
         "scientific_claim_boundary": "INTEGRATED_OPERATIONAL_STATE_NOT_NEW_AUTONOMOUS_CAPABILITY",
         "gates": {
@@ -272,6 +328,8 @@ def main():
             "flash_cold_restart": "PASS",
             "metatron_live_restart": "PASS",
             "metatron_ablation": "PASS",
+            "source_bound_native_scoped_certificate": "PASS" if native_done else "UNKNOWN",
+            "native_semantic_event_ablation": native_causal,
             "prior_research_history_retained": "PASS" if preceding_flash is not None and preceding_log is not None else "COLD_BOOTSTRAP",
             "previously_failing_native_goal_solved": "UNKNOWN",
             "new_generator_native_transfer": "UNKNOWN",
