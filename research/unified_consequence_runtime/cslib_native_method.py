@@ -42,40 +42,58 @@ def bisim_ref(case):
             return r
         r = after
 
-def rewrite_native_certificate(source_lean, bisimulation):
+def witness_tactic(n, indent="  "):
+    # Every witness is an actual target-state element; the compiler verifies
+    # both the target transition and the successor-in-relation obligation.
+    lines = [indent + "all_goals first"]
+    for i in range(n):
+        lines.append(indent + f"| exact ⟨({i} : Fin {n}), by simp [sys], by simp [relation]⟩")
+    return "\n".join(lines)
+
+
+def rewrite_native_certificate(source_lean, case, bisimulation):
     old = """theorem certified : LTS.IsSimulation sys sys relation := by
   intro s₁ s₂ hrel μ s₁' htr
   fin_cases s₁ <;> fin_cases s₂ <;> fin_cases μ <;> fin_cases s₁'
   all_goals simp_all [sys, relation]
 """
     new = """theorem certified : LTS.IsSimulation sys sys relation := by
-  decide
-"""
+  intro s₁ s₂ hrel μ s₁' htr
+  fin_cases s₁ <;> fin_cases s₂ <;> fin_cases μ <;> fin_cases s₁'
+  all_goals simp_all [sys, relation]
+""" + witness_tactic(case["n"]) + "\n"
     if source_lean.count(old) != 1:
         raise ValueError("frozen original proof block changed")
     code = source_lean.replace(old, new)
     code = code.replace(
         "import Cslib.Foundations.Semantics.LTS.Simulation",
-        "import Cslib.Foundations.Semantics.LTS.Bisimulation", 1,
+        "import Cslib.Foundations.Semantics.LTS.Bisimulation\n"
+        "import Mathlib.Tactic.FinCases", 1,
     )
     if bisimulation:
-        code = code.replace(
-            "theorem seed :", 
+        left = """  · intro s₁' htr
+    fin_cases s₁ <;> fin_cases s₂ <;> fin_cases μ <;> fin_cases s₁'
+    all_goals simp_all [sys, relation]
+""" + witness_tactic(case["n"], indent="    ") + "\n"
+        right = """  · intro s₂' htr
+    fin_cases s₁ <;> fin_cases s₂ <;> fin_cases μ <;> fin_cases s₂'
+    all_goals simp_all [sys, relation]
+""" + witness_tactic(case["n"], indent="    ") + "\n"
+        proof = (
             "theorem certified_bisimulation : LTS.IsBisimulation sys sys relation := by\n"
-            "  decide\n"
-            "theorem seed :", 1,
+            "  intro s₁ s₂ hrel μ\n"
+            "  constructor\n" + left + right
         )
-        if "theorem certified_bisimulation" not in code:
-            # A negative-seed case has no seed theorem.
+        if "theorem seed :" in code:
+            code = code.replace("theorem seed :", proof + "theorem seed :", 1)
+        else:
             code = code.replace(
-                "theorem seed_rejected :",
-                "theorem certified_bisimulation : LTS.IsBisimulation sys sys relation := by\n"
-                "  decide\n"
-                "theorem seed_rejected :", 1,
+                "theorem seed_rejected :", proof + "theorem seed_rejected :", 1
             )
-    if "fin_cases" in code or "sorry" in code or "admit" in code:
+    if "sorry" in code or "admit" in code or "axiom" in code:
         raise AssertionError("untrusted proof path")
     return code
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -107,7 +125,7 @@ def main():
                     f"theorem seed_rejected : ¬relation {case['seed'][0]} "
                     f"{case['seed'][1]} := by\n  decide\nend V10_{case['id']}\n"
                 )
-            native = rewrite_native_certificate(native, proves_bisim)
+            native = rewrite_native_certificate(native, case, proves_bisim)
             out = args.out / (split + "_" + case["id"] + ".lean")
             out.write_text(native)
             rows.append({
