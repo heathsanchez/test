@@ -96,6 +96,15 @@ jobs:
             --policy-sha256 7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89 \
             --audit-imports > out/mathgraph-replay.json
 
+      - name: Recheck MathGraph source-catalogue publication
+        working-directory: coordinator
+        run: |
+          python -I -S -B components/mathgraph/conformance/source_catalogue_v1/consumer.py \
+            --catalogue-root components/mathgraph/website/public/catalogues/mathlib/v4.34.1 \
+            --policy components/mathgraph/conformance/source_catalogue_v1/trust-policy.json \
+            --policy-sha256 c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9 \
+            --audit-imports > out/catalogue-replay.json
+
       - name: Read actual existing source emitter evidence
         working-directory: coordinator
         run: |
@@ -121,6 +130,7 @@ jobs:
             --run-data out/run-data \
             --source-bundles out/source-bundles \
             --mathgraph-replay out/mathgraph-replay.json \
+            --catalogue-replay out/catalogue-replay.json \
             --out out/integration
           python - <<'PY'
           import json
@@ -143,5 +153,6 @@ jobs:
           path: |
             coordinator/out/integration/
             coordinator/out/mathgraph-replay.json
+            coordinator/out/catalogue-replay.json
             coordinator/out/run-data/
           if-no-files-found: warn
