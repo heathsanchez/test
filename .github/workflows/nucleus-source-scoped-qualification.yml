@@ -62,11 +62,16 @@ jobs:
               for p in sorted((root/group).rglob('*.ndjson')):
                   rows.append(check(p,str(p.relative_to(root)),group))
           assert len(rows) == 196, len(rows)
+          baseline = json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())['modes'][mode]['rows']
+          pinned = {r['case']:r for r in baseline}
+          assert all(r['sha256']==pinned[r['case']]['sha256'] for r in rows), 'input bytes changed'
+          regressions = [r for r in rows if pinned[r['case']]['rc'] in [0,1] and r['rc'] != pinned[r['case']]['rc']]
           counts = dict(accept=sum(r['rc']==0 for r in rows),reject=sum(r['rc']==1 for r in rows),unknown=sum(r['rc']==2 for r in rows),wrong=sum((r['group']=='bad' and r['rc']==0) or (r['group']=='good' and r['rc']==1) for r in rows),errors=sum(r['rc'] not in [0,1,2] for r in rows))
           controls = [check(pathlib.Path('metatron-kernel/tests/fixtures')/name,name,'bad') for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']]
           out = dict(mode=mode,source_commit=os.environ['GITHUB_SHA'],counts=counts,rows=rows,protected=controls)
           pathlib.Path('/tmp/evidence/verdicts.json').write_text(json.dumps(out,indent=2)+'\n')
           print(json.dumps(counts),flush=True)
+          assert not regressions, regressions
           assert counts['wrong']==counts['errors']==0,counts
           assert counts['accept'] >= (118 if mode=='default' else 119), counts
           assert counts['reject']==71,counts
