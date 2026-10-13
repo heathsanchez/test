@@ -154,7 +154,12 @@ def main():
         source_evidence=raw,
         capability=cap,
         oracle=sem,
-        support_ids=[certificate_id, "github-run:" + str(policy["run_id"])],
+        # FLASH support_ids are PARENT CAPABILITY IDS, not external proof
+        # receipts. This native-qualified capability is a root: proof/run IDs
+        # remain bound in certificate_id, provenance_ids and source_evidence.
+        # External proof revocation must be represented by a typed capability
+        # revocation event, not an imaginary parent capability.
+        support_ids=[],
         origin="native-checked-finite-source-certificate",
     )
     a.out.mkdir(parents=True, exist_ok=True)
