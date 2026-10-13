@@ -1,0 +1,147 @@
+name: Unified source-bound consequence reclosure
+on:
+  push:
+    branches: [research/unified-consequence-runtime-20261013]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: coordinator/components/flash
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: coordinator/components/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: cf359686c74549a132c7a651cd7aabc7c1a870fe
+          path: coordinator/components/mathgraph
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 5d448c0ecc82ff3945d009963064ebbb67d2f308
+          path: coordinator/components/msi
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph-lean-kernel
+          ref: faaa735170f64d598034f52c795814de4719693d
+          path: coordinator/components/producers/lean
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 94e923df0cbc4cf4d5f6108a05ebada595d30920
+          path: coordinator/components/producers/arc
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: 974a9f8f85e5961ca2a279b32565991a93cde602
+          path: coordinator/components/producers/collatz
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/equational-theories-lean-stage2
+          ref: 6821d765fc33da95a6cf5bef32b0a43b2ee39522
+          path: coordinator/components/producers/sair
+          persist-credentials: false
+
+      - name: Read actual historical CI metadata without scientific promotion
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/run-data
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          manifest=json.loads(Path('research/unified_consequence_runtime/sources.json').read_text())
+          for key,repo,run,sha,conclusion in manifest['runs']:
+              body=subprocess.check_output(['gh','api',f'repos/{repo}/actions/runs/{run}'])
+              (Path('out/run-data')/(key+'.json')).write_bytes(body)
+          PY
+
+      - name: Native independent MathGraph profile replay
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          python -I -S components/mathgraph/conformance/capability_v1/consumer.py \
+            --fixture components/mathgraph/conformance/capability_v1/fixtures/finite-representation-refinement-v1.json \
+            --contract components/mathgraph/conformance/capability_v1/fixtures/capability-contract.json \
+            --policy components/mathgraph/conformance/capability_v1/trust-policy.json \
+            --policy-sha256 7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89 \
+            --audit-imports > out/mathgraph-replay.json
+
+      - name: Read actual existing source emitter evidence
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/source-bundles/{lean,arc,collatz,sair}
+          python components/producers/lean/experiments/emit_qckn_flash_event.py \
+            --commit "$(git -C components/producers/lean rev-parse HEAD)" --out out/source-bundles/lean
+          python components/producers/arc/kaggle/scripts/emit_qckn_flash_event.py \
+            --commit "$(git -C components/producers/arc rev-parse HEAD)" --out out/source-bundles/arc
+          python components/producers/collatz/experiments/emit_qckn_flash_event.py \
+            --commit "$(git -C components/producers/collatz rev-parse HEAD)" --out out/source-bundles/collatz
+          python components/producers/sair/experiments/mathgraph/residual12/emit_qckn_flash_event.py \
+            --commit "$(git -C components/producers/sair rev-parse HEAD)" --out out/source-bundles/sair
+
+      - name: Reconcile existing native FLASH plus Metatron source dependency state
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          python -m unittest -v research.unified_consequence_runtime.test_integrate
+          python research/unified_consequence_runtime/integrate.py \
+            --manifest research/unified_consequence_runtime/sources.json \
+            --components components \
+            --run-data out/run-data \
+            --source-bundles out/source-bundles \
+            --mathgraph-replay out/mathgraph-replay.json \
+            --out out/integration
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          obj=json.loads(Path('out/integration/closure.json').read_text())
+          assert obj['scientific_closure']=='UNKNOWN'
+          assert obj['mathgraph']['action_authorization']=='NONE'
+          assert obj['mathgraph']['current_applicability']=='UNKNOWN'
+          assert obj['runs']['CSLIB_NATIVE_FAIL']['conclusion']=='failure'
+          assert obj['flash']['events']>=4
+          assert obj['metatron']['source_revocation']=='PASS'
+          print('PASS_INTEGRATED_OPERATIONS_NO_FALSE_SCIENTIFIC_PROMOTION')
+          PY
+
+      - name: Save closure state and exact native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-source-bound-state
+          path: |
+            coordinator/out/integration/
+            coordinator/out/mathgraph-replay.json
+            coordinator/out/run-data/
+          if-no-files-found: warn
