@@ -107,8 +107,25 @@ def main():
     for key in ("external_events", "event_ids", "active_capability_ids",
                 "open_obligation_ids", "discharged_obligation_ids", "repositories"):
         assert summary[key] == cold[key], "Flash restart mismatch: " + key
-    sources = dict((repo, commit) for repo, commit in manifest["emitters"].values())
-    assert summary["source_commits"] == sources, "producer identity changed"
+    # A producer can retain multiple historical source commitments.
+    # Repo-level source_commits is a lossy presentation, NOT event provenance.
+    source_events = []
+    for bundle in bundles:
+        source_family = bundle.relative_to(args.source_bundles).parts[0]
+        repository, emitter_head = manifest["emitters"][source_family]
+        event = read(bundle / "event.json")
+        allowed = manifest.get("event_origin_allowlist", {}).get(
+            source_family, [emitter_head])
+        assert event["repository"] == repository, "source repository changed"
+        assert event["commit"] in allowed, "unapproved historical event origin"
+        source_events.append({
+            "id": event["event_id"], "emitter": source_family,
+            "repository": repository, "event_origin_commit": event["commit"],
+            "emitter_source_commit": emitter_head,
+            "source_evidence_sha256": event["source_evidence_sha256"]
+        })
+    assert len(source_events) == summary["external_events"]
+    assert len({item["id"] for item in source_events}) == len(source_events)
 
     log = ()
     roots = {}
@@ -177,6 +194,7 @@ def main():
         "flash": {
             "events": summary["external_events"],
             "repositories": summary["repositories"],
+            "source_events": source_events,
             "active_capabilities": summary["active_capability_ids"],
             "open_obligations": summary["open_obligation_ids"],
             "obstructions": summary["obstruction_ids"],
