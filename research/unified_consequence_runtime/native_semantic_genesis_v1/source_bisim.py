@@ -49,7 +49,7 @@ def extract_edges(source_text, spec):
     if header.group(1) != ("ℕ" if spec["source_label"] == "Nat" else "Char"):
         raise ValueError("NATIVE_LABEL_TYPE_MISMATCH")
     edge_re = re.compile(
-        r"^\s*\|\s*(\w+)\s*:\s*" + re.escape(name)
+        r"^\s*\|\s*([\w\']+)\s*:\s*" + re.escape(name)
         + r"\s+(\d+)\s+(\d+|'[^']+')\s+(\d+)\s*$"
     )
     edges = []
