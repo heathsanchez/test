@@ -1,0 +1,97 @@
+{
+  "schema": "metalogic.unified-consequence-manifest.v1",
+  "components": {
+    "flash": [
+      "heathsanchez/realitygraph",
+      "50c43b14e7272469bc51ff7204dec07682a996d7"
+    ],
+    "metatron": [
+      "metalogiclabs/metatron",
+      "b9d1b5cc10477188be6e55617699be60e70f6dad"
+    ],
+    "mathgraph": [
+      "metalogiclabs/mathgraph",
+      "cf359686c74549a132c7a651cd7aabc7c1a870fe"
+    ],
+    "msi": [
+      "heathsanchez/Minimal-Sufficient-Interface",
+      "5d448c0ecc82ff3945d009963064ebbb67d2f308"
+    ]
+  },
+  "emitters": {
+    "lean": [
+      "metalogiclabs/mathgraph-lean-kernel",
+      "faaa735170f64d598034f52c795814de4719693d"
+    ],
+    "arc": [
+      "heathsanchez/Minimal-Sufficient-Interface",
+      "94e923df0cbc4cf4d5f6108a05ebada595d30920"
+    ],
+    "collatz": [
+      "heathsanchez/test",
+      "974a9f8f85e5961ca2a279b32565991a93cde602"
+    ],
+    "sair": [
+      "heathsanchez/equational-theories-lean-stage2",
+      "6821d765fc33da95a6cf5bef32b0a43b2ee39522"
+    ]
+  },
+  "runs": [
+    [
+      "MSI_FORMAL",
+      "heathsanchez/Minimal-Sufficient-Interface",
+      33283198081,
+      "f6285a1562e2364f1e8116e4a0118c521ef6260c",
+      "success"
+    ],
+    [
+      "MSI_LEAN_NATIVE",
+      "heathsanchez/Minimal-Sufficient-Interface",
+      33212842416,
+      "1d247b5ee922aae9f42e0f4fd502fe32fd014a7f",
+      "success"
+    ],
+    [
+      "METATRON_VIABILITY",
+      "metalogiclabs/metatron",
+      35930307507,
+      "21923060852ed75311e15045ddab3673ae93db37",
+      "success"
+    ],
+    [
+      "MDA_V7",
+      "heathsanchez/test",
+      38043019010,
+      "13325089c471996b8b68f46540fd4ad449df752c",
+      "success"
+    ],
+    [
+      "FLASH_V14R",
+      "heathsanchez/test",
+      38208892583,
+      "7133a5b4cfa66f9b91de522c534fd4f4431331e6",
+      "success"
+    ],
+    [
+      "FLASH_V16B",
+      "heathsanchez/test",
+      38220344126,
+      "483b62435c406c364c773246658dbac82f92365e",
+      "success"
+    ],
+    [
+      "CSLIB_NATIVE_FAIL",
+      "heathsanchez/test",
+      38237298379,
+      "a50f199082da91845115efb77844603dee55a465",
+      "failure"
+    ]
+  ],
+  "mathgraph_policy_sha256": "7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89",
+  "protected_claims": {
+    "open_native_target": "CSLIB_NATIVE_FAIL",
+    "system_e2e": "UNKNOWN",
+    "recursive_native_development": "UNKNOWN"
+  },
+  "interpretation": "Historical runs are provider-checked pointers, not fresh theorem verifications. Original source scientific scopes prevail."
+}
