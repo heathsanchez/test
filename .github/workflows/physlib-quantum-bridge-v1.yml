@@ -30,6 +30,41 @@ jobs:
         run: |
           lake exe cache get
           lake build QuantumInfo.Channels.CPTP PhyslibAlpha.QuantumMechanics.StinespringDilation
+      - name: Verify reusable Stinespring bridge and held-out composition
+        working-directory: /tmp/physlib
+        run: |
+          cat > PhyslibQuantumBridgeProbe.lean <<'LEAN'
+          import PhyslibAlpha.QuantumMechanics.StinespringDilation
+          import QuantumInfo.Channels.CPTP
+
+          open CPTPMap
+
+          /-- Reuse the native Kraus/partial-trace correspondence at a new input. -/
+          example {m r : ℕ} (K : Fin r → Matrix (Fin m) (Fin m) ℂ)
+              (ρ : Matrix (Fin m) (Fin m) ℂ) :
+              tr₂ (stinespringDilation K ρ) = krausApply K ρ :=
+            stinespringForm_eq K ρ
+
+          /-- Held-out compositional channel equality using the bundled representation. -/
+          example {a b c d : Type*} [Fintype a] [Fintype b]
+              [Fintype c] [Fintype d]
+              (f : CPTPMap a b) (g : CPTPMap b c) (h : CPTPMap c d) :
+              (h ∘ₘ g) ∘ₘ f = h ∘ₘ (g ∘ₘ f) :=
+            CPTPMap.compose_assoc h g f
+
+          /-- Native purification reconstruction, independent of the Kraus representation. -/
+          example {a b : Type*} [Fintype a] [Fintype b]
+              [DecidableEq a] [DecidableEq b] [Inhabited b]
+              (f : CPTPMap a b) :
+              f = (let zero_prep : CPTPMap Unit (b × b) :=
+                      CPTPMap.replacement (MState.pure (Ket.basis default))
+                    let prep := (CPTPMap.id ⊗ᶜᵖ zero_prep)
+                    let append : CPTPMap a (a × Unit) :=
+                      CPTPMap.ofEquiv (Equiv.prodPUnit a).symm
+                    CPTPMap.traceLeft ∘ₘ CPTPMap.traceLeft ∘ₘ f.purify ∘ₘ prep ∘ₘ append) :=
+            CPTPMap.purify_trace f
+          LEAN
+          lake env lean PhyslibQuantumBridgeProbe.lean
       - name: Record proof declarations and duplication
         working-directory: /tmp/physlib
         run: |
