@@ -10,6 +10,66 @@ scientific result. Source repositories and the production MathGraph website
 are unchanged. [Draft PR #123](https://github.com/heathsanchez/test/pull/123)
 is intentionally unmerged.
 
+## New source-induced semantic method across original upstream CSLib modules
+
+**WARRANTED_BOUNDED_SOURCE_NATIVE_PROOF_CONSTRUCTION, not autonomous meta-genesis.**
+The protocol was frozen before implementation at
+[30655cdd](https://github.com/heathsanchez/test/commit/30655cddfa751e73194796b186c0090fe0bdbee1).
+The original upstream CSLib commit is `4b88bcac4c0dec65b3f45b59e85f5397045efd8d`.
+No original sources were edited.
+
+[Independent native Lean CI #38477830521](https://github.com/heathsanchez/test/actions/runs/38477830521)
+SUCCESS at `5f6fe3e69a6313d113403c0967154357caf2d8c6`.
+[Artifact #11857035513](https://github.com/heathsanchez/test/actions/runs/38477830521/artifacts/11857035513)
+ZIP SHA256 `bda0704204e7a3b4649195940c3c40c9e3ca22a1d1ef24277dfbc0278a648d4b`,
+independently opened and both generated files' SHA-256 matched the report.
+
+The same source-driven human-authored compiler extracts two *original,
+independently written upstream CSLib declarations*:
+`CslibTests/LTS.lean::NatTr` (Nat-labelled, two active states, 4 bisimulation
+relation pairs) and `CslibTests/Bisimulation.lean::tr1` (Char-labelled,
+eight active states, 24 bisimulation relation pairs, including some
+terminal-state identifications not in the source's manually listed witness
+relation). Separate descending-pair and partition-refinement references
+agree. It generates concrete Lean proofs of the **entire claimed relation**
+and native Lean proofs that a source-selected active/inert pair relation
+is not a bisimulation. Both compile with original CSLib/Lean
+`v4.35.0-rc4`. Edited source bytes fail the original Git-blob gate.
+An infinite countdown definition remains `UNKNOWN_INFINITE_SUPPORT`.
+
+This exercises an actual source-semantic proof compiler beyond the local
+finite V10 target, but it does not show blind source-grammar discovery,
+previously open mathematics, unbounded Nat-state reasoning, self-generated
+metamethods, or strict gains over an equally capable independent reference.
+
+**[Seven-event scientific-state integration #38478536175](https://github.com/heathsanchez/test/actions/runs/38478536175)**
+SUCCESS, source `288da7f57a134238a98e311264865c868ce61252`.
+[Artifact #11856101351](https://github.com/heathsanchez/test/actions/runs/38478536175/artifacts/11856101351)
+ZIP SHA256 `dfa576d549495e4a607e4184f0b84d535c7ee612f519cbb86699eaf5e057c0d3`.
+It contains 7 real source-bound FLASH events, 5 scoped active capabilities,
+2 unchanged original obstructions and 2 remaining original open obligations.
+Previously qualified 6/6 source events were unchanged.
+Metatron preserved all 29 preceding nodes; after admitting the new
+method receipt the ledger has 36 nodes, 30 live.
+
+The new event `cslib:two-original-inductives:native-source-derived-bisimulation:v1`
+is **guarded to the two exact original source files and Lean proof products**.
+The source proof CI head `5f6fe3...` is distinct from the emitter
+implementation head `bf577c18...` and upstream semantics SHA `4b88bcac...`.
+Independent proof-file hashes, native run/artifact pins, source blobs, exact
+scope and `action_authorization=NONE` are bound. FLASH deletion ablation and
+deliberately **simulated** typed revocation both remove only this capability
+and reopen its obligation, leaving prior research knowledge live.
+Metatron performs its separate source-support withdrawal check.
+
+Scientific `E2E_SYSTEM` / `L7` still `UNKNOWN`: the generic
+source parser and native proof compiler were written by humans after seeing
+both declarations, not invented by a recursively self-improving agent.
+The second-generation **change to the generator itself** and a genuinely
+new previously unsolved external native task still need independent proof.
+No natural-domain lifecycle economic advantage, outside-owner adoption,
+publisher authentication, or production action authority is asserted.
+
 ## New independent native checker result
 
 The prior pinned [V10 native failure](https://github.com/heathsanchez/test/actions/runs/38237298379)
