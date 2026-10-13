@@ -213,6 +213,7 @@ def main():
         "native_flash_event_reclosure",
         {"event_ids": summary["event_ids"],
          "source_commits": summary["source_commits"],
+         "source_events": source_events,
          "active": summary["active_capability_ids"],
          "open": summary["open_obligation_ids"],
          "artifact_sha256": sha(flash["state_bundle_text"].encode("utf-8")),
