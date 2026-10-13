@@ -119,6 +119,27 @@ jobs:
           python components/producers/sair/experiments/mathgraph/residual12/emit_qckn_flash_event.py \
             --commit "$(git -C components/producers/sair rev-parse HEAD)" --out out/source-bundles/sair
 
+      - name: Restore preceding real FLASH and Metatron research state
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/previous
+          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=unified-source-bound-state&per_page=100" \
+            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // empty')"
+          if [ -n "$artifact_id" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > out/previous/prior.zip
+            unzip -q out/previous/prior.zip -d out/previous/extracted
+            historical_flash="$(find out/previous/extracted -type f -name flash-state-bundle.json -print -quit)"
+            historical_ledger="$(find out/previous/extracted -type f -name metatron-ledger.jsonl -print -quit)"
+            test -n "$historical_flash"
+            test -n "$historical_ledger"
+            cp "$historical_flash" out/previous/flash-state-bundle.json
+            cp "$historical_ledger" out/previous/metatron-ledger.jsonl
+            echo "PREVIOUS_QUALIFIED_STATE_RECOVERED=$artifact_id"
+          else
+            echo "COLD_INITIAL_QUALIFICATION"
+          fi
+
       - name: Reconcile existing native FLASH plus Metatron source dependency state
         working-directory: coordinator
         run: |
@@ -131,6 +152,8 @@ jobs:
             --source-bundles out/source-bundles \
             --mathgraph-replay out/mathgraph-replay.json \
             --catalogue-replay out/catalogue-replay.json \
+            --previous-flash out/previous/flash-state-bundle.json \
+            --previous-ledger out/previous/metatron-ledger.jsonl \
             --out out/integration
           python - <<'PY'
           import json
@@ -142,6 +165,12 @@ jobs:
           assert obj['runs']['CSLIB_NATIVE_FAIL']['conclusion']=='failure'
           assert obj['flash']['events']>=4
           assert obj['metatron']['source_revocation']=='PASS'
+          if Path('out/previous/flash-state-bundle.json').exists():
+              assert obj['flash']['past_restored']
+              assert obj['metatron']['past_restored']
+              assert obj['flash']['new_event_ids']==[]
+              assert len(obj['flash']['unchanged_event_ids'])==5
+              assert obj['gates']['prior_research_history_retained']=='PASS'
           print('PASS_INTEGRATED_OPERATIONS_NO_FALSE_SCIENTIFIC_PROMOTION')
           PY
 
