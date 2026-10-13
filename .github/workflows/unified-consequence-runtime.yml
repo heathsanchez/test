@@ -154,25 +154,39 @@ jobs:
             --policy research/unified_consequence_runtime/native_policy.json \
             --out out/source-bundles/native
 
-      - name: Restore preceding real FLASH and Metatron research state
+      - name: Restore only a successfully qualified previous FLASH and Metatron artifact
         working-directory: coordinator
         run: |
           set -euo pipefail
           mkdir -p out/previous
-          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=unified-source-bound-state&per_page=100" \
-            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // empty')"
-          if [ -n "$artifact_id" ]; then
-            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > out/previous/prior.zip
-            unzip -q out/previous/prior.zip -d out/previous/extracted
-            historical_flash="$(find out/previous/extracted -type f -name flash-state-bundle.json -print -quit)"
-            historical_ledger="$(find out/previous/extracted -type f -name metatron-ledger.jsonl -print -quit)"
-            test -n "$historical_flash"
-            test -n "$historical_ledger"
-            cp "$historical_flash" out/previous/flash-state-bundle.json
-            cp "$historical_ledger" out/previous/metatron-ledger.jsonl
-            echo "PREVIOUS_QUALIFIED_STATE_RECOVERED=$artifact_id"
-          else
-            echo "COLD_INITIAL_QUALIFICATION"
+          found=0
+          while IFS=$'\t' read -r artifact_id previous_run_id; do
+            test -n "$artifact_id" || continue
+            test "$previous_run_id" != "null" || continue
+            previous_result="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$previous_run_id" --jq '.conclusion' 2>/dev/null || true)"
+            if [ "$previous_result" != "success" ]; then
+              echo "SKIP_NONQUALIFIED_ARTIFACT=$artifact_id RUN=$previous_run_id"
+              continue
+            fi
+            mkdir -p out/previous/candidate
+            rm -rf out/previous/candidate/*
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > out/previous/previous.zip
+            unzip -q out/previous/previous.zip -d out/previous/candidate
+            previous_flash="$(find out/previous/candidate -type f -name flash-state-bundle.json -print -quit)"
+            previous_ledger="$(find out/previous/candidate -type f -name metatron-ledger.jsonl -print -quit)"
+            if [ -z "$previous_flash" ] || [ -z "$previous_ledger" ]; then
+              echo "SKIP_MISSING_STATE_ARTIFACT=$artifact_id"
+              continue
+            fi
+            cp "$previous_flash" out/previous/flash-state-bundle.json
+            cp "$previous_ledger" out/previous/metatron-ledger.jsonl
+            echo "PREVIOUS_QUALIFIED_STATE_RECOVERED=$artifact_id RUN=$previous_run_id"
+            found=1
+            break
+          done < <(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=unified-source-bound-state&per_page=100" \
+            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[] | [.id,.workflow_run.id] | @tsv')
+          if [ "$found" -ne 1 ]; then
+            echo "NO_QUALIFIED_PREVIOUS_STATE; BOOTSTRAPPING_FROM_PINNED_SOURCES"
           fi
 
       - name: Reconcile existing native FLASH plus Metatron source dependency state
