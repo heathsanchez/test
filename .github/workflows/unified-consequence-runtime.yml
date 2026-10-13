@@ -84,6 +84,19 @@ jobs:
           path: coordinator/components/producers/native
           persist-credentials: false
 
+      - uses: actions/checkout@v4
+        with:
+          repository: leanprover/cslib
+          ref: 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          path: coordinator/components/cslib
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: bf577c18f9f70f306e59b9d52a31bb2e5411d555
+          path: coordinator/components/producers/source_bisim
+          persist-credentials: false
+
       - name: Read actual historical CI metadata without scientific promotion
         working-directory: coordinator
         run: |
@@ -154,6 +167,28 @@ jobs:
             --policy research/unified_consequence_runtime/native_policy.json \
             --out out/source-bundles/native
 
+      - name: Bind two externally native-checked CSLib source families as guarded proof products
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/source-method-qualification out/source-bundles/source_bisim
+          gh api "repos/heathsanchez/test/actions/artifacts/11857035513/zip" > out/source-method-qualification/sealed.zip
+          expected="$(python - <<'PY'
+          import json
+          d=json.load(open('research/unified_consequence_runtime/native_semantic_genesis_v1/admission_policy.json'))
+          print(d['artifact_sha256'])
+          PY
+          )"
+          test "$(sha256sum out/source-method-qualification/sealed.zip | cut -d' ' -f1)" = "$expected"
+          unzip -q out/source-method-qualification/sealed.zip -d out/source-method-qualification/proofs
+          PYTHONPATH=components/flash python components/producers/source_bisim/research/unified_consequence_runtime/native_semantic_genesis_v1/source_bisim_event.py \
+            --cslib components/cslib \
+            --proofs out/source-method-qualification/proofs \
+            --native-run out/run-data/CSLIB_SOURCE_METHOD_PASS.json \
+            --protocol research/unified_consequence_runtime/native_semantic_genesis_v1/FROZEN_PROTOCOL.json \
+            --policy research/unified_consequence_runtime/native_semantic_genesis_v1/admission_policy.json \
+            --out out/source-bundles/source_bisim
+
       - name: Restore the latest successful qualification, never a red-run artifact
         working-directory: coordinator
         run: |
@@ -206,8 +241,13 @@ jobs:
           assert obj['mathgraph']['action_authorization']=='NONE'
           assert obj['mathgraph']['current_applicability']=='UNKNOWN'
           assert obj['runs']['CSLIB_NATIVE_FAIL']['conclusion']=='failure'
-          assert obj['flash']['events']==6
+          assert obj['flash']['events']==7
           assert obj['native_scoped_proof']['verdict']=='PASS_SCOPED'
+          assert obj['source_native_method']['verdict']=='PASS_SCOPED'
+          assert obj['source_native_method']['scientific_autonomous_genesis']=='UNKNOWN'
+          assert obj['source_native_method']['source_deletion_ablation']=='PASS_NATIVE_SOURCE_CAPABILITY_DELETION'
+          assert obj['source_native_method']['controlled_revocation']=='PASS_SIMULATED_TYPED_METHOD_REVOCATION'
+          assert obj['gates']['source_distinct_upstream_native_semantics']=='PASS_SCOPED'
           assert obj['native_scoped_proof']['scientific_genesis']=='UNKNOWN'
           assert obj['native_scoped_proof']['source_deletion_ablation']=='PASS_SCOPED_ADMISSION_ABLATION'
           assert obj['gates']['source_bound_native_scoped_certificate']=='PASS'
@@ -219,9 +259,12 @@ jobs:
               assert obj['flash']['past_restored']
               assert obj['metatron']['past_restored']
 
-              allowable={'cslib:cycle:native-source-checked-simulation:v1'}
+              allowable={
+                  'cslib:cycle:native-source-checked-simulation:v1',
+                  'cslib:two-original-inductives:native-source-derived-bisimulation:v1'
+              }
               assert set(obj['flash']['new_event_ids']) <= allowable
-              assert len(obj['flash']['unchanged_event_ids'])>=5
+              assert len(obj['flash']['unchanged_event_ids'])>=6
               assert obj['gates']['prior_research_history_retained']=='PASS'
           print('PASS_INTEGRATED_OPERATIONS_NO_FALSE_SCIENTIFIC_PROMOTION')
           PY
@@ -237,6 +280,9 @@ jobs:
             coordinator/out/catalogue-replay.json
             coordinator/out/native-qualification/proofs/
             coordinator/out/native-qualification/sealed.zip
+            coordinator/out/source-method-qualification/proofs/
+            coordinator/out/source-method-qualification/sealed.zip
+            coordinator/out/source-bundles/source_bisim/
             coordinator/out/source-bundles/native/
             coordinator/out/run-data/
           if-no-files-found: warn
