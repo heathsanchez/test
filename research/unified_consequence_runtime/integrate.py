@@ -161,6 +161,7 @@ def main():
     # verification succeeds. Its capability affects only its matching scope.
     native_done = "CSLIB_NATIVE_PASS" in runs and "native" in manifest["emitters"]
     native_causal = "NOT_CHECKED"
+    native_revocation = "NOT_CHECKED"
     native_id = "cslib:cycle:native-source-checked-simulation:v1"
     if native_done:
         if native_id not in summary["active_capability_ids"]:
@@ -176,6 +177,48 @@ def main():
         if set(ablated["obstruction_ids"]) != set(summary["obstruction_ids"]):
             raise AssertionError("UNRELATED_RESEARCH_OBSTRUCTION_CHANGED")
         native_causal = "PASS_SCOPED_ADMISSION_ABLATION"
+
+        # Deliberately simulated proof withdrawal: generated after current
+        # qualification, kept OUTSIDE the real persistent event history.
+        # This is a causal control of FLASH's existing revocation logic,
+        # not a claim that the actual CSLib proof has been withdrawn.
+        from tempfile import TemporaryDirectory
+        from realitygraph.flash import ExternalEventEnvelope
+        proof_event_path = next(
+            p for p in bundles if p.relative_to(args.source_bundles).parts[0] == "native"
+        )
+        proof_event = read(proof_event_path / "event.json")
+        if "external:" + native_id not in summary["discharged_obligation_ids"]:
+            raise AssertionError("NEW_NATIVE_OBLIGATION_NOT_ACTUALLY_DISCHARGED")
+        simulated_evidence = (
+            b'{"kind":"SIMULATED_NATIVE_SUPPORT_WITHDRAWAL","real_revocation":false}'
+        )
+        attack = ExternalEventEnvelope.capability_revocation(
+            event_id="cslib:cycle:controlled-native-revocation:attack-only",
+            repository=proof_event["repository"],
+            commit=proof_event["commit"],
+            authority_snapshot=proof_event["authority_snapshot"],
+            verifier_id=proof_event["verifier_id"],
+            source_evidence=simulated_evidence,
+            capability_id=native_id,
+            reason="controlled support withdrawal, NOT an actual proof revocation",
+        )
+        with TemporaryDirectory(prefix="unified-native-revocation-") as td:
+            revocation_dir = Path(td)
+            (revocation_dir / "event.json").write_text(attack.to_text())
+            (revocation_dir / "evidence.json").write_bytes(simulated_evidence)
+            after_revoke = update_live_state(
+                None, list(bundles) + [revocation_dir]
+            )["summary"]
+        if native_id in after_revoke["active_capability_ids"]:
+            raise AssertionError("REVOKED_NATIVE_PROOF_REMAINS_EXECUTABLE")
+        if set(after_revoke["active_capability_ids"]) != old_active:
+            raise AssertionError("REVOKED_PROOF_CHANGED_UNRELATED_ACTIVE_CAPABILITIES")
+        if set(after_revoke["obstruction_ids"]) != set(summary["obstruction_ids"]):
+            raise AssertionError("REVOKED_PROOF_CHANGED_UNRELATED_OBSTRUCTIONS")
+        if "external:" + native_id not in after_revoke["open_obligation_ids"]:
+            raise AssertionError("REVOKED_PROOF_DID_NOT_REOPEN_NATIVE_OBLIGATION")
+        native_revocation = "PASS_SIMULATED_TYPED_REVOCATION"
 
     preceding_log = (args.previous_ledger.read_text(encoding="utf-8")
                      if args.previous_ledger and args.previous_ledger.is_file() else None)
@@ -280,6 +323,18 @@ def main():
     assert residual.id in independent_live(revoked)
     assert flash_event.id in independent_live(revoked)
     assert mt.loads(serialized) == log, "archived past must not change"
+    if native_done:
+        simulated_native_withdrawal = mt.append(log, mt.Node("revoke", {
+            "target": native_node.id,
+            "reason": "controlled removal of native proof support; historical Lean proof unchanged",
+        }))
+        native_live = independent_live(simulated_native_withdrawal)
+        if native_node.id in native_live or frontier.id in native_live:
+            raise AssertionError("NATIVE_PROOF_METATRON_WITHDRAWAL_NOT_PROPAGATED")
+        if qualification.id not in native_live or residual.id not in native_live:
+            raise AssertionError("NATIVE_WITHDRAWAL_REMOVED_UNRELATED_PROOF_AUTHORITY")
+        assert set(mt.live_ids(simulated_native_withdrawal)) == native_live
+        assert mt.loads(serialized) == log
 
     out = {
         "schema": "metalogic.unified-consequential-closure.v1",
@@ -317,6 +372,7 @@ def main():
             "run": runs["CSLIB_NATIVE_PASS"]["url"] if native_done else None,
             "capability_id": native_id if native_done else None,
             "source_deletion_ablation": native_causal,
+            "controlled_native_revocation": native_revocation,
             "scientific_genesis": "UNKNOWN"},
         "scientific_closure": "UNKNOWN",
         "scientific_claim_boundary": "INTEGRATED_OPERATIONAL_STATE_NOT_NEW_AUTONOMOUS_CAPABILITY",
@@ -331,6 +387,7 @@ def main():
             "metatron_ablation": "PASS",
             "source_bound_native_scoped_certificate": "PASS" if native_done else "UNKNOWN",
             "native_semantic_event_ablation": native_causal,
+            "native_typed_revocation_control": native_revocation,
             "prior_research_history_retained": "PASS" if preceding_flash is not None and preceding_log is not None else "COLD_BOOTSTRAP",
             "previously_failing_native_goal_solved": "UNKNOWN",
             "new_generator_native_transfer": "UNKNOWN",
