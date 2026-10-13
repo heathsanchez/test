@@ -71,6 +71,19 @@ jobs:
           path: coordinator/components/producers/sair
           persist-credentials: false
 
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: a50f199082da91845115efb77844603dee55a465
+          path: coordinator/components/v10
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: dd0d53ff3ce198aaac9f4537f418682efd6a3f79
+          path: coordinator/components/producers/native
+          persist-credentials: false
+
       - name: Read actual historical CI metadata without scientific promotion
         working-directory: coordinator
         run: |
@@ -119,6 +132,28 @@ jobs:
           python components/producers/sair/experiments/mathgraph/residual12/emit_qckn_flash_event.py \
             --commit "$(git -C components/producers/sair rev-parse HEAD)" --out out/source-bundles/sair
 
+      - name: Admit separately native-checked CSLib proof into original FLASH event contract
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/native-qualification out/source-bundles/native
+          gh api "repos/heathsanchez/test/actions/artifacts/11848853826/zip" > out/native-qualification/sealed.zip
+          expected="$(python - <<'PY'
+          import json
+          d=json.load(open('research/unified_consequence_runtime/native_policy.json'))
+          print(d['artifact_sha256'])
+          PY
+          )"
+          actual="$(sha256sum out/native-qualification/sealed.zip | cut -d' ' -f1)"
+          test "$actual" = "$expected"
+          unzip -q out/native-qualification/sealed.zip -d out/native-qualification/proofs
+          PYTHONPATH=components/flash python components/producers/native/research/unified_consequence_runtime/native_proof_event.py \
+            --original components/v10/capstone/v10 \
+            --proofs out/native-qualification/proofs \
+            --native-run out/run-data/CSLIB_NATIVE_PASS.json \
+            --policy research/unified_consequence_runtime/native_policy.json \
+            --out out/source-bundles/native
+
       - name: Restore preceding real FLASH and Metatron research state
         working-directory: coordinator
         run: |
@@ -163,13 +198,22 @@ jobs:
           assert obj['mathgraph']['action_authorization']=='NONE'
           assert obj['mathgraph']['current_applicability']=='UNKNOWN'
           assert obj['runs']['CSLIB_NATIVE_FAIL']['conclusion']=='failure'
-          assert obj['flash']['events']>=4
+          assert obj['flash']['events']==6
+          assert obj['native_scoped_proof']['verdict']=='PASS_SCOPED'
+          assert obj['native_scoped_proof']['scientific_genesis']=='UNKNOWN'
+          assert obj['native_scoped_proof']['source_deletion_ablation']=='PASS_SCOPED_ADMISSION_ABLATION'
+          assert obj['gates']['source_bound_native_scoped_certificate']=='PASS'
+          assert obj['gates']['new_generator_native_transfer']=='UNKNOWN'
+          assert obj['gates']['previously_failing_native_goal_solved']=='UNKNOWN'
+          assert obj['flash']['obstructions']==['arc3:ft09-vc33-transfer-refutation:v2','collatz:bank-order-redundancy:v1']
           assert obj['metatron']['source_revocation']=='PASS'
           if Path('out/previous/flash-state-bundle.json').exists():
               assert obj['flash']['past_restored']
               assert obj['metatron']['past_restored']
-              assert obj['flash']['new_event_ids']==[]
-              assert len(obj['flash']['unchanged_event_ids'])==5
+
+              allowable={'cslib:cycle:native-source-checked-simulation:v1'}
+              assert set(obj['flash']['new_event_ids']) <= allowable
+              assert len(obj['flash']['unchanged_event_ids'])>=5
               assert obj['gates']['prior_research_history_retained']=='PASS'
           print('PASS_INTEGRATED_OPERATIONS_NO_FALSE_SCIENTIFIC_PROMOTION')
           PY
@@ -183,5 +227,8 @@ jobs:
             coordinator/out/integration/
             coordinator/out/mathgraph-replay.json
             coordinator/out/catalogue-replay.json
+            coordinator/out/native-qualification/proofs/
+            coordinator/out/native-qualification/sealed.zip
+            coordinator/out/source-bundles/native/
             coordinator/out/run-data/
           if-no-files-found: warn
