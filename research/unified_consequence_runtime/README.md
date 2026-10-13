@@ -1,104 +1,134 @@
-# Unified Consequential Runtime — real cross-repository reconciliation
+# Unified Consequential Runtime — evidence-bound native development
 
-**Status: operational integration qualified; autonomous developmental closure remains UNKNOWN.**
+**Status: native certificate repair + cross-repository operational admission qualified.**
+**Scientific autonomous method genesis and system-wide L7 remain UNKNOWN.**
 
-This is a small, source-pinned coordinator for existing, qualified
-components. It does not construct a new Boolean benchmark, synthesize a fake
-candidate, or substitute CI success for a theorem. One event changes the
-recorded past, current warrant and affected future frontiers. The current
-source-bound replay is read-only with respect to source repositories and
-MathGraph production.
+This branch integrates *the actual qualified programs* that already existed in
+MathGraph, MSI, RealityGraph / FLASH, Metatron and the original research repos.
+It does not invent another finite O1/O2 world or treat a green workflow as a
+scientific result. Source repositories and the production MathGraph website
+are unchanged. [Draft PR #123](https://github.com/heathsanchez/test/pull/123)
+is intentionally unmerged.
 
-## Operational evidence
+## New independent native checker result
 
-- [Current successive-state qualification](https://github.com/heathsanchez/test/actions/runs/38364850629):
-  5 original source-bound FLASH events, 3 scoped active capabilities and
-  2 retained obstructions; previously accepted events remained unchanged.
-  All 20 pre-existing Metatron log nodes survived cold restart and were not
-  duplicated on subsequent replay.
-- [Catalogue + authority qualification](https://github.com/heathsanchez/test/actions/runs/38364431139):
-  independently validate the real MathGraph source-indexed knowledge network,
-  2,345 declaration occurrences, 3,571 source structural relations and
-  13 historical pinned Mathlib modules. Proof verification NOT_CHECKED,
-  present applicability NOT_CHECKED, authority NONE.
-- [First complete native integration](https://github.com/heathsanchez/test/actions/runs/38363710083):
-  native source event ingestion; separate MathGraph bounded finite profile
-  replay; native FLASH cold restart; Metatron append-only log/independent
-  liveness parity and isolated support revocation.
-- [Native outstanding error](https://github.com/heathsanchez/test/actions/runs/38237298379):
-  CSLib relation certificate failed pinned Lean checking with unknown tactic
-  and unsolved goal. This is a real open verification residual, NOT a complete
-  expressiveness obstruction or a successful proof.
+The prior pinned [V10 native failure](https://github.com/heathsanchez/test/actions/runs/38237298379)
+was a generated CSLib proof that did not elaborate at actual Lean 4.35.0-rc4:
+missing \`fin_cases\` support and an unsolved simulation obligation. It was
+not a theorem that the target was expressively impossible.
 
-The provenance binding is deliberately **per event**: Collatz's two historical
-warrants have different source commits and cannot be collapsed to its current
-emitter implementation SHA. Source emitters and repositories are pinned
-separately. Every current event includes its source bytes SHA-256 and native
-loader verifies those bytes before ingestion.
+[**New CSLib native qualification #38466549740**](https://github.com/heathsanchez/test/actions/runs/38466549740)
+at \`dd0d53ff3ce198aaac9f4537f418682efd6a3f79\` is green.
+[Sealed original artifact #11848853826](https://github.com/heathsanchez/test/actions/runs/38466549740/artifacts/11848853826)
+has ZIP SHA-256
+\`76c842791e428dcd9263a2b9282c9d0f27ed61e748f8b340541f91239f6f5bb8\`.
 
-## Actual implementations, not replacement mimics
+It reuses original, *unchanged* V10 Python fixed-point solver
+\`heathsanchez/test@a50f1990:capstone/v10/run.py\`, frozen six declared LTS
+cases and independent reference. It constructs six Lean proof files,
+compiling source-specific simulation and bisimulation certificates with
+\`Mathlib.Tactic.FinCases\` and \`simp_all\` against
+\`leanprover/cslib@4b88bcac4c0dec65b3f45b59e85f5397045efd8d\`.
+Four seed-pair positive certificates and two seed-pair refutations are
+native-checked; actual missing relations remain refuted. A deliberately
+forged universal simulation theorem is not accepted, but the failed tactic
+attempt is NOT evidence of a general semantic impossibility. The original
+sealed artifact's \`proof_backend\` label is imprecise (it says "decidable
+reflection"); the effective successful source backend is the actual imported
+\`fin_cases\` + simplification procedure. The checked Lean files are primary.
 
-- **RealityGraph / FLASH**: reuse the existing frozen native
-  `qckn_flash_live_router.update_live_state` and its existing
-  `qckn_flash_cross_repo_ingest.restore_state_bundle`. Restore the preceding
-  qualifying run's artifact, merge new native producer events without
-  discarding old ones, and check cold reconstruction.
-- **Metatron**: import the original unchanged `runtime/metatron/nucleus.py`,
-  and use its real `Node`, `append`, `loads`, `dumps`, `live_ids` and
-  `ids` functions. Verify a withheld source support causes exactly its
-  dependent advisory claim to disappear while unrelated branches remain.
-  Persist the genuine append-only ledger as JSONL for the next run.
-- **MathGraph**: execute two independent stdlib source-pinned consumers:
-  a separately-pinned finite profile warrant and the real source catalogue
-  publication/structural-relation replay. Neither confers present action
-  authority; neither source index nor receipt turns into a fresh Lean proof.
-- **MSI, MDA and original scientific results**: retain verified run IDs,
-  exact head commits and actual conclusions as historical provenance. Do not
-  rerun the older finite-genesis science or confuse an existing success with a
-  newly solved source-distinct target.
+**Narrow scientific meaning:** an existing finite solver, equipped with a
+source-specific target-language proof backend, passed an external native
+checker where its previous generated certificates failed. Neither arbitrary
+method invention nor an independently open theorem has been demonstrated.
 
-A policy change, source mutation, run identity mismatch, forged status or
-unrecognized source-event origin fails the integration. All currently unknown
-semantic bridges remain UNKNOWN instead of being silently installed.
+## New event-to-native research-state integration
 
-## Exact outcomes
+[**Source-event integration #38469251893**](https://github.com/heathsanchez/test/actions/runs/38469251893)
+at \`7571513b11d9c7b9839abe0d8b252b2015aed747\` is fully green.
+[Sealed integrated artifact #11851366033](https://github.com/heathsanchez/test/actions/runs/38469251893/artifacts/11851366033)
+has SHA-256
+\`5743785f8c775db0cbeb589dadc86b6baf0e5377416cfbdc78cf28b4fea3e83b\`.
 
-The qualified CI artifact contains:
+The workflow independently fetches the actual successful native run,
+checks its *source commit and independent GitHub artifact digest*, rechecks
+each proof SHA against the sealed manifest and the original source-bound
+semantic reference, and constructs a real \`ExternalEventEnvelope.capability\`
+using the existing RealityGraph FLASH library. The event identity is
+\`cslib:cycle:native-source-checked-simulation:v1\`. Native theorem
+origin \`dd0d53f...\` and emitter implementation \`4543d75...\` are separate
+pinned identities; they are NOT incorrectly collapsed to the current
+coordinator revision.
 
-- `integration/closure.json`: operational gates, scope statuses, source
-  event identity, native residual, future frontier and preserved negatives.
-- `integration/flash-state-bundle.json`: deterministic FLASH state
-  for cold restart and subsequent event merges.
-- `integration/metatron-ledger.jsonl`: actual persistent append-only source,
-  warrant and residual dependency graph.
-- `mathgraph-replay.json`, `catalogue-replay.json`: independent profile
-  and knowledge-network checks.
-- `run-data/*.json`: upstream REST metadata at exact job/run SHA.
+Existing real-source events from Lean kernel, MSI ARC, Collatz (two
+independent historical source commits) and SAIR survive unchanged.
+The genuine FLASH closure has **6 events, 4 active scoped capabilities,
+2 original obstructions**. A second-source deletion ablation removes
+only the new native capability. A deliberately simulated typed capability
+revocation causes that capability to cease being active, **reopens the
+native obligation**, preserves all three old capabilities and both
+original obstructions, and is discarded afterward rather than being
+misrepresented as an actual source withdrawal. The integration also verifies
+independent cold restore, state replay and Metatron append-only liveness.
+Metatron recorded **29 total nodes, 25 live, 22 existing prior IDs retained**
+in the first fully green native integration.
 
-Run path: `.github/workflows/unified-consequence-runtime.yml`.
-The workflow is on the isolated research branch and is **not deployed as
-MathGraph production or merged into the scheduled RealityGraph daemon**.
-GitHub cron cannot be treated as active on an unmerged feature branch.
-The workflow's recorded past is the latest available qualified artifact;
-it is not a universal guarantee of full provenance mediation or publisher
-authentication.
+**Important support semantics:** FLASH \`support_ids\` represent
+*dependency parent capability IDs*, not external Lean receipt identifiers.
+The native verified event is a root with no other capability parents.
+Its original source, exact checked proof, GitHub receipt and assumptions
+are bound separately by the event evidence SHA, \`certificate_id\`,
+\`provenance_ids\` and Metatron evidence lineage.
+External source revocation must be encoded by a new explicitly checked
+typed revocation event, not by silently asserting a proof token is an
+executable dependency. A simulated revocation does not establish automatic
+monitoring of upstream revocations.
 
-## Meaningful remaining closure
+## Real MathGraph and research evidence retained
 
-The actual scientific E2E-SYSTEM and recursive developmental verdicts remain
-`UNKNOWN`. This integration currently has **no** automatically synthesized
-new source-to-target semantic method that closes a frozen formerly failing
-native obligation and then improves an independently sourced second native
-research frontier without target-specific human code. It also does not show
-full-lifetime advantage over equally informed strong stateless/executable-ledger
-controls, independent outside-owner adoption, or production ACT authority.
+Two unchanged implementation-independent MathGraph consumers are executed:
+a \`QUALIFIED_BOUNDED\` finite capability replay with
+\`current_applicability=UNKNOWN\` and \`action_authorization=NONE\`,
+and an exact source-index catalogue publication replay of 2,345
+declaration occurrences / 3,571 structural edges / 13 pinned Mathlib
+modules. SOURCE_INDEXED is **not** Lean proof replay. MathGraph source
+indices retain \`independent_verification=NOT_CHECKED\`, and authorization
+\`NONE\`. Prior MSI/MDA/Metatron and negative native runs remain
+source-pinned historical evidence, never self-certifying inventions.
 
-These are explicit residuals to be closed through real source-bound native
-development, not a request to rerun Boolean O1→O2, repackage a known constructor
-or invent another descriptive framework. The correct first action is to
-determine whether the frozen CSLib native error is a harness/tactic defect,
-a solvable proof problem or a genuine inadequacy; do not label a search failure
-an impossibility certificate.
+The workflow stores its closure report, FLASH state bundle, Metatron
+append-only log, new qualified source event, native original proof files
+and independently checked history in one artifact. New runs restore
+only from a **completed-successful** previously qualified integration,
+not merely the newest available artifact from a failed job.
 
-**Claim boundary:** operational source/replay/provenance integration,
-qualified at exact CI commit and artifacts. No L7 or L8 promotion.
+## What is still genuinely missing
+
+These remain UNKNOWN, not retrospectively turned into PASS:
+- source-derived *new semantic method*, not a human-authored tactic fix;
+- previously open **source-distinct independent native** target repaired
+  without target-specific human engineering;
+- verified generator change producing a second independent native
+  research capability, including held-out transfer and deletion ablation;
+- measured full acquisition+verification+maintenance economics against
+  equally informed competent baselines;
+- production freshness, source authenticity, ACT authorization, and
+  an independent outside-owner consumer;
+- complete mechanization of the broader CLC formal specification.
+
+The next real scientific attempt must attack one of those missing native
+semantic boundaries *through this already working infrastructure*, without
+another locally chosen finite experiment masquerading as L7.
+
+Workflow: \`.github/workflows/unified-consequence-runtime.yml\`.
+Native source checker:
+\`.github/workflows/unified-cslib-native-continuation.yml\`.
+Native event adapter:
+\`research/unified_consequence_runtime/native_proof_event.py\`.
+Coordinator:
+\`research/unified_consequence_runtime/integrate.py\`.
+Source policy:
+\`research/unified_consequence_runtime/native_policy.json\`.
+
+**Declared verdict: WARRANTED_BOUNDED_NATIVE_CERTIFICATE_AND_OPERATIONAL_REUSE,
+not E2E-SYSTEM autonomous intelligence.**
