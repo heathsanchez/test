@@ -123,7 +123,7 @@ def main():
                 native = native[:native.index("theorem seed :")]
                 native += (
                     f"theorem seed_rejected : ¬relation {case['seed'][0]} "
-                    f"{case['seed'][1]} := by\n  decide\nend V10_{case['id']}\n"
+                    f"{case['seed'][1]} := by\n  unfold relation\n  decide\nend V10_{case['id']}\n"
                 )
             native = rewrite_native_certificate(native, case, proves_bisim)
             out = args.out / (split + "_" + case["id"] + ".lean")
