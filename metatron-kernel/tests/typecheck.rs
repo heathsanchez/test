@@ -292,3 +292,51 @@ fn captured_two_argument_relation_requires_checked_domains() {
         "an ill-typed beta-redex discarded during normalization is not a typed application",
     );
 }
+
+#[test]
+fn fixed_pi_substitution_keeps_distinct_arguments_and_checks_ignored_argument() {
+    let mut fixture = Fixture::dependent_core();
+    fixture.expressions.insert(ExprId(11), Expr::Const { name: NameId(3), levels: vec![] }).unwrap();
+    fixture.environment = fixture.environment.extend(NameId(3),
+        ConstantDecl::axiom(vec![], ExprId(0))).unwrap();
+    for (id, expr) in [
+        (12, Expr::Lam { domain: ExprId(1), body: ExprId(1) }),
+        (13, Expr::Lam { domain: ExprId(0), body: ExprId(12) }),
+        (14, Expr::App { fun: ExprId(13), arg: ExprId(4) }),
+        (15, Expr::App { fun: ExprId(13), arg: ExprId(11) }),
+        (16, Expr::App { fun: ExprId(9), arg: ExprId(11) }),
+        (17, Expr::App { fun: ExprId(14), arg: ExprId(10) }),
+        (18, Expr::App { fun: ExprId(15), arg: ExprId(16) }),
+        (19, Expr::App { fun: ExprId(15), arg: ExprId(10) }),
+        (20, Expr::Lam { domain: ExprId(4), body: ExprId(4) }),
+        (21, Expr::App { fun: ExprId(20), arg: ExprId(4) }),
+    ] { fixture.expressions.insert(ExprId(id), expr).unwrap(); }
+    let checker = fixture.checker();
+    for (application, expected) in [(17, 4), (18, 11)] {
+        let result = checker.infer(ExprId(application), 256);
+        assert!(result.is_proven(), "distinct argument application: {result:?}");
+        assert!(checker.convert(result.proven_value().unwrap(),
+            &TypeValue::Term(Closure::new(ExprId(expected), EnvFrame::empty())), 256).is_proven());
+    }
+    assert!(!checker.infer(ExprId(19), 256).is_proven(), "A proof cannot fill the B domain");
+    assert!(!checker.infer(ExprId(21), 256).is_proven(), "ignored arguments still require typing");
+}
+
+#[test]
+fn stored_dependent_function_under_colliding_local_declines_capture() {
+    let mut fixture = Fixture::dependent_core();
+    for (id, expr) in [
+        (11, Expr::Lam { domain: ExprId(1), body: ExprId(1) }),
+        (12, Expr::Lam { domain: ExprId(0), body: ExprId(11) }),
+        (13, Expr::BVar(1)),
+        (14, Expr::App { fun: ExprId(13), arg: ExprId(1) }),
+        (15, Expr::Lam { domain: ExprId(0), body: ExprId(14) }),
+        (16, Expr::Pi { domain: ExprId(1), body: ExprId(1) }),
+        (17, Expr::Pi { domain: ExprId(0), body: ExprId(16) }),
+        (18, Expr::Let { ty: ExprId(17), value: ExprId(12), body: ExprId(15) }),
+    ] { fixture.expressions.insert(ExprId(id), expr).unwrap(); }
+    // The stored f opens its nested proof binder at FreeId(1). The later
+    // Q : Prop also opens at FreeId(1); substitution must decline rather
+    // than reinterpret Q as the proof binder retained in f's result type.
+    assert!(!fixture.checker().infer(ExprId(18), 4096).is_proven());
+}

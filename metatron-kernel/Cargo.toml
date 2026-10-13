@@ -18,3 +18,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "metatron-kernel"
 path = "src/main.rs"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

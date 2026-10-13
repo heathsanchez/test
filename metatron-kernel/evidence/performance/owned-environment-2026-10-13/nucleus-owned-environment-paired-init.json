@@ -1,0 +1,92 @@
+{
+  "binaries": {
+    "baseline": {
+      "path": "/tmp/nucleus-opening-role-lto-binary",
+      "sha256": "5aff70a1118a8a283fa3f9c86221a3d3a6439a068a7675bbe6eb78f8041c0928"
+    },
+    "candidate": {
+      "path": "/tmp/nucleus-owned-environment-binary",
+      "sha256": "588ecfd86ea35d23c97b580d825baa59b56e74ecabad140eed9736072ae8743c"
+    }
+  },
+  "input_sha256": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5",
+  "flags": {
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1"
+  },
+  "profile": "thin LTO/codegen1/diagnostics both",
+  "fresh_process": true,
+  "pmu_instructions": null,
+  "timing_caveat": "no root whole probe; another agent build may overlap; child CPU measured separately",
+  "rows": [
+    {
+      "pair": 1,
+      "mode": "baseline",
+      "rc": 0,
+      "wall": 1.8106058330013184,
+      "cpu": 1.78464,
+      "terminal": []
+    },
+    {
+      "pair": 1,
+      "mode": "candidate",
+      "rc": 0,
+      "wall": 2.3409634999989066,
+      "cpu": 1.7200550000000003,
+      "terminal": []
+    },
+    {
+      "pair": 2,
+      "mode": "candidate",
+      "rc": 0,
+      "wall": 1.7105297499947483,
+      "cpu": 1.6897050000000007,
+      "terminal": []
+    },
+    {
+      "pair": 2,
+      "mode": "baseline",
+      "rc": 0,
+      "wall": 1.8596842499973718,
+      "cpu": 1.8385649999999996,
+      "terminal": []
+    },
+    {
+      "pair": 3,
+      "mode": "baseline",
+      "rc": 0,
+      "wall": 1.8524142090027453,
+      "cpu": 1.7904299999999993,
+      "terminal": []
+    },
+    {
+      "pair": 3,
+      "mode": "candidate",
+      "rc": 0,
+      "wall": 1.6721579169970937,
+      "cpu": 1.6669710000000006,
+      "terminal": []
+    }
+  ],
+  "summary": {
+    "baseline": {
+      "mean_cpu": 1.8045449999999996,
+      "median_cpu": 1.7904299999999993
+    },
+    "candidate": {
+      "mean_cpu": 1.6922436666666671,
+      "median_cpu": 1.6897050000000007
+    },
+    "median_cpu_reduction_percent": 5.6257435364688195
+  }
+}

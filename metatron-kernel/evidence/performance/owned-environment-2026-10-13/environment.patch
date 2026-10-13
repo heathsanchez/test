@@ -1,0 +1,122 @@
+--- /tmp/nucleus-opening-role-source/src/environment.rs	2026-10-13 10:34:42
++++ /tmp/nucleus-owned-environment-source/src/environment.rs	2026-10-13 17:12:00
+@@ -157,46 +157,30 @@
+     }
+ 
+     pub fn extend(
+-        &self,
+-        name: NameId,
+-        declaration: ConstantDecl,
+-    ) -> Result<Self, EnvironmentError> {
+-        if self.constants.contains_key(&name) {
++        &self,name:NameId,declaration:ConstantDecl,
++    )->Result<Self,EnvironmentError>{
++        self.clone().extend_owned(name,declaration)
++    }
++
++    /// Append to a consumed environment. Strong snapshot and machine-map
++    /// owners force copy-on-write; unique maps avoid copying prior entries.
++    pub fn extend_owned(
++        mut self,name:NameId,declaration:ConstantDecl,
++    )->Result<Self,EnvironmentError>{
++        if self.constants.contains_key(&name){
+             return Err(EnvironmentError::DuplicateConstant(name));
+         }
+-        let mut constants = self.constants.as_ref().clone();
+-        let mut definitions = self.definitions.as_ref().clone();
+-        if let Some(value) = declaration.value {
+-            definitions.insert(
+-                name,
+-                DefinitionBody {
+-                    value,
+-                    preferred_for_reduction: declaration.preferred_for_reduction,
+-                    level_params: declaration.level_params.clone(),
+-                },
+-            );
++        let authority=AuthorityId(self.authority.0.checked_add(1)
++            .ok_or(EnvironmentError::AuthorityOverflow)?);
++        if let Some(value)=declaration.value {
++            Rc::make_mut(&mut self.definitions).insert(name,DefinitionBody {
++                value,preferred_for_reduction:declaration.preferred_for_reduction,
++                level_params:declaration.level_params.clone(),
++            });
+         }
+-        constants.insert(name, declaration);
+-        let authority = self
+-            .authority
+-            .0
+-            .checked_add(1)
+-            .ok_or(EnvironmentError::AuthorityOverflow)?;
+-        Ok(Self {
+-            authority: AuthorityId(authority),
+-            constants: Rc::new(constants),
+-            definitions: Rc::new(definitions),
+-            singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+-            nullary_minor_reductions: self.nullary_minor_reductions.clone(),
+-            closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
+-            recursor_reductions: self.recursor_reductions.clone(),
+-            projection_specs: self.projection_specs.clone(),
+-            nat_primitives: self.nat_primitives.clone(),
+-            string_literal_type:self.string_literal_type,
+-            bool_primitives: self.bool_primitives.clone(),
+-            quot_primitives: self.quot_primitives.clone(),
+-            unit_like_types: self.unit_like_types.clone(),
+-        })
++        Rc::make_mut(&mut self.constants).insert(name,declaration);
++        self.authority=authority;
++        Ok(self)
+     }
+ 
+     /// Install the independently qualified nullary-singleton recursor
+@@ -653,3 +637,51 @@
+ }
+ 
+ impl Error for EnvironmentError {}
++
++#[cfg(test)]
++mod owned_append_tests {
++    use super::*;
++    #[test]
++    fn unique_owned_append_preserves_both_map_allocations_across_many_definitions() {
++        let mut env=Environment::empty();let constants=Rc::as_ptr(&env.constants);let definitions=Rc::as_ptr(&env.definitions);
++        for i in 0..2048 {env=env.extend_owned(NameId(i),ConstantDecl::definition(vec![],ExprId(0),ExprId(i),true)).unwrap();assert_eq!(Rc::as_ptr(&env.constants),constants,"unique owned publication must avoid cloning all prior signatures");assert_eq!(Rc::as_ptr(&env.definitions),definitions,"unique owned publication must avoid cloning all prior bodies");}
++        assert_eq!(env.authority(),AuthorityId(2048));assert_eq!(env.constants.len(),2048);assert_eq!(env.definitions.len(),2048);
++    }
++    #[test]
++    fn borrowed_and_pinned_snapshots_keep_their_maps_and_authority() {
++        let env=Environment::empty().extend_owned(NameId(1),ConstantDecl::definition(vec![NameId(8)],ExprId(10),ExprId(11),true)).unwrap();
++        let old=env.clone();let pinned=env.definition_bodies();let authority=env.authority();
++        let next=env.extend_owned(NameId(2),ConstantDecl::definition(vec![],ExprId(12),ExprId(13),false)).unwrap();
++        assert_eq!(old.authority(),authority);assert_eq!(next.authority(),AuthorityId(authority.0+1));
++        assert!(old.get(NameId(2)).is_none());assert!(pinned.get(&NameId(2)).is_none());
++        assert_eq!(pinned[&NameId(1)].value,ExprId(11));assert!(!Rc::ptr_eq(&pinned,&next.definition_bodies()));
++        let borrowed=old.extend(NameId(3),ConstantDecl::axiom(vec![],ExprId(14))).unwrap();
++        assert!(old.get(NameId(3)).is_none());assert!(borrowed.get(NameId(3)).is_some());
++        assert!(Rc::ptr_eq(&pinned,&borrowed.definition_bodies()),"no-body append can share unchanged bodies under incremented authority");
++    }
++    #[test]
++    fn validation_errors_do_not_modify_shared_snapshots_and_siblings_remain_distinct() {
++        let env=Environment::empty().extend_owned(NameId(1),ConstantDecl::axiom(vec![],ExprId(1))).unwrap();let snapshot=env.clone();let constants=env.constants.clone();
++        assert_eq!(env.extend_owned(NameId(1),ConstantDecl::definition(vec![],ExprId(2),ExprId(3),true)).unwrap_err(),EnvironmentError::DuplicateConstant(NameId(1)));
++        assert_eq!(snapshot.get(NameId(1)).unwrap().ty,ExprId(1));assert!(snapshot.definition_bodies().is_empty());assert!(Rc::ptr_eq(&constants,&snapshot.constants));
++        let mut exhausted=snapshot.clone();exhausted.authority=AuthorityId(u64::MAX);let exhausted_snapshot=exhausted.clone();
++        assert_eq!(exhausted.extend_owned(NameId(2),ConstantDecl::definition(vec![],ExprId(2),ExprId(3),true)).unwrap_err(),EnvironmentError::AuthorityOverflow);
++        assert!(exhausted_snapshot.get(NameId(2)).is_none());assert!(exhausted_snapshot.definition_bodies().is_empty());
++        let left=snapshot.clone().extend_owned(NameId(2),ConstantDecl::definition(vec![],ExprId(2),ExprId(3),true)).unwrap();
++        let right=snapshot.extend_owned(NameId(2),ConstantDecl::definition(vec![],ExprId(2),ExprId(4),true)).unwrap();
++        assert_eq!(left.authority(),right.authority());assert_ne!(left.definition_bodies()[&NameId(2)].value,right.definition_bodies()[&NameId(2)].value);assert!(!Rc::ptr_eq(&left.definition_bodies(),&right.definition_bodies()));
++    }
++    #[test]
++    fn retained_machine_delta_witness_cannot_observe_future_owned_appends() {
++        use crate::id::{IdTable,LevelId};use crate::syntax::{Expr,Level};use crate::value::{Closure,EnvFrame,Value};use crate::machine::{Machine,Transparency};
++        let mut expressions=IdTable::default();let mut levels=IdTable::default();levels.insert(LevelId(0),Level::Zero).unwrap();
++        expressions.insert(ExprId(0),Expr::Const{name:NameId(2),levels:vec![]}).unwrap();expressions.insert(ExprId(1),Expr::Sort(LevelId(0))).unwrap();
++        let env=Environment::empty();let old=Machine::new(env.authority(),&expressions,&levels,env.definition_bodies());
++        let extended=env.extend_owned(NameId(2),ConstantDecl::definition(vec![],ExprId(1),ExprId(1),true)).unwrap();
++        let new=Machine::new(extended.authority(),&expressions,&levels,extended.definition_bodies());let term=Closure::new(ExprId(0),EnvFrame::empty());
++        assert!(matches!(old.expose(term.clone(),Transparency::Full,32).proven_value(),Some(Value::Neutral(_))));
++        assert!(matches!(new.expose(term.clone(),Transparency::Full,32).proven_value(),Some(Value::Sort(_))));
++        assert!(matches!(old.expose(term.clone(),Transparency::Full,32).proven_value(),Some(Value::Neutral(_))));
++    }
++
++}

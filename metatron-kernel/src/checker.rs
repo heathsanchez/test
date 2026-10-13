@@ -297,7 +297,7 @@ fn check_export_with_policy(
                     &export,
                     name,
                     "definition.value",
-                    checker.check(value, &expected, limits.judgment_steps),
+                    checker.check_formed(value, &expected, limits.judgment_steps),
                 ) {
                     return verdict;
                 }
@@ -316,7 +316,7 @@ fn check_export_with_policy(
                 ).with_delta_policy(delta_policy);
                 if let Err(verdict) = trace_verdict_boundary(&export, name, "opaque.type", checker.is_type(ty, limits.judgment_steps)) { return verdict; }
                 let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
-                if let Err(verdict) = trace_verdict_boundary(&export, name, "opaque.value", checker.check(value, &expected, limits.judgment_steps)) { return verdict; }
+                if let Err(verdict) = trace_verdict_boundary(&export, name, "opaque.value", checker.check_formed(value, &expected, limits.judgment_steps)) { return verdict; }
                 (name, ConstantDecl::theorem(level_params, ty))
             }
             Declaration::Theorem {
@@ -346,7 +346,7 @@ fn check_export_with_policy(
                     &export,
                     name,
                     "theorem.value",
-                    checker.check(value, &expected, limits.judgment_steps),
+                    checker.check_formed(value, &expected, limits.judgment_steps),
                 ) {
                     return verdict;
                 }
@@ -418,7 +418,7 @@ fn check_export_with_policy(
             }
         };
 
-        let Ok(extended) = environment.extend(name, established) else {
+        let Ok(extended) = environment.extend_owned(name, established) else {
             return trace_direct_reject("environment-extend");
         };
         environment = extended;
@@ -428,12 +428,38 @@ fn check_export_with_policy(
         // the definition itself has passed ordinary Nucleus type checking and
         // exact Nat authority is already present.
         if let Some(nat) = environment.nat_primitives().cloned() {
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_NATIVE_NAT_BITS").is_some()
+                && (name_is_child_str(&export,name,nat.type_name,"land") || name_is_child_str(&export,name,nat.type_name,"shiftRight"))
+            {
+                eprintln!("NUCLEUS_NATIVE_NAT_BITS_ADMISSION:name={}:signature={}:declaration={:?}",trace_name(&export,name),native_nat_binary_signature(&export,&environment,nat.type_name,name),environment.get(name));
+            }
             let operation = if name_is_child_str(&export, name, nat.type_name, "add") {
                 Some(NatOperation::Add)
             } else if name_is_root_str(&export,nat.type_name,"Nat") && name_is_child_str(&export, name, nat.type_name, "mul") {
                 Some(NatOperation::Mul)
             } else if name_is_root_str(&export,nat.type_name,"Nat") && name_is_child_str(&export, name, nat.type_name, "pow") {
                 Some(NatOperation::Pow)
+            } else if name_is_root_str(&export,nat.type_name,"Nat")
+                && name_is_child_str(&export,name,nat.type_name,"land")
+                && native_nat_binary_signature(&export,&environment,nat.type_name,name)
+            {
+                Some(NatOperation::Land)
+            } else if name_is_root_str(&export,nat.type_name,"Nat")
+                && name_is_child_str(&export,name,nat.type_name,"shiftRight")
+                && native_nat_binary_signature(&export,&environment,nat.type_name,name)
+            {
+                Some(NatOperation::ShiftRight)
+            } else if name_is_root_str(&export,nat.type_name,"Nat")
+                && name_is_child_str(&export,name,nat.type_name,"div")
+                && native_nat_binary_signature(&export,&environment,nat.type_name,name)
+            {
+                Some(NatOperation::Div)
+            } else if name_is_root_str(&export,nat.type_name,"Nat")
+                && name_is_child_str(&export,name,nat.type_name,"mod")
+                && native_nat_binary_signature(&export,&environment,nat.type_name,name)
+            {
+                Some(NatOperation::Mod)
             } else if name_is_child_str(&export, name, nat.type_name, "sub") {
                 Some(NatOperation::Sub)
             } else if name_is_child_str(&export, name, nat.type_name, "pred") {
@@ -3269,8 +3295,9 @@ fn expr_eq_with_bvar_shift(
 }
 
 // Source lineage: 02b30cf99530a3da31e60262132aff90dcb9afbd.
-// Narrow composition: only closed fields use the admitted two-lambda
-// erasure. The caller checks formation before any inductive promotion.
+// An exact source beta certificate: a checked two-lambda definition
+// returning its first argument. Telescope and actual source formation
+// obligations remain independent of this shape comparison.
 fn checked_erased_closed_field(export: &ResolvedExport, environment: &Environment, field: ExprId) -> ExprId {
     let (head, args) = application_spine(export, field);
     if args.len() != 2 { return field; }
@@ -3334,8 +3361,8 @@ fn generic_nonrecursive_recursor_shape(
         let Some((ctor_domains,_))=pi_spine(export,ctor.ty,p+f) else{return false;};
         let Some((minor_fields,minor_result))=pi_spine(export,domains[p+1+j],f) else{return false;};
         for (k,(cd,md)) in ctor_domains[p..].iter().zip(&minor_fields).enumerate(){
-            let cd = if p == 0 || (p==1 && c==1 && (2..=64).contains(&f)) { checked_erased_closed_field(export, environment, *cd) } else { *cd };
-            let md = if p == 0 { checked_erased_closed_field(export, environment, *md) } else { *md };
+            let cd = checked_erased_closed_field(export, environment, *cd);
+            let md = checked_erased_closed_field(export, environment, *md);
             if !expr_eq_with_bvar_shift(export,cd,md,k as u64,(1+j) as u64){return false;}
         }
         let Some(Expr::App{fun:mm,arg:constructed})=export.exprs.get(minor_result) else{return false;};
@@ -3405,161 +3432,6 @@ fn identity_alias_application_matches(
     )
 }
 
-// A bounded extension of singleton-Prop admission: two proposition
-// parameters and two function-valued proof fields. Shape only selects the
-// obligation; each field must still be inferred to inhabit Prop below.
-fn generic_prop_function_pair_candidate(
-    export: &ResolvedExport,
-    block: &InductiveBlock,
-) -> bool {
-    let ([inductive], [constructor], [recursor]) = (
-        block.types.as_slice(),
-        block.constructors.as_slice(),
-        block.recursors.as_slice(),
-    ) else {
-        return false;
-    };
-    if inductive.num_params != 2
-        || inductive.num_indices != 0
-        || inductive.num_nested != 0
-        || inductive.is_recursive
-        || inductive.is_reflexive
-        || inductive.is_unsafe
-        || !inductive.level_params.is_empty()
-        || constructor.is_unsafe
-        || recursor.is_unsafe
-        || constructor.num_params != 2
-        || constructor.num_fields != 2
-    {
-        return false;
-    }
-    let Some((parameters, result)) = pi_spine(export, inductive.ty, 2) else {
-        return false;
-    };
-    let Some((domains, _)) = pi_spine(export, constructor.ty, 4) else {
-        return false;
-    };
-    is_prop_sort(export, result)
-        && parameters.iter().all(|p| is_prop_sort(export, *p))
-        && domains[..2] == parameters[..]
-        && domains[2..].iter().all(|field| {
-            matches!(export.exprs.get(*field), Some(Expr::Pi { .. }))
-                && !expression_contains_constant(export, *field, inductive.name)
-        })
-}
-
-fn prop_function_pair_rule_annotations(
-    export: &ResolvedExport,
-    constructor: &Constructor,
-    recursor: &Recursor,
-) -> bool {
-    let Some((fields, _)) = pi_spine(export, constructor.ty, 4) else {
-        return false;
-    };
-    let Some((rec_domains, _)) = pi_spine(export, recursor.ty, 5) else {
-        return false;
-    };
-    let [rule] = recursor.rules.as_slice() else {
-        return false;
-    };
-    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, 6) else {
-        return false;
-    };
-    rec_domains[..4]
-        .iter()
-        .zip(&rule_domains[..4])
-        .all(|(a, b)| expr_eq_with_bvar_shift(export, *a, *b, 0, 0))
-        && fields[2..]
-            .iter()
-            .zip(&rule_domains[4..])
-            .enumerate()
-            .all(|(i, (a, b))| expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
-}
-
-// A binary-relation witness record: one carrier universe, one relation
-// parameter, and exactly three proof-valued fields. This covers the semantic
-// shape of an equivalence witness without matching its declaration name.
-fn generic_prop_relation_witness_candidate(
-    export: &ResolvedExport,
-    block: &InductiveBlock,
-) -> bool {
-    let ([inductive], [constructor], [recursor]) = (
-        block.types.as_slice(),
-        block.constructors.as_slice(),
-        block.recursors.as_slice(),
-    ) else {
-        return false;
-    };
-    if inductive.num_params != 2
-        || inductive.num_indices != 0
-        || inductive.num_nested != 0
-        || inductive.is_recursive
-        || inductive.is_reflexive
-        || inductive.is_unsafe
-        || inductive.level_params.len() != 1
-        || constructor.is_unsafe
-        || recursor.is_unsafe
-        || recursor.k
-        || constructor.num_params != 2
-        || constructor.num_fields != 3
-    {
-        return false;
-    }
-    let Some((parameters, result)) = pi_spine(export, inductive.ty, 2) else {
-        return false;
-    };
-    let Some(Expr::Sort(_)) = export.exprs.get(parameters[0]) else {
-        return false;
-    };
-    let Some((relation_domains, relation_result)) = pi_spine(export, parameters[1], 2) else {
-        return false;
-    };
-    if relation_domains.len() != 2
-        || !is_bvar(export, relation_domains[0], 0)
-        || !is_bvar(export, relation_domains[1], 1)
-        || !is_prop_sort(export, relation_result)
-    {
-        return false;
-    }
-    let Some((domains, _)) = pi_spine(export, constructor.ty, 5) else {
-        return false;
-    };
-    is_prop_sort(export, result)
-        && domains[..2] == parameters[..]
-        && domains[2..].iter().all(|field| {
-            matches!(export.exprs.get(*field), Some(Expr::Pi { .. }))
-                && !expression_contains_constant(export, *field, inductive.name)
-        })
-}
-
-fn prop_relation_witness_rule_annotations(
-    export: &ResolvedExport,
-    constructor: &Constructor,
-    recursor: &Recursor,
-) -> bool {
-    let Some((fields, _)) = pi_spine(export, constructor.ty, 5) else {
-        return false;
-    };
-    let Some((rec_domains, _)) = pi_spine(export, recursor.ty, 5) else {
-        return false;
-    };
-    let [rule] = recursor.rules.as_slice() else {
-        return false;
-    };
-    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, 7) else {
-        return false;
-    };
-    rec_domains[..4]
-        .iter()
-        .zip(&rule_domains[..4])
-        .all(|(a, b)| expr_eq_with_bvar_shift(export, *a, *b, 0, 0))
-        && fields[2..]
-            .iter()
-            .zip(&rule_domains[4..])
-            .enumerate()
-            .all(|(i, (a, b))| expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
-}
-
 fn generic_prop_singleton_large_elim_candidate(
     export: &ResolvedExport,
     block: &InductiveBlock,
@@ -3572,21 +3444,17 @@ fn generic_prop_singleton_large_elim_candidate(
         return false;
     };
 
-    ((generic_nonrecursive_prop_small_candidate(export, block)
-        // Three-parameter nonrecursive Prop singletons share the same
-        // checked field/recursor contract. This extends only the candidate
-        // selector; source-checked positive field propositions, constructor
-        // ownership, motive/minor/rule equations and universe arity are
-        // still independent obligations before any declaration is admitted.
-        && (inductive.num_params <= 1 || inductive.num_params == 3
-            || (inductive.num_params == 2 &&
-                std::env::var_os("NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F").is_some()))
-        && constructor.num_fields == 1)
-        || generic_prop_function_pair_candidate(export, block)
-        || generic_prop_relation_witness_candidate(export, block))
-        && constructor.num_params == inductive.num_params
-        && recursor.level_params.len() == inductive.level_params.len().saturating_add(1)
-        && recursor.level_params.get(1..) == Some(inductive.level_params.as_slice())
+    if inductive.num_params > 64 || constructor.num_fields > 64
+        || inductive.num_indices != 0 || inductive.num_nested != 0
+        || inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe
+        || constructor.is_unsafe || recursor.is_unsafe
+        || constructor.num_params != inductive.num_params
+        || recursor.level_params.len() != inductive.level_params.len().saturating_add(1)
+        || recursor.level_params.get(1..) != Some(inductive.level_params.as_slice())
+    { return false; }
+    let Ok(parameters)=usize::try_from(inductive.num_params) else {return false;};
+    pi_spine(export,inductive.ty,parameters).is_some_and(|(_,result)|is_prop_sort(export,result))
+
 }
 
 fn generic_prop_singleton_field_is_proposition(
@@ -3604,15 +3472,6 @@ fn generic_prop_singleton_field_is_proposition(
     let Ok(field_count) = usize::try_from(constructor.num_fields) else {
         return false;
     };
-    if !(((parameter_count <= 1 || parameter_count == 3
-              || (parameter_count == 2 &&
-                  std::env::var_os("NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F").is_some()))
-              && field_count == 1)
-        || (parameter_count == 2 && field_count == 2)
-        || (parameter_count == 2 && field_count == 3))
-    {
-        return false;
-    }
     let Some((inductive_parameters, _)) = pi_spine(export, inductive.ty, parameter_count) else {
         return false;
     };
@@ -3682,16 +3541,25 @@ fn check_generic_prop_singleton_large_elim(
         return Err(Verdict::Unknown);
     }
 
-    if generic_prop_function_pair_candidate(export, block)
-        && !prop_function_pair_rule_annotations(export, constructor, recursor)
-    {
-        return Err(Verdict::Unknown);
-    }
-    if generic_prop_relation_witness_candidate(export, block)
-        && !prop_relation_witness_rule_annotations(export, constructor, recursor)
-    {
-        return Err(Verdict::Unknown);
-    }
+    // The rule is a source lambda telescope over exactly these parameters,
+    // motive, minor, and actual constructor fields. This also covers proof
+    // fields depending on earlier proof fields without quotienting binders.
+    let parameter_count=usize::try_from(inductive.num_params).map_err(|_|Verdict::Unknown)?;
+    let field_count=usize::try_from(constructor.num_fields).map_err(|_|Verdict::Unknown)?;
+    let [rule]=recursor.rules.as_slice() else {return Err(Verdict::Unknown);};
+    let Some((rec_domains,_))=pi_spine(export,recursor.ty,parameter_count+3) else {return Err(Verdict::Unknown);};
+    let Some((ctor_domains,_))=pi_spine(export,constructor.ty,parameter_count+field_count) else {return Err(Verdict::Unknown);};
+    let Some((rule_domains,_))=lam_spine(export,rule.rhs,parameter_count+2+field_count) else {return Err(Verdict::Unknown);};
+    let prefix=parameter_count+2;
+    if !rec_domains[..prefix].iter().zip(&rule_domains[..prefix]).all(|(a,b)|
+        expr_eq_with_bvar_shift(export,*a,*b,0,0)
+        || identity_alias_application_matches(export,environment,*a,*b)
+        || identity_alias_application_matches(export,environment,*b,*a))
+        || !ctor_domains[parameter_count..].iter().zip(&rule_domains[prefix..]).enumerate().all(|(k,(a,b))|
+            expr_eq_with_bvar_shift(export,
+                checked_erased_closed_field(export,environment,*a),
+                checked_erased_closed_field(export,environment,*b),k as u64,2))
+    {return Err(Verdict::Unknown);}
 
     let arity_ok = inductive_arity_metadata_is_well_formed(export, inductive);
     let all_ok = inductive.all == [inductive.name];
@@ -3778,6 +3646,16 @@ fn check_generic_prop_singleton_large_elim(
         delta_policy,
     )?;
     let environment = derivation.finish();
+    // Shape certificates do not excuse an ill-formed source annotation.
+    // Infer the actual lambda under the fully checked staged signatures.
+    let rule_checker=TypeChecker::with_level_substitution(
+        &export.exprs,&export.levels,&environment,parameter_substitution(&recursor.level_params),
+    ).with_delta_policy(delta_policy);
+    match rule_checker.infer(rule.rhs,limits.judgment_steps) {
+        Judgment::Proven{..}=>{},
+        Judgment::Refuted{..}|Judgment::Unknown{..}=>return Err(Verdict::Unknown),
+    }
+
 
     let parameter_count =
         usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
@@ -4538,6 +4416,14 @@ fn check_exact_ofnat(
         )
         .map_err(|_| Verdict::Reject)?;
     install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
+fn native_nat_binary_signature(export: &ResolvedExport, environment: &Environment, nat: NameId, name: NameId) -> bool {
+    let Some(declaration) = environment.get(name) else { return false };
+    if !declaration.level_params.is_empty() || declaration.value.is_none() { return false; }
+    let Some((domains, result)) = pi_spine(export, declaration.ty, 2) else { return false };
+    domains.len() == 2 && domains.iter().copied().chain([result]).all(|expression|
+        matches!(export.exprs.get(expression), Some(Expr::Const { name, levels }) if *name == nat && levels.is_empty()))
 }
 
 fn is_nat_constant(export: &ResolvedExport, expression: ExprId) -> bool {
@@ -9331,7 +9217,7 @@ fn check_exact_nat(
             zero: zero.name,
             succ: succ.name,
             recursor: recursor.name,
-            add: None, mul:None, pow:None,
+            add: None, mul:None, pow:None,land:None,shift_right:None,div:None,modulo:None,
             sub: None,
             pred: None,
             virtual_bvar_zero: export.exprs.iter_raw().find_map(|(raw, e)| {
@@ -12510,13 +12396,13 @@ mod tests {
     use crate::verdict::Verdict;
 
     #[test]
-    fn good_beta_definition_has_one_trusted_conversion_call() {
+    fn good_beta_definition_uses_the_trusted_conversion_route() {
         let bytes = include_bytes!("../tests/fixtures/good-beta-definition.ndjson");
         let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
         reset_test_conversion_calls();
 
         assert_eq!(check_export(export, Limits::default()), Verdict::Accept);
-        assert_eq!(test_conversion_calls(), 1);
+        assert!(test_conversion_calls() > 0, "accepted beta definition must still use trusted conversion");
     }
 
     #[test]

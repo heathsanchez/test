@@ -168,6 +168,21 @@ fn convert_in_context_with_congruence(
             continue;
         }
 
+        // Equal source syntax is sufficient only after every used capture
+        // and universe is independently identical. Unused frame slots carry
+        // no equality authority; incomplete support must decline this trial.
+        if let (TypeValue::Term(lhs), TypeValue::Term(rhs)) = (&left, &right)
+            && lhs.env != rhs.env
+            && remaining > 8 && *congruence_attempts > 0
+        {
+            *congruence_attempts -= 1;
+            let allowance = remaining.min(1024);
+            let mut trial = allowance;
+            let identical = checker.exact_source_capture_identity(lhs, rhs, &mut trial);
+            remaining -= allowance.saturating_sub(trial);
+            if identical { continue; }
+        }
+
         // Residual-generated function eta capability.  This is deliberately
         // syntactic and contraction-only: (fun x => f x) may contract to f
         // exactly when the bound variable does not occur in f.  No unfolding,
@@ -328,6 +343,7 @@ fn convert_in_context_with_congruence(
                     continue;
                 }
                 let machine = checker.machine();
+                let mut unfold_parent = false;
                 // Positive congruence before unfolding. Failed premises only
                 // decline this rule; all nested probes share an attempt limit.
                 if congruence_depth < 16 && *congruence_attempts > 0 {
@@ -370,6 +386,10 @@ fn convert_in_context_with_congruence(
                     if congruence.is_proven() {
                         continue;
                     }
+                    // Unequal arguments are not an inequality proof for a
+                    // reducible function. Compare its actual applications
+                    // after delta instead of committing those argument goals.
+                    unfold_parent = checker.definition_value(rigid_head).is_some();
                     if let Judgment::Refuted { obstruction } = &congruence
                         && checker.is_certified_constructor(rigid_head)
                     {
@@ -423,36 +443,41 @@ fn convert_in_context_with_congruence(
                                 left.expr, right.expr
                             );
                         }
-                        let (Some(left_delta), Some(right_delta)) =
+                        if let (Some(left_delta), Some(right_delta)) =
                             (left_delta.proven_value(), right_delta.proven_value())
-                        else {
-                            return Judgment::unknown("lazy-head-delta-exposure");
-                        };
-                        match compare_values(
-                            checker,
-                            left_delta,
-                            right_delta,
-                            remaining.saturating_sub(1),
-                            depth,
-                            context,
-                            &mut work,
-                            &mut proof_function_frees,
-                        ) {
-                            Judgment::Proven { .. } => continue,
-                            Judgment::Refuted { obstruction } => {
-                                return Judgment::Refuted { obstruction };
+                        {
+                            match compare_values(
+                                checker,
+                                left_delta,
+                                right_delta,
+                                remaining.saturating_sub(1),
+                                depth,
+                                context,
+                                &mut work,
+                                &mut proof_function_frees,
+                            ) {
+                                Judgment::Proven { .. } => continue,
+                                Judgment::Refuted { obstruction } => {
+                                    return Judgment::Refuted { obstruction };
+                                }
+                                Judgment::Unknown { residual } => {
+                                    return Judgment::Unknown { residual };
+                                }
                             }
-                            Judgment::Unknown { residual } => {
-                                return Judgment::Unknown { residual };
-                            }
+                        } else {
+                            // This optional bounded shortcut established no
+                            // value comparison. Pay both attempted exposures
+                            // and continue the ordinary guarded derivation.
+                            let spent = remaining.min(64).saturating_mul(2);
+                            remaining = remaining.saturating_sub(spent);
                         }
                     }
                 }
                 let cheap_left =
-                    machine.expose_for_conversion(left.clone(), Transparency::Reducible, remaining);
+                    machine.expose_for_conversion(left.clone(), if unfold_parent { Transparency::Full } else { Transparency::Reducible }, remaining);
                 let cheap_right = machine.expose_for_conversion(
                     right.clone(),
-                    Transparency::Reducible,
+                    if unfold_parent { Transparency::Full } else { Transparency::Reducible },
                     remaining,
                 );
                 let (Some(cheap_left), Some(cheap_right)) =
@@ -529,14 +554,14 @@ fn convert_in_context_with_congruence(
                     }
                     return Judgment::unknown("conversion-exposure");
                 };
-                let exposed = if let Some(exposed) = value_as_type(exposed, depth) {
+                let exposed = if let Some(exposed) = value_as_type(checker, exposed, depth, &mut remaining) {
                     exposed
                 } else if delta_policy == DeltaPolicy::GuardedSemanticFallback {
                     let full = machine.expose(term.clone(), Transparency::Full, remaining);
                     let Some(full) = full.proven_value() else {
                         return Judgment::unknown("full-conversion-exposure");
                     };
-                    let recovered = if depth == context.len() && value_as_type(full, depth).is_none() {
+                    let recovered = if depth == context.len() && value_as_type(checker, full, depth, &mut remaining).is_none() {
                         checked_source_type_value(checker, term.clone(), context, remaining)
                     } else {
                         Judgment::unknown("checked-source-type-recovery-not-needed")
@@ -546,7 +571,7 @@ fn convert_in_context_with_congruence(
                         eprintln!("NUCLEUS_SOURCE_TYPE_RECOVERY:term={:?}:result={recovered:?}",term.expr);
                     }
                     let full = recovered.proven_value().unwrap_or(full);
-                    let Some(full) = value_as_type(full, depth) else {
+                    let Some(full) = value_as_type(checker, full, depth, &mut remaining) else {
                         #[cfg(feature="diagnostics")]
                         if std::env::var_os("NUCLEUS_TRACE_RIGID_TYPE_MISMATCH").is_some() {
                             eprintln!("NUCLEUS_RIGID_TYPE_MISMATCH:depth={depth}:context={}:exposed={full:?}:expected={other:?}:budget={remaining}",context.len());
@@ -809,6 +834,11 @@ fn evaluated_free_eta(
     let Some(argument_free) = fresh_local(depth) else {
         return false;
     };
+    let mut opening_budget = budget.min(1024);
+    if !source_opening_avoids_capture(checker, lambda_body, argument_free, &mut opening_budget) {
+        return false;
+    }
+    let budget = budget.saturating_sub(budget.min(1024) - opening_budget);
     let exposed_body = checker.machine().expose(
         lambda_body.under_free(argument_free),
         Transparency::Reducible,
@@ -1177,6 +1207,13 @@ fn compare_values(
                 let Some(free) = fresh_local(depth) else {
                     return Judgment::unknown("binder-depth-overflow");
                 };
+                let allowance = current_budget.min(1024);
+                let mut opening_budget = allowance;
+                if !source_opening_avoids_capture(checker, left_body, free, &mut opening_budget)
+                    || !source_opening_avoids_capture(checker, right_body, free, &mut opening_budget) {
+                    return Judgment::unknown("source-binder-capture-or-support-unavailable");
+                }
+                current_budget -= allowance - opening_budget;
                 let left_domain_type = TypeValue::Term(left_domain.clone());
                 let right_domain_type = TypeValue::Term(right_domain.clone());
                 if let (Some(left_key), Some(right_key)) = (
@@ -1572,6 +1609,35 @@ fn compare_values(
                 continue;
             }
             (Value::Neutral(left), Value::Neutral(right)) => {
+                // A registered recursor with an actual constructor major is
+                // reducible even when both applications retain the same head.
+                // Replay source iota before treating its arguments as rigid.
+                if left.head == right.head
+                    && let NeutralHead::Const { name, .. } = &left.head
+                    && checker.has_qualified_recursor(*name)
+                    && left.spine != right.spine
+                {
+                    let mut available = current_budget;
+                    let mut reduced = None;
+                    for (is_left, candidate) in [(false, right), (true, left)] {
+                        if available < 128 { break; }
+                        let probe = available / 2;
+                        available -= probe;
+                        if let Judgment::Proven { value, .. } = checker.machine()
+                            .qualified_one_step_recursor_result(candidate, probe)
+                            && !matches!(&value, Value::Neutral(n) if n == candidate)
+                        {
+                            reduced = Some((is_left, value));
+                            break;
+                        }
+                    }
+                    if let Some((is_left, value)) = reduced {
+                        if is_left { current_left = value; } else { current_right = value; }
+                        current_budget = available.saturating_sub(1);
+                        continue;
+                    }
+                    current_budget = available;
+                }
                 // Proof-carrying relevance signature: a proposition-valued
                 // argument may differ ONLY after both applications' exact
                 // dependent argument typing and data-argument congruence
@@ -1717,7 +1783,7 @@ fn compare_values(
                             return None;
                         }
                         checker.machine().qualified_nested_recursor_result(
-                            recursive, current_budget.min(2048),
+                            recursive, current_budget,
                         ).proven_value().cloned()
                     };
                     if let Some(result) = candidate(left, right) {
@@ -1741,7 +1807,38 @@ fn compare_values(
                 }
                 match compare_neutral_heads(checker, left, right, current_budget, depth, context) {
                     Judgment::Proven { .. } => {}
-                    other => return other,
+                    other => {
+                        // A retained registered recursor can still have an
+                        // actual constructor major. Replay its checked rule,
+                        // independently of the opposing head or desired value.
+                        // Reserve both bounded probes from this comparison's
+                        // allowance, and continue iteratively after real iota.
+                        let mut available = current_budget;
+                        let mut reduced = None;
+                        if left.head != right.head {
+                            for (is_left, candidate) in [(false, right), (true, left)] {
+                                if !matches!(candidate.head, NeutralHead::Const { .. })
+                                    || candidate.spine.is_empty() || available < 128 {
+                                    continue;
+                                }
+                                let probe = available / 2;
+                                available -= probe;
+                                if let Judgment::Proven { value, .. } = checker.machine()
+                                    .qualified_one_step_recursor_result(candidate, probe)
+                                    && !matches!(&value, Value::Neutral(n) if n == candidate)
+                                {
+                                    reduced = Some((is_left, value));
+                                    break;
+                                }
+                            }
+                        }
+                        if let Some((is_left, value)) = reduced {
+                            if is_left { current_left = value; } else { current_right = value; }
+                            current_budget = available.saturating_sub(1);
+                            continue;
+                        }
+                        return other;
+                    }
                 }
                 if left.spine.len() != right.spine.len() {
                     return Judgment::refuted("neutral-spine-length");
@@ -2064,6 +2161,70 @@ fn compare_nat_literal_neutral(
     Judgment::refuted("Nat-literal-non-Nat-head")
 }
 
+// A sufficient source equality proof for an entire neutral receiver. Every
+// child uses the same remaining allowance; no normalization or typing
+// witness is borrowed from another receiver or context.
+fn exact_neutral_source_congruence(
+    checker: &TypeChecker<'_>, left: &Neutral, right: &Neutral, remaining: &mut usize,
+) -> bool {
+    use crate::level::LevelTerm;
+    let mut pending = vec![(left, right)];
+    while let Some((left, right)) = pending.pop() {
+        if *remaining == 0 { return false; }
+        *remaining -= 1;
+        match (&left.head, &right.head) {
+            (NeutralHead::Free(a), NeutralHead::Free(b)) if a == b => {}
+            (NeutralHead::Const { name: a, levels: x }, NeutralHead::Const { name: b, levels: y }) if a == b && x.len() == y.len() => {
+                if *remaining < x.len() { return false; }
+                *remaining -= x.len();
+                let mut levels: Vec<_> = x.iter().zip(y).collect();
+                while let Some((a, b)) = levels.pop() {
+                    if *remaining == 0 { return false; }
+                    *remaining -= 1;
+                    match (a, b) {
+                        (LevelTerm::Zero, LevelTerm::Zero) => {}
+                        (LevelTerm::Param(x), LevelTerm::Param(y)) => {
+                            let cost = x.len().max(y.len());
+                            if *remaining < cost { return false; }
+                            *remaining -= cost;
+                            if x != y { return false; }
+                        }
+                        (LevelTerm::Succ(x), LevelTerm::Succ(y)) => {
+                            if *remaining == 0 { return false; }
+                            *remaining -= 1;
+                            levels.push((x, y));
+                        }
+                        (LevelTerm::Max(x, u), LevelTerm::Max(y, v))
+                        | (LevelTerm::IMax(x, u), LevelTerm::IMax(y, v)) => {
+                            if *remaining < 2 { return false; }
+                            *remaining -= 2;
+                            levels.push((x, y)); levels.push((u, v));
+                        }
+                        _ => return false,
+                    }
+                }
+            }
+            (NeutralHead::Projection { type_name: a, index: i, structure: x },
+             NeutralHead::Projection { type_name: b, index: j, structure: y }) if a == b && i == j => {
+                if *remaining == 0 { return false; }
+                *remaining -= 1;
+                pending.push((x.as_ref(), y.as_ref()));
+            }
+            _ => return false,
+        }
+        if left.spine.len() != right.spine.len() { return false; }
+        for (a, b) in left.spine.iter().zip(&right.spine) {
+            if *remaining == 0 { return false; }
+            *remaining -= 1;
+            if a.expr == b.expr && a.env == b.env && a.levels.identity() == b.levels.identity() {
+                continue;
+            }
+            if !checker.exact_source_capture_identity(a, b, remaining) { return false; }
+        }
+    }
+    true
+}
+
 fn compare_neutral_heads(
     checker: &TypeChecker<'_>,
     left: &Neutral,
@@ -2113,6 +2274,11 @@ fn compare_neutral_heads(
             if budget < 8 || left_structure.spine.len() != right_structure.spine.len() {
                 return Judgment::unknown("neutral-projection-receiver-congruence");
             }
+            let mut source_work = budget.saturating_sub(1);
+            if exact_neutral_source_congruence(checker, left_structure, right_structure, &mut source_work) {
+                return Judgment::proven((), "exact-source-neutral-receiver-congruence");
+            }
+            let budget = source_work;
             let probe = budget.saturating_sub(1) / 2;
             if !compare_neutral_heads(
                 checker, left_structure, right_structure, probe, depth, context,
@@ -2121,10 +2287,25 @@ fn compare_neutral_heads(
             }
             let argument_budget = probe / left_structure.spine.len().max(1);
             for (lhs, rhs) in left_structure.spine.iter().zip(&right_structure.spine) {
-                if !convert_with_policy_in_context(
+                let argument_result = convert_with_policy_in_context(
                     checker, &TypeValue::Term(lhs.clone()), &TypeValue::Term(rhs.clone()),
                     argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
-                ).is_proven() {
+                );
+                if !argument_result.is_proven() {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CAPTURES").is_some()
+                        && matches!(lhs.expr.0, 600 | 1214)
+                        && lhs.expr == rhs.expr && argument_budget >= 2048
+                    {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static CAPTURES: AtomicUsize = AtomicUsize::new(0);
+                        // Count before probing typed captures so recursive
+                        // diagnostic conversion cannot start another trace.
+                        if CAPTURES.fetch_add(1, Ordering::Relaxed) == 0 {
+                            eprintln!("NUCLEUS_FAILED_RECEIVER_CAPTURES:owner={left_type:?}:field={left_index}:depth={depth}:budget={budget}:argument_budget={argument_budget}:result={argument_result:?}:{}",
+                                checker.diagnostic_receiver_capture_pair(lhs, rhs, context, 128));
+                        }
+                    }
                     return Judgment::unknown("neutral-projection-receiver-congruence");
                 }
             }
@@ -2224,6 +2405,17 @@ fn compare_neutral_heads(
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_CHECKED_MAJOR_CHAIN").is_some() && left.spine.len()>=4 && context.len()<=24 {
                 eprintln!("NUCLEUS_CHECKED_MAJOR_CHAIN:{}",checker.diagnostic_captured_recursor_major_chain(left,budget));
+            }
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_CHECKED_MAJOR_CHAIN").is_some() && context.len() <= 24 {
+                for value in [left, right] {
+                    if value.spine.len() >= 4 {
+                        eprintln!("NUCLEUS_EITHER_MAJOR_CHAIN:{}",checker.diagnostic_captured_recursor_major_chain(value,budget));
+                    }
+                    if let NeutralHead::Projection { structure, .. } = &value.head {
+                        eprintln!("NUCLEUS_PROJECTION_MAJOR_CHAIN:{}",checker.diagnostic_captured_recursor_major_chain(structure,budget));
+                    }
+                }
             }
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_LEFT_DECIDABLE_MAJOR_CHAIN").is_some()
@@ -2445,11 +2637,16 @@ pub(crate) fn checked_source_type_value(
     machine.projection_value_for_conversion(reduced, *type_name, *index, spine, budget / 2)
 }
 
-fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {
+fn value_as_type(checker: &TypeChecker<'_>, value: &Value, depth: usize, remaining: &mut usize) -> Option<TypeValue> {
     match value {
         Value::Sort(level) => Some(TypeValue::Sort(level.clone())),
         Value::Pi { domain, body } => {
             let free = fresh_local(depth)?;
+            let allowance = (*remaining).min(1024);
+            let mut opening_budget = allowance;
+            let safe = source_opening_avoids_capture(checker, body, free, &mut opening_budget);
+            *remaining -= allowance - opening_budget;
+            if !safe { return None; }
             Some(TypeValue::Pi {
                 domain: Box::new(TypeValue::Term(domain.clone())),
                 body: Box::new(TypeValue::Term(body.under_free(free))),
@@ -2465,4 +2662,66 @@ fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {
 
 fn fresh_local(depth: usize) -> Option<FreeId> {
     u64::try_from(depth).ok().map(FreeId)
+}
+
+// A source body still has its leading de Bruijn binder, so drop that
+// virtual slot before inspecting actual captures. Only complete source
+// support can justify opening it with an ID used by the checked context.
+pub(crate) fn source_opening_avoids_capture(
+    checker: &TypeChecker<'_>, body: &Closure, free: FreeId, budget: &mut usize,
+) -> bool {
+    // The exact lookup consumes the existing initial source-node step.
+    // A miss carries that prepaid node into the original traversal once.
+    if *budget==0{return false;}
+    *budget-=1;
+    if checker.has_source_opening_proof(body,free){return true;}
+    let safe=source_opening_avoids_capture_uncached(checker,body,free,budget);
+    if safe{checker.retain_source_opening_proof(body,free);}
+    safe
+}
+
+fn source_opening_avoids_capture_uncached(
+    checker:&TypeChecker<'_>,body:&Closure,free:FreeId,budget:&mut usize,
+)->bool {
+    let mut pending = vec![(body.clone(), 1u64)];
+    let mut visited = HashSet::new();
+    let mut prepaid_root=true;
+    while let Some((source, virtual_slots)) = pending.pop() {
+        if prepaid_root {prepaid_root=false;}
+        else {
+            if *budget == 0 { return false; }
+            *budget -= 1;
+        }
+        if !visited.insert((source.expr, source.env.id(), virtual_slots)) { continue; }
+        let Some(support) = checker.complete_source_support(source.expr, budget) else { return false; };
+        for index in support {
+            if index < virtual_slots { continue; }
+            let index = index - virtual_slots;
+            let Some(cost) = index.checked_add(1).and_then(|n| usize::try_from(n).ok()) else { return false; };
+            if *budget < cost { return false; }
+            *budget -= cost;
+            let Some(binding) = source.env.lookup_binding_ref(index) else { return false; };
+            match binding {
+                EnvBinding::Free(actual) => { if *actual == free { return false; } }
+                EnvBinding::Closure(captured) => pending.push((captured.clone(), 0)),
+                EnvBinding::NatLit(_) => {}
+                EnvBinding::Neutral(neutral) => {
+                    let mut neutrals = vec![neutral];
+                    while let Some(value) = neutrals.pop() {
+                        if *budget == 0 { return false; }
+                        *budget -= 1;
+                        match &value.head {
+                            NeutralHead::Free(actual) => { if *actual == free { return false; } }
+                            NeutralHead::Projection { structure, .. } => neutrals.push(structure.as_ref()),
+                            NeutralHead::Const { .. } => {}
+                        }
+                        if *budget < value.spine.len() { return false; }
+                        *budget -= value.spine.len();
+                        pending.extend(value.spine.iter().map(|c| (c.clone(), 0)));
+                    }
+                }
+            }
+        }
+    }
+    true
 }
