@@ -1,0 +1,53 @@
+name: MathGraph native generated regex assertion — fifth original Go source
+on:
+  push:
+    branches:
+      - mathgraph-generated-source-mutation-validator-20261015-v1
+    paths:
+      - 'research/novel_test_instance/**'
+      - '.github/workflows/mathgraph-fifth-native-test-genesis.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: go-playground/validator
+          ref: a37c290428207fcaf419d295cde1fc432fa37c9e
+          path: source/validator/head
+          fetch-depth: 3
+          persist-credentials: false
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Freeze original source and materialize source-native counterfactuals
+        run: |
+          set -euo pipefail
+          test "$(git -C source/validator/head rev-parse HEAD)" = a37c290428207fcaf419d295cde1fc432fa37c9e
+          git -C source/validator/head cat-file -e df91dfdd9abdbb838739d13a70550efb7f730d3e^{commit}
+          git -C source/validator/head worktree add --detach ../base df91dfdd9abdbb838739d13a70550efb7f730d3e
+          git -C source/validator/head worktree add --detach ../negative a37c290428207fcaf419d295cde1fc432fa37c9e
+          git -C source/validator/head worktree add --detach ../pristine df91dfdd9abdbb838739d13a70550efb7f730d3e
+      - name: Derive a NEW test case from original source regex semantics, no named test/function/operation
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mathgraph-new-case"
+          go run research/novel_test_instance/derive.go             --base source/validator/base --head source/validator/head             --negative source/validator/negative             --old-sha df91dfdd9abdbb838739d13a70550efb7f730d3e             --new-sha a37c290428207fcaf419d295cde1fc432fa37c9e             --out "$RUNNER_TEMP/mathgraph-new-case/manifest.json"
+      - name: Original native behavioral causality and pristine ablation
+        run: |
+          set -euo pipefail
+          python3 research/novel_test_instance/verify.py             --manifest "$RUNNER_TEMP/mathgraph-new-case/manifest.json"             --base source/validator/base --head source/validator/head             --negative source/validator/negative --pristine source/validator/pristine             --out "$RUNNER_TEMP/mathgraph-new-case/verification.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: fifth-new-regex-assertion-execution
+          path: ${{ runner.temp }}/mathgraph-new-case/
+          if-no-files-found: ignore
