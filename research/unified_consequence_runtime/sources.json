@@ -49,7 +49,7 @@
     ],
     "native_unbounded": [
       "heathsanchez/test",
-      "820e01ace410fa1cec9c13b4ada54f962e9f4534"
+      "ab55e2ea963f422d05c84fbe1e24e77b886fa222"
     ]
   },
   "runs": [
@@ -152,5 +152,5 @@
   },
   "source_note": "An emitter head does not equal every event's original evidence commit. Validate each typed event's own repository and source SHA. Collatz has two source-distinct historical events. New CSLib native scope-qualified event is distinct from both historical Collatz events and cannot attest unrelated native goal success. Qualified proof origin dd0d53 and emitter implementation 4543d757 are distinct pins.",
   "source_method_note": "Qualified source-extracted bisimulation method compiles two native CSLib inductives, per-artifact guarded, human-authored general extractor, no new open theorem or autonomous generator revision.",
-  "source_unbounded_note": "Generic forward/backward method computed by source-feedback selection over designer-supplied typed meta-grammar, Lean checked for all n and k on three precommitted original CSLib sources; no spontaneous meta-grammar or open mathematical theorem."
+  "source_unbounded_note": "Generic forward/backward method computed by source-feedback selection over designer-supplied typed meta-grammar, Lean checked for all n and k on three precommitted original CSLib sources; no spontaneous meta-grammar or open mathematical theorem. Frozen protocol check binds the canonical sorted semantic JSON digest, while its git source commit separately binds exact raw text; those identities are intentionally distinct."
 }
