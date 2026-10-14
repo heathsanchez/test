@@ -30,6 +30,7 @@ jobs:
           grep -q 'func patParamKeys' tree.go
           cp ../research/semantic_quotient/chi1207/mathgraph_semantic_quotient_test.go ./mathgraph_semantic_quotient_test.go
           cp ../research/semantic_quotient/chi1207/mathgraph_observational_quotient_test.go ./mathgraph_observational_quotient_test.go
+          cp ../research/semantic_quotient/chi1207/mathgraph_exception_boundary_test.go ./mathgraph_exception_boundary_test.go
       - uses: actions/setup-go@v5
         with:
           go-version-file: chi/go.mod
