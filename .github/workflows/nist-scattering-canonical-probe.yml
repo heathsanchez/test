@@ -1,0 +1,31 @@
+name: APS scientific abstract content stability probe
+
+on:
+  push:
+    branches: [research/nist-scattering-rounded-residual-20261014]
+    paths:
+      - '.github/workflows/nist-scattering-canonical-probe.yml'
+      - 'research/nist_scattering_rounding/canonical_probe.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  two-independent-publication-reads:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compare two publisher source-contents vs dynamic byte wrappers
+        run: python3 research/nist_scattering_rounding/canonical_probe.py
+      - name: Retain limited non-promotional digest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aps-scattering-abstract-stability-probe
+          path: research/nist_scattering_rounding/evidence/canonical_probe.json
+          if-no-files-found: warn
+          retention-days: 90
