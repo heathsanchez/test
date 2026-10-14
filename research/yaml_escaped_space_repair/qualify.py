@@ -228,6 +228,16 @@ def main(proto,workspace,out):
         raise ValueError("ORIGINAL_SCANNER_PATCH_NOT_MATERIAL")
     patchfile=out/"scanner_escaped_space.patch"
     patchfile.write_text(patch_text)
+    retained=ROOT/"scanner_escaped_space.patch"
+    if not retained.is_file():
+        raise ValueError("DURABLE_SOURCE_BOUND_PATCH_NOT_RETAINED")
+    if sha(retained.read_bytes())!=sha(patchfile.read_bytes()):
+        raise ValueError("COMMITTED_PATCH_DIFFERS_FROM_ACTUALLY_VERIFIED_SOURCE_DIFF")
+    STATE["durable_original_patch"]={
+        "relative_path":"research/yaml_escaped_space_repair/scanner_escaped_space.patch",
+        "source_exact_sha256":sha(retained.read_bytes()),
+        "byte_for_byte_matches_native_qualified_diff":True
+    }
     # Fresh receiver deliberately starts from the same independent original
     # publisher source. Git's patch consumer does NOT import the generator.
     fresh=out/"independent-fresh-original-checkout"
