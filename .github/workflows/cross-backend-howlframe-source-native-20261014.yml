@@ -14,27 +14,31 @@ permissions:
 
 jobs:
   frozen-original-source:
-    name: Original HowlFrame Go source-derived tests and causal ablation
+    name: Protected source-native test contrast on Go ${{ matrix.go }}
     runs-on: ubuntu-22.04
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ['1.21.13', '1.23.9']
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23.9'
+          go-version: ${{ matrix.go }}
           cache: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Select original tests from exact contributor source and replay
-        run: python3 research/aria_scaling_trust/cross_backend_20261014/source_native_contrast.py
+      - name: Discover touched Go tests, preserve untouched older tests, replay and ablate
+        run: python3 research/aria_scaling_trust/cross_backend_20261014/requirement_conflict.py
       - name: Preserve all native source/verifier commands and the first failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: howlframe-external-source-native-contrast
+          name: howlframe-source-native-protected-conflict-${{ matrix.go }}
           path: research/aria_scaling_trust/cross_backend_20261014/native_evidence/
           if-no-files-found: warn
           retention-days: 90
