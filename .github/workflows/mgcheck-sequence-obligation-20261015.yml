@@ -31,10 +31,13 @@ jobs:
       - name: Compile unchanged observer and source-clone guard
         run: |
           python -m py_compile research/mgcheck_sequence_obligation_20261015/sequence_observer.py
+          python -m py_compile research/mgcheck_sequence_obligation_20261015/sequence_repair.py
           python -m py_compile research/mathgraph_obligation_compiler_20261015/observer_genesis.py
       - name: Execute frozen native Python collection contracts on source/head
         run: |
           python research/mgcheck_sequence_obligation_20261015/sequence_observer.py evidence/mgcheck-sequence-obligation-20261015
+      - name: Qualify source-consistent repair candidates
+        run: python research/mgcheck_sequence_obligation_20261015/sequence_repair.py evidence/mgcheck-sequence-obligation-20261015/repair
       - name: Preserve failures and complete source-native reports
         if: always()
         uses: actions/upload-artifact@v4
