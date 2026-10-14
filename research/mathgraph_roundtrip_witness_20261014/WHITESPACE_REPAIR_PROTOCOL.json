@@ -1,0 +1,73 @@
+{
+  "schema": "mathgraph.yaml-whitespace-fidelity-repair.v1",
+  "project": "source-exact native YAML string serialization",
+  "source_repo": "goccy/go-yaml",
+  "exact_source_commit": "72a4f95c648c844ef2f8ddbc009530be64ab4c41",
+  "preexisting_oracle": {
+    "original_1088_corpus_sha256": "86b3b2477024dec6cb57b82c3503d472132c5b50f2214bc34aa03afccfc8f2fe",
+    "original_1088_target_failures": 21,
+    "after_verified_first_repair_failures": 16,
+    "first_repair_run": 38553564584,
+    "first_repair_artifact": 11886954929,
+    "previous_verified_patch_blob": "5d7df07558ef5e93c22a97d05a597a2dc00db389",
+    "exposed_residuals": [
+      "whitespace_004",
+      "whitespace_024",
+      "whitespace_025",
+      "whitespace_034",
+      "whitespace_035",
+      "whitespace_042",
+      "whitespace_048",
+      "whitespace_056",
+      "whitespace_061",
+      "whitespace_068",
+      "whitespace_071",
+      "whitespace_077",
+      "whitespace_079",
+      "whitespace_082",
+      "whitespace_090",
+      "whitespace_092"
+    ]
+  },
+  "new_hypothesis": "The encoder should quote scalar strings containing literal tab, LF, or CR bytes by default, because YAML unquoted multiline and control characters are otherwise normalized, folded or misinterpreted.",
+  "human_selected_operation": "In token.IsNeedQuoted(value string), return true when strings.ContainsAny(value, \"\\t\\r\\n\"). Keep decoder, special-scalar map and explicit useLiteralStyleIfMultiline behavior unchanged.",
+  "one_implementation_file": "token/token.go",
+  "scope": "Default Marshal(map[string]any{\"value\":string}) then Unmarshal into map[string]any. No general YAML standard or explicit literal-style claim.",
+  "verification_arms": [
+    {
+      "name": "ORIGINAL",
+      "expected_failures": 21
+    },
+    {
+      "name": "SPECIAL_ONLY",
+      "expected_failures": 16
+    },
+    {
+      "name": "SPECIAL_PLUS_WHITESPACE",
+      "expected_failures": 0
+    },
+    {
+      "name": "WHITESPACE_REMOVED",
+      "expected_failures": 16
+    },
+    {
+      "name": "ALL_CHANGES_REMOVED",
+      "expected_failures": 21
+    }
+  ],
+  "other_gates": [
+    "exact source commit and byte/hash of original file",
+    "same immutable 1088 fixture bytes and native test across five arms",
+    "no new failures in 384 number-like, 384 punctuation, 128 keywords, 96 unicode, 96 whitespace classes beyond frozen residual",
+    "unchanged original Go test suite go test -count=1 ./... green on cumulative patch",
+    "restoring only whitespace change returns precisely prior 16 failures",
+    "restoring original source returns precisely prior 21 failures"
+  ],
+  "authority": "Human-formed hypothesis after inspecting failed examples; verifier-native qualification, not self-generated method.",
+  "provenance_controls": {
+    "no_external_repo_writes": true,
+    "no_third_party_outreach": true,
+    "no_live_app_publication": true,
+    "autonomous_method_genesis": "UNKNOWN"
+  }
+}
