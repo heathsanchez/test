@@ -4,6 +4,7 @@ from pathlib import Path
 import hashlib,json,subprocess
 from fractions import Fraction as F
 from decimal import Decimal as D
+from canonical_probe import extract as extract_scientific_abstract
 from rounding_envelope import (Unknown,nature,qattan_first,qattan_second,
     qattan_magnetic,rounded_covariance_envelope,unsafe_midpoint_only,
     independent_decimal_check)
@@ -13,7 +14,8 @@ OUT.mkdir(exist_ok=True)
 PUB_URL="https://journals.aps.org/prc/abstract/10.1103/f6gq-ghvh"
 # Frozen from separate original publisher source-probe run #38492414481,
 # BEFORE this qualification. Do not silently update to force acceptance.
-PUB_SHA="74c110d63bed05650e9ae13a9d5611ae80c77e4ac8fcfda99adeaa34fded0d4d"
+CANONICAL_PUBLISHER_ABSTRACT_SHA="e9edf0fe447fa17611608610ff9ead098fba23fb056547a544a394c738da7cb6"
+FIRST_RAW_WRAPPER_SHA="74c110d63bed05650e9ae13a9d5611ae80c77e4ac8fcfda99adeaa34fded0d4d"
 NATURE_AUTHOR_SHA="758181d221327797c87758f17cabfece0632a9f0394138da0c9ebac10d4b25f4"
 
 def get_source():
@@ -24,18 +26,27 @@ def get_source():
         raise Unknown("PUBLISHER_SOURCE_NOT_RETRIEVED:"+p.stderr[-200:])
     raw=raw_path.read_bytes()
     h=hashlib.sha256(raw).hexdigest()
-    if h!=PUB_SHA:
-        raise Unknown("ORIGINAL_PUBLISHER_BYTES_CHANGED_NO_WARRANT:"+h)
+    canonical=extract_scientific_abstract(raw)
+    if canonical.get("strategy")!="PUBLISHER_DESCRIPTION_META" or "abstract" not in canonical:
+        raise Unknown("SCIENTIFIC_ABSTRACT_NOT_EXTRACTED")
+    digest=hashlib.sha256(canonical["abstract"].encode("utf-8")).hexdigest()
+    if digest!=CANONICAL_PUBLISHER_ABSTRACT_SHA:
+        raise Unknown("SCIENTIFIC_ABSTRACT_CONTENT_CHANGED_NO_WARRANT:"+digest)
     needed=["f6gq-ghvh","0.854","0.851","2012","2015","stat","sys"]
     text=raw.decode("utf-8",errors="replace").lower()
     matched={t:t.lower() in text for t in needed}
     if not all(matched.values()):
-        raise Unknown("PUBLISHER_ABSTRACT_SOURCE_ANCHORS_MISSING:"+str(matched))
-    altered=bytearray(raw); altered[10]^=1
-    if hashlib.sha256(altered).hexdigest()==PUB_SHA:
-        raise AssertionError("SOURCE_MUTATION_NOT_DETECTED")
-    return {"source":"original_prc_abstract_html",
-      "url":PUB_URL,"sha256":h,"bytes":len(raw),"matched":matched,
+        raise Unknown("PUBLISHER_SOURCE_ANCHORS_MISSING:"+str(matched))
+    altered=canonical["abstract"].replace("0.851","0.850",1)
+    if hashlib.sha256(altered.encode()).hexdigest()==digest:
+        raise AssertionError("SCIENTIFIC_CONTENT_MUTATION_NOT_DETECTED")
+    return {"source":"original_prc_canonical_abstract_content",
+      "url":PUB_URL,"canonical_sha256":digest,
+      "canonical_source_probe":"https://github.com/heathsanchez/test/actions/runs/38492956938",
+      "raw_transport_sha256":h,"raw_bytes":len(raw),
+      "raw_html_equal_first_probe":h==FIRST_RAW_WRAPPER_SHA,
+      "source_content_not_full_bytes":True,
+      "matched":matched,
       "publisher_full_pdf":"INACCESSIBLE_401",
       "semantic_mapping":"HUMAN_DECLARED_NOT_AUTONOMOUS"}
 
@@ -74,7 +85,7 @@ def main():
     except Unknown as exc:
         assert str(exc)=="MEASURAND_MISMATCH"
     result={
-      "status":"WARRANTED_BOUNDED_ROUNDING_SAFE_COVARIANCE_INDEPENDENT_COMPARISON",
+      "status":"WARRANTED_BOUNDED_SOURCE_CONTENT_ROUNDING_SAFE_CONTRAST",
       "source":src,"inherited_source":v2["source_retrieval"]["nature2026"],
       "independent_raw_scattering_experiments_added":0,
       "scattering_source_event_count":1,"scattering_fit_approaches_count":2,
@@ -89,7 +100,7 @@ def main():
       "new_effective_semantic_extraction_method":"NOT_GENERATED_HUMAN_ADAPTER",
       "independent_theory_qed_recheck":False,
       "independent_baseline":"EXACT_FRACTION_AGREES_WITH_DECIMAL",
-      "full_source_claim_statement_binding":"NOT_CHECKED_ONLY_SOURCE_TEXT_ANCHORS",
+      "full_source_claim_statement_binding":"NOT_CHECKED_CANONICAL_ABSTRACT_PLUS_MANUAL_MAPPING",
       "cross_source_likelihood_pooled":"WITHHELD",
       "autonomous_experiment_design":"UNKNOWN",
       "E2E_SYSTEM_L7":"UNKNOWN"}
