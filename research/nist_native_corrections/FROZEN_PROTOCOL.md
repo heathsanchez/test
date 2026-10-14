@@ -1,0 +1,19 @@
+# Native two-presentation affine consequence test — frozen before implementation
+
+## Scope
+Isolated branch from qualified immutable-source V2 head f8d8376f51f4d9cc9c4bfbfe325b19202c2e867a. No original paper, NIST, previous results, main or upstream changes.
+
+**Original frozen sources**
+- Bullis 2026, arXiv v1 immutable original PDF https://arxiv.org/pdf/2604.26401v1 ; SHA256 79b0e291be20049b5df9bf895722c6b39a4c2e68e5e17bc86669de5a6e0ebe7e . Table I has three columns (2S–8S/9S/10S), each source row has value and explicit standard uncertainty in parentheses. Its first numerical row is "ac Stark shift corrected"; seven following numerical rows are signed additive corrections; last row "Final measured value". Verifier must derive all 3 exact reported values, and standard uncertainty by RSS of the eight components, agreeing within the source's two-decimal rounding. Do not falsely treat the resulting three corrected frequencies as independent of their original input table.
+- Maisenbacher 2026, arXiv v1 original PDF https://arxiv.org/pdf/2602.14980v1 ; SHA256 758181d221327797c87758f17cabfece0632a9f0394138da0c9ebac10d4b25f4 . Independently presented Eq 7 centroid from source figures ν1/2=730,690,111,486.30(69) kHz, ν3/2=730,690,516,650.91(66) kHz and published hyperfine offset −132,985.25(1) kHz with coefficients 1/3,2/3,+1. Verify exactly 730,690,248,610.79 kHz. Source reports standard uncertainty 0.48 kHz: naïve independent-input RSS can differ due covariance and rounding. If no complete covariance, declare UNCERTAINTY_REPRODUCTION_UNKNOWN rather than infer independence/covariance. Coefficients/semantic meaning are **manually typed from Eq 7**, not learned automatically.
+
+## Hypothesis / failure criteria
+One generic exact affine kernel must handle both input presentations, without branch-specific arithmetic. First case values must be **read from the source PDF text** instead of copying the final numbers from fixture. Second case is held-out equation presentation using the same kernel, albeit with human-declared coefficients and manually keyed source values checked against original PDF text.
+- For Bullis Table I: parse original PDF text table generically as sequence of 3-column signed value/standard uncertainty rows, not per-row hard-coded values. Validate number of expected rows and unique final output labels; reject missing rows, altered sign, error-value transcription, repeated or omitted correction rows. Ensure all three final values and published sigmas are reproduced. Record source row labels, pages, source PDF exact digest, calculation and control statuses.
+- Withhold final targets from the computation; read printed final row only to check outputs. The kernel must not use them as inputs.
+- Same kernel must compute Nature's centroid from different source-presentation map, using exact rational (1/3,2/3,1) coefficients. The output frequency must match paper's published centroid. The published 0.48 kHz standard uncertainty cannot be inferred from only the three printed marginal uncertainties; refuse independent-RSS warrant (even if close).
+- Negative controls: delete one Bullis correction (output changes); flip one sign; scramble columns; mutate source byte; wrong unit; corrupt one output target; identify missing covariance as UNKNOWN. Conditional expected observations must stay exact and original sources remain unchanged.
+- Statistically correct matched conventional baseline is normal Decimal/Fraction arithmetic. No claim of outperforming a mature metrology tool, source-semantic autonomy, unbounded induction, new physics, real third-party adoption, or autonomous optimal experiment design.
+
+## Evidence criteria
+Exact pinned GitHub Actions run with all adversarial tests green, retained logs/JSON, source identity, limitations and ROS checkpoint. Any failure preserves its negative lineage and must not upgrade the result.
