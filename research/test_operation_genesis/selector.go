@@ -22,8 +22,6 @@ import (
  "strings"
  "unicode"
 )
-const basePin="7bcea74f8c32f689578555359a3bfd9c517ca8b0"
-const headPin="9ab94ddad9f74ed2ad96d903cb6d8a127323a481"
 func git(where string, input []byte, args ...string)([]byte,error){
  cmd:=exec.Command("git",append([]string{"-C",where},args...)...)
  if input!=nil {cmd.Stdin=bytes.NewReader(input)}
@@ -64,22 +62,26 @@ func main(){
  base:=flag.String("base","","original predecessor Git directory")
  head:=flag.String("head","","original author revision Git directory")
  out:=flag.String("out","","manifest output JSON file")
- wantedBase:=flag.String("base-sha",basePin,"frozen expected base source")
- wantedHead:=flag.String("head-sha",headPin,"frozen expected author source")
+ sourceRepo:=flag.String("source-repo","","original independent upstream owner/repo")
+ wantedBase:=flag.String("base-sha","","frozen expected base source")
+ wantedHead:=flag.String("head-sha","","frozen expected author source")
  flag.Parse()
  require(*base!="" && *head!="" && *out!="","MISSING_ARG")
- require(*wantedBase==basePin&&*wantedHead==headPin,"FROZEN_SOURCE_PIN_CHANGED")
- rev0,e:=git(*base,nil,"rev-parse","HEAD");require(e==nil&&strings.TrimSpace(string(rev0))==basePin,"BASE_SOURCE_IDENTITY_INVALID")
- rev1,e:=git(*head,nil,"rev-parse","HEAD");require(e==nil&&strings.TrimSpace(string(rev1))==headPin,"HEAD_SOURCE_IDENTITY_INVALID")
- changed,e:=git(*head,nil,"diff","--name-only",basePin,headPin,"--","*_test.go")
+ require(regexp.MustCompile("^[a-f0-9]{40}$").MatchString(*wantedBase) &&
+   regexp.MustCompile("^[a-f0-9]{40}$").MatchString(*wantedHead) &&
+   regexp.MustCompile("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").MatchString(*sourceRepo) &&
+   *wantedBase!=*wantedHead,"BAD_SOURCE_IDENTITY_PINS")
+ rev0,e:=git(*base,nil,"rev-parse","HEAD");require(e==nil&&strings.TrimSpace(string(rev0))==*wantedBase,"BASE_SOURCE_IDENTITY_INVALID")
+ rev1,e:=git(*head,nil,"rev-parse","HEAD");require(e==nil&&strings.TrimSpace(string(rev1))==*wantedHead,"HEAD_SOURCE_IDENTITY_INVALID")
+ changed,e:=git(*head,nil,"diff","--name-only",*wantedBase,*wantedHead,"--","*_test.go")
  require(e==nil,"SOURCE_DIFF_UNAVAILABLE")
  selected:=[]Selection{}
  files:=[]FileOrigin{}
  for _,name:=range strings.Split(strings.TrimSpace(string(changed)),"\n") {
   if name==""{continue}
   require(strings.HasSuffix(name,"_test.go")&&!strings.HasPrefix(name,"../"),"TEST_SOURCE_PATH_UNSAFE")
-  after,e:=git(*head,nil,"show",headPin+":"+name);require(e==nil,"HEAD_TEST_BYTES_MISSING")
-  before,e:=git(*head,nil,"show",basePin+":"+name)
+  after,e:=git(*head,nil,"show",*wantedHead+":"+name);require(e==nil,"HEAD_TEST_BYTES_MISSING")
+  before,e:=git(*head,nil,"show",*wantedBase+":"+name)
   if e!=nil {before=nil}
   newest,e:=originalTests(after,name);require(e==nil,"GO_AST_INVALID_HEAD")
   older,e:=originalTests(before,name);require(e==nil,"GO_AST_INVALID_BASE")
@@ -96,7 +98,7 @@ func main(){
  require(len(selected)>0&&len(selected)<30,"UNKNOWN_NO_NEW_NATIVE_TEST_OPERATION")
  changedFiles:=[]string{}
  for _,f:=range files{changedFiles=append(changedFiles,f.File)}
- patch,e:=git(*head,nil,append([]string{"diff","--binary",basePin,headPin,"--"},changedFiles...)...)
+ patch,e:=git(*head,nil,append([]string{"diff","--binary",*wantedBase,*wantedHead,"--"},changedFiles...)...)
  require(e==nil&&len(patch)>0,"TEST_ONLY_PATCH_UNAVAILABLE")
  _,e=git(*base,patch,"apply","--check","-");require(e==nil,"TEST_ONLY_PATCH_CANNOT_APPLY")
  _,e=git(*base,patch,"apply","-");require(e==nil,"TEST_ONLY_PATCH_FAILED")
@@ -112,7 +114,7 @@ func main(){
  }
  result:=map[string]any{
   "schema":"metalogic.original-go-source-test-operation-extraction.v1",
-  "repo":"goccy/go-json","base_sha":basePin,"head_sha":headPin,
+  "repo":*sourceRepo,"base_sha":*wantedBase,"head_sha":*wantedHead,
   "source_test_operation_selection":"GO_AST_NEW_AUTHOR_TEST_FUNCTIONS",
   "test_source_authorship":"ORIGINAL_UPSTREAM_CONTRIBUTOR",
   "selector_implementation_authorship":"HUMAN_WRITTEN_GENERIC_GO_AST",

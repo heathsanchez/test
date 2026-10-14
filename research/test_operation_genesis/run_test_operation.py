@@ -29,7 +29,7 @@ def run(package, names, workdir):
     original_fails=[n for n in names if "run" in statuses[n] and "fail" in statuses[n]]
     original_passes=[n for n in names if "run" in statuses[n] and "pass" in statuses[n]]
     assertion_events=[e.get("Output","") for e in events
-                      if e.get("Test") in original_fails and
+                      if any(e.get("Test","")==n or e.get("Test","").startswith(n+"/") for n in original_fails) and
                       (re.search(r"\.go:[0-9]+:",e.get("Output","")) or
                        re.search(r"\b(?:got|want|mismatch)\b",e.get("Output","")))]
     return {"status":"COMPLETE" if all("run" in actions for actions in statuses.values()) else "TEST_DISCOVERY_INCOMPLETE",

@@ -1,0 +1,59 @@
+name: MathGraph source-derived test operation transfer - frozen TOML original
+on:
+  push:
+    branches:
+      - mathgraph-source-derived-go-test-transfer-toml-20261014-v1
+    paths:
+      - 'research/test_operation_genesis/**'
+      - '.github/workflows/mathgraph-test-operation-transfer-toml.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-native-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TZ: America/New_York
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: BurntSushi/toml
+          ref: 24ca3d8dcb474537da393351a75ccaa42c65cae4
+          path: source/toml/head
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Pin actual original TOML author HEAD and predecessor, make immutable worktrees
+        run: |
+          set -euo pipefail
+          test "$(git -C source/toml/head rev-parse HEAD)" = 24ca3d8dcb474537da393351a75ccaa42c65cae4
+          test "$(git -C source/toml/head rev-parse HEAD^)" = 277ecb0abd5e5945cf4c0a5cf3668759a27aa7fd
+          git -C source/toml/head worktree add --detach ../base 277ecb0abd5e5945cf4c0a5cf3668759a27aa7fd
+          git -C source/toml/head worktree add --detach ../pristine 277ecb0abd5e5945cf4c0a5cf3668759a27aa7fd
+      - name: GENERAL original Go AST operation selector, no named target test or semantic manifest
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/toml-operation"
+          go run research/test_operation_genesis/selector.go             --source-repo BurntSushi/toml             --base-sha 277ecb0abd5e5945cf4c0a5cf3668759a27aa7fd             --head-sha 24ca3d8dcb474537da393351a75ccaa42c65cae4             --base source/toml/base --head source/toml/head             --out "$RUNNER_TEMP/toml-operation/manifest.json"
+      - name: Native exact-source original test under controlled non-UTC
+        run: |
+          set -euo pipefail
+          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/toml-operation/manifest.json"             --base source/toml/base --head source/toml/head             --out "$RUNNER_TEMP/toml-operation/native.json"
+      - name: Actual untouched predecessor ablation and typed source withdrawal
+        run: |
+          set -euo pipefail
+          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/toml-operation/manifest.json"             --base source/toml/base --head source/toml/head             --pristine source/toml/pristine --ablate             --out "$RUNNER_TEMP/toml-operation/ablation.json"
+          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/toml-operation/manifest.json"             --base source/toml/base --head source/toml/head --withdraw             --out "$RUNNER_TEMP/toml-operation/withdrawal.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: source-derived-go-operation-fourth-family
+          path: ${{ runner.temp }}/toml-operation/
+          if-no-files-found: ignore
