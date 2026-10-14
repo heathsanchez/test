@@ -5,6 +5,8 @@ on:
       - mathgraph-roundtrip-unseen-witness-20261014-v1
     paths:
       - 'research/mathgraph_roundtrip_witness_20261014/repair_native.py'
+      - 'research/mathgraph_roundtrip_witness_20261014/special_scalar_fidelity_test.go'
+      - 'research/mathgraph_roundtrip_witness_20261014/SPECIAL_SCALAR_REPAIR_PROTOCOL.json'
       - '.github/workflows/mathgraph-special-scalar-repair-20261014.yml'
   workflow_dispatch:
 permissions:
