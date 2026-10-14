@@ -7,7 +7,7 @@ pinned public YAML-specification fixture plus source-derived metamorphic
 variants; their expected semantic values come from independent PyYAML.
 """
 from __future__ import annotations
-import argparse,hashlib,json,os,pathlib,re,shutil,subprocess,sys,time
+import argparse,difflib,hashlib,json,os,pathlib,re,shutil,subprocess,sys,time
 import yaml
 
 ROOT=pathlib.Path(__file__).resolve().parent
@@ -216,6 +216,60 @@ def main(proto,workspace,out):
         raise ValueError("SOURCE_ESCAPED_WHITESPACE_NATIVE_REPAIR_NOT_QUALIFIED")
     if (original/u["scanner_file"]).read_text()!=scanner_source:
         raise ValueError("PUBLISHER_ORIGINAL_SOURCE_CHANGED")
+    # Turn the exactly accepted candidate into an auditable portable patch.
+    selected_source=patch_source(scanner_source,"PRESERVE_EXPLICIT_ESCAPED_SPACE_INDEX")
+    if sha(selected_source.encode())!=approved[0]["source_sha256"]:
+        raise ValueError("PORTABLE_PATCH_SOURCE_DIFFERS_FROM_NATIVE_QUALIFIED_CANDIDATE")
+    patch_text="".join(difflib.unified_diff(
+       scanner_source.splitlines(keepends=True),
+       selected_source.splitlines(keepends=True),
+       fromfile="a/"+u["scanner_file"],tofile="b/"+u["scanner_file"]))
+    if not patch_text or "scanDoubleQuote" not in scanner_source:
+        raise ValueError("ORIGINAL_SCANNER_PATCH_NOT_MATERIAL")
+    patchfile=out/"scanner_escaped_space.patch"
+    patchfile.write_text(patch_text)
+    # Fresh receiver deliberately starts from the same independent original
+    # publisher source. Git's patch consumer does NOT import the generator.
+    fresh=out/"independent-fresh-original-checkout"
+    source_compiler.native_overlay(original,fresh)
+    check=go(["git","apply","--check",str(patchfile)],fresh,25)
+    if check["exit"]!=0:
+        raise ValueError("PORTABLE_PATCH_NOT_APPLICABLE_TO_ORIGINAL_SOURCE")
+    applied=go(["git","apply",str(patchfile)],fresh,25)
+    if applied["exit"]!=0:
+        raise ValueError("PORTABLE_PATCH_FAILED_TO_APPLY")
+    if sha((fresh/target_dir).read_bytes())!=sha(selected_source.encode()):
+        raise ValueError("PORTABLE_PATCH_SOURCE_BYTES_DIFFER")
+    fresh_native,_=run_test_program(fresh,out,base_modfile,code,names,"cold-restart")
+    fresh_suite=go(["go","test","-count=1","-timeout=120s","./..."],
+                   fresh,420,{"GOFLAGS":"-modfile="+str(base_modfile)})
+    if (fresh_native["exit"]!=0 or fresh_suite["exit"]!=0 or
+        not all(x["PASS"] for x in fresh_native["individual_method_observations"].values())):
+        raise ValueError("PORTABLE_PATCH_COLD_REBUILD_DID_NOT_PRESERVE_ALL_NATIVE_WARRANTS")
+    # Negative: mutate a line that the patch's source contract explicitly
+    # requires; a different scanner implementation must NOT inherit warrant.
+    altered_original=scanner_source.replace(
+        "if value[i] == ' ' {","if value[i] == '\\t' {",1)
+    if altered_original==scanner_source:
+        raise ValueError("PATCH_ANCESTOR_MUTATION_NOT_CONSTRUCTED")
+    forged=out/"mutated-source-negative"
+    source_compiler.native_overlay(original,forged)
+    (forged/target_dir).write_text(altered_original)
+    rejected=go(["git","apply","--check",str(patchfile)],forged,25)
+    if rejected["exit"]==0:
+        raise ValueError("SOURCE_CHANGED_BUT_PATCH_STILL_AUTHORIZED")
+    STATE["portable_patch"]={
+       "artifact_name":"scanner_escaped_space.patch",
+       "diff_sha256":sha(patchfile.read_bytes()),
+       "original_git_blob":u["scanner_git_blob"],
+       "qualified_patched_source_sha256":sha(selected_source.encode()),
+       "fresh_git_apply_check":"PASS",
+       "fresh_apply":"PASS",
+       "fresh_original_scanner_rebuilt_from_publisher":"PASS",
+       "fresh_native_source_generated_tests":fresh_native,
+       "fresh_original_full_go_suite":fresh_suite,
+       "source_mutation_patch_refused":"PASS",
+       "no_upstream_code_mutated":True}
     STATE["result"]="WARRANTED_BOUNDED_SOURCE_NATIVE_ESCAPED_WHITESPACE_REPAIR_IN_SCRATCH"
     STATE["negative_controls"]={
        "source_original_byte_pin":"PASS",
