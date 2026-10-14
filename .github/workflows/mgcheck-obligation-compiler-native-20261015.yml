@@ -1,0 +1,40 @@
+name: MathGraph Check / original native observer synthesis
+
+on:
+  push:
+    branches:
+      - research/mgcheck-obligation-compiler-native-20261015
+    paths:
+      - research/mathgraph_obligation_compiler_20261015/**
+      - .github/workflows/mgcheck-obligation-compiler-native-20261015.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-stateful-observer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Check out exact owned research source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup native Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install independent native test baseline
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Qualify original stateful methods and source guards
+        id: test
+        run: |
+          python research/mathgraph_obligation_compiler_20261015/observer_genesis.py evidence/mgcheck-observer-native-20261015
+      - name: Upload complete native and negative evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgcheck-stateful-observer-native-evidence
+          path: evidence/mgcheck-observer-native-20261015/
+          if-no-files-found: warn
