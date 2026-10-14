@@ -27,7 +27,7 @@ def parse(path):
     learned={}
     for label in ("chi","stdlib"):
         m2=re.search(r"MATHGRAPH_OBSERVATIONAL_QUOTIENT oracle="+label+
-                     r" histories=(\\d+) probes=(\\d+) classes=(\\d+) holdoutQueries=(\\d+) distinguishedPairs=(\\d+)",text)
+                     r" histories=(\d+) probes=(\d+) classes=(\d+) holdoutQueries=(\d+) distinguishedPairs=(\d+)",text)
         assert m2, "MISSING_OBSERVATIONAL_QUOTIENT_"+label
         values=[int(q) for q in m2.groups()]
         assert values==[121,40,9,9801,36], ("UNQUALIFIED_OBSERVATIONAL_QUOTIENT",label,values)
