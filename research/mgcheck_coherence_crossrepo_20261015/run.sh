@@ -26,7 +26,7 @@ curl -fLsS \
 printf '2ab47701fa213e417b528ccd2e46a9233143c9b5191bd2c5aea112a24412d057  %s\n' "$E/a_previous_source_evidence.zip" | sha256sum -c
 for rev in base head; do
   for family in b c; do
-    python3 "$DIR/native_bridge.py" "$ROOT/workspaces/$family_$rev" "$family" "$rev" "$E" | tee "$E/$family_$rev.stdout"
+    python3 "$DIR/native_bridge.py" "$ROOT/workspaces/$family"_"$rev" "$family" "$rev" "$E" | tee "$E/$family"_"$rev".stdout
   done
 done
 python3 - "$ROOT/workspaces" "$E" <<'PY'
