@@ -1,0 +1,127 @@
+name: MathGraph Check - frozen cross-repository coherence transfer
+on:
+  push:
+    branches: [research/mgcheck-coherence-source-distinct-toml-20261015]
+    paths:
+      - research/mgcheck_cross_repo_coherence_20261015/**
+      - .github/workflows/mgcheck-cross-repo-coherence.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original-native-acquired-capability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile and preserve preregistered source grammar
+        run: |
+          python -m py_compile research/mgcheck_cross_repo_coherence_20261015/*.py
+          test -s research/mgcheck_cross_repo_coherence_20261015/FROZEN_PROTOCOL.md
+      - name: Read ONLY prior qualified source A native receipt and policy
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/cross-repo-native/source_A
+          gh run download 38639050079 --repo heathsanchez/test \
+            --name native-flash-v11-cross-future-observation-basis \
+            --dir evidence/cross-repo-native/source_A
+          root=evidence/cross-repo-native/source_A
+          test -s "$root/learned_capability_A.json"
+          test -s "$root/frozen_A_capability_sha256.txt"
+          (cd "$root" && sha256sum -c frozen_A_capability_sha256.txt)
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path("evidence/cross-repo-native/source_A/learned_capability_A.json").read_text())
+          assert a["source_A"]=={"old":"7ab7469addd60e03ca3bfbb1287642e8d771e1c0","head":"dcdfda3f825189c7f31048b6598142a944151073"}
+          assert a["selected_channels"]==["coherence"]
+          assert a["original_v11_solver_blob"]=="0f7fb6b837cd65aa86b5fef7c097196fc0df4845"
+          print("FROZEN_SOURCE_A_POLICY_ACCEPTED:",a["selected_channels"])
+          PY
+      - name: Obtain immutable upstream original uiri/toml source snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mgcheck-toml-origin
+          git -C /tmp/mgcheck-toml-origin init -q
+          git -C /tmp/mgcheck-toml-origin remote add origin https://github.com/uiri/toml.git
+          native_worktree() {
+            name="$1"; sha="$2"; pr="$3"
+            if ! git -C /tmp/mgcheck-toml-origin fetch -q --depth=1 origin "$sha"; then
+              git -C /tmp/mgcheck-toml-origin fetch -q --depth=1 origin "pull/$pr/head"
+            fi
+            git -C /tmp/mgcheck-toml-origin worktree add -q --detach "/tmp/mgcheck-toml-$name" "$sha"
+            test "$(git -C /tmp/mgcheck-toml-$name rev-parse HEAD)" = "$sha"
+            test -z "$(git -C /tmp/mgcheck-toml-$name status --porcelain)"
+          }
+          native_worktree T1old 3f637dba5f68db63d4b30967fedda51c82459471 367
+          native_worktree T1head e879373d2e86a02c1d9b13438e6dadfdad935577 367
+          native_worktree T2old 3f637dba5f68db63d4b30967fedda51c82459471 349
+          native_worktree T2head 99d17a24e137e2d2a5118e468b0d06e0d2065739 349
+          native_worktree T3old 65bab7582ce14c55cdeec2244c65ea23039c9e6f 453
+          native_worktree T3head c97a49cfe10f584a36ea5746fe651331d3c777ab 453
+      - name: Execute frozen original native source on all three historical PRs
+        shell: bash
+        run: |
+          set -euo pipefail
+          p=research/mgcheck_cross_repo_coherence_20261015/cross_source_native.py
+          root=evidence/cross-repo-native
+          python "$p" native /tmp/mgcheck-toml-T1old 3f637dba5f68db63d4b30967fedda51c82459471 T1 old "$root/T1old.json"
+          python "$p" native /tmp/mgcheck-toml-T1head e879373d2e86a02c1d9b13438e6dadfdad935577 T1 head "$root/T1head.json"
+          python "$p" native /tmp/mgcheck-toml-T2old 3f637dba5f68db63d4b30967fedda51c82459471 T2 old "$root/T2old.json"
+          python "$p" native /tmp/mgcheck-toml-T2head 99d17a24e137e2d2a5118e468b0d06e0d2065739 T2 head "$root/T2head.json"
+          python "$p" native /tmp/mgcheck-toml-T3old 65bab7582ce14c55cdeec2244c65ea23039c9e6f T3 old "$root/T3old.json"
+          python "$p" native /tmp/mgcheck-toml-T3head c97a49cfe10f584a36ea5746fe651331d3c777ab T3 head "$root/T3head.json"
+      - name: Apply PREVIOUS source A selected method without target learning
+        shell: bash
+        run: |
+          set -euo pipefail
+          p=research/mgcheck_cross_repo_coherence_20261015/cross_source_native.py
+          root=evidence/cross-repo-native
+          (cd "$root/source_A" && sha256sum -c frozen_A_capability_sha256.txt)
+          python "$p" transfer "$root/source_A/learned_capability_A.json" "$root" "$root/cross_repo_transfer_report.json"
+          (cd "$root/source_A" && sha256sum -c frozen_A_capability_sha256.txt)
+      - name: Archive all original native evidence even when hypothesis RED
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-cross-repository-native-coherence
+          path: evidence/cross-repo-native/
+          retention-days: 30
+  independent-receiver-reconstruction:
+    needs: original-native-acquired-capability
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: frozen-cross-repository-native-coherence
+          path: evidence/receiving
+      - name: Reconstruct native source/semantic classifications independently
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/mgcheck_cross_repo_coherence_20261015/independent_receiver.py
+          python research/mgcheck_cross_repo_coherence_20261015/independent_receiver.py \
+            evidence/receiving evidence/receiving/source_A/learned_capability_A.json
+          mkdir -p evidence/independent
+          cp evidence/receiving/independent_receiver_audit.json evidence/independent/
+          sha256sum evidence/independent/independent_receiver_audit.json > evidence/independent/audit_sha256.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-cross-repo-coherence-audit
+          path: evidence/independent/
+          retention-days: 30
