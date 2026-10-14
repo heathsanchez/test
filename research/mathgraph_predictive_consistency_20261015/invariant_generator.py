@@ -231,15 +231,20 @@ def run_worker(root, subject, sha, noobserver=False):
     cmd=[sys.executable,str(pathlib.Path(__file__).resolve()),"worker",
          json.dumps({"root":str(root),"subject":subject,"sha":sha,
                      "noobserver":noobserver})]
-    p=prior.call(cmd,timeout=80)
-    if p["code"]:
-        return {"status":"UNKNOWN_WORKER_ERROR","stderr":p["stderr"][-500:]}
+    started=time.monotonic()
     try:
-        result=json.loads(p["stdout"])
-        result["elapsed_seconds"]=p["seconds"]
+        p=subprocess.run(cmd,capture_output=True,text=True,check=False,timeout=80)
+    except subprocess.TimeoutExpired:
+        return {"status":"UNKNOWN_WORKER_TIMEOUT"}
+    if p.returncode:
+        return {"status":"UNKNOWN_WORKER_ERROR","stderr":p.stderr[-700:]}
+    try:
+        result=json.loads(p.stdout)
+        result["elapsed_seconds"]=round(time.monotonic()-started,4)
         return result
     except Exception:
-        return {"status":"UNKNOWN_WORKER_OUTPUT","error":p["stdout"][-500:]}
+        return {"status":"UNKNOWN_WORKER_OUTPUT","error":p.stdout[-700:],
+                "stdout_size":len(p.stdout)}
 
 def controls(subject,trees,target):
     removed=run_worker(trees["base"],subject,target["base"],True)
