@@ -1,0 +1,51 @@
+{
+  "schema": "mathgraph-check.review-input.v1",
+  "reviewer_source": "review-bench/ReviewBench@5bba258937cc7d43577ce9a81a389a6550a20fa9/golden/allan-mobley-jr_gimmes_468-e1477f8b.json",
+  "input_source": "Published original reviewer comments only; TP/FP adjudications excluded from runtime inputs",
+  "subject": {
+    "repo": "allan-mobley-jr/gimmes",
+    "pr": 468,
+    "head": "e1477f8b3f18c1de6ff87dbca9465a7b106dc193",
+    "base": "08efd0bbc34fd29de2a4077f07d24f3dc02a63b6"
+  },
+  "prior_native_run": {
+    "run_id": 38638946524,
+    "artifact_id": 11929207814,
+    "sha256": "0e567242796ff0a68fadb4ded8fe754b0721c450b221d5733b9edad1be793fbe"
+  },
+  "findings": [
+    {
+      "key": "historical-volume-fallback",
+      "file": "src/gimmes/strategy/staleness.py",
+      "start_line": 72,
+      "end_line": 79,
+      "review_message": "`volume = m.volume_24h if m.volume_24h > 0 else m.volume` falls back to the lifetime cumulative `volume` field when `volume_24h` is zero. Any market with nonzero historical cumulative volume (even if completely inactive for months) will satisfy `has_volume >= volume_floor` and never be considered stale. This makes the fallback path counterproductive: it's intended to handle missing 24h data but actually permanently exempts high-history dead markets from staleness filtering.",
+      "producer": "llm_review:claude-sonnet-4.6",
+      "proof_role": "native_separable",
+      "contract_context": "Zero recent 24h volume, unchanged price and unchanged OI must count as inactive despite historic cumulative volume"
+    },
+    {
+      "key": "old-open-interest-migration",
+      "file": "src/gimmes/strategy/staleness.py",
+      "start_line": 80,
+      "end_line": 80,
+      "review_message": "`oi_changed = oi != entry.get(\"open_interest\", 0)` defaults the missing field to 0. On first load of an old `scan_staleness.json` (without `open_interest`), every market with nonzero OI — essentially all real markets — will have `oi_changed=True`, resetting their accumulated stale count to 0. This silently voids all previously-built-up staleness state on migration, making the filter ineffective for another full `staleness_cycles` rounds.",
+      "producer": "llm_review:claude-sonnet-4.6",
+      "proof_role": "unresolved_normative",
+      "contract_context": "Whether old counter resets on schema migration are acceptable requires a separate migration contract"
+    },
+    {
+      "key": "absolute-volume-floor",
+      "file": "src/gimmes/strategy/staleness.py",
+      "start_line": 79,
+      "end_line": 79,
+      "review_message": "`has_volume = volume >= volume_floor` checks current absolute volume against a fixed floor, not whether trading activity changed between cycles. A market with a consistently stagnant 10-15 contracts/day will never accumulate a stale count and will never be filtered, even though it is essentially dead. The old `volume_spike_ratio` checked for a relative increase in volume (i.e., actual new activity) — the replacement checks only for presence of volume above a minimum, conflating \"some volume exists\" with \"trading just happened\".",
+      "producer": "llm_review:claude-sonnet-4.6",
+      "proof_role": "unresolved_normative",
+      "contract_context": "Whether the floor should be relative is a maintainer policy decision; present targeted tests encode absolute floor"
+    }
+  ],
+  "reviewer_alone_proposals": 3,
+  "creator_note": "Human selected original strong-reviewer comments; this is retrospective post-review verification, not prospective discovery",
+  "merge_authority": "UNKNOWN"
+}
