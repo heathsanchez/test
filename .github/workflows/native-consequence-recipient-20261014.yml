@@ -1,0 +1,85 @@
+name: Native consequence recipient - three source families read-only
+
+on:
+  push:
+    branches:
+      - research/native-consequence-recipient-20261014
+    paths:
+      - research/aria_scaling_trust/consequence_recipient/**
+      - .github/workflows/native-consequence-recipient-20261014.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recipient:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Retrieve exact original Actions evidence and protected source files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,pathlib,urllib.request
+          home=pathlib.Path('research/aria_scaling_trust/consequence_recipient')
+          target=home/'inputs'
+          target.mkdir(parents=True,exist_ok=True)
+          policy=home.joinpath('policy.json').read_bytes()
+          assert hashlib.sha1(b'blob '+str(len(policy)).encode()+b'\0'+policy).hexdigest() == '1374343177ac75b0cfbfa154a87fafc26d91fe92'
+          p=json.loads(policy)
+          for item in p['artifacts']:
+              url='https://api.github.com/repos/heathsanchez/test/actions/artifacts/'+str(item['id'])+'/zip'
+              req=urllib.request.Request(url,headers={
+                  'Accept':'application/vnd.github+json',
+                  'User-Agent':'MathGraphConsequenceRecipient',
+                  'Authorization':'Bearer '+os.environ['GH_TOKEN']
+              })
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  raw=r.read(500001)
+              assert len(raw)<500001 and hashlib.sha256(raw).hexdigest()==item['sha256'],'CI_ARTIFACT_PIN_MISMATCH'
+              (target/(item['name']+'.zip')).write_bytes(raw)
+              print('SOURCE_ARTIFACT_AUTHORIZED',item['name'],len(raw),flush=True)
+          protected=next(x for x in p['sources'] if x['kind']=='NATIVE_GO_PROTECTED_TEST')
+          member='internal/backend/wasm/ssa_serializer_test.go'
+          for name,commit,key in [('base',protected['source_base'],'source_go_file_blob_original'),
+                                  ('head',protected['source_head'],'source_go_file_blob_head')]:
+              url='https://raw.githubusercontent.com/'+protected['repository']+'/'+commit+'/'+member
+              req=urllib.request.Request(url,headers={'User-Agent':'MathGraphConsequenceRecipient'})
+              with urllib.request.urlopen(req, timeout=45) as r:
+                  raw=r.read(400001)
+              actual=hashlib.sha1(b'blob '+str(len(raw)).encode()+b'\0'+raw).hexdigest()
+              assert len(raw)<400001 and actual==protected[key], 'ORIGINAL_GO_TEST_PIN_MISMATCH'
+              (target/('original-go-test-'+name+'.go')).write_bytes(raw)
+              print('ORIGINAL_TEST_SOURCE_AUTHORIZED',name,actual,flush=True)
+          PY
+      - name: Syntax and independent adversarial receipt tests
+        run: |
+          python -m py_compile research/aria_scaling_trust/consequence_recipient/consume.py
+          cd research/aria_scaling_trust/consequence_recipient
+          python -m unittest -v test_consume.py
+      - name: Independently receive and render three original source-native receipts
+        run: |
+          python research/aria_scaling_trust/consequence_recipient/consume.py \
+            --policy research/aria_scaling_trust/consequence_recipient/policy.json \
+            --external-git-blob 1374343177ac75b0cfbfa154a87fafc26d91fe92 \
+            --archives research/aria_scaling_trust/consequence_recipient/inputs \
+            --out research/aria_scaling_trust/consequence_recipient/output
+      - name: Preserve read-only native consequence receipts and reviewer preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-native-consequence-reviewer-prototype
+          path: |
+            research/aria_scaling_trust/consequence_recipient/output/
+            research/aria_scaling_trust/consequence_recipient/policy.json
+          if-no-files-found: warn
+          retention-days: 90
