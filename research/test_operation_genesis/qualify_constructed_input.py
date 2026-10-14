@@ -70,8 +70,8 @@ def main():
          "GENERATED_LITERAL_IDENTITY_FORGED")
   (a.head/proposal["test_file"]).write_bytes(newbytes)
   head=native(test,package,a.head)
-  if head["status"]!="COMPLETE" or head["exit"]!=0 or
-     head["subtest_count"]!=1 or "pass" not in head["selected_parent_actions"]:
+  if (head["status"]!="COMPLETE" or head["exit"]!=0 or
+      head["subtest_count"]!=1 or "pass" not in head["selected_parent_actions"]):
    evaluated.append({"candidate_id":c["id"],"head":head,
       "status":"UNKNOWN_INVALID_OR_UNEXECUTED_NEW_LITERAL"})
    continue
@@ -83,9 +83,9 @@ def main():
    "head":head,"base":base}
   # The assertion itself is upstream-authored; an original BASE failure
   # must witness the mutated literal rather than a remaining old case.
-  proves=base["status"]=="COMPLETE" and base["exit"]!=0 and
-         base["subtest_count"]==1 and base["has_source_test_assertion"] and
-         c["new_literal"].strip() in base.get("test_output_tail","")
+  proves=(base["status"]=="COMPLETE" and base["exit"]!=0 and
+          base["subtest_count"]==1 and base["has_source_test_assertion"] and
+          c["new_literal"].strip() in base.get("test_output_tail",""))
   candidate["source_native_new_literal_causes_regression"]=proves
   evaluated.append(candidate)
   if proves:
