@@ -1,0 +1,85 @@
+name: MathGraph Check — previously qualified observer activation
+on:
+  push:
+    branches:
+      - research/mgcheck-existing-observer-activation-20261015
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgcheck-existing-observer-activation-20261015
+  cancel-in-progress: false
+
+jobs:
+  frozen-protected-observer-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify source-native observer programs have exact previously qualified source blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/mgcheck_observer_activation_20261015/run_observer_activation.py
+          python -m py_compile research/mgcheck_observer_activation_20261015/run_test_operation.py
+          test "$(git hash-object research/mgcheck_observer_activation_20261015/selector.go)" = 4409ae416d2b4aeb35a2fb8555a0cb7def60833d
+          test "$(git hash-object research/mgcheck_observer_activation_20261015/run_test_operation.py)" = e2b21d3949bfdb9056ef369f4b044d592f9e6747
+          test "$(git hash-object research/mgcheck_nonregex_genesis_20261015/nonregex_method_learner.go)" = c5c4af86620d87fa0222ac2092ba0e529b16cc3e
+          echo EXISTING_QUALIFIED_OBSERVER_SOURCE_BYTES_UNMODIFIED
+      - name: Run source-native A parser vs B selected Go test observer vs C complete existing inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/mgcheck_observer_activation_20261015/run_observer_activation.py \
+            --phase protected --out observer-evidence/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-existing-observer-first-native
+          path: observer-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+  independent-cold-restart:
+    needs: frozen-protected-observer-comparison
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: mgcheck-existing-observer-first-native
+          path: prior-evidence/
+      - name: Rerun unmodified native observers on fresh runner; compare semantic results
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/mgcheck_observer_activation_20261015/run_observer_activation.py \
+            --phase cold --reference prior-evidence/ --out cold-evidence/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-existing-observer-cold-native
+          path: cold-evidence/
+          if-no-files-found: warn
+          retention-days: 30
