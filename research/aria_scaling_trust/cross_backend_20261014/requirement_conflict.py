@@ -140,6 +140,49 @@ def main():
                         })
             if conflicts:
                 evidence["unchanged_old_tests_failing_at_contributor_head"][pkg]=conflicts
+        # Independent protected-future ablation: suppress ONLY unchanged
+        # older test entrypoint in an ephemeral copy of the author head.
+        # Retain and restore its exact original bytes. No implementation edit.
+        for ix, (pkg, conflicts) in enumerate(sorted(
+                evidence["unchanged_old_tests_failing_at_contributor_head"].items())):
+            original_files = {}
+            for entry in conflicts:
+                rel = entry["original_source"]
+                target = newer / rel
+                if rel not in original_files:
+                    original_files[rel] = target.read_bytes()
+                current = target.read_bytes()
+                functions = individual_test_bodies(current)
+                test_name = entry["test"]
+                if test_name not in functions:
+                    raise RuntimeError("ABLATION_ORIGINAL_TEST_MISSING")
+                body = functions[test_name].encode("utf-8")
+                if base.sha(body) != entry["exact_test_body_sha256"] or current.count(body) != 1:
+                    raise RuntimeError("ABLATION_PROTECTED_BODY_NOT_PINNED")
+                stub = ("func " + test_name +
+                        '(t *testing.T) { t.Skip("PROTECTED_TEST_ABLATED") }\\n').encode()
+                target.write_bytes(current.replace(body, stub, 1))
+            label = "protected_"+str(ix)
+            ablated_code, ablated_output = base.execute_package(
+                label+"_head_only_old_failing_test_ablated",pkg,newer)
+            for rel, raw in original_files.items():
+                (newer/rel).write_bytes(raw)
+                if (newer/rel).read_bytes()!=raw:
+                    raise RuntimeError("ABLATION_COULD_NOT_RESTORE_EXACT_HEAD_TEST")
+            rec = evidence["native_package_results"][pkg]
+            rec["head_with_only_conflicting_old_test_ablated_exit"]=ablated_code
+            rec["head_ablation_scope"]=sorted(entry["test"] for entry in conflicts)
+            if ablated_code:
+                raise RuntimeError("REMOVING_ONLY_PROTECTED_TEST_DID_NOT_RECOVER_HEAD")
+            if "PROTECTED_TEST_ABLATED" not in ablated_output:
+                raise RuntimeError("ABLATED_TEST_NOT_OBSERVED_SKIPPED")
+            restored_code, restored_output = base.execute_package(
+                label+"_head_original_failing_test_restored",pkg,newer)
+            rec["head_reinstated_old_test_exit"]=restored_code
+            if (restored_code != 1 or
+                not set(native_failures(restored_output)) >=
+                  set(entry["test"] for entry in conflicts)):
+                raise RuntimeError("RESTORING_PROTECTED_TEST_DID_NOT_REOPEN_CONFLICT")
         # Copy ONLY contributor Go test changes into ORIGINAL implementation.
         for path, meta in sorted(tests.items()):
             target=old/path
