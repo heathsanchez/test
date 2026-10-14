@@ -1,0 +1,55 @@
+name: Native 2026 hydrogen source reachability probe
+
+on:
+  push:
+    branches:
+      - research/nist-hydrogen-crosssource-20261014
+    paths:
+      - '.github/workflows/nist-hydrogen-source-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-probe:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Probe publisher and author manuscript primary sources
+        run: |
+          set -eu
+          mkdir -p research/nist_hydrogen_crosssource/evidence
+          python3 - <<'PY'
+          import hashlib,json,re,subprocess
+          from pathlib import Path
+          sources={
+            'nature_publisher':'https://www.nature.com/articles/s41586-026-10124-3',
+            'nature_author_arxiv':'https://arxiv.org/abs/2602.14980',
+            'bullis_author_arxiv':'https://arxiv.org/abs/2604.26401',
+            'bullis_full_html':'https://arxiv.org/html/2604.26401'}
+          needles=['0.8406','0.8433','0.8422','0.94','730690248610.79','10973731.568152','3289841960252.9','s41586-026-10124-3']
+          report={}
+          for name,url in sources.items():
+            p=Path('/tmp/'+name+'.html')
+            cmd=['curl','-A','Mozilla/5.0 (compatible; ResearchEvidence/1.0)','-L','--silent','--show-error','--max-time','22','--retry','1','-o',str(p),'-w','%{http_code}',url]
+            x=subprocess.run(cmd,text=True,capture_output=True)
+            raw=p.read_bytes() if p.exists() else b''
+            collapsed=re.sub(rb'\s+',b'',raw)
+            report[name]={'url':url,'curl_status':x.returncode,'http_code':x.stdout,'size':len(raw),
+                 'sha256':hashlib.sha256(raw).hexdigest() if raw else None,
+                 'tokens':{n:(n.encode() in collapsed) for n in needles},
+                 'error':x.stderr[-250:]}
+          Path('research/nist_hydrogen_crosssource/evidence/probe.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report,indent=2))
+          PY
+      - name: Preserve probe without promoting source authority
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nist-2026-hydrogen-source-probe
+          path: research/nist_hydrogen_crosssource/evidence/probe.json
+          if-no-files-found: warn
+          retention-days: 90
