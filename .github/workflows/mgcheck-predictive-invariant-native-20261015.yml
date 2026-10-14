@@ -31,6 +31,7 @@ jobs:
         run: |
           python -m py_compile research/mathgraph_predictive_consistency_20261015/invariant_generator.py
           python -m py_compile research/mathgraph_predictive_consistency_20261015/preflight_repair.py
+          python -m py_compile research/mathgraph_predictive_consistency_20261015/subclass_adversary.py
           python -m py_compile research/mathgraph_obligation_compiler_20261015/observer_genesis.py
       - name: Run independently pinned native original sources and negative controls
         run: |
@@ -38,6 +39,9 @@ jobs:
       - name: Source-inferred preflight repair and physical causal replay
         run: |
           python research/mathgraph_predictive_consistency_20261015/preflight_repair.py evidence/predictive-consistency-20261015/repair
+      - name: Adversarial subclass negative and source-lexical replacement candidate
+        run: |
+          python research/mathgraph_predictive_consistency_20261015/subclass_adversary.py evidence/predictive-consistency-20261015/adversary
       - name: Persist full native receipts including UNKNOWN / negatives
         if: always()
         uses: actions/upload-artifact@v4
