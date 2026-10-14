@@ -16,6 +16,9 @@ on:
 permissions:
   contents: read
 
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+
 jobs:
   native-sql-correspondence-and-flash-reclosure:
     runs-on: ubuntu-latest
