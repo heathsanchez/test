@@ -1,0 +1,35 @@
+name: MathGraph Check - native special scalar repair and causal ablation
+on:
+  push:
+    branches:
+      - mathgraph-roundtrip-unseen-witness-20261014-v1
+    paths:
+      - 'research/mathgraph_roundtrip_witness_20261014/repair_native.py'
+      - '.github/workflows/mathgraph-special-scalar-repair-20261014.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mathgraph-special-scalar-repair-native-v1
+  cancel-in-progress: false
+jobs:
+  native-repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.25.0'
+          cache: false
+      - name: Qualify original defect, human minimal repair, native full suite, revert and original 1088 case replay
+        run: python3 research/mathgraph_roundtrip_witness_20261014/repair_native.py
+      - name: Preserve complete native receipts and negative controls
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mathgraph-special-scalar-repair-native-v1
+          path: ${{ runner.temp }}/mathgraph-special-scalar-repair-native/
+          if-no-files-found: warn
