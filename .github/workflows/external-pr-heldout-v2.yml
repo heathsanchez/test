@@ -1,0 +1,53 @@
+name: Heldout IEANTN evidence replay
+on:
+  push:
+    branches: [research/ieantn-pr-transfer-v2]
+    paths:
+      - 'research/unified_consequence_runtime/external_pr_v2/**'
+      - '.github/workflows/external-pr-heldout-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-bound-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile coordinator/research/unified_consequence_runtime/external_pr_v2/qualify.py
+      - uses: actions/checkout@v4
+        with:
+          repository: teorth/IEANTN
+          ref: 2a10e721ff645865c45c344333b1934f34c45b41
+          path: upstream-base
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: teorth/IEANTN
+          ref: fcfc2023a9670c0bf097a6e7119abe27761cd57f
+          path: upstream-pr160
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: teorth/IEANTN
+          ref: 772d67590fd62c4dc1be336edf96e38754ddb130
+          path: upstream-pr161
+          persist-credentials: false
+      - run: python -m pip install PyYAML==6.0.3 ruamel.yaml==0.18.15
+      - run: |
+          mkdir -p out/heldout-v2/metadata
+          curl -fsSL https://api.github.com/repos/teorth/IEANTN/pulls/160 -o out/heldout-v2/metadata/160.json
+          curl -fsSL https://api.github.com/repos/teorth/IEANTN/pulls/161 -o out/heldout-v2/metadata/161.json
+      - run: python coordinator/research/unified_consequence_runtime/external_pr_v2/qualify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ieantn-heldout-native-evidence
+          path: out/heldout-v2/receipt.json
+          if-no-files-found: warn
