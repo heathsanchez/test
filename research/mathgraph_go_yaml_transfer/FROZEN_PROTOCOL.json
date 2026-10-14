@@ -1,0 +1,63 @@
+{
+  "schema": "mathgraph.native-method-grammar-separator.go-yaml.v1",
+  "freeze_date": "2026-10-14",
+  "objective": "Move from previous Python AST-only PR-native method to real upstream Go-YAML source without any preselected test names or manually authored source-specific parser rules; produce source-native Go test-scope executable method IR automatically from original modified _test.go files or a precise grammar obstruction.",
+  "predecessor": {
+    "repo": "heathsanchez/test",
+    "head": "0af425d4a223dd8d3764ae5a354099e0b9448640",
+    "method_blob": "60e90d3858753c6319a6a64336361baf56172ede",
+    "tested_revisions": "teorth/IEANTN #155 #158 #160 #161",
+    "expected_gap": "old Python unittest AST cannot parse Go"
+  },
+  "external": {
+    "repository": "goccy/go-yaml",
+    "base": "edee2f91616c6d73112a13e7c0dbde72ce938877",
+    "go_mod_blob": "facf4d4ac08099d73aefb967b7826cbd3076b583",
+    "go_version": "1.21.0",
+    "cases": [
+      {
+        "pr": 957,
+        "head": "f4bd46ddbaf0e10fdcc0c70174c1f919f9aa7320",
+        "source_file": "decode.go",
+        "base_source_blob": "1ac427295c1dc4c939f605b58f43e50638e67adb",
+        "head_source_blob": "a85378f982365317700f171dd9978b67669facd1",
+        "test_file": "decode_test.go",
+        "base_test_blob": "6f71d375455db536afe9baf48d625498134e5ded",
+        "head_test_blob": "e2e8b9dbd25840c69aba9106767fbc2d96af939b",
+        "claim": "alias bound to most recently PRECEDING anchor even with typed target"
+      },
+      {
+        "pr": 955,
+        "head": "bf0bb054779a46952c3c8a9e03dd22175c5dee6d",
+        "source_file": "parser/parser.go",
+        "base_source_blob": "5d7990779571bffefb2e4e6bdb1af86e69521be6",
+        "head_source_blob": "7bc4b25d793745395ea3f42421fe3d01db75430f",
+        "test_file": "parser/parser_test.go",
+        "base_test_blob": "6b369515b75a43dcacae16d857cff468f445f575",
+        "head_test_blob": "0c620eeabfee0fed5576339030702b81d42426e0",
+        "claim": "no value at same column as a mapping key on the next line; existing table test extended"
+      }
+    ]
+  },
+  "frozen_admissible_method_ir": [
+    "NATIVE_GO_MODULE_IDENTITY_CHECK",
+    "GO_AST_CHANGED_TEST_DECLS",
+    "GO_AST_CHANGED_EXISTING_TEST_BODY",
+    "COMPILE_PACKAGE_SELECTOR",
+    "EXECUTE_GO_NATIVE_FROZEN_TESTS",
+    "CROSS_REVISION_TEST_OVERLAY",
+    "COMPARE_COMPLETE_NATIVE_GO_SUITE",
+    "REPORT_UNKNOWN_ON_NO_SCOPE"
+  ],
+  "falsifiers": [
+    "Original upstream PR/base revisions or blobs move -> refuse",
+    "Go AST method discovers test names only from original unchanged source files, never from frozen successful test names",
+    "Old Python-only AST native selector must correctly decline Go grammar; no implied L7 proof",
+    "When no new top-level test but in-place table-driven test change, adapt by generating scope for existing test, or report named UNKNOWN, never manually supply test name",
+    "Base original full Go test suite green. Base original production code plus PR author's unchanged head test file must fail in automatically selected Go native test(s), while PR head with same tests must pass",
+    "Full head suite green; no unauthorised dependencies or test deletions concealed",
+    "Report wall-time and total test scopes vs conventional full-suite comparator, without claiming causally superior lifetime economics",
+    "Mutated source identity rejected; failing tests do not mean all implementation failures, nor independently proven YAML standard equivalence"
+  ],
+  "honest_authority": "Human-authored general grammar/template executor compiled AFTER frozen protocol; any emergent method IR is algorithmically selected from predeclared primitives, not self-modification of the meta-generator source. No new PR repairs are generated, no external GitHub writes, no deployed App identity."
+}
