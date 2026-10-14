@@ -37,7 +37,11 @@ def function_replace(original, function):
     last=text.index("func (c *Client) RequestCopilotReview(",first)
     repaired=text[:first]+function+text[last:]
     # Original source only used "time" for the method being rewritten.
-    return repaired.replace('\t"time"\n',"").encode()
+    # Keep the original time import for the historical SHA patch, which
+    # still decodes submitted_at as time.Time. The improved function does not.
+    if "time." not in function:
+        repaired=repaired.replace('\t"time"\n',"")
+    return repaired.encode()
 
 def main():
     repo=Path(sys.argv[1]).resolve()
