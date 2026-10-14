@@ -1,0 +1,67 @@
+name: MathGraph seedless regex-to-public Go native rule - isolated four-arm test
+on:
+  push:
+    branches:
+      - mathgraph-native-regex-api-bridge-20261015-v1
+    paths:
+      - 'research/seedless_regex/native_public_bridge.go'
+      - 'research/seedless_regex/native_public_runner.py'
+      - '.github/workflows/seedless-regex-public-native.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-rule-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: go-ozzo/ozzo-validation
+          ref: 48423ae967b5ed417f9076caa37e83f24b29dccd
+          path: source/ozzo/head
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Build four isolated original source worktrees
+        run: |
+          set -euo pipefail
+          git -C source/ozzo/head fetch --no-tags --depth=1 origin dbba76d963f16ad2ea78fd8fb7d36564783cb3c4
+          git -C source/ozzo/head worktree add --detach ../base dbba76d963f16ad2ea78fd8fb7d36564783cb3c4
+          git -C source/ozzo/head worktree add --detach ../negative 48423ae967b5ed417f9076caa37e83f24b29dccd
+          git -C source/ozzo/head worktree add --detach ../pristine dbba76d963f16ad2ea78fd8fb7d36564783cb3c4
+          test "$(git -C source/ozzo/head rev-parse HEAD)" = 48423ae967b5ed417f9076caa37e83f24b29dccd
+          test "$(git -C source/ozzo/base rev-parse HEAD)" = dbba76d963f16ad2ea78fd8fb7d36564783cb3c4
+          test "$(git -C source/ozzo/pristine status --porcelain)" = ""
+      - name: Reconstruct exact previous source-only witness with unchanged constructor
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/seedless_regex/seedless.go)" = e50c595e36caf67013b9d45f5a46179bbaf1aa8d
+          mkdir -p "$RUNNER_TEMP/bridge"
+          go run research/seedless_regex/seedless.go --base source/ozzo/base --head source/ozzo/head --base-sha dbba76d963f16ad2ea78fd8fb7d36564783cb3c4 --head-sha 48423ae967b5ed417f9076caa37e83f24b29dccd --repo go-ozzo/ozzo-validation --out "$RUNNER_TEMP/bridge/seedless.json" >/dev/null
+          python3 - "$RUNNER_TEMP/bridge/seedless.json" <<'PY'
+          import json,sys
+          x=json.load(open(sys.argv[1]))
+          assert x['result']=='WARRANTED_BOUNDED_SOURCE_REGEX_DELTA_WITNESS'
+          assert x['old_only_shortest']['input']=='10' and x['positive_example_seed']=='NONE'
+          PY
+      - name: DERIVE matcher, predicate and exported rule via Go AST; inject test only
+        run: |
+          set -euo pipefail
+          go run research/seedless_regex/native_public_bridge.go --evidence "$RUNNER_TEMP/bridge/seedless.json" --base source/ozzo/base --head source/ozzo/head --negative source/ozzo/negative --pristine source/ozzo/pristine --out "$RUNNER_TEMP/bridge/binding.json"
+      - name: Execute original native public rule on before, after, inverted and pristine
+        run: |
+          set -euo pipefail
+          python3 research/seedless_regex/native_public_runner.py --manifest "$RUNNER_TEMP/bridge/binding.json" --root source/ozzo --out "$RUNNER_TEMP/bridge/native.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: original-ozzo-native-public-rule-seedless
+          path: ${{ runner.temp }}/bridge/
+          if-no-files-found: ignore
