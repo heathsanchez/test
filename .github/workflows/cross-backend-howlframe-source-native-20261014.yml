@@ -34,6 +34,8 @@ jobs:
           node-version: '22'
       - name: Discover touched Go tests, preserve untouched older tests, replay and ablate
         run: python3 research/aria_scaling_trust/cross_backend_20261014/requirement_conflict.py
+      - name: Compare unchanged MathGraph Check v0 with the real native test conflict
+        run: node research/aria_scaling_trust/cross_backend_20261014/check_v0_vs_native.mjs
       - name: Preserve all native source/verifier commands and the first failure
         if: always()
         uses: actions/upload-artifact@v4
