@@ -128,11 +128,14 @@ def main():
         # Strong independent Go runner introspection confirms native test
         # names; we do not trust the self-report of AST selection alone.
         pkg=selection["scopes"][0]["package"]
-        listing=getoutput(["go","test","-list",".",pkg],head,240)
-        if listing["exit_code"]!=0:raise ValueError("GO_NATIVE_TEST_LIST_FAILED:"+listing["output_tail"])
+        native_listings=[]
         for scope in selection["scopes"]:
+            listing=getoutput(["go","test","-list","^"+scope["name"]+"$",pkg],head,240)
+            if listing["exit_code"]!=0:
+                raise ValueError("GO_NATIVE_TEST_LIST_FAILED:"+listing["output_tail"])
             if not re.search(r"(?m)^"+re.escape(scope["name"])+r"$",listing["output_tail"]):
                 raise ValueError("NATIVE_RUNNER_DOES_NOT_RECOGNIZE_AST_METHOD:"+scope["name"])
+            native_listings.append(listing)
         overlay=WORK/("counterfactual-pr"+str(pr))
         original_copy(base,overlay)
         target=overlay/case["test_file"]
@@ -161,7 +164,7 @@ def main():
            "base":original["base"],"head":case["head"],
            "changed_source":case["source_file"],"test_file":case["test_file"],
            "inferred_method_ir":selection,
-           "independent_compiler_test_list":listing,
+           "independent_compiler_test_list":native_listings,
            "counterfactual_base_source_plus_exact_head_tests":before,
            "original_pr_source_plus_exact_head_tests":after,
            "head_full_native_suite":fully_updated,
