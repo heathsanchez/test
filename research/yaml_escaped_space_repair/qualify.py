@@ -64,7 +64,7 @@ def patch_source(original,mode):
         patches=[
            ('	value := []rune{}\n','	value := []rune{}\n	escapedSpaceIndex := -1\n'),
            ("if value[i] == ' ' {","if value[i] == ' ' && i != escapedSpaceIndex {"),
-           ("value = value[:notSpaceIdx+1]\n","value = value[:notSpaceIdx+1]\n			escapedSpaceIndex = -1\n"),
+           ("value = value[:notSpaceIdx+1]\n","value = value[:notSpaceIdx+1]\n				escapedSpaceIndex = -1\n"),
            ("value = append(value, 0x20)\n","value = append(value, 0x20)\n				escapedSpaceIndex = len(value) - 1\n")
         ]
         for old,new in patches:
@@ -248,8 +248,12 @@ def main(proto,workspace,out):
         raise ValueError("PORTABLE_PATCH_COLD_REBUILD_DID_NOT_PRESERVE_ALL_NATIVE_WARRANTS")
     # Negative: mutate a line that the patch's source contract explicitly
     # requires; a different scanner implementation must NOT inherit warrant.
-    altered_original=scanner_source.replace(
-        "if value[i] == ' ' {","if value[i] == '\\t' {",1)
+    prefix,scanner_body,suffix=isolate_body(scanner_source)
+    old_scanner_guard="if value[i] == ' ' {"
+    if scanner_body.count(old_scanner_guard)!=1:
+        raise ValueError("SCANNER_NEGATIVE_TARGET_NOT_SOURCE_UNIQUE")
+    altered_original=prefix+scanner_body.replace(
+        old_scanner_guard,"if value[i] == '\\t' {",1)+suffix
     if altered_original==scanner_source:
         raise ValueError("PATCH_ANCESTOR_MUTATION_NOT_CONSTRUCTED")
     forged=out/"mutated-source-negative"
