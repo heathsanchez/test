@@ -1,0 +1,45 @@
+{
+  "schema": "mathgraph.one-consequential-pr-decision.v1",
+  "frozen_on": "2026-10-15",
+  "target": {
+    "repository": "goccy/go-yaml",
+    "pr": 958,
+    "base": "edee2f91616c6d73112a13e7c0dbde72ce938877",
+    "head": "a34b94ecb553bb5a693296c30232a89026db79ca"
+  },
+  "scope": "Read-only clone of public repo at two immutable PR revisions; no source changes to upstream, no public review comments or GitHub App expansion.",
+  "issue_context_seen": true,
+  "contributor_diff_seen": false,
+  "contributor_tests_seen": false,
+  "preselection": "Independently generate nested byte-marshaler YAML fragments and compare native decoding of stand-alone fragment vs embedded fragment. Include literal, folded, chomping, explicit-indent, unicode, plain and quoted controls across one through three levels of mapping/sequence wrappers.",
+  "cases": {
+    "fragments": 13,
+    "wrappers": 5,
+    "indent_settings": [
+      2,
+      4
+    ],
+    "expected": 130
+  },
+  "generated_control": "At least 2 plain/quoted non-block fragments, no artificial expectation requiring byte-identical formatting when semantic meaning preserved.",
+  "invariant": "If standalone YAML fragment parses to one mapping, after nesting its byte-marshaler output must decode to the same mapping at the nested path. A failure can be invalid YAML, semantic drift, or unsupported input; type and parsed bytes must be recorded.",
+  "attributable_failure": "Only label a newly introduced PR regression when original BASE passes a given frozen input and PR HEAD fails the same input, with original suite passing and no setup difference. BASE failure/HEAD success means PR repaired a behavior; both fail is inherited/residual and must not be blamed on PR.",
+  "prioritization": [
+    "New valid-to-invalid YAML introduced by PR",
+    "New wrong decoded semantic value introduced by PR",
+    "Inherited failures requiring separate issue, not merge blocker without policy"
+  ],
+  "outcome_contract": "At most ONE consequential finding only if attributable+independently reproduced, with minimal native witness and smallest proposed action. Otherwise report no attributable finding and specify scope unknown.",
+  "experiment_arms": [
+    "BASE with original upstream CI",
+    "PR HEAD with original upstream CI",
+    "BASE vs HEAD with same fixed generated source-native corpus",
+    "Inherited defect control: '.nan' string fidelity (must not blame PR)"
+  ],
+  "baseline_comparison": "Strong conventional original native Go package suite; neither independent maintainer judgement nor coding-agent equal-information cost advantage is tested.",
+  "tests_author": "Human-authored generic metamorphic oracle. Not an autonomous original claim extraction or repair method.",
+  "future_resolution": "If native PR-introduced regression found, propose a minimal isolated patch and causal ablation on SHA; do not claim this phase passed until an actual run qualifies it.",
+  "no_external_writes": true,
+  "no_upstream_installations": true,
+  "no_github_check_published_to_external_repo": true
+}
