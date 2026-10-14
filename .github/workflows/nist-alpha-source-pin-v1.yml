@@ -26,6 +26,8 @@ jobs:
             --max-time 90 -o /tmp/codata.pdf \
             'https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=958143'
           test "$(head -c 4 /tmp/codata.pdf)" = '%PDF'
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
           pdftotext -layout /tmp/codata.pdf /tmp/codata.txt
           python3 - <<'PY'
           from pathlib import Path
