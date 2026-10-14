@@ -13,7 +13,6 @@ import(
  "os"
  "os/exec"
  "path/filepath"
- "regexp"
  "sort"
  "strconv"
  "strings"
@@ -191,19 +190,16 @@ func readMarker(log string)string {
 func writeGenerated(path string,c Candidate,input string,expected bool)error{
  // No dependency on user-authored tests: this test is created from original
  // AST predicate identity + frozen source-regexp generated input only.
- code:=fmt.Sprintf("package %s
+ code:=fmt.Sprintf(`package %s
 
 import "testing"
 
 func TestMathGraphDerivedPredicate(t *testing.T) {
-"+
-  " got := %s(%q)
+ got := %s(%q)
  t.Logf("MATHGRAPH_NATIVE_BOOLEAN=%%t", got)
-"+
-  " if got != %t { t.Errorf("source-derived behavior: got %%t want %t", got) }
+ if got != %t { t.Errorf("source-derived behavior: got %%t want %t", got) }
 }
-",
-  c.Package,c.Function,input,expected,expected)
+`, c.Package,c.Function,input,expected,expected)
  return os.WriteFile(filepath.Join(path,"mathgraph_derived_predicate_test.go"),[]byte(code),0644)
 }
 func main(){
