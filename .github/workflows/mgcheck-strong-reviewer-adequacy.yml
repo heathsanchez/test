@@ -7,6 +7,10 @@ on:
       - research/reviewbench_20261015/STRONG_BASELINE_REPAIR_ADEQUACY_FROZEN.md
       - research/reviewbench_20261015/strong_reviewer_pagination_test.go
       - research/reviewbench_20261015/replay_strong_reviewer_adequacy.py
+      - research/reviewbench_20261015/FROZEN_STRONG_REVIEWER_RESOLUTION.md
+      - research/reviewbench_20261015/strong_reviewer_resolution_function.go.txt
+      - research/reviewbench_20261015/replay_strong_resolution.py
+      - research/reviewbench_20261015/semantic_review_identity_test.go
       - .github/workflows/mgcheck-strong-reviewer-adequacy.yml
   workflow_dispatch: {}
 
@@ -38,6 +42,9 @@ jobs:
       - name: Test published strong model pagination risks against previously qualified identity repair
         run: |
           python3 research/reviewbench_20261015/replay_strong_reviewer_adequacy.py /tmp/mgcheck-reviewbench-strong-baseline "$GITHUB_WORKSPACE/strong-reviewer-adequacy"
+      - name: Qualify improved bounded reviewer-informed candidate against all scoped native tests
+        run: |
+          python3 research/reviewbench_20261015/replay_strong_resolution.py /tmp/mgcheck-reviewbench-strong-baseline "$GITHUB_WORKSPACE/strong-reviewer-adequacy/improved"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
