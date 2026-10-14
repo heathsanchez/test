@@ -160,7 +160,7 @@ def main():
                 if base.sha(body) != entry["exact_test_body_sha256"] or current.count(body) != 1:
                     raise RuntimeError("ABLATION_PROTECTED_BODY_NOT_PINNED")
                 stub = ("func " + test_name +
-                        '(t *testing.T) { t.Skip("PROTECTED_TEST_ABLATED") }\\n').encode()
+                        '(t *testing.T) { t.Skip("PROTECTED_TEST_ABLATED") }\n').encode()
                 target.write_bytes(current.replace(body, stub, 1))
             label = "protected_"+str(ix)
             ablated_code, ablated_output = base.execute_package(
