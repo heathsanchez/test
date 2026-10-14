@@ -18,12 +18,7 @@ clone_at_sha "uiri/toml" "5be7c5041f28df68365ec4f3d77b3363ede198be" "$ROOT/works
 clone_at_sha "avakar/pytoml" "d883c7cf2ae48eae5ba572c1d45bc46fbf8e5cb5" "$ROOT/workspaces/c_base"
 clone_at_sha "avakar/pytoml" "b28b705bd364aa7d7fbc9f6102bca3ceda223dbf" "$ROOT/workspaces/c_head"
 python3 -m compileall -q "$ROOT/workspaces/b_base" "$ROOT/workspaces/b_head" "$ROOT/workspaces/c_base" "$ROOT/workspaces/c_head"
-curl -fLsS \
- -H "Accept: application/vnd.github+json" \
- -H "Authorization: Bearer $GH_TOKEN" \
- "https://api.github.com/repos/heathsanchez/test/actions/artifacts/11929272911/zip" \
- -o "$E/a_previous_source_evidence.zip"
-printf '2ab47701fa213e417b528ccd2e46a9233143c9b5191bd2c5aea112a24412d057  %s\n' "$E/a_previous_source_evidence.zip" | sha256sum -c
+printf '2407927cfc0a7b5061aefecce70ae69ddd19a70820883d08439da5fb2aa363d1  %s\n' "$DIR/acquired_capability_A_from_original_archive.json" | sha256sum -c
 for rev in base head; do
   for family in b c; do
     python3 "$DIR/native_bridge.py" "$ROOT/workspaces/$family"_"$rev" "$family" "$rev" "$E" | tee "$E/$family"_"$rev".stdout
