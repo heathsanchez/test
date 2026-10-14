@@ -1,0 +1,29 @@
+{
+  "schema": "metalogic.source-native-runner-config.v2",
+  "family": "yq-2869-reduce-semantics",
+  "reference_name": "system-jq-C-filter-syntax-only",
+  "source": {
+    "base_dir": "original/yq/base",
+    "head_dir": "original/yq/head",
+    "base_sha": "1957ff45ed555eebe8206ba50c0e5e7800253783",
+    "head_sha": "9526bbf99cd808f30deab33626c89b2dcaf2ddf1"
+  },
+  "runners": {
+    "reference": [
+      "jq",
+      "-c"
+    ],
+    "base": [
+      "__BIN__/yq-base",
+      "-p=json",
+      "-o=json",
+      "-I=0"
+    ],
+    "head": [
+      "__BIN__/yq-head",
+      "-p=json",
+      "-o=json",
+      "-I=0"
+    ]
+  }
+}

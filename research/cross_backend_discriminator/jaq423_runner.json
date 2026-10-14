@@ -1,0 +1,25 @@
+{
+  "schema": "metalogic.source-native-runner-config.v2",
+  "family": "jaq-423-non-key-paths",
+  "reference_name": "system-jq-C",
+  "source": {
+    "base_dir": "original/jaq/base",
+    "head_dir": "original/jaq/head",
+    "base_sha": "8cdd767e527d3e62e5da5916320b5546f4ffbeb9",
+    "head_sha": "86c4e75fffd25a5ddd19089ed840c3394d54475b"
+  },
+  "runners": {
+    "reference": [
+      "jq",
+      "-c"
+    ],
+    "base": [
+      "__BIN__/jaq-base",
+      "-c"
+    ],
+    "head": [
+      "__BIN__/jaq-head",
+      "-c"
+    ]
+  }
+}
