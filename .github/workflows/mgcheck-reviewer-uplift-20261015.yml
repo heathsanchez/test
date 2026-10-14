@@ -29,6 +29,8 @@ jobs:
           git -C /tmp/mgcheck-original fetch -q --depth=1 origin e1477f8b3f18c1de6ff87dbca9465a7b106dc193
           git -C /tmp/mgcheck-original checkout -q --detach e1477f8b3f18c1de6ff87dbca9465a7b106dc193
           test "$(git -C /tmp/mgcheck-original rev-parse HEAD)" = e1477f8b3f18c1de6ff87dbca9465a7b106dc193
+      - name: Install exact source package dependencies for its original shared pytest conftest
+        run: python -m pip install --disable-pip-version-check -e /tmp/mgcheck-original
       - name: Original RED → candidate GREEN → negative/physical RESTORE RED
         run: |
           python research/mgcheck_review_uplift_20261015/replay_gimmes.py \
