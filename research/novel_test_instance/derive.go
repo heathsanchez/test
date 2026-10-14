@@ -261,7 +261,7 @@ func main(){
   "test_harness_inherited_from_upstream_author":true,
   "operation_generator_human_written":true,
   "semantic_method_self_invented":false,
-  "expected_three_native_arms":["ORIGINAL_BASE_PLUS_NEW_CASE_RED",
+  "expected_three_native_arms":[]string{"ORIGINAL_BASE_PLUS_NEW_CASE_RED",
                                 "ORIGINAL_HEAD_PLUS_NEW_CASE_GREEN",
                                 "ORIGINAL_HEAD_PLUS_FALSE_CASE_RED"],
   "action_authorization":"NONE",
