@@ -46,8 +46,11 @@ def validate(paths, policy, native_run, protocol_bytes, report_raw):
         r.get("repository",{}).get("full_name") != "heathsanchez/test" or
         not str(r.get("path","")).endswith(policy["qualified_workflow"])):
         stop("UNQUALIFIED_OR_WRONG_NATIVE_RUN")
-    if sha(protocol_bytes) != policy["original_protocol_sha256"]:
-        stop("FROZEN_ORIGINAL_PROTOCOL_CHANGED")
+    canonical_protocol_bytes = (
+        json.dumps(protocol, sort_keys=True, indent=2) + "\n"
+    ).encode("utf-8")
+    if sha(canonical_protocol_bytes) != policy["original_protocol_sha256"]:
+        stop("FROZEN_CANONICAL_PROTOCOL_CHANGED")
     if report.get("source_protocol_sha256") != policy["original_protocol_sha256"]:
         stop("NATIVE_SOURCE_PROTOCOL_REPLAY_MISMATCH")
     if report.get("upstream_commit") != policy["original_source_commit"]:
