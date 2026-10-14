@@ -1,0 +1,44 @@
+name: MathGraph Check / source-contract sequence-law synthesis
+
+on:
+  push:
+    branches:
+      - research/mgcheck-sequence-obligation-20261015
+    paths:
+      - research/mgcheck_sequence_obligation_20261015/**
+      - .github/workflows/mgcheck-sequence-obligation-20261015.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-contract-observer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - name: Checkout independent frozen research code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Python toolchain
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Original-package prerequisites
+        run: |
+          python -m pip install --disable-pip-version-check -q textblob pytest
+      - name: Compile unchanged observer and source-clone guard
+        run: |
+          python -m py_compile research/mgcheck_sequence_obligation_20261015/sequence_observer.py
+          python -m py_compile research/mathgraph_obligation_compiler_20261015/observer_genesis.py
+      - name: Execute frozen native Python collection contracts on source/head
+        run: |
+          python research/mgcheck_sequence_obligation_20261015/sequence_observer.py evidence/mgcheck-sequence-obligation-20261015
+      - name: Preserve failures and complete source-native reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgcheck-sequence-obligation-native
+          path: evidence/mgcheck-sequence-obligation-20261015/
+          if-no-files-found: warn
