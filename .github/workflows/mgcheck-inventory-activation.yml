@@ -1,0 +1,31 @@
+name: MathGraph inventory activation admission
+on:
+  push:
+    branches: [research/mgcheck-inventory-activation-20261015]
+    paths:
+      - research/inventory_activation_20261015/**
+      - .github/workflows/mgcheck-inventory-activation.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  source-inventory-admission:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original source-qualified operator evidence
+        run: |
+          set -euo pipefail
+          git clone -q --filter=blob:none https://github.com/heathsanchez/test.git /tmp/original-research
+          git -C /tmp/original-research fetch -q origin research/mgcheck-predictive-invariant-genesis-20261015
+          git -C /tmp/original-research checkout -q FETCH_HEAD
+          test "$(git -C /tmp/original-research hash-object research/mathgraph_predictive_consistency_20261015/invariant_generator.py)" = 997836e748addcb3064dd87315436fc4efdb1165
+          echo "EXISTING_OPERATOR_INVENTORY_SOURCE_IDENTITY=PASS"
+      - name: Record honest unresolved experimental state
+        run: |
+          mkdir -p inventory-evidence
+          printf '%s\n' '{"operator_inventory":"SOURCE_IDENTITY_VERIFIED","unseen_source_native_task":"NOT_FROZEN","arms_A_B_C":"NOT_RUN","native_outcome":"UNKNOWN","economic_advantage":"UNKNOWN"}' > inventory-evidence/status.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inventory-activation-admission
+          path: inventory-evidence/
