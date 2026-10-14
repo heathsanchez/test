@@ -191,7 +191,10 @@ def transfer(policy_path,folder,destination):
                 control_concordance+=1
             if a["label"]=="UNKNOWN" or b["label"]=="UNKNOWN":
                 unresolved.append(a["id"])
+        introduced=sum(1 for a,b in zip(old["rows"],head["rows"])
+                       if a["label"]=="PASS" and b["label"]=="FAIL")
         outcomes[subj]={
+            "introduced_native_violations":introduced,
             "source_old":old["commit"],"source_head":head["commit"],
             "tested_case_count":len(old["rows"]),
             "old_native_coherence_violations":sum(r["label"]=="FAIL" for r in old["rows"]),
@@ -211,7 +214,10 @@ def transfer(policy_path,folder,destination):
     # retaining A's source choice does NOT create an economic advantage.
     assert policy["selected_channels"]==["coherence"]
     assert all(v["false_warrants"]==0 for v in outcomes.values())
-    assert outcomes["T2"]["old_fail_to_head_pass_count"]==0, "T2 failed styling-only negative control"
+    assert (outcomes["T2"]["old_fail_to_head_pass_count"]==0
+            and outcomes["T2"]["introduced_native_violations"]==0
+            and outcomes["T2"]["valid_lexical_only_changed_cases"]>0), (
+                "T2 formatting-only negative control failed")
     removed=Path(policy_path).with_suffix(".withdrawn")
     original=Path(policy_path)
     if removed.exists():raise ValueError("UNKNOWN_STALE_WITHDRAWAL_FILE")
@@ -222,7 +228,7 @@ def transfer(policy_path,folder,destination):
         removed.rename(original)
     assert missing_status=="UNKNOWN_NO_SOURCE_CAPABILITY"
     assert verified_policy(original)[1]=="WARRANTED_BOUNDED_A_SOURCE_ADMISSION"
-    if outcomes["T1"]["old_fail_to_head_pass_count"]>0 and outcomes["T1"]["new_native_coherence_violations"]==0:
+    if (outcomes["T1"]["old_fail_to_head_pass_count"]>0 and outcomes["T1"]["introduced_native_violations"]==0):
         outcome="PASS_BOUNDED_REAL_CROSS_REPOSITORY_COHERENCE_TRANSFER"
     else:
         outcome="UNKNOWN_OR_REJECTED_REAL_CROSS_REPOSITORY_COHERENCE_TRANSFER"
