@@ -1,0 +1,34 @@
+{
+  "schema": "mathgraph.pr958-one-material-residual-separate-issue.v1",
+  "date": "2026-10-15",
+  "source": {
+    "repo": "goccy/go-yaml",
+    "pr": 958,
+    "commit": "a34b94ecb553bb5a693296c30232a89026db79ca",
+    "file": "ast/ast.go"
+  },
+  "upstream_issue": "https://github.com/goccy/go-yaml/issues/872",
+  "issue_prior_art_known": true,
+  "failure_scope": "20 native |+ and >+ keep-chomping embedded string cases fail on both PR base and head. Must classify inherited, already explicitly out-of-scope for PR #958.",
+  "research_obligation": "Can a small, separate one-file change preserve trailing blank lines through LiteralNode.String without changing existing upstream test expectations or breaking the newly authored nested invariant?",
+  "source_hypothesis": "LiteralNode.String currently TrimRight(..., '\\n') strips all trailing newline bytes, even when YAML style has + keep chomping. Preserve the relevant suffix for '+' styles while leaving |, |-, >, >- unchanged.",
+  "proposed_surgical_change": "For '+' chomping style, replace broad trailing-newline trim with TrimSuffix(...,'\\n') (allow printer's final newline to supply exactly one newline). Keep existing branch for other styles.",
+  "preconditions": [
+    "Exact original source SHA",
+    "go test ./... original upstream green",
+    "130 nested tests as frozen in commit bbc5b90...",
+    "five inherited special-scalar controls continue to behave identically",
+    "only ast/ast.go changed and a git diff check confirms it"
+  ],
+  "arms": [
+    "PR HEAD before patch 20 inherited failing",
+    "PR HEAD + proposed one-file patch 0 nested failures candidate",
+    "PR HEAD with patch removed 20 originally failing"
+  ],
+  "success_requires": "Original Go suite green, 130/130 nested tests pass with patch, native immutable source diff one file, ablation restores same exact 20 case IDs and five inherited controls unchanged.",
+  "product_action": "Separate follow-up for existing upstream issue #872; do NOT block merge of PR #958 solely for preexisting independent issue.",
+  "no_external_writes": true,
+  "no_upstream_pr_created": true,
+  "original_issue_is_not_rediscovered": true,
+  "autonomous_agent_invention": false
+}
