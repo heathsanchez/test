@@ -5,7 +5,7 @@ Reconstructs the source-A capability admission, target contract verdicts,
 and native input/control identities with Python's standard TOML decoder.
 No producer import, no author patch, no code modification of any target.
 """
-import copy
+import copy as deepcopy_module
 import hashlib
 import json
 from pathlib import Path
@@ -140,7 +140,7 @@ def main():
         copy.write_bytes(PIN.read_bytes()+b"x")
         assert receive(copy,pairs)==("UNKNOWN_BAD_SOURCE_SUPPORT",None)
     source=next(r for r in pairs["T1"]["old"]["rows"] if r["serialized"] is not None)
-    forged=copy.deepcopy(source)
+    forged=deepcopy_module.deepcopy(source)
     forged["serialized"]="value = \x00"
     try:
         independent_reference(forged)
