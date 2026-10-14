@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Source-pinned ReviewBench adapter. Fails closed; zero findings != verified safe.
 
-Two scoped arms: baseline LLM proposals, and the same proposals plus compiler-
-verified *introduced syntax regressions*. Not a general semantic-bug checker.
-No benchmark golden data, network search, or PR review comments are consumed.
+Two scoped arms: baseline model proposals, and the same proposals plus
+compiler-checked syntax regressions and host-pinned qualified native receipts.
+Native receipt consumption is not a new autonomous semantic-bug detector.
+No benchmark golden data, network search or review comments are consumed.
 """
 import ast
 import json
@@ -207,7 +208,7 @@ def main():
              "model_status":model_status,"model":os.getenv("RB_CONFIG_MODEL","") if model_status=="EXECUTED" else "none",
              "candidate_rejections":rejected,"changed_py_go_count":len(changed),
              "compiler_witnesses":witnesses,"finding_count":len(output["findings"]),
-             "note":"No finding is NOT a correctness warrant; compiler results are bounded to installed versions."}
+             "note":"No finding is NOT a correctness warrant. Native evidence is subject-scoped to separately qualified targeted tests; compiler evidence is toolchain-bounded."}
     (out.parent/"receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
     print("model_status="+model_status+" mode="+mode+" findings="+str(len(output["findings"])),flush=True)
 
