@@ -1,0 +1,73 @@
+name: MathGraph V3 — untouched original Rust jaq source-to-operation transfer
+on:
+  push:
+    branches:
+      - mathgraph-v3-rust-jaq432-untouched-transfer-20261014
+    paths:
+      - 'research/cross_backend_discriminator/**'
+      - '.github/workflows/mathgraph-v3-jaq432-untouched.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-jaq-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: 01mf02/jaq
+          ref: fc6de8af7164ef17ef5a3fe0034115744ff4bea3
+          path: original/jaq/head
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact original source and unchanged common V3 parser
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/cross_backend_discriminator/whole_observation_v3.py)" = 362712ff44c3f309cdf4ce7ac968fdff564269ca
+          test "$(git hash-object research/cross_backend_discriminator/source_grammar_v2.py)" = 5f4407304e9f5ee2dd5ab5282b354714c8f58efe
+          test "$(git -C original/jaq/head rev-parse HEAD)" = fc6de8af7164ef17ef5a3fe0034115744ff4bea3
+          git -C original/jaq/head worktree add --detach ../base 961601926ac4c8e8281a817aa21e20a1ee53b04c
+          test "$(git -C original/jaq/base rev-parse HEAD)" = 961601926ac4c8e8281a817aa21e20a1ee53b04c
+          rustc --version
+          jq --version
+      - name: Original-source fixture admission regression tests
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v research/cross_backend_discriminator/test_whole_observation_v3.py
+      - name: Build original Rust jaq predecessor and original contributor head
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bin"
+          (cd original/jaq/base && cargo build --locked -p jaq)
+          cp original/jaq/base/target/debug/jaq "$RUNNER_TEMP/bin/jaq-base"
+          (cd original/jaq/head && cargo build --locked -p jaq)
+          cp original/jaq/head/target/debug/jaq "$RUNNER_TEMP/bin/jaq-head"
+      - name: Execute unchanged generic source-operation procedure on untouched Rust original
+        env:
+          NATIVE_BIN_DIR: ${{ runner.temp }}/bin
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/jaq432"
+          python3 research/cross_backend_discriminator/whole_observation_v3.py --config research/cross_backend_discriminator/jaq432_runner.json --out "$RUNNER_TEMP/jaq432/original.json"
+      - name: Preserve source, reference and retraction controls
+        if: always()
+        env:
+          NATIVE_BIN_DIR: ${{ runner.temp }}/bin
+        run: |
+          set -euo pipefail
+          if test -x "$RUNNER_TEMP/bin/jaq-head"; then
+            mkdir -p "$RUNNER_TEMP/jaq432"
+            python3 research/cross_backend_discriminator/whole_observation_v3.py --config research/cross_backend_discriminator/jaq432_runner.json --ablate-source --out "$RUNNER_TEMP/jaq432/source-removed.json"
+            python3 research/cross_backend_discriminator/whole_observation_v3.py --config research/cross_backend_discriminator/jaq432_runner.json --ablate-reference --out "$RUNNER_TEMP/jaq432/reference-removed.json"
+            python3 research/cross_backend_discriminator/whole_observation_v3.py --config research/cross_backend_discriminator/jaq432_runner.json --withdraw --out "$RUNNER_TEMP/jaq432/withdrawal.json"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: jaq432-frozen-native-source-operation-transfer
+          path: ${{ runner.temp }}/jaq432/
+          if-no-files-found: ignore

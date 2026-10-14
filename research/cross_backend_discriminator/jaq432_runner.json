@@ -1,0 +1,53 @@
+{
+  "schema": "metalogic.whole-source-runner-config.v3",
+  "family": "jaq-432-frozen-input-filename-capability",
+  "reference_name": "system-jq-original-C-cli",
+  "source": {
+    "base_dir": "original/jaq/base",
+    "head_dir": "original/jaq/head",
+    "base_sha": "961601926ac4c8e8281a817aa21e20a1ee53b04c",
+    "head_sha": "fc6de8af7164ef17ef5a3fe0034115744ff4bea3"
+  },
+  "runners": {
+    "reference": [
+      "jq",
+      "-c"
+    ],
+    "base": [
+      "__BIN__/jaq-base",
+      "-c"
+    ],
+    "head": [
+      "__BIN__/jaq-head",
+      "-c"
+    ]
+  },
+  "domain": [
+    null,
+    [],
+    [
+      0
+    ],
+    [
+      1
+    ],
+    [
+      1,
+      2,
+      3
+    ],
+    {},
+    {
+      "a": 1
+    },
+    {
+      "a": [
+        1
+      ]
+    },
+    "",
+    "ab",
+    0,
+    1
+  ]
+}
