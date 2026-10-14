@@ -44,7 +44,7 @@ def inputs(arity):
                     seen.add(s)
                     if arity==1: yield [s]
                     else:
-                        for k in sorted(set((0,1,2,len(s),max(0,len(s)-1))):
+                        for k in sorted(set((0,1,2,len(s),max(0,len(s)-1)))):
                             yield [s,k]
 
 def discover(root):
