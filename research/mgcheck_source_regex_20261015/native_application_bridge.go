@@ -47,6 +47,7 @@ type Result struct {
  HeadNativeValue string `json:"head_native_value"`
  OriginalObserved string `json:"original_observation"`
  HeadObserved string `json:"head_observation"`
+ NoTestAblation string `json:"no_generated_test_ablation"`
  Status string `json:"status"`
 }
 type Report struct {
@@ -248,11 +249,16 @@ func main(){
    newCode,newOut,newValue:=nativeTest(right)
    _=os.Remove(filepath.Join(left,relTestFile))
    _=os.Remove(filepath.Join(right,relTestFile))
+   ablationCode,ablationLog,ablationValue:=nativeTest(left)
+   ablation:="UNKNOWN_UNCHECKED"
+   if ablationCode==0&&ablationValue==""&&!strings.Contains(ablationLog,"=== RUN   TestMathGraphDerivedPredicate") {
+    ablation="EXECUTED_NO_TEST_NO_OBSERVATION"
+   }
    p:=Result{Candidate:c,Input:ch.First.Input,OriginalExpected:ch.First.Old,AuthorExpected:ch.First.Head,
     OldNativeExit:oldCode,HeadNativeExit:newCode,OldNativeValue:oldValue,HeadNativeValue:newValue,
-    OriginalObserved:firstLines(oldOut),HeadObserved:firstLines(newOut),Status:"UNKNOWN"}
+    OriginalObserved:firstLines(oldOut),HeadObserved:firstLines(newOut),NoTestAblation:ablation,Status:"UNKNOWN"}
    if oldCode!=0&&newCode==0&&oldValue==strconv.FormatBool(ch.First.Old)&&
-     newValue==strconv.FormatBool(ch.First.Head) {
+     newValue==strconv.FormatBool(ch.First.Head)&&ablation=="EXECUTED_NO_TEST_NO_OBSERVATION" {
     p.Status="WARRANTED_BOUNDED_SOURCE_TO_NATIVE_APPLICATION_PREDICATE"
    }else if oldValue!=""&&newValue!="" {
     p.Status="REJECTED_NO_CAUSAL_NATIVE_APPLICATION_DELTA"
