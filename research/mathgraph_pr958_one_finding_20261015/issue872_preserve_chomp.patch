@@ -9,8 +9,8 @@ diff --git a/ast/ast.go b/ast/ast.go
 -	lit := strings.TrimRight(strings.TrimRight(origin, " "), "\n")
 +	lit := strings.TrimRight(origin, " ")
 +	if strings.Contains(n.Start.Value, "+") {
-+		// A keep-chomp block retains trailing blanks. The outer printer
-+		// supplies the final document line ending.
++		// Keep chomping retains blank lines. The final newline is supplied
++		// by the enclosing YAML printer.
 +		lit = strings.TrimSuffix(lit, "\n")
 +	} else {
 +		lit = strings.TrimRight(lit, "\n")
