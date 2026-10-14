@@ -97,6 +97,12 @@ jobs:
           path: coordinator/components/producers/source_bisim
           persist-credentials: false
 
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: 820e01ace410fa1cec9c13b4ada54f962e9f4534
+          path: coordinator/components/producers/native_unbounded
+          persist-credentials: false
       - name: Read actual historical CI metadata without scientific promotion
         working-directory: coordinator
         run: |
@@ -189,6 +195,28 @@ jobs:
             --policy research/unified_consequence_runtime/native_semantic_genesis_v1/admission_policy.json \
             --out out/source-bundles/source_bisim
 
+      - name: Admit independently native-checked parametric Nat induction methods
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/native-unbounded-qualification out/source-bundles/native_unbounded
+          gh api "repos/heathsanchez/test/actions/artifacts/11861096883/zip" > out/native-unbounded-qualification/sealed.zip
+          expected="$(python - <<'PY'
+          import json
+          p='research/unified_consequence_runtime/native_unbounded_v1/admission_policy.json'
+          print(json.load(open(p))['artifact_zip_sha256'])
+          PY
+          )"
+          test "$(sha256sum out/native-unbounded-qualification/sealed.zip | cut -d' ' -f1)" = "$expected"
+          unzip -q out/native-unbounded-qualification/sealed.zip -d out/native-unbounded-qualification/proofs
+          PYTHONPATH=components/flash python components/producers/native_unbounded/research/unified_consequence_runtime/native_unbounded_v1/admit_methods.py \
+            --cslib components/cslib \
+            --proofs out/native-unbounded-qualification/proofs \
+            --native-run out/run-data/CSLIB_NATIVE_UNBOUNDED_PASS.json \
+            --protocol research/unified_consequence_runtime/native_unbounded_v1/FROZEN_PROTOCOL.json \
+            --policy research/unified_consequence_runtime/native_unbounded_v1/admission_policy.json \
+            --out out/source-bundles/native_unbounded
+
       - name: Restore the latest successful qualification, never a red-run artifact
         working-directory: coordinator
         run: |
@@ -241,9 +269,17 @@ jobs:
           assert obj['mathgraph']['action_authorization']=='NONE'
           assert obj['mathgraph']['current_applicability']=='UNKNOWN'
           assert obj['runs']['CSLIB_NATIVE_FAIL']['conclusion']=='failure'
-          assert obj['flash']['events']==7
+          assert obj['flash']['events']==9
           assert obj['native_scoped_proof']['verdict']=='PASS_SCOPED'
           assert obj['source_native_method']['verdict']=='PASS_SCOPED'
+          assert obj['source_native_parametric_induction']['verdict']=='PASS_SCOPED'
+          assert obj['source_native_parametric_induction']['new_parametric_induction']=='PASS_NATIVE'
+          assert obj['source_native_parametric_induction']['source_distinct_transfer']=='PASS_NATIVE'
+          assert obj['source_native_parametric_induction']['feedback_selected_reverse_method']=='PASS_NATIVE'
+          assert obj['source_native_parametric_induction']['causal_admission_ablation']=='PASS_BOTH_SOURCE_METHODS_CAUSALLY_ADMITTED'
+          assert obj['source_native_parametric_induction']['simulated_typed_revocation']=='PASS_SIMULATED_INDEPENDENT_METHOD_REVOCATIONS'
+          assert obj['source_native_parametric_induction']['generator_self_invention']=='UNKNOWN'
+          assert obj['gates']['native_unbounded_parametric_induction']=='PASS_SCOPED'
           assert obj['source_native_method']['scientific_autonomous_genesis']=='UNKNOWN'
           assert obj['source_native_method']['source_deletion_ablation']=='PASS_NATIVE_SOURCE_CAPABILITY_DELETION'
           assert obj['source_native_method']['controlled_revocation']=='PASS_SIMULATED_TYPED_METHOD_REVOCATION'
@@ -261,10 +297,12 @@ jobs:
 
               allowable={
                   'cslib:cycle:native-source-checked-simulation:v1',
-                  'cslib:two-original-inductives:native-source-derived-bisimulation:v1'
+                  'cslib:two-original-inductives:native-source-derived-bisimulation:v1',
+                  'cslib:nat-infinite-trace:forward-method:v1',
+                  'cslib:nat-infinite-trace:backward-method:v1'
               }
               assert set(obj['flash']['new_event_ids']) <= allowable
-              assert len(obj['flash']['unchanged_event_ids'])>=6
+              assert len(obj['flash']['unchanged_event_ids'])>=7
               assert obj['gates']['prior_research_history_retained']=='PASS'
           print('PASS_INTEGRATED_OPERATIONS_NO_FALSE_SCIENTIFIC_PROMOTION')
           PY
@@ -283,6 +321,9 @@ jobs:
             coordinator/out/source-method-qualification/proofs/
             coordinator/out/source-method-qualification/sealed.zip
             coordinator/out/source-bundles/source_bisim/
+            coordinator/out/native-unbounded-qualification/proofs/
+            coordinator/out/native-unbounded-qualification/sealed.zip
+            coordinator/out/source-bundles/native_unbounded/
             coordinator/out/source-bundles/native/
             coordinator/out/run-data/
           if-no-files-found: warn
