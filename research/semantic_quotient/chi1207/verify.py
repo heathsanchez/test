@@ -34,9 +34,16 @@ def parse(path):
         learned[label]={"histories":values[0],"probeCount":values[1],"learnedStates":values[2],
                         "heldoutQueries":values[3],"distinguishedClasses":values[4]}
     assert re.search(r"MATHGRAPH_OBSERVATIONAL_TRANSFER chiStates=9 independentStdlibStates=9 partitionsIdentical=true orderSensitiveMutationDetected=true",text), "NATIVE_TRANSFER_OR_MUTATION_MISSING"
+    other=re.search(r'MATHGRAPH_OTHER_EXCEPTION samples=(\d+) changed=(\d+) originalRoutesStillOK=(\d+) livenessTimeouts=(\d+) firstChanged="([^"]*)"',text)
+    assert other, "MISSING_OTHER_EXCEPTION_SOURCE_RECEIPT"
+    other_values=[int(v) for v in other.groups()[:4]]
+    assert other_values[0] >= 3 and 0 <= other_values[1] <= other_values[0]
+    other_boundary={"cases":other_values[0],"treeChanged":other_values[1],
+        "originalRouteStillServed":other_values[2],"routeTimeouts150ms":other_values[3],
+        "firstChanged":other.group(5)}
     count,dirty,clean,minimum=[int(x) for x in state.groups()[:4]]
     assert count>0 and dirty+clean==count
-    return {"file":path.name,"observational":learned,"nativeKeyCases":int(key.group(1)),
+    return {"file":path.name,"observational":learned,"otherException":other_boundary,"nativeKeyCases":int(key.group(1)),
             "recoveredInvalidCases":count,"dirty":dirty,"clean":clean,
             "minimalDirtyKeyCount":minimum,"minimalDirtyPattern":state.group(5),
             "livenessCases":int(live.group(1)),
