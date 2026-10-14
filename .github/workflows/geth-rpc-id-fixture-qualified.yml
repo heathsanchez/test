@@ -1,0 +1,47 @@
+name: MathGraph Geth RPC fixture source qualification
+on:
+  push:
+    branches: [research/geth-rpc-id-shadow-check-20261014]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone and pin correction
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/metalogiclabs/go-ethereum.git geth
+          cd geth
+          git fetch origin 2e3c22b0ac37c84df8c4bc2e81bab160b3fb92b6
+          git checkout --detach 2e3c22b0ac37c84df8c4bc2e81bab160b3fb92b6
+          test "$(git rev-parse HEAD)" = 2e3c22b0ac37c84df8c4bc2e81bab160b3fb92b6
+          test "$(git rev-parse HEAD^)" = ae4936f24e5d2123c602fdd640347fb1b99fea4b
+          git diff --check HEAD^ HEAD
+          git diff --name-only HEAD^ HEAD | tee ../changed-files.txt
+          test "$(cat ../changed-files.txt)" = "rpc/http_test.go"
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: geth/go.mod
+          cache: false
+      - name: Add independent adversarial fixture
+        run: cp fixtures/geth_rpc_id_boundary_test.go geth/rpc/mathgraph_response_id_boundary_test.go
+      - name: Verify exact regression and full RPC suite
+        run: |
+          set -euo pipefail
+          cd geth
+          go test ./rpc -run '^TestMathGraphHTTPResponseIDBoundary$|^TestMathGraphHeaderContextWithValidResponseIDs$|^TestNewContextWithHeaders$' -count=1 -v | tee ../focused.log
+          go test ./rpc/... -count=1 | tee ../rpc-suite.log
+      - name: Upload qualification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geth-rpc-fixture-qualification
+          path: |
+            changed-files.txt
+            focused.log
+            rpc-suite.log
+          if-no-files-found: warn
