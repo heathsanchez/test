@@ -1,0 +1,88 @@
+name: MathGraph Check - mixed-language source-bound review resolution
+on:
+  push:
+    branches: [research/mgcheck-multisource-review-warrants-20261015]
+    paths:
+      - research/mgcheck_multisource_review_20261015/**
+      - .github/workflows/mgcheck-multisource-native-review.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-two-subject:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify existing reader/input Git blobs and new runner syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/mgcheck_multisource_review_20261015/joint_receipt.py
+          test "$(git hash-object research/reviewer_receipt_projection_20261015/project_receipt.py)" = 79f72f72885d6a7cf9ebd3105107fc9ade1ee4b2
+          test "$(git hash-object research/reviewer_receipt_projection_20261015/review_input.json)" = aa08f762e4894ce92778964935d7cca1d54304dc
+          git fetch -q --depth=1 origin 25981f6f8f0072e675fab8532c5a309e6c31d355
+          git show 25981f6f8f0072e675fab8532c5a309e6c31d355:research/reviewbench_20261015/trusted_native_receipt.py > /tmp/original_go9_reader.py
+          test "$(git hash-object /tmp/original_go9_reader.py)" = fb75fd28d08edb6b5a79ed2bb4c053dfea20f500
+      - name: Independently read GitHub-qualified original run and artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo=heathsanchez/test
+          test "$(gh api repos/$repo/actions/runs/38634850681 --jq '.conclusion + " " + .head_sha')" = "success 25981f6f8f0072e675fab8532c5a309e6c31d355"
+          test "$(gh api repos/$repo/actions/runs/38638946524 --jq '.conclusion + " " + .head_sha')" = "success a9dbef7b0293237420e9c6071180df22cab82755"
+          test "$(gh api repos/$repo/actions/artifacts/11926873580 --jq '.digest')" = "sha256:a9d92e8935c02d8e74e245e97f4490f668abbae17b3355b362c74ca7291af523"
+          test "$(gh api repos/$repo/actions/artifacts/11929207814 --jq '.digest')" = "sha256:0e567242796ff0a68fadb4ded8fe754b0721c450b221d5733b9edad1be793fbe"
+          mkdir -p /tmp/review-go9 /tmp/review-gimmes
+          gh run download 38634850681 --repo "$repo" --name mgcheck-reviewbench-trusted-native-bridge --dir /tmp/review-go9
+          gh run download 38638946524 --repo "$repo" --name mathgraph-reviewer-uplift-python-native --dir /tmp/review-gimmes
+          test -s /tmp/review-go9/research/reviewbench_20261015/native_evidence/manifest.json
+          test -s /tmp/review-gimmes/receipt.json
+          echo "Both exact original GitHub native sources independently admitted"
+      - name: Materialize exact original Go code; NEVER execute external PR changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/review-go9-source
+          git -C /tmp/review-go9-source init -q
+          git -C /tmp/review-go9-source remote add origin https://github.com/review-bench/k1LoW_gh-copilot-review.git
+          git -C /tmp/review-go9-source fetch -q --depth=1 origin 5f3765a9ef25d9c5a57699418bed105d9ac54691
+          git -C /tmp/review-go9-source fetch -q --depth=1 origin f98281938e63acd1d2df9b89d6af98dcf58c9fa8
+          git -C /tmp/review-go9-source checkout -q --detach f98281938e63acd1d2df9b89d6af98dcf58c9fa8
+          test "$(git -C /tmp/review-go9-source rev-parse HEAD)" = f98281938e63acd1d2df9b89d6af98dcf58c9fa8
+      - name: Run cross-language source-bound admission and physical/forged support negatives
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/mgcheck-multisource-review
+          python research/mgcheck_multisource_review_20261015/joint_receipt.py \
+            --go-reader /tmp/original_go9_reader.py \
+            --go-root /tmp/review-go9 \
+            --go-source /tmp/review-go9-source \
+            --python-root /tmp/review-gimmes \
+            --out evidence/mgcheck-multisource-review/report.json
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          p=Path("evidence/mgcheck-multisource-review/report.json")
+          r=json.loads(p.read_bytes())
+          assert r["native_causal_warrants"] == 2
+          assert r["unresolved_normative_claims"] == 2
+          assert len(r["independent_source_partial_revocation_controls"]) == 10
+          assert r["live_strong_equal_info_coding_agent"] == "NOT_RUN"
+          assert r["safe_merge"] == "UNKNOWN"
+          (p.parent/"report.sha256").write_text(hashlib.sha256(p.read_bytes()).hexdigest()+"\n")
+          print("MIXED_LANGUAGE_RECEIPT_CONSUMER_QUALIFIED",r["status"],"controls",len(r["independent_source_partial_revocation_controls"]))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-multisource-review-receipt
+          path: evidence/mgcheck-multisource-review/
+          retention-days: 30
