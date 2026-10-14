@@ -166,7 +166,7 @@ def run(protocol_path,root_base,roots,metadata_dir,out):
     reports=[]
     for spec in protocol["cases"]:
         pr=str(spec["pr"])
-        head=roots/pr
+        head=roots[pr]
         metadata=json.loads((metadata_dir/(pr+".json")).read_bytes())
         verify_api_metadata(spec,metadata,base)
         verify_repo(head,spec["head"],spec["script_blob"],spec["tests_blob"])
