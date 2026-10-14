@@ -103,6 +103,13 @@ jobs:
           ref: ab55e2ea963f422d05c84fbe1e24e77b886fa222
           path: coordinator/components/producers/native_unbounded
           persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: edc7531f91e9f1829b75be597afeb49b0be5b8e2
+          path: coordinator/components/producers/typed_semantic
+          persist-credentials: false
+
       - name: Read actual historical CI metadata without scientific promotion
         working-directory: coordinator
         run: |
@@ -217,6 +224,28 @@ jobs:
             --policy research/unified_consequence_runtime/native_unbounded_v1/admission_policy.json \
             --out out/source-bundles/native_unbounded
 
+      - name: Admit source-mined typed proof-method vocabulary into guarded FLASH events
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/typed-native-qualification out/source-bundles/typed_semantic
+          gh api "repos/heathsanchez/test/actions/artifacts/11862440093/zip" > out/typed-native-qualification/sealed.zip
+          expected="$(python - <<'PY'
+          import json
+          p='research/unified_consequence_runtime/typed_semantic_method_v1/admission_policy.json'
+          print(json.load(open(p))['artifact_zip_sha256'])
+          PY
+          )"
+          test "$(sha256sum out/typed-native-qualification/sealed.zip | cut -d' ' -f1)" = "$expected"
+          unzip -q out/typed-native-qualification/sealed.zip -d out/typed-native-qualification/proofs
+          PYTHONPATH=components/flash python components/producers/typed_semantic/research/unified_consequence_runtime/typed_semantic_method_v1/admit_native_method.py \
+            --cslib components/cslib \
+            --proofs out/typed-native-qualification/proofs \
+            --run out/run-data/CSLIB_TYPED_METHOD_PASS.json \
+            --protocol research/unified_consequence_runtime/typed_semantic_method_v1/FROZEN_PROTOCOL.json \
+            --policy research/unified_consequence_runtime/typed_semantic_method_v1/admission_policy.json \
+            --out out/source-bundles/typed_semantic
+
       - name: Restore the latest successful qualification, never a red-run artifact
         working-directory: coordinator
         run: |
@@ -269,10 +298,16 @@ jobs:
           assert obj['mathgraph']['action_authorization']=='NONE'
           assert obj['mathgraph']['current_applicability']=='UNKNOWN'
           assert obj['runs']['CSLIB_NATIVE_FAIL']['conclusion']=='failure'
-          assert obj['flash']['events']==9
+          assert obj['flash']['events']==12
           assert obj['native_scoped_proof']['verdict']=='PASS_SCOPED'
           assert obj['source_native_method']['verdict']=='PASS_SCOPED'
           assert obj['source_native_parametric_induction']['verdict']=='PASS_SCOPED'
+          assert obj['source_native_typed_method_grammar']['verdict']=='PASS_SCOPED'
+          assert obj['source_native_typed_method_grammar']['earned_method_rule_count']==3
+          assert obj['source_native_typed_method_grammar']['proof_plan_ablation']=='PASS_THREE_INDEPENDENT_SOURCE_METHOD_ABLATIONS'
+          assert obj['source_native_typed_method_grammar']['controlled_revocation']=='PASS_THREE_SIMULATED_TYPED_METHOD_REVOCATIONS'
+          assert obj['source_native_typed_method_grammar']['autonomous_meta_generator_invention']=='UNKNOWN'
+          assert obj['gates']['native_typed_method_grammar_extension']=='PASS_SCOPED'
           assert obj['source_native_parametric_induction']['new_parametric_induction']=='PASS_NATIVE'
           assert obj['source_native_parametric_induction']['source_distinct_transfer']=='PASS_NATIVE'
           assert obj['source_native_parametric_induction']['feedback_selected_reverse_method']=='PASS_NATIVE'
@@ -299,10 +334,13 @@ jobs:
                   'cslib:cycle:native-source-checked-simulation:v1',
                   'cslib:two-original-inductives:native-source-derived-bisimulation:v1',
                   'cslib:nat-infinite-trace:forward-method:v1',
-                  'cslib:nat-infinite-trace:backward-method:v1'
+                  'cslib:nat-infinite-trace:backward-method:v1',
+                  'cslib:transport-method:acquisition:v1',
+                  'cslib:transport-method:heldout:v1',
+                  'cslib:transport-method:grammar_revision:v1'
               }
               assert set(obj['flash']['new_event_ids']) <= allowable
-              assert len(obj['flash']['unchanged_event_ids'])>=7
+              assert len(obj['flash']['unchanged_event_ids'])>=9
               assert obj['gates']['prior_research_history_retained']=='PASS'
           print('PASS_INTEGRATED_OPERATIONS_NO_FALSE_SCIENTIFIC_PROMOTION')
           PY
@@ -324,6 +362,9 @@ jobs:
             coordinator/out/native-unbounded-qualification/proofs/
             coordinator/out/native-unbounded-qualification/sealed.zip
             coordinator/out/source-bundles/native_unbounded/
+            coordinator/out/typed-native-qualification/proofs/
+            coordinator/out/typed-native-qualification/sealed.zip
+            coordinator/out/source-bundles/typed_semantic/
             coordinator/out/source-bundles/native/
             coordinator/out/run-data/
           if-no-files-found: warn
