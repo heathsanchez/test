@@ -1,0 +1,94 @@
+{
+  "source_directory": "/tmp/nucleus-pred-derived-source",
+  "binary_sha256": "599c351823e94749d5438c1d7fc98807cb87478cec1620b1ad3ccf685eb81698",
+  "source_hashes": {
+    "/tmp/nucleus-pred-derived-source/src/capability.rs": "465c7b8f6a8e23f7e6900320aebb356f2f6291795a5923565685022e3d730953",
+    "/tmp/nucleus-pred-derived-source/src/checker.rs": "98f852572d1ac0f1f4602657cad21b3cdd2e9f46909f829ce598038f7090f30b",
+    "/tmp/nucleus-pred-derived-source/src/convert.rs": "492b2d953b818698e6c4074094fff3ca80ecc56718adc77206e9a7e6fd21c1a0",
+    "/tmp/nucleus-pred-derived-source/src/diagnostics.rs": "2d94c257aa27566aaa6dbdd45a9b5f7beed41e4eda054176b026116c6cfedfdc",
+    "/tmp/nucleus-pred-derived-source/src/environment.rs": "c4dd73062d4f269098af1bb38f5de00b2cf1d13fd20bd390e98304996191a09a",
+    "/tmp/nucleus-pred-derived-source/src/id.rs": "79f7d6e2c32b0f50a391d197e4eee32dc0bf9bc4ec96d27a1e31eed833dd215b",
+    "/tmp/nucleus-pred-derived-source/src/indexed_prop.rs": "ab9f35c77c8c285e12f60bca2b50d40faa8ae1673e1a6bfb300f00e1fd683e76",
+    "/tmp/nucleus-pred-derived-source/src/inductive.rs": "f8111184a6c4a37ebfa362679d4c79d2a9f3297c41fd524cc45b71ca7b39e1dd",
+    "/tmp/nucleus-pred-derived-source/src/judgment.rs": "41714ffe0ba04ae42a1329f0a083f632eec6ae3102d1cc9e0c7ab3ca8c082f6d",
+    "/tmp/nucleus-pred-derived-source/src/level.rs": "9ba7db039f7793f9cd794d6a2a9e30d92313c093d6b4506fd6db1449a002aef5",
+    "/tmp/nucleus-pred-derived-source/src/lib.rs": "220c4510c23dbed492432e1f53913133468e0f572e5d97e04046084a17c06f83",
+    "/tmp/nucleus-pred-derived-source/src/machine.rs": "e830d7d59afa2c1e1971510ceff295b4eb1dbbe62025c63a16996eabcb92b3ab",
+    "/tmp/nucleus-pred-derived-source/src/main.rs": "0e10bfafdc3395ca48b3e7bd33d096e542feffb02e66840915ed70fb552601ec",
+    "/tmp/nucleus-pred-derived-source/src/nat.rs": "b1767ff422548733e756056e2470771bfa9eed2bcbb71082e8d494cfa1869b88",
+    "/tmp/nucleus-pred-derived-source/src/parser.rs": "c65393a6fba7da46f5bd9bef14608d7a47c4cca3041442d3c96eccdcabbe7161",
+    "/tmp/nucleus-pred-derived-source/src/syntax.rs": "6ba86a3b6820d9739f8cb5ad1ede3906f456cf2a16119d712a85795cda376116",
+    "/tmp/nucleus-pred-derived-source/src/typecheck.rs": "4d71bcc0bb14e12791d474ce6df2fadf2e242bb5e4d1e444faed137633bc15d3",
+    "/tmp/nucleus-pred-derived-source/src/value.rs": "38483901bce088eae740626e5865181e4e2fe4e9dc075547f55c0708da128e9b",
+    "/tmp/nucleus-pred-derived-source/src/verdict.rs": "e2154540cb78dee760db6800999d6d134bec90ae6c03a0a1bd297efb0eb5885c"
+  },
+  "patch": "/tmp/nucleus-pred-derived.patch",
+  "patch_sha256": "779232a53ec146e3a69af75cb3d1eb45732e85628549153d0dfe8f48a3022ff5",
+  "tests_log": "/tmp/nucleus-pred-derived-origin-tests.log",
+  "tests": {
+    "passed": 326,
+    "failed": 0,
+    "ignored": 17
+  },
+  "test_flags": [
+    "RELEVANCE",
+    "CONTEXT_BINDER",
+    "TYPED_LINEAGE",
+    "SUBSTITUTION_RECLOSURE",
+    "TYPED_VALUE_NORMALIZATION",
+    "PROJECTION_CONTEXT",
+    "PROJECTION_CROSSFRAME_512",
+    "TYPED_RECEIVER",
+    "SOURCE_PAIR_DEPTH8",
+    "POLYMORPHIC_PROP_IRREL",
+    "PROP_SINGLETON_2P1F",
+    "EXPECTED_LAMBDA"
+  ],
+  "qualification": "/tmp/nucleus-pred-derived-final-frozen196.json",
+  "modes": {
+    "default": {
+      "accept": 118,
+      "reject": 71,
+      "unknown": 7,
+      "errors": 0,
+      "wrong": 0
+    },
+    "origin": {
+      "accept": 119,
+      "reject": 71,
+      "unknown": 6,
+      "errors": 0,
+      "wrong": 0
+    },
+    "demand": {
+      "accept": 119,
+      "reject": 71,
+      "unknown": 6,
+      "errors": 0,
+      "wrong": 0
+    }
+  },
+  "controls": [
+    {
+      "case": "pred-custom-valid",
+      "rc": 0,
+      "expected": 0
+    },
+    {
+      "case": "pred-custom-incompatible",
+      "rc": 1,
+      "expected": 1
+    },
+    {
+      "case": "pred-standard-valid",
+      "rc": 0,
+      "expected": 0
+    },
+    {
+      "case": "pred-standard-incompatible",
+      "rc": 1,
+      "expected": 1
+    }
+  ],
+  "semantic_warrant": "Only established exact checked RHS, closed Nat lambda and formed source Nat domain; actual zero RHS reduces to zero and actual succ of fresh source-owned typed local reduces to the same local. Native rule follows substitution of these two source clauses for qualified exhaustive Nat; no name-only authority."
+}

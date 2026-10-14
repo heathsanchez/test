@@ -5175,6 +5175,47 @@ impl<'a> TypeChecker<'a> {
         .then(|| (*name, levels.clone()))
     }
 
+    pub(crate) fn derived_predecessor_equations(&self,name:NameId,value:ExprId,budget:usize)->bool {
+        let Some(nat)=self.environment.nat_primitives() else{return false;};
+        if nat.pred.is_some(){return false;}
+        let Some(carrier)=nat.virtual_bvar_zero else{return false;};
+        if !matches!(self.expressions.get(carrier),Some(Expr::BVar(0))){return false;}
+        let Some(Expr::Lam{domain,body})=self.expressions.get(value) else{return false;};
+        if !matches!(self.expressions.get(*domain),Some(Expr::Const{name,levels}) if *name==nat.type_name&&levels.is_empty()){return false;}
+        let mut probe=Self::new(self.expressions,self.levels,self.environment);
+        probe.strict_origin_probe=true;
+        let mut work=budget;
+        if probe.complete_source_support(value,&mut work).is_none_or(|support|!support.is_empty()){return false;}
+        // The immutable environment contains only established declarations.
+        // Use that completed original body judgment, rather than rechecking it
+        // under a different strict probe configuration.
+        let Some(declaration)=self.environment.get(name) else{return false;};
+        if declaration.value!=Some(value)||!declaration.level_params.is_empty(){return false;}
+        let Some(Expr::Pi { domain: declared_domain, body: result }) = self.expressions.get(declaration.ty) else { return false; };
+        if ![*declared_domain, *result].into_iter().all(|expr|
+            matches!(self.expressions.get(expr),Some(Expr::Const{name,levels}) if *name==nat.type_name&&levels.is_empty())) { return false; }
+
+        let domain=Closure::new(*domain,EnvFrame::empty());
+        let Some(formation)=probe.infer_exact_closure_in_context(&domain,&[],&mut work,0)else{return false;};
+        if !probe.sort_level(Judgment::proven(formation,"source-Nat-domain-formation"),work).is_proven(){return false;}
+        if work < 4 { return false; }
+        work -= 4;
+        let free=FreeId(0);let original_body=Closure::new(*body,EnvFrame::empty());
+        if !crate::convert::source_opening_avoids_capture(&probe,&original_body,free,&mut work){return false;}
+        let domain=TypeValue::Term(domain);let context=vec![domain.clone()];
+        let frame=probe.checked_source_frame(value,CheckedFrameRole::InferLambda,&EnvFrame::empty(),domain.clone(),&context,CheckedFrameBinding::Free(free));
+        if probe.checked_type_of_bound_source(&frame,0,&context)!=Some(domain){return false;}
+        let variable=Closure::new(carrier,frame);
+        // A certified Nat.succ applied to this actual typed source local is
+        // a Nat in the same Γ. The neutral carrier asserts no new typing fact.
+        let successor=Closure::new(carrier,EnvFrame::empty().extend_neutral(Neutral{
+            head:NeutralHead::Const{name:nat.succ,levels:vec![]},spine:vec![variable],
+        }));
+        let zero_body=Closure::new(*body,EnvFrame::empty().extend_nat_literal(crate::nat::BigNat::zero()));
+        let succ_body=Closure::new(*body,EnvFrame::empty().extend(successor));
+        probe.machine().source_predecessor_equations(zero_body,succ_body,free,work)
+    }
+
     pub(crate) fn machine(&self) -> Machine<'_> {
         Machine::new(
             self.environment.authority(),

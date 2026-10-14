@@ -1669,3 +1669,11 @@ fn g23_does_not_authorize_a_renamed_family() {
     );
     assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
 }
+
+#[test]
+fn nat_pred_follows_its_checked_definition_instead_of_its_name() {
+    assert_eq!(run_fixture("pred-custom-valid.ndjson"), Verdict::Accept);
+    assert_eq!(run_fixture("pred-custom-incompatible.ndjson"), Verdict::Reject);
+    assert_eq!(run_fixture("pred-standard-valid.ndjson"), Verdict::Accept);
+    assert_eq!(run_fixture("pred-standard-incompatible.ndjson"), Verdict::Reject);
+}

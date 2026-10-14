@@ -384,6 +384,28 @@ impl<'a> Machine<'a> {
             .map(|exposure| exposure.value)
     }
 
+    // Both inputs come from qualified Nat constructors and a source-checked
+    // Nat local. Evaluate the actual RHS; no expected result selects iota.
+    pub(crate) fn source_predecessor_equations(&self,zero_body:Closure,succ_body:Closure,
+        free:FreeId,budget:usize)->bool {
+        if self.nat_primitives.as_ref().is_none_or(|nat|nat.pred.is_some()) {return false;}
+        let Some(nat)=self.nat_primitives.as_ref() else{return false;};
+        let _owner=if self.exposure_fuel.get().is_none(){
+            self.exposure_fuel.set(Some(budget));Some(ConstructorFuelScope{fuel:&self.exposure_fuel})
+        }else{None};
+        let zero=self.expose(zero_body,Transparency::Full,budget);
+        let zero_matches=matches!(zero.proven_value(),Some(Value::NatLit(n)) if n.is_zero())
+            ||matches!(zero.proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Const{name,levels},spine})) if *name==nat.zero&&levels.is_empty()&&spine.is_empty());
+        if !zero_matches{
+            #[cfg(feature="diagnostics")] if std::env::var_os("NUCLEUS_TRACE_PRED_SOURCE").is_some(){eprintln!("NUCLEUS_PRED_SOURCE_DECLINE:actual-zero:{zero:?}:fuel={:?}",self.exposure_fuel.get());}
+            return false;
+        }
+        let succ=self.expose(succ_body,Transparency::Full,self.exposure_fuel.get().unwrap_or(0));
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_PRED_SOURCE").is_some(){eprintln!("NUCLEUS_PRED_SOURCE_EQUATIONS:zero={zero:?}:succ={succ:?}:fuel={:?}",self.exposure_fuel.get());}
+        matches!(succ.proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Free(actual),spine})) if *actual==free&&spine.is_empty())
+    }
+
     pub fn expose_for_conversion(
         &self,
         closure: Closure,

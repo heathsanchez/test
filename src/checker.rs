@@ -462,7 +462,12 @@ fn check_export_with_policy(
                 Some(NatOperation::Mod)
             } else if name_is_child_str(&export, name, nat.type_name, "sub") {
                 Some(NatOperation::Sub)
-            } else if name_is_child_str(&export, name, nat.type_name, "pred") {
+            } else if name_is_child_str(&export,name,nat.type_name,"pred")
+                && native_nat_unary_signature(&export,&environment,nat.type_name,name)
+                && environment.get(name).and_then(|decl|decl.value).is_some_and(|value|
+                    TypeChecker::new(&export.exprs,&export.levels,&environment)
+                        .derived_predecessor_equations(name,value,limits.judgment_steps.min(4096)))
+            {
                 Some(NatOperation::Pred)
             } else if name_is_child_str(&export, name, nat.type_name, "ble") {
                 Some(NatOperation::Ble)
@@ -4416,6 +4421,14 @@ fn check_exact_ofnat(
         )
         .map_err(|_| Verdict::Reject)?;
     install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
+fn native_nat_unary_signature(export:&ResolvedExport,environment:&Environment,nat:NameId,name:NameId)->bool {
+    let Some(declaration)=environment.get(name)else{return false;};
+    if !declaration.level_params.is_empty()||declaration.value.is_none(){return false;}
+    let Some((domains,result))=pi_spine(export,declaration.ty,1)else{return false;};
+    domains.len()==1&&domains.iter().copied().chain([result]).all(|expression|
+        matches!(export.exprs.get(expression),Some(Expr::Const{name,levels}) if *name==nat&&levels.is_empty()))
 }
 
 fn native_nat_binary_signature(export: &ResolvedExport, environment: &Environment, nat: NameId, name: NameId) -> bool {
