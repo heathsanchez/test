@@ -180,9 +180,12 @@ def evidence_model(source_records):
     nature_unc=D("0.000014")*dC/D(1000)
     delta=abs(nature_freq-D("3289841960252.9"))
     lower=abs(nature_unc-D("9.7"))
-    assert abs(delta-D(ryd["delta_exact"].split("/")[0])/
-               D(ryd["delta_exact"].split("/")[1]) if "/" in ryd["delta_exact"]
-               else delta-D(ryd["delta_exact"]))<D("1e-27")
+    r_delta=F(ryd["delta_exact"])
+    r_lower=F(ryd["minimum_difference_sigma_exact"])
+    expected_delta=D(r_delta.numerator)/D(r_delta.denominator)
+    expected_lower=D(r_lower.numerator)/D(r_lower.denominator)
+    assert abs(delta-expected_delta)<D("1e-27")
+    assert abs(lower-expected_lower)<D("1e-27")
     assert delta < D(2)*lower
     # SM-predicted contrast only in the paper's exact supplied model scope.
     model_contrast=contrast_measured_predicted(nature_obs,nature_SM)
