@@ -85,7 +85,7 @@ for(const expected of policy.exact_cases) {
   // This does not change the generic risk classification or Check conclusion.
   const genericContext=githubPayload.output.summary;
   githubPayload.output.summary=(
-    sourceText+'\n\n---\n### Additional generic PR analysis\n'+genericContext
+    sourceText.trimStart()+'\n\n---\n### Additional generic PR analysis\n'+genericContext
   ).slice(0,60000);
   githubPayload.output.title='Exact-revision PR regressions — neutral review evidence';
   if(githubPayload.conclusion!=='neutral') throw Error('ADVISORY_WAS_PROMOTED');
