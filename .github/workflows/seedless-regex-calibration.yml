@@ -27,6 +27,7 @@ jobs:
       - name: Reconstruct frozen original base source, untouched
         run: |
           set -euo pipefail
+          git -C source/validator/head fetch --no-tags --depth=1 origin df91dfdd9abdbb838739d13a70550efb7f730d3e
           git -C source/validator/head worktree add --detach ../base df91dfdd9abdbb838739d13a70550efb7f730d3e
           test "$(git -C source/validator/base rev-parse HEAD)" = df91dfdd9abdbb838739d13a70550efb7f730d3e
           test "$(git -C source/validator/head rev-parse HEAD)" = a37c290428207fcaf419d295cde1fc432fa37c9e
