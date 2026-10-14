@@ -52,10 +52,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git show 6451eacf2f5687317579573eab69439307bb3c61:research/jpl_meta_sql_transfer_v1/FROZEN_PROTOCOL.json > /tmp/jpl_meta_original_protocol.json
-          cmp /tmp/jpl_meta_original_protocol.json research/jpl_meta_sql_transfer_v1/FROZEN_PROTOCOL.json
-          git show 931ad550560a044fb98e36369e5b5a40e75e7448:research/jpl_meta_sql_transfer_v1/FUTURE_ADVERSARIAL_PROTOCOL.json > /tmp/jpl_meta_frozen_future.json
-          cmp /tmp/jpl_meta_frozen_future.json research/jpl_meta_sql_transfer_v1/FUTURE_ADVERSARIAL_PROTOCOL.json
+          # Exact immutable Git blobs from frozen source commits. Avoid a shallow
+          # checkout's incomplete old-commit tree lookup; do not relax the bytes.
+          test "$(git hash-object research/jpl_meta_sql_transfer_v1/FROZEN_PROTOCOL.json)" = 119473aab8f3ca1409bf161c8ed1c00d9d289354
+          test "$(git hash-object research/jpl_meta_sql_transfer_v1/FUTURE_ADVERSARIAL_PROTOCOL.json)" = a183d9ed45e6ec3f918e45c4cd1e7c9146f9ef11
           test "$(git -C jpl-target-sqlglot rev-parse HEAD)" = b1b244b1f38a3000c94a7b21ee6dfae1959dd4b2
           test "$(git -C flash-v13-source rev-parse HEAD)" = 90d167031bba230399a686252ae5573d57100b94
           test "$(git -C jpl-target-sqlglot hash-object sqlglot/optimizer/optimizer.py)" = fb8d216967c68d8e65db4455bdca0c8419cd9efc
