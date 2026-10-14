@@ -263,7 +263,7 @@ func main(){
   "semantic_method_self_invented":false,
   "expected_three_native_arms":[]string{"ORIGINAL_BASE_PLUS_NEW_CASE_RED",
                                 "ORIGINAL_HEAD_PLUS_NEW_CASE_GREEN",
-                                "ORIGINAL_HEAD_PLUS_FALSE_CASE_RED"],
+                                "ORIGINAL_HEAD_PLUS_FALSE_CASE_RED"},
   "action_authorization":"NONE",
  }
  data,e:=json.MarshalIndent(result,"","  ");fatal(e==nil,"REPORT_MARSHAL_FAILURE")
