@@ -76,6 +76,8 @@ def robust_consistency(a: Quantity,b: Quantity,threshold: Fraction=F(2)):
 
 def joint_covariance_diagnostic(rho: Fraction):
     """Normalized outputs: diagnostic only, NOT an invented physical measurand."""
+    if rho is None:
+        raise UnknownEvidence("UNKNOWN_WITHIN_SOURCE_COVARIANCE")
     if abs(rho)>1:
         raise UnknownEvidence("NON_POSITIVE_SEMIDEFINITE_COVARIANCE")
     return {"correlation":str(rho),
@@ -93,6 +95,8 @@ class Ledger:
         if not source_digest or len(source_digest)!=64 or not source_url.startswith("https://"):
             raise UnknownEvidence("INVALID_SOURCE_IDENTITY")
         incoming=(source_digest,source_url)
+        if event_id not in self.events and any(v[0]==source_digest for v in self.events.values()):
+            raise UnknownEvidence("SOURCE_ALIAS_DUPLICATE")
         old=self.events.get(event_id)
         if old is not None and old!=incoming:
             raise UnknownEvidence("CONFLICTING_SOURCE_ID")
@@ -146,3 +150,8 @@ def contrast_measured_predicted(x:Quantity,pred:Quantity):
             "variance_kHz_sq":str(x.sigma*x.sigma+pred.sigma*pred.sigma),
             "attribution":"REPORTED_MODEL_DEPENDENT_CONTRAST",
             "independent_QED_validation":False}
+
+
+def independent_pooled_mean(*values):
+    # No two-event covariance means no justified statistically fused value.
+    raise UnknownEvidence("UNKNOWN_CROSS_STUDY_COVARIANCE_NO_POOLED_MEAN")
