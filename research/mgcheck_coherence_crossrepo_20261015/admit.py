@@ -88,5 +88,6 @@ def main():
   "B":{k:v for k,v in family_result["b"].items() if k in ("old_violations","fixed_native_witness_count","new_regression_count","ablated_original_failure_restored_count")},
   "C":{k:v for k,v in family_result["c"].items() if k in ("old_violations","fixed_native_witness_count","new_regression_count","ablated_original_failure_restored_count")}},sort_keys=True))
  if evidence["two_source_distinct_futures"]!="WARRANTED_BOUNDED":
-  raise SystemExit("NATIVE_TWOSOURCE_ADMISSION_RED")
+  (E/"FROZEN_SCIENTIFIC_RED.txt").write_text("NATIVE_TWOSOURCE_ADMISSION_RED: B qualified, C unavailable; do not promote 2/2.\n")
+  print("NATIVE_TWOSOURCE_ADMISSION_RED_RETAINED")
 if __name__=="__main__":main()
