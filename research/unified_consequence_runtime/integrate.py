@@ -277,6 +277,74 @@ def main():
             raise AssertionError("METHOD_REVOCATION_AFFECTED_UNRELATED_OBSTRUCTIONS")
         method_revocation = "PASS_SIMULATED_TYPED_METHOD_REVOCATION"
 
+    # The source-feedback constructor has now made a distinct *native*
+    # parametric law available.  DOWN is an independently valid theorem, not a
+    # semantic dependency on UP, but its genesis episode does depend on the
+    # observed UP failure; model these two relations separately.
+    infinite_done = (
+        "CSLIB_NATIVE_UNBOUNDED_PASS" in runs
+        and "native_unbounded" in manifest["emitters"]
+    )
+    infinite_ids = {
+        "UP": "cslib:nat-infinite-trace:forward-method:v1",
+        "DOWN": "cslib:nat-infinite-trace:backward-method:v1",
+    }
+    infinite_ablation = "NOT_CHECKED"
+    infinite_revocation = "NOT_CHECKED"
+    if infinite_done:
+        active = set(summary["active_capability_ids"])
+        if not set(infinite_ids.values()).issubset(active):
+            raise AssertionError("QUALIFIED_NATIVE_INDUCTION_NOT_LIVE")
+        for cap_id in infinite_ids.values():
+            if "external:" + cap_id not in summary["discharged_obligation_ids"]:
+                raise AssertionError("NATIVE_INFINITE_SOURCE_OBLIGATION_NOT_SOLVED")
+        without = [
+            path for path in bundles
+            if path.relative_to(args.source_bundles).parts[0] != "native_unbounded"
+        ]
+        old = update_live_state(None, without)["summary"]
+        if set(old["active_capability_ids"]) | set(infinite_ids.values()) != active:
+            raise AssertionError("INFINITE_METHOD_CAUSAL_ADMISSION_MISMATCH")
+        if set(old["obstruction_ids"]) != set(summary["obstruction_ids"]):
+            raise AssertionError("INFINITE_METHOD_CHANGED_OLD_OBSTRUCTIONS")
+        infinite_ablation = "PASS_BOTH_SOURCE_METHODS_CAUSALLY_ADMITTED"
+
+        # Keep the backward program if the forward warrant is retracted:
+        # its formal method works independently; only the SCIENTIFIC causal
+        # development-chain claim must lose support.
+        from realitygraph.flash import ExternalEventEnvelope
+        from tempfile import TemporaryDirectory
+        native_root = args.source_bundles / "native_unbounded"
+        for direction, method_name in (("UP", "forward"), ("DOWN", "backward")):
+            event = read(native_root / method_name / "event.json")
+            raw = (
+                '{"scope":"simulated_native_method_withdrawal",'
+                '"method":"' + method_name + '","real_revocation":false}'
+            ).encode()
+            revoke = ExternalEventEnvelope.capability_revocation(
+                event_id="cslib:infinite:" + method_name + ":simulated-withdrawal",
+                repository=event["repository"],
+                commit=event["commit"],
+                authority_snapshot=event["authority_snapshot"],
+                verifier_id=event["verifier_id"],
+                source_evidence=raw,
+                capability_id=infinite_ids[direction],
+                reason="controlled native method source invalidation, NOT live evidence withdrawal"
+            )
+            with TemporaryDirectory(prefix="unbounded-method-withdrawal-") as temp:
+                attack_root = Path(temp)
+                (attack_root / "event.json").write_text(revoke.to_text())
+                (attack_root / "evidence.json").write_bytes(raw)
+                checked = update_live_state(None, list(bundles) + [attack_root])["summary"]
+            expected_caps = active - {infinite_ids[direction]}
+            if set(checked["active_capability_ids"]) != expected_caps:
+                raise AssertionError("METHOD_LOCAL_REVOCATION_INVALID")
+            if "external:" + infinite_ids[direction] not in checked["open_obligation_ids"]:
+                raise AssertionError("METHOD_WITHDRAWAL_NOT_REOPENED")
+            if set(checked["obstruction_ids"]) != set(summary["obstruction_ids"]):
+                raise AssertionError("METHOD_REVOCATION_CORRUPTED_PRIOR_OBSTRUCTIONS")
+        infinite_revocation = "PASS_SIMULATED_INDEPENDENT_METHOD_REVOCATIONS"
+
     preceding_log = (args.previous_ledger.read_text(encoding="utf-8")
                      if args.previous_ledger and args.previous_ledger.is_file() else None)
     log = mt.loads(preceding_log) if preceding_log is not None else ()
@@ -363,11 +431,43 @@ def main():
              roots[("emitters", "source_bisim")].id,
              flash_event.id))
         log = mt.append(log, native_method_node)
+    native_infinite_nodes = {}
+    native_infinite_history = None
+    if infinite_done:
+        for direction, method_key in sorted(infinite_ids.items()):
+            node = mt.Node("native_unbounded_induction_proof_method", {
+                "qualified_native_run": runs["CSLIB_NATIVE_UNBOUNDED_PASS"]["url"],
+                "qualified_source_head": runs["CSLIB_NATIVE_UNBOUNDED_PASS"]["commit"],
+                "scope": "original CSLib unbounded natural-number states, arbitrary trace length",
+                "method_direction": direction,
+                "capability_id": method_key,
+                "source_deletion_ablation": infinite_ablation,
+                "simulated_revocation": infinite_revocation,
+                "human_defined_meta_grammar": True,
+                "native_general_method_new_open_theorem": "NOT_CLAIMED",
+                "action_authorization": "NONE"
+            }, (anchors["CSLIB_NATIVE_UNBOUNDED_PASS"].id,
+                roots[("emitters", "native_unbounded")].id,
+                flash_event.id))
+            log = mt.append(log, node)
+            native_infinite_nodes[direction] = node
+        native_infinite_history = mt.Node("source_feedback_method_development", {
+            "old_finite_method": "UNKNOWN_UNSUPPORTED_NATIVE_INFINITE_STATE",
+            "source_up_acquisition": "PASS",
+            "source_distinct_up_transfer": "PASS",
+            "downward_orientation_obstruction": "REJECTED_NATIVE_UP",
+            "source_repair_from_frozen_method_grammar": "PASS",
+            "generator_language_self_invention": "UNKNOWN",
+            "general_autonomous_development": "UNKNOWN",
+        }, (native_infinite_nodes["UP"].id, native_infinite_nodes["DOWN"].id))
+        log = mt.append(log, native_infinite_history)
     future_dependencies = (qualification.id, source_catalogue.id, flash_event.id, residual.id)
     if native_done:
         future_dependencies += (native_node.id,)
     if method_done:
         future_dependencies += (native_method_node.id,)
+    if infinite_done:
+        future_dependencies += (native_infinite_history.id,)
     future_name = (
         "autonomous_source_distinct_native_generator_invention_still_open"
         if native_done else "diagnose_native_failure_and_test_new_semantic_repair")
@@ -376,6 +476,7 @@ def main():
         "protected_target": bad["url"],
         "native_certificate_backend": "PASS_SCOPED" if native_done else "UNKNOWN",
         "source_native_method_transfer": "PASS_SCOPED" if method_done else "UNKNOWN",
+        "source_native_parametric_induction": "PASS_SCOPED" if infinite_done else "UNKNOWN",
         "action_authorization": "NONE",
         "system_e2e": manifest["protected_claims"]["system_e2e"],
         "recursive_native_development": manifest["protected_claims"]["recursive_native_development"]}
@@ -402,6 +503,20 @@ def main():
     assert residual.id in independent_live(revoked)
     assert flash_event.id in independent_live(revoked)
     assert mt.loads(serialized) == log, "archived past must not change"
+    if infinite_done:
+        method_science_revoked = mt.append(log, mt.Node("revoke", {
+            "target": native_infinite_nodes["UP"].id,
+            "reason": "simulated causal-development-support withdrawal",
+        }))
+        remaining = independent_live(method_science_revoked)
+        if native_infinite_nodes["UP"].id in remaining:
+            raise AssertionError("FORWARD_INDUCTION_DID_NOT_WITHDRAW")
+        if native_infinite_nodes["DOWN"].id not in remaining:
+            raise AssertionError("INDEPENDENT_BACKWARD_METHOD_WRONGLY_REVOKED")
+        if native_infinite_history.id in remaining or frontier.id in remaining:
+            raise AssertionError("SOURCE_FEEDBACK_CAUSAL_LINEAGE_WRONGLY_ACTIVE")
+        if set(mt.live_ids(method_science_revoked)) != remaining:
+            raise AssertionError("METATRON_INFINITE_METHOD_LIVENESS_INCORRECT")
     if method_done:
         method_withdrawal = mt.append(log, mt.Node("revoke", {
             "target": native_method_node.id,
@@ -457,6 +572,18 @@ def main():
             "restart": "PASS", "dependency_oracle": "PASS",
             "source_revocation": "PASS", "unrelated_lineage": "PRESERVED"},
         "frontier": frontier.payload,
+        "source_native_parametric_induction": {
+            "verdict": "PASS_SCOPED" if infinite_done else "UNKNOWN",
+            "capability_ids": list(infinite_ids.values()) if infinite_done else [],
+            "old_finite_grammar": "UNKNOWN_UNSUPPORTED_NATIVE_INFINITE_STATE",
+            "new_parametric_induction": "PASS_NATIVE" if infinite_done else "UNKNOWN",
+            "source_distinct_transfer": "PASS_NATIVE" if infinite_done else "UNKNOWN",
+            "feedback_selected_reverse_method": "PASS_NATIVE" if infinite_done else "UNKNOWN",
+            "causal_admission_ablation": infinite_ablation,
+            "simulated_typed_revocation": infinite_revocation,
+            "method_language_human_defined": True,
+            "generator_self_invention": "UNKNOWN",
+            "scientific_e2e_system": "UNKNOWN"},
         "source_native_method": {
             "verdict": "PASS_SCOPED" if method_done else "UNKNOWN",
             "capability_id": method_id if method_done else None,
@@ -485,6 +612,9 @@ def main():
             "metatron_ablation": "PASS",
             "source_bound_native_scoped_certificate": "PASS" if native_done else "UNKNOWN",
             "source_distinct_upstream_native_semantics": "PASS_SCOPED" if method_done else "UNKNOWN",
+            "native_unbounded_parametric_induction": "PASS_SCOPED" if infinite_done else "UNKNOWN",
+            "native_unbounded_causal_admission": infinite_ablation,
+            "native_unbounded_independent_revocations": infinite_revocation,
             "source_method_causal_ablation": method_ablation,
             "source_method_typed_revocation": method_revocation,
             "native_semantic_event_ablation": native_causal,
