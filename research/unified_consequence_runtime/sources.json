@@ -46,6 +46,10 @@
     "source_bisim": [
       "heathsanchez/test",
       "bf577c18f9f70f306e59b9d52a31bb2e5411d555"
+    ],
+    "native_unbounded": [
+      "heathsanchez/test",
+      "820e01ace410fa1cec9c13b4ada54f962e9f4534"
     ]
   },
   "runs": [
@@ -111,6 +115,13 @@
       38477830521,
       "5f6fe3e69a6313d113403c0967154357caf2d8c6",
       "success"
+    ],
+    [
+      "CSLIB_NATIVE_UNBOUNDED_PASS",
+      "heathsanchez/test",
+      38489499790,
+      "f3adc4d72748e61884a30e05ee4627f534080a58",
+      "success"
     ]
   ],
   "mathgraph_policy_sha256": "7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89",
@@ -119,7 +130,9 @@
     "system_e2e": "UNKNOWN",
     "recursive_native_development": "UNKNOWN",
     "native_certificate_backend": "PASS_SCOPED",
-    "source_native_semantic_method": "PASS_SCOPED_ORIGINAL_UPSTREAM"
+    "source_native_semantic_method": "PASS_SCOPED_ORIGINAL_UPSTREAM",
+    "source_parametric_unbounded_induction": "PASS_SCOPED",
+    "generator_self_invention": "UNKNOWN"
   },
   "interpretation": "Historical runs are provider-checked pointers, not fresh theorem verifications. Original source scientific scopes prevail.",
   "event_origin_allowlist": {
@@ -132,8 +145,12 @@
     ],
     "source_bisim": [
       "5f6fe3e69a6313d113403c0967154357caf2d8c6"
+    ],
+    "native_unbounded": [
+      "f3adc4d72748e61884a30e05ee4627f534080a58"
     ]
   },
   "source_note": "An emitter head does not equal every event's original evidence commit. Validate each typed event's own repository and source SHA. Collatz has two source-distinct historical events. New CSLib native scope-qualified event is distinct from both historical Collatz events and cannot attest unrelated native goal success. Qualified proof origin dd0d53 and emitter implementation 4543d757 are distinct pins.",
-  "source_method_note": "Qualified source-extracted bisimulation method compiles two native CSLib inductives, per-artifact guarded, human-authored general extractor, no new open theorem or autonomous generator revision."
+  "source_method_note": "Qualified source-extracted bisimulation method compiles two native CSLib inductives, per-artifact guarded, human-authored general extractor, no new open theorem or autonomous generator revision.",
+  "source_unbounded_note": "Generic forward/backward method computed by source-feedback selection over designer-supplied typed meta-grammar, Lean checked for all n and k on three precommitted original CSLib sources; no spontaneous meta-grammar or open mathematical theorem."
 }
