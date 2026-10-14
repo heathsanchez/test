@@ -1,0 +1,102 @@
+name: MathGraph Check external PR native-evidence preview
+on:
+  push:
+    branches: [research/unified-consequence-runtime-20261013]
+    paths:
+      - 'research/unified_consequence_runtime/external_pr_v1/check_preview.mjs'
+      - '.github/workflows/unified-external-pr-check-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-mathgraph-check-native-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_PUBLIC_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 942de0ba529efdff00b1c667850b9d3f9f05aa5d
+          path: app-pilot
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preserve the existing GitHub App pilot's independent webhook controls
+        run: |
+          set -euo pipefail
+          test "$(git -C app-pilot rev-parse HEAD)" = 942de0ba529efdff00b1c667850b9d3f9f05aa5d
+          cd app-pilot
+          node --test integrations/mathgraph-check-github/test.mjs integrations/mathgraph-check-github/webhook.integration.test.mjs
+      - name: Pin the exact previously qualified external native regression artifact
+        run: |
+          set -euo pipefail
+          mkdir -p coordinator/out/native-pr-proof coordinator/out/mathgraph-check
+          gh api repos/heathsanchez/test/actions/artifacts/11862929149/zip > coordinator/out/native-pr-proof/pr-native.zip
+          expected="$(node -e 'const p=require("./coordinator/research/unified_consequence_runtime/external_pr_v1/ADMISSION_POLICY.json"); console.log(p.archive_zip_sha256)')"
+          test "$(sha256sum coordinator/out/native-pr-proof/pr-native.zip | cut -d' ' -f1)" = "$expected"
+          unzip -q coordinator/out/native-pr-proof/pr-native.zip -d coordinator/out/native-pr-proof/unsealed
+      - name: Generate exact-head neutral GitHub Check Run preview for two original external PRs
+        run: |
+          set -euo pipefail
+          node coordinator/research/unified_consequence_runtime/external_pr_v1/check_preview.mjs \
+            --core app-pilot/integrations/mathgraph-check-github/core.mjs \
+            --receipt coordinator/out/native-pr-proof/unsealed/receipt.json \
+            --policy coordinator/research/unified_consequence_runtime/external_pr_v1/ADMISSION_POLICY.json \
+            --output coordinator/out/mathgraph-check/external-pr-neutral-previews.json
+          node --input-type=module - <<'JS'
+          import {readFileSync} from 'node:fs';
+          const d=JSON.parse(readFileSync('coordinator/out/mathgraph-check/external-pr-neutral-previews.json','utf8'));
+          if(d.results.length!==2||d.actual_check_runs_posted!==0)
+            throw Error('NOT_TWO_READ_ONLY_PREVIEWS');
+          for(const r of d.results) {
+            if(r.github_check_run_preview.conclusion!=='neutral' ||
+                r.github_check_run_preview.status!=='completed' ||
+                r.github_check_run_preview.head_sha!==r.protected_revision ||
+                r.actually_posted!==false ||
+                r.app_installed!==false ||
+                r.action_authorization!=='NONE' ||
+                !r.github_check_run_preview.output.summary.includes('WARRANTED_BOUNDED_REAL_PR_NATIVE_REGRESSION'))
+              throw Error('FALSE_CHECK_RUN_SOURCE_AUTHORITY');
+          }
+          console.log('TWO_EXACT_HEAD_NEUTRAL_MATHGRAPH_CHECK_PAYLOADS_QUALIFIED');
+          JS
+      - name: Reject receipt mutation without contacting external publisher
+        run: |
+          set -euo pipefail
+          node --input-type=module - <<'JS'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const file='coordinator/out/native-pr-proof/unsealed/receipt.json';
+          const o=JSON.parse(readFileSync(file,'utf8'));
+          o.action_authorization='WRITE_ALLOWED';
+          writeFileSync('coordinator/out/native-pr-proof/forged-receipt.json',JSON.stringify(o));
+          JS
+          if node coordinator/research/unified_consequence_runtime/external_pr_v1/check_preview.mjs \
+            --core app-pilot/integrations/mathgraph-check-github/core.mjs \
+            --receipt coordinator/out/native-pr-proof/forged-receipt.json \
+            --policy coordinator/research/unified_consequence_runtime/external_pr_v1/ADMISSION_POLICY.json \
+            --output coordinator/out/mathgraph-check/forged-preview.json > /tmp/forged.log 2>&1; then
+              echo FALSE_NATIVE_AUTHORITY_ADMITTED
+              exit 1
+          fi
+          grep SOURCE_NATIVE_EVIDENCE_INVALID /tmp/forged.log
+          echo FORGED_CHECK_OUTPUT_DECLINED
+      - name: Save independent, read-only prospective Check Run previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-check-two-actual-pr-native-previews
+          path: |
+            coordinator/out/mathgraph-check/
+            coordinator/out/native-pr-proof/pr-native.zip
+          if-no-files-found: warn
