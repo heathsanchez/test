@@ -35,7 +35,7 @@ jobs:
                   target=super().redirect_request(req,fp,code,msg,headers,newurl)
                   if target and urllib.parse.urlparse(req.full_url).netloc != urllib.parse.urlparse(newurl).netloc:
                       target.remove_header('Authorization')
-                      target.remove_unredirected_header('Authorization')
+                      target.unredirected_hdrs.pop('Authorization', None)
                   return target
           opener=urllib.request.build_opener(SafeRedirect())
           home=pathlib.Path('research/aria_scaling_trust/consequence_recipient')
