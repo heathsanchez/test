@@ -1,0 +1,157 @@
+name: MathGraph Check - ReviewBench trusted native evidence bridge
+on:
+  push:
+    branches: [research/mgcheck-reviewbench-evidence-bridge-20261015]
+    paths:
+      - research/reviewbench_20261015/reviewer.py
+      - research/reviewbench_20261015/trusted_native_receipt.py
+      - research/reviewbench_20261015/tests/**
+      - research/reviewbench_20261015/Dockerfile
+      - .github/workflows/mgcheck-reviewbench-evidence-bridge.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  independent-native-to-reviewbench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.1'
+      - name: Run trusted-receipt positive and adversarial tests
+        run: python3 -m unittest discover -s research/reviewbench_20261015/tests -v
+      - name: Fetch pinned ReviewBench source and exact historic PR head
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/review-bench/ReviewBench.git /tmp/ReviewBench
+          git -C /tmp/ReviewBench checkout -q 5bba258937cc7d43577ce9a81a389a6550a20fa9
+          test "$(git -C /tmp/ReviewBench rev-parse HEAD)" = 5bba258937cc7d43577ce9a81a389a6550a20fa9
+          git init -q /tmp/reviewbench-go
+          git -C /tmp/reviewbench-go remote add origin https://github.com/review-bench/k1LoW_gh-copilot-review.git
+          git -C /tmp/reviewbench-go fetch -q --depth=1 origin f98281938e63acd1d2df9b89d6af98dcf58c9fa8
+          git -C /tmp/reviewbench-go checkout -q --detach f98281938e63acd1d2df9b89d6af98dcf58c9fa8
+          test "$(git -C /tmp/reviewbench-go rev-parse HEAD)" = f98281938e63acd1d2df9b89d6af98dcf58c9fa8
+      - name: Re-execute original native Go RED / repaired GREEN / removal RED
+        run: |
+          python3 research/reviewbench_20261015/replay_semantic.py /tmp/reviewbench-go "$GITHUB_WORKSPACE/native-source-artifacts"
+      - name: Build strict source-subject and native-log pinned evidence manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/reviewbench_20261015/native_evidence
+          cp native-source-artifacts/{receipt.json,original.log,candidate_patch.log,removed_patch.log} research/reviewbench_20261015/native_evidence/
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          def sha(data): return hashlib.sha256(data).hexdigest()
+          root=Path("research/reviewbench_20261015/native_evidence")
+          subjects=json.loads(Path("/tmp/ReviewBench/corpus/test/test.json").read_text())
+          pr=subjects[9]
+          assert pr["nwo"]=="k1LoW/gh-copilot-review" and pr["pr_number"]==9
+          assert pr["base"]=="5f3765a9ef25d9c5a57699418bed105d9ac54691"
+          assert pr["head"]=="f98281938e63acd1d2df9b89d6af98dcf58c9fa8"
+          receipt=json.loads((root/"receipt.json").read_text())
+          assert receipt["source_head"]==pr["head"]
+          assert receipt["final_source_restored"] is True and receipt["fixture_removed"] is True
+          assert [a["actual"] for a in receipt["arm"]]==["FAIL","PASS","FAIL"]
+          assert receipt["golden_reference_used"] is False
+          path="internal/github/github.go"
+          code=Path("/tmp/reviewbench-go")/path
+          content=code.read_bytes()
+          assert sha(content)==receipt["original_sha256"]
+          needle="func (c *Client) IsCopilotReviewFresh("
+          matched=[i for i,s in enumerate(content.decode().splitlines(),1) if needle in s]
+          assert len(matched)==1
+          message=(
+            "Source-bound native contract witness: PR description requires Copilot "
+            "review commit_id to equal current PR HEAD SHA, but this implementation "
+            "uses submitted_at versus committer.date. Original Go test reproduces "
+            "two identity/time counterexamples; a candidate identity repair passes "
+            "the same 4 cases, and restoring the original source restores both failures. "
+            "Advisory: human-authored test and repair, targeted scope only; not a full "
+            "project safety or benchmark novelty claim."
+          )
+          manifest={
+            "schema":"mgcheck-trusted-native-witness-v1",
+            "subject":{"repo":pr["nwo"],"pr_number":9,
+                       "base":pr["base"],"head":pr["head"]},
+            "finding":{"file":path,"line":matched[0],"message":message},
+            "evidence":{
+              "original_source_sha256":sha(content),
+              "native_receipt_sha256":sha((root/"receipt.json").read_bytes()),
+              "native_test_sha256":receipt["test_sha256"],
+              "native_test_name":"TestMGCheckCopilotHeadIdentityNotClock",
+              "log_sha256":{name:sha((root/(name+".log")).read_bytes())
+                            for name in ("original","candidate_patch","removed_patch")}
+            }
+          }
+          serialized=(json.dumps(manifest,sort_keys=True,indent=2)+"\n").encode()
+          (root/"manifest.json").write_bytes(serialized)
+          (Path("native-source-artifacts")/"manifest.sha256").write_text(sha(serialized)+"\n")
+          print("SIGNED_BY_HOST_DIGEST="+sha(serialized), "SOURCE_LINE="+str(matched[0]))
+          PY
+      - name: Build source-only ReviewBench reviewer with verified native evidence
+        run: docker build -t mgcheck-reviewbench:evidence research/reviewbench_20261015
+      - name: Execute actual official benchmark container contract with scoped positive and unrelated negative
+        shell: bash
+        run: |
+          set -euo pipefail
+          digest="$(cat native-source-artifacts/manifest.sha256)"
+          mkdir -p reviewbench-native-bridge
+          for pair in baseline:9 mathgraph:9 mathgraph:8; do
+            mode="${pair%%:*}"
+            index="${pair##*:}"
+            mkdir -p "reviewbench-native-bridge/${mode}-${index}"
+            (
+              cd "reviewbench-native-bridge/${mode}-${index}"
+              TRY_AGENT_WORK="/tmp/mgcheck-evidence-bridge-work" \
+                /tmp/ReviewBench/scripts/try-agent.sh mgcheck-reviewbench:evidence \
+                --pr "${index}" -e "RB_CONFIG_MODE=${mode}" -e RB_CONFIG_MODEL= \
+                -e "RB_NATIVE_EVIDENCE_DIR=/opt/mathgraph-check/native_evidence" \
+                -e "RB_NATIVE_EVIDENCE_MANIFEST_SHA256=${digest}" \
+                2>&1 | tee "contract.log"
+            )
+          done
+      - name: Admit only exact-source native finding, not off-subject or unrun baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("reviewbench-native-bridge")
+          records={}
+          for mode,idx,expected in [("baseline",9,0),("mathgraph",9,1),("mathgraph",8,0)]:
+              files=list((root/f"{mode}-{idx}"/"findings").glob("*.json"))
+              assert len(files)==1, (mode,idx,[str(x) for x in files])
+              data=json.loads(files[0].read_text())
+              assert len(data["findings"])==expected,(mode,idx,data)
+              if expected:
+                  assert data["findings"][0]["producer"]=="mathgraph-native-receipt"
+                  assert data["findings"][0]["file"]=="internal/github/github.go"
+              records[f"{mode}-{idx}"]={"contract":"PASS","findings":len(data["findings"])}
+          report={
+              "qualification":"BOUNDED_FIRST_PRODUCT_NATIVE_RECEIPT_CONSUMPTION",
+              "original_native_red_patch_green_removal_red":"PASS",
+              "subject_bound_admission":records,
+              "strong_model":"NOT_RUN",
+              "competitor_novel_defect_advantage":"REJECTED_ON_KNOWN_CASE",
+              "reviewer_speed_cost_superiority":"UNKNOWN",
+              "general_semantic_discovery":"UNKNOWN",
+              "deployment":"NONE",
+              "outside_repo_writes":"NONE"
+          }
+          (root/"summary.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-reviewbench-trusted-native-bridge
+          path: |
+            native-source-artifacts/
+            reviewbench-native-bridge/
+          retention-days: 30
