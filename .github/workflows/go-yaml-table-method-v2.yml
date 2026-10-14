@@ -1,0 +1,63 @@
+name: Source native Go test-table method construction V2
+on:
+  push:
+    branches: [research/mathgraph-go-yaml-table-closure-20261014]
+    paths:
+      - 'research/mathgraph_go_yaml_tables/construct_table_test_ir.go'
+      - 'research/mathgraph_go_yaml_tables/qualify_table.py'
+      - 'research/mathgraph_go_yaml_tables/FROZEN_PROTOCOL.json'
+      - '.github/workflows/go-yaml-table-method-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  go-table-method-source-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 27
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.12'
+      - name: Fail early on grammar-source compile and protocol parse
+        run: |
+          python3 -m py_compile coordinator/research/mathgraph_go_yaml_tables/qualify_table.py
+          python3 -m json.tool coordinator/research/mathgraph_go_yaml_tables/FROZEN_PROTOCOL.json > /dev/null
+          GO111MODULE=off go build -o /tmp/go-table-native-method coordinator/research/mathgraph_go_yaml_tables/construct_table_test_ir.go
+      - uses: actions/checkout@v4
+        with:
+          repository: go-yaml/yaml
+          ref: f6f7691b1fdeb513f56608cd2c32c51f8194bf51
+          path: base-go-yaml
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: go-yaml/yaml
+          ref: eeec3325703e0b40e3db99030ae27c8eb24be85f
+          path: head-go-yaml-1039
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: go-yaml/yaml
+          ref: f4c639bd1cc60dce6a61f68e7278e58210c0f07d
+          path: head-go-yaml-1037
+          persist-credentials: false
+      - name: Bind original external PR status to exact unmodified source
+        run: |
+          set -euo pipefail
+          mkdir -p metadata
+          curl -fsSL --retry 2 https://api.github.com/repos/go-yaml/yaml/pulls/1039 -o metadata/1039.json
+          curl -fsSL --retry 2 https://api.github.com/repos/go-yaml/yaml/pulls/1037 -o metadata/1037.json
+      - name: Test bounded generated native receiver methods against original data and full suite
+        run: python3 coordinator/research/mathgraph_go_yaml_tables/qualify_table.py
+      - name: Preserve exact source-diff, declined-method, induced-method and native execution receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-go-yaml-data-to-gocheck-native-v2
+          path: coordinator/research/mathgraph_go_yaml_tables/evidence/table_transfer_report.json
+          if-no-files-found: warn
+          retention-days: 90
