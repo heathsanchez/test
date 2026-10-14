@@ -56,6 +56,30 @@ jobs:
           git checkout --detach mathgraph-pr
           test "$(git rev-parse HEAD)" = "ae4936f24e5d2123c602fdd640347fb1b99fea4b"
           go test ./rpc -run '^TestMathGraphHTTPResponseIDBoundary$' -count=1 -v | tee ../pr.log
+      - name: PR head valid response-ID header positive control
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd geth
+          go test ./rpc -run '^TestMathGraphHeaderContextWithValidResponseIDs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd geth
+          go test ./rpc/... -count=1 | tee ../rpc-suite.log
+      - name: Upload exact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geth-rpc-id-shadow-evidence
+          path: |
+            master.sha
+            master.log
+            pr.log
+            rpc-suite.log
+            header-positive.log
+          if-no-files-found: warn
+ -count=1 -v | tee ../header-positive.log
       - name: PR head existing RPC tests
         shell: bash
         run: |
