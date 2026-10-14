@@ -144,7 +144,7 @@ def verify_api_metadata(spec,metadata,base):
         metadata.get("head",{}).get("sha")!=spec["head"] or
         metadata.get("base",{}).get("sha")!=base or
         metadata.get("base",{}).get("repo",{}).get("full_name")!="teorth/IEANTN" or
-        metadata.get("head",{}).get("repo",{}).get("full_name")!="teorth/IEANTN"):
+        not metadata.get("head",{}).get("repo",{}).get("full_name")):
         fail("LIVE_EXTERNAL_PR_SOURCE_REVISION_DRIFT")
     # An already merged PR is not forbidden, but a closed/unknown one should
     # not be passed off as currently open for maintainer decision support.
