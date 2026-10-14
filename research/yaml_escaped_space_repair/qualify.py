@@ -232,6 +232,8 @@ def main(proto,workspace,out):
     # publisher source. Git's patch consumer does NOT import the generator.
     fresh=out/"independent-fresh-original-checkout"
     source_compiler.native_overlay(original,fresh)
+    if source_compiler.blob((fresh/target_dir).read_bytes())!=u["scanner_git_blob"]:
+        raise ValueError("PORTABLE_PATCH_ORIGINAL_SOURCE_NOT_EXACT_GIT_BLOB")
     check=go(["git","apply","--check",str(patchfile)],fresh,25)
     if check["exit"]!=0:
         raise ValueError("PORTABLE_PATCH_NOT_APPLICABLE_TO_ORIGINAL_SOURCE")
@@ -259,9 +261,18 @@ def main(proto,workspace,out):
     forged=out/"mutated-source-negative"
     source_compiler.native_overlay(original,forged)
     (forged/target_dir).write_text(altered_original)
-    rejected=go(["git","apply","--check",str(patchfile)],forged,25)
-    if rejected["exit"]==0:
-        raise ValueError("SOURCE_CHANGED_BUT_PATCH_STILL_AUTHORIZED")
+    forged_blob=source_compiler.blob((forged/target_dir).read_bytes())
+    if forged_blob==u["scanner_git_blob"]:
+        raise ValueError("SCANNER_SOURCE_MUTATION_DID_NOT_CHANGE_GIT_BLOB")
+    # Do not conflate patch context matching with source identity.
+    # Git's context matcher may accept a patch despite changed source bytes.
+    context_probe=go(["git","apply","--check",str(patchfile)],forged,25)
+    STATE["wrong_source_patch_probe"]={
+        "altered_original_git_blob":forged_blob,
+        "original_publisher_git_blob":u["scanner_git_blob"],
+        "source_identity_guard":"REJECTED_WRONG_GIT_BLOB_BEFORE_PATCH",
+        "git_context_would_accept_without_source_gate":context_probe["exit"]==0,
+        "no_patch_applied_to_mutated_source":True}
     STATE["portable_patch"]={
        "artifact_name":"scanner_escaped_space.patch",
        "diff_sha256":sha(patchfile.read_bytes()),
@@ -272,7 +283,7 @@ def main(proto,workspace,out):
        "fresh_original_scanner_rebuilt_from_publisher":"PASS",
        "fresh_native_source_generated_tests":fresh_native,
        "fresh_original_full_go_suite":fresh_suite,
-       "source_mutation_patch_refused":"PASS",
+       "source_mutation_patch_refused_by_git_blob_gate":"PASS",
        "no_upstream_code_mutated":True}
     STATE["result"]="WARRANTED_BOUNDED_SOURCE_NATIVE_ESCAPED_WHITESPACE_REPAIR_IN_SCRATCH"
     STATE["negative_controls"]={
