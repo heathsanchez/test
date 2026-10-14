@@ -1,0 +1,107 @@
+name: MathGraph non-regex native method acquisition (frozen 2026-10-15)
+on:
+  push:
+    branches: [research/mgcheck-nonregex-source-genesis-20261015b]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-nonregex-method:
+    name: Native original ${{ matrix.family }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        family: [decimal, version]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+      - name: Frozen subject and source pins from protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.family }}" = "decimal" ]; then
+            echo "ORIGINAL_REPO=shopspring/decimal" >> "$GITHUB_ENV"
+            echo "PR=428" >> "$GITHUB_ENV"
+            echo "OLD_SHA=f658fbf1eb94abc869558633a0b9b239300899f4" >> "$GITHUB_ENV"
+            echo "HEAD_SHA=1fc621e247bcaa551e84a3a49608515ef9cbf13e" >> "$GITHUB_ENV"
+          else
+            echo "ORIGINAL_REPO=Masterminds/semver" >> "$GITHUB_ENV"
+            echo "PR=303" >> "$GITHUB_ENV"
+            echo "OLD_SHA=8b89c86cb53c57cfd5d07c13de12bc4d78954e99" >> "$GITHUB_ENV"
+            echo "HEAD_SHA=c9706646b4e12416632860dd87d388c2eed07052" >> "$GITHUB_ENV"
+          fi
+      - name: Fetch original historical source and exact contributor PR head
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q --no-checkout "https://github.com/${ORIGINAL_REPO}.git" "$RUNNER_TEMP/upstream"
+          git -C "$RUNNER_TEMP/upstream" fetch -q origin "refs/pull/${PR}/head:refs/pull/${PR}/head"
+          test "$(git -C "$RUNNER_TEMP/upstream" rev-parse "refs/pull/${PR}/head")" = "$HEAD_SHA"
+          git -C "$RUNNER_TEMP/upstream" cat-file -e "${OLD_SHA}^{commit}"
+          git -C "$RUNNER_TEMP/upstream" worktree add -q --detach "$RUNNER_TEMP/base" "$OLD_SHA"
+          git -C "$RUNNER_TEMP/upstream" worktree add -q --detach "$RUNNER_TEMP/head" "$HEAD_SHA"
+          test "$(git -C "$RUNNER_TEMP/base" rev-parse HEAD)" = "$OLD_SHA"
+          test "$(git -C "$RUNNER_TEMP/head" rev-parse HEAD)" = "$HEAD_SHA"
+          echo "PINNED_NATIVE_BASE=$OLD_SHA"
+          echo "PINNED_NATIVE_AUTHOR_HEAD=$HEAD_SHA"
+      - name: Run the UNCHANGED old regexp method as failure/UNKNOWN control
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          go run research/mgcheck_source_regex_20261015/source_regex_probe.go \
+            --old "$RUNNER_TEMP/base" --head "$RUNNER_TEMP/head" \
+            --old-sha "$OLD_SHA" --head-sha "$HEAD_SHA" \
+            --out "old-method-${{ matrix.family }}.json" > old-method-log.txt
+          status=$?
+          set -e
+          echo "PREVIOUS_REGEX_METHOD_EXIT=$status"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("old-method-${{ matrix.family }}.json").read_text())
+          assert r["status"] in ("REJECTED_NO_MATCHED_PATTERN_CHANGE","UNKNOWN_NO_WITNESS_WITHIN_GENERATED_DOMAIN"),r["status"]
+          assert r.get("changed_unique_patterns",0)==0 or r["status"]=="UNKNOWN_NO_WITNESS_WITHIN_GENERATED_DOMAIN"
+          print("PREVIOUS_METHOD_DECLINED_NONREGEX="+r["status"])
+          PY
+      - name: Compile universal new method and execute original application functions
+        shell: bash
+        run: |
+          set -euo pipefail
+          go run research/mgcheck_nonregex_20261015/nonregex_method.go \
+            --old "$RUNNER_TEMP/base" --head "$RUNNER_TEMP/head" \
+            --old-sha "$OLD_SHA" --head-sha "$HEAD_SHA" \
+            --out "nonregex-native-${{ matrix.family }}.json"
+      - name: Admit only exact-sha native observed behavior and physical generated-test removal
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("nonregex-native-${{ matrix.family }}.json").read_text())
+          assert r["source_identity"]=="EXACT_NATIVE_GIT_HEAD_CHECKED"
+          assert r["status"]=="WARRANTED_BOUNDED_NONREGEX_NATIVE_DIVERGENCE",r["status"]
+          assert r["L7"]=="UNKNOWN_METHOD_LANGUAGE_NOT_INVENTED"
+          qualified=[x for x in r["results"] if x["status"]==r["status"]]
+          assert qualified
+          assert all(x["native_generated_test_removed_before"] and x["native_generated_test_removed_after"] for x in qualified)
+          assert all(x["minimum_witness"]["input"] is not None for x in qualified)
+          print("QUALIFIED_NONREGEX_NATIVE_WITNESSES",[(x["source_function_key"],x["minimum_witness"]["input"]) for x in qualified])
+          print("FULL_INFO_BASELINE_RESULT=TIE_ON_GIVEN_SOURCE_AND_INPUTS")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-nonregex-${{ matrix.family }}
+          path: |
+            nonregex-native-${{ matrix.family }}.json
+            old-method-${{ matrix.family }}.json
+          if-no-files-found: warn
