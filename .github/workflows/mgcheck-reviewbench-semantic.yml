@@ -1,0 +1,35 @@
+name: MathGraph Check - ReviewBench native semantic discriminator
+on:
+  push:
+    branches: [research/mgcheck-reviewbench-20261015]
+    paths:
+      - research/reviewbench_20261015/semantic_review_identity_test.go
+      - research/reviewbench_20261015/replay_semantic.py
+      - .github/workflows/mgcheck-reviewbench-semantic.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  fixed-source-semantic-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.1'
+      - name: Checkout exact frozen original ReviewBench Go source
+        run: |
+          git init -q /tmp/reviewbench-go
+          git -C /tmp/reviewbench-go remote add origin https://github.com/review-bench/k1LoW_gh-copilot-review.git
+          git -C /tmp/reviewbench-go fetch -q --depth=1 origin f98281938e63acd1d2df9b89d6af98dcf58c9fa8
+          git -C /tmp/reviewbench-go checkout -q --detach f98281938e63acd1d2df9b89d6af98dcf58c9fa8
+          git -C /tmp/reviewbench-go rev-parse HEAD
+      - name: Original native RED, human-coded repair GREEN, physical removal RED
+        run: python3 research/reviewbench_20261015/replay_semantic.py /tmp/reviewbench-go "$GITHUB_WORKSPACE/semantic-artifacts"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-reviewbench-semantic-replay
+          path: semantic-artifacts/
+          retention-days: 30
