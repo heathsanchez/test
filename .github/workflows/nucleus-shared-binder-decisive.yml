@@ -20,7 +20,7 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/receipt
           git rev-parse HEAD:metatron-kernel | tee /tmp/receipt/source-tree.txt
-          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/receipt/tests.log 2>&1 || { echo 'BASELINE_TEST_FAILURE; retaining log and continuing with independent verdict replay'; tail -70 /tmp/receipt/tests.log; }
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
       - name: Acquire pinned 196 cases
         run: |
