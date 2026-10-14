@@ -62,6 +62,7 @@ def sha_file(path):
 
 
 def make_worktrees(root, target):
+    root.mkdir(parents=True, exist_ok=True)
     bare = root / "original"
     checked(["git", "init", "-q", str(bare)])
     checked(["git", "-C", str(bare), "remote", "add",
