@@ -1,0 +1,70 @@
+{
+  "schema": "mathgraph.native-generator-fixture-source-progression.v1",
+  "frozen_date": "2026-10-14",
+  "hypothesis": "Original third-party specification-only YAML fixture PRs can induce source-bound executable test programs for independently maintained native Go YAML parsers without PR-author-supplied code tests and without manually specifying target-specific test names or case values.",
+  "prior_method_boundary": "Previous Go AST method scopes only original Go _test.go declarations and global Go test tables, so these fixture-only .yaml inputs constitute a new generator-language obstruction. Old method must explicitly return UNKNOWN_UNSUPPORTED_GO_TEST_PATH when given fixture.",
+  "independent_source": {
+    "repository": "yaml/yaml-test-suite",
+    "baseline_commit": "da267a5c4782e7361e82889e76c0dc7df0e1e870",
+    "schema_description_path": "ReadMe.md",
+    "schema_blob": "68b69cbb7f4f3563363ac059da3a72b72d1c3d38",
+    "cases": [
+      {
+        "PR": 175,
+        "commit": "9bca0be9eb5c309eb07f1aaa4d626fc7cd114ae0",
+        "file": "src/XG7H.yaml",
+        "git_blob": "ed272fd33d2a67e990ca7c9e1c6cd719cdbcba2f",
+        "stage": "ACQUIRE"
+      },
+      {
+        "PR": 172,
+        "commit": "119fb49252e091e61d17a6f9f43ecc469299408d",
+        "file": "src/M6Y4.yaml",
+        "git_blob": "d88ca2496e25e052184899af5d4db1eb21776003",
+        "stage": "HELDOUT"
+      }
+    ]
+  },
+  "external_native_parsers": [
+    {
+      "repository": "goccy/go-yaml",
+      "revision": "edee2f91616c6d73112a13e7c0dbde72ce938877",
+      "module_file": "go.mod",
+      "module_blob": "facf4d4ac08099d73aefb967b7826cbd3076b583",
+      "submodule_id": "goccy"
+    },
+    {
+      "repository": "go-yaml/yaml",
+      "revision": "f6f7691b1fdeb513f56608cd2c32c51f8194bf51",
+      "module_file": "go.mod",
+      "module_blob": "f407ea3213edc12392275945f8291202b0712c9d",
+      "submodule_id": "go-yaml"
+    }
+  ],
+  "allowed_meta_operations": [
+    "ORIGINAL_GIT_COMMIT_AND_FILE_BLOB_CHECK",
+    "PARSE_ORIGINAL_SPEC_SOURCE_AS_YAML_DOCUMENT",
+    "DERIVE_INPUT_ORACLE_ROLES_FROM_PINNED_UPSTREAM_SCHEMA",
+    "REJECT_AMBIGUOUS_OR_MISSING_JSON_ORACLE",
+    "COMPILE_UNITIZED_JSON_SEMANTIC_EQUIVALENCE",
+    "GENERATE_NATIVE_GO_TEST_PROGRAM_FROM_SOURCE_VALUES",
+    "DERIVE_IMPORTED_YAML_PARSER_API_FROM_PINNED_MODULE_AND_GO_STANDARD_UNMARSHAL",
+    "RUN_NATIVE_GO_TEST_AND_CAPTURE_ORIGINAL_GO_VERDICT",
+    "COMPARE_SAME_SOURCE_ON_TWO_DISTINCT_NATIVE_PARSERS",
+    "SOURCE_BYTE_MUTATION_AND_ORACLE_SWAP_NEGATIVES",
+    "EXACT_RESTART_REPRODUCIBILITY"
+  ],
+  "initial_falsifiers": [
+    "No source path or field-value targets hard-coded into emitter; protocol only supplies source file/commit/blob and publisher documented schema",
+    "Original Go selector rejects non-Go fixtures rather than fabricated success",
+    "Original fixture Git blobs, schema markdown and Go module source blobs pin before execution",
+    "Upstream fixture cases must produce an actual decoded JSON test oracle; case-specific expected result not hand provided",
+    "Native generated Go files are independently compiled and run in each untouched publisher repository under temporary test-only copies",
+    "A changed oracle produces a real FAIL on a known-positive control and source byte corruption rejects prior to native execution",
+    "Fail closed if a parser cannot process the input or matches a different semantic type; do not force all green or declare parser buggy solely from a spec test mismatch",
+    "No human-written per-PR code or generated repair claimed. The program generating the program will be human-written after this freeze",
+    "The only true software/semantic promotion available is bounded original-source-to-native executable test-construction and conditional observed parser behavior",
+    "Autonomous invention or rewriting of generator grammar and full E2E-L7 remain UNKNOWN"
+  ],
+  "baseline": "Independent PyYAML safe_load as a third-party parsing oracle compared with original JSON expectation, and conventional go test full suites. Do not claim statistically significant net lifecycle advantage."
+}
