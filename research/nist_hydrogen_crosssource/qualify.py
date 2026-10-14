@@ -23,64 +23,51 @@ EVIDENCE.mkdir(exist_ok=True)
 # automatically from content found in the current run.
 SOURCES={
  "nature2026":{
-  "url":"https://www.nature.com/articles/s41586-026-10124-3",
-  "sha256":"b83251eae9a24e40deb2500008b75763a47d506a34d94c80edbed1e9b6e12737",
-  "hints":["0.8406","0.94","s41586-026-10124-3"]},
+  "url":"https://arxiv.org/pdf/2602.14980v1",
+  "sha256":"758181d221327797c87758f17cabfece0632a9f0394138da0c9ebac10d4b25f4",
+  "hints":["0.8406(15)","10,973,731.568152","0.94","730,690,248,610.79"]},
  "bullis2026":{
-  "url":"https://arxiv.org/html/2604.26401",
-  "sha256":"cdbb6027f1b175acd4f1e1a02cbbe173018b176c75d48eb25a7f914555845c26",
-  "hints":["0.8433","0.8422","2604.26401"]}}
-class Text(HTMLParser):
-    def __init__(self):
-        super().__init__(convert_charrefs=True)
-        self.parts=[]
-    def handle_data(self,v):
-        self.parts.append(v)
-def visible_text(raw):
-    parser=Text()
-    parser.feed(raw.decode("utf-8",errors="replace"))
-    return unicodedata.normalize("NFKC",html.unescape(" ".join(parser.parts)))
-def normalized_numeric_text(txt):
-    # Only use for presence of manually interpreted source values.
-    # This is NOT a scientific PDF/HTML semantic parser.
-    t=txt
-    for _ in range(8):
-        new=re.sub(r"(?<=\d)[\s,\u2009\u202f]+(?=\d)", "", t)
-        if new==t: break
-        t=new
-    return t
+  "url":"https://arxiv.org/pdf/2604.26401v1",
+  "sha256":"79b0e291be20049b5df9bf895722c6b39a4c2e68e5e17bc86669de5a6e0ebe7e",
+  "hints":["0.8433(31)","0.8422(31)","3289841960252.9"]}}
+
 def fail_closed_source(raw,expected):
     digest=hashlib.sha256(raw).hexdigest()
     if digest!=expected:
         raise UnknownEvidence("SOURCE_BYTES_NOT_EQUAL_FROZEN_PIN")
     return digest
+
 def fetch_sources():
     rec={}
     for sid,source in SOURCES.items():
-        path=Path("/tmp/hydrogen_"+sid+".html")
+        path=Path("/tmp/hydrogen_"+sid+".pdf")
         x=subprocess.run(
-            ["curl","-A","Mozilla/5.0 (compatible; ResearchEvidence/1.0)",
-             "-L","--fail","--silent","--show-error","--max-time","40",
-             "--retry","2","-o",str(path),source["url"]],
-            capture_output=True,text=True,timeout=150)
+            ["curl","-A","Mozilla/5.0","-L","--fail","--silent",
+             "--show-error","--max-time","50","--retry","2",
+             "-o",str(path),source["url"]],
+            capture_output=True,text=True,timeout=160)
         if x.returncode or not path.exists():
-            raise UnknownEvidence("SOURCE_FETCH_FAILED_"+sid+":"+x.stderr[-150:])
+            raise UnknownEvidence("ORIGINAL_PDF_FETCH_FAILED_"+sid+":"+x.stderr[-150:])
         raw=path.read_bytes()
+        if raw[:4]!=b"%PDF":
+            raise UnknownEvidence("NON_PDF_ORIGINAL")
         dig=fail_closed_source(raw,source["sha256"])
-        visible=normalized_numeric_text(visible_text(raw))
-        # Every published value is manually mapped below, not inferred
-        # from source syntax; require at least frozen unambiguous anchors.
-        if not all(hint in visible or hint in raw.decode("utf-8","replace") for hint in source["hints"]):
-            raise UnknownEvidence("SOURCE_TEXT_ANCHOR_MISSING_"+sid)
+        out=Path("/tmp/hydrogen_"+sid+".txt")
+        subprocess.run(["pdftotext","-layout",str(path),str(out)],check=True)
+        normalized=re.sub(r"\s+","",out.read_text(errors="replace"))
+        if not all(hint.replace(" ","") in normalized for hint in source["hints"]):
+            missing=[hint for hint in source["hints"] if hint.replace(" ","") not in normalized]
+            raise UnknownEvidence("ORIGINAL_SOURCE_VALUE_ANCHOR_MISSING_"+sid+":"+repr(missing))
         rec[sid]={"url":source["url"],"sha256":dig,
-                  "source_bytes":len(raw),"human_semantic_mapping":"DECLARED_ADAPTER",
-                  "text_anchors_present":True}
-    # Independent one-byte corruption negative.
-    original=Path("/tmp/hydrogen_bullis2026.html").read_bytes()
-    mutated=bytearray(original);mutated[9]^=1
+                  "original_pdf_bytes":len(raw),
+                  "human_semantic_mapping":"DECLARED_ADAPTER_NOT_MACHINE_DISCOVERED",
+                  "text_anchors_present":True,
+                  "version_immutable":"arxiv_v1"}
+    original=Path("/tmp/hydrogen_bullis2026.pdf").read_bytes()
+    modified=bytearray(original);modified[9]^=1
     try:
-        fail_closed_source(bytes(mutated),SOURCES["bullis2026"]["sha256"])
-        raise AssertionError("CORRUPTED_SOURCE_ACCEPTED")
+        fail_closed_source(bytes(modified),SOURCES["bullis2026"]["sha256"])
+        raise AssertionError("SOURCE_BYTE_CORRUPTION_ACCEPTED")
     except UnknownEvidence as ex:
         assert str(ex)=="SOURCE_BYTES_NOT_EQUAL_FROZEN_PIN"
     return rec
