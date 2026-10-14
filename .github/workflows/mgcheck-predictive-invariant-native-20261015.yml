@@ -1,0 +1,41 @@
+name: MathGraph Check / predictive source-derived observer grammar
+
+on:
+  push:
+    branches:
+      - research/mgcheck-predictive-invariant-genesis-20261015
+    paths:
+      - research/mathgraph_predictive_consistency_20261015/**
+      - .github/workflows/mgcheck-predictive-invariant-native-20261015.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-projection-observer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout owned exact source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Static syntax check
+        run: |
+          python -m py_compile research/mathgraph_predictive_consistency_20261015/invariant_generator.py
+          python -m py_compile research/mathgraph_obligation_compiler_20261015/observer_genesis.py
+      - name: Run independently pinned native original sources and negative controls
+        run: |
+          python research/mathgraph_predictive_consistency_20261015/invariant_generator.py evidence/predictive-consistency-20261015
+      - name: Persist full native receipts including UNKNOWN / negatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: predictive-observer-composition-native
+          path: evidence/predictive-consistency-20261015/
+          if-no-files-found: warn
