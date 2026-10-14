@@ -25,12 +25,13 @@ jobs:
         run: |
           set -euo pipefail
           git clone -q --no-checkout https://github.com/review-bench/brexhq_CrabTrap.git "$RUNNER_TEMP/mirror"
+          git -C "$RUNNER_TEMP/mirror" fetch -q origin "$REVIEWBENCH_MIRROR_HEAD"
           git -C "$RUNNER_TEMP/mirror" cat-file -e "$REVIEWBENCH_MIRROR_HEAD^{commit}"
           git -C "$RUNNER_TEMP/mirror" cat-file -e "$REVIEWBENCH_MIRROR_BASE^{commit}"
           git -C "$RUNNER_TEMP/mirror" worktree add -q --detach "$RUNNER_TEMP/original-head" "$REVIEWBENCH_MIRROR_HEAD"
           test "$(git -C "$RUNNER_TEMP/original-head" rev-parse HEAD)" = "$REVIEWBENCH_MIRROR_HEAD"
           test -f "$RUNNER_TEMP/original-head/web/src/stores/auditStore.ts"
-          test -f "$RUNNER_TEMP/original-head/web/package-lock.json"
+          test -f "$RUNNER_TEMP/original-head/web/package.json"
           echo "PINNED_REVIEWBENCH_HEAD=$REVIEWBENCH_MIRROR_HEAD"
       - name: Install original native web TypeScript and Zustand dependencies
         shell: bash
@@ -38,7 +39,7 @@ jobs:
           set -euo pipefail
           cp research/reviewbench_20261015/pr8_store_counterfactual.mjs "$RUNNER_TEMP/original-head/web/__mgcheck_stateful_test.mjs"
           cd "$RUNNER_TEMP/original-head/web"
-          npm ci --no-audit --no-fund --ignore-scripts
+          npm install --no-audit --no-fund --ignore-scripts --no-save
       - name: Execute actual original store, candidate patch, physical restoration
         shell: bash
         env:
