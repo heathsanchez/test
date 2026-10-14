@@ -1,0 +1,22 @@
+diff --git a/ast/ast.go b/ast/ast.go
+--- a/ast/ast.go
++++ b/ast/ast.go
+@@ -934,10 +934,17 @@
+ 
+ // String literal to text
+ func (n *LiteralNode) String() string {
+ 	origin := n.Value.GetToken().Origin
+-	lit := strings.TrimRight(strings.TrimRight(origin, " "), "\n")
++	lit := strings.TrimRight(origin, " ")
++	if strings.Contains(n.Start.Value, "+") {
++		// A keep-chomp block retains trailing blanks. The outer printer
++		// supplies the final document line ending.
++		lit = strings.TrimSuffix(lit, "\n")
++	} else {
++		lit = strings.TrimRight(lit, "\n")
++	}
+ 	if n.Comment != nil {
+ 		return fmt.Sprintf("%s %s\n%s", n.Start.Value, n.Comment.String(), lit)
+ 	}
+ 	return fmt.Sprintf("%s\n%s", n.Start.Value, lit)
+ }
