@@ -1,0 +1,61 @@
+{
+  "schema": "metalogic.cross-implementation-native-domain.v1",
+  "name": "gojq-303-c-reference-vs-go",
+  "sources": [
+    {
+      "name": "original_base",
+      "local_dir": "source/gojq/base",
+      "sha": "86e392aeece0e75849c5c82567f1190525f4b28b"
+    },
+    {
+      "name": "original_head",
+      "local_dir": "source/gojq/head",
+      "sha": "50778c1da45c3f36fb08dab4ba06020115e542e4"
+    }
+  ],
+  "axes": [
+    {
+      "name": "s",
+      "type": "strings",
+      "alphabet": "ab",
+      "maxlen": 3
+    },
+    {
+      "name": "separator",
+      "type": "strings",
+      "alphabet": "ab",
+      "maxlen": 3
+    }
+  ],
+  "expression": {
+    "stdin": "{{s}}\n",
+    "normalization": "json"
+  },
+  "timeout_seconds": 2,
+  "arms": [
+    {
+      "name": "reference",
+      "argv": [
+        "jq",
+        "-c",
+        "split({{separator}})"
+      ]
+    },
+    {
+      "name": "base",
+      "argv": [
+        "{{BIN}}/gojq-base",
+        "-c",
+        "split({{separator}})"
+      ]
+    },
+    {
+      "name": "head",
+      "argv": [
+        "{{BIN}}/gojq-head",
+        "-c",
+        "split({{separator}})"
+      ]
+    }
+  ]
+}

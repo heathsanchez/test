@@ -1,0 +1,90 @@
+{
+  "schema": "metalogic.cross-implementation-native-domain.v1",
+  "name": "opa-9216-go-topdown-vs-wasm",
+  "sources": [
+    {
+      "name": "original_base",
+      "local_dir": "source/opa/base",
+      "sha": "37030a09d6088821a473f486fd75dd81ef394b74"
+    },
+    {
+      "name": "original_head",
+      "local_dir": "source/opa/head",
+      "sha": "d231b0381efd880597db736efdd74e6681000b54"
+    }
+  ],
+  "axes": [
+    {
+      "name": "patterns",
+      "type": "literals",
+      "values": [
+        {
+          "anotherinfo": "Y",
+          "info": "X"
+        },
+        {
+          "ab": "b",
+          "b": "Y"
+        },
+        {
+          "": "X"
+        }
+      ]
+    },
+    {
+      "name": "s",
+      "type": "literals",
+      "values": [
+        "anotherinfo",
+        "ab",
+        "a",
+        "b",
+        "bb",
+        ""
+      ]
+    }
+  ],
+  "expression": {
+    "stdin": "",
+    "normalization": "raw"
+  },
+  "timeout_seconds": 2,
+  "arms": [
+    {
+      "name": "reference",
+      "argv": [
+        "{{BIN}}/opa-base",
+        "eval",
+        "-f",
+        "raw",
+        "-t",
+        "rego",
+        "strings.replace_n({{patterns}}, {{s}})"
+      ]
+    },
+    {
+      "name": "base",
+      "argv": [
+        "{{BIN}}/opa-base",
+        "eval",
+        "-f",
+        "raw",
+        "-t",
+        "wasm",
+        "strings.replace_n({{patterns}}, {{s}})"
+      ]
+    },
+    {
+      "name": "head",
+      "argv": [
+        "{{BIN}}/opa-head",
+        "eval",
+        "-f",
+        "raw",
+        "-t",
+        "wasm",
+        "strings.replace_n({{patterns}}, {{s}})"
+      ]
+    }
+  ]
+}
