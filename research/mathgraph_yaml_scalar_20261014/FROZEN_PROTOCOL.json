@@ -1,0 +1,40 @@
+{
+  "schema": "mathgraph.native.scalar-grammar-patch-blind.v1",
+  "timestamp": "2026-10-14",
+  "repository": "goccy/go-yaml",
+  "source_pr": 939,
+  "issue_context_seen": true,
+  "contributor_patch_seen": false,
+  "contributor_added_tests_seen": false,
+  "assessed_prior_to_implementation": true,
+  "source_base": "edee2f91616c6d73112a13e7c0dbde72ce938877",
+  "source_head": "72a4f95c648c844ef2f8ddbc009530be64ab4c41",
+  "code_generation_authority": "Human-written independent grammar-based generator; no self-invention of generator language or target-free discovery",
+  "test_strategy": "Generate reproducible YAML plain scientific notation scalars from fixed grammar, derive expected float64 from strconv.ParseFloat; quoted counterparts must retain string type; malformed exponent candidates must remain strings; include positive controls",
+  "independent_requirement": "YAML 1.2 core schema allows exponent with no fractional dot, quoted scalars remain strings",
+  "seed": 20261014,
+  "generated_numeric_limit": 256,
+  "generated_malformed_limit": 36,
+  "generated_quoted_limit": 96,
+  "batch_limits": {
+    "max_total_cases": 500,
+    "max_generated_test_minutes": 10
+  },
+  "arms": [
+    "BASE",
+    "CONTRIBUTOR_HEAD",
+    "HEAD_WITH_AUTOMATIC_NON_TEST_GO_SOURCE_REVERT"
+  ],
+  "no_patch_view_until_generator_committed": true,
+  "source_diff_selection": "Automatically collect all modified .go paths between exact base/head, exclude _test.go, require precisely one modified implementation file, restore that file from pinned base in HEAD_WITH_AUTOMATIC_NON_TEST_GO_SOURCE_REVERT",
+  "qualification": {
+    "BASE": "Original unmodified package tests already known green on the same pinned base from independent run 38549639235. Newly generated grammar cases must expose >=5 genuine typed scientific-notation failures while unchanged controls pass.",
+    "CONTRIBUTOR_HEAD": "All 256 generated numeric cases and controls pass natively; if not, report residual or semantic-oracle dispute, never silently weaken the generator.",
+    "HEAD_WITH_AUTOMATIC_NON_TEST_GO_SOURCE_REVERT": "Same failure case identities as BASE (or subset satisfying preregistered decisive failures), and controls remain intact.",
+    "independent_test_source_hash": "All three arms use identical generated fixture and unchanged Go test bytes",
+    "unsupported": "No claim of automatic issue discovery, native App integration, superiority to another agent, general YAML conformance or L7."
+  },
+  "no_upstream_writes": true,
+  "no_external_comments": true,
+  "no_outreach": true
+}
