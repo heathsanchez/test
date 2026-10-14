@@ -24,9 +24,19 @@ def parse(path):
     live=re.search(r"MATHGRAPH_NATIVE_LIVENESS tested=(\d+) firstNotReturnedWithin150ms=(\d+)",text)
     assert key and state and live, "MISSING_NATIVE_RECIEPT_"+path.stem
     assert [int(x) for x in key.groups()]==[121,3,4,0]
+    learned={}
+    for label in ("chi","stdlib"):
+        m2=re.search(r"MATHGRAPH_OBSERVATIONAL_QUOTIENT oracle="+label+
+                     r" histories=(\\d+) probes=(\\d+) classes=(\\d+) holdoutQueries=(\\d+) distinguishedPairs=(\\d+)",text)
+        assert m2, "MISSING_OBSERVATIONAL_QUOTIENT_"+label
+        values=[int(q) for q in m2.groups()]
+        assert values==[121,40,9,9801,36], ("UNQUALIFIED_OBSERVATIONAL_QUOTIENT",label,values)
+        learned[label]={"histories":values[0],"probeCount":values[1],"learnedStates":values[2],
+                        "heldoutQueries":values[3],"distinguishedClasses":values[4]}
+    assert re.search(r"MATHGRAPH_OBSERVATIONAL_TRANSFER chiStates=9 independentStdlibStates=9 partitionsIdentical=true orderSensitiveMutationDetected=true",text), "NATIVE_TRANSFER_OR_MUTATION_MISSING"
     count,dirty,clean,minimum=[int(x) for x in state.groups()[:4]]
     assert count>0 and dirty+clean==count
-    return {"file":path.name,"nativeKeyCases":int(key.group(1)),
+    return {"file":path.name,"observational":learned,"nativeKeyCases":int(key.group(1)),
             "recoveredInvalidCases":count,"dirty":dirty,"clean":clean,
             "minimalDirtyKeyCount":minimum,"minimalDirtyPattern":state.group(5),
             "livenessCases":int(live.group(1)),
@@ -45,7 +55,7 @@ report={"schema":"metalogic.jpl-quotient-router.v1",
  "base":"167e1e3bd039d060696b99c8da4e876ae04f42c1",
  "head":"5a84f0500b8f8f307d615969c1ba4f7cd9126978"},
  "model":model,"old":old,"prHead":new,"oneChangeRemoval":ablated,
- "claim":"A minimal duplicate-key state quotient predicts native admission; two duplicate keys expose a discarded-write/validate ordering distinction on a fresh router, and removing only the early validation reproduces the previous mutation.",
+ "claim":"One native observation-only learner constructs nine bounded consequence-equivalence states on two independently implemented Go routers; withheld continuations and order-sensitive mutation validate the quotient. Two duplicate keys expose the original validation/mutation-order defect, removed by the PR and restored under one-site ablation.",
  "nonClaims":["Already described by contributor; no blind bug discovery",
  "Full arbitrary Go code-to-semantics transformation unknown",
  "Tree mutation is local state, not general observable nontermination",
