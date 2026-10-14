@@ -27,6 +27,8 @@ jobs:
         run: |
           set -euo pipefail
           git clone -q --no-checkout https://github.com/simplejson/simplejson.git "$RUNNER_TEMP/upstream"
+          git -C "$RUNNER_TEMP/upstream" fetch -q origin refs/pull/379/head:refs/pull/379/head
+          test "$(git -C "$RUNNER_TEMP/upstream" rev-parse refs/pull/379/head)" = "$AUTHOR_SHA"
           cd "$RUNNER_TEMP/upstream"
           git cat-file -e "$AUTHOR_SHA^{commit}"
           test "$(git rev-list --parents -n 1 "$AUTHOR_SHA" | wc -w)" -eq 2
@@ -83,6 +85,8 @@ jobs:
         run: |
           set -euo pipefail
           git clone -q --no-checkout https://github.com/simplejson/simplejson.git "$RUNNER_TEMP/upstream"
+          git -C "$RUNNER_TEMP/upstream" fetch -q origin refs/pull/379/head:refs/pull/379/head
+          test "$(git -C "$RUNNER_TEMP/upstream" rev-parse refs/pull/379/head)" = "$AUTHOR_SHA"
           git -C "$RUNNER_TEMP/upstream" worktree add -q --detach "$RUNNER_TEMP/original-head" "$AUTHOR_SHA"
           test "$(git -C "$RUNNER_TEMP/original-head" rev-parse HEAD)" = "$AUTHOR_SHA"
           python -m pip install -q --no-deps --target "$RUNNER_TEMP/site-head" "$RUNNER_TEMP/original-head"
