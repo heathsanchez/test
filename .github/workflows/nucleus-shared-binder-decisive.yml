@@ -22,6 +22,7 @@ jobs:
           git rev-parse HEAD:metatron-kernel | tee /tmp/receipt/source-tree.txt
           cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/receipt/tests.log 2>&1 || { echo 'BASELINE_TEST_FAILURE; retaining log and continuing with independent verdict replay'; tail -70 /tmp/receipt/tests.log; }
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml --test checked_relevance_signature -- --nocapture > /tmp/receipt/relevance-enabled.log 2>&1 || { echo RELEVANCE_ENABLED_TEST_FAILED; tail -35 /tmp/receipt/relevance-enabled.log; }
       - name: Acquire pinned 196 cases
         run: |
           set -euo pipefail
