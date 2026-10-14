@@ -14,8 +14,20 @@ type mgcheckPagedAPI struct {
     commits [2]string
     reviews [2]string
     pagedEndpoint string
+    prHead string
 }
 func (p *mgcheckPagedAPI) RoundTrip(req *http.Request) (*http.Response, error) {
+    if strings.HasSuffix(req.URL.Path, "/pulls/9") {
+        payload:=fmt.Sprintf("{\"head\":{\"sha\":%q}}",p.prHead)
+        return &http.Response{StatusCode:200,
+            Header:http.Header{"Content-Type":[]string{"application/json"}},
+            Body:io.NopCloser(strings.NewReader(payload)),Request:req},nil
+    }
+    if v:=req.URL.Query().Get("page"); v!="" && v!="1" && v!="2" {
+        return &http.Response{StatusCode:200,
+            Header:http.Header{"Content-Type":[]string{"application/json"}},
+            Body:io.NopCloser(strings.NewReader("[]")),Request:req},nil
+    }
     var pages [2]string
     endpoint := ""
     switch {
@@ -60,7 +72,7 @@ func mgcheckCommit(sha,when string) any {
 func mgcheckReview(who,sha,when string) any {
     return map[string]any{
         "user":map[string]any{"login":who},
-        "commit_id":sha,"submitted_at":when}
+        "commit_id":sha,"submitted_at":when,"state":"COMMENTED"}
 }
 
 func TestMGCheckStrongReviewerPaginationResidual(t *testing.T) {
@@ -74,6 +86,7 @@ func TestMGCheckStrongReviewerPaginationResidual(t *testing.T) {
         secondPage:=[]any{mgcheckCommit(headSHA,"2026-01-02T00:00:00Z")}
         reviews:=[]any{mgcheckReview("copilot",headSHA,"2026-01-02T12:00:00Z")}
         rt:=&mgcheckPagedAPI{
+            prHead:headSHA,
             commits:[2]string{mgcheckJSON(t,firstPage),mgcheckJSON(t,secondPage)},
             reviews:[2]string{mgcheckJSON(t,reviews),"[]"},
             pagedEndpoint:"commits"}
@@ -91,6 +104,7 @@ func TestMGCheckStrongReviewerPaginationResidual(t *testing.T) {
         }
         secondPage:=[]any{mgcheckReview("copilot",headSHA,"2026-01-03T00:00:00Z")}
         rt:=&mgcheckPagedAPI{
+            prHead:headSHA,
             commits:[2]string{mgcheckJSON(t,commits),"[]"},
             reviews:[2]string{mgcheckJSON(t,firstPage),mgcheckJSON(t,secondPage)},
             pagedEndpoint:"reviews"}
@@ -104,10 +118,40 @@ func TestMGCheckStrongReviewerPaginationResidual(t *testing.T) {
 func TestMGCheckStrongReviewerSinglePageControl(t *testing.T) {
     const headSHA="1111111111111111111111111111111111111111"
     rt:=&mgcheckPagedAPI{
+            prHead:headSHA,
         commits:[2]string{mgcheckJSON(t,[]any{mgcheckCommit(headSHA,"2026-01-01T00:00:00Z")}),"[]"},
         reviews:[2]string{mgcheckJSON(t,[]any{mgcheckReview("copilot",headSHA,"2026-01-03T00:00:00Z")}),"[]"},
         pagedEndpoint:"none"}
     fresh,err:=mgcheckClient(t,rt).IsCopilotReviewFresh(9)
     if err!=nil {t.Fatal(err)}
     if !fresh {t.Error("unchanged simple first-page positive control failed")}
+}
+
+
+func TestMGCheckStrongReviewerDismissedNotFresh(t *testing.T) {
+    const headSHA="1111111111111111111111111111111111111111"
+    commits:=[]any{mgcheckCommit(headSHA,"2026-01-01T00:00:00Z")}
+    review:=map[string]any{
+        "user":map[string]any{"login":"copilot"},
+        "commit_id":headSHA,"submitted_at":"2026-01-03T00:00:00Z",
+        "state":"DISMISSED"}
+    rt:=&mgcheckPagedAPI{
+        prHead:headSHA,
+        commits:[2]string{mgcheckJSON(t,commits),"[]"},
+        reviews:[2]string{mgcheckJSON(t,[]any{review}),"[]"},
+        pagedEndpoint:"none"}
+    fresh,err:=mgcheckClient(t,rt).IsCopilotReviewFresh(9)
+    if err!=nil {t.Fatal(err)}
+    if fresh {t.Error("a dismissed review must not count as a current active review")}
+}
+
+func TestMGCheckStrongReviewerMissingHeadFailsClosed(t *testing.T) {
+    const headSHA="1111111111111111111111111111111111111111"
+    rt:=&mgcheckPagedAPI{
+        prHead:"",
+        commits:[2]string{"[]","[]"},
+        reviews:[2]string{mgcheckJSON(t,[]any{mgcheckReview("copilot",headSHA,"2026-01-03T00:00:00Z")}),"[]"},
+        pagedEndpoint:"none"}
+    fresh,_:=mgcheckClient(t,rt).IsCopilotReviewFresh(9)
+    if fresh {t.Error("missing authoritative PR head cannot justify freshness")}
 }
