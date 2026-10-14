@@ -4,7 +4,10 @@ on:
     branches:
       - research/mgcheck-reviewbench-20261015
     paths:
-      - research/reviewbench_20261015/**
+      - research/reviewbench_20261015/reviewer.py
+      - research/reviewbench_20261015/Dockerfile
+      - research/reviewbench_20261015/FROZEN_PROTOCOL.md
+      - research/reviewbench_20261015/tests/**
       - .github/workflows/mgcheck-reviewbench-first-gate.yml
   workflow_dispatch: {}
 permissions:
