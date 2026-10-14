@@ -1,0 +1,49 @@
+name: MathGraph Check - independent real native observation receipt audit
+on:
+  push:
+    branches: [research/mgcheck-real-native-basis-independent-audit-20261015]
+    paths:
+      - research/real_native_observation_basis_20261015/audit_independent.py
+      - .github/workflows/mgcheck-real-native-basis-independent-audit.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-receiver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Download previously source-qualified immutable native evidence; no native retest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/qualified-native
+          gh run download 38639050079 --repo heathsanchez/test \
+            --name native-flash-v11-cross-future-observation-basis \
+            --dir /tmp/qualified-native
+          test "$(find /tmp/qualified-native -maxdepth 1 -name '*.json' | wc -l)" = 8
+          test -s /tmp/qualified-native/learned_capability_A.json
+          test -s /tmp/qualified-native/final_report.json
+      - name: Independent TOML reference reconstruction and adversarial admission test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/real_native_observation_basis_20261015/audit_independent.py
+          python research/real_native_observation_basis_20261015/audit_independent.py /tmp/qualified-native
+          test "$(python -c 'import json;print(json.load(open("/tmp/qualified-native/independent_receiver_audit.json"))["status"])')" = INDEPENDENT_AUDIT_PASS_EXACT_FINITE
+          mkdir -p independent-native-receipt
+          cp /tmp/qualified-native/independent_receiver_audit.json independent-native-receipt/
+          sha256sum independent-native-receipt/independent_receiver_audit.json > independent-native-receipt/source_report_sha256.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independently-audited-native-future-observation
+          path: independent-native-receipt/
+          retention-days: 30
