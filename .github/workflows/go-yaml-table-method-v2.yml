@@ -51,13 +51,6 @@ jobs:
           mkdir -p metadata
           curl -fsSL --retry 2 https://api.github.com/repos/go-yaml/yaml/pulls/1039 -o metadata/1039.json
           curl -fsSL --retry 2 https://api.github.com/repos/go-yaml/yaml/pulls/1037 -o metadata/1037.json
-      - name: Recover historical Go module checksums without source file edits
-        run: |
-          set -euo pipefail
-          for d in base-go-yaml head-go-yaml-1039 head-go-yaml-1037; do
-            (cd "$d" && go mod download)
-            test -s "$d/go.sum"
-          done
       - name: Test bounded generated native receiver methods against original data and full suite
         run: python3 coordinator/research/mathgraph_go_yaml_tables/qualify_table.py
       - name: Preserve exact source-diff, declined-method, induced-method and native execution receipts
