@@ -1,0 +1,67 @@
+name: Original YAML escaped-space scanner causal repair V1
+
+on:
+  push:
+    branches: [research/yaml-escaped-space-repair-v1]
+    paths:
+      - 'research/yaml_escaped_space_repair/**'
+      - '.github/workflows/yaml-original-repair-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-source-native-causal-repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.12'
+      - name: Reject syntactically invalid method apparatus before source fetch
+        run: |
+          python3 -m py_compile coordinator/research/yaml_escaped_space_repair/qualify.py
+          python3 -m py_compile coordinator/research/mathgraph_fixture_native/compile_fixture.py
+          python3 -m json.tool coordinator/research/yaml_escaped_space_repair/FROZEN_PROTOCOL.json > /dev/null
+      - name: Independent parser oracle
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+      - uses: actions/checkout@v4
+        with:
+          repository: yaml/yaml-test-suite
+          ref: 9bca0be9eb5c309eb07f1aaa4d626fc7cd114ae0
+          path: source-175
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: goccy/go-yaml
+          ref: edee2f91616c6d73112a13e7c0dbde72ce938877
+          path: original-goccy
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: go-yaml/yaml
+          ref: f6f7691b1fdeb513f56608cd2c32c51f8194bf51
+          path: reference-go-yaml
+          persist-credentials: false
+      - name: Prove no-source-mutation local patch under native Go full suites and original fixture
+        run: |
+          python coordinator/research/yaml_escaped_space_repair/qualify.py \
+            --protocol coordinator/research/yaml_escaped_space_repair/FROZEN_PROTOCOL.json \
+            --workspace . \
+            --out coordinator/research/yaml_escaped_space_repair/evidence
+      - name: Retain original native source, patch candidates and all negative evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yaml-original-source-escaped-space-local-repair
+          path: coordinator/research/yaml_escaped_space_repair/evidence/repair_report.json
+          if-no-files-found: warn
+          retention-days: 90
