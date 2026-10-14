@@ -1,0 +1,36 @@
+name: V4 original Nature source-relation text probe
+on:
+  push:
+    branches:
+      - research/nist-equation-semantic-transfer-20261014
+    paths:
+      - '.github/workflows/nist-semantic-text-probe-v4.yml'
+permissions:
+  contents: read
+jobs:
+  source-presentation:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Source SHA verified and original notation windows
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          curl --fail --location --silent --show-error --max-time 60 -o /tmp/nature-v1.pdf 'https://arxiv.org/pdf/2602.14980v1'
+          echo '758181d221327797c87758f17cabfece0632a9f0394138da0c9ebac10d4b25f4  /tmp/nature-v1.pdf' | sha256sum --check --status
+          pdftotext -layout /tmp/nature-v1.pdf /tmp/nature-v1.txt
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          t=Path('/tmp/nature-v1.txt').read_text(errors='replace')
+          for needle in ['By averaging all available data','multiplicity ratio of',
+                         'hyperfine-structure (HFS) correction','1:2 ratio','2:1 ratio',
+                         '730,690,111,486.30']:
+              at=t.find(needle)
+              print('=== SOURCE WINDOW',repr(needle),'AT',at,'===')
+              print(repr(t[max(0,at-240):at+1200]) if at>=0 else 'MISSING')
+          PY
