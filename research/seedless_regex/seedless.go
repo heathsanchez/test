@@ -125,8 +125,7 @@ func main(){
  need(*base!=""&&*head!=""&&*repo!=""&&*out!=""&&len(*oldSha)==40&&len(*headSha)==40,"SOURCE_ARGS_MISSING")
  need(git(*base,"rev-parse","HEAD")==*oldSha,"ORIGINAL_SOURCE_SHA_MISMATCH")
  need(git(*head,"rev-parse","HEAD")==*headSha,"REPAIRED_SOURCE_SHA_MISMATCH")
- changed:=strings.Split(git(*head,"diff","--name-only",*oldSha,*headSha,"--","*.go"),"
-")
+ changed:=strings.Split(git(*head,"diff","--name-only",*oldSha,*headSha,"--","*.go"),"\n")
  names:=[]string{};for _,f:=range changed{
   if f!=""&&strings.HasSuffix(f,".go")&&!strings.HasSuffix(f,"_test.go"){names=append(names,f)}
  };sort.Strings(names)
@@ -179,7 +178,6 @@ func main(){
  }
  data,e:=json.MarshalIndent(result,"","  ");need(e==nil,"OUTPUT_MARSHAL_FAILED")
  need(os.MkdirAll(filepath.Dir(*out),0755)==nil,"OUTPUT_PATH_FAILED")
- need(os.WriteFile(*out,append(data,'
-'),0644)==nil,"OUTPUT_WRITE_FAILED")
+ need(os.WriteFile(*out,append(data,'\n'),0644)==nil,"OUTPUT_WRITE_FAILED")
  fmt.Println("SEEDLESS_SOURCE_REGEX "+string(data))
 }
