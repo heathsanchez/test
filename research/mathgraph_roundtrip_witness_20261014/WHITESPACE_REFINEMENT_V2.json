@@ -1,0 +1,44 @@
+{
+  "schema": "mathgraph.yaml-whitespace-encoder-first-byte-refinement.v2",
+  "date": "2026-10-14",
+  "source_repo": "goccy/go-yaml",
+  "source_sha": "72a4f95c648c844ef2f8ddbc009530be64ab4c41",
+  "previous_untouched_hypothesis": "The token quote predicate should quote any scalar containing tab, CR, or LF.",
+  "negative_control": {
+    "run": 38554550541,
+    "artifact": 11889091034,
+    "observed_metmorphic": "21 failures original; 16 special-only; zero special+blanket whitespace",
+    "fail_condition": "Original upstream go test ./... FAIL due changed expected block-style formatting",
+    "actual_original_regression_tests": [
+      "TestEncoder hello| variants",
+      "TestMarshalIndentWithMultipleText depth1/depth2/raw_string_new_lines"
+    ],
+    "original_expected_forms": [
+      "|",
+      "|-",
+      "|+"
+    ],
+    "rejected_operation": "strings.ContainsAny(value, \"\\t\\r\\n\") anywhere in value"
+  },
+  "consequential_distinction": "Unsafe plain YAML scalar starts versus safe ordinary multiline string emitted intentionally in literal block style.",
+  "refined_hypothesis": "Quote only strings whose first byte is TAB, LF or CR, preserving original multiline strings beginning with ordinary content, even if their interior contains linebreaks.",
+  "exact_source_change": "Inside token.IsNeedQuoted, add '\\t', '\\n', '\\r' to the pre-existing switch first-character cases.",
+  "allowed_file": "token/token.go",
+  "controls": {
+    "fixture_sha256": "86b3b2477024dec6cb57b82c3503d472132c5b50f2214bc34aa03afccfc8f2fe",
+    "original_native_cases": 1088,
+    "fail_counts_by_arm": [
+      21,
+      16,
+      0,
+      16,
+      21
+    ],
+    "unchanged_original_go_suite": "go test -count=1 -timeout=10m ./... must pass",
+    "no_source_patch_except_single_file": true,
+    "deterministic_ablation": true
+  },
+  "authority": "Human-selected v2 generator operation after native negative feedback, no autonomous language invention.",
+  "no_upstream_writes": true,
+  "no_external_outreach": true
+}
