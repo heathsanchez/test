@@ -1,0 +1,76 @@
+name: MathGraph Check - ReviewBench first admission
+on:
+  push:
+    branches:
+      - research/mgcheck-reviewbench-20261015
+    paths:
+      - research/reviewbench_20261015/**
+      - .github/workflows/mgcheck-reviewbench-first-gate.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  native-adapter-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run isolated source-negative controls
+        run: python3 -m unittest discover -s research/reviewbench_20261015/tests -v
+      - name: Build source-only reviewer image
+        run: docker build -t mgcheck-reviewbench:admission research/reviewbench_20261015
+      - name: Fetch exact benchmark specification
+        run: |
+          git clone -q https://github.com/review-bench/ReviewBench.git /tmp/ReviewBench
+          git -C /tmp/ReviewBench checkout -q 5bba258937cc7d43577ce9a81a389a6550a20fa9
+          test "$(git -C /tmp/ReviewBench rev-parse HEAD)" = 5bba258937cc7d43577ce9a81a389a6550a20fa9
+      - name: Validate seven public Go and Python PRs, no inference credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/reviewbench-admission"
+          report="$GITHUB_WORKSPACE/reviewbench-admission/contract-results.jsonl"
+          : > "$report"
+          for mode in baseline mathgraph; do
+            mkdir -p "$GITHUB_WORKSPACE/reviewbench-admission/$mode"
+            for idx in 4 5 8 9 17 18 21; do
+              echo "Checking official public PR index $idx / mode $mode"
+              (
+                cd "$GITHUB_WORKSPACE/reviewbench-admission/$mode"
+                TRY_AGENT_WORK="/tmp/mgcheck-reviewbench-work" \
+                  /tmp/ReviewBench/scripts/try-agent.sh mgcheck-reviewbench:admission \
+                  --pr "$idx" -e "RB_CONFIG_MODE=$mode" -e RB_CONFIG_MODEL= \
+                  2>&1 | tee "$GITHUB_WORKSPACE/reviewbench-admission/$mode-$idx.log"
+              )
+              jq -nc --arg mode "$mode" --argjson index "$idx" \
+                '{mode:$mode, index:$index, contract:"PASS", model:"NOT_RUN_NO_MODEL_OR_CREDENTIAL"}' >> "$report"
+            done
+          done
+      - name: Assert 14 real container contracts and summarize evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(wc -l < reviewbench-admission/contract-results.jsonl)" = 14
+          python3 - <<'PY'
+          import json, pathlib
+          root=pathlib.Path('reviewbench-admission')
+          files=list((root/'baseline'/'findings').glob('*.json'))+list((root/'mathgraph'/'findings').glob('*.json'))
+          assert len(files)==14, len(files)
+          counts={}
+          for p in files:
+            result=json.loads(p.read_text()); mode=p.parent.parent.name
+            assert len(result['pr']['head'])==40
+            counts[mode]=counts.get(mode,0)+len(result['findings'])
+          summary={'contract_pass':14,'syntax_observation_findings':counts.get('mathgraph',0),
+                   'baseline_findings':counts.get('baseline',0),
+                   'model_reviews':'NOT_RUN','judge':'NOT_RUN','leaderboard':'NOT_SUBMITTED',
+                   'reviewer_superiority':'UNKNOWN'}
+          (root/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          print(summary)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-reviewbench-first-gate
+          path: reviewbench-admission/
+          retention-days: 30
