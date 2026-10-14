@@ -29,6 +29,10 @@ jobs:
         run: python3 research/nist_alpha_consequence/ci_replay.py
       - name: Precommitted generic exact-rational and adversarial tests
         run: python3 -m unittest discover -s research/nist_hydrogen_crosssource -p test_core.py -v
+      - name: Install only the original-PDF extractor
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
       - name: Live original-source pin and source-specific declared semantics
         run: python3 research/nist_hydrogen_crosssource/qualify.py
       - name: Retain all receipts even on failure
