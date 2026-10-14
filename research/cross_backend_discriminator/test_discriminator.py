@@ -17,6 +17,8 @@ class EngineTests(unittest.TestCase):
   self.assertEqual(d.comparison({"status":"PROCESS_ERROR"},{"status":"VALUE","value":1}),"UNKNOWN")
   self.assertEqual(d.comparison({"status":"VALUE","value":[]},{"status":"VALUE","value":[""]}),"DIFFERENT")
   self.assertEqual(d.comparison({"status":"VALUE","value":"Y"},{"status":"VALUE","value":"Y"}),"EQUAL")
+  self.assertEqual(d.comparison({"status":"VALUE","value":True},{"status":"VALUE","value":1}),"DIFFERENT")
+  self.assertEqual(d.comparison({"status":"VALUE","value":{"a":1,"b":2}},{"status":"VALUE","value":{"b":2,"a":1}}),"EQUAL")
  def test_template_no_custom_logic(self):
   self.assertEqual(d.expand("split({{separator}})",{"separator":"a"},"/tmp"),'split("a")')
   with self.assertRaisesRegex(ValueError,"UNBOUND"):

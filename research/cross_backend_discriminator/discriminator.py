@@ -65,8 +65,8 @@ def evaluate(arm,prm,template,bin_dir,seconds):
             lines=[line for line in z.stdout.splitlines() if line.strip()]
             if len(lines)!=1:return dict(status="OUTPUT_COUNT_UNKNOWN",
                 seconds=round(dt,4),line_count=len(lines))
-            try: val=json.loads(lines[0])
-            except json.JSONDecodeError:return dict(status="OUTPUT_PARSE_UNKNOWN",seconds=round(dt,4))
+            try: val=json.loads(lines[0],parse_constant=lambda x: (_ for _ in ()).throw(ValueError("NONSTANDARD_JSON_VALUE")))
+            except (json.JSONDecodeError,ValueError):return dict(status="OUTPUT_PARSE_UNKNOWN",seconds=round(dt,4))
         elif template["normalization"]=="raw":
             lines=z.stdout.strip().splitlines()
             if len(lines)!=1:return dict(status="OUTPUT_COUNT_UNKNOWN",
@@ -82,7 +82,8 @@ def evaluate(arm,prm,template,bin_dir,seconds):
 def comparison(a,b):
     if a.get("status")!="VALUE" or b.get("status")!="VALUE":
         return "UNKNOWN"
-    return "EQUAL" if a["value"]==b["value"] else "DIFFERENT"
+    # Retain observable JSON value type. Python otherwise treats True == 1.
+    return "EQUAL" if stable(a["value"])==stable(b["value"]) else "DIFFERENT"
 def valid_sources(manifest):
     for d in manifest["sources"]:
         p=pathlib.Path(d["local_dir"])
