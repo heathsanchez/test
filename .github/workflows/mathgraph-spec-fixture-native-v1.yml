@@ -1,0 +1,79 @@
+name: MathGraph external specification to native Go verification
+
+on:
+  push:
+    branches: [research/mathgraph-fixture-to-native-v1]
+    paths:
+      - 'research/mathgraph_fixture_native/**'
+      - '.github/workflows/mathgraph-spec-fixture-native-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-yaml-fixture-to-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.12'
+      - name: Freeze protocol and compiler syntax before original source retrieval
+        run: |
+          python -m py_compile coordinator/research/mathgraph_fixture_native/compile_fixture.py
+          python -m json.tool coordinator/research/mathgraph_fixture_native/FROZEN_PROTOCOL.json > /dev/null
+      - name: Minimal stable source-format decoder
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+      - uses: actions/checkout@v4
+        with:
+          repository: yaml/yaml-test-suite
+          ref: 9bca0be9eb5c309eb07f1aaa4d626fc7cd114ae0
+          path: source-175
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: yaml/yaml-test-suite
+          ref: 119fb49252e091e61d17a6f9f43ecc469299408d
+          path: source-172
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: goccy/go-yaml
+          ref: edee2f91616c6d73112a13e7c0dbde72ce938877
+          path: parser-goccy
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: go-yaml/yaml
+          ref: f6f7691b1fdeb513f56608cd2c32c51f8194bf51
+          path: parser-go-yaml
+          persist-credentials: false
+      - name: Verify author PR revisions remain source-identifiable
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/yaml/yaml-test-suite/pulls/175 --jq '.head.sha' | grep -Fx 9bca0be9eb5c309eb07f1aaa4d626fc7cd114ae0
+          gh api repos/yaml/yaml-test-suite/pulls/172 --jq '.head.sha' | grep -Fx 119fb49252e091e61d17a6f9f43ecc469299408d
+      - name: Independently construct and execute original source-native tests
+        run: |
+          python coordinator/research/mathgraph_fixture_native/compile_fixture.py \
+            --protocol coordinator/research/mathgraph_fixture_native/FROZEN_PROTOCOL.json \
+            --workspace . \
+            --out coordinator/research/mathgraph_fixture_native/evidence/spec_native
+      - name: Retain exact source, compiler and original native execution receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-spec-fixture-native-v1
+          path: coordinator/research/mathgraph_fixture_native/evidence/spec_native/report.json
+          if-no-files-found: warn
+          retention-days: 90
