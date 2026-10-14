@@ -16,12 +16,15 @@ OUT.mkdir(parents=True,exist_ok=True)
 PROTOCOL=HERE/"FROZEN_PROTOCOL.json"
 REPORT={"schema":"mathgraph.go-yaml-test-table-closure.v1",
         "status":"UNKNOWN","cases":[],"error":None}
+DEPENDENCY_MODFILE=None
 
 def sha(raw):
     return hashlib.sha256(raw).hexdigest()
 def run(argv,cwd,timeout=400,envextra=None):
     env=os.environ.copy()
     env.update({"GOTOOLCHAIN":"local"})
+    if argv and len(argv)>1 and argv[0]=="go" and argv[1]=="test" and DEPENDENCY_MODFILE is not None:
+        env["GOFLAGS"]="-modfile="+str(DEPENDENCY_MODFILE)
     if envextra:env.update(envextra)
     t=time.monotonic()
     try:
@@ -84,6 +87,25 @@ def main():
     for case in source["cases"]:
         for entry in case["files"]:pinned[entry["path"]]=entry["base_blob"]
     check_git(base,source["base"],pinned)
+    # Historical source has no complete Go sum/modern go directive.
+    # Isolate toolchain normalization in an ALTERNATE external module file.
+    # Both original and proposed revision are compiled under the SAME
+    # normalized dependency graph; never modify publisher go.mod/go.sum.
+    global DEPENDENCY_MODFILE
+    DEPENDENCY_MODFILE=OUT/"source-preserved-dependencies.mod"
+    DEPENDENCY_MODFILE.write_bytes((base/"go.mod").read_bytes())
+    tidy=run(["go","mod","tidy","-modfile="+str(DEPENDENCY_MODFILE)],base,150)
+    if tidy["exit_code"]!=0:
+        raise ValueError("ALTERNATE_DEPENDENCY_NORMALIZATION_FAILED:"+tidy["output_tail"])
+    check_git(base,source["base"],{"go.mod":source["go_mod_blob"]})
+    REPORT["dependency_context"]={
+       "method":"go mod tidy -modfile=SOURCE_EXTERNAL_ALTERNATE",
+       "source_publisher_go_mod_unchanged":True,
+       "normalized_alternate_mod_sha256":sha(DEPENDENCY_MODFILE.read_bytes()),
+       "normalized_alternate_sum_sha256":sha(
+             DEPENDENCY_MODFILE.with_suffix(".sum").read_bytes())
+          if DEPENDENCY_MODFILE.with_suffix(".sum").exists() else "UNKNOWN",
+       "no_original_publishers_source_modification":True}
     from_old=COORD/"research/mathgraph_go_yaml_transfer/discover_go_test_scopes.go"
     old_binary=OUT/"old-method-generator"
     new_binary=OUT/"new-table-method-generator"
