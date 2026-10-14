@@ -1,0 +1,87 @@
+name: MathGraph source-witness native Go application bridge
+on:
+  push:
+    branches: [research/mgcheck-native-application-bridge-20261015]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native-application:
+    name: Exact original native application / ${{ matrix.subject }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        subject: [first, transfer]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: mgcheck-source-regex-${{ matrix.subject }}
+          repository: heathsanchez/test
+          run-id: 38599440770
+          github-token: ${{ github.token }}
+          path: frozen
+      - name: Original exact immutable source subject and author head
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.subject }}" = "first" ]; then
+            echo "UPSTREAM_REPO=go-ozzo/ozzo-validation" >> "$GITHUB_ENV"
+            echo "PR=208" >> "$GITHUB_ENV"
+            echo "OLD_SHA=dbba76d963f16ad2ea78fd8fb7d36564783cb3c4" >> "$GITHUB_ENV"
+            echo "HEAD_SHA=48423ae967b5ed417f9076caa37e83f24b29dccd" >> "$GITHUB_ENV"
+          else
+            echo "UPSTREAM_REPO=asaskevich/govalidator" >> "$GITHUB_ENV"
+            echo "PR=528" >> "$GITHUB_ENV"
+            echo "OLD_SHA=3dd3875e2b081a20d6eed935913a482fea14ecd0" >> "$GITHUB_ENV"
+            echo "HEAD_SHA=80fc291b0bc7b293068daf5341c47704fb630d43" >> "$GITHUB_ENV"
+          fi
+      - name: Fetch actual original code, no upstream writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q --no-checkout "https://github.com/${UPSTREAM_REPO}.git" "$RUNNER_TEMP/source"
+          git -C "$RUNNER_TEMP/source" fetch -q origin "refs/pull/${PR}/head:refs/pull/${PR}/head"
+          test "$(git -C "$RUNNER_TEMP/source" rev-parse "refs/pull/${PR}/head")" = "$HEAD_SHA"
+          git -C "$RUNNER_TEMP/source" cat-file -e "${OLD_SHA}^{commit}"
+          git -C "$RUNNER_TEMP/source" worktree add -q --detach "$RUNNER_TEMP/old" "$OLD_SHA"
+          git -C "$RUNNER_TEMP/source" worktree add -q --detach "$RUNNER_TEMP/head" "$HEAD_SHA"
+          test "$(git -C "$RUNNER_TEMP/old" rev-parse HEAD)" = "$OLD_SHA"
+          test "$(git -C "$RUNNER_TEMP/head" rev-parse HEAD)" = "$HEAD_SHA"
+      - name: Infer native Go predicate and execute generated test on original source
+        shell: bash
+        run: |
+          set -euo pipefail
+          go run research/mgcheck_source_regex_20261015/native_application_bridge.go \
+            --old "$RUNNER_TEMP/old" --head "$RUNNER_TEMP/head" \
+            --witness "frozen/native-regex-${{ matrix.subject }}.json" \
+            --out "native-app-${{ matrix.subject }}.json"
+      - name: Admit only independently observed real Go invocation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("native-app-${{ matrix.subject }}.json").read_text())
+          assert r["status"]=="WARRANTED_BOUNDED_SOURCE_TO_NATIVE_APPLICATION_PREDICATE"
+          observed=[x for x in r["native_predicate_results"] if x["status"]==r["status"]]
+          assert observed and all(x["old_native_exit"]!=0 and x["head_native_exit"]==0 for x in observed)
+          assert all(x["old_native_value"]!=x["head_native_value"] for x in observed)
+          print("WARRANTED_NATIVE_APPLICATION_FUNCTIONS",[(x["candidate"]["function"],x["input"]) for x in observed])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-native-app-${{ matrix.subject }}
+          path: native-app-${{ matrix.subject }}.json
+          if-no-files-found: warn
