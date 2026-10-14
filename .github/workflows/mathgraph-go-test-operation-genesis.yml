@@ -1,0 +1,57 @@
+name: MathGraph Go native test-operation extraction — frozen third external repo
+on:
+  push:
+    branches:
+      - mathgraph-test-operation-genesis-gojson-20261014-v1
+    paths:
+      - 'research/test_operation_genesis/**'
+      - '.github/workflows/mathgraph-go-test-operation-genesis.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-test-operation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: goccy/go-json
+          ref: 9ab94ddad9f74ed2ad96d903cb6d8a127323a481
+          path: source/gojson/head
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Verify original source parent and form isolated original-source base
+        run: |
+          set -euo pipefail
+          test "$(git -C source/gojson/head rev-parse HEAD)" = 9ab94ddad9f74ed2ad96d903cb6d8a127323a481
+          test "$(git -C source/gojson/head rev-parse HEAD^)" = 7bcea74f8c32f689578555359a3bfd9c517ca8b0
+          git -C source/gojson/head worktree add --detach ../base 7bcea74f8c32f689578555359a3bfd9c517ca8b0
+          test "$(git -C source/gojson/base rev-parse HEAD)" = 7bcea74f8c32f689578555359a3bfd9c517ca8b0
+      - name: Automatically derive NEW original Go test operations from AST differences
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/go-test-genesis"
+          go run research/test_operation_genesis/selector.go             --base source/gojson/base --head source/gojson/head             --out "$RUNNER_TEMP/go-test-genesis/manifest.json"
+      - name: Run original author tests against base implementation and original repaired head
+        run: |
+          set -euo pipefail
+          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/go-test-genesis/manifest.json"             --base source/gojson/base --head source/gojson/head             --out "$RUNNER_TEMP/go-test-genesis/native.json"
+      - name: Qualify no-test operation ablation and typed evidence withdrawal
+        run: |
+          set -euo pipefail
+          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/go-test-genesis/manifest.json"             --base source/gojson/base --head source/gojson/head --ablate             --out "$RUNNER_TEMP/go-test-genesis/ablation.json"
+          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/go-test-genesis/manifest.json"             --base source/gojson/base --head source/gojson/head --withdraw             --out "$RUNNER_TEMP/go-test-genesis/withdrawal.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: source-derived-third-native-test-operation
+          path: ${{ runner.temp }}/go-test-genesis/
+          if-no-files-found: ignore
