@@ -12,6 +12,7 @@ import hashlib
 import itertools
 import json
 import os
+import random
 from pathlib import Path
 import subprocess
 import sys
@@ -31,7 +32,7 @@ SUFFIXES = (
 )
 CAPS = (24, 48, 96, 128, 256)
 LENGTHS = (0, 1, 8, 24, 48, 96, 160)
-SAMPLE_PREFIXES = 34
+SAMPLE_PREFIXES = 240
 
 
 def digest(data):
@@ -67,32 +68,41 @@ def build_cases():
             cases.append(dict(id=f"{version}:{kind}:{size}:cap{cap}",
                               version=version, kind=kind, size=size,
                               cap=cap, wire_hex=wire.hex(), nbytes=len(wire)))
-    # A small, predeclared prefix bank and suffix test-language. Prefixes
-    # are not chosen after reading PR diffs or native results.
-    small = sorted(cases, key=lambda c: (c["nbytes"], c["id"]))
-    picks = []
+    # Version-2 exploratory correction: the original shortest-34 prefixes
+    # under-sampled long, capped, and folded states. Stratify across the
+    # identical frozen grammar, without consulting native outcomes, and then
+    # uniformly sample with a sealed deterministic seed.
+    pool = []
     seen = set()
-    for c in small:
-        if c["cap"] not in (48, 96, 128) or c["kind"] not in (
-                "ordinary", "fold-space", "fold-double", "content-length",
-                "invalid", "control-no-extra"):
-            continue
+    for c in cases:
         wire = bytes.fromhex(c["wire_hex"])
-        points = [max(1, len(wire) // 2),
-                  wire.find(b"\r\n") + 2,
-                  max(1, len(wire) - 4)]
-        for cut in points:
+        fold = min((p for mark in (b"\r\n ", b"\r\n\t")
+                    if (p := wire.find(mark)) >= 0), default=-1)
+        points = [
+            ("after-request-line", wire.find(b"\r\n") + 2),
+            ("before-terminator", wire.rfind(b"\r\n\r\n") + 2),
+            ("before-cap", min(len(wire)-1, max(1, c["cap"]-1))),
+            ("at-cap", min(len(wire)-1, max(1, c["cap"]))),
+            ("midpoint", max(1, len(wire)//2)),
+        ]
+        if fold >= 0:
+            points.append(("before-fold", fold+2))
+        for cut_type, cut in points:
             if not 0 < cut < len(wire):
                 continue
-            ident = (wire[:cut], c["cap"])
-            if ident not in seen:
-                seen.add(ident)
-                picks.append({"prefix_hex": wire[:cut].hex(), "cap": c["cap"],
-                              "parent": c["id"], "cut": cut})
-            if len(picks) >= SAMPLE_PREFIXES:
-                break
-        if len(picks) >= SAMPLE_PREFIXES:
-            break
+            prefix = wire[:cut]
+            ident = (prefix, c["cap"])
+            if ident in seen:
+                continue
+            seen.add(ident)
+            pool.append({"prefix_hex": prefix.hex(), "cap": c["cap"],
+                         "parent": c["id"], "cut": cut,
+                         "cut_type": cut_type, "nbytes": len(wire)})
+    rng = random.Random(20261015)
+    rng.shuffle(pool)
+    picks = pool[:SAMPLE_PREFIXES]
+    # The same independently selected prefix bank is used on base and
+    # all heads. No target-specific observations enter this selection.
     return {"cases": cases, "prefix_cases": picks,
             "suffixes": [s.hex() for s in SUFFIXES]}
 
@@ -370,6 +380,10 @@ def run_experiment(root, output_dir):
             "status": ("BOUNDED_NATIVE_SEPARATOR" if witness is not None
                        else "NO_SEPARATOR_IN_FROZEN_GRAMMAR")
         }
+        distinct_prefix_futures = sum(
+            stable(base["future"][i]) != stable(other["future"][i])
+            for i in range(len(inputs["prefix_cases"])))
+        witnesses[label]["prefix_future_differences"] = distinct_prefix_futures
         source_stats[label] = source_guard_projection(root, SOURCES["base"],
                                                        SOURCES[label])
         # Two invariance controls that must remain true in baseline and both
@@ -441,6 +455,7 @@ def run_experiment(root, output_dir):
             f"- Exact output differences: {w['exact_event_differences']}",
             f"- Decision differences: {w['disposition_differences']}",
             f"- Status: {w['status']}",
+            f"- Differing sampled prefix future observations: {w['prefix_future_differences']}",
             f"- Observable future prefix classes: {q['future_prefix']['classes']} "
             f"of {q['future_prefix']['total']} source prefixes",
             f"- Minimum separating suffixes within frozen language: "
@@ -475,6 +490,9 @@ def run_experiment(root, output_dir):
                                                         "disposition_differences",
                                                         "status")}
                                    for k, v in witnesses.items()},
+                      "prefix_future_differences": {
+                          k: witnesses[k]["prefix_future_differences"]
+                          for k in witnesses},
                       "future_classes": {k: quotients[k]["future_prefix"]["classes"]
                                          for k in quotients}}))
 
