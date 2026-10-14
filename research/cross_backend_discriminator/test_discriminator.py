@@ -10,7 +10,8 @@ class EngineTests(unittest.TestCase):
   self.assertEqual(len(d.domain([{"name":"s","type":"strings","alphabet":"ab","maxlen":2},
    {"name":"x","type":"literals","values":[True,False]}])),14)
   with self.assertRaisesRegex(ValueError,"DOMAIN_BUDGET"):
-   d.domain([{"name":"s","type":"strings","alphabet":"ab","maxlen":5}])
+   d.domain([{"name":"s","type":"strings","alphabet":"ab","maxlen":5},
+             {"name":"t","type":"strings","alphabet":"ab","maxlen":5}])
  def test_preserve_distinct_unknowns(self):
   self.assertEqual(d.comparison({"status":"TIMEOUT_UNKNOWN"},{"status":"VALUE","value":1}),"UNKNOWN")
   self.assertEqual(d.comparison({"status":"PROCESS_ERROR"},{"status":"VALUE","value":1}),"UNKNOWN")
