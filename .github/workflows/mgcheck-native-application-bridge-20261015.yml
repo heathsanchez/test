@@ -77,7 +77,27 @@ jobs:
           observed=[x for x in r["native_predicate_results"] if x["status"]==r["status"]]
           assert observed and all(x["old_native_exit"]!=0 and x["head_native_exit"]==0 for x in observed)
           assert all(x["old_native_value"]!=x["head_native_value"] for x in observed)
+          assert all(x["no_generated_test_ablation"]=="EXECUTED_NO_TEST_NO_OBSERVATION" for x in observed)
           print("WARRANTED_NATIVE_APPLICATION_FUNCTIONS",[(x["candidate"]["function"],x["input"]) for x in observed])
+          PY
+      - name: Exercise the same bridge with a missing native reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          go run research/mgcheck_source_regex_20261015/native_application_bridge.go \
+            --old "$RUNNER_TEMP/old" --head "$RUNNER_TEMP/nonexistent-reference" \
+            --witness "frozen/native-regex-${{ matrix.subject }}.json" \
+            --out "negative-${{ matrix.subject }}.json" > /dev/null
+          status=$?
+          set -e
+          test "$status" -ne 0
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          n=json.loads(Path("negative-${{ matrix.subject }}.json").read_text())
+          assert n["status"]=="UNKNOWN_SOURCE_IDENTITY"
+          print("PHYSICAL_MISSING_NATIVE_REFERENCE_UNKNOWN=PASSED")
           PY
       - uses: actions/upload-artifact@v4
         if: always()
