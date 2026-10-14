@@ -1,0 +1,172 @@
+{
+  "version": "jpl-meta-sql-transform-v1",
+  "protocol_date": "2026-10-14",
+  "external_source": {
+    "repo": "tobymao/sqlglot",
+    "commit": "b1b244b1f38a3000c94a7b21ee6dfae1959dd4b2",
+    "module": "sqlglot.optimizer.optimize",
+    "dialect": "sqlite"
+  },
+  "flash_source": {
+    "repo": "heathsanchez/test",
+    "commit": "90d167031bba230399a686252ae5573d57100b94",
+    "path": "research/flash_v13/flash_engine.py"
+  },
+  "sqlite_schema": {
+    "t": {
+      "a": "INT",
+      "b": "INT",
+      "c": "INT"
+    },
+    "u": {
+      "a": "INT",
+      "b": "INT",
+      "c": "INT"
+    }
+  },
+  "row_domain": [
+    null,
+    -1,
+    0,
+    1
+  ],
+  "basis_rows": [
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      1,
+      0,
+      1
+    ],
+    [
+      -1,
+      1,
+      -1
+    ],
+    [
+      null,
+      1,
+      null
+    ],
+    [
+      0,
+      null,
+      1
+    ],
+    [
+      1,
+      1,
+      0
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      -1,
+      -1,
+      1
+    ],
+    [
+      0,
+      -1,
+      null
+    ],
+    [
+      1,
+      null,
+      -1
+    ]
+  ],
+  "random_seed": 20261014,
+  "random_worlds": 80,
+  "random_max_rows": 3,
+  "query_cases": [
+    {
+      "id": "q01",
+      "sql": "SELECT a AS result FROM t WHERE b = 1 AND (c > 0 OR c IS NULL)"
+    },
+    {
+      "id": "q02",
+      "sql": "SELECT a + b AS total FROM t WHERE a IS NOT NULL AND b IS NOT NULL"
+    },
+    {
+      "id": "q03",
+      "sql": "SELECT t.a AS left_a, u.c AS right_c FROM t LEFT JOIN u ON t.b = u.a WHERE t.c IS NULL OR t.c >= 0"
+    },
+    {
+      "id": "q04",
+      "sql": "SELECT a AS group_a, COUNT(*) AS n FROM t GROUP BY a HAVING COUNT(*) >= 1"
+    },
+    {
+      "id": "q05",
+      "sql": "SELECT a AS match_a FROM t WHERE a IN (SELECT b FROM u WHERE b >= 0)"
+    },
+    {
+      "id": "q06",
+      "sql": "WITH m AS (SELECT a, b FROM t WHERE b IS NOT NULL) SELECT a AS item FROM m WHERE b = 1"
+    },
+    {
+      "id": "q07",
+      "sql": "SELECT a AS item FROM t WHERE (a = 1 OR b = 1) AND a IS NOT NULL"
+    },
+    {
+      "id": "q08",
+      "sql": "SELECT DISTINCT a AS item FROM t WHERE b IS NOT NULL"
+    },
+    {
+      "id": "q09",
+      "sql": "SELECT a AS item FROM t WHERE 0 = 1 OR a > 0"
+    },
+    {
+      "id": "q10",
+      "sql": "SELECT a AS item FROM t ORDER BY b ASC, a DESC"
+    },
+    {
+      "id": "q11",
+      "sql": "SELECT COUNT(*) AS n FROM t WHERE b IS NULL"
+    },
+    {
+      "id": "q12",
+      "sql": "SELECT t.a AS item FROM t INNER JOIN u ON t.a = u.a WHERE t.b = 1"
+    },
+    {
+      "id": "q13",
+      "sql": "SELECT a AS item FROM t WHERE a BETWEEN -1 AND 1"
+    },
+    {
+      "id": "q14",
+      "sql": "SELECT a AS item FROM t WHERE NOT (b = 1 OR c = 0)"
+    }
+  ],
+  "controls": {
+    "mutations": [
+      "predicate",
+      "null_handling",
+      "bag_distinct",
+      "output_header",
+      "sort_direction",
+      "left_join"
+    ],
+    "identity": true,
+    "retraction": true,
+    "restart": true,
+    "wrong_source": true,
+    "forged_evidence": true,
+    "post_snapshot_future": true
+  },
+  "baseline": "Identical source, optimized SQL, and native SQLite evaluations; independent full-batch consequence rebuild; all acquisition costs charged.",
+  "no_claims": [
+    "This is finite world-relative verification, not universal SQL equivalence.",
+    "SQLGlot optimization source is external; query corpus is authored and frozen by Metalogic before output evaluation.",
+    "SQLite is an independent runtime oracle for specified SQLite dialect only.",
+    "No per-query manually written target expectation; no per-repository semantic translator built after seeing outputs.",
+    "The FLASH event authority is local simulated revocation, not an authenticated external publisher.",
+    "An identical strong source-aware native comparator is expected to tie detection.",
+    "No automatic generalized source-to-English semantics or full autonomous generator invention."
+  ]
+}
