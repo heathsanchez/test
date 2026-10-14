@@ -1,0 +1,100 @@
+name: MathGraph Check — ReviewBench qualified method applicability
+on:
+  push:
+    branches: [research/mgcheck-reviewbench-reuse-20261015]
+    paths:
+      - .github/workflows/mgcheck-reviewbench-applicability-20261015.yml
+      - research/reviewbench_20261015/applicability.py
+      - research/reviewbench_20261015/qualified_20261015/**
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  static-qualified-method-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact imported qualified code identities
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/reviewbench_20261015/qualified_20261015/mathgraph_obligation_compiler_20261015/observer_genesis.py)" = 226dce752cd6a3cb8074d920afec539e1536ee07
+          test "$(git hash-object research/reviewbench_20261015/qualified_20261015/mathgraph_predictive_consistency_20261015/invariant_generator.py)" = 997836e748addcb3064dd87315436fc4efdb1165
+      - name: Freeze public benchmark metadata and deterministic Python coverage slice
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/review-bench/ReviewBench.git /tmp/ReviewBench
+          git -C /tmp/ReviewBench checkout -q 5bba258937cc7d43577ce9a81a389a6550a20fa9
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("/tmp/ReviewBench")
+          show=[x for x in json.loads((root/"corpus/test/test.json").read_text()) if x.get("language")=="Python"]
+          full=[x for x in json.loads((root/"corpus/manifest.json").read_text()) if x.get("language")=="Python"
+                and x.get("files_changed",999)<=10
+                and x.get("lines_added",99999)+x.get("lines_removed",99999)<=500]
+          shown={(s["nwo"],s["pr_number"]) for s in show}
+          chosen=show+[x for x in sorted(full,key=lambda t:(t["nwo"],t["pr_number"]))
+                       if (x["nwo"],x["pr_number"]) not in shown][:12]
+          assert len(show)==4 and len(chosen)==16,len(chosen)
+          out=Path("reviewbench-applicability");out.mkdir(exist_ok=True)
+          (out/"frozen-subjects.json").write_text(json.dumps(
+              [{k:v for k,v in t.items() if k in ("nwo","pr_number","base","head","language","files_changed","lines_added","lines_removed")} for t in chosen],
+              indent=2)+"\n")
+          print("Frozen 16 metadata-selected Python PRs; no golden findings read.")
+          PY
+      - name: Inspect true base/head source AST in official mirror snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > reviewbench-applicability/records.jsonl
+          for idx in $(seq 0 15); do
+            meta=$(jq -c ".[$idx]" reviewbench-applicability/frozen-subjects.json)
+            nwo=$(jq -r .nwo <<< "$meta")
+            base=$(jq -r .base <<< "$meta")
+            head=$(jq -r .head <<< "$meta")
+            if [[ ! "$nwo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then exit 2; fi
+            mirror=$(printf '%s' "$nwo" | tr / _)
+            dir="/tmp/mgcheck-cover-$idx"
+            git init -q "$dir"
+            git -C "$dir" remote add origin "https://github.com/review-bench/$mirror.git"
+            if ! GIT_LFS_SKIP_SMUDGE=1 git -C "$dir" fetch -q --filter=blob:none origin "$base" "$head"; then
+              jq -nc --arg nwo "$nwo" --arg status "UNKNOWN_MIRROR_FETCH" '{nwo:$nwo,status:$status}' >> reviewbench-applicability/records.jsonl
+              continue
+            fi
+            git -C "$dir" checkout -q --force --detach "$head"
+            python3 research/reviewbench_20261015/applicability.py "$dir" "$base" "$head" > "/tmp/probe-$idx.json" || true
+            jq -c --arg nwo "$nwo" --argjson pr "$(jq '.pr_number' <<< "$meta")" \
+              '. + {nwo:$nwo,pr_number:$pr}' "/tmp/probe-$idx.json" >> reviewbench-applicability/records.jsonl
+          done
+      - name: Seal boundaries, counts and not-run baselines
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("reviewbench-applicability")
+          rows=[json.loads(line) for line in (p/"records.jsonl").read_text().splitlines()]
+          assert len(rows)==16,len(rows)
+          summary={
+            "source":"review-bench/ReviewBench@5bba258937cc7d43577ce9a81a389a6550a20fa9",
+            "selected":16,
+            "ast_scans":sum(v.get("status")=="CANDIDATE_AST_SCAN_ONLY" for v in rows),
+            "unreadable_or_unknown":sum(v.get("status")!="CANDIDATE_AST_SCAN_ONLY" for v in rows),
+            "ast_method_candidates":sum(v.get("candidate_count",0) for v in rows),
+            "repos_with_method_candidates":sum(v.get("candidate_count",0)>0 for v in rows),
+            "native_semantic_tests":"NOT_RUN",
+            "findings":"NOT_RUN",
+            "model_comparator":"NOT_RUN",
+            "golden_set_used":False,
+            "reviewer_superiority":"UNKNOWN",
+            "interpretation":"AST candidate count only, NOT contract applicability or a true defect."
+          }
+          (p/"summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print(json.dumps(summary,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reviewbench-verified-method-applicability
+          path: reviewbench-applicability/
+          retention-days: 30
