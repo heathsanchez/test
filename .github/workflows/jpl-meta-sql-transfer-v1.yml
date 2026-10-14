@@ -51,6 +51,8 @@ jobs:
           set -euo pipefail
           git show 6451eacf2f5687317579573eab69439307bb3c61:research/jpl_meta_sql_transfer_v1/FROZEN_PROTOCOL.json > /tmp/jpl_meta_original_protocol.json
           cmp /tmp/jpl_meta_original_protocol.json research/jpl_meta_sql_transfer_v1/FROZEN_PROTOCOL.json
+          git show 931ad550560a044fb98e36369e5b5a40e75e7448:research/jpl_meta_sql_transfer_v1/FUTURE_ADVERSARIAL_PROTOCOL.json > /tmp/jpl_meta_frozen_future.json
+          cmp /tmp/jpl_meta_frozen_future.json research/jpl_meta_sql_transfer_v1/FUTURE_ADVERSARIAL_PROTOCOL.json
           test "$(git -C jpl-target-sqlglot rev-parse HEAD)" = b1b244b1f38a3000c94a7b21ee6dfae1959dd4b2
           test "$(git -C flash-v13-source rev-parse HEAD)" = 90d167031bba230399a686252ae5573d57100b94
           test "$(git -C jpl-target-sqlglot hash-object sqlglot/optimizer/optimizer.py)" = fb8d216967c68d8e65db4455bdca0c8419cd9efc
@@ -60,6 +62,7 @@ jobs:
         run: |
           set -euo pipefail
           python research/jpl_meta_sql_transfer_v1/run.py | tee /tmp/jpl_meta_run.log
+          python research/jpl_meta_sql_transfer_v1/future.py | tee /tmp/jpl_meta_future.log
           python - <<'PY'
           import json
           from pathlib import Path
@@ -71,7 +74,12 @@ jobs:
           assert r["graph"]["tampered_restart_rejected"]
           assert r["graph"]["unrelated_conclusions_unchanged"] if "unrelated_conclusions_unchanged" in r["graph"] else r["graph"]["selective_retraction"]["unrelated_conclusions_unchanged"]
           assert len(r["mutants"])==6 and all(x["caught"] for x in r["mutants"])
-          print("PASS_EXACT_SOURCE_NATIVE_META_CORRESPONDENCE_BOUNDARY")
+          f=json.loads((p/"future_report.json").read_text())
+          assert f["status"]=="PASS_FINITE_FUTURE_RELATIVE_META_REFINEMENT"
+          assert f["incremental_graph"]["historical_warrant_remains_active_on_new_scope_withdrawal"]
+          assert f["incremental_graph"]["independent_full_batch_equal_each_step"]
+          assert f["witness"]["old_basis"]!=f["witness"]["new_basis"]
+          print("PASS_EXACT_SOURCE_NATIVE_META_CORRESPONDENCE_AND_FUTURE_REFINEMENT")
           PY
       - name: Archive source, controls and native evidence
         if: always()
