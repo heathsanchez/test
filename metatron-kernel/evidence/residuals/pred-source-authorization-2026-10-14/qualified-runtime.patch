@@ -1,0 +1,11 @@
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -462,8 +462,6 @@
+                 Some(NatOperation::Mod)
+             } else if name_is_child_str(&export, name, nat.type_name, "sub") {
+                 Some(NatOperation::Sub)
+-            } else if name_is_child_str(&export, name, nat.type_name, "pred") {
+-                Some(NatOperation::Pred)
+             } else if name_is_child_str(&export, name, nat.type_name, "ble") {
+                 Some(NatOperation::Ble)
+             } else if name_is_child_str(&export, name, nat.type_name, "beq") {
