@@ -63,7 +63,7 @@ class NumericCore(unittest.TestCase):
         self.assertFalse(reproduce_table(table_rows(t))[2]["exact_value_match"])
     def test_missing_final_row_unknown(self):
         t=SYNTHETIC_TABLE.replace("Final measured value", "No declared final line")
-        with self.assertRaisesRegex(SourceParseFailure,"MISSING_OR_DUPLICATE"):
+        with self.assertRaisesRegex(SourceParseFailure,"FINAL_ROW_IDENTITY_MISMATCH"):
             table_rows(t)
     def test_missing_heading_unknown(self):
         with self.assertRaisesRegex(SourceParseFailure,"HEADING"):
