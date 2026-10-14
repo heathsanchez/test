@@ -13,11 +13,14 @@ import (
 type mgcheckFrozenREST struct {
     commits string
     reviews string
+    pull string
 }
 
 func (m mgcheckFrozenREST) RoundTrip(req *http.Request) (*http.Response, error) {
     var data string
     switch {
+    case strings.HasSuffix(req.URL.Path, "/pulls/9"):
+        data = m.pull
     case strings.HasSuffix(req.URL.Path, "/commits"):
         data = m.commits
     case strings.HasSuffix(req.URL.Path, "/reviews"):
@@ -44,9 +47,10 @@ func TestMGCheckCopilotHeadIdentityNotClock(t *testing.T) {
     for _, tc := range tests {
         t.Run(tc.name,func(t *testing.T) {
             commits := fmt.Sprintf(`[{"sha":%q,"commit":{"committer":{"date":%q}}}]`, headSHA, tc.committerTime)
-            reviews := fmt.Sprintf(`[{"user":{"login":%q},"commit_id":%q,"submitted_at":%q}]`,tc.user,tc.reviewSHA,tc.reviewTime)
+            reviews := fmt.Sprintf(`[{"user":{"login":%q},"commit_id":%q,"submitted_at":%q,"state":"COMMENTED"}]`,tc.user,tc.reviewSHA,tc.reviewTime)
             rest,err := api.NewRESTClient(api.ClientOptions{Host:"github.com", AuthToken:"mock-token",
-                Transport:mgcheckFrozenREST{commits:commits,reviews:reviews}})
+                Transport:mgcheckFrozenREST{commits:commits,reviews:reviews,
+                    pull:fmt.Sprintf("{\"head\":{\"sha\":%q}}",headSHA)}})
             if err != nil {t.Fatal(err)}
             client:=&Client{rest:rest,owner:"frozen",repo:"source"}
             got,err:=client.IsCopilotReviewFresh(9)
