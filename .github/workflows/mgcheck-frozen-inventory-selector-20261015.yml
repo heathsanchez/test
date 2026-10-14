@@ -1,0 +1,83 @@
+name: MathGraph Check — frozen capability inventory selection
+on:
+  push:
+    branches:
+      - research/mgcheck-frozen-inventory-selector-20261015
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgcheck-inventory-selection-20261015
+  cancel-in-progress: false
+
+jobs:
+  frozen-historical-training:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify frozen selector and unchanged native learner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/mgcheck_activation_20261015/run_selector.py
+          python research/mgcheck_activation_20261015/run_selector.py --phase self-check
+          test "$(git hash-object research/mgcheck_nonregex_genesis_20261015/nonregex_method_learner.go)" = "c5c4af86620d87fa0222ac2092ba0e529b16cc3e"
+          echo FROZEN_PREEXISTING_OPERATOR_GRAMMAR_UNCHANGED
+      - name: Select solely from three historical native training source families
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/mgcheck_activation_20261015/run_selector.py --phase train \
+            --root . --out train-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-frozen-inventory-train
+          path: train-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+  protected-cold-native-evaluation:
+    needs: frozen-historical-training
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: mgcheck-frozen-inventory-train
+          path: train-evidence/
+      - name: Run A old selector, B retained selection, C stateless on protected native PRs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/mgcheck_activation_20261015/run_selector.py --phase protected \
+            --root . --plans train-evidence/ --out protected-evidence/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-frozen-inventory-protected-native
+          path: protected-evidence/
+          if-no-files-found: warn
+          retention-days: 30
