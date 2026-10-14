@@ -1,0 +1,50 @@
+{
+  "schema": "mathgraph.yaml-heldout-5000-string-fidelity.v1",
+  "date": "2026-10-14",
+  "independent_input_seed": 20261016,
+  "source_to_holdout_barrier": "The first 1088 cases and both human-selected repair operations have been frozen in commits and native qualified before generation of this distinct 5000-input grammar.",
+  "fixed_repair_source": "research/mathgraph_roundtrip_witness_20261014/whitespace_native.py",
+  "fixed_repair_source_blob": "50583ec47e4f6e0709d595a0814615b3092692c7",
+  "fixed_operations": [
+    "patch",
+    "add_whitespace"
+  ],
+  "target": {
+    "repo": "goccy/go-yaml",
+    "sha": "72a4f95c648c844ef2f8ddbc009530be64ab4c41",
+    "original_token_blob": "1ba8bf07b4859e49f4016551c63c9c8f76fa137f",
+    "fully_patched_token_blob": "595d8db12f3dad4dbd0f7c8bbbe5f7a3cf9f5a94",
+    "module": "github.com/goccy/go-yaml"
+  },
+  "reference": {
+    "repo": "go-yaml/yaml",
+    "sha": "944c86a7d29391925ed6ac33bee98a0516f1287a",
+    "module": "gopkg.in/yaml.v3"
+  },
+  "source_tests": "Marshal map[string]any with a string value and Unmarshal its output; compare exact Go type and exact string bytes.",
+  "generated_case_total": 5000,
+  "case_families": {
+    "number_like": 1000,
+    "control_leading": 1000,
+    "control_internal": 1000,
+    "punctuation_unicode": 1000,
+    "special_near_miss": 1000
+  },
+  "unknowns_to_exercise": [
+    "normal-prefix interior CR/LF/TAB and line-folding",
+    "unusual leading control strings",
+    "Unicode separators and combining sequences",
+    "numeric/string confusion near special scalars",
+    "punctuation and escape preservation"
+  ],
+  "arms": [
+    "original_source",
+    "same_source_plus_both_frozen_repairs",
+    "unmodified_independent_reference"
+  ],
+  "comparator_policy": "Do not label any target-only or shared mismatch as confirmed new bug until minimally reproduced with source-correct native tests and intended YAML serialization policy. Passing zero failures is not assumed.",
+  "original_corpus_replay_scope": "Previously reported 1088 cases is separate and unchanged; this is a held-out input-domain test not a new source repository/version.",
+  "no_external_repo_mutations": true,
+  "zero_outreach": true,
+  "no_L7_claim": true
+}
