@@ -1,0 +1,48 @@
+name: Original jaq third source — frozen lexical operation discovery
+on:
+  push:
+    branches:
+      - mathgraph-source-derived-third-jaq-20261014
+    paths:
+      - '.github/workflows/mathgraph-third-jaq-frozen-extractor.yml'
+      - 'research/cross_backend_discriminator/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-source-extraction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: 01mf02/jaq
+          ref: d7329cde766a33480ec4e1e8127ec39dda265350
+          path: original/jaq/head
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze real source and pre-inspection extractor blob
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/cross_backend_discriminator/derive_probe.py)" = aaca8d8c47b618f37163e73a90f50b384c44c2f6
+          test "$(git -C original/jaq/head rev-parse HEAD)" = d7329cde766a33480ec4e1e8127ec39dda265350
+          git -C original/jaq/head worktree add --detach ../base 8402d71af0d3beb32fba7091feb531475ba8caf4
+          test "$(git -C original/jaq/base rev-parse HEAD)" = 8402d71af0d3beb32fba7091feb531475ba8caf4
+      - name: Run original-source lexical generator unchanged
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/jaq-frozen"
+          python3 research/cross_backend_discriminator/derive_probe.py \
+            --base-dir original/jaq/base --base-sha 8402d71af0d3beb32fba7091feb531475ba8caf4 \
+            --head-dir original/jaq/head --head-sha d7329cde766a33480ec4e1e8127ec39dda265350 \
+            --manifest-out "$RUNNER_TEMP/jaq-frozen/manifest.json" \
+            --discovery-out "$RUNNER_TEMP/jaq-frozen/discovery.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: original-jaq-frozen-operation-discovery
+          path: ${{ runner.temp }}/jaq-frozen/
+          if-no-files-found: ignore
