@@ -18,13 +18,12 @@ def native_projection(r):
    x.get("own_reparse_equal"),x.get("reference_error"),x.get("native_error"))
    for x in r["results"]}
 def main():
- E=pathlib.Path(sys.argv[1]);zip_path=E/"a_previous_source_evidence.zip"
- assert dig(zip_path)==A_ZIP_SHA,"UNKNOWN_ORIGIN_ZIP_IDENTITY"
- with zipfile.ZipFile(zip_path) as z:
-  prev=json.loads(z.read("learned_capability_A.json"))
-  origin_report=json.loads(z.read("final_report.json"))
-  source_cap_sha=hashlib.sha256(z.read("learned_capability_A.json")).hexdigest()
- assert prev["selected_channels"]==["coherence"] and origin_report["future"]["B"]["learned_method_recognized_repaired_witnesses"]==8,"UNKNOWN_ORIGIN_CAPABILITY_NOT_QUALIFIED"
+ E=pathlib.Path(sys.argv[1]); root=E.parent
+ source_cap_path=root/"acquired_capability_A_from_original_archive.json"
+ assert dig(source_cap_path)=="2407927cfc0a7b5061aefecce70ae69ddd19a70820883d08439da5fb2aa363d1","UNKNOWN_SOURCE_A_MANIFEST_IDENTITY"
+ prev=load(source_cap_path)
+ assert prev["selected_channels"]==["coherence"] and prev["source_old_fail_to_head_pass"]==13,"UNKNOWN_A_CAPABILITY"
+ source_cap_sha=dig(source_cap_path)
  cap={
    "source":"heathsanchez/test Actions 38639050079 artifact 11929272911",
    "source_archive_sha256":A_ZIP_SHA,
