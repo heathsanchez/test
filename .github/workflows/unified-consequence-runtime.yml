@@ -116,6 +116,12 @@ jobs:
           path: coordinator/components/producers/typed_semantic
           persist-credentials: false
 
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ff2b556186a97e49684c322e4551d047f666d1a5
+          path: coordinator/components/producers/external_pr
+          persist-credentials: false
       - name: Read actual historical CI metadata without scientific promotion
         working-directory: coordinator
         run: |
@@ -252,6 +258,27 @@ jobs:
             --policy research/unified_consequence_runtime/typed_semantic_method_v1/admission_policy.json \
             --out out/source-bundles/typed_semantic
 
+      - name: Independently bind external IEANTN PR regression receipt as scoped advisory evidence
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/external-pr-qualification/proofs out/source-bundles/external_pr
+          gh api "repos/heathsanchez/test/actions/artifacts/11862929149/zip" > out/external-pr-qualification/sealed.zip
+          expected="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('research/unified_consequence_runtime/external_pr_v1/ADMISSION_POLICY.json')
+          print(json.loads(p.read_bytes())['archive_zip_sha256'])
+          PY
+          )"
+          test "$(sha256sum out/external-pr-qualification/sealed.zip | cut -d' ' -f1)" = "$expected"
+          unzip -q out/external-pr-qualification/sealed.zip -d out/external-pr-qualification/proofs
+          PYTHONPATH=components/flash python components/producers/external_pr/research/unified_consequence_runtime/external_pr_v1/emit.py \
+            --policy research/unified_consequence_runtime/external_pr_v1/ADMISSION_POLICY.json \
+            --evidence out/external-pr-qualification/proofs/receipt.json \
+            --run out/run-data/IEANTN_EXTERNAL_NATIVE_PASS.json \
+            --out out/source-bundles/external_pr
+
       - name: Restore the latest successful qualification, never a red-run artifact
         working-directory: coordinator
         run: |
@@ -304,7 +331,13 @@ jobs:
           assert obj['mathgraph']['action_authorization']=='NONE'
           assert obj['mathgraph']['current_applicability']=='UNKNOWN'
           assert obj['runs']['CSLIB_NATIVE_FAIL']['conclusion']=='failure'
-          assert obj['flash']['events']==12
+          assert obj['flash']['events']==13
+          assert obj['real_external_pr_native_advisory']['verdict']=='PASS_SCOPED'
+          assert obj['real_external_pr_native_advisory']['source_code_fix_generated'] is False
+          assert obj['real_external_pr_native_advisory']['actual_github_app_check_posted'] is False
+          assert obj['real_external_pr_native_advisory']['source_deletion_ablation']=='PASS_ONE_SOURCE_BOUND_PR_EVIDENCE_EVENT_DELETION'
+          assert obj['real_external_pr_native_advisory']['simulated_typed_revocation']=='PASS_SIMULATED_TYPED_READ_ONLY_PR_EVIDENCE_RETRACTION'
+          assert obj['gates']['external_real_pr_regression_checks']=='PASS_SCOPED'
           assert obj['native_scoped_proof']['verdict']=='PASS_SCOPED'
           assert obj['source_native_method']['verdict']=='PASS_SCOPED'
           assert obj['source_native_parametric_induction']['verdict']=='PASS_SCOPED'
@@ -343,10 +376,11 @@ jobs:
                   'cslib:nat-infinite-trace:backward-method:v1',
                   'cslib:transport-method:acquisition:v1',
                   'cslib:transport-method:heldout:v1',
-                  'cslib:transport-method:grammar_revision:v1'
+                  'cslib:transport-method:grammar_revision:v1',
+                  'mathgraph-check:ieantn:two-real-pr-native-regressions:v1'
               }
               assert set(obj['flash']['new_event_ids']) <= allowable
-              assert len(obj['flash']['unchanged_event_ids'])>=9
+              assert len(obj['flash']['unchanged_event_ids'])>=12
               assert obj['gates']['prior_research_history_retained']=='PASS'
           print('PASS_INTEGRATED_OPERATIONS_NO_FALSE_SCIENTIFIC_PROMOTION')
           PY
@@ -371,6 +405,9 @@ jobs:
             coordinator/out/typed-native-qualification/proofs/
             coordinator/out/typed-native-qualification/sealed.zip
             coordinator/out/source-bundles/typed_semantic/
+            coordinator/out/external-pr-qualification/proofs/receipt.json
+            coordinator/out/external-pr-qualification/sealed.zip
+            coordinator/out/source-bundles/external_pr/
             coordinator/out/source-bundles/native/
             coordinator/out/run-data/
           if-no-files-found: warn
