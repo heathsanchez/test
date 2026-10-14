@@ -63,7 +63,6 @@ def main():
         check=independent_decimal_check(nature(),model)
         self_value=D(exact.numerator)/D(exact.denominator)
         assert abs(check-self_value)<D("1e-45")
-    from rounding_envelope import rounded_covariance_envelope
     try:
         rounded_covariance_envelope(qattan_first(),qattan_second())
         raise AssertionError("SAME_SCATTERING_DATA_WAS_DOUBLE_COUNTED")
