@@ -75,8 +75,7 @@ func main(){
  require(e==nil,"SOURCE_DIFF_UNAVAILABLE")
  selected:=[]Selection{}
  files:=[]FileOrigin{}
- for _,name:=range strings.Split(strings.TrimSpace(string(changed)),"
-") {
+ for _,name:=range strings.Split(strings.TrimSpace(string(changed)),"\n") {
   if name==""{continue}
   require(strings.HasSuffix(name,"_test.go")&&!strings.HasPrefix(name,"../"),"TEST_SOURCE_PATH_UNSAFE")
   after,e:=git(*head,nil,"show",headPin+":"+name);require(e==nil,"HEAD_TEST_BYTES_MISSING")
@@ -108,8 +107,7 @@ func main(){
  differences,e:=git(*base,nil,"diff","--name-only");require(e==nil,"PATCH_SCOPE_UNOBSERVED")
  allowed:=map[string]bool{}
  for _,f:=range files{allowed[f.File]=true}
- for _,f:=range strings.Split(strings.TrimSpace(string(differences)),"
-") {
+ for _,f:=range strings.Split(strings.TrimSpace(string(differences)),"\n") {
   if f!=""&&!allowed[f]{panic("NON_TEST_IMPLEMENTATION_MODIFIED")}
  }
  result:=map[string]any{
@@ -124,10 +122,8 @@ func main(){
  }
  bytes,e:=json.MarshalIndent(result,"","  ");require(e==nil,"SERIALIZE_FAILED")
  require(os.MkdirAll(filepath.Dir(*out),0755)==nil,"OUTPUT_DIR_ERROR")
- require(os.WriteFile(*out,append(bytes,'
-'),0644)==nil,"OUTPUT_FILE_ERROR")
- fmt.Printf("SOURCE_TEST_OPERATION_GENESIS %s
-",string(bytes))
+ require(os.WriteFile(*out,append(bytes,'\n'),0644)==nil,"OUTPUT_FILE_ERROR")
+ fmt.Printf("SOURCE_TEST_OPERATION_GENESIS %s\n",string(bytes))
 }
 var _=errors.Is
 var _=regexp.MustCompile
