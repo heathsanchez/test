@@ -74,6 +74,14 @@ def checkout_sources():
 def run_arm(d,name,sha):
  git(d,"checkout","--force","--detach",sha)
  if git(d,"rev-parse","HEAD")!=sha:raise RuntimeError("SOURCE_SHA_PIN_DRIFT")
+ # Git checkout deliberately retains untracked files. Remove only the exact
+ # previously injected research test before running untouched upstream CI.
+ # This keeps the original suite a genuine no-extra-test baseline.
+ leftover=d/"mathgraph_pr958_test.go"
+ if leftover.exists():
+  if leftover.read_bytes()!=(ROOT/"mathgraph_pr958_test.go").read_bytes():
+   raise RuntimeError("UNEXPECTED_FOREIGN_UNTRACKED_TEST_SOURCE")
+  leftover.unlink()
  # The original test suite runs before adding the MathGraph tests.
  native_suite,elapsed_suite=native(d,["go","test","-count=1","-timeout=10m","./..."],
       name+"_original_suite",timeout=720)
