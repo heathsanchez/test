@@ -1,0 +1,35 @@
+--- a/scanner/scanner.go
++++ b/scanner/scanner.go
+@@ -316,6 +316,7 @@
+ 	src := ctx.src
+ 	size := len(src)
+ 	value := []rune{}
++	escapedSpaceIndex := -1
+ 	isFirstLineChar := false
+ 	isNewLine := false
+ 
+@@ -330,7 +331,7 @@
+ 		if s.isNewLineChar(c) {
+ 			notSpaceIdx := -1
+ 			for i := len(value) - 1; i >= 0; i-- {
+-				if value[i] == ' ' {
++				if value[i] == ' ' && i != escapedSpaceIndex {
+ 					continue
+ 				}
+ 				notSpaceIdx = i
+@@ -338,6 +339,7 @@
+ 			}
+ 			if len(value) > notSpaceIdx {
+ 				value = value[:notSpaceIdx+1]
++				escapedSpaceIndex = -1
+ 			}
+ 			if isFirstLineChar {
+ 				value = append(value, '\n')
+@@ -414,6 +416,7 @@
+ 				progress = 1
+ 				ctx.addOriginBuf(nextChar)
+ 				value = append(value, 0x20)
++				escapedSpaceIndex = len(value) - 1
+ 			case '"':
+ 				progress = 1
+ 				ctx.addOriginBuf(nextChar)
