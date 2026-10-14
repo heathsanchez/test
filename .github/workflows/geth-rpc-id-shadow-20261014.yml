@@ -22,6 +22,7 @@ jobs:
           git rev-parse refs/heads/mathgraph-pr
           test "$(git rev-parse refs/heads/mathgraph-pr)" = "ae4936f24e5d2123c602fdd640347fb1b99fea4b"
           git rev-parse origin/master > ../master.sha
+          git checkout --detach refs/heads/mathgraph-pr
       - name: Install Go
         uses: actions/setup-go@v5
         with:
