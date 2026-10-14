@@ -10,6 +10,78 @@ scientific result. Source repositories and the production MathGraph website
 are unchanged. [Draft PR #123](https://github.com/heathsanchez/test/pull/123)
 is intentionally unmerged.
 
+## 2026-10-14 — Real outside-owner PR behavioral checks and MathGraph GitHub App previews
+
+**WARRANTED_BOUNDED_READ_ONLY_EXTERNAL_PR_NATIVE_EVIDENCE**, not autonomous
+repair generation, general mathematical verification, outside-owner adoption,
+production deployment or L7 scientific closure.
+
+The original external `teorth/IEANTN` PRs were frozen at their **actual**
+independent source revisions *before* our checker implementation:
+[original protocol commit `9a8d870`](https://github.com/heathsanchez/test/commit/9a8d870285f0153f02773b9d2bbb7a6e158f).
+The same generic source AST test selector discovered native original
+regressions **without being given the new test names**.
+
+- [External #158](https://github.com/teorth/IEANTN/pull/158): broken
+  receipt falsely appeared fully verified on old code; same 2 new PR
+  author tests have 1 failure+1 pass on original base and 2/2 pass on
+  author-provided PR head. Old unrelated native suite 241/241 pass,
+  new PR suite 243/243 pass. Preserves historical proof when only
+  environment freshness changes.
+- [External #155](https://github.com/teorth/IEANTN/pull/155): an uncompiled
+  path traversal or `.txt` file was eligible as a purported Lean bridge.
+  The added original native regression failed on untouched base (two
+  subcases) and passed against contributor-authored PR head (1/1),
+  old native suite 241/241 pass and new suite 242/242 pass.
+
+**Original native qualification:**
+[run 38495636825](https://github.com/heathsanchez/test/actions/runs/38495636825)
+SUCCESS at source `52257867ccf3f72e9f6b2bc657be9101a67e3259`,
+[artifact 11862929149](https://github.com/heathsanchez/test/actions/runs/38495636825/artifacts/11862929149)
+ZIP SHA256 `dfa66e486f8d669115f33deef9b3fd79c784e39161791bc1dcad7f349a4a20b5`.
+The original upstream PyYAML dependency was required: earlier red setup runs
+lack semantic value. The actual green native run verified executable source
+before→after separation; it did **not** generate the external code changes.
+
+**Original FLASH/Metatron support admission:**
+[run 38498545968](https://github.com/heathsanchez/test/actions/runs/38498545968)
+SUCCESS: one guarded read-only source evidence capability added to prior
+12 events → **13 source events, 11 scoped live capabilities, 2 unchanged
+ARC/Collatz obstructions, 75 Metatron nodes/63 live**, previous 60/60
+lineage IDs retained. [Evidence artifact 11865110283](https://github.com/heathsanchez/test/actions/runs/38498545968/artifacts/11865110283)
+SHA256 `85b6e4381b9814f7b83776bd4a24be14ff09ebcbe7f63a2ff321e28e138aad97`.
+Exact source-deletion ablation and controlled *simulated* typed revocation
+remove only that PR evidence event and reopen the dependent obligation.
+An independent [cold successor 38498825850](https://github.com/heathsanchez/test/actions/runs/38498825850)
+retained **13/13 events and 75/75 lineage nodes** without duplication.
+Artifact 11865380348 ZIP SHA256 `39caaac32331e47b4ae858ee201d1a5f625f105e5b23aba8592a8e720609cef2`.
+
+**Existing GitHub App interface exercised, without installation:**
+[run 38498825980](https://github.com/heathsanchez/test/actions/runs/38498825980)
+SUCCESS; the ORIGINAL `metalogiclabs/mathgraph` shadow GitHub App pilot at
+`942de0ba529efdff00b1c667850b9d3f9f05aa5d` passed its original signed
+HTTP webhook/adversarial controls. Its real PR analyzer retrieved both
+unchanged external current heads from GitHub and emitted two complete neutral
+GitHub Check Run **preview payloads** that attach the separately source-
+qualified native regression observations, artifact/digest pins and
+exact limitations. Forging native receipt bytes fails closed.
+[Preview artifact 11864308701](https://github.com/heathsanchez/test/actions/runs/38498825980/artifacts/11864308701)
+ZIP SHA256 `8f1266d7f99231faafee879c767148fc903982978f58adf5897ead1a5f1212e5`,
+independently opened and both exact-head check payloads verified.
+
+**0 external Checks POSTed, 0 App installations performed, 0 source fixes
+generated, 0 outside-owner customer consent assumed.** Original MathGraph
+production and upstream IEANTN repositories remain unchanged. This is a
+demonstration of real scoped maintainer value, not a live service.
+
+**Highest consequential residual:** self-construct a needed improvement
+to the method-generating language from a newly encountered real PR-native
+failure, then reuse the changed generator on a distinct external source
+without human-written target glue. An equally informed capable stateless
+checker and exact qualified executable ledger must be charged fairly.
+Until then `E2E_SYSTEM/L7=UNKNOWN`, `APP_LIVE=NO`,
+`PRODUCTION_ACT=NONE`.
+
 ## 2026-10-14 — Native source-mined method vocabulary integrated (12-event milestone)
 
 **Scope: WARRANTED_BOUNDED_NATIVE_METHOD_VOCABULARY_EXTENSION and
