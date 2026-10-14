@@ -1,0 +1,28 @@
+name: MathGraph native consequential decision closure
+on:
+  push:
+    branches:
+      - research/mgcheck-crosslanguage-decision-closure-20261015
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native-evidence-closure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout owner-side bounded consumer
+        uses: actions/checkout@v4
+      - name: Verify historical source and both native artifact families
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash research/mgcheck_consequential_decision_20261015/verify.sh
+      - name: Retain original evidence and negative-control results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-consequential-decisions-two-original-sources
+          path: research/mgcheck_consequential_decision_20261015/evidence/
+          if-no-files-found: warn
+          retention-days: 30
