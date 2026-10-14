@@ -12,7 +12,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from consequence_core import (C,q,canonical,robust_consistency,Ledger,UnknownEvidence,
                               contrast_measured_predicted,joint_covariance_diagnostic,
-                              independent_pooled_mean)
+                              independent_pooled_mean,declared_within_source_correlation)
 getcontext().prec=55
 ROOT=Path(__file__).resolve().parent
 EVIDENCE=ROOT/"evidence"
@@ -122,7 +122,13 @@ def evidence_model(source_records):
              "nature2026","SM-QED+muonic-radius",
              ("shared-1S2S","muonic-proton-radius","nature-QED","alpha2022"))
     # Nature's +0.94 reported correlation is a WITHIN-STUDY covariance.
-    corr=joint_covariance_diagnostic(F("0.94"))
+    corr=joint_covariance_diagnostic(declared_within_source_correlation("0.94","nature2026:rp_vs_Rinf"))
+    for forged in [None,"0", "-0.94", "0.4"]:
+        try:
+            declared_within_source_correlation(forged,"nature2026:rp_vs_Rinf")
+            raise AssertionError("FORGED_CORRELATION_ACCEPTED")
+        except UnknownEvidence:
+            pass
     # Exact rational, uncertainty-only conclusion even when unknown
     # cross-paper rho ranges freely through [-1,+1].
     rp=robust_consistency(nature_rp,bullis_current)
