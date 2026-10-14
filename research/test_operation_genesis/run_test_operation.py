@@ -45,6 +45,7 @@ def main():
     p.add_argument("--base",type=pathlib.Path,required=True)
     p.add_argument("--head",type=pathlib.Path,required=True)
     p.add_argument("--out",type=pathlib.Path,required=True)
+    p.add_argument("--pristine",type=pathlib.Path)
     p.add_argument("--ablate",action="store_true")
     p.add_argument("--withdraw",action="store_true")
     a=p.parse_args()
@@ -53,7 +54,23 @@ def main():
     check(gitrev(a.base)==m["base_sha"] and gitrev(a.head)==m["head_sha"],"SOURCE_PIN_MISMATCH")
     check(m.get("source_test_patch_only") is True,"IMPLEMENTATION_PATCH_LAUNDERED")
     selected=m["selected"]
-    if a.ablate: verdict="UNKNOWN_REQUIRED_TEST_OPERATION_REMOVED"
+    ablation_observations={}
+    if a.ablate:
+        check(a.pristine is not None and gitrev(a.pristine)==m["base_sha"],
+              "PRISTINE_SOURCE_IDENTITY_NOT_QUALIFIED")
+        status=subprocess.run(["git","-C",str(a.pristine),"status","--porcelain"],
+                              text=True,capture_output=True,check=True)
+        check(not status.stdout.strip(),"PRISTINE_BASE_NOT_CLEAN")
+        packageGroups={}
+        for entry in selected:packageGroups.setdefault(entry["package"],[]).append(entry["function"])
+        for package,names in sorted(packageGroups.items()):
+            ablation_observations[package]=run(package,names,a.pristine)
+            record=ablation_observations[package]
+            check(record["exit"]==0 and record["status"]=="TEST_DISCOVERY_INCOMPLETE" and
+                  not record["fail_names"] and not record["pass_names"] and
+                  all(not v for v in record["selected"].values()),
+                  "ABLATION_STILL_EXECUTED_QUALIFYING_TEST")
+        verdict="UNKNOWN_REQUIRED_TEST_OPERATION_REMOVED"
     elif a.withdraw: verdict="STALE_EVIDENCE_WITHDRAWN"
     elif not selected:verdict="UNKNOWN_NO_TEST_FUNCTION_EXTRACTED"
     else:verdict=None
@@ -80,6 +97,7 @@ def main():
       "schema":"metalogic.source-derived-native-test-operation-result.v1",
       "third_original_repo":m["repo"],"base_sha":m["base_sha"],"head_sha":m["head_sha"],
       "result":verdict,"selection":selected,"native_test_records":records,
+      "causal_no_added_test_run":ablation_observations,
       "generated_test_source":False,"selection_derived_from_go_ast_diff":True,
       "source_test_patch_only":True,"action_authorization":"NONE",
       "baseline":{
