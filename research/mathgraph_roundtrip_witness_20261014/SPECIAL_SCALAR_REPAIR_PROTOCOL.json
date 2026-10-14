@@ -1,0 +1,51 @@
+{
+  "schema": "mathgraph.falsified-codec-type-fidelity-to-bounded-repair.v1",
+  "discovery_basis": {
+    "run": 38552218582,
+    "target": "goccy/go-yaml",
+    "repo_commit": "72a4f95c648c844ef2dd0a85d0d56bda43",
+    "case_ids": [
+      "keywords_023",
+      "keywords_024",
+      "keywords_025",
+      "keywords_026",
+      "keywords_027"
+    ],
+    "reference_control": "go-yaml/yaml at 944c86a7d29391925ed6ac33bee98a0516f1287a passed these five"
+  },
+  "fix_provenance": "Human-authored, issue-independent diagnosis made after frozen roundtrip oracle emitted failures. No autonomous source repair claim.",
+  "allowed_source_file": "token/token.go",
+  "allowed_operations": [
+    "Map each member of reservedInfKeywords to reservedEncKeywordMap using its existing reservedKeywordMap function",
+    "Map each member of reservedNanKeywords to reservedEncKeywordMap using its existing reservedKeywordMap function"
+  ],
+  "unchanged_decoder": "The reservedKeywordMap must remain unchanged so unquoted .nan/.inf still decode to floating-point special values.",
+  "native_acceptance": {
+    "string_fidelity": [
+      ".nan",
+      ".NaN",
+      ".NAN",
+      ".inf",
+      "-.inf"
+    ],
+    "numeric_controls": [
+      "math.NaN()",
+      "math.Inf(+1)",
+      "math.Inf(-1)"
+    ],
+    "negative_controls": [
+      "literal normal strings",
+      "malformed near-misses"
+    ],
+    "before": "Five literal string fidelity failures with numeric controls passing",
+    "after": "Five literal strings become byte-for-byte round-trippable, numeric controls remain preserved, native original package tests pass",
+    "source_revert": "Restoring exact original token/token.go file alone restores the five string failures",
+    "scope": "CRLF/indent and whitespace round-trip candidates remain separate and not fixed by this repair"
+  },
+  "no_external_repository_writes": true,
+  "no_public_upstream_outreach": true,
+  "report_labels": [
+    "WARRANTED_BOUNDED_NATIVE_HUMAN_REPAIR",
+    "AUTONOMOUS_METHOD_GENESIS_UNKNOWN"
+  ]
+}
