@@ -1,0 +1,37 @@
+package yaml_test
+
+import (
+    "encoding/json"
+    "os"
+    "testing"
+
+    yaml "@MODULE@"
+)
+type mathGraphRoundtripCase struct{
+    ID string `json:"id"`
+    Kind string `json:"kind"`
+    Value string `json:"value"`
+}
+func TestMathGraphStringRoundTrip(t *testing.T){
+    raw,err:=os.ReadFile("mathgraph_roundtrip_corpus.json")
+    if err!=nil{t.Fatalf("missing immutable generated corpus: %v",err)}
+    var cases []mathGraphRoundtripCase
+    if err:=json.Unmarshal(raw,&cases);err!=nil{t.Fatalf("bad generated cases: %v",err)}
+    if len(cases)!=1088{t.Fatalf("unexpected corpus size: %d",len(cases))}
+    for _,tc:=range cases{
+        t.Run(tc.ID,func(t *testing.T){
+            source:=map[string]any{"value":tc.Value}
+            emitted,err:=yaml.Marshal(source)
+            if err!=nil{t.Fatalf("YAML marshal failed: %v",err)}
+            var decoded map[string]any
+            if err:=yaml.Unmarshal(emitted,&decoded);err!=nil{
+                t.Fatalf("YAML unmarshal own output failed: %v",err)
+            }
+            actual,found:=decoded["value"]
+            if !found{t.Fatalf("own output lost value key")}
+            s,ok:=actual.(string)
+            if !ok{t.Fatalf("source string of class %q changed type to %T (%v)",tc.Kind,actual,actual)}
+            if s!=tc.Value{t.Fatalf("source string changed content: got %q, want %q",s,tc.Value)}
+        })
+    }
+}
