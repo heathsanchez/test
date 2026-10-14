@@ -1,0 +1,73 @@
+name: Original YAML source discrepancy differential minimization
+
+on:
+  push:
+    branches: [research/yaml-original-witness-minimization-v1]
+    paths:
+      - 'research/yaml_differential_minimization/**'
+      - '.github/workflows/yaml-original-differential-minimization-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-native-two-parser-witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.12'
+      - name: Frozen original protocol and reducer source preflight
+        run: |
+          python -m py_compile coordinator/research/yaml_differential_minimization/minimize.py
+          python -m py_compile coordinator/research/mathgraph_fixture_native/compile_fixture.py
+          python -m json.tool coordinator/research/yaml_differential_minimization/FROZEN_PROTOCOL.json > /dev/null
+      - name: Pin independent Python YAML parser oracle
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+      - uses: actions/checkout@v4
+        with:
+          repository: yaml/yaml-test-suite
+          ref: 9bca0be9eb5c309eb07f1aaa4d626fc7cd114ae0
+          path: source-175
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: yaml/yaml-test-suite
+          ref: 119fb49252e091e61d17a6f9f43ecc469299408d
+          path: source-172
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: goccy/go-yaml
+          ref: edee2f91616c6d73112a13e7c0dbde72ce938877
+          path: parser-goccy
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: go-yaml/yaml
+          ref: f6f7691b1fdeb513f56608cd2c32c51f8194bf51
+          path: parser-go-yaml
+          persist-credentials: false
+      - name: Minimize original source case under independent native Go and PyYAML oracle
+        run: |
+          python coordinator/research/yaml_differential_minimization/minimize.py \
+            --protocol coordinator/research/yaml_differential_minimization/FROZEN_PROTOCOL.json \
+            --workspace . \
+            --out coordinator/research/yaml_differential_minimization/evidence
+      - name: Retain exact source-derived minimal witness and original parser outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yaml-spec-escaped-whitespace-differential-minimal
+          path: coordinator/research/yaml_differential_minimization/evidence/minimization.json
+          if-no-files-found: warn
+          retention-days: 90
