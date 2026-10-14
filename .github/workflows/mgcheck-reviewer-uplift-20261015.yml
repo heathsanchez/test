@@ -1,0 +1,65 @@
+name: MathGraph Check — Reviewer Finding Native Uplift
+on:
+  push:
+    branches: [research/mgcheck-reviewer-uplift-20261015]
+    paths:
+      - .github/workflows/mgcheck-reviewer-uplift-20261015.yml
+      - research/mgcheck_review_uplift_20261015/**
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  python-known-review-finding-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install only targeted test dependencies
+        run: python -m pip install --disable-pip-version-check "pytest>=8,<10" "pydantic>=2,<3"
+      - name: Checkout exact original public ReviewBench mirror
+        run: |
+          set -euo pipefail
+          git init -q /tmp/mgcheck-original
+          git -C /tmp/mgcheck-original remote add origin https://github.com/review-bench/allan-mobley-jr_gimmes.git
+          git -C /tmp/mgcheck-original fetch -q --depth=1 origin e1477f8b3f18c1de6ff87dbca9465a7b106dc193
+          git -C /tmp/mgcheck-original checkout -q --detach e1477f8b3f18c1de6ff87dbca9465a7b106dc193
+          test "$(git -C /tmp/mgcheck-original rev-parse HEAD)" = e1477f8b3f18c1de6ff87dbca9465a7b106dc193
+      - name: Original RED → candidate GREEN → negative/physical RESTORE RED
+        run: |
+          python research/mgcheck_review_uplift_20261015/replay_gimmes.py \
+            /tmp/mgcheck-original "$GITHUB_WORKSPACE/reviewer-native-evidence"
+      - name: Assert semantic evidence boundary and costs
+        if: success()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("reviewer-native-evidence/receipt.json")
+          d=json.loads(p.read_text())
+          assert d["qualification"]=="WARRANTED_BOUNDED_KNOWN_REVIEW_FINDING_NATIVE_REMEDIATION"
+          assert d["final_exact_original_source_restored"]
+          assert d["temporary_test_removed"]
+          assert d["old_targeted_suite"]["exit"]==0
+          assert d["original_native_observer"]["exit"]!=0
+          assert d["candidate_native_observer_and_old_suite"]["exit"]==0
+          assert d["deliberately_wrong_candidate"]["exit"]!=0
+          assert d["physical_patch_removal"]["exit"]!=0
+          print("REVIEWER_INPUT_REMEDIATION_GATE=PASS_BOUNDED")
+          print("BASELINE_LIVE_STRONG_AGENT=NOT_RUN; LEADERBOARD=NOT_SUBMITTED; NONSECURITY_CASE=1")
+          print("SCOPED_RUNTIME_SECONDS="+str(sum(
+            d[k]["duration_seconds"] for k in (
+              "old_targeted_suite","original_native_observer",
+              "candidate_native_observer_and_old_suite",
+              "deliberately_wrong_candidate","physical_patch_removal"))))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-reviewer-uplift-python-native
+          path: reviewer-native-evidence/
+          retention-days: 30
