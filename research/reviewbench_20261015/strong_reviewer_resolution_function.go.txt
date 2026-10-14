@@ -1,0 +1,53 @@
+func (c *Client) IsCopilotReviewFresh(prNumber int) (bool, error) {
+    // Identity of the actual PR head is the authority. Committer clocks
+    // and the last item in the first page of commits are not.
+    var pr struct {
+        Head struct {
+            SHA string `json:"sha"`
+        } `json:"head"`
+    }
+    err := c.rest.Get(fmt.Sprintf("repos/%s/%s/pulls/%d", c.owner, c.repo, prNumber), &pr)
+    if err != nil {
+        return false, fmt.Errorf("failed to get PR head: %w", err)
+    }
+    if pr.Head.SHA == "" {
+        return false, nil
+    }
+    // Resolve later review pages, refusing to call an unreviewed HEAD fresh.
+    // A bounded maximum avoids giving unbounded resource authority to any
+    // unexpectedly paginated or nonconforming endpoint.
+    const maxReviewPages = 100
+    for page := 1; page <= maxReviewPages; page++ {
+        var reviews []struct {
+            User struct {
+                Login string `json:"login"`
+            } `json:"user"`
+            CommitID string `json:"commit_id"`
+            State string `json:"state"`
+        }
+        endpoint := fmt.Sprintf("repos/%s/%s/pulls/%d/reviews?per_page=100&page=%d",
+            c.owner, c.repo, prNumber, page)
+        if err := c.rest.Get(endpoint, &reviews); err != nil {
+            return false, fmt.Errorf("failed to get PR review page: %w", err)
+        }
+        for _, review := range reviews {
+            if !isCopilotUser(review.User.Login) {
+                continue
+            }
+            if review.State == "DISMISSED" || review.State == "PENDING" {
+                continue
+            }
+            if review.CommitID == pr.Head.SHA {
+                return true, nil
+            }
+        }
+        // Under the declared GitHub REST paging contract, a page shorter
+        // than 30 entries cannot have a further complete page of reviews.
+        // We request per_page=100 but remain compatible with 30-item pages.
+        if len(reviews) < 30 {
+            return false, nil
+        }
+    }
+    return false, fmt.Errorf("cannot establish freshness after %d review pages", maxReviewPages)
+}
+
