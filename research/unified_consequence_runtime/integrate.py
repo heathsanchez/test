@@ -377,10 +377,11 @@ def main():
             if set(deleted["obstruction_ids"]) != set(summary["obstruction_ids"]):
                 raise AssertionError("TYPED_METHOD_ABLATION_CHANGED_OBSTRUCTIONS")
             e = read(source_root / stage.lower() / "event.json")
-            evidence = (
-                '{"controlled":true,"kind":"typed-grammar-'}
-                +stage.lower()+'","real_revocation":false}'
-            ).encode()
+            evidence = json.dumps({
+                "controlled": True,
+                "kind": "typed-grammar-" + stage.lower(),
+                "real_revocation": False,
+            }, sort_keys=True, separators=(",", ":")).encode()
             revoke = ExternalEventEnvelope.capability_revocation(
                 event_id="cslib:transport:"+stage.lower()+":simulated-withdrawal",
                 repository=e["repository"], commit=e["commit"],
