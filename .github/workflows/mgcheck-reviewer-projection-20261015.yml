@@ -1,0 +1,54 @@
+name: MathGraph Check — Source-bound Reviewer Receipt
+on:
+  push:
+    branches: [research/mgcheck-reviewer-uplift-20261015]
+    paths:
+      - .github/workflows/mgcheck-reviewer-projection-20261015.yml
+      - research/reviewer_receipt_projection_20261015/**
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-bound-review-resolution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Download existing native artifact without re-running verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/previous-native
+          gh run download 38638946524 --repo heathsanchez/test --name mathgraph-reviewer-uplift-python-native --dir /tmp/previous-native
+      - name: Verify original GitHub artifact identity and digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          expected=sha256:0e567242796ff0a68fadb4ded8fe754b0721c450b221d5733b9edad1be793fbe
+          actual=$(gh api repos/heathsanchez/test/actions/artifacts/11929207814 --jq '.digest')
+          test "$actual" = "$expected"
+          echo "Exact prior artifact digest confirmed; no native tests were restarted."
+      - name: Consume reviewer proposals and prior native receipt with revocation controls
+        run: |
+          python3 research/reviewer_receipt_projection_20261015/project_receipt.py \
+            /tmp/previous-native "$GITHUB_WORKSPACE/review-resolution"
+      - name: Independently restart projection with retained evidence only
+        run: |
+          python3 research/reviewer_receipt_projection_20261015/project_receipt.py \
+            /tmp/previous-native "$GITHUB_WORKSPACE/review-resolution-cold"
+          cmp review-resolution/review_resolution.json review-resolution-cold/review_resolution.json
+          cmp review-resolution/review_resolution.md review-resolution-cold/review_resolution.md
+          echo "WARRANTED_BOUNDED_DETERMINISTIC_RECEIPT_REUSE"
+          echo "LIVE_STRONG_AGENT=NOT_RUN; NATIVE_EVIDENCE_PRODUCER=PRIOR_38638946524"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-reviewer-resolution-receipt
+          path: |
+            review-resolution/
+            review-resolution-cold/
+          retention-days: 30
