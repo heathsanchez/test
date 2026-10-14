@@ -1,0 +1,65 @@
+name: MathGraph cross-language Go native method scope V1
+
+on:
+  push:
+    branches:
+      - research/mathgraph-go-yaml-native-gap-20261014
+    paths:
+      - 'research/mathgraph_go_yaml_transfer/**'
+      - '.github/workflows/mathgraph-go-yaml-transfer-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-native-go-method:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.12'
+      - name: Ensure original Python and Go source methods compile before expensive fetch
+        run: |
+          python3 -m py_compile coordinator/research/mathgraph_go_yaml_transfer/qualify.py
+          python3 -m json.tool coordinator/research/mathgraph_go_yaml_transfer/FROZEN_PROTOCOL.json > /dev/null
+          GO111MODULE=off go build -o /tmp/mathgraph-go-native-scope coordinator/research/mathgraph_go_yaml_transfer/discover_go_test_scopes.go
+      - uses: actions/checkout@v4
+        with:
+          repository: goccy/go-yaml
+          ref: edee2f91616c6d73112a13e7c0dbde72ce938877
+          path: upstream-base
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: goccy/go-yaml
+          ref: f4bd46ddbaf0e10fdcc0c70174c1f919f9aa7320
+          path: upstream-pr957
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: goccy/go-yaml
+          ref: bf0bb054779a46952c3c8a9e03dd22175c5dee6d
+          path: upstream-pr955
+          persist-credentials: false
+      - name: Freeze PR metadata at exact original revision
+        run: |
+          set -euo pipefail
+          mkdir -p metadata
+          curl --fail --silent --show-error --location --retry 2 'https://api.github.com/repos/goccy/go-yaml/pulls/957' -o metadata/957.json
+          curl --fail --silent --show-error --location --retry 2 'https://api.github.com/repos/goccy/go-yaml/pulls/955' -o metadata/955.json
+      - name: Source-exact original Go and PR-test counterfactual qualification
+        run: python3 coordinator/research/mathgraph_go_yaml_transfer/qualify.py
+      - name: Retain source, independent native test selector and full-suite evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-go-yaml-cross-language-method-v1
+          path: coordinator/research/mathgraph_go_yaml_transfer/evidence/report.json
+          if-no-files-found: warn
+          retention-days: 90
