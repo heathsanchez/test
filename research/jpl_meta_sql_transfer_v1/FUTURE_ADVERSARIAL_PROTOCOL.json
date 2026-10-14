@@ -1,0 +1,30 @@
+{
+  "version": "jpl-meta-sql-future-refinement-v1",
+  "protocol_date": "2026-10-14",
+  "parent_frozen_protocol_commit": "6451eacf2f5687317579573eab69439307bb3c61",
+  "parent_source_sha": "b1b244b1f38a3000c94a7b21ee6dfae1959dd4b2",
+  "parent_run": 38553731013,
+  "parent_artifact": 11887568204,
+  "parent_artifact_sha256": "464f2101e31a773837236cfd046819cf1667c7fb9b986a834532cc3e6708d26c",
+  "status": "POST_HOC_ADVERSARIAL_FALSIFIER_NOT_BLIND_HELDOUT",
+  "objective": "Automatically find a finite future SQL database state which has exactly the same original minimum-sufficient projected state but a different native result. Correctly refine the minimum input projection without invalidating historical finite source scope.",
+  "generator": {
+    "read_pinned_original_records": true,
+    "target_selection": "All 14 queries in frozen ID order; stop at first independently observed violation.",
+    "candidate_moves": "For each missing input feature in sorted [t.a,t.b,t.c,u.a,u.b,u.c], for each row in each frozen world, replace exactly one cell with another value from the frozen row_domain.",
+    "modified_world_must_be_absent_from_original_frozen_world_set": true,
+    "retain_original_projected_state_exactly": true,
+    "interpreter": "Independently execute original and optimized SQL in unchanged sqlite3; accept only when both agree within each world and source output differs between old/new worlds.",
+    "restart_and_reclose": "Import unchanged original FLASH V13; require old finite receipt intact, new expanded-world receipt independent, source-bounded future status, selective withdrawal of only new-scope receipt.",
+    "costs": "Count candidate probes, number of native SQLite calls and elapsed wall time. Strong conventional SQLite search has identical data and is expected to tie."
+  },
+  "protected_positive": "At least one native counterexample to a world-relative minimal-state projection's unbounded use, and a new basis preserving all original and new worlds.",
+  "protected_negative": "No automatic promoted universal SQL correctness; retain old 1301-world source certificate; refuse spoofed target SHA/scope; mutation and wrong environment fail closed.",
+  "claim_boundaries": [
+    "Adversarial follow-on is informed by previous run; not independent untouched second source family.",
+    "Data-world expansion is not SQL source change or cross-language semantics theorem.",
+    "Source-native optimizer is frozen; generator enumerates a predefined one-cell observation grammar, not self-invented grammar.",
+    "A strong full-information native oracle may reproduce all findings.",
+    "No external repository writes or stakeholder contact."
+  ]
+}
