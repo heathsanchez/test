@@ -1,0 +1,60 @@
+{
+  "schema": "mathgraph.evidence-policy.protected-consequence.v1",
+  "owner": "heathsanchez/test",
+  "warrant_scope": "HISTORICAL_RESEARCH_ONLY",
+  "artifacts": [
+    {
+      "name": "native-differential",
+      "id": 11886079762,
+      "sha256": "5b6ac622257c58dbe3622ce1ed9f765b2b021bc1fb908311fd6a41b5b3751d28"
+    },
+    {
+      "name": "native-protected-go-test",
+      "id": 11887482736,
+      "sha256": "12ef28475e7b04200943785583f46aa77ecd46a1c61c72987970fde1325870fb"
+    }
+  ],
+  "sources": [
+    {
+      "id": "opa-cross-backend",
+      "kind": "NATIVE_DIFFERENTIAL",
+      "repository": "open-policy-agent/opa",
+      "pr": 9216,
+      "source_base": "37030a09d6088821a473f486fd75dd81ef394b74",
+      "source_head": "d231b0381efd880597db736efdd74e6681000b54",
+      "artifact": "native-differential",
+      "member": "opa.json"
+    },
+    {
+      "id": "gojq-cross-backend",
+      "kind": "NATIVE_DIFFERENTIAL",
+      "repository": "itchyny/gojq",
+      "pr": 303,
+      "source_base": "86e392aeece0e75849c5c82567f1190525f4b28b",
+      "source_head": "50778c1da45c3f36fb08dab4ba06020115e542e4",
+      "artifact": "native-differential",
+      "member": "gojq.json",
+      "negative_controls": [
+        "gojq-ablation.json",
+        "gojq-withdrawal.json"
+      ]
+    },
+    {
+      "id": "howlframe-protected-old-test",
+      "kind": "NATIVE_GO_PROTECTED_TEST",
+      "repository": "howlcipher/howlframe",
+      "pr": 75,
+      "source_base": "21efc6cb4742d7ae101288dfc67819bb549c1307",
+      "source_head": "151a033119a6f1acd3c7adce2524ce0768178be9",
+      "artifact": "native-protected-go-test",
+      "member": "protected_conflict_report.json",
+      "source_go_file_blob_original": "dd61a2e693cdc40cda08e0c1c9c77858fddb0c60",
+      "source_go_file_blob_head": "bf9c3ab0999a5351cd6eab285a91e6c93ef6eee5"
+    }
+  ],
+  "allowed_statuses": [
+    "WARRANTED_BOUNDED_NATIVE_DIFFERENTIAL_REPAIRED",
+    "WARRANTED_BOUNDED_ORIGINAL_TEST_CONTRACT_CONFLICT"
+  ],
+  "no_action_authorization": true
+}
