@@ -1,0 +1,35 @@
+name: MathGraph Check - real native Go source boundary causal calibration
+on:
+  push:
+    branches:
+      - mathgraph-native-boundary-eval-20261014-v1
+    paths:
+      - 'research/mathgraph_native_boundary_20261014/**'
+      - '.github/workflows/mathgraph-native-boundary-20261014.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mathgraph-native-go-boundary-calibration-v1
+  cancel-in-progress: false
+jobs:
+  native-go:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.25.0'
+          cache: false
+      - name: Run exact upstream baseline, fixed head and single-file ablation
+        run: python3 research/mathgraph_native_boundary_20261014/run.py
+      - name: Preserve JSONL native receipts and negative evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mathgraph-native-boundary-20261014-v1
+          path: ${{ runner.temp }}/mathgraph-native-boundary-evidence/
+          if-no-files-found: warn
