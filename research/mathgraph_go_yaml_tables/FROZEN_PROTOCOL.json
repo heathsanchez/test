@@ -1,0 +1,85 @@
+{
+  "schema": "mathgraph.native-method-grammar-gap.go-check-tables.v1",
+  "frozen_at": "2026-10-14",
+  "objective": "Test whether the exact already-qualified Go AST source-native test-scope constructor transfers unmodified to a second externally maintained Go YAML implementation with global test tables and receiver-style gopkg.in/check.v1 tests. If it fails, construct an executable method-plan operation from a predeclared Go native grammar, test on two source-distinct external PRs, retain negative and scope.",
+  "prior_authority": {
+    "previous_go_crosslanguage_run": "https://github.com/heathsanchez/test/actions/runs/38504565716",
+    "predecessor_branch": "research/mathgraph-go-yaml-native-gap-20261014",
+    "native_go_selector_path": "research/mathgraph_go_yaml_transfer/discover_go_test_scopes.go",
+    "require_no_patch_for_initial_separator": true
+  },
+  "upstream": {
+    "repository": "go-yaml/yaml",
+    "base": "f6f7691b1fdeb513f56608cd2c32c51f8194bf51",
+    "go_mod_blob": "f407ea3213edc12392275945f8291202b0712c9d",
+    "cases": [
+      {
+        "pr": 1039,
+        "head": "eeec3325703e0b40e3db99030ae27c8eb24be85f",
+        "claim": "decode !!binary as bytes; original source test table and node test data reinterpreted",
+        "files": [
+          {
+            "path": "decode.go",
+            "base_blob": "0173b6982e8437ee6b74c2708fc6c2f082ae650e",
+            "head_blob": "fd92c3de350297bfdb2f5f06167d2c8632cb45d5",
+            "role": "production"
+          },
+          {
+            "path": "decode_test.go",
+            "base_blob": "0364b0bb0bc7969a7497418b0c9652cb9c4f2fde",
+            "head_blob": "74a7a9bb33e1dc8680055c44a692ad5368330b11",
+            "role": "native_test"
+          },
+          {
+            "path": "node_test.go",
+            "base_blob": "b7d0c9a30d5daccb687447c4606584959a70b1c7",
+            "head_blob": "080276f21064f40bdf9cc233b1114048550c964d",
+            "role": "native_test"
+          }
+        ]
+      },
+      {
+        "pr": 1037,
+        "head": "f4c639bd1cc60dce6a61f68e7278e58210c0f07d",
+        "claim": "1024 rune simple YAML key not byte length; encoding source/test table",
+        "files": [
+          {
+            "path": "emitterc.go",
+            "base_blob": "0f47c9ca8addf8e9d2e454e02842927ae825d0e9",
+            "head_blob": "48b9ba40b718e2122aa8dfef7b88d018d10ee896",
+            "role": "production"
+          },
+          {
+            "path": "encode_test.go",
+            "base_blob": "4a8bf2e264ee2b0712c191b7bcde35075e5f1",
+            "head_blob": "cd0cc30558f33f8d5b6135a393fba2e220dcb134",
+            "role": "native_test"
+          }
+        ]
+      }
+    ]
+  },
+  "candidate_ir_grammar": [
+    "DECLINED_UNSUPPORTED_GO_TABLE_TEST",
+    "PARSE_NATIVE_GO_GLOBAL_TEST_VAR",
+    "IDENTIFY_CHANGED_ORIGINAL_DATA_DECL",
+    "REACH_GO_RECEIVER_TEST_BY_IDENTIFIER_REF",
+    "BIND_GOCHECK_NATIVE_RUNNER",
+    "OVERLAY_UNMODIFIED_PR_TESTS_ON_PINNED_BASE",
+    "INDIVIDUAL_SCOPED_GO_REPLAY",
+    "FULL_GO_PACKAGE_NATIVE_BASELINE"
+  ],
+  "fail_closed": [
+    "PR revisions/Go blob pins must match original source",
+    "No test function name, table variable or runnable method supplied as answer in protocol",
+    "Unchanged prior generic Go AST function selector must be executed first and its exact unsupported scope preserved",
+    "A newly built Go grammar plan must extract table declaration and consumer test function through original Go parser, and be natively run; if no justified test scope return UNKNOWN",
+    "Any original base+new head-test executable failure must be an actual native test assertion, not compilation/network/setup error",
+    "Require full original Go suite green and full PR HEAD suite green separately, or withhold claimed behavioral fix",
+    "Unknown gocheck flags or unsupported receiver test forms must fail to UNKNOWN; no guessed manual test name",
+    "Do not mistake two data tables or two model output ways as independent measurements",
+    "Explicitly compare full-suite baseline native cost; reject claim of strict economic advantage without matched total cost",
+    "No source mutations, external upstream writes, generated bug fix, or autonomous self-revised meta-generator source"
+  ],
+  "scope": "Frozen method-choice grammar is HUMAN DECLARED. Generated method IR may be new/derived, but the program that builds it will be written by the assistant after freeze. If it succeeds, status WARRANTED_BOUNDED_CROSS_REPOSITORY_GO_NATIVE_METHOD_REUSE, not E2E-SYSTEM/L7."
+}
