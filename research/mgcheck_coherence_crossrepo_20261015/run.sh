@@ -47,3 +47,4 @@ for family in b c; do
   python3 "$DIR/native_bridge.py" "$ROOT/workspaces/$family"_head "$family" ablated "$E" | tee "$E/$family"_ablated.stdout
 done
 python3 "$DIR/admit.py" "$E"
+python3 "$DIR/control_audit.py"
