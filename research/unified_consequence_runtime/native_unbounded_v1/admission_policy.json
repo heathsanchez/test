@@ -1,0 +1,38 @@
+{
+  "schema": "metalogic.native-unbounded-method-admission.v1",
+  "qualified_run_id": 38489499790,
+  "qualified_head_sha": "f3adc4d72748e61884a30e05ee4627f534080a58",
+  "qualified_workflow": ".github/workflows/unified-native-unbounded-method.yml",
+  "artifact_id": 11861096883,
+  "artifact_zip_sha256": "bd8b694399e693809417aef1da91bf966d9c7bae77a9371af8a5c17af3602ffe",
+  "native_report_schema": "metalogic.native-unbounded-method-genesis-result.v1",
+  "original_source_commit": "4b88bcac4c0dec65b3f45b59e85f5397045efd8d",
+  "original_protocol_sha256": "712db5142930271bad15025a666b927f6c26cb2fe8b7a3c02cbafbf9fb86d6f3",
+  "original_universal_method_sha256": "7965d143f847d8eb263315d7ae1b71dc39de6e975c8fa2fa67074e98320341f7",
+  "accepted": [
+    {
+      "stage": "ACQUIRE",
+      "direction": "UP",
+      "system": "CslibTests.natDivLTS",
+      "proof_sha256": "5022dc904fe841f4a3303200121688637d12d8385b77201ea7613c29d5b607fe"
+    },
+    {
+      "stage": "HELDOUT",
+      "direction": "UP",
+      "system": "Cslib.LTS.Example.successorLTS",
+      "proof_sha256": "45e4acb03579562af8b55a3fbc6ab836a72c4e525a7d37b1741861adbf3bfff4"
+    },
+    {
+      "stage": "GENERATOR_REVISION",
+      "direction": "DOWN",
+      "system": "Cslib.LTS.Example.countdownLTS",
+      "proof_sha256": "5deed894d602a2b7569c72fa83afb50797415db26dae2f1341d1ddd185b9ea52"
+    }
+  ],
+  "negative_direction_check": "REJECTED_NATIVE",
+  "claimed_e2e_system": "UNKNOWN",
+  "claimed_generator_invention": "UNKNOWN",
+  "authority": "NONE",
+  "action_authorization": "NONE",
+  "output": "two independent scoped typed FLASH capabilities (forward and backward), with causal lineage and prior-source negatives preserved"
+}
