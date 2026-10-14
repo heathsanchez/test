@@ -54,6 +54,10 @@
     "typed_semantic": [
       "heathsanchez/test",
       "edc7531f91e9f1829b75be597afeb49b0be5b8e2"
+    ],
+    "external_pr": [
+      "heathsanchez/test",
+      "ff2b556186a97e49684c322e4551d047f666d1a5"
     ]
   },
   "runs": [
@@ -133,6 +137,13 @@
       38492128421,
       "93b01adc48f47143f13e153f19ea19f401eca577",
       "success"
+    ],
+    [
+      "IEANTN_EXTERNAL_NATIVE_PASS",
+      "heathsanchez/test",
+      38495636825,
+      "52257867ccf3f72e9f6b2bc657be9101a67e3259",
+      "success"
     ]
   ],
   "mathgraph_policy_sha256": "7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89",
@@ -145,7 +156,9 @@
     "source_parametric_unbounded_induction": "PASS_SCOPED",
     "generator_self_invention": "UNKNOWN",
     "native_typed_method_grammar_extension": "PASS_SCOPED_THREE_GOALS",
-    "meta_generator_autonomous_self_rewrite": "UNKNOWN"
+    "meta_generator_autonomous_self_rewrite": "UNKNOWN",
+    "external_pr_native_advisory": "PASS_SCOPED_2_REAL_PR_REGRESSIONS",
+    "external_author_provided_repairs": true
   },
   "interpretation": "Historical runs are provider-checked pointers, not fresh theorem verifications. Original source scientific scopes prevail.",
   "event_origin_allowlist": {
@@ -164,10 +177,14 @@
     ],
     "typed_semantic": [
       "93b01adc48f47143f13e153f19ea19f401eca577"
+    ],
+    "external_pr": [
+      "52257867ccf3f72e9f6b2bc657be9101a67e3259"
     ]
   },
   "source_note": "An emitter head does not equal every event's original evidence commit. Validate each typed event's own repository and source SHA. Collatz has two source-distinct historical events. New CSLib native scope-qualified event is distinct from both historical Collatz events and cannot attest unrelated native goal success. Qualified proof origin dd0d53 and emitter implementation 4543d757 are distinct pins.",
   "source_method_note": "Qualified source-extracted bisimulation method compiles two native CSLib inductives, per-artifact guarded, human-authored general extractor, no new open theorem or autonomous generator revision.",
   "source_unbounded_note": "Generic forward/backward method computed by source-feedback selection over designer-supplied typed meta-grammar, Lean checked for all n and k on three precommitted original CSLib sources; no spontaneous meta-grammar or open mathematical theorem. Frozen protocol check binds the canonical sorted semantic JSON digest, while its git source commit separately binds exact raw text; those identities are intentionally distinct.",
-  "typed_method_note": "Original four CSLib source modules, 9 source-mined theorem names; 3 frozen cross-representation Lean theorems and 3 program-relative source-rule deletion ablations; shared human-built tactic-search substrate, no production ACT authority or general L7 claim."
+  "typed_method_note": "Original four CSLib source modules, 9 source-mined theorem names; 3 frozen cross-representation Lean theorems and 3 program-relative source-rule deletion ablations; shared human-built tactic-search substrate, no production ACT authority or general L7 claim.",
+  "external_pr_scope_note": "Generic AST-selected originally author-provided regression tests on two authentic teorth/IEANTN fork PRs. Green head/red base proves exactly those behaviors, not generated source repairs, independent publisher current trust, live installed GitHub Check, or full self-improvement."
 }
