@@ -51,11 +51,17 @@ def main():
   assert "@MODULE@" not in source
   (directory/"mathgraph_roundtrip_test.go").write_text(source)
   (directory/"mathgraph_roundtrip_corpus.json").write_bytes(corpus.read_bytes())
+  # Older reference repository lacks a committed go.sum for one test
+  # dependency. Module resolution is permitted in this ephemeral checkout
+  # only; preserve immutable source by checking original go.mod bytes.
+  original_mod=hashlib.sha256((directory/"go.mod").read_bytes()).hexdigest()
   start=time.monotonic()
-  result=subprocess.run(["go","test","-json","-count=1","-timeout=11m",
+  result=subprocess.run(["go","test","-mod=mod","-json","-count=1","-timeout=11m",
     "-run","^TestMathGraphStringRoundTrip$","."],
     cwd=directory,env={**os.environ,"GOTOOLCHAIN":"auto"},
     capture_output=True,text=True,timeout=810)
+  assert hashlib.sha256((directory/"go.mod").read_bytes()).hexdigest()==original_mod, \
+    "MODULE_MANIFEST_CHANGED_BY_DEPENDENCY_RESOLUTION_"+name
   elapsed=round(time.monotonic()-start,2)
   evidence=name.replace("/","__")
   (OUT/(evidence+".jsonl")).write_text(result.stdout)
