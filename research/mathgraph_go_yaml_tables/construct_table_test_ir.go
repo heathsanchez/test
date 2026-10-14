@@ -107,7 +107,7 @@ func main(){
      MethodASTHash:rawDigest([]byte(sourceText(after,fn))),
      // gopkg.in/check.v1 processes a source-native -check.f filter.
      // Actual run must independently demonstrate chosen method executed.
-     NativeCommand:[]string{"go","test","-count=1","-timeout=120s",".","-args","-check.f",method,"-check.v"},
+     NativeCommand:[]string{"go","test","-count=1","-v","-timeout=120s",".","-args","-check.f",method+"$","-check.v"},
    })
   }
   if count==0{unmatched=append(unmatched,table)}
