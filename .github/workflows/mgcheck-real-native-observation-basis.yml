@@ -1,0 +1,101 @@
+name: MathGraph Check - native future observation basis transfer
+on:
+  push:
+    branches: [research/mgcheck-real-native-observation-basis-20261015]
+    paths:
+      - research/real_native_observation_basis_20261015/**
+      - .github/workflows/mgcheck-real-native-observation-basis.yml
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  source-native-strong-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Freeze source solver hash, validate protocol and code
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/real_native_observation_basis_20261015/native_basis.py
+          test "$(git hash-object research/flash_genesis_v11/learned_repair.py)" = 0f7fb6b837cd65aa86b5fef7c097196fc0df4845
+          test -s research/real_native_observation_basis_20261015/FROZEN_PROTOCOL.md
+      - name: Fetch original immutable native source revisions (no author test/patch copy)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tomlkit-src
+          git -C /tmp/tomlkit-src init -q
+          git -C /tmp/tomlkit-src remote add origin https://github.com/python-poetry/tomlkit.git
+          get_native() {
+            name="$1"; sha="$2"
+            git -C /tmp/tomlkit-src fetch -q --depth=1 origin "$sha"
+            git -C /tmp/tomlkit-src worktree add -q --detach "/tmp/tomlkit-$name" "$sha"
+            test "$(git -C /tmp/tomlkit-$name rev-parse HEAD)" = "$sha"
+          }
+          get_native Aold 7ab7469addd60e03ca3bfbb1287642e8d771e1c0
+          get_native Ahead dcdfda3f825189c7f31048b6598142a944151073
+          get_native Bold 858186a3edb4cad6d66281ee7ad5fb07fe820406
+          get_native Bhead 5d0b1825134a05da4e49654baa4717094a9f0896
+          get_native Cold 4b38becd75405e0f38ef3e47e9839eb407591c8a
+          get_native Chead d17910d46bcc0f3d5b9c1de607a41836e1c85ce2
+      - name: Acquire native A observation rule with old+head ONLY
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/native-observation-basis
+          p=research/real_native_observation_basis_20261015/native_basis.py
+          python "$p" child /tmp/tomlkit-Aold 7ab7469addd60e03ca3bfbb1287642e8d771e1c0 A evidence/native-observation-basis/Aold.json
+          python "$p" child /tmp/tomlkit-Ahead dcdfda3f825189c7f31048b6598142a944151073 A evidence/native-observation-basis/Ahead.json
+          python "$p" acquire evidence/native-observation-basis/Aold.json evidence/native-observation-basis/Ahead.json evidence/native-observation-basis/learned_capability_A.json
+          sha256sum evidence/native-observation-basis/learned_capability_A.json > evidence/native-observation-basis/frozen_A_capability_sha256.txt
+      - name: Source-distinct future operations B and C, NO re-learning
+        shell: bash
+        run: |
+          set -euo pipefail
+          p=research/real_native_observation_basis_20261015/native_basis.py
+          e=evidence/native-observation-basis
+          test -s "$e/learned_capability_A.json"
+          sha256sum -c "$e/frozen_A_capability_sha256.txt"
+          python "$p" child /tmp/tomlkit-Bold 858186a3edb4cad6d66281ee7ad5fb07fe820406 B "$e/Bold.json"
+          python "$p" child /tmp/tomlkit-Bhead 5d0b1825134a05da4e49654baa4717094a9f0896 B "$e/Bhead.json"
+          python "$p" child /tmp/tomlkit-Cold 4b38becd75405e0f38ef3e47e9839eb407591c8a C "$e/Cold.json"
+          python "$p" child /tmp/tomlkit-Chead d17910d46bcc0f3d5b9c1de607a41836e1c85ce2 C "$e/Chead.json"
+          python "$p" transfer "$e/learned_capability_A.json" "$e/Bold.json" "$e/Bhead.json" "$e/Cold.json" "$e/Chead.json" "$e/final_report.json"
+          sha256sum -c "$e/frozen_A_capability_sha256.txt"
+      - name: Independent complete native report and strong stateless checksum
+        shell: bash
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          e=Path("evidence/native-observation-basis")
+          r=e/"final_report.json"
+          if not r.is_file():
+              print("NO_FINAL_SCIENCE_REPORT; do not promote")
+              raise SystemExit(0)
+          d=json.loads(r.read_text())
+          cap=d["source_capability"]
+          assert cap["strong_fully_informed_exhaustive_baseline_ties"]
+          assert cap["candidate_observation_masks_exhaustively_checked"]==128
+          assert cap["original_v11_solver_blob"]=="0f7fb6b837cd65aa86b5fef7c097196fc0df4845"
+          assert d["physical_withdrawal"]=="UNKNOWN_CAPABILITY_WITHDRAWN"
+          for f in ("Aold","Ahead","Bold","Bhead","Cold","Chead"):
+              p=e/(f+".json")
+              if p.exists():
+                  z=json.loads(p.read_text())
+                  assert len(z["source_sha"])==40 and z["native_tests"]==len(z["rows"])
+          (e/"report_sha256.txt").write_text(hashlib.sha256(r.read_bytes()).hexdigest()+"\n")
+          print("AUDITED:",d["status"],"channels:",cap["selected_channels"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-flash-v11-cross-future-observation-basis
+          path: evidence/native-observation-basis/
+          retention-days: 30
