@@ -1,0 +1,21 @@
+{
+  "schema": "metalogic.source-native-external-pr-admission.v1",
+  "run_id": 38495636825,
+  "head_sha": "52257867ccf3f72e9f6b2bc657be9101a67e3259",
+  "workflow": ".github/workflows/unified-external-pr-native.yml",
+  "artifact_id": 11862929149,
+  "artifact_zip_sha256": "dfa66e486f8d669115f33deef9b3fd79c784e39161791bc1dcad7f349a4a20b5",
+  "scoped_repo": "teorth/IEANTN",
+  "base_sha": "2a10e721ff645865c45c344333b1934f34c45b41",
+  "heads": {
+    "155": "a70ba812e1b6e40a6ce4652fb830589030e461d0",
+    "158": "7fab327e61518fa607753cd022d87ef9d243bbf4"
+  },
+  "native_verdict": "WARRANTED_BOUNDED_REAL_PR_NATIVE_REGRESSION",
+  "native_language": "Python unittest original upstream",
+  "current_action_authorization": "NONE",
+  "method_development_autonomous": "UNKNOWN",
+  "causal_baseline": "source code old revision under byte-identical PR-author tests",
+  "publisher_current_freshness": "NOT_CONTINUOUSLY_CHECKED",
+  "trust": "Historical run and original source blobs only. Method author human. No trust in GitHub CI green without original tests."
+}
