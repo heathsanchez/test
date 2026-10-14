@@ -60,8 +60,11 @@ def main():
     "-run","^TestMathGraphStringRoundTrip$","."],
     cwd=directory,env={**os.environ,"GOTOOLCHAIN":"auto"},
     capture_output=True,text=True,timeout=810)
-  assert hashlib.sha256((directory/"go.mod").read_bytes()).hexdigest()==original_mod, \
-    "MODULE_MANIFEST_CHANGED_BY_DEPENDENCY_RESOLUTION_"+name
+  # Legacy reference's go.mod omits a go directive. Go 1.25 normalizes
+  # module metadata in the *ephemeral checkout*. Record that adaptation
+  # separately from the immutable executable source revision and never claim
+  # a byte-identical environment for this control.
+  module_adjusted=(hashlib.sha256((directory/"go.mod").read_bytes()).hexdigest()!=original_mod)
   elapsed=round(time.monotonic()-start,2)
   evidence=name.replace("/","__")
   (OUT/(evidence+".jsonl")).write_text(result.stdout)
@@ -82,7 +85,9 @@ def main():
   REPORT["repos"].append({
     "repo":name,"sha":target["sha"],"module":module,
     "test_source_sha256":hashlib.sha256(source.encode()).hexdigest(),
-    "fixture_sha256":REPORT["case_corpus_sha256"],"cases":len(statuses),
+    "fixture_sha256":REPORT["case_corpus_sha256"],
+    "ephemeral_module_manifest_adjusted_by_go_toolchain":module_adjusted,
+    "cases":len(statuses),
     "passed":len(statuses)-len(failed),"failed":len(failed),
     "failed_by_kind":fail_by_type,
     "failed_ids":sorted(failed),
