@@ -39,8 +39,8 @@ def failure_type(test, events, rc):
     whole="".join(captured)
     # A selected Go test that produces a native panic is evidence of an
     # executed program failure, not necessarily a test assertion.
-    panic=bool(re.search(r"(?m)^\s*panic:\s+",whole)) and
-        bool(re.search(r"\b"+re.escape(test)+r"\b",whole))
+    panic=(bool(re.search(r"(?m)^\s*panic:\s+",whole)) and
+           bool(re.search(r"\b"+re.escape(test)+r"\b",whole)))
     if panic:
         return "NATIVE_PANIC_IN_SELECTED_TEST"
     # t.Error{f}, Fatal{f} and their nested subtests emit source locations.
