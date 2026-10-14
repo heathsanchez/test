@@ -38,6 +38,7 @@ LAWS=("append_eq_insert_end","extend_eq_slice_assignment_end",
 SEED_FAMILIES=(
  ("strings",["dogs","cats","birds"]),
  ("numbers",[0,1,2,3,4,5]),
+ ("native-constructor-origin",["dogs","cats","birds"]),
 )
 SLICES=(
  ("empty_prefix",slice(None,0)),("negative_tail",slice(-1,None)),
@@ -147,16 +148,34 @@ def run_program(cls,law,seed_family,seed,slice_label=None,slicer=None):
     if law=="append_eq_insert_end":
         a,b=new_sequence(cls,seed),new_sequence(cls,seed)
         if a is None or b is None:return {"status":"UNKNOWN_CONSTRUCTOR"}
-        value=seed[0] if seed else "element"
-        x=safe_call(lambda:a.append(value))
-        y=safe_call(lambda:b.insert(len(b),value))
+        # GENERAL typed refinement: valid element taken from each original
+        # native constructor, not a target-specific class or external test.
+        if seed_family=="native-constructor-origin":
+            xa=safe_call(lambda:a[0])
+            yb=safe_call(lambda:b[0])
+            if not xa["ok"] or not yb["ok"]:
+                return {"status":"UNKNOWN_NO_CONSTRUCTOR_ELEMENT"}
+            left_value=a[0]
+            right_value=b[0]
+        else:
+            left_value=right_value=seed[0] if seed else "element"
+        x=safe_call(lambda:a.append(left_value))
+        y=safe_call(lambda:b.insert(len(b),right_value))
         left,right=view(a),view(b)
     elif law=="extend_eq_slice_assignment_end":
         a,b=new_sequence(cls,seed),new_sequence(cls,seed)
         if a is None or b is None:return {"status":"UNKNOWN_CONSTRUCTOR"}
-        value=[seed[0]] if seed else ["element"]
-        x=safe_call(lambda:a.extend(value))
-        y=safe_call(lambda:b.__setitem__(slice(len(b),None),value))
+        if seed_family=="native-constructor-origin":
+            xa=safe_call(lambda:a[0])
+            yb=safe_call(lambda:b[0])
+            if not xa["ok"] or not yb["ok"]:
+                return {"status":"UNKNOWN_NO_CONSTRUCTOR_ELEMENT"}
+            left_value=[a[0]]
+            right_value=[b[0]]
+        else:
+            left_value=right_value=[seed[0]] if seed else ["element"]
+        x=safe_call(lambda:a.extend(left_value))
+        y=safe_call(lambda:b.__setitem__(slice(len(b),None),right_value))
         left,right=view(a),view(b)
     elif law=="delete_slice_eq_builtin_list":
         a=new_sequence(cls,seed)
