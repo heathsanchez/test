@@ -252,21 +252,38 @@ func main(){
    results=append(results,rec);continue
   }
   nativeRuns+=2
-  different:=0;var best map[string]interface{}
+  semantic:=0;diagnosticOnly:=0;statusChanged:=0;successValuesChanged:=0;panics:=0
+  var best map[string]interface{}
   for i,p:=range ps{
-   if !classify(preRows[i],postRows[i]){continue}
-   different++
+   oldRow,newRow:=preRows[i],postRows[i]
+   if !classify(oldRow,newRow){continue}
+   if oldRow[1]=="PANIC"||newRow[1]=="PANIC" {panics++;continue}
+   if oldRow[1]=="ERROR"&&newRow[1]=="ERROR"{
+    diagnosticOnly++;continue // error text alone is not claimed semantic success
+   }
+   isStatus:=oldRow[1]!=newRow[1]
+   isValue:=oldRow[1]=="OK"&&newRow[1]=="OK"&&oldRow[2]!=newRow[2]
+   if !isStatus&&!isValue{continue}
+   if isStatus{statusChanged++}else{successValuesChanged++}
+   semantic++
    if best==nil||len(p.Value)<len(best["input"].(string))||
     (len(p.Value)==len(best["input"].(string))&&p.Value<best["input"].(string)){
     best=map[string]interface{}{
      "input":p.Value, "constructed_method_program":p.Method,
-     "old_observation":preRows[i], "head_observation":postRows[i],
+     "old_observation":oldRow, "head_observation":newRow,
+     "semantic_class":map[bool]string{true:"ACCEPTANCE_STATUS_CHANGED",false:"SUCCESS_VALUE_CHANGED"}[isStatus],
     }
    }
   }
-  rec["differing_inputs"]=different
-  rec["minimum_witness"]=best
-  if different>0 {rec["status"]="WARRANTED_BOUNDED_NONREGEX_NATIVE_DIVERGENCE";qualified++} else {rec["status"]="NO_SEPARATOR_WITHIN_DECLARED_TYPED_GRAMMAR"}
+  rec["changed_acceptance_status_count"]=statusChanged
+  rec["changed_successful_value_count"]=successValuesChanged
+  rec["diagnostic_only_difference_count"]=diagnosticOnly
+  rec["different_panic_outcomes_unknown_count"]=panics
+  rec["independently_admitted_semantic_inputs"]=semantic
+  rec["minimum_semantic_witness"]=best
+  if semantic>0 {rec["status"]="WARRANTED_BOUNDED_NONREGEX_NATIVE_DIVERGENCE";qualified++} else {
+   rec["status"]="UNKNOWN_NO_SEMANTIC_SEPARATOR_IN_DECLARED_GRAMMAR"
+  }
   results=append(results,rec)
  }
  report["changed_string_input_functions"]=foundChanged
