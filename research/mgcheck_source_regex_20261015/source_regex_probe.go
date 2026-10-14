@@ -76,7 +76,7 @@ func regexpCall(e ast.Expr)bool{
 func regexHint(name,value string)bool{
  n:=strings.ToLower(name)
  return strings.Contains(n,"regex")||strings.Contains(n,"regexp")||strings.Contains(n,"pattern")||
-   strings.HasPrefix(n,"rx")||strings.ContainsAny(value,"^$[]{}\")
+   strings.HasPrefix(n,"rx")||strings.ContainsAny(value,"^$[]{}")
 }
 func gather(root string)(map[string]Pattern,error){
  m:=map[string]Pattern{}
@@ -261,10 +261,8 @@ func main(){
  finish:=func(){
   rep.ElapsedMs=time.Since(start).Milliseconds()
   b,_:=json.MarshalIndent(rep,"","  ")
-  _=os.WriteFile(*output,append(b,'
-'),0644)
-  fmt.Printf("RESULT %s
-",string(b))
+  _=os.WriteFile(*output,b,0644)
+  fmt.Println("RESULT",string(b))
  }
  observedOld,observedHead:=sha(*old),sha(*head)
  if len(*oldSHA)!=40||len(*headSHA)!=40||observedOld!=*oldSHA||observedHead!=*headSHA{
