@@ -81,6 +81,13 @@ jobs:
             --external-git-blob 1374343177ac75b0cfbfa154a87fafc26d91fe92 \
             --archives research/aria_scaling_trust/consequence_recipient/inputs \
             --out research/aria_scaling_trust/consequence_recipient/output
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Exact-subject neutral Check formatting and no-authority controls
+        run: node --test research/aria_scaling_trust/consequence_recipient/render_check.test.mjs
+      - name: Preserve three native-evidence Check previews without posting
+        run: node research/aria_scaling_trust/consequence_recipient/emit_check_previews.mjs
       - name: Preserve read-only native consequence receipts and reviewer preview
         if: always()
         uses: actions/upload-artifact@v4
