@@ -35,7 +35,18 @@ func prune(a []string)[]string{
  seen:=map[string]bool{};o:=[]string{}
  for _,s:=range a{if len(s)>maxStringLen||!utf8.ValidString(s)||seen[s]{continue};seen[s]=true;o=append(o,s)}
  sort.Slice(o,func(i,j int)bool{if len(o[i])!=len(o[j]){return len(o[i])<len(o[j])};return o[i]<o[j]})
- if len(o)>bound{return o[:bound]};return o
+ // Preserve lengths from alternate branches: pruning only shortest witnesses
+ // can discard a longer semantic branch entirely before comparison.
+ diversified:=[]string{}
+ countByLen:=map[int]int{}
+ for _,candidate:=range o {
+  length:=len(candidate)
+  if countByLen[length]>=48 {continue}
+  diversified=append(diversified,candidate)
+  countByLen[length]++
+  if len(diversified)>=bound {break}
+ }
+ return diversified
 }
 func product(a,b []string)[]string{
  o:=[]string{};for _,x:=range a{for _,y:=range b{
