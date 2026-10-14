@@ -1,0 +1,82 @@
+name: MathGraph source-regex witness genesis (two native source families)
+on:
+  push:
+    branches: [research/mgcheck-source-regex-genesis-20261015]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-source-genesis:
+    name: Native source regex / ${{ matrix.subject }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        subject: [first, transfer]
+    steps:
+      - uses: actions/checkout$v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go$v5
+        with:
+          go-version: "1.23"
+      - name: Load only frozen original subject and source pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.subject }}" = "first" ]; then
+            echo "UPSTREAM_REPO=go-ozzo/ozzo-validation" >> "$GITHUB_ENV"
+            echo "PR=208" >> "$GITHUB_ENV"
+            echo "OLD_SHA=dbba76d963f16ad2ea78fd8fb7d36564783cb3c4" >> "$GITHUB_ENV"
+            echo "HEAD_SHA=48423ae967b5ed417f9076caa37e83f24b29dccd" >> "$GITHUB_ENV"
+          else
+            echo "UPSTREAM_REPO=asaskevich/govalidator" >> "$GITHUB_ENV"
+            echo "PR=528" >> "$GITHUB_ENV"
+            echo "OLD_SHA=3dd3875e2b081a20d6eed935913a482fea14ecd0" >> "$GITHUB_ENV"
+            echo "HEAD_SHA=80fc291b0bc7b293068daf5341c47704fb630d43" >> "$GITHUB_ENV"
+          fi
+      - name: Fetch exact original source commits without upstream mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q --no-checkout "https://github.com/${UPSTREAM_REPO}.git" "$RUNNER_TEMP/source"
+          git -C "$RUNNER_TEMP/source" fetch -q origin "refs/pull/${PR}/head:refs/pull/${PR}/head"
+          test "$(git -C "$RUNNER_TEMP/source" rev-parse "refs/pull/${PR}/head")" = "$HEAD_SHA"
+          git -C "$RUNNER_TEMP/source" cat-file -e "${OLD_SHA}^{commit}"
+          git -C "$RUNNER_TEMP/source" worktree add -q --detach "$RUNNER_TEMP/base" "$OLD_SHA"
+          git -C "$RUNNER_TEMP/source" worktree add -q --detach "$RUNNER_TEMP/head" "$HEAD_SHA"
+          test "$(git -C "$RUNNER_TEMP/base" rev-parse HEAD)" = "$OLD_SHA"
+          test "$(git -C "$RUNNER_TEMP/head" rev-parse HEAD)" = "$HEAD_SHA"
+          echo "SOURCE_PRE=$(git -C "$RUNNER_TEMP/base" rev-parse HEAD)"
+          echo "SOURCE_POST=$(git -C "$RUNNER_TEMP/head" rev-parse HEAD)"
+      - name: Run unchanged Go AST and regexp source-only generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          go run research/mgcheck_source_regex_20261015/source_regex_probe.go \
+            --old "$RUNNER_TEMP/base" --head "$RUNNER_TEMP/head" \
+            --old-sha "$OLD_SHA" --head-sha "$HEAD_SHA" \
+            --out "native-regex-${{ matrix.subject }}.json"
+      - name: Verify exact evidence and finite negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rec=json.loads(Path("native-regex-${{ matrix.subject }}.json").read_text())
+          assert rec["status"]=="WARRANTED_BOUNDED_SOURCE_NATIVE_REGEXP_WITNESS"
+          assert rec["executed_controls"]["real_source_sha_guard"]=="EXACT_SOURCE_REVISION_CHECKED"
+          assert rec["executed_controls"]["same_source_pair"]=="EXECUTED_SAME_PATTERN_ZERO_DIFFERENCE"
+          assert any(x["changed_cases"] and x.get("first_witness") for x in rec["source_changes"])
+          print("ADMITTED_FINITE_SOURCE_NATIVE_REGEX_WITNESS")
+          print("CHANGED_SOURCE_PATTERNS",rec["changed_patterns"])
+          print("WITNESSES",sum(x["changed_cases"] for x in rec["source_changes"]))
+          PY
+      - uses: actions/upload-artifact$v4
+        if: always()
+        with:
+          name: mgcheck-source-regex-${{ matrix.subject }}
+          path: native-regex-${{ matrix.subject }}.json
+          if-no-files-found: warn
