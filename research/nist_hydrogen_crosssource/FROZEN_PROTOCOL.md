@@ -24,3 +24,7 @@ Source event/lineage qualified; type-and-unit checks and bounded contrasts warra
 
 ## Cheapest decisive output
 Retained machine-readable receipt containing source bytes SHA256, original URL, publication/reported numbers, event identity, provenance supports/derived dependency relation, correlation boundary, qualified numerical results, all negative outcomes and the current residual. Evidence stored on isolated GitHub Actions run, then ROS checkpoint. No external communication or product deployment.
+
+
+## Pre-implementation source-observed clarification: theory-version fork
+The same 2026 Bullis et al. measurement is evaluated at two declared theory versions in the original source: historical CODATA-2022-era theory gives r_p = 0.8422(31) fm; improved 2024–2025 QED corrections give r_p = 0.8433(31) fm. The 0.0011 fm difference is a THEORY_REQUALIFICATION, not a new experiment, new primitive or second observation. Hold the experimental source event fixed; version-typed output reclosure changes proton-radius descendants only. Removing the updated-theory support must remove that version's product but cannot, without independent warrant, imply old theory is currently scientifically preferred. Preserve both historical results and reopen current applicability to UNKNOWN when support becomes unavailable.
