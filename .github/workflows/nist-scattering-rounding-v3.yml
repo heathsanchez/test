@@ -1,0 +1,44 @@
+name: NIST hydrogen-scattering V3 conservative reanalysis
+
+on:
+  push:
+    branches: [research/nist-scattering-rounded-residual-20261014]
+    paths:
+      - 'research/nist_scattering_rounding/**'
+      - '.github/workflows/nist-scattering-rounding-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-bound-cross-modality:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Independently rerun immutable 2022 CODATA arithmetic
+        run: python3 research/nist_alpha_consequence/ci_replay.py
+      - name: Reproduce two original 2026 hydrogen source and covariance qualification
+        run: |
+          python3 -m unittest discover -s research/nist_hydrogen_crosssource -p test_core.py -v
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          python3 research/nist_hydrogen_crosssource/qualify.py
+      - name: Exact-rational V3 and independent Decimal precision controls
+        run: python3 -m unittest discover -s research/nist_scattering_rounding -p test_rounding.py -v
+      - name: Original scattering publisher hash and conservatively evaluated new consequence
+        run: python3 research/nist_scattering_rounding/qualify.py
+      - name: Retain all source qualified and negative receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nist-scattering-rounded-residual-v3
+          path: |
+            research/nist_alpha_consequence/evidence/ci_report.json
+            research/nist_hydrogen_crosssource/evidence/hydrogen_v2_result.json
+            research/nist_scattering_rounding/evidence/v3_result.json
+          if-no-files-found: warn
+          retention-days: 90
