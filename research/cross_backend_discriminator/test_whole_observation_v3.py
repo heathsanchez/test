@@ -1,5 +1,6 @@
-import pathlib,importlib.util,unittest
+import pathlib,importlib.util,unittest,sys
 p=pathlib.Path(__file__).with_name("whole_observation_v3.py")
+sys.path.insert(0,str(p.parent))
 spec=importlib.util.spec_from_file_location("whole_v3",p)
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 class WholeSource(unittest.TestCase):
