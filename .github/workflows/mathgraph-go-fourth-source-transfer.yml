@@ -1,0 +1,100 @@
+name: MathGraph Go AST selector transfer - frozen fourth external repo
+on:
+  push:
+    branches:
+      - mathgraph-go-ast-fourth-transfer-20261014-v1
+    paths:
+      - 'research/test_operation_genesis/**'
+      - '.github/workflows/mathgraph-go-fourth-source-transfer.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    name: Go AST source transfer - ${{ matrix.case }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - case: calibrate-original-gojson
+            repo: goccy/go-json
+            base: 7bcea74f8c32f689578555359a3bfd9c517ca8b0
+            head: 9ab94ddad9f74ed2ad96d903cb6d8a127323a481
+          - case: held-out-fourth-osv-scanner
+            repo: google/osv-scanner
+            base: 1f87b5cb9781a03a9b8b50dfc1eac1b2056c79d5
+            head: 6d23031dad5af57fcec2c49611d73e620609a222
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.head }}
+          path: external/head
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Check exact source, create only local base and untouched ablation worktrees
+        run: |
+          set -euo pipefail
+          test "$(git -C external/head rev-parse HEAD)" = "${{ matrix.head }}"
+          test "$(git -C external/head rev-parse HEAD^)" = "${{ matrix.base }}"
+          git -C external/head worktree add --detach ../base "${{ matrix.base }}"
+          git -C external/head worktree add --detach ../pristine "${{ matrix.base }}"
+          test "$(git -C external/base rev-parse HEAD)" = "${{ matrix.base }}"
+          test "$(git -C external/pristine rev-parse HEAD)" = "${{ matrix.base }}"
+      - name: Verify AST extraction method identical to previous qualified selector
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          name='func originalTests(source []byte,file string)(map[string]bool,error){'
+          def extract(path):
+              s=Path(path).read_text()
+              i=s.index(name)
+              depth=0
+              for j in range(i,len(s)):
+                  if s[j]=='{':depth+=1
+                  if s[j]=='}':
+                      depth-=1
+                      if depth==0:return s[i:j+1]
+              raise ValueError('unclosed original test AST method')
+          a='research/test_operation_genesis/selector.go'
+          b='research/test_operation_genesis/selector_portable.go'
+          assert extract(a)==extract(b),'EXTRACTION_ALGORITHM_CHANGED'
+          print('SAME_GO_AST_TEST_EXTRACTION_CONFIRMED')
+          PY
+      - name: Select original contributor-authored new test operation without target names
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/source-operation"
+          go run research/test_operation_genesis/selector_portable.go             --repository "${{ matrix.repo }}"             --base-sha "${{ matrix.base }}"             --head-sha "${{ matrix.head }}"             --base external/base --head external/head             --out "$RUNNER_TEMP/source-operation/manifest.json"
+      - name: Reproduce native original-source regression against author repair
+        run: |
+          set -euo pipefail
+          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/source-operation/manifest.json"             --base external/base --head external/head             --out "$RUNNER_TEMP/source-operation/native.json"
+      - name: Real pristine-no-added-test ablation and typed evidence withdrawal
+        run: |
+          set -euo pipefail
+          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/source-operation/manifest.json"             --base external/base --head external/head             --pristine external/pristine --ablate             --out "$RUNNER_TEMP/source-operation/ablation.json"
+          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/source-operation/manifest.json"             --base external/base --head external/head --withdraw             --out "$RUNNER_TEMP/source-operation/withdrawal.json"
+      - name: Refuse unrelated source identity as negative control
+        run: |
+          set -euo pipefail
+          if go run research/test_operation_genesis/selector_portable.go             --repository "${{ matrix.repo }}" --base-sha 0000000000000000000000000000000000000000             --head-sha "${{ matrix.head }}"             --base external/base --head external/head             --out "$RUNNER_TEMP/source-operation/forbidden.json"; then
+            echo 'FORGED_SOURCE_ID_ACCEPTED'; exit 1
+          fi
+          test ! -e "$RUNNER_TEMP/source-operation/forbidden.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: native-go-operation-transfer-${{ matrix.case }}
+          path: ${{ runner.temp }}/source-operation/
+          if-no-files-found: ignore
