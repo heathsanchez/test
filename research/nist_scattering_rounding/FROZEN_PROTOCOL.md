@@ -1,0 +1,27 @@
+# Frozen V3: rounding-safe covariance-independent tension from electron scattering
+
+Frozen before V3 implementation. Parent V2 two-hydrogen green run: https://github.com/heathsanchez/test/actions/runs/38491803250 (original Nature author PDF sha256 758181d221327797c87758f17cabfece0632a9f0394138da0c9ebac10d4b25f4). New V3 target is a **2026 reanalysis of previously collected electron-proton scattering**, not a newly measured experiment or independent replication.
+
+## Original held-out source
+- I. A. Qattan, 'New extraction of the proton's conventional charge and magnetic radii utilizing electron-proton elastic scattering experimental data', Physical Review C 113, 045211, published April 23, 2026; https://journals.aps.org/prc/abstract/10.1103/f6gq-ghvh DOI https://doi.org/10.1103/f6gq-ghvh.
+- First proton electric charge-radius extraction (form-factor independent-fit approach): r_E = 0.854 ± 0.002(stat) ± 0.003(sys) fm. Second approach with ratio/coupled-radii prior: r_E = 0.851 ± 0.001(stat) ± 0.001(sys) fm. Distinct fit/theory methods applied to **shared earlier scattering data**, not independent experiments or an extra count of empirical information.
+- Data origin must retain Qattan/Arrington PRC 86, 065210 (2012) and Qattan/Arrington/Alsaad PRC 91, 065203 (2015); derived magnetic radius r_M is a *different measurand* and is not comparable to a proton charge radius.
+- Historic Nature 2026 hydrogen: 0.8406(15) fm, manually bound and original-PDF pinned in V2. Its experimental sample is distinct, but fitted-model assumptions and corrections may affect comparable meaning and uncertainty; no claim of physics contradicted.
+
+## Precommitted decisive 3-state rule
+- For any two jointly interpreted scalar estimates with standard uncertainty sA,sB and arbitrary correlation rho in [-1,1], difference variance lies between (sA-sB)^2 and (sA+sB)^2; this follows algebraically from the positive semidefinite covariance bound. No assumed statistical independence.
+- If delta > 2*(sA+sB), **UNAVOIDABLE_2SIGMA_TENSION** conditional on source estimates and their comparability. If delta < 2*abs(sA-sB), **UNAVOIDABLE_2SIGMA_CONSISTENCY**. Otherwise **UNKNOWN**, not false proof of either. Different physical measurands MUST fail type-check.
+- Split source stat/sys contributions have unknown covariance. Upper bound Qattan sQ <= s_stat+s_sys by triangle inequality. Do not quietly use quadrature unless the papers warrant the independence assumption.
+- **Publication rounding matters:** treat each reported central value and standard uncertainty as an interval widened by half of its last displayed decimal unit, including Nature 0.8406 and (15) uncertainty. Evaluate worst-case lower center difference and worst-case upper uncertainty before concluding unavoidable tension.
+- Preliminary falsifier arithmetic (to be rechecked in independent code, not taken as warrant): first Qattan fit 0.854 has lower rounded delta 0.01285 fm, upper total standard uncertainty 0.00755 fm -> lower z bound 1.702: **UNKNOWN**, even though midpoint heuristic suggests >2σ. Second Qattan fit 0.851: lower rounded delta 0.00985 fm, upper total 0.00455 fm -> lower z bound 2.165: **conditional unavoidable >2σ**. Note the heuristic '2.06σ' for first fit must NOT be promoted.
+- Two Qattan methods are *one underlying source-data family*. No inverse-variance pooling or counting them as two independent experiments. The V2 Nature fitted electric charge radius and scattering extracted r_E are comparable only conditional on definition, fit models and source interpretation; keep scope qualified.
+
+## Failure controls and strong conventional baseline
+- Pin original primary source bytes independently before using them as qualified input; if unavailable, report SOURCE_IDENTITY_UNKNOWN. The original DOI/publisher abstract HTML may be dynamic; avoid replacing the pin to force a pass. Preserve failed delivery. No live-source freshness claim.
+- One source event with two fit/model versions. If code counts them as independent experiments or calls magnetic radius r_M proton electric radius, reject.
+- Wrong central-unit digits, omitted source uncertainty, misplaced statistical/systematic labels, dropped rounding envelope, or false assumption of independent stat/sys must either reject or leave UNKNOWN; exact-rational baseline matches independent Decimal stdlib computation and exhaustive adversarial boundary examples.
+- Strongest success would be safe new source-family read and conservatively justified >2σ cross-modality *conditional comparison*, not discovery of a measurement discrepancy unknown to physics or autonomous scientific hypothesis invention.
+- Scientific boundary: metadata and semantics mapped manually by developer in this prototype; source-document pin and text substring verification are not generic source-native interpretation. Maintain E2E_SYSTEM / L7 = UNKNOWN.
+
+## Next experiment if V3 passes
+Try a genuinely source-independent generic numerical-claim extractor on an untouched fourth research publication, without writing another paper-specific adapter. Show extraction, supported uncertainty semantics, and downstream requalification against a fully informed conventional extractor. Failure stays UNKNOWN/REJECTED.
