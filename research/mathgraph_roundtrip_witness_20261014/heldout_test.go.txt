@@ -1,0 +1,32 @@
+package yaml_test
+import (
+ "encoding/json"
+ "os"
+ "testing"
+ yaml "@MODULE@"
+)
+type mathGraphHoldoutCase struct{
+  ID string `json:"id"`
+  Kind string `json:"kind"`
+  Value string `json:"value"`
+}
+func TestMathGraphHeldoutStringFidelity(t *testing.T){
+ data,err:=os.ReadFile("mathgraph_heldout_cases.json")
+ if err!=nil{t.Fatalf("heldout corpus unavailable: %v",err)}
+ var cases []mathGraphHoldoutCase
+ if err:=json.Unmarshal(data,&cases);err!=nil{t.Fatalf("invalid corpus JSON: %v",err)}
+ if len(cases)!=5000{t.Fatalf("expected 5000 immutable inputs, got %d",len(cases))}
+ for _,tc:=range cases{
+  t.Run(tc.ID,func(t *testing.T){
+   encoded,err:=yaml.Marshal(map[string]any{"value":tc.Value})
+   if err!=nil{t.Fatalf("encode %s: %v",tc.ID,err)}
+   var back map[string]any
+   if err:=yaml.Unmarshal(encoded,&back);err!=nil{t.Fatalf("decode own YAML %s: %v",tc.ID,err)}
+   v,ok:=back["value"]
+   if !ok{t.Fatalf("decoded value key absent")}
+   s,ok:=v.(string)
+   if !ok{t.Fatalf("source string became %T, value %#v",v,v)}
+   if s!=tc.Value{t.Fatalf("source string changed: got %q want %q",s,tc.Value)}
+  })
+ }
+}
