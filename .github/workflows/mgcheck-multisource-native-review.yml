@@ -74,7 +74,7 @@ jobs:
           r=json.loads(p.read_bytes())
           assert r["native_causal_warrants"] == 2
           assert r["unresolved_normative_claims"] == 2
-          assert len(r["independent_source_partial_revocation_controls"]) == 10
+          assert len(r["independent_source_partial_revocation_controls"]) == 11
           assert r["live_strong_equal_info_coding_agent"] == "NOT_RUN"
           assert r["safe_merge"] == "UNKNOWN"
           (p.parent/"report.sha256").write_text(hashlib.sha256(p.read_bytes()).hexdigest()+"\n")
