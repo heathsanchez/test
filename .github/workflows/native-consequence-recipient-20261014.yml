@@ -29,7 +29,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           python - <<'PY'
-          import hashlib,json,os,pathlib,urllib.request
+          import hashlib,json,os,pathlib,urllib.request,urllib.parse
+          class SafeRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,req,fp,code,msg,headers,newurl):
+                  target=super().redirect_request(req,fp,code,msg,headers,newurl)
+                  if target and urllib.parse.urlparse(req.full_url).netloc != urllib.parse.urlparse(newurl).netloc:
+                      target.remove_header('Authorization')
+                      target.remove_unredirected_header('Authorization')
+                  return target
+          opener=urllib.request.build_opener(SafeRedirect())
           home=pathlib.Path('research/aria_scaling_trust/consequence_recipient')
           target=home/'inputs'
           target.mkdir(parents=True,exist_ok=True)
@@ -43,7 +51,7 @@ jobs:
                   'User-Agent':'MathGraphConsequenceRecipient',
                   'Authorization':'Bearer '+os.environ['GH_TOKEN']
               })
-              with urllib.request.urlopen(req, timeout=60) as r:
+              with opener.open(req, timeout=60) as r:
                   raw=r.read(500001)
               assert len(raw)<500001 and hashlib.sha256(raw).hexdigest()==item['sha256'],'CI_ARTIFACT_PIN_MISMATCH'
               (target/(item['name']+'.zip')).write_bytes(raw)
