@@ -345,6 +345,64 @@ def main():
                 raise AssertionError("METHOD_REVOCATION_CORRUPTED_PRIOR_OBSTRUCTIONS")
         infinite_revocation = "PASS_SIMULATED_INDEPENDENT_METHOD_REVOCATIONS"
 
+    # A source-mined theorem vocabulary was extended three times. Each
+    # proof remains independently valid after earlier proof witnesses are
+    # withdrawn; the development-history claim depends on all three.
+    typed_done = "CSLIB_TYPED_METHOD_PASS" in runs and "typed_semantic" in manifest["emitters"]
+    typed_stage_ids = {
+        stage:"cslib:transport-method:"+stage.lower()+":v1"
+        for stage in ("ACQUISITION","HELDOUT","GRAMMAR_REVISION")
+    }
+    typed_ablation = "NOT_CHECKED"
+    typed_revocation = "NOT_CHECKED"
+    if typed_done:
+        ids = set(typed_stage_ids.values())
+        live = set(summary["active_capability_ids"])
+        if not ids.issubset(live):
+            raise AssertionError("SOURCE_MINED_METHOD_PROOFS_NOT_LIVE")
+        if not all("external:"+item in summary["discharged_obligation_ids"]
+                   for item in ids):
+            raise AssertionError("SOURCE_MINED_METHOD_OBLIGATIONS_NOT_DISCHARGED")
+        from realitygraph.flash import ExternalEventEnvelope
+        from tempfile import TemporaryDirectory
+        source_root = args.source_bundles / "typed_semantic"
+        for stage, capability_id in sorted(typed_stage_ids.items()):
+            removed = [
+                path for path in bundles
+                if path != source_root / stage.lower()
+            ]
+            deleted = update_live_state(None, removed)["summary"]
+            if set(deleted["active_capability_ids"]) != live - {capability_id}:
+                raise AssertionError("TYPED_METHOD_ABLATION_NOT_ISOLATED:"+stage)
+            if set(deleted["obstruction_ids"]) != set(summary["obstruction_ids"]):
+                raise AssertionError("TYPED_METHOD_ABLATION_CHANGED_OBSTRUCTIONS")
+            e = read(source_root / stage.lower() / "event.json")
+            evidence = (
+                '{"controlled":true,"kind":"typed-grammar-'}
+                +stage.lower()+'","real_revocation":false}'
+            ).encode()
+            revoke = ExternalEventEnvelope.capability_revocation(
+                event_id="cslib:transport:"+stage.lower()+":simulated-withdrawal",
+                repository=e["repository"], commit=e["commit"],
+                authority_snapshot=e["authority_snapshot"],
+                verifier_id=e["verifier_id"], source_evidence=evidence,
+                capability_id=capability_id,
+                reason="simulation only: native proof preserved, live route removed",
+            )
+            with TemporaryDirectory(prefix="native-typed-method-") as temp:
+                attack = Path(temp)
+                (attack/"event.json").write_text(revoke.to_text())
+                (attack/"evidence.json").write_bytes(evidence)
+                withdrawn = update_live_state(None,list(bundles)+[attack])["summary"]
+            if set(withdrawn["active_capability_ids"]) != live-{capability_id}:
+                raise AssertionError("TYPED_REVOCATION_DID_NOT_ISOLATE:"+stage)
+            if "external:"+capability_id not in withdrawn["open_obligation_ids"]:
+                raise AssertionError("TYPED_METHOD_REVOCATION_NOT_REOPENED:"+stage)
+            if set(withdrawn["obstruction_ids"]) != set(summary["obstruction_ids"]):
+                raise AssertionError("TYPED_REVOCATION_CORRUPTED_OTHER_RESEARCH")
+        typed_ablation = "PASS_THREE_INDEPENDENT_SOURCE_METHOD_ABLATIONS"
+        typed_revocation = "PASS_THREE_SIMULATED_TYPED_METHOD_REVOCATIONS"
+
     preceding_log = (args.previous_ledger.read_text(encoding="utf-8")
                      if args.previous_ledger and args.previous_ledger.is_file() else None)
     log = mt.loads(preceding_log) if preceding_log is not None else ()
@@ -461,6 +519,42 @@ def main():
             "general_autonomous_development": "UNKNOWN",
         }, (native_infinite_nodes["UP"].id, native_infinite_nodes["DOWN"].id))
         log = mt.append(log, native_infinite_history)
+    native_typed_nodes = {}
+    native_typed_history = None
+    if typed_done:
+        source_rules = {
+            "ACQUISITION":"Cslib.FLTS.toLTS_mtr",
+            "HELDOUT":"Cslib.FLTS.mtr_append_eq",
+            "GRAMMAR_REVISION":"Cslib.LTS.toFLTS_mem_mtr",
+        }
+        for stage,capability_id in sorted(typed_stage_ids.items()):
+            node = mt.Node("native_typed_transport_proof", {
+                "scope":"exact frozen original source-bound CSLib goal",
+                "stage":stage,"capability_id":capability_id,
+                "new_source_theorem_primitive":source_rules[stage],
+                "proof_program_deletion_ablation":typed_ablation,
+                "typed_simulated_revocation":typed_revocation,
+                "meta_generator_human_written":True,
+                "source_theorems_preexisting":True,
+                "scientific_L7":"UNKNOWN",
+                "action_authorization":"NONE",
+            }, (anchors["CSLIB_TYPED_METHOD_PASS"].id,
+                roots[("emitters","typed_semantic")].id,
+                flash_event.id))
+            log = mt.append(log,node)
+            native_typed_nodes[stage] = node
+        native_typed_history = mt.Node("native_method_vocabulary_development", {
+            "old_native_method":"Nat-interval successor/predecessor only",
+            "earned_acquisition":"product to relational trace",
+            "earned_heldout":"source compositional trace append",
+            "earned_second_change":"set-valued lifted relation",
+            "generated_source_methods":3,
+            "general_self_generated_meta_substrate":"UNKNOWN",
+            "full_equal_information_cost_advantage":"UNMEASURED",
+            "independent_open_theorem":"NOT_CLAIMED",
+        },tuple(native_typed_nodes[x].id for x in (
+            "ACQUISITION","HELDOUT","GRAMMAR_REVISION")))
+        log = mt.append(log,native_typed_history)
     future_dependencies = (qualification.id, source_catalogue.id, flash_event.id, residual.id)
     if native_done:
         future_dependencies += (native_node.id,)
@@ -468,6 +562,8 @@ def main():
         future_dependencies += (native_method_node.id,)
     if infinite_done:
         future_dependencies += (native_infinite_history.id,)
+    if typed_done:
+        future_dependencies += (native_typed_history.id,)
     future_name = (
         "autonomous_source_distinct_native_generator_invention_still_open"
         if native_done else "diagnose_native_failure_and_test_new_semantic_repair")
@@ -477,6 +573,7 @@ def main():
         "native_certificate_backend": "PASS_SCOPED" if native_done else "UNKNOWN",
         "source_native_method_transfer": "PASS_SCOPED" if method_done else "UNKNOWN",
         "source_native_parametric_induction": "PASS_SCOPED" if infinite_done else "UNKNOWN",
+        "source_native_typed_method_language": "PASS_SCOPED" if typed_done else "UNKNOWN",
         "action_authorization": "NONE",
         "system_e2e": manifest["protected_claims"]["system_e2e"],
         "recursive_native_development": manifest["protected_claims"]["recursive_native_development"]}
@@ -503,6 +600,20 @@ def main():
     assert residual.id in independent_live(revoked)
     assert flash_event.id in independent_live(revoked)
     assert mt.loads(serialized) == log, "archived past must not change"
+    if typed_done:
+        typed_history_withdrawn = mt.append(log, mt.Node("revoke",{
+            "target":native_typed_nodes["ACQUISITION"].id,
+            "reason":"simulated cancellation of one native method-program acquisition",
+        }))
+        remaining=independent_live(typed_history_withdrawn)
+        if native_typed_nodes["ACQUISITION"].id in remaining:
+            raise AssertionError("TYPED_ACQUISITION_WARRANT_NOT_WITHDRAWN")
+        if not all(native_typed_nodes[x].id in remaining
+                   for x in ("HELDOUT","GRAMMAR_REVISION")):
+            raise AssertionError("TYPED_LEAN_PROOF_WRONGLY_DEPENDS_ON_EARLIER_PROOF")
+        if native_typed_history.id in remaining or frontier.id in remaining:
+            raise AssertionError("UNSUPPORTED_METHOD_DEVELOPMENT_HISTORY_STILL_LIVE")
+        assert set(mt.live_ids(typed_history_withdrawn))==remaining
     if infinite_done:
         method_science_revoked = mt.append(log, mt.Node("revoke", {
             "target": native_infinite_nodes["UP"].id,
@@ -572,6 +683,18 @@ def main():
             "restart": "PASS", "dependency_oracle": "PASS",
             "source_revocation": "PASS", "unrelated_lineage": "PRESERVED"},
         "frontier": frontier.payload,
+        "source_native_typed_method_grammar": {
+            "verdict":"PASS_SCOPED" if typed_done else "UNKNOWN",
+            "active_scoped_capability_ids":list(typed_stage_ids.values()) if typed_done else [],
+            "earned_method_rule_count":3 if typed_done else 0,
+            "proof_plan_ablation":typed_ablation,
+            "controlled_revocation":typed_revocation,
+            "generator_substrate_human_written":True,
+            "autonomous_meta_generator_invention":"UNKNOWN",
+            "independently_open_new_theorem":"NOT_CLAIMED",
+            "full_lifecycle_advantage":"UNMEASURED",
+            "action_authorization":"NONE"
+        },
         "source_native_parametric_induction": {
             "verdict": "PASS_SCOPED" if infinite_done else "UNKNOWN",
             "capability_ids": list(infinite_ids.values()) if infinite_done else [],
@@ -612,6 +735,9 @@ def main():
             "metatron_ablation": "PASS",
             "source_bound_native_scoped_certificate": "PASS" if native_done else "UNKNOWN",
             "source_distinct_upstream_native_semantics": "PASS_SCOPED" if method_done else "UNKNOWN",
+            "native_typed_method_grammar_extension": "PASS_SCOPED" if typed_done else "UNKNOWN",
+            "native_typed_method_source_ablation":typed_ablation,
+            "native_typed_method_revocation":typed_revocation,
             "native_unbounded_parametric_induction": "PASS_SCOPED" if infinite_done else "UNKNOWN",
             "native_unbounded_causal_admission": infinite_ablation,
             "native_unbounded_independent_revocations": infinite_revocation,
