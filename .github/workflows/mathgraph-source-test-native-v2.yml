@@ -1,0 +1,121 @@
+name: MathGraph V2 — source-derived original jaq and yq tests
+on:
+  push:
+    branches:
+      - mathgraph-source-grammar-generalization-v2-20261014
+    paths:
+      - 'research/cross_backend_discriminator/**'
+      - '.github/workflows/mathgraph-source-test-native-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  jaq-original:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: 01mf02/jaq
+          ref: 86c4e75fffd25a5ddd19089ed840c3394d54475b
+          path: original/jaq/head
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify original source revisions and add local base worktree
+        run: |
+          set -euo pipefail
+          git -C original/jaq/head worktree add --detach ../base 8cdd767e527d3e62e5da5916320b5546f4ffbeb9
+          test "$(git -C original/jaq/base rev-parse HEAD)" = 8cdd767e527d3e62e5da5916320b5546f4ffbeb9
+          test "$(git -C original/jaq/head rev-parse HEAD)" = 86c4e75fffd25a5ddd19089ed840c3394d54475b
+          rustc --version
+          jq --version
+      - name: Qualify human-written generic source operator extractor
+        run: python3 -m unittest -v research/cross_backend_discriminator/test_source_grammar_v2.py
+      - name: Compile both exact original Rust jaq revisions
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bin"
+          (cd original/jaq/base && cargo build --locked -p jaq)
+          cp original/jaq/base/target/debug/jaq "$RUNNER_TEMP/bin/jaq-base"
+          (cd original/jaq/head && cargo build --locked -p jaq)
+          cp original/jaq/head/target/debug/jaq "$RUNNER_TEMP/bin/jaq-head"
+      - name: Evaluate frozen original jaq source-derived operations
+        env:
+          NATIVE_BIN_DIR: ${{ runner.temp }}/bin
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/source-v2"
+          python3 research/cross_backend_discriminator/source_grammar_v2.py --config research/cross_backend_discriminator/jaq423_runner.json --out "$RUNNER_TEMP/source-v2/jaq423.json"
+      - name: Mandatory source and reference ablation controls
+        if: always()
+        env:
+          NATIVE_BIN_DIR: ${{ runner.temp }}/bin
+        run: |
+          set -euo pipefail
+          if test -x "$RUNNER_TEMP/bin/jaq-head"; then
+            python3 research/cross_backend_discriminator/source_grammar_v2.py --config research/cross_backend_discriminator/jaq423_runner.json --ablate-reference --out "$RUNNER_TEMP/source-v2/jaq423-ref-ablation.json"
+            python3 research/cross_backend_discriminator/source_grammar_v2.py --config research/cross_backend_discriminator/jaq423_runner.json --ablate-tests --out "$RUNNER_TEMP/source-v2/jaq423-test-ablation.json"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: jaq423-native-source-derived-v2
+          path: ${{ runner.temp }}/source-v2/
+          if-no-files-found: ignore
+  yq-original:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: mikefarah/yq
+          ref: 9526bbf99cd808f30deab33626c89b2dcaf2ddf1
+          path: original/yq/head
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact original Go source revisions
+        run: |
+          set -euo pipefail
+          git -C original/yq/head worktree add --detach ../base 1957ff45ed555eebe8206ba50c0e5e7800253783
+          test "$(git -C original/yq/base rev-parse HEAD)" = 1957ff45ed555eebe8206ba50c0e5e7800253783
+          test "$(git -C original/yq/head rev-parse HEAD)" = 9526bbf99cd808f30deab33626c89b2dcaf2ddf1
+          jq --version
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version-file: original/yq/head/go.mod
+          cache: false
+      - name: Compile both original Go yq revisions
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bin"
+          (cd original/yq/base && go build -o "$RUNNER_TEMP/bin/yq-base" .)
+          (cd original/yq/head && go build -o "$RUNNER_TEMP/bin/yq-head" .)
+      - name: Same generic extractor on frozen Go yq source
+        env:
+          NATIVE_BIN_DIR: ${{ runner.temp }}/bin
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/source-v2"
+          python3 research/cross_backend_discriminator/source_grammar_v2.py --config research/cross_backend_discriminator/yq2869_runner.json --out "$RUNNER_TEMP/source-v2/yq2869.json"
+      - name: Causal reference and source ablation controls
+        if: always()
+        env:
+          NATIVE_BIN_DIR: ${{ runner.temp }}/bin
+        run: |
+          set -euo pipefail
+          if test -x "$RUNNER_TEMP/bin/yq-head"; then
+            python3 research/cross_backend_discriminator/source_grammar_v2.py --config research/cross_backend_discriminator/yq2869_runner.json --ablate-reference --out "$RUNNER_TEMP/source-v2/yq2869-ref-ablation.json"
+            python3 research/cross_backend_discriminator/source_grammar_v2.py --config research/cross_backend_discriminator/yq2869_runner.json --ablate-tests --out "$RUNNER_TEMP/source-v2/yq2869-test-ablation.json"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: yq2869-native-source-derived-v2
+          path: ${{ runner.temp }}/source-v2/
+          if-no-files-found: ignore
