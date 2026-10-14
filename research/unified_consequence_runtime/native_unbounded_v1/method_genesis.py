@@ -276,8 +276,8 @@ def main():
     protocol=json.loads(args.protocol.read_bytes())
     if protocol.get("schema")!="metalogic.native-unbounded-method-genesis.v1":
         raise ValueError("UNSUPPORTED_NATIVE_METHOD_PROTOCOL")
-    run_all(args.cslib, protocol, args.previous_source_method,
-            args.out, args.timeout)
+    run_all(args.cslib.resolve(), protocol, args.previous_source_method.resolve(),
+            args.out.resolve(), args.timeout)
 
 
 if __name__ == "__main__":
