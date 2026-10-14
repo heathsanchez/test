@@ -133,12 +133,15 @@ func testCode(pkg,funcName string)string{
     " data,err:=os.ReadFile(os.Getenv(\"MG_INPUTS\")); if err!=nil{t.Fatal(err)}\n"+
     " var inputs []string; if err:=json.Unmarshal(data,&inputs);err!=nil{t.Fatal(err)}\n"+
     " output:=make([][3]string,0,len(inputs))\n"+
-    " for _,s:=range inputs { value,err:=%s(s); status:=\"OK\"; errmsg:=\"\";"+
-       " if err!=nil{status=\"ERROR\";errmsg=err.Error()};"+
-       " output=append(output,[3]string{s,status,fmt.Sprint(value)+\"|\"+errmsg}) }\n"+
+    " for _,s:=range inputs { output=append(output,mgNativeObserve(s)) }\n"+
     " raw,err:=json.Marshal(output);if err!=nil{t.Fatal(err)}\n"+
     " if err:=os.WriteFile(os.Getenv(\"MG_OUTPUT\"),raw,0600);err!=nil{t.Fatal(err)}\n"+
-    " t.Logf(\"MATHGRAPH_EXECUTED_NATIVE_INPUTS=%%d\",len(output))\n}\n",pkg,funcName)
+    " t.Logf(\"MATHGRAPH_EXECUTED_NATIVE_INPUTS=%%d\",len(output))\n}\n"+
+    "func mgNativeObserve(s string)(out [3]string){\n"+
+    " out[0]=s; defer func(){ if p:=recover();p!=nil{out[1]=\"PANIC\";out[2]=fmt.Sprint(p)} }()\n"+
+    " value,err:=%s(s);out[1]=\"OK\";out[2]=fmt.Sprint(value)\n"+
+    " if err!=nil{out[1]=\"ERROR\";out[2]=fmt.Sprint(value)+\"|\"+err.Error()}\n"+
+    " return out\n}\n",pkg,funcName)
 }
 func execGo(root string,api API,programs []Program,folder string)([][3]string,int,string,bool){
  dir:=filepath.Join(root,api.Dir)
