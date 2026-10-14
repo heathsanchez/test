@@ -34,7 +34,9 @@ jobs:
           test "$(git -C source/gojson/head rev-parse HEAD)" = 9ab94ddad9f74ed2ad96d903cb6d8a127323a481
           test "$(git -C source/gojson/head rev-parse HEAD^)" = 7bcea74f8c32f689578555359a3bfd9c517ca8b0
           git -C source/gojson/head worktree add --detach ../base 7bcea74f8c32f689578555359a3bfd9c517ca8b0
+          git -C source/gojson/head worktree add --detach ../pristine 7bcea74f8c32f689578555359a3bfd9c517ca8b0
           test "$(git -C source/gojson/base rev-parse HEAD)" = 7bcea74f8c32f689578555359a3bfd9c517ca8b0
+          test "$(git -C source/gojson/pristine rev-parse HEAD)" = 7bcea74f8c32f689578555359a3bfd9c517ca8b0
       - name: Automatically derive NEW original Go test operations from AST differences
         run: |
           set -euo pipefail
@@ -47,7 +49,7 @@ jobs:
       - name: Qualify no-test operation ablation and typed evidence withdrawal
         run: |
           set -euo pipefail
-          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/go-test-genesis/manifest.json"             --base source/gojson/base --head source/gojson/head --ablate             --out "$RUNNER_TEMP/go-test-genesis/ablation.json"
+          python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/go-test-genesis/manifest.json"             --base source/gojson/base --head source/gojson/head --pristine source/gojson/pristine --ablate             --out "$RUNNER_TEMP/go-test-genesis/ablation.json"
           python3 research/test_operation_genesis/run_test_operation.py             --manifest "$RUNNER_TEMP/go-test-genesis/manifest.json"             --base source/gojson/base --head source/gojson/head --withdraw             --out "$RUNNER_TEMP/go-test-genesis/withdrawal.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
