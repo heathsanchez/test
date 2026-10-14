@@ -13,8 +13,7 @@ func TestMathGraphSpecialScalarStringFidelity(t *testing.T) {
             var decoded map[string]any
             if err:=yaml.Unmarshal(encoded,&decoded);err!=nil{t.Fatal(err)}
             s,ok:=decoded["value"].(string)
-            if !ok{t.Errorf("string %q encoded as %q decoded into %T, expected string",source,encoded,decoded["value"])}
-            else if s!=source{t.Errorf("string %q encoded as %q round-tripped as %q",source,encoded,s)}
+            if !ok{t.Errorf("string %q encoded as %q decoded into %T, expected string",source,encoded,decoded["value"])} else if s!=source{t.Errorf("string %q encoded as %q round-tripped as %q",source,encoded,s)}
         })
     }
     for _,tc:=range []struct{name string;value float64}{
@@ -28,9 +27,7 @@ func TestMathGraphSpecialScalarStringFidelity(t *testing.T) {
             if err:=yaml.Unmarshal(encoded,&decoded);err!=nil{t.Fatal(err)}
             actual,ok:=decoded["value"].(float64)
             if !ok{t.Fatalf("float source reclassified into %T",decoded["value"])}
-            if math.IsNaN(tc.value){if !math.IsNaN(actual){t.Errorf("NaN changed to %v",actual)}}
-            else if math.IsInf(tc.value,1){if !math.IsInf(actual,1){t.Errorf("positive infinity changed to %v",actual)}}
-            else if math.IsInf(tc.value,-1){if !math.IsInf(actual,-1){t.Errorf("negative infinity changed to %v",actual)}}
+            if math.IsNaN(tc.value){if !math.IsNaN(actual){t.Errorf("NaN changed to %v",actual)}} else if math.IsInf(tc.value,1){if !math.IsInf(actual,1){t.Errorf("positive infinity changed to %v",actual)}} else if math.IsInf(tc.value,-1){if !math.IsInf(actual,-1){t.Errorf("negative infinity changed to %v",actual)}}
         })
     }
     for _,source:=range []string{".nanny",".infinite","normal","null","true"} {
