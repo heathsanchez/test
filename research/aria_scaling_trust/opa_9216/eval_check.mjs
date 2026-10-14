@@ -24,7 +24,7 @@ async function get(path) {
   return response.json();
 }
 const t0=performance.now(),pr=await get("/pulls/"+prNumber);
-if(pr.head?.sha!==HEAD||pr.base?.repo?.full_name!==repo||pr.head?.repo?.full_name!==repo)
+if(pr.head?.sha!==HEAD||pr.base?.repo?.full_name!==repo||pr.head?.repo?.full_name!=="andreaTP/opa")
  throw Error("FROZEN_PR_SOURCE_MOVED");
 const files=[],maxPages=3;
 let filesVisibility="COMPLETE";
@@ -64,7 +64,8 @@ const strongBaselineFromAvailablePRBody={
 const report={
  schema:"metalogic.mathgraph-check.opa-heldout-product-v1",
  original_repo:repo,pr:prNumber,base_sha:PARENT,head_sha:HEAD,
- source:"actual public original PR, changed-file API, and original exact-head CI",
+ source:"actual public original fork PR, changed-file API, and original exact-head CI",
+ original_head_repository:"andreaTP/opa",
  source_files_count:files.length,files_visibility:filesVisibility,ci_visibility:ciVisibility,
  head_runs:runs.filter(x=>x.head_sha===HEAD).map(x=>({
   id:x.id,name:x.name,conclusion:x.conclusion,status:x.status})),
