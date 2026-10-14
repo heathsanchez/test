@@ -13,6 +13,7 @@ import time
 
 ROOT=Path(__file__).resolve().parent
 PROTOCOL=json.loads((ROOT/"WHITESPACE_REPAIR_PROTOCOL.json").read_text())
+REFINEMENT=json.loads((ROOT/"WHITESPACE_REFINEMENT_V2.json").read_text())
 OUT=Path(os.environ.get("RUNNER_TEMP","/tmp"))/"mathgraph-yaml-whitespace-native"
 OUT.mkdir(parents=True,exist_ok=True)
 DIR=OUT/"checkout"
@@ -27,6 +28,8 @@ EVIDENCE={
  "source_repo":PROTOCOL["source_repo"],
  "source_sha":SHA,
  "preregistered_whitespace_protocol_sha256":hashlib.sha256((ROOT/"WHITESPACE_REPAIR_PROTOCOL.json").read_bytes()).hexdigest(),
+ "post_negative_control_refinement_v2_sha256":hashlib.sha256((ROOT/"WHITESPACE_REFINEMENT_V2.json").read_bytes()).hexdigest(),
+ "rejected_v1_full_suite_failure_run":38554550541,
  "original_source_blob":ORIGINAL_BLOB,
  "prior_special_source_blob":SPECIAL_BLOB,
  "original_case_corpus_sha256":"86b3b2477024dec6cb57b82c3503d472132c5b50f2214bc34aa03afccfc8f2fe",
@@ -67,11 +70,27 @@ def patch(source):
   source=source.replace(old,new,1)
  return source
 def add_whitespace(s):
- old='func IsNeedQuoted(value string) bool {\n\tif value == "" {\n\t\treturn true\n\t}\n'
- added=old+'\tif strings.ContainsAny(value, "\\t\\r\\n") {\n\t\treturn true\n\t}\n'
- assert s.count(old)==1,"QUOTE_WHITESPACE_SOURCE_ANCHOR_NOT_UNIQUE"
- assert 'strings.ContainsAny(value, "\\t\\r\\n")' not in s
- return s.replace(old,added,1)
+ # Refinement v2 after failed broad-quoting negative control:
+ # quote only scalar strings whose FIRST byte cannot begin an unquoted
+ # scalar. Do not change the encoder's intentional multiline literal
+ # presentation when a string starts with ordinary text.
+ start=s.index("func IsNeedQuoted(value string) bool {")
+ end=s.index("// LiteralBlockHeader",start)
+ prefix=s[:start]
+ segment=s[start:end]
+ suffix=s[end:]
+ lines=segment.splitlines(keepends=True)
+ matches=[i for i,line in enumerate(lines)
+          if line.lstrip().startswith("case '*', '&', '['")
+          and line.rstrip().endswith(", ':':")]
+ assert len(matches)==1,"QUOTE_FIRST_BYTE_CASE_NOT_UNIQUE"
+ old=lines[matches[0]]
+ assert old.count(", ':':")==1,"QUOTE_FIRST_BYTE_ANCHOR_CHANGED"
+ lines[matches[0]]=old.replace(", ':':",", ':', '\\t', '\\r', '\\n':",1)
+ refined=prefix+"".join(lines)+suffix
+ assert refined!=s
+ assert 'strings.ContainsAny(value, "\\t\\r\\n")' not in refined
+ return refined
 def test_case_set(arm,source,expected_fail):
  git("checkout","--force","--detach",SHA)
  assert git("rev-parse","HEAD")==SHA,"GIT_REVISION_CHANGED"
@@ -122,6 +141,10 @@ def test_case_set(arm,source,expected_fail):
  return source
 def main():
  global CORPUS_BYTES,CASES
+ assert REFINEMENT["source_repo"]=="goccy/go-yaml"
+ assert REFINEMENT["source_sha"]==SHA
+ assert REFINEMENT["negative_control"]["run"]==38554550541
+ assert REFINEMENT["controls"]["fail_counts_by_arm"]==[21,16,0,16,21]
  assert PROTOCOL["source_repo"]=="goccy/go-yaml"
  assert PROTOCOL["exact_source_commit"]==SHA
  assert len(WHITESPACE_16)==16 and len(SPECIAL_5)==5
