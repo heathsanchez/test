@@ -1,0 +1,43 @@
+{
+  "schema": "mathgraph.yaml-preserve-output-versus-string-fidelity-obstruction.v1",
+  "created_on": "2026-10-14",
+  "source_repo": "goccy/go-yaml",
+  "pinned_commit": "72a4f95c648c844ef2f8ddbc009530be64ab4c41",
+  "protected_source_test": "encode_test.go TestEncoder original exact expected serialized strings, source unchanged",
+  "constraints": [
+    "Hold original decoder D fixed at pinned GitHub source revision",
+    "For each protected encoded output B mandated by existing original TestEncoder, keep E(s)=B",
+    "Seek exact input value roundtrip D(E(s))=s"
+  ],
+  "candidate_cases": [
+    {
+      "name": "ordinary_LF",
+      "input": "hello\nworld\n",
+      "expected_serialized": "hello: |\n  hello\n  world\n",
+      "positive_control": true
+    },
+    {
+      "name": "ordinary_LF_no_final_newline",
+      "input": "hello\nworld",
+      "expected_serialized": "hello: |-\n  hello\n  world\n",
+      "positive_control": true
+    },
+    {
+      "name": "interior_CR",
+      "input": "hello\rworld\r",
+      "expected_serialized": "hello: |\r  hello\r  world\n",
+      "positive_control": false
+    },
+    {
+      "name": "interior_CRLF",
+      "input": "hello\r\nworld\r\n",
+      "expected_serialized": "hello: |\r\n  hello\r\n  world\n",
+      "positive_control": false
+    }
+  ],
+  "bounded_obstruction_rule": "If native encoder E emits the exact protected original YAML B for s, but the exact pinned decoder returns t!=s, and plain LF positive controls work, then no encoder-only change can meet both E(s)=B and D(E(s))=s while D remains fixed. This is a specific, test-byte-bound logical contradiction, not a universal impossibility of round-tripping CRLF or repairing the decoder.",
+  "reject_on": "If source test bytes don't match expected B, native decoder unexpectedly roundtrips all four strings, or test/harness cannot execute, do not claim obstruction.",
+  "science_limits": "One source version/decoder, exact protected test output; generalized schema claims or implementation alternatives unknown.",
+  "no_external_repo_writes": true,
+  "no_external_comments": true
+}
