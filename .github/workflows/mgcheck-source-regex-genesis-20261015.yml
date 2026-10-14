@@ -15,10 +15,10 @@ jobs:
       matrix:
         subject: [first, transfer]
     steps:
-      - uses: actions/checkout$v4
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-go$v5
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.23"
       - name: Load only frozen original subject and source pins
@@ -74,7 +74,7 @@ jobs:
           print("CHANGED_SOURCE_PATTERNS",rec["changed_patterns"])
           print("WITNESSES",sum(x["changed_cases"] for x in rec["source_changes"]))
           PY
-      - uses: actions/upload-artifact$v4
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mgcheck-source-regex-${{ matrix.subject }}
