@@ -1,0 +1,61 @@
+{
+  "schema": "metalogic.whole-source-runner-config.v3",
+  "family": "yq-2871-conditional-compatibility",
+  "reference_name": "system-jq-native-C",
+  "source": {
+    "base_dir": "original/yq/base",
+    "head_dir": "original/yq/head",
+    "base_sha": "ef305adbe5a703a994f431812e0521d81f5f8668",
+    "head_sha": "88566f7676af10192bc5bd5bd3bdab13ca8956c6"
+  },
+  "runners": {
+    "reference": [
+      "jq",
+      "-c"
+    ],
+    "base": [
+      "__BIN__/yq-base",
+      "-p=json",
+      "-o=json",
+      "-I=0"
+    ],
+    "head": [
+      "__BIN__/yq-head",
+      "-p=json",
+      "-o=json",
+      "-I=0"
+    ]
+  },
+  "domain": [
+    null,
+    [],
+    [
+      0
+    ],
+    [
+      1
+    ],
+    [
+      1,
+      2,
+      3
+    ],
+    {},
+    {
+      "a": 1
+    },
+    {
+      "enabled": true,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "enabled": false,
+      "a": 1,
+      "b": 2
+    },
+    "",
+    0,
+    1
+  ]
+}

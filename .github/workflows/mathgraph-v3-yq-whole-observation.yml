@@ -1,0 +1,72 @@
+name: MathGraph V3 — frozen original yq whole-source observation test
+on:
+  push:
+    branches:
+      - mathgraph-whole-observation-yq2871-v3-20261014
+    paths:
+      - 'research/cross_backend_discriminator/**'
+      - '.github/workflows/mathgraph-v3-yq-whole-observation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: mikefarah/yq
+          ref: 88566f7676af10192bc5bd5bd3bdab13ca8956c6
+          path: original/yq/head
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze original native source and create local base only
+        run: |
+          set -euo pipefail
+          test "$(git -C original/yq/head rev-parse HEAD)" = 88566f7676af10192bc5bd5bd3bdab13ca8956c6
+          git -C original/yq/head worktree add --detach ../base ef305adbe5a703a994f431812e0521d81f5f8668
+          test "$(git -C original/yq/base rev-parse HEAD)" = ef305adbe5a703a994f431812e0521d81f5f8668
+          jq --version
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version-file: original/yq/head/go.mod
+          cache: false
+      - name: Qualify whole-observation parser and typed native comparator
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v research/cross_backend_discriminator/test_whole_observation_v3.py
+      - name: Build original contributor-head and base Go yq CLI from exact source
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bin"
+          (cd original/yq/base && go build -o "$RUNNER_TEMP/bin/yq-base" .)
+          (cd original/yq/head && go build -o "$RUNNER_TEMP/bin/yq-head" .)
+      - name: Run the frozen whole original-source-probe generator without fitting
+        env:
+          NATIVE_BIN_DIR: ${{ runner.temp }}/bin
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/whole-source-v3"
+          python3 research/cross_backend_discriminator/whole_observation_v3.py             --config research/cross_backend_discriminator/yq2871_runner.json             --out "$RUNNER_TEMP/whole-source-v3/yq2871.json"
+      - name: Causal source removal, reference removal and withdrawal
+        if: always()
+        env:
+          NATIVE_BIN_DIR: ${{ runner.temp }}/bin
+        run: |
+          set -euo pipefail
+          if test -x "$RUNNER_TEMP/bin/yq-head"; then
+            mkdir -p "$RUNNER_TEMP/whole-source-v3"
+            python3 research/cross_backend_discriminator/whole_observation_v3.py --config research/cross_backend_discriminator/yq2871_runner.json --ablate-source --out "$RUNNER_TEMP/whole-source-v3/source-ablation.json"
+            python3 research/cross_backend_discriminator/whole_observation_v3.py --config research/cross_backend_discriminator/yq2871_runner.json --ablate-reference --out "$RUNNER_TEMP/whole-source-v3/reference-ablation.json"
+            python3 research/cross_backend_discriminator/whole_observation_v3.py --config research/cross_backend_discriminator/yq2871_runner.json --withdraw --out "$RUNNER_TEMP/whole-source-v3/source-withdrawal.json"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: frozen-yq2871-whole-source-native-evidence
+          path: ${{ runner.temp }}/whole-source-v3/
+          if-no-files-found: ignore
