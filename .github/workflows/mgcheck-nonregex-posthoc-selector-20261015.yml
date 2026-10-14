@@ -1,0 +1,86 @@
+name: MathGraph selector transfer cause (POST-HOC, not original gate)
+on:
+  push:
+    branches: [research/mgcheck-nonregex-selector-diagnostic-20261015]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-operator-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        subject: [cast, semver]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+      - name: Pin original source family, no implementation lookahead
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.subject }}" = "cast" ];then
+            echo "ORIGINAL_REPO=spf13/cast" >> "$GITHUB_ENV"
+            echo "PR_NUMBER=352" >> "$GITHUB_ENV"
+            echo "BASE_SHA=6fd6afdc9df068c662e923a7c3ad04fda4647121" >> "$GITHUB_ENV"
+            echo "HEAD_SHA=9e3a7c487e18826a2482ad34ff29c58221a0c85b" >> "$GITHUB_ENV"
+          else
+            echo "ORIGINAL_REPO=Masterminds/semver" >> "$GITHUB_ENV"
+            echo "PR_NUMBER=303" >> "$GITHUB_ENV"
+            echo "BASE_SHA=8b89c86cb53c57cfd5d07c13de12bc4d78954e99" >> "$GITHUB_ENV"
+            echo "HEAD_SHA=c9706646b4e12416632860dd87d388c2eed07052" >> "$GITHUB_ENV"
+          fi
+      - name: Fetch exact original revision with full source, without external writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q --no-checkout "https://github.com/${ORIGINAL_REPO}.git" "$RUNNER_TEMP/upstream"
+          git -C "$RUNNER_TEMP/upstream" fetch -q origin "refs/pull/${PR_NUMBER}/head:refs/pull/${PR_NUMBER}/head"
+          test "$(git -C "$RUNNER_TEMP/upstream" rev-parse "refs/pull/${PR_NUMBER}/head")" = "$HEAD_SHA"
+          git -C "$RUNNER_TEMP/upstream" cat-file -e "${BASE_SHA}^{commit}"
+          git -C "$RUNNER_TEMP/upstream" worktree add -q --detach "$RUNNER_TEMP/old" "$BASE_SHA"
+          git -C "$RUNNER_TEMP/upstream" worktree add -q --detach "$RUNNER_TEMP/head" "$HEAD_SHA"
+          test "$(git -C "$RUNNER_TEMP/old" rev-parse HEAD)" = "$BASE_SHA"
+          test "$(git -C "$RUNNER_TEMP/head" rev-parse HEAD)" = "$HEAD_SHA"
+      - name: Manually fix already-available EDGE_SPACE operation as diagnostic hypothesis
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '{"Operator":"EDGE_SPACE","Observe":"GO_LAST_RETURN_ERROR_NIL","InterfaceShape":"one_string_or_any_arg_two_returns_last_error","AcquiredFrom":"POSTHOC_DIAGNOSTIC_MANUALLY_SELECTED_NOT_AUTONOMOUS","PlanLanguage":"human_fixed_primitives_not_a_new_L7_grammar"}' > retained-plan.json
+          test "$(git hash-object research/mgcheck_nonregex_genesis_20261015/nonregex_method_learner.go)" = "c5c4af86620d87fa0222ac2092ba0e529b16cc3e"
+          echo "ORIGINAL_UNCHANGED_LEARNER_BLOB_CONFIRMED"
+      - name: Execute identical original native Go method learner with preselected operation
+        shell: bash
+        run: |
+          set -euo pipefail
+          export GOFLAGS=-mod=mod
+          go run research/mgcheck_nonregex_genesis_20261015/nonregex_method_learner.go \
+            -mode transfer -old "$RUNNER_TEMP/old" -head "$RUNNER_TEMP/head" \
+            -old-sha "$BASE_SHA" -head-sha "$HEAD_SHA" \
+            -retained retained-plan.json -out "posthoc-${{ matrix.subject }}.json" \
+            -plan should-not-create-new-method.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path("posthoc-${{ matrix.subject }}.json").read_text())
+          assert x["Status"]=="WARRANTED_BOUNDED_RETAINED_PLAN_TRANSFER"
+          assert x["NativeWitness"]["Probe"]["Op"]=="EDGE_SPACE"
+          assert x["FocusOldExit"]!=0 and x["FocusHeadExit"]==0 and x["WrongOracleExit"]!=0
+          assert x["NoTestAblation"]=="EXECUTED_NO_GENERATED_TEST_NO_OBSERVATION"
+          print("POSTHOC_EDGE_SPACE_DIAGNOSTIC_ONLY",x["NativeWitness"]["Function"]["Name"],repr(x["NativeWitness"]["Probe"]["Input"]))
+          print("DOES_NOT_PROMOTE_ORIGINAL_TRANSFER=TRUE")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-posthoc-operator-${{ matrix.subject }}
+          path: |
+            posthoc-${{ matrix.subject }}.json
+            retained-plan.json
+          if-no-files-found: warn
