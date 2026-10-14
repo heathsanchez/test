@@ -24,7 +24,7 @@ def digest(s):
     return hashlib.sha256(s).hexdigest()
 
 def blob(data):
-    return hashlib.sha1(b"blob "+str(len(data)).encode()+b"\\0"+data).hexdigest()
+    return hashlib.sha1(b"blob "+str(len(data)).encode()+bytes([0])+data).hexdigest()
 
 def git(root,*args):
     cp=subprocess.run(["git","-C",str(root),*args],capture_output=True,text=True)
