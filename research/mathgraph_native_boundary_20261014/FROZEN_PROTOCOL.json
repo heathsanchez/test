@@ -1,0 +1,65 @@
+{
+  "title": "MathGraph Check native boundary witness: two real Go repos",
+  "frozen_utc_date": "2026-10-14",
+  "epistemic_authority": "CROSS_REPOSITORY_HISTORICAL_BEFORE_AFTER_CALIBRATION_NOT_BLIND_DISCOVERY",
+  "contamination_notice": "The investigator had seen ethereum/go-ethereum PR #35599 patch and goccy/go-yaml PR #957 patch and descriptions in the preceding conversation. Do not claim independent blind defect discovery, autonomous repair or L7 self-invention.",
+  "evaluation_version": 1,
+  "no_external_writes": true,
+  "no_upstream_modification": true,
+  "target_repositories": [
+    {
+      "repo": "ethereum/go-ethereum",
+      "pr": 35599,
+      "base_sha": "57218e569889014108919429e1d74d2944fc4d96",
+      "head_sha": "ae4936f24e5d2123c602fdd640347fb1b99fea4b",
+      "ablate_file": "rpc/http.go",
+      "base_blob": "8f4f1bc92ebbe0469615b28a5aaee71f01b7c27c",
+      "head_blob": "b5903bc6392553469e108cc633621cabd6631fa8",
+      "test_function": "TestMathGraphRPCIDBoundary",
+      "test_path": "rpc/mathgraph_boundary_test.go",
+      "package": "./rpc",
+      "go_version": "1.25.0",
+      "predicted_baseline_failures": 4,
+      "predicted_fixed_failures": 0,
+      "predicted_ablated_failures": 4,
+      "expected_positive_controls": 1,
+      "requirement": "A single JSON-RPC response must not be attributed to a request when its response ID differs from the sent ID, while matching responses must remain accepted.",
+      "claim_scope": "Independent native test newly authored for known upstream-author PR fix; not discovery"
+    },
+    {
+      "repo": "goccy/go-yaml",
+      "pr": 957,
+      "base_sha": "edee2f91616c6d73112a13e7c0dbde72ce938877",
+      "head_sha": "f4bd46ddbaf0e10fdcc0c70174c1f919f9aa7320",
+      "ablate_file": "decode.go",
+      "base_blob": "1ac427295c1dc4c939f605b58f43e50638e67adb",
+      "head_blob": "a85378f982365317700f171dd9978b67669facd1",
+      "test_function": "TestMathGraphYAMLAliasBoundary",
+      "test_path": "mathgraph_boundary_test.go",
+      "package": ".",
+      "go_version": "1.25.0",
+      "predicted_baseline_failures": 2,
+      "predicted_fixed_failures": 0,
+      "predicted_ablated_failures": 2,
+      "expected_positive_controls": 1,
+      "requirement": "A YAML alias must resolve to the most recent preceding binding, rather than a later redefinition.",
+      "claim_scope": "Transfer-style historical calibration with new locally authored native test on a known PR; no autonomous method adaptation"
+    }
+  ],
+  "arms": [
+    "BASE_WITH_EXACT_NEW_TEST",
+    "FIXED_PR_HEAD_WITH_IDENTICAL_TEST",
+    "PR_HEAD_WITH_SINGLE_SOURCE_FILE_ABLATED_TO_BASE"
+  ],
+  "decision_rule": "WARRANTED_BOUNDED iff pinned checkout SHAs, original upstream native go tests compile, all known invalid inputs fail on base+ablation, pass on fixed head, positive controls pass all three arms. Unexpected compile/setup errors are INFRASTRUCTURE_UNKNOWN, not genuine behavioral result.",
+  "future_holdout_rule": "Actual future blind discovery must be time-frozen against a PR fix/patch not previously viewed by evaluator, and must use a pre-registered agent method with no target-specific human-written test semantics.",
+  "strong_baseline": "Original CI and a competent stateless agent have access to same public issue and source; no claim of advantage unless cost and behavior are explicitly measured.",
+  "outputs": [
+    "native_go_test_json",
+    "manifest_sha256",
+    "source_blob_sha_checks",
+    "arm_results",
+    "negative_controls",
+    "verdict_with_limitations"
+  ]
+}
