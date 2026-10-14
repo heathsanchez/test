@@ -1,0 +1,112 @@
+name: MathGraph Check native obligation discovery (isolated)
+on:
+  push:
+    branches: [research/mgcheck-autonomous-obligation-20261015]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mgcheck-obligation-discovery-20261015
+  cancel-in-progress: false
+jobs:
+  freeze-original-source:
+    name: Source-only mining and immutable witnesses
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fetch only pinned original external source
+        shell: bash
+        env:
+          AUTHOR_SHA: 9504252b2fcc3be36dc2719ebdfa32419ac2339b
+        run: |
+          set -euo pipefail
+          git clone -q --no-checkout https://github.com/simplejson/simplejson.git "$RUNNER_TEMP/upstream"
+          cd "$RUNNER_TEMP/upstream"
+          git cat-file -e "$AUTHOR_SHA^{commit}"
+          test "$(git rev-list --parents -n 1 "$AUTHOR_SHA" | wc -w)" -eq 2
+          OLD_SHA="$(git rev-parse "$AUTHOR_SHA^")"
+          git worktree add -q --detach "$RUNNER_TEMP/original-old" "$OLD_SHA"
+          echo "OLD_SHA=$OLD_SHA" >> "$GITHUB_ENV"
+          echo "EXACT_PRE_FIX_SHA=$OLD_SHA"
+      - name: Build original Python package with compiled native extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -q --no-deps --target "$RUNNER_TEMP/site-old" "$RUNNER_TEMP/original-old"
+          test -n "$(find "$RUNNER_TEMP/site-old" -name '*_speedups*.so' -print -quit)"
+      - name: Derive operation and freeze pre-fix divergences
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$RUNNER_TEMP/site-old" python research/mgcheck_autonomous_obligation_20261015/generic_pair_miner.py scan --site "$RUNNER_TEMP/site-old" --sha "$OLD_SHA" --output old-frozen.json
+          python - <<'PY'
+          import json
+          d=json.load(open("old-frozen.json"))
+          assert d["target_operation_manifest"] is None
+          assert any(r["counts"]["different"] for r in d["entries"])
+          print("FROZEN_OLD_SUBJECT="+d["source_sha"])
+          print("FROZEN_NATIVE_PAIRS="+str(len(d["entries"])))
+          print("FROZEN_WITNESSES="+str(sum(len(r["witnesses"]) for r in d["entries"])))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-original-frozen-manifest
+          path: old-frozen.json
+          if-no-files-found: warn
+  replay-author-fix:
+    name: Contributor-head replay (no new witness generation)
+    needs: freeze-original-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: mgcheck-original-frozen-manifest
+          path: frozen
+      - name: Build independent author revision
+        shell: bash
+        env:
+          AUTHOR_SHA: 9504252b2fcc3be36dc2719ebdfa32419ac2339b
+        run: |
+          set -euo pipefail
+          git clone -q --no-checkout https://github.com/simplejson/simplejson.git "$RUNNER_TEMP/upstream"
+          git -C "$RUNNER_TEMP/upstream" worktree add -q --detach "$RUNNER_TEMP/original-head" "$AUTHOR_SHA"
+          test "$(git -C "$RUNNER_TEMP/original-head" rev-parse HEAD)" = "$AUTHOR_SHA"
+          python -m pip install -q --no-deps --target "$RUNNER_TEMP/site-head" "$RUNNER_TEMP/original-head"
+          test -n "$(find "$RUNNER_TEMP/site-head" -name '*_speedups*.so' -print -quit)"
+      - name: Recheck exact frozen inputs and honest UNKNOWN
+        shell: bash
+        env:
+          AUTHOR_SHA: 9504252b2fcc3be36dc2719ebdfa32419ac2339b
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$RUNNER_TEMP/site-head" python research/mgcheck_autonomous_obligation_20261015/generic_pair_miner.py replay --sha "$AUTHOR_SHA" --frozen frozen/old-frozen.json --output replay.json
+          python - <<'PY'
+          import json
+          r=json.load(open("replay.json"))
+          assert r["old_manifest_digest"]
+          assert r["no_reference_ablation"]=="UNKNOWN_REFERENCE_REMOVED"
+          assert r["wrong_source_ablation"]=="UNKNOWN_SUBJECT_MISMATCH"
+          assert any(x.get("closed",0)>0 for x in r["results"])
+          print("WARRANT_BOUNDARY="+r["status"])
+          print("CLAIMED_REVIEWER_ADVANTAGE=NONE")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-original-author-head-replay
+          path: replay.json
+          if-no-files-found: warn
