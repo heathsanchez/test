@@ -1,0 +1,81 @@
+name: MathGraph Check — frozen original OPA #9216 strong-baseline test
+on:
+  push:
+    branches:
+      - aria-mathgraph-check-opa-9216-heldout-20261014
+    paths:
+      - '.github/workflows/aria-mathgraph-opa-heldout.yml'
+      - 'research/aria_scaling_trust/opa_9216/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  existing-check-read-only:
+    name: Run unchanged MathGraph Check on original external PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Check exact original MathGraph analyzer blob
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' 'a21d34622f3b283db989462aa4a5a8ef00bcae77' 'research/aria_scaling_trust/opa_9216/pinned-analysis.mjs' > /tmp/expected.sha
+          test "$(git hash-object research/aria_scaling_trust/opa_9216/pinned-analysis.mjs)" = 'a21d34622f3b283db989462aa4a5a8ef00bcae77'
+      - name: Apply frozen original analyzer to exact historical PR
+        env:
+          GH_PUBLIC_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mathgraph-heldout"
+          node research/aria_scaling_trust/opa_9216/eval_check.mjs \
+            research/aria_scaling_trust/opa_9216/pinned-analysis.mjs \
+            "$RUNNER_TEMP/mathgraph-heldout/product.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: original-opa-heldout-product-shadow
+          path: ${{ runner.temp }}/mathgraph-heldout/
+          if-no-files-found: ignore
+  native-original-source:
+    name: Original source Go/Wasm differential (read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: open-policy-agent/opa
+          ref: d231b0381efd880597db736efdd74e6681000b54
+          path: opasrc/head
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Read exact original parent, don't mutate upstream repository
+        run: |
+          set -euo pipefail
+          test "$(git -C opasrc/head rev-parse HEAD)" = d231b0381efd880597db736efdd74e6681000b54
+          test "$(git -C opasrc/head rev-parse HEAD^)" = 37030a09d6088821a473f486fd75dd81ef394b74
+          git -C opasrc/head worktree add --detach ../base 37030a09d6088821a473f486fd75dd81ef394b74
+          test "$(git -C opasrc/base rev-parse HEAD)" = 37030a09d6088821a473f486fd75dd81ef394b74
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: opasrc/head/.go-version
+          cache: false
+      - name: Execute actual OPA topdown vs Wasm on original base and PR head
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mathgraph-heldout"
+          python3 research/aria_scaling_trust/opa_9216/native_replay.py \
+            opasrc "$RUNNER_TEMP/mathgraph-heldout/native.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: original-opa-heldout-native-differential
+          path: ${{ runner.temp }}/mathgraph-heldout/
+          if-no-files-found: ignore
