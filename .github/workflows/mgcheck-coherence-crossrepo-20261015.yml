@@ -1,0 +1,29 @@
+name: MathGraph Check cross-repo coherence transfer
+on:
+  push:
+    branches:
+      - research/mgcheck-crossrepo-coherence-transfer-20261015
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source-frozen runner
+        uses: actions/checkout@v4
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check original native repositories
+        run: bash research/mgcheck_coherence_crossrepo_20261015/run.sh
+      - name: Preserve original observation data and negatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crossrepo-coherence-evidence
+          path: research/mgcheck_coherence_crossrepo_20261015/evidence
+          if-no-files-found: warn
+          retention-days: 30
