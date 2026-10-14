@@ -91,7 +91,7 @@ jobs:
           serialized=(json.dumps(manifest,sort_keys=True,indent=2)+"\n").encode()
           (root/"manifest.json").write_bytes(serialized)
           (Path("native-source-artifacts")/"manifest.sha256").write_text(sha(serialized)+"\n")
-          print("SIGNED_BY_HOST_DIGEST="+sha(serialized), "SOURCE_LINE="+str(matched[0]))
+          print("HOST_PINNED_MANIFEST_SHA256="+sha(serialized), "SOURCE_LINE="+str(matched[0]))
           PY
       - name: Build source-only ReviewBench reviewer with verified native evidence
         run: docker build -t mgcheck-reviewbench:evidence research/reviewbench_20261015
@@ -153,5 +153,6 @@ jobs:
           name: mgcheck-reviewbench-trusted-native-bridge
           path: |
             native-source-artifacts/
+            research/reviewbench_20261015/native_evidence/
             reviewbench-native-bridge/
           retention-days: 30
