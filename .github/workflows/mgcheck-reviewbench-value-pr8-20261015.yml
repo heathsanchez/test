@@ -1,0 +1,77 @@
+name: MathGraph ReviewBench PR8 — native stateful reviewer value gate
+on:
+  push:
+    branches: [research/mgcheck-reviewbench-value-pr8-20261015]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-frontend-observation:
+    name: Original audit pagination source RED / patch GREEN / restored RED
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+      - name: Fetch immutable ReviewBench mirror source
+        shell: bash
+        env:
+          REVIEWBENCH_MIRROR_HEAD: 5ef0884c59b3ee1d5a986dd02686a8232570c80f
+          REVIEWBENCH_MIRROR_BASE: b29930e93765700608313c0f0d32c4818734e158
+        run: |
+          set -euo pipefail
+          git clone -q --no-checkout https://github.com/review-bench/brexhq_CrabTrap.git "$RUNNER_TEMP/mirror"
+          git -C "$RUNNER_TEMP/mirror" cat-file -e "$REVIEWBENCH_MIRROR_HEAD^{commit}"
+          git -C "$RUNNER_TEMP/mirror" cat-file -e "$REVIEWBENCH_MIRROR_BASE^{commit}"
+          git -C "$RUNNER_TEMP/mirror" worktree add -q --detach "$RUNNER_TEMP/original-head" "$REVIEWBENCH_MIRROR_HEAD"
+          test "$(git -C "$RUNNER_TEMP/original-head" rev-parse HEAD)" = "$REVIEWBENCH_MIRROR_HEAD"
+          test -f "$RUNNER_TEMP/original-head/web/src/stores/auditStore.ts"
+          test -f "$RUNNER_TEMP/original-head/web/package-lock.json"
+          echo "PINNED_REVIEWBENCH_HEAD=$REVIEWBENCH_MIRROR_HEAD"
+      - name: Install original native web TypeScript and Zustand dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/reviewbench_20261015/pr8_store_counterfactual.mjs "$RUNNER_TEMP/original-head/web/__mgcheck_stateful_test.mjs"
+          cd "$RUNNER_TEMP/original-head/web"
+          npm ci --no-audit --no-fund --ignore-scripts
+      - name: Execute actual original store, candidate patch, physical restoration
+        shell: bash
+        env:
+          MG_EXPECTED_HEAD: 5ef0884c59b3ee1d5a986dd02686a8232570c80f
+        run: |
+          set -euo pipefail
+          export MG_REPORT_FILE="$GITHUB_WORKSPACE/pr8-native-state-report.json"
+          cd "$RUNNER_TEMP/original-head/web"
+          node __mgcheck_stateful_test.mjs
+          test -f "$MG_REPORT_FILE"
+          git -C "$RUNNER_TEMP/original-head" diff --exit-code -- web/src/stores/auditStore.ts
+      - name: Fail-closed qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          r=json.load(open("pr8-native-state-report.json"))
+          assert r["status"]=="WARRANTED_BOUNDED_RETROSPECTIVE_FRONTEND_STATE_COUNTEREXAMPLE"
+          assert r["controls"]["noSSEControlPassed"]
+          assert r["controls"]["candidateFix"]
+          assert r["controls"]["causalRestoration"]
+          assert r["controls"]["byteRestored"]
+          assert r["original"]["duplicate"] and r["original"]["missingOldestD"]
+          assert r["patched"]["finalComplete"] and not r["patched"]["duplicate"]
+          assert r["restored"]["duplicate"]
+          print("NATIVE_STATEFUL_CONSEQUENCE_CONFIRMED; NOT REVIEWER_SUPERIORITY")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mgcheck-reviewbench-pr8-native-state
+          path: pr8-native-state-report.json
+          if-no-files-found: warn
