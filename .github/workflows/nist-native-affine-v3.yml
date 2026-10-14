@@ -1,0 +1,47 @@
+name: Original-source spectroscopy affine consequences V3
+
+on:
+  push:
+    branches:
+      - research/nist-native-corrections-20261014
+    paths:
+      - 'research/nist_native_corrections/**'
+      - '.github/workflows/nist-native-affine-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-standalone-source-qualifier:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install original-PDF text reader
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+      - name: Confirm independent NIST 2022 baseline
+        run: python3 research/nist_alpha_consequence/ci_replay.py
+      - name: Unchanged V2 tests and original source proof of lineage
+        run: |
+          python3 -m unittest discover -s research/nist_hydrogen_crosssource -p test_core.py -v
+          python3 research/nist_hydrogen_crosssource/qualify.py
+      - name: Generic affine math and falsifiers
+        run: python3 -m unittest discover -s research/nist_native_corrections -p test_affine.py -v
+      - name: Real original-source two-presentation reconstruction
+        run: python3 research/nist_native_corrections/qualify_v3.py
+      - name: Retain bounded result and every prior-stage report, including failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nist-native-affine-consequences-v3
+          path: |
+            research/nist_alpha_consequence/evidence/ci_report.json
+            research/nist_hydrogen_crosssource/evidence/hydrogen_v2_result.json
+            research/nist_native_corrections/evidence/
+          if-no-files-found: warn
+          retention-days: 90
