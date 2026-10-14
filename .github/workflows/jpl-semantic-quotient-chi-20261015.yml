@@ -1,0 +1,87 @@
+name: MathGraph JPL semantic quotient chi 1207
+on:
+  push:
+    branches:
+      - research/jpl-semantic-quotient-chi-20261015
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-external-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze exact upstream Go source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/go-chi/chi.git chi
+          cd chi
+          git fetch origin 167e1e3bd039d060696b99c8da4e876ae04f42c1
+          git fetch origin refs/pull/1207/head:refs/heads/mathgraph-upstream-pr
+          test "$(git rev-parse mathgraph-upstream-pr)" = "5a84f0500b8f8f307d615969c1ba4f7cd9126978"
+          git checkout --detach 167e1e3bd039d060696b99c8da4e876ae04f42c1
+          git rev-parse HEAD > ../base.sha
+          git show --format= --name-only mathgraph-upstream-pr | sort -u > ../upstream-diff-files.txt
+          cat ../upstream-diff-files.txt
+          diff -u ../upstream-diff-files.txt <(printf '%s\n' 'tree.go' 'tree_test.go')
+          grep -q 'func (n \*node) InsertRoute' tree.go
+          grep -q 'func patParamKeys' tree.go
+          cp ../research/semantic_quotient/chi1207/mathgraph_semantic_quotient_test.go ./mathgraph_semantic_quotient_test.go
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: chi/go.mod
+          cache: false
+      - name: Exhaustively qualify the independent minimal semantic quotient
+        run: |
+          set -euo pipefail
+          python3 research/semantic_quotient/chi1207/quotient.py | tee quotient.log
+      - name: Native base controls and bounded separators
+        run: |
+          set -euo pipefail
+          cd chi
+          go test . -run '^TestMathGraph' -count=1 -timeout=90s -v | tee ../base-native.log
+          go test ./... -count=1 -timeout=4m | tee ../base-suite.log
+      - name: Native exact PR head controls
+        run: |
+          set -euo pipefail
+          cd chi
+          git checkout --detach 5a84f0500b8f8f307d615969c1ba4f7cd9126978
+          test "$(git rev-parse HEAD)" = "5a84f0500b8f8f307d615969c1ba4f7cd9126978"
+          git rev-parse HEAD > ../head.sha
+          test -f mathgraph_semantic_quotient_test.go
+          go test . -run '^TestMathGraph' -count=1 -timeout=90s -v | tee ../head-native.log
+          go test ./... -count=1 -timeout=4m | tee ../head-suite.log
+      - name: Causal source ablation and native replay
+        run: |
+          set -euo pipefail
+          cd chi
+          python3 ../research/semantic_quotient/chi1207/ablate.py
+          test "$(git diff --name-only)" = "tree.go"
+          git diff --check
+          git diff -- tree.go > ../ablation.patch
+          go test . -run '^TestMathGraph' -count=1 -timeout=90s -v | tee ../ablation-native.log
+      - name: Cross-arm decision and fail-closed report
+        run: |
+          set -euo pipefail
+          python3 research/semantic_quotient/chi1207/verify.py \
+             base-native.log head-native.log ablation-native.log quotient.log \
+             | tee verdict.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jpl-quotient-chi1207-evidence
+          path: |
+            base.sha
+            head.sha
+            upstream-diff-files.txt
+            quotient.log
+            base-native.log
+            head-native.log
+            ablation-native.log
+            base-suite.log
+            head-suite.log
+            ablation.patch
+            verdict.json
+          if-no-files-found: warn
