@@ -1,0 +1,65 @@
+name: Frozen author-PDF 2026 hydrogen source probe
+
+on:
+  push:
+    branches:
+      - research/nist-hydrogen-crosssource-20261014
+    paths:
+      - '.github/workflows/nist-hydrogen-pdf-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  versioned-pdf-attestation:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Fetch the two versioned original authored manuscripts twice
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          mkdir -p research/nist_hydrogen_crosssource/evidence
+          python3 - <<'PY'
+          import hashlib,json,re,subprocess
+          from pathlib import Path
+          sources={'nature2026':'https://arxiv.org/pdf/2602.14980v1',
+                   'bullis2026':'https://arxiv.org/pdf/2604.26401v1'}
+          checks={'nature2026':['0.8406(15)','10,973,731.568152','0.94','730,690,248,610.79'],
+                  'bullis2026':['0.8433(31)','0.8422(31)','3289841960252.9']}
+          record={}
+          for key,url in sources.items():
+              raw_list=[]
+              for n in [1,2]:
+                  path=Path('/tmp/hydrogen_'+key+'_'+str(n)+'.pdf')
+                  cmd=['curl','-A','Mozilla/5.0','-L','--fail','--silent','--show-error','--retry','2','--max-time','50','-o',str(path),url]
+                  result=subprocess.run(cmd,text=True,capture_output=True)
+                  raw=path.read_bytes() if path.exists() else b''
+                  raw_list.append(raw)
+                  print(key,n,'status',result.returncode,'bytes',len(raw),result.stderr[-250:])
+              good=all(x[:4]==b'%PDF' for x in raw_list)
+              stable=raw_list[0]==raw_list[1]
+              dig=hashlib.sha256(raw_list[0]).hexdigest() if raw_list[0] else None
+              if good:
+                  subprocess.run(['pdftotext','-layout',str(Path('/tmp/hydrogen_'+key+'_1.pdf')),'/tmp/hydrogen_'+key+'.txt'],check=True)
+                  text=Path('/tmp/hydrogen_'+key+'.txt').read_text(errors='replace')
+                  compact=re.sub(r'\s+','',text)
+                  anchors={x:(x.replace(' ','') in compact) for x in checks[key]}
+              else: anchors={}
+              record[key]={'source_url':url,'both_valid_pdf':good,'same_bytes_two_fetches':stable,
+                           'sha256':dig,'size_bytes':len(raw_list[0]),'text_anchors':anchors}
+          Path('research/nist_hydrogen_crosssource/evidence/pdf_probe.json').write_text(json.dumps(record,indent=2)+'\n')
+          print(json.dumps(record,indent=2))
+          PY
+      - name: Retain exact probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hydrogen-original-pdf-probe-v1
+          path: research/nist_hydrogen_crosssource/evidence/pdf_probe.json
+          if-no-files-found: warn
+          retention-days: 90
