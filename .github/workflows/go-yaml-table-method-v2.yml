@@ -46,11 +46,13 @@ jobs:
           path: head-go-yaml-1037
           persist-credentials: false
       - name: Bind original external PR status to exact unmodified source
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p metadata
-          curl -fsSL --retry 2 https://api.github.com/repos/go-yaml/yaml/pulls/1039 -o metadata/1039.json
-          curl -fsSL --retry 2 https://api.github.com/repos/go-yaml/yaml/pulls/1037 -o metadata/1037.json
+          gh api repos/go-yaml/yaml/pulls/1039 > metadata/1039.json
+          gh api repos/go-yaml/yaml/pulls/1037 > metadata/1037.json
       - name: Test bounded generated native receiver methods against original data and full suite
         run: python3 coordinator/research/mathgraph_go_yaml_tables/qualify_table.py
       - name: Preserve exact source-diff, declined-method, induced-method and native execution receipts
