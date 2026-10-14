@@ -1,0 +1,31 @@
+name: NIST alpha consequence bounded replay
+
+on:
+  push:
+    branches:
+      - research/nist-codata-alpha-consequence-20261014
+    paths:
+      - 'research/nist_alpha_consequence/**'
+      - '.github/workflows/nist-alpha-consequence-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  independent-reference:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Independent stdlib rational and high-precision consequence replay
+        run: python3 research/nist_alpha_consequence/ci_replay.py
+      - name: Retain independent receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nist-alpha-bounded-replay-v1
+          path: research/nist_alpha_consequence/evidence/
+          if-no-files-found: warn
+          retention-days: 90
