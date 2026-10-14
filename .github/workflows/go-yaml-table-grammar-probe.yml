@@ -1,0 +1,54 @@
+name: Native Go table test grammar protected negative
+on:
+  push:
+    branches: [research/mathgraph-go-yaml-table-closure-20261014]
+    paths:
+      - 'research/mathgraph_go_yaml_tables/probe.py'
+      - 'research/mathgraph_go_yaml_tables/FROZEN_PROTOCOL.json'
+      - '.github/workflows/go-yaml-table-grammar-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-grammar-decline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.12'
+      - name: Original source and syntax preflight
+        run: |
+          python3 -m py_compile coordinator/research/mathgraph_go_yaml_tables/probe.py
+          python3 -m json.tool coordinator/research/mathgraph_go_yaml_tables/FROZEN_PROTOCOL.json > /dev/null
+      - uses: actions/checkout@v4
+        with:
+          repository: go-yaml/yaml
+          ref: f6f7691b1fdeb513f56608cd2c32c51f8194bf51
+          path: base-go-yaml
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: go-yaml/yaml
+          ref: eeec3325703e0b40e3db99030ae27c8eb24be85f
+          path: head-go-yaml-1039
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: go-yaml/yaml
+          ref: f4c639bd1cc60dce6a61f68e7278e58210c0f07d
+          path: head-go-yaml-1037
+          persist-credentials: false
+      - name: Old frozen Go generator must fail closed on receiver and data-table grammar
+        run: python3 coordinator/research/mathgraph_go_yaml_tables/probe.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: go-yaml-original-grammar-obstruction
+          path: coordinator/research/mathgraph_go_yaml_tables/evidence/grammar_probe.json
+          if-no-files-found: warn
+          retention-days: 90
