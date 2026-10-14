@@ -1,0 +1,59 @@
+name: Source probe third experiment scattering
+
+on:
+  push:
+    branches: [research/nist-scattering-rounded-residual-20261014]
+    paths:
+      - '.github/workflows/nist-scattering-source-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  primary-publisher-source:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Inspect original PRC publisher source bytes
+        run: |
+          mkdir -p research/nist_scattering_rounding/evidence
+          python3 - <<'PY'
+          import subprocess,hashlib,json,re
+          from pathlib import Path
+          sources={
+            "publisher_html":"https://journals.aps.org/prc/abstract/10.1103/f6gq-ghvh",
+            "publisher_pdf":"https://journals.aps.org/prc/pdf/10.1103/f6gq-ghvh",
+            "doi":"https://doi.org/10.1103/f6gq-ghvh"}
+          out={}
+          for key,url in sources.items():
+            name="/tmp/scatter_"+key
+            p=Path(name)
+            cmd=["curl","-L","--silent","--show-error","--max-time","30","--retry","1",
+                 "-A","Mozilla/5.0", "-o",name,"-w","%{http_code}",url]
+            proc=subprocess.run(cmd,text=True,capture_output=True)
+            raw=p.read_bytes() if p.exists() else b""
+            out[key]={"source_url":url,"http_code":proc.stdout,"curl_rc":proc.returncode,
+                "bytes":len(raw),"sha256":hashlib.sha256(raw).hexdigest() if raw else None,
+                "is_pdf":raw.startswith(b"%PDF"),
+                "expected_tokens":{
+                    "DOI":b"f6gq-ghvh" in raw,
+                    "radius_fit1":b"0.854" in raw,
+                    "radius_fit2":b"0.851" in raw,
+                    "stats":b"stat" in raw.lower(),
+                    "sys":b"sys" in raw.lower()},
+                "stderr":proc.stderr[-200:]}
+          Path("research/nist_scattering_rounding/evidence/source_probe.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,indent=2))
+          PY
+      - name: Retain probe report without granting scientific warrant
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: third-source-publisher-probe
+          path: research/nist_scattering_rounding/evidence/source_probe.json
+          retention-days: 90
+          if-no-files-found: warn
