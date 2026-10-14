@@ -1,0 +1,53 @@
+{
+  "schema": "mathgraph.source-observation-minimizer.native-yaml.v1",
+  "freeze_date": "2026-10-14",
+  "parent_exact_head": "7179052f7fdeb28426748a0d85006580c4c421a7",
+  "parent_qualified_run": "https://github.com/heathsanchez/test/actions/runs/38508168086",
+  "parent_original_artifact_sha256": "427fa81a4713554f458177b6f063925bb1bf9e526e819840a02187746b61df72",
+  "objective": "Construct minimal native source witness of the independently observed XG7H parser disagreement via a source-general reducer and independent parser oracles. Do not seed the minimal YAML input, output characters, winning deletion sequence or affected parser implementation patch.",
+  "source": {
+    "repository": "yaml/yaml-test-suite",
+    "commit": "9bca0be9eb5c309eb07f1aaa4d626fc7cd114ae0",
+    "original_file": "src/XG7H.yaml",
+    "original_git_blob": "ed272fd33d2a67e990ca7c9e1c6cd719cdbcba2f",
+    "schema_file": "ReadMe.md",
+    "schema_git_blob": "68b69cbb7f4f3563363ac059da3a72b72d1c3d38",
+    "input_sha256": "d5fc07311dcf999660bf3e284ae50034bdde36b113c74a8565ae0fbdd758a999"
+  },
+  "native_parsers": [
+    {
+      "repo": "goccy/go-yaml",
+      "original_revision": "edee2f91616c6d73112a13e7c0dbde72ce938877",
+      "module_blob": "facf4d4ac08099d73aefb967b7826cbd3076b583"
+    },
+    {
+      "repo": "go-yaml/yaml",
+      "original_revision": "f6f7691b1fdeb513f56608cd2c32c51f8194bf51",
+      "module_blob": "f407ea3213edc12392275945f8291202b0712c9d"
+    }
+  ],
+  "reference_oracle": "PyYAML==6.0.3 and original YAML author JSON expectation; original oracle independently matched by both sources in parent run.",
+  "specification": "https://yaml.org/spec/1.2.2/#731-double-quoted-style",
+  "allowed_reducer_ops": [
+    "ORIGINAL_SUITES_PINNED",
+    "PARSE_FIXTURE_FROM_PUBLISHER_SCHEMATIC_SOURCE",
+    "GENERATE_GO_NATIVE_JSON_LINE_OBSERVER_FROM_UNCHANGED_MODULE_GO_MOD",
+    "INDEPENDENT_ORACLE_ON_EACH_CANDIDATE",
+    "DELETE_ANY_CONTIGUOUS_INPUT_CODEPOINT_SPAN",
+    "ADMIT_ONLY_IF_GO_YAML_REFERENCE_MATCHES_PYYAML_AND_GOCCY_DISAGREES",
+    "DELTA_DEBUG_1_MINIMAL",
+    "CLEAN_RESTART_IDENTICAL_MINIMUM",
+    "PRESERVE_RAW_CODEPOINTS_BYTES_AND_HASHES"
+  ],
+  "controls": [
+    "Original input and output bytes must be source-verified prior to generating observer",
+    "Use no candidate input literal or predetermined expected minimizer output in source or protocol",
+    "All observer Go source compiled independently in original publisher source copies and cannot modify publisher Git blobs",
+    "Run independent negative known-matching previous fixture M6Y4; no false disagreement diagnosis",
+    "Replay minimal on both parsers and third party PyYAML and report escaped byte hex/codepoint lengths",
+    "If minimization cannot shorten the original, report honest 1-minimal obstruction; no claim of new parser bug that wasn't established by independent source oracle",
+    "Scope differs from earlier L4YAML alias proof and does not establish universal YAML conformance",
+    "Record search cost and fully informed comparator; no forced economic superiority"
+  ],
+  "claims_limited": "This can produce a new minimal executable counterexample and localized future investigative obligation. A human writes the generic reducer and native observer generator after freeze, so automatic invention of a meta-generator/L7 is NOT established; no upstream comments or repairs."
+}
