@@ -1,0 +1,92 @@
+name: Go source-derived test selection - typed original failure classes
+on:
+  push:
+    branches:
+      - mathgraph-go-typed-failure-fifth-family-20261014
+    paths:
+      - 'research/test_operation_genesis/**'
+      - '.github/workflows/mathgraph-typed-go-fifth-source.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    name: Native typed source consequence - ${{ matrix.case }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - case: calibration-original-gojson-assertion
+            repo: goccy/go-json
+            base: 7bcea74f8c32f689578555359a3bfd9c517ca8b0
+            head: 9ab94ddad9f74ed2ad96d903cb6d8a127323a481
+          - case: prior-osv-original-panic-diagnostic
+            repo: google/osv-scanner
+            base: 1f87b5cb9781a03a9b8b50dfc1eac1b2056c79d5
+            head: 6d23031dad5af57fcec2c49611d73e620609a222
+          - case: fifth-heldout-toml-local-time
+            repo: BurntSushi/toml
+            base: 277ecb0abd5e5945cf4c0a5cf3668759a27aa7fd
+            head: 24ca3d8dcb474537da393351a75ccaa42c65cae4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.head }}
+          path: original/head
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Bind untouched original source SHAs and independent test absence worktree
+        run: |
+          set -euo pipefail
+          test "$(git -C original/head rev-parse HEAD)" = "${{ matrix.head }}"
+          test "$(git -C original/head rev-parse HEAD^)" = "${{ matrix.base }}"
+          git -C original/head worktree add --detach ../base "${{ matrix.base }}"
+          git -C original/head worktree add --detach ../pristine "${{ matrix.base }}"
+          test "$(git -C original/base rev-parse HEAD)" = "${{ matrix.base }}"
+          test "$(git -C original/pristine rev-parse HEAD)" = "${{ matrix.base }}"
+      - name: Run generic failure classifier unit and false-positive controls
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v research/test_operation_genesis/test_typed_native.py
+      - name: Unchanged Go AST selector derives actual original author-added tests
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/typed-native"
+          go run research/test_operation_genesis/selector_portable.go             --repository "${{ matrix.repo }}"             --base-sha "${{ matrix.base }}"             --head-sha "${{ matrix.head }}"             --base original/base --head original/head             --out "$RUNNER_TEMP/typed-native/manifest.json"
+      - name: Native causal failure classification with same derived Go tests
+        env:
+          TZ: America/New_York
+        run: |
+          set -euo pipefail
+          python3 research/test_operation_genesis/run_test_operation_typed.py             --manifest "$RUNNER_TEMP/typed-native/manifest.json"             --base original/base --head original/head             --out "$RUNNER_TEMP/typed-native/native.json"
+      - name: Physical no-test ablation and independently typed withdrawal
+        env:
+          TZ: America/New_York
+        run: |
+          set -euo pipefail
+          python3 research/test_operation_genesis/run_test_operation_typed.py             --manifest "$RUNNER_TEMP/typed-native/manifest.json"             --base original/base --head original/head             --pristine original/pristine --ablate             --out "$RUNNER_TEMP/typed-native/ablation.json"
+          python3 research/test_operation_genesis/run_test_operation_typed.py             --manifest "$RUNNER_TEMP/typed-native/manifest.json"             --base original/base --head original/head --withdraw             --out "$RUNNER_TEMP/typed-native/withdrawal.json"
+      - name: Wrong original base SHA must never acquire test authority
+        run: |
+          set -euo pipefail
+          if go run research/test_operation_genesis/selector_portable.go             --repository "${{ matrix.repo }}"             --base-sha 0000000000000000000000000000000000000000             --head-sha "${{ matrix.head }}"             --base original/base --head original/head             --out "$RUNNER_TEMP/typed-native/forged.json"; then
+            echo 'UNAUTHORIZED_SOURCE_ACCEPTED'
+            exit 1
+          fi
+          test ! -e "$RUNNER_TEMP/typed-native/forged.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: typed-go-native-${{ matrix.case }}
+          path: ${{ runner.temp }}/typed-native/
+          if-no-files-found: ignore
