@@ -20,7 +20,7 @@ DEPENDENCY_MODFILE=None
 
 def sha(raw):
     return hashlib.sha256(raw).hexdigest()
-def run(argv,cwd,timeout=400,envextra=None):
+def run(argv,cwd,timeout=400,envextra=None,expected_method=None):
     env=os.environ.copy()
     env.update({"GOTOOLCHAIN":"local"})
     if argv and len(argv)>1 and argv[0]=="go" and argv[1]=="test" and DEPENDENCY_MODFILE is not None:
@@ -33,8 +33,15 @@ def run(argv,cwd,timeout=400,envextra=None):
         ret=p.returncode;output=p.stdout
     except subprocess.TimeoutExpired as exc:
         ret=124;output="TIMEOUT "+str(exc)
-    return {"argv":argv,"exit_code":ret,"wall_s":round(time.monotonic()-t,3),
+    result={"argv":argv,"exit_code":ret,"wall_s":round(time.monotonic()-t,3),
        "output_sha256":sha(output.encode()),"output_tail":output[-4000:]}
+    if expected_method:
+        exact=re.compile(r"(?m)^(PASS|FAIL):[^\n]*\b"+re.escape(expected_method)+r"\b")
+        observed=exact.search(output)
+        result["native_method_observed"]=bool(observed)
+        result["native_method_result"]=observed.group(1) if observed else "NO_METHOD_OBSERVED"
+        result["actual_gocheck_output"]=bool(re.search(r"(?m)^(PASS|FAIL):",output))
+    return result
 def check_git(root,commit,files):
     def g(*args):
         p=run(["git",*args],root,25)
@@ -153,17 +160,15 @@ def main():
         before=[];after=[]
         for method in methods:
             cmd=method["native_command"]
-            a=run(cmd,overlay,330)
-            b=run(cmd,head,330)
-            # Native suite filter must demonstrably run the discovered
-            # method, not silently pass an empty test selection.
             name=method["discovered_test_method"]
-            a["method_mentioned"]=name in a["output_tail"]
-            b["method_mentioned"]=name in b["output_tail"]
-            a["native_failed_assertion"]=a["exit_code"] not in (0,124) and (
-                  ("FAIL:" in a["output_tail"] or "--- FAIL:" in a["output_tail"]
-                   or "FAIL\t" in a["output_tail"]) and a["method_mentioned"])
-            b["native_pass"]=b["exit_code"]==0 and b["method_mentioned"]
+            a=run(cmd,overlay,330,expected_method=name)
+            b=run(cmd,head,330,expected_method=name)
+            # Positive must explicitly report PASS for the exact derived
+            # gocheck receiver method. Empty selections cannot be green.
+            a["native_failed_assertion"]=(a["exit_code"] not in (0,124) and
+              a["native_method_result"]=="FAIL")
+            b["native_pass"]=(b["exit_code"]==0 and
+              b["native_method_result"]=="PASS")
             before.append(a);after.append(b)
         full_head=run(["go","test","-count=1","-timeout=120s","./..."],head,480)
         full_overlay=run(["go","test","-count=1","-timeout=120s","./..."],overlay,480)
