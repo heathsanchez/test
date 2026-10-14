@@ -1,0 +1,35 @@
+name: MathGraph Check - native YAML whitespace and special scalar repair
+on:
+  push:
+    branches:
+      - mathgraph-roundtrip-unseen-witness-20261014-v1
+    paths:
+      - 'research/mathgraph_roundtrip_witness_20261014/whitespace_native.py'
+      - '.github/workflows/mathgraph-whitespace-repair-20261014.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mathgraph-native-yaml-whitespace-repair-v1
+  cancel-in-progress: false
+jobs:
+  source-exact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.25.0'
+          cache: false
+      - name: Run original, special-only, cumulative, removal and fully ablated Go semantics
+        run: python3 research/mathgraph_roundtrip_witness_20261014/whitespace_native.py
+      - name: Retain native source-specific differential receipts and failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mathgraph-yaml-whitespace-repair-five-arms
+          path: ${{ runner.temp }}/mathgraph-yaml-whitespace-native/
+          if-no-files-found: warn
