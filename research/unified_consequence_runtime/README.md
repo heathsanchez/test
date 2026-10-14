@@ -10,6 +10,75 @@ scientific result. Source repositories and the production MathGraph website
 are unchanged. [Draft PR #123](https://github.com/heathsanchez/test/pull/123)
 is intentionally unmerged.
 
+## 2026-10-14 — Native source-mined method vocabulary integrated (12-event milestone)
+
+**Scope: WARRANTED_BOUNDED_NATIVE_METHOD_VOCABULARY_EXTENSION and
+WARRANTED_BOUNDED_OPERATIONAL_CAUSAL_REUSE. NOT unrestricted autonomous L7.**
+
+The [evaluation protocol was frozen before the method miner](https://github.com/heathsanchez/test/commit/45852342e798ac714ca27e49bf35859b34788a7a).
+It named three goals over original, exact-blob upstream
+`leanprover/cslib@4b88bcac4c0dec65b3f45b59e85f5397045efd8d` modules,
+with product, LTS, append and set-valued semantic transport.
+
+[Native original Lean qualification #38492128421](https://github.com/heathsanchez/test/actions/runs/38492128421)
+SUCCESS at `93b01adc48f47143f13e153f19ea19f401eca577`;
+[artifact #11862440093](https://github.com/heathsanchez/test/actions/runs/38492128421/artifacts/11862440093),
+ZIP SHA256 `d59d91e672ee13fc0224e7dbccecf36869f35a181550fd58750dd786fa779831`.
+Original source search mined nine pre-existing CSLib theorem names. Across
+**36 native Lean checks**, accepted proof plans automatically acquired three
+source rewrite lemmas in the frozen order:
+
+- `ACQUISITION`: `Cslib.FLTS.toLTS_mtr` (product FLTS → relational trace).
+- `HELDOUT`: `Cslib.FLTS.mtr_append_eq` (composed trace).
+- `GRAMMAR_REVISION`: `Cslib.LTS.toFLTS_mem_mtr` (set-valued powerset image).
+
+All three exact frozen propositions passed independent native Lean replay.
+The tested bare tactics without source-lemma composition failed. Each new
+lemma's individual deletion made the corresponding chosen proof PLAN fail.
+**This is plan-relative dependence, NOT a proof that another strategy could
+not solve the goal, NOT a globally minimal proof, and NOT a strict advantage
+over a fully informed stateless method synthesizer.** The human-supplied
+source miner, structural tactics and candidate enumeration remained fixed.
+The method vocabulary grew, **not the generator implementation itself**.
+
+The archived report contains the string
+`source_self_modified_generator="NO_HUMAN_CODE_WRITTEN_AFTER_FREEZE"`.
+That description is **not a warranted scientific conclusion**: the method
+miner *was human-authored after protocol freeze*, then frozen for qualification.
+The report's independent explicit
+`meta_generator_substrate_human_written=true`,
+`general_autonomous_L7=UNKNOWN` and exact git history are controlling.
+Do not quote that single string as evidence of autonomous program mutation.
+
+[Cross-repo 12-event FLASH/Metatron integration #38492986694](https://github.com/heathsanchez/test/actions/runs/38492986694)
+SUCCESS at `18ec4ca845219633c60aa647a146d29a42f69e36`;
+[artifact #11861939661](https://github.com/heathsanchez/test/actions/runs/38492986694/artifacts/11861939661),
+ZIP SHA256 `943f6c5450032d9a3f67d7e477f69c07bc6d75f3144fbcac2660a6ec21ebaf9e`
+reopened independently and exact SHA matched. Previous **9 unchanged source
+events**, three new scoped typed-method events → **12 total events, 10 live
+scoped capabilities, two original preserved ARC/Collatz obstructions,
+60 Metatron records (50 live), all 46 previous source/lineage IDs retained**.
+Each new capability survives cold restart and source binding, passes exact
+method-event deletion ablation and a deliberately **simulated** typed
+revocation; revoking the first native Lean theorem leaves later *individual
+theorems* independently valid but withdraws the full *developmental-history*
+claim from the Metatron dependency graph.
+
+**Scientific completion boundary:** native source-to-proof production, exact
+native verification, scoped admission, retained consequence graph and causal
+controls now work across three qualitatively different native method strata.
+The next target is not another `simp` lemma, O1/O2 case or known CSLib
+theorem; it is **verified automatic revision of the generator or its
+representation/observation language**, triggered by a genuinely new frozen
+externally sourced failure, without humans writing a new task adapter.
+Require an independent second downstream native source frontier, strong
+same-information stateless and complete executable-ledger comparisons,
+hard restart and counterfactual method-source deletion. Until then:
+`E2E_SYSTEM=UNKNOWN`, `recursive_generator_self_invention=UNKNOWN`,
+`full_lifecycle_advantage=UNMEASURED`, `ACT_authorization=NONE`.
+No general intelligence, novel mathematical result, upstream CSLib adoption,
+MathGraph production deployment or external publisher authenticity claimed.
+
 ## 2026-10-14 — Verified infinite Nat-state method extension (not universal L7)
 
 **Scientific classification: WARRANTED_BOUNDED_NATIVE_PARAMETRIC_METHOD_SELECTION;
