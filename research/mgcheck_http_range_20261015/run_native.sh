@@ -78,7 +78,7 @@ verdict={
  "target_base":"f7b1c4f68b90299afc89ffeb47756e5fca590b91",
  "method":method,
  "statuses":statuses,
- "source_physically_restored":hashlib.sha256(original).hexdigest()==hashlib.sha256(original).hexdigest(),
+ "source_physically_restored":hashlib.sha256(original).hexdigest()==hashlib.sha256((out.parents[2]/'candidate/pkg/downloader/downloader.go').read_bytes()).hexdigest(),
  "original_candidate_has_generated_failure":statuses.get('candidate_original',0)!=0 and has('candidate_original','MG_GEN_RETRY_LOOP'),
  "base_passes_generated_test":statuses.get('predecessor_original',1)==0,
  "repair_passes_generated_test":statuses.get('candidate_repaired',1)==0,
