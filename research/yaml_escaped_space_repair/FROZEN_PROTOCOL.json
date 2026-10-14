@@ -1,0 +1,48 @@
+{
+  "schema": "mathgraph.source-bound-yaml-scanner-repair-v1",
+  "frozen_date": "2026-10-14",
+  "objective": "Causally attribute the previously generated external YAML fixture discrepancy to original goccy scanner double-quote trailing-space trimming and qualify a minimal local-only source patch under frozen original fixture, 1-deletion-minimal witness, independent PyYAML and go-yaml reference, original full Go suite, and negative controls.",
+  "upstream": {
+    "repo": "goccy/go-yaml",
+    "commit": "edee2f91616c6d73112a13e7c0dbde72ce938877",
+    "module_file": "go.mod",
+    "module_blob": "facf4d4ac08099d73aefb967b7826cbd3076b583",
+    "scanner_file": "scanner/scanner.go",
+    "scanner_git_blob": "799f4694a8db7bfb8bad9723c572cc3e0ed7c11e"
+  },
+  "source_case": {
+    "repo": "yaml/yaml-test-suite",
+    "commit": "9bca0be9eb5c309eb07f1aaa4d626fc7cd114ae0",
+    "path": "src/XG7H.yaml",
+    "git_blob": "ed272fd33d2a67e990ca7c9e1c6cd719cdbcba2f",
+    "readme": "ReadMe.md",
+    "readme_blob": "68b69cbb7f4f3563363ac059da3a72b72d1c3d38",
+    "input_sha256": "d5fc07311dcf999660bf3e284ae50034bdde36b113c74a8565ae0fbdd758a999"
+  },
+  "prior_minimizer": {
+    "run": "https://github.com/heathsanchez/test/actions/runs/38508673476",
+    "artifact_zip_sha256": "81c7da29d2a28d5bf2c5c368888f174d49ae0c5ae8aa42914791076a97c64f64",
+    "codepoint_deletion_minimal_utf8_sha256": "e585df3df40820e035d1a77b9c3c4b23b0ee4e2bf3161b3ee159af26cbb6c0b6",
+    "minimal_hex": "225c200a22",
+    "oracle": "PyYAML and independently maintained go-yaml/yaml yield 2 ASCII spaces; original goccy yields 1."
+  },
+  "source_hypothesis": "scanDoubleQuote strips every trailing space rune before newline, including whitespace emitted by an explicit escaped-space source token. Preserve escaped content while folding unescaped trailing whitespace. This is a manually identified code hypothesis, not a self-invented generator operation.",
+  "candidate_patches": [
+    "ORIGINAL_NO_CHANGE",
+    "REMOVE_ALL_TRAILING_SPACE_TRIM",
+    "PRESERVE_EXPLICIT_ESCAPED_SPACE_INDEX"
+  ],
+  "frozen_tests": [
+    "Exact original YAML fixture parsed from Git-hashed original upstream source; no manually written test values",
+    "Exact source-minimal witness checked as derivation of original source, and independent output under original parser and PyYAML",
+    "All candidate patches are applied only to scratch isolated copy and must be kernel/build/test executed using original Go toolchain, never changed in upstream original repository",
+    "Existing upstream complete native Go test suite green for original and accepted patch",
+    "Original source native test fails exactly escaped-space fixture and minimal witness; accepted patch passes both and independent PyYAML-derived combinations",
+    "Mutation generator covers escaped/raw whitespace followed by newline and escaped newline variants without hardcoded expected strings; independent PyYAML supplies oracle",
+    "Preserve normal folding of raw unescaped trailing spaces, scalar JSON input and unrelated test expectations; patch with no trim cannot be promoted solely from narrow witness",
+    "Negative missing patch reopens original and minimized failure; source byte altered or unpinned verifier must reject",
+    "Selecting a patch from human-authored candidates via native verifier is bounded local repair selection, not autonomous generator invention or general parser correctness",
+    "No external upstream repo PR, comment, merge, unsolicited outreach or product deployment; no secrets."
+  ],
+  "authority_limits": "WARRANTED_BOUNDED source-native repaired original counterexample if native tests pass. Generator grammar and candidate patch source written by assistant AFTER protocol freeze; L7/meta-generator self-authorship and general YAML specification theorem UNKNOWN."
+}
