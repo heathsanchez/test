@@ -49,6 +49,13 @@ jobs:
             "$RUNNER_TEMP/h11" "$RUNNER_TEMP/quotient" | tee "$RUNNER_TEMP/summary.stdout"
           test -s "$RUNNER_TEMP/quotient/summary.json"
           test -s "$RUNNER_TEMP/quotient/REPORT.md"
+      - name: Independently confirm unclosed HTTP error-order residual
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/mathgraph_minimal_quotient/independent_residual.py \
+            "$RUNNER_TEMP/h11" "$RUNNER_TEMP/quotient/independent-residual.json"
+          test -s "$RUNNER_TEMP/quotient/independent-residual.json"
       - name: Qualify original upstream parser test suites on exact source heads
         shell: bash
         run: |
