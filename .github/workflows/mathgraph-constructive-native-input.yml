@@ -1,0 +1,57 @@
+name: Construct new input from original source-derived Go test (calibration only)
+on:
+  push:
+    branches:
+      - mathgraph-constructive-test-input-genesis-20261014-v1
+    paths:
+      - 'research/test_operation_genesis/**'
+      - '.github/workflows/mathgraph-constructive-native-input.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: BurntSushi/toml
+          ref: 24ca3d8dcb474537da393351a75ccaa42c65cae4
+          path: original/head
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Exact original author commits only
+        run: |
+          set -euo pipefail
+          test "$(git -C original/head rev-parse HEAD)" = 24ca3d8dcb474537da393351a75ccaa42c65cae4
+          test "$(git -C original/head rev-parse HEAD^)" = 277ecb0abd5e5945cf4c0a5cf3668759a27aa7fd
+          git -C original/head worktree add --detach ../base 277ecb0abd5e5945cf4c0a5cf3668759a27aa7fd
+      - name: Derive original author test selector without test name
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/new-input"
+          go run research/test_operation_genesis/selector_portable.go             --repository BurntSushi/toml             --base-sha 277ecb0abd5e5945cf4c0a5cf3668759a27aa7fd             --head-sha 24ca3d8dcb474537da393351a75ccaa42c65cae4             --base original/base --head original/head             --out "$RUNNER_TEMP/new-input/manifest.json"
+      - name: Generate NEW single-input original Go test variants using source AST
+        run: |
+          set -euo pipefail
+          go run research/test_operation_genesis/construct_input.go             --manifest "$RUNNER_TEMP/new-input/manifest.json"             --base original/base --head original/head             --out-dir "$RUNNER_TEMP/new-input/candidates" --budget 40
+      - name: Native independent candidate validation plus zero-input causal ablation
+        env:
+          TZ: America/New_York
+        run: |
+          set -euo pipefail
+          python3 research/test_operation_genesis/qualify_constructed_input.py             --manifest "$RUNNER_TEMP/new-input/manifest.json"             --proposal "$RUNNER_TEMP/new-input/candidates/proposal.json"             --base original/base --head original/head             --out "$RUNNER_TEMP/new-input/native.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: mathgraph-construction-calibration-native-input
+          path: ${{ runner.temp }}/new-input/
+          if-no-files-found: ignore
