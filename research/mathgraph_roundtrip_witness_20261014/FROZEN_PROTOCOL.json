@@ -1,0 +1,38 @@
+{
+  "schema": "mathgraph.string-roundtrip-oracle-20261014.v1",
+  "date": "2026-10-14",
+  "generator_method": "Deterministic grammar enumeration + native YAML Marshal->Unmarshal for map[string]any. This is a human-authored generic metamorphic oracle; no issue-specific expected outputs, no contributor PR diff or added tests used.",
+  "semantic_invariant": "For each valid UTF-8 source string s, unmarshalling the library's YAML encoding of map[string]any{\"value\": s} must yield string s, or report an explicit unsupported-case error; silent type changes/contents differences are candidates for bugs. This property is internal roundtrip consistency, not complete YAML conformance.",
+  "target_revisions": [
+    {
+      "repo": "goccy/go-yaml",
+      "sha": "72a4f95c648c844ef2f8ddbc009530be64ab4c41",
+      "module": "github.com/goccy/go-yaml",
+      "role": "new_native_candidate_after_upstream_exponent_fix"
+    },
+    {
+      "repo": "go-yaml/yaml",
+      "sha": "944c86a7d29391925ed6ac33bee98a0516f1287a",
+      "module": "gopkg.in/yaml.v3",
+      "role": "independent_reference_implementation"
+    }
+  ],
+  "seed": 20261014,
+  "case_budgets": {
+    "number_like": 384,
+    "punctuation": 384,
+    "keywords": 128,
+    "unicode": 96,
+    "whitespace": 96
+  },
+  "total_cases": 1088,
+  "max_wall_clock_minutes": 20,
+  "negative_controls": "Random source strings only, no lossy normalization permitted; controls include ordinary ASCII, punctuations, and quoted keyword strings.",
+  "blind_to_contributor_diff": true,
+  "prior_issue_visibility": "The scientific-notation PR #939 issue and prior Go YAML #957 patch were previously read; failures identical to those reports cannot be labeled new. No implementation patch of current target is inspected in this experiment.",
+  "mismatch_admission": "Only classify native test failures with original source pinned, complete Go test execution, and failing source string captured. Determine whether independent reference agrees; if both fail call invariant/unsupported UNKNOWN, not a goccy bug. If only target fails with reference green, call CANDIDATE and require replay/reduction.",
+  "automatic_repair": false,
+  "third_party_writes": false,
+  "external_comments": false,
+  "conclusion_cap": "Never claim an undisclosed vulnerability, general semantics equivalence, L7 method invention or significant competitive advantage from differential mismatches alone."
+}
