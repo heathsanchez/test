@@ -100,7 +100,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: heathsanchez/test
-          ref: 820e01ace410fa1cec9c13b4ada54f962e9f4534
+          ref: ab55e2ea963f422d05c84fbe1e24e77b886fa222
           path: coordinator/components/producers/native_unbounded
           persist-credentials: false
       - name: Read actual historical CI metadata without scientific promotion
