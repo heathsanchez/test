@@ -1,0 +1,43 @@
+name: Source-bound 2026 hydrogen consequence V2
+
+on:
+  push:
+    branches:
+      - research/nist-hydrogen-crosssource-20261014
+    paths:
+      - 'research/nist_hydrogen_crosssource/**'
+      - '.github/workflows/nist-hydrogen-crosssource-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-and-consequences:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Exact Python compile
+        run: |
+          python3 -m py_compile research/nist_hydrogen_crosssource/consequence_core.py
+          python3 -m py_compile research/nist_hydrogen_crosssource/test_core.py
+          python3 -m py_compile research/nist_hydrogen_crosssource/qualify.py
+      - name: Re-check 2022 NIST baseline without modification
+        run: python3 research/nist_alpha_consequence/ci_replay.py
+      - name: Precommitted generic exact-rational and adversarial tests
+        run: python3 -m unittest discover -s research/nist_hydrogen_crosssource -p test_core.py -v
+      - name: Live original-source pin and source-specific declared semantics
+        run: python3 research/nist_hydrogen_crosssource/qualify.py
+      - name: Retain all receipts even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nist-hydrogen-crosssource-v2-evidence
+          path: |
+            research/nist_alpha_consequence/evidence/ci_report.json
+            research/nist_hydrogen_crosssource/evidence/
+          if-no-files-found: warn
+          retention-days: 90
