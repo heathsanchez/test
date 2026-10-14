@@ -159,14 +159,12 @@ func baseAnchor(root,name,function,nextKey string)int {
   })
  }
  fatal(offset>0&&offset<len(bytes),"ORIGINAL_BASE_TABLE_ANCHOR_NOT_FOUND")
- for offset>0 && bytes[offset-1]!='
-'{offset--}
+ for offset>0 && bytes[offset-1]!='\n'{offset--}
  return offset
 }
 func restrictDiff(root,allowed string){
  out:=git(root,"diff","--name-only")
- for _,file:=range strings.Split(out,"
-") {
+ for _,file:=range strings.Split(out,"\n") {
   fatal(file==""||file==allowed,"IMPLEMENTATION_SOURCE_MUTATED_"+file)
  }
 }
@@ -182,11 +180,9 @@ func main(){
    "EXPECTED_EXPLICIT_SOURCE_ARGS")
  fatal(git(*base,"rev-parse","HEAD")==*oldPin&&git(*head,"rev-parse","HEAD")==*newPin&&
        git(*negative,"rev-parse","HEAD")==*newPin,"SOURCE_IDENTITY_CHANGED")
- changed:=strings.Split(git(*head,"diff","--name-only",*oldPin,*newPin)," 
-")
+ changed:=strings.Split(git(*head,"diff","--name-only",*oldPin,*newPin)," \n")
  // Git emits one changed path per line.
- changed=strings.Split(strings.Join(changed,""),"
-")
+ changed=strings.Split(strings.Join(changed,""),"\n")
  oldRules:=rules(*base,changed);newRules:=rules(*head,changed)
  keys:=[]string{}
  for key,nr:=range newRules {
@@ -225,21 +221,15 @@ func main(){
       }
      }
      if invalid==""{continue}
-     generated:=fmt.Sprintf("			{%s, true}, // MathGraph source-derived, not in upstream author tests
-",
+     generated:=fmt.Sprintf("			{%s, true}, // MathGraph source-derived, not in upstream author tests\n",
        strconv.Quote(candidate))
-     bad:=fmt.Sprintf("			{%s, true}, // deliberately false mutant, must reject
-",
+     bad:=fmt.Sprintf("			{%s, true}, // deliberately false mutant, must reject\n",
        strconv.Quote(invalid))
-     originalBaseBlock:=fmt.Sprintf("		%s: {
-%s		},
-",strconv.Quote(key),generated)
+     originalBaseBlock:=fmt.Sprintf("		%s: {\n%s		},\n",strconv.Quote(key),generated)
      payloadBase=append(append([]byte{},bBytes[:pos]...),append([]byte(originalBaseBlock),bBytes[pos:]...)...)
      hpos:=t.ValueLbrace+1
-     payloadHead=append(append([]byte{},hbytes[:hpos]...),append([]byte("
-"+generated),hbytes[hpos:]...)...)
-     payloadNegative=append(append([]byte{},nBytes[:hpos]...),append([]byte("
-"+bad),nBytes[hpos:]...)...)
+     payloadHead=append(append([]byte{},hbytes[:hpos]...),append([]byte("\n"+generated),hbytes[hpos:]...)...)
+     payloadNegative=append(append([]byte{},nBytes[:hpos]...),append([]byte("\n"+bad),nBytes[hpos:]...)...)
      found=&Discovery{Key:key,TestFile:testFile,TestFunction:t.Function,SourceFile:new.File,
        OriginalSeed:seed,NewWitness:candidate,InvalidControl:invalid,
        OldRuleSHA256:hash([]byte(old.Pattern)),NewRuleSHA256:hash([]byte(new.Pattern)),
@@ -278,8 +268,6 @@ func main(){
  }
  data,e:=json.MarshalIndent(result,"","  ");fatal(e==nil,"REPORT_MARSHAL_FAILURE")
  fatal(os.MkdirAll(filepath.Dir(*out),0755)==nil,"OUTPUT_DIR_CREATION_FAILURE")
- fatal(os.WriteFile(*out,append(data,'
-'),0644)==nil,"REPORT_WRITE_FAILURE")
- fmt.Printf("SOURCE_DERIVED_NEW_TEST_ASSERTION %s
-",data)
+ fatal(os.WriteFile(*out,append(data,'\n'),0644)==nil,"REPORT_WRITE_FAILURE")
+ fmt.Printf("SOURCE_DERIVED_NEW_TEST_ASSERTION %s\n",data)
 }
