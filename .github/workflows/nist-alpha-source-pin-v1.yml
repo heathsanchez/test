@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Download original NIST publication and bind extracted values
+      - name: Pin original NIST PDF and bind the independent calculation
         run: |
           set -euo pipefail
           mkdir -p research/nist_alpha_consequence/evidence/source
@@ -31,34 +31,60 @@ jobs:
           pdftotext -layout /tmp/codata.pdf /tmp/codata.txt
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib,json,re
+          import hashlib,json,re,subprocess
           raw=Path('/tmp/codata.pdf').read_bytes()
-          text=Path('/tmp/codata.txt').read_text(errors='replace')
-          clean=re.sub(r'\s+','',text)
-          expected={'Parker_Cs_alpha_inv':'137.035999046',
-                    'Morel_Rb_alpha_inv':'137.035999206',
-                    'Fan_electron_QED_alpha_inv':'137.035999166',
-                    'recommended_alpha_inv':'137.035999177',
-                    'atomic_unit_velocity':'2.18769126216'}
-          matched={k:(v in clean) for k,v in expected.items()}
-          if not all(matched.values()):
-              raise RuntimeError('SOURCE_VALUE_ANCHOR_MISSING:'+str(matched))
           h=hashlib.sha256(raw).hexdigest()
-          out={'state':'CANDIDATE_UNPINNED_SOURCE_BYTES',
-               'upstream_pdf_url':'https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=958143',
-               'original_pdf_sha256':h, 'original_pdf_size_bytes':len(raw),
-               'matched_source_text_anchors':matched,
-               'source_semantic_fidelity':'NOT_CHECKED',
-               'original_recoil_paper_bytes':'NOT_CHECKED'}
-          p=Path('research/nist_alpha_consequence/evidence/source/source_probe.json')
+          EXPECTED_NIST_PDF_SHA256='e7fa786c5b66640784451f40883c886bddaee52d87521382af71c55e1636af41'
+          EXPECTED_VERIFIER_SHA256='c04c0437732a087ee296544b8a31453115a01edbf382303f3ab6e0d0809a188d'
+          if h!=EXPECTED_NIST_PDF_SHA256:
+              raise RuntimeError('UPSTREAM_ORIGINAL_REPORT_SHA256_CHANGED')
+          script=Path('research/nist_alpha_consequence/ci_replay.py')
+          script_hash=hashlib.sha256(script.read_bytes()).hexdigest()
+          if script_hash!=EXPECTED_VERIFIER_SHA256:
+              raise RuntimeError('NUMERICAL_VERIFIER_SOURCE_CHANGED')
+          clean=re.sub(r'\s+','',Path('/tmp/codata.txt').read_text(errors='replace'))
+          publication={'recommended_alpha_inverse':'137.035999177',
+                       'atomic_unit_velocity':'2.18769126216'}
+          if not all(v in clean for v in publication.values()):
+              raise RuntimeError('PUBLISHED_SOURCE_VALUE_MISSING')
+          # The independent numerical calculation must succeed at this source-pinned head.
+          subprocess.run(['python3',str(script)],check=True)
+          numeric=json.loads(Path('research/nist_alpha_consequence/evidence/ci_report.json').read_text())
+          matched={source_id:inverse in clean for source_id,inverse,sigma in numeric['data']}
+          if not all(matched.values()):
+              raise RuntimeError('NUMERICAL_INPUT_NOT_ANCHORED_IN_ORIGINAL_REPORT:'+str(matched))
+          if numeric['result']!='PASS_BOUNDED_NUMERICAL_REPLAY_ONLY':
+              raise RuntimeError('NUMERICAL_REPLAY_NOT_QUALIFIED')
+          # A one-byte mutation must not pass the digest pin.
+          corruption=bytearray(raw)
+          corruption[10]^=1
+          if hashlib.sha256(corruption).hexdigest()==EXPECTED_NIST_PDF_SHA256:
+              raise RuntimeError('CORRUPTED_ORIGINAL_PASSED_PIN')
+          out={'state':'WARRANTED_BOUNDED_SOURCE_ANCHORED_NUMERICAL_REPLAY',
+               'original_report_sha256':h,
+               'original_report_size_bytes':len(raw),
+               'original_report_url':'https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=958143',
+               'independent_verifier_sha256':script_hash,
+               'numerical_input_sha256':numeric['input_sha256'],
+               'source_values_verified_present':matched,
+               'published_comparator_values_present':publication,
+               'source_byte_mutation_negative':'REJECTED_SHA256_MISMATCH',
+               'publication_semantic_and_equation_parsing':'MANUAL_NOT_GENERAL',
+               'original_recoil_paper_bytes':'NOT_CHECKED',
+               'full_133_input_correlated_CODATA_adjustment':'NOT_RUN',
+               'autonomous_scientific_discovery':'UNKNOWN',
+               'optimal_new_physical_experiment':'UNKNOWN'}
+          p=Path('research/nist_alpha_consequence/evidence/source/joint_receipt.json')
           p.write_text(json.dumps(out,indent=2)+'\n')
           print(json.dumps(out,indent=2))
           PY
-      - name: Retain source-probe receipt
+      - name: Retain source-pinned consequence receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nist-original-pdf-source-probe
-          path: research/nist_alpha_consequence/evidence/source/
+          name: nist-source-pinned-consequence-v1
+          path: |
+            research/nist_alpha_consequence/evidence/source/
+            research/nist_alpha_consequence/evidence/ci_report.json
           if-no-files-found: warn
           retention-days: 90
