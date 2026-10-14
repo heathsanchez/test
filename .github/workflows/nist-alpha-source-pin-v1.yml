@@ -1,0 +1,62 @@
+name: NIST CODATA original source-byte probe
+
+on:
+  push:
+    branches:
+      - research/nist-codata-alpha-consequence-20261014
+    paths:
+      - '.github/workflows/nist-alpha-source-pin-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  original-pdf-source-probe:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Download original NIST publication and bind extracted values
+        run: |
+          set -euo pipefail
+          mkdir -p research/nist_alpha_consequence/evidence/source
+          curl --fail --location --silent --show-error --retry 2 \
+            --max-time 90 -o /tmp/codata.pdf \
+            'https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=958143'
+          test "$(head -c 4 /tmp/codata.pdf)" = '%PDF'
+          pdftotext -layout /tmp/codata.pdf /tmp/codata.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,re
+          raw=Path('/tmp/codata.pdf').read_bytes()
+          text=Path('/tmp/codata.txt').read_text(errors='replace')
+          clean=re.sub(r'\s+','',text)
+          expected={'Parker_Cs_alpha_inv':'137.035999046',
+                    'Morel_Rb_alpha_inv':'137.035999206',
+                    'Fan_electron_QED_alpha_inv':'137.035999166',
+                    'recommended_alpha_inv':'137.035999177',
+                    'atomic_unit_velocity':'2.18769126216'}
+          matched={k:(v in clean) for k,v in expected.items()}
+          if not all(matched.values()):
+              raise RuntimeError('SOURCE_VALUE_ANCHOR_MISSING:'+str(matched))
+          h=hashlib.sha256(raw).hexdigest()
+          out={'state':'CANDIDATE_UNPINNED_SOURCE_BYTES',
+               'upstream_pdf_url':'https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=958143',
+               'original_pdf_sha256':h, 'original_pdf_size_bytes':len(raw),
+               'matched_source_text_anchors':matched,
+               'source_semantic_fidelity':'NOT_CHECKED',
+               'original_recoil_paper_bytes':'NOT_CHECKED'}
+          p=Path('research/nist_alpha_consequence/evidence/source/source_probe.json')
+          p.write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+          PY
+      - name: Retain source-probe receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nist-original-pdf-source-probe
+          path: research/nist_alpha_consequence/evidence/source/
+          if-no-files-found: warn
+          retention-days: 90
