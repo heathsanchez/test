@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Source-native compiled/Python interface parity miner; no target-specific operation manifest."""
-import argparse, hashlib, importlib, inspect, json, math, pkgutil, time
+import argparse, hashlib, importlib, inspect, json, math, os, pkgutil, subprocess, time
 from pathlib import Path
 
 def save(p,x):
@@ -145,17 +145,58 @@ def replay(sha,old):
             "not_warranted":["novel_upstream_defect","semantic_intent","fully_autonomous_L7","third_family_transfer","reviewer_advantage"],
             "elapsed_seconds":round(time.perf_counter()-start,4)}
 
+def check_source_identity(declared, stage):
+    """Read original on-disk Git HEAD; never trust a caller-asserted source SHA."""
+    tree = Path(os.environ.get("RUNNER_TEMP", "/nonexistent")) / (
+        "original-old" if stage == "scan" else "original-head")
+    try:
+        r = subprocess.run(["git", "-C", str(tree), "rev-parse", "HEAD"],
+                           check=True, capture_output=True, text=True)
+        observed = r.stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "UNKNOWN_UNVERIFIED_SOURCE_TREE", None
+    if len(declared) != 40 or declared != observed:
+        return "UNKNOWN_SUBJECT_SHA_MISMATCH", observed
+    return "EXACT_SOURCE_SHA_CONFIRMED", observed
+
+
+def exercise_negative_controls(frozen, author_sha):
+    """Actually run the no-reference branch and wrong-subject guard."""
+    mutated = json.loads(json.dumps(frozen))
+    for entry in mutated["entries"]:
+        entry["interface"]["native"] = "__REMOVED_NATIVE_REFERENCE__"
+    deprived = replay(author_sha, mutated)
+    all_unknown = (deprived["status"] == "UNKNOWN_NO_CLOSED_WITNESS" and
+                   bool(deprived["results"]) and
+                   all(r["state"] == "UNKNOWN_NO_NATIVE_REFERENCE" for r in deprived["results"]))
+    wrong_status, observed = check_source_identity("0"*40, "replay")
+    assert all_unknown and wrong_status == "UNKNOWN_SUBJECT_SHA_MISMATCH", "ADVERSARIAL_GUARD_FAILURE"
+    return {"reference_removed": "VERIFIED_UNKNOWN_NO_NATIVE_REFERENCE",
+            "wrong_subject": "VERIFIED_UNKNOWN_SUBJECT_SHA_MISMATCH",
+            "actual_author_head": observed,
+            "reference_removed_pair_count": len(deprived["results"])}
+
+
 def main():
     p=argparse.ArgumentParser();p.add_argument("stage",choices=("scan","replay"))
     p.add_argument("--site");p.add_argument("--sha",required=True)
     p.add_argument("--frozen");p.add_argument("--output",required=True)
     a=p.parse_args()
+    identity,observed_sha = check_source_identity(a.sha,a.stage)
+    if identity != "EXACT_SOURCE_SHA_CONFIRMED":
+        result={"stage":"SOURCE_IDENTITY_REFUSAL","status":identity,
+                "claimed_sha":a.sha,"observed_sha":observed_sha}
+        save(a.output,result)
+        raise SystemExit("REFUSED_UNVERIFIED_SOURCE_IDENTITY")
     if a.stage=="scan":
         result=prescan(a.site,a.sha)
         good=any(x["counts"]["different"]>0 for x in result["entries"])
     else:
-        result=replay(a.sha,json.loads(Path(a.frozen).read_text()))
+        frozen=json.loads(Path(a.frozen).read_text())
+        result=replay(a.sha,frozen)
+        result["executed_negative_controls"]=exercise_negative_controls(frozen,a.sha)
         good=result["status"]=="WARRANTED_BOUNDED_PAIRED_INTERFACE_OBLIGATION"
+    result["source_identity_guard"]="EXACT_SOURCE_SHA_CONFIRMED"
     save(a.output,result)
     if a.stage=="scan":
         report=[{"pair":x["interface"]["module"]+"."+x["interface"]["py"],
