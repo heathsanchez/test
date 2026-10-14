@@ -29,9 +29,9 @@ def native(test,package,cwd):
  sub=[e for e in events if str(e.get("Test","")).startswith(test+"/") and
       e.get("Action")=="run"]
  outputs="".join(str(e.get("Output","")) for e in events if e.get("Action")=="output")
- fail_assert=bool(re.search(r"(?m)\.go:\d+:",outputs)) and
+ fail_assert=(bool(re.search(r"(?m)\.go:\d+:",outputs)) and
              any(e.get("Action")=="fail" and str(e.get("Test","")).startswith(test)
-                 for e in events)
+                 for e in events))
  # No arbitrary process/non-test error may be promoted as native behavioural witness.
  return {"status":"COMPLETE" if "run" in selected else "NO_TEST_EXECUTED",
          "exit":r.returncode,"selected_parent_actions":selected,
@@ -97,8 +97,8 @@ def main():
  verify(sha(absent)==proposal["empty_ablation_sha256"],"ABLATION_SOURCE_CHANGED")
  (a.base/proposal["test_file"]).write_bytes(absent)
  ablated=native(test,package,a.base)
- absent_ok=ablated["status"]=="COMPLETE" and ablated["exit"]==0 and
-           ablated["subtest_count"]==0 and "pass" in ablated["selected_parent_actions"]
+ absent_ok=(ablated["status"]=="COMPLETE" and ablated["exit"]==0 and
+            ablated["subtest_count"]==0 and "pass" in ablated["selected_parent_actions"])
  result=("WARRANTED_BOUNDED_NEW_SOURCE_DERIVED_TEST_INPUT" if winner and absent_ok
    else "UNKNOWN_NO_CAUSAL_GENERATED_INPUT")
  record={
