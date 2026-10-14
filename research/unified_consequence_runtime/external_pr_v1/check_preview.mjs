@@ -80,12 +80,21 @@ for(const expected of policy.exact_cases) {
   ].join('\n');
   githubPayload.head_sha=expected.head;
   githubPayload.external_id=policy.external_source_repository+'#'+expected.pr+'@'+expected.head;
-  githubPayload.output.summary=(githubPayload.output.summary+'\n'+sourceText).slice(0,60000);
-  githubPayload.output.title='Scoped native PR behavior — review evidence';
+  // Keep the original generic analyzer verdict, but give independently
+  // replicated source-native evidence priority in the maintainer's preview.
+  // This does not change the generic risk classification or Check conclusion.
+  const genericContext=githubPayload.output.summary;
+  githubPayload.output.summary=(
+    sourceText+'\n\n---\n### Additional generic PR analysis\n'+genericContext
+  ).slice(0,60000);
+  githubPayload.output.title='Exact-revision PR regressions — neutral review evidence';
   if(githubPayload.conclusion!=='neutral') throw Error('ADVISORY_WAS_PROMOTED');
   results.push({
     pr:expected.pr,source:assessment.source,ci:assessment.ci.state,
-    finding:assessment.finding.code,receipt_id:sha(bytes),
+    finding:assessment.finding.code,
+    native_evidence_verdict:'WARRANTED_BOUNDED_REAL_PR_NATIVE_REGRESSION',
+    generic_analyzer_finding:assessment.finding.code,
+    receipt_id:sha(bytes),
     github_check_run_preview:githubPayload,
     actually_posted:false,app_installed:false,protected_revision:expected.head,
     external_contributor_supplied_fix:true,auto_repair_generated:false,
