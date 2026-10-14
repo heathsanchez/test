@@ -55,6 +55,11 @@ jobs:
           ref: a70ba812e1b6e40a6ce4652fb830589030e461d0
           path: upstream-pr155
           persist-credentials: false
+      - name: Supply pinned Python parser dependency for external native tests
+        run: |
+          python -m pip install --disable-pip-version-check PyYAML==6.0.3 ruamel.yaml==0.18.15
+          python -c 'import yaml; print("PyYAML",yaml.__version__)'
+
       - name: Read actual source PR metadata for exact base/head and current applicability
         run: |
           set -euo pipefail
