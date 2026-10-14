@@ -100,7 +100,7 @@ jobs:
           assert rec["changed_unique_patterns"]==1
           assert rec["duplicate_source_slots"]>=1
           print("ADMITTED_FINITE_SOURCE_NATIVE_REGEX_WITNESS")
-          print("CHANGED_SOURCE_PATTERNS",rec["changed_patterns"])
+          print("CHANGED_SOURCE_PATTERNS",rec["changed_unique_patterns"])
           print("WITNESSES",sum(x["changed_cases"] for x in rec["source_changes"]))
           PY
       - uses: actions/upload-artifact@v4
