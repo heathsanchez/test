@@ -1,0 +1,106 @@
+name: Native unbounded-source method construction
+on:
+  push:
+    branches: [research/unified-consequence-runtime-20261013]
+    paths:
+      - 'research/unified_consequence_runtime/native_unbounded_v1/**'
+      - '.github/workflows/unified-native-unbounded-method.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-source-native-method:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: leanprover/cslib
+          ref: 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          path: cslib
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: 5f6fe3e69a6313d113403c0967154357caf2d8c6
+          path: previously-qualified-finite-method
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pin original native semantics before generating an induction method
+        run: |
+          set -euo pipefail
+          test "$(git -C cslib rev-parse HEAD)" = 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          test "$(git -C cslib hash-object CslibTests/LTS.lean)" = 34f3c3db9378e11906bba456f0178497531c6a26
+          test "$(git -C cslib hash-object Cslib/Foundations/Semantics/LTS/ExampleTermination.lean)" = 9d6d90d81e04d6e3bff3a0f62c1c9f8b41a18f85
+          test "$(git -C previously-qualified-finite-method rev-parse HEAD)" = 5f6fe3e69a6313d113403c0967154357caf2d8c6
+      - name: Install original CSLib checker and build source modules
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          cd cslib
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0-rc4
+          "$HOME/.elan/bin/lake" exe cache get
+          "$HOME/.elan/bin/lake" build CslibTests.LTS Cslib.Foundations.Semantics.LTS.ExampleTermination
+      - name: Build a genuine source-selected infinite-state method, test native goal and retain closed state
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          test "$(cd cslib && lean --version | grep -o '4.35.0-rc4')" = '4.35.0-rc4'
+          python coordinator/research/unified_consequence_runtime/native_unbounded_v1/method_genesis.py \
+            --cslib cslib \
+            --previous-source-method previously-qualified-finite-method/research/unified_consequence_runtime/native_semantic_genesis_v1/source_bisim.py \
+            --protocol coordinator/research/unified_consequence_runtime/native_unbounded_v1/FROZEN_PROTOCOL.json \
+            --out coordinator/native-unbounded-output
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('coordinator/native-unbounded-output')
+          d=json.loads((root/'report.json').read_text())
+          assert d['native_generic_induction']=='PASS'
+          assert len(d['old_method_residuals'])==3
+          assert [r['kind'] for r in d['old_method_residuals']]==['UNKNOWN_PREVIOUS_FINITE_GRAMMAR']*3
+          methods=d['native_source_methods']
+          assert [r['stage'] for r in methods]==['ACQUIRE','HELDOUT','GENERATOR_REVISION']
+          assert [r['direction'] for r in methods]==['UP','UP','DOWN']
+          assert [r['delta'] for r in methods]==[1,1,1]
+          assert len({r['method_sha256'] for r in methods})==1
+          assert d['negative_direction_check']=='REJECTED_NATIVE'
+          assert d['claimed_lifetime_advantage']=='NOT_ESTABLISHED'
+          assert d['science_l7']=='UNKNOWN'
+          for row in methods:
+              assert row['native_lean']=='PASS'
+          print('PASS_SOURCE_DERIVED_UNBOUNDED_METHOD_THREE_ORIGINAL_NATIVE_SYSTEMS')
+          PY
+      - name: Native checker and source tamper controls
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cp cslib/CslibTests/LTS.lean /tmp/cslib-original.lean
+          printf '\n-- forbidden source mutation\n' >> cslib/CslibTests/LTS.lean
+          if python coordinator/research/unified_consequence_runtime/native_unbounded_v1/method_genesis.py \
+            --cslib cslib \
+            --previous-source-method previously-qualified-finite-method/research/unified_consequence_runtime/native_semantic_genesis_v1/source_bisim.py \
+            --protocol coordinator/research/unified_consequence_runtime/native_unbounded_v1/FROZEN_PROTOCOL.json \
+            --out /tmp/tampered > /tmp/tampered-report.log 2>&1; then
+            echo 'TAMPERED_SOURCE_ACCEPTED'
+            exit 1
+          fi
+          grep SOURCE_GIT_BLOB_MISMATCH /tmp/tampered-report.log
+          mv /tmp/cslib-original.lean cslib/CslibTests/LTS.lean
+          echo SOURCE_TAMPER_REJECTED
+      - name: Retain all real source-native method trials and exact checked proofs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-unbounded-method-construction-v1
+          path: coordinator/native-unbounded-output/
+          if-no-files-found: warn

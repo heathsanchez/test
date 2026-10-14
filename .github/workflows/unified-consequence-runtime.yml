@@ -1,0 +1,413 @@
+name: Unified source-bound consequence reclosure
+on:
+  push:
+    branches: [research/unified-consequence-runtime-20261013]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fail early on coordinator syntax and source-authority contracts
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          python -m compileall -q research/unified_consequence_runtime
+          python -m unittest -v research.unified_consequence_runtime.test_integrate
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: coordinator/components/flash
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: coordinator/components/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: cf359686c74549a132c7a651cd7aabc7c1a870fe
+          path: coordinator/components/mathgraph
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 5d448c0ecc82ff3945d009963064ebbb67d2f308
+          path: coordinator/components/msi
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph-lean-kernel
+          ref: faaa735170f64d598034f52c795814de4719693d
+          path: coordinator/components/producers/lean
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 94e923df0cbc4cf4d5f6108a05ebada595d30920
+          path: coordinator/components/producers/arc
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: 974a9f8f85e5961ca2a279b32565991a93cde602
+          path: coordinator/components/producers/collatz
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/equational-theories-lean-stage2
+          ref: 6821d765fc33da95a6cf5bef32b0a43b2ee39522
+          path: coordinator/components/producers/sair
+          persist-credentials: false
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: a50f199082da91845115efb77844603dee55a465
+          path: coordinator/components/v10
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: 4543d757de6ebbce1655f65851a4289c9a8a75f2
+          path: coordinator/components/producers/native
+          persist-credentials: false
+
+      - uses: actions/checkout@v4
+        with:
+          repository: leanprover/cslib
+          ref: 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          path: coordinator/components/cslib
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: bf577c18f9f70f306e59b9d52a31bb2e5411d555
+          path: coordinator/components/producers/source_bisim
+          persist-credentials: false
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ab55e2ea963f422d05c84fbe1e24e77b886fa222
+          path: coordinator/components/producers/native_unbounded
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: edc7531f91e9f1829b75be597afeb49b0be5b8e2
+          path: coordinator/components/producers/typed_semantic
+          persist-credentials: false
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ff2b556186a97e49684c322e4551d047f666d1a5
+          path: coordinator/components/producers/external_pr
+          persist-credentials: false
+      - name: Read actual historical CI metadata without scientific promotion
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/run-data
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          manifest=json.loads(Path('research/unified_consequence_runtime/sources.json').read_text())
+          for key,repo,run,sha,conclusion in manifest['runs']:
+              body=subprocess.check_output(['gh','api',f'repos/{repo}/actions/runs/{run}'])
+              (Path('out/run-data')/(key+'.json')).write_bytes(body)
+          PY
+
+      - name: Native independent MathGraph profile replay
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          python -I -S components/mathgraph/conformance/capability_v1/consumer.py \
+            --fixture components/mathgraph/conformance/capability_v1/fixtures/finite-representation-refinement-v1.json \
+            --contract components/mathgraph/conformance/capability_v1/fixtures/capability-contract.json \
+            --policy components/mathgraph/conformance/capability_v1/trust-policy.json \
+            --policy-sha256 7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89 \
+            --audit-imports > out/mathgraph-replay.json
+
+      - name: Recheck MathGraph source-catalogue publication
+        working-directory: coordinator
+        run: |
+          python -I -S -B components/mathgraph/conformance/source_catalogue_v1/consumer.py \
+            --catalogue-root components/mathgraph/website/public/catalogues/mathlib/v4.34.1 \
+            --policy components/mathgraph/conformance/source_catalogue_v1/trust-policy.json \
+            --policy-sha256 c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9 \
+            --audit-imports > out/catalogue-replay.json
+
+      - name: Read actual existing source emitter evidence
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/source-bundles/{lean,arc,collatz,sair}
+          python components/producers/lean/experiments/emit_qckn_flash_event.py \
+            --commit "$(git -C components/producers/lean rev-parse HEAD)" --out out/source-bundles/lean
+          python components/producers/arc/kaggle/scripts/emit_qckn_flash_event.py \
+            --commit "$(git -C components/producers/arc rev-parse HEAD)" --out out/source-bundles/arc
+          python components/producers/collatz/experiments/emit_qckn_flash_event.py \
+            --commit "$(git -C components/producers/collatz rev-parse HEAD)" --out out/source-bundles/collatz
+          python components/producers/sair/experiments/mathgraph/residual12/emit_qckn_flash_event.py \
+            --commit "$(git -C components/producers/sair rev-parse HEAD)" --out out/source-bundles/sair
+
+      - name: Admit separately native-checked CSLib proof into original FLASH event contract
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/native-qualification out/source-bundles/native
+          gh api "repos/heathsanchez/test/actions/artifacts/11848853826/zip" > out/native-qualification/sealed.zip
+          expected="$(python - <<'PY'
+          import json
+          d=json.load(open('research/unified_consequence_runtime/native_policy.json'))
+          print(d['artifact_sha256'])
+          PY
+          )"
+          actual="$(sha256sum out/native-qualification/sealed.zip | cut -d' ' -f1)"
+          test "$actual" = "$expected"
+          unzip -q out/native-qualification/sealed.zip -d out/native-qualification/proofs
+          PYTHONPATH=components/flash python components/producers/native/research/unified_consequence_runtime/native_proof_event.py \
+            --original components/v10/capstone/v10 \
+            --proofs out/native-qualification/proofs \
+            --native-run out/run-data/CSLIB_NATIVE_PASS.json \
+            --policy research/unified_consequence_runtime/native_policy.json \
+            --out out/source-bundles/native
+
+      - name: Bind two externally native-checked CSLib source families as guarded proof products
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/source-method-qualification out/source-bundles/source_bisim
+          gh api "repos/heathsanchez/test/actions/artifacts/11857035513/zip" > out/source-method-qualification/sealed.zip
+          expected="$(python - <<'PY'
+          import json
+          d=json.load(open('research/unified_consequence_runtime/native_semantic_genesis_v1/admission_policy.json'))
+          print(d['artifact_sha256'])
+          PY
+          )"
+          test "$(sha256sum out/source-method-qualification/sealed.zip | cut -d' ' -f1)" = "$expected"
+          unzip -q out/source-method-qualification/sealed.zip -d out/source-method-qualification/proofs
+          PYTHONPATH=components/flash python components/producers/source_bisim/research/unified_consequence_runtime/native_semantic_genesis_v1/source_bisim_event.py \
+            --cslib components/cslib \
+            --proofs out/source-method-qualification/proofs \
+            --native-run out/run-data/CSLIB_SOURCE_METHOD_PASS.json \
+            --protocol research/unified_consequence_runtime/native_semantic_genesis_v1/FROZEN_PROTOCOL.json \
+            --policy research/unified_consequence_runtime/native_semantic_genesis_v1/admission_policy.json \
+            --out out/source-bundles/source_bisim
+
+      - name: Admit independently native-checked parametric Nat induction methods
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/native-unbounded-qualification out/source-bundles/native_unbounded
+          gh api "repos/heathsanchez/test/actions/artifacts/11861096883/zip" > out/native-unbounded-qualification/sealed.zip
+          expected="$(python - <<'PY'
+          import json
+          p='research/unified_consequence_runtime/native_unbounded_v1/admission_policy.json'
+          print(json.load(open(p))['artifact_zip_sha256'])
+          PY
+          )"
+          test "$(sha256sum out/native-unbounded-qualification/sealed.zip | cut -d' ' -f1)" = "$expected"
+          unzip -q out/native-unbounded-qualification/sealed.zip -d out/native-unbounded-qualification/proofs
+          PYTHONPATH=components/flash python components/producers/native_unbounded/research/unified_consequence_runtime/native_unbounded_v1/admit_methods.py \
+            --cslib components/cslib \
+            --proofs out/native-unbounded-qualification/proofs \
+            --native-run out/run-data/CSLIB_NATIVE_UNBOUNDED_PASS.json \
+            --protocol research/unified_consequence_runtime/native_unbounded_v1/FROZEN_PROTOCOL.json \
+            --policy research/unified_consequence_runtime/native_unbounded_v1/admission_policy.json \
+            --out out/source-bundles/native_unbounded
+
+      - name: Admit source-mined typed proof-method vocabulary into guarded FLASH events
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/typed-native-qualification out/source-bundles/typed_semantic
+          gh api "repos/heathsanchez/test/actions/artifacts/11862440093/zip" > out/typed-native-qualification/sealed.zip
+          expected="$(python - <<'PY'
+          import json
+          p='research/unified_consequence_runtime/typed_semantic_method_v1/admission_policy.json'
+          print(json.load(open(p))['artifact_zip_sha256'])
+          PY
+          )"
+          test "$(sha256sum out/typed-native-qualification/sealed.zip | cut -d' ' -f1)" = "$expected"
+          unzip -q out/typed-native-qualification/sealed.zip -d out/typed-native-qualification/proofs
+          PYTHONPATH=components/flash python components/producers/typed_semantic/research/unified_consequence_runtime/typed_semantic_method_v1/admit_native_method.py \
+            --cslib components/cslib \
+            --proofs out/typed-native-qualification/proofs \
+            --run out/run-data/CSLIB_TYPED_METHOD_PASS.json \
+            --protocol research/unified_consequence_runtime/typed_semantic_method_v1/FROZEN_PROTOCOL.json \
+            --policy research/unified_consequence_runtime/typed_semantic_method_v1/admission_policy.json \
+            --out out/source-bundles/typed_semantic
+
+      - name: Independently bind external IEANTN PR regression receipt as scoped advisory evidence
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/external-pr-qualification/proofs out/source-bundles/external_pr
+          gh api "repos/heathsanchez/test/actions/artifacts/11862929149/zip" > out/external-pr-qualification/sealed.zip
+          expected="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('research/unified_consequence_runtime/external_pr_v1/ADMISSION_POLICY.json')
+          print(json.loads(p.read_bytes())['archive_zip_sha256'])
+          PY
+          )"
+          test "$(sha256sum out/external-pr-qualification/sealed.zip | cut -d' ' -f1)" = "$expected"
+          unzip -q out/external-pr-qualification/sealed.zip -d out/external-pr-qualification/proofs
+          PYTHONPATH=components/flash python components/producers/external_pr/research/unified_consequence_runtime/external_pr_v1/emit.py \
+            --policy research/unified_consequence_runtime/external_pr_v1/ADMISSION_POLICY.json \
+            --evidence out/external-pr-qualification/proofs/receipt.json \
+            --run out/run-data/IEANTN_EXTERNAL_NATIVE_PASS.json \
+            --out out/source-bundles/external_pr
+
+      - name: Restore the latest successful qualification, never a red-run artifact
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          mkdir -p out/previous
+          qualified_run="$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/runs?branch=research/unified-consequence-runtime-20261013&status=success&per_page=40" \
+            --jq '.workflow_runs | map(select(.name == "Unified source-bound consequence reclosure")) | .[0].id // empty')"
+          if [ -z "$qualified_run" ]; then
+            echo "NO_PRIOR_SUCCESSFUL_INTEGRATION"
+            exit 1
+          fi
+          qualified_artifact="$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$qualified_run/artifacts" \
+            --jq '.artifacts | map(select(.name == "unified-source-bound-state" and .expired == false)) | .[0].id // empty')"
+          if [ -z "$qualified_artifact" ]; then
+            echo "NO_RESTORABLE_QUALIFIED_STATE"
+            exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$qualified_artifact/zip" > out/previous/prior.zip
+          unzip -q out/previous/prior.zip -d out/previous/extracted
+          historical_flash="$(find out/previous/extracted -type f -name flash-state-bundle.json -print -quit)"
+          historical_ledger="$(find out/previous/extracted -type f -name metatron-ledger.jsonl -print -quit)"
+          test -n "$historical_flash"
+          test -n "$historical_ledger"
+          cp "$historical_flash" out/previous/flash-state-bundle.json
+          cp "$historical_ledger" out/previous/metatron-ledger.jsonl
+          echo "PREVIOUS_QUALIFIED_STATE_RECOVERED=$qualified_artifact RUN=$qualified_run"
+
+      - name: Reconcile existing native FLASH plus Metatron source dependency state
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          python -m unittest -v research.unified_consequence_runtime.test_integrate
+          python research/unified_consequence_runtime/integrate.py \
+            --manifest research/unified_consequence_runtime/sources.json \
+            --components components \
+            --run-data out/run-data \
+            --source-bundles out/source-bundles \
+            --mathgraph-replay out/mathgraph-replay.json \
+            --catalogue-replay out/catalogue-replay.json \
+            --previous-flash out/previous/flash-state-bundle.json \
+            --previous-ledger out/previous/metatron-ledger.jsonl \
+            --out out/integration
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          obj=json.loads(Path('out/integration/closure.json').read_text())
+          assert obj['scientific_closure']=='UNKNOWN'
+          assert obj['mathgraph']['action_authorization']=='NONE'
+          assert obj['mathgraph']['current_applicability']=='UNKNOWN'
+          assert obj['runs']['CSLIB_NATIVE_FAIL']['conclusion']=='failure'
+          assert obj['flash']['events']==13
+          assert obj['real_external_pr_native_advisory']['verdict']=='PASS_SCOPED'
+          assert obj['real_external_pr_native_advisory']['source_code_fix_generated'] is False
+          assert obj['real_external_pr_native_advisory']['actual_github_app_check_posted'] is False
+          assert obj['real_external_pr_native_advisory']['source_deletion_ablation']=='PASS_ONE_SOURCE_BOUND_PR_EVIDENCE_EVENT_DELETION'
+          assert obj['real_external_pr_native_advisory']['simulated_typed_revocation']=='PASS_SIMULATED_TYPED_READ_ONLY_PR_EVIDENCE_RETRACTION'
+          assert obj['gates']['external_real_pr_regression_checks']=='PASS_SCOPED'
+          assert obj['native_scoped_proof']['verdict']=='PASS_SCOPED'
+          assert obj['source_native_method']['verdict']=='PASS_SCOPED'
+          assert obj['source_native_parametric_induction']['verdict']=='PASS_SCOPED'
+          assert obj['source_native_typed_method_grammar']['verdict']=='PASS_SCOPED'
+          assert obj['source_native_typed_method_grammar']['earned_method_rule_count']==3
+          assert obj['source_native_typed_method_grammar']['proof_plan_ablation']=='PASS_THREE_INDEPENDENT_SOURCE_METHOD_ABLATIONS'
+          assert obj['source_native_typed_method_grammar']['controlled_revocation']=='PASS_THREE_SIMULATED_TYPED_METHOD_REVOCATIONS'
+          assert obj['source_native_typed_method_grammar']['autonomous_meta_generator_invention']=='UNKNOWN'
+          assert obj['gates']['native_typed_method_grammar_extension']=='PASS_SCOPED'
+          assert obj['source_native_parametric_induction']['new_parametric_induction']=='PASS_NATIVE'
+          assert obj['source_native_parametric_induction']['source_distinct_transfer']=='PASS_NATIVE'
+          assert obj['source_native_parametric_induction']['feedback_selected_reverse_method']=='PASS_NATIVE'
+          assert obj['source_native_parametric_induction']['causal_admission_ablation']=='PASS_BOTH_SOURCE_METHODS_CAUSALLY_ADMITTED'
+          assert obj['source_native_parametric_induction']['simulated_typed_revocation']=='PASS_SIMULATED_INDEPENDENT_METHOD_REVOCATIONS'
+          assert obj['source_native_parametric_induction']['generator_self_invention']=='UNKNOWN'
+          assert obj['gates']['native_unbounded_parametric_induction']=='PASS_SCOPED'
+          assert obj['source_native_method']['scientific_autonomous_genesis']=='UNKNOWN'
+          assert obj['source_native_method']['source_deletion_ablation']=='PASS_NATIVE_SOURCE_CAPABILITY_DELETION'
+          assert obj['source_native_method']['controlled_revocation']=='PASS_SIMULATED_TYPED_METHOD_REVOCATION'
+          assert obj['gates']['source_distinct_upstream_native_semantics']=='PASS_SCOPED'
+          assert obj['native_scoped_proof']['scientific_genesis']=='UNKNOWN'
+          assert obj['native_scoped_proof']['source_deletion_ablation']=='PASS_SCOPED_ADMISSION_ABLATION'
+          assert obj['gates']['source_bound_native_scoped_certificate']=='PASS'
+          assert obj['gates']['new_generator_native_transfer']=='UNKNOWN'
+          assert obj['gates']['previously_failing_native_goal_solved']=='UNKNOWN'
+          assert obj['flash']['obstructions']==['arc3:ft09-vc33-transfer-refutation:v2','collatz:bank-order-redundancy:v1']
+          assert obj['metatron']['source_revocation']=='PASS'
+          if Path('out/previous/flash-state-bundle.json').exists():
+              assert obj['flash']['past_restored']
+              assert obj['metatron']['past_restored']
+
+              allowable={
+                  'cslib:cycle:native-source-checked-simulation:v1',
+                  'cslib:two-original-inductives:native-source-derived-bisimulation:v1',
+                  'cslib:nat-infinite-trace:forward-method:v1',
+                  'cslib:nat-infinite-trace:backward-method:v1',
+                  'cslib:transport-method:acquisition:v1',
+                  'cslib:transport-method:heldout:v1',
+                  'cslib:transport-method:grammar_revision:v1',
+                  'mathgraph-check:ieantn:two-real-pr-native-regressions:v1'
+              }
+              assert set(obj['flash']['new_event_ids']) <= allowable
+              assert len(obj['flash']['unchanged_event_ids'])>=12
+              assert obj['gates']['prior_research_history_retained']=='PASS'
+          print('PASS_INTEGRATED_OPERATIONS_NO_FALSE_SCIENTIFIC_PROMOTION')
+          PY
+
+      - name: Save closure state and exact native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-source-bound-state
+          path: |
+            coordinator/out/integration/
+            coordinator/out/mathgraph-replay.json
+            coordinator/out/catalogue-replay.json
+            coordinator/out/native-qualification/proofs/
+            coordinator/out/native-qualification/sealed.zip
+            coordinator/out/source-method-qualification/proofs/
+            coordinator/out/source-method-qualification/sealed.zip
+            coordinator/out/source-bundles/source_bisim/
+            coordinator/out/native-unbounded-qualification/proofs/
+            coordinator/out/native-unbounded-qualification/sealed.zip
+            coordinator/out/source-bundles/native_unbounded/
+            coordinator/out/typed-native-qualification/proofs/
+            coordinator/out/typed-native-qualification/sealed.zip
+            coordinator/out/source-bundles/typed_semantic/
+            coordinator/out/external-pr-qualification/proofs/receipt.json
+            coordinator/out/external-pr-qualification/sealed.zip
+            coordinator/out/source-bundles/external_pr/
+            coordinator/out/source-bundles/native/
+            coordinator/out/run-data/
+          if-no-files-found: warn

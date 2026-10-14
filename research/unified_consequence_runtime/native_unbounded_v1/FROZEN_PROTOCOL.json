@@ -1,0 +1,93 @@
+{
+  "schema": "metalogic.native-unbounded-method-genesis.v1",
+  "frozen_at": "2026-10-14",
+  "authority": "exact independent upstream CSLib Lean checker; old exact finite source compiler does not support unbounded/parametric source semantics",
+  "upstream": {
+    "repository": "leanprover/cslib",
+    "sha": "4b88bcac4c0dec65b3f45b59e85f5397045efd8d",
+    "lean_toolchain": "leanprover/lean4:v4.35.0-rc4"
+  },
+  "previous_method": {
+    "repository": "heathsanchez/test",
+    "sha": "5f6fe3e69a6313d113403c0967154357caf2d8c6",
+    "path": "research/unified_consequence_runtime/native_semantic_genesis_v1/source_bisim.py",
+    "scope": "complete finite active Nat state transition constructors"
+  },
+  "source_sets": [
+    {
+      "stage": "ACQUIRE",
+      "file": "CslibTests/LTS.lean",
+      "blob_sha": "34f3c3db9378e11906bba456f0178497531c6a26",
+      "import": "CslibTests.LTS",
+      "system": "CslibTests.natDivLTS",
+      "label": "CslibTests.TLabel.τ",
+      "source_symbol": "NatDivergentTr",
+      "role": "unbounded Nat successor via parametric inductive"
+    },
+    {
+      "stage": "HELDOUT",
+      "file": "Cslib/Foundations/Semantics/LTS/ExampleTermination.lean",
+      "blob_sha": "9d6d90d81e04d6e3bff3a0f62c1c9f8b41a18f85",
+      "import": "Cslib.Foundations.Semantics.LTS.ExampleTermination",
+      "system": "Cslib.LTS.Example.successorLTS",
+      "label": "()",
+      "source_symbol": "successorLTS",
+      "role": "unbounded Nat successor via equation-defined LTS"
+    },
+    {
+      "stage": "GENERATOR_REVISION",
+      "file": "Cslib/Foundations/Semantics/LTS/ExampleTermination.lean",
+      "blob_sha": "9d6d90d81e04d6e3bff3a0f62c1c9f8b41a18f85",
+      "import": "Cslib.Foundations.Semantics.LTS.ExampleTermination",
+      "system": "Cslib.LTS.Example.countdownLTS",
+      "label": "()",
+      "source_symbol": "countdownLTS",
+      "role": "unbounded Nat countdown requires reversal of source step orientation"
+    }
+  ],
+  "constructor_substrate": {
+    "descriptions": "do not preselect accepted rule orientation per source; use external native checker to select from combinations of generic one-step shape and tactics",
+    "step_directions": [
+      "UP",
+      "DOWN"
+    ],
+    "step_delta_candidates": [
+      1,
+      2,
+      3
+    ],
+    "proof_atoms": [
+      "constructor",
+      "rfl",
+      "simp [SYSTEM]",
+      "grind [SYSTEM]"
+    ],
+    "repeated_natural_law": "once proven, reuse generic induction lemma on source-distinct Nat carrier, no per-instance induction rewrite",
+    "methodology": "choose only with source-native proof check; decode identical winning proof program and requalify independently on heldout source; source modules frozen prior to generator code",
+    "budget_max_native_search_trials": 24,
+    "retention": "store admitted parametric induction method selected from upstream source native checker, prove source-specific conditions separately",
+    "old_method_ablation": "old finite-only grammar cannot express source's parameterized state trajectories",
+    "no_unbounded_completeness_claim": true
+  },
+  "fail_closed": {
+    "independent_native_verifier": "actual Lean 4.35.0-rc4 with unmodified CSLib module",
+    "bare_evidence_or_github_green": "insufficient without source-bound proof files",
+    "unrelated_source_failure": "UNKNOWN",
+    "source_drift": "reject",
+    "verified_native_method_vs_generator_method_invention": "distinct"
+  },
+  "controls": [
+    "UP-only acquired method must be rejected on original countdown successor direction",
+    "retained generated proof on heldout successor must pass after cold restart",
+    "source bytes mutated must refuse admission",
+    "acquisition and total source checks charged vs same candidate list stateless strong solver, no forced win",
+    "native compiler actually proves universal k-step correctness over arbitrary Nat state and k (not a finite enumeration)",
+    "blanket claim of all infinite LTSs must fail"
+  ],
+  "claim_limits": [
+    "Targets are existing original upstream CSLib source-defined systems. No newly open theorem or upstream code improvement.",
+    "The meta-language of orientation, step delta and native proof atoms is designer authored, though its winning programs are not supplied.",
+    "This cannot qualify unrestricted L7 or arbitrary autonomous meta-grammar genesis.",
+    "Developmental selection and source-independently proven k-step induction is a bounded native method extension."
+  ]
+}
