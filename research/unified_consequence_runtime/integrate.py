@@ -404,6 +404,57 @@ def main():
         typed_ablation = "PASS_THREE_INDEPENDENT_SOURCE_METHOD_ABLATIONS"
         typed_revocation = "PASS_THREE_SIMULATED_TYPED_METHOD_REVOCATIONS"
 
+    # Real third-party PR author regressions are *native behavioral evidence*,
+    # not a theorem, new solution, production Check Run or self-built repair.
+    # The same frozen PR-native evidence follows the actual source event path.
+    external_pr_done = (
+        "IEANTN_EXTERNAL_NATIVE_PASS" in runs
+        and "external_pr" in manifest["emitters"]
+    )
+    pr_id="mathgraph-check:ieantn:two-real-pr-native-regressions:v1"
+    pr_ablation="NOT_CHECKED"
+    pr_revocation="NOT_CHECKED"
+    if external_pr_done:
+        active=set(summary["active_capability_ids"])
+        if pr_id not in active or "external:"+pr_id not in summary["discharged_obligation_ids"]:
+            raise AssertionError("EXTERNAL_PR_NATIVE_EVIDENCE_NOT_ADMITTED")
+        without=[
+            path for path in bundles
+            if path.relative_to(args.source_bundles).parts[0]!="external_pr"
+        ]
+        prior=update_live_state(None,without)["summary"]
+        if active != set(prior["active_capability_ids"]) | {pr_id}:
+            raise AssertionError("EXTERNAL_PR_DELETION_CHANGED_UNRELATED_CAPABILITIES")
+        if set(summary["obstruction_ids"])!=set(prior["obstruction_ids"]):
+            raise AssertionError("EXTERNAL_PR_EVENT_ERASED_PRIOR_OBSTRUCTIONS")
+        pr_ablation="PASS_ONE_SOURCE_BOUND_PR_EVIDENCE_EVENT_DELETION"
+        from realitygraph.flash import ExternalEventEnvelope
+        from tempfile import TemporaryDirectory
+        original=read(args.source_bundles / "external_pr" / "event.json")
+        simulated=b'{"kind":"SIMULATED_PR_EVIDENCE_RETRACTION","real_withdrawal":false}'
+        withdrawn=ExternalEventEnvelope.capability_revocation(
+            event_id="mathgraph-check:ieantn:simulated-pr-warrant-retraction:v1",
+            repository=original["repository"],
+            commit=original["commit"],
+            authority_snapshot=original["authority_snapshot"],
+            verifier_id=original["verifier_id"],
+            source_evidence=simulated,
+            capability_id=pr_id,
+            reason="controlled local retraction of external native test observation, not actual upstream test invalidation"
+        )
+        with TemporaryDirectory(prefix="external-pr-native-withdrawal-") as temp:
+            folder=Path(temp)
+            (folder/"event.json").write_text(withdrawn.to_text())
+            (folder/"evidence.json").write_bytes(simulated)
+            revoked=update_live_state(None,list(bundles)+[folder])["summary"]
+        if set(revoked["active_capability_ids"])!=active-{pr_id}:
+            raise AssertionError("EXTERNAL_PR_WARRANT_RETREATED_BUT_REMAINS_LIVE")
+        if "external:"+pr_id not in revoked["open_obligation_ids"]:
+            raise AssertionError("EXTERNAL_PR_WARRANT_WITHDRAWAL_NOT_REOPENED")
+        if set(summary["obstruction_ids"])!=set(revoked["obstruction_ids"]):
+            raise AssertionError("EXTERNAL_PR_WITHDRAWAL_CHANGED_OTHER_RESEARCH")
+        pr_revocation="PASS_SIMULATED_TYPED_READ_ONLY_PR_EVIDENCE_RETRACTION"
+
     preceding_log = (args.previous_ledger.read_text(encoding="utf-8")
                      if args.previous_ledger and args.previous_ledger.is_file() else None)
     log = mt.loads(preceding_log) if preceding_log is not None else ()
@@ -556,6 +607,29 @@ def main():
         },tuple(native_typed_nodes[x].id for x in (
             "ACQUISITION","HELDOUT","GRAMMAR_REVISION")))
         log = mt.append(log,native_typed_history)
+    external_pr_node = None
+    if external_pr_done:
+        external_pr_node=mt.Node("independent_external_pr_native_regression", {
+            "native_run":runs["IEANTN_EXTERNAL_NATIVE_PASS"]["url"],
+            "method":"unchanged outside-owner PR-authored regressions selected by generic AST differ",
+            "external_original_repository":"teorth/IEANTN",
+            "upstream_pr_heads": {
+                "158":"7fab327e61518fa607753cd022d87ef9d243bbf4",
+                "155":"a70ba812e1b6e40a6ce4652fb830589030e461d0",
+            },
+            "regression_base_failed_but_native_heads_passed":True,
+            "source_deletion_ablation":pr_ablation,
+            "simulated_local_withdrawal":pr_revocation,
+            "original_fixes_written_by_external_contributors":True,
+            "auto_generated_code_repair":"NO",
+            "github_app_live_installed":"NOT_ESTABLISHED",
+            "autonomous_generator_invention":"UNKNOWN",
+            "scientific_L7":"UNKNOWN",
+            "action_authorization":"NONE",
+        },(anchors["IEANTN_EXTERNAL_NATIVE_PASS"].id,
+           roots[("emitters","external_pr")].id,
+           flash_event.id))
+        log=mt.append(log,external_pr_node)
     future_dependencies = (qualification.id, source_catalogue.id, flash_event.id, residual.id)
     if native_done:
         future_dependencies += (native_node.id,)
@@ -565,6 +639,8 @@ def main():
         future_dependencies += (native_infinite_history.id,)
     if typed_done:
         future_dependencies += (native_typed_history.id,)
+    if external_pr_done:
+        future_dependencies += (external_pr_node.id,)
     future_name = (
         "autonomous_source_distinct_native_generator_invention_still_open"
         if native_done else "diagnose_native_failure_and_test_new_semantic_repair")
@@ -575,6 +651,7 @@ def main():
         "source_native_method_transfer": "PASS_SCOPED" if method_done else "UNKNOWN",
         "source_native_parametric_induction": "PASS_SCOPED" if infinite_done else "UNKNOWN",
         "source_native_typed_method_language": "PASS_SCOPED" if typed_done else "UNKNOWN",
+        "real_external_pr_regression": "PASS_SCOPED" if external_pr_done else "UNKNOWN",
         "action_authorization": "NONE",
         "system_e2e": manifest["protected_claims"]["system_e2e"],
         "recursive_native_development": manifest["protected_claims"]["recursive_native_development"]}
@@ -601,6 +678,18 @@ def main():
     assert residual.id in independent_live(revoked)
     assert flash_event.id in independent_live(revoked)
     assert mt.loads(serialized) == log, "archived past must not change"
+    if external_pr_done:
+        pr_support_withdrawn=mt.append(log,mt.Node("revoke",{
+            "target":external_pr_node.id,
+            "reason":"controlled withdrawal of live PR evidence; author repairs remain historical facts",
+        }))
+        remaining=independent_live(pr_support_withdrawn)
+        if external_pr_node.id in remaining or frontier.id in remaining:
+            raise AssertionError("METATRON_EXTERNAL_PR_SOURCE_AUTHORITY_NOT_WITHDRAWN")
+        if qualification.id not in remaining or residual.id not in remaining:
+            raise AssertionError("EXTERNAL_PR_RETRACTION_CORRUPTED_OTHER_EVIDENCE")
+        if set(mt.live_ids(pr_support_withdrawn))!=remaining:
+            raise AssertionError("METATRON_EXTERNAL_PR_DEPS_NOT_RECOMPUTED")
     if typed_done:
         typed_history_withdrawn = mt.append(log, mt.Node("revoke",{
             "target":native_typed_nodes["ACQUISITION"].id,
@@ -684,6 +773,21 @@ def main():
             "restart": "PASS", "dependency_oracle": "PASS",
             "source_revocation": "PASS", "unrelated_lineage": "PRESERVED"},
         "frontier": frontier.payload,
+        "real_external_pr_native_advisory": {
+            "verdict":"PASS_SCOPED" if external_pr_done else "UNKNOWN",
+            "capability_id":pr_id if external_pr_done else None,
+            "external_repository":"teorth/IEANTN",
+            "native_regression_prs":[155,158] if external_pr_done else [],
+            "author_provided_fixes":True,
+            "generic_new_test_method_discovery":"AST_DIFF",
+            "source_deletion_ablation":pr_ablation,
+            "simulated_typed_revocation":pr_revocation,
+            "advisory_only":True,
+            "actual_github_app_check_posted":False,
+            "source_code_fix_generated":False,
+            "source_method_genesis":"UNKNOWN",
+            "action_authorization":"NONE"
+        },
         "source_native_typed_method_grammar": {
             "verdict":"PASS_SCOPED" if typed_done else "UNKNOWN",
             "active_scoped_capability_ids":list(typed_stage_ids.values()) if typed_done else [],
@@ -736,6 +840,9 @@ def main():
             "metatron_ablation": "PASS",
             "source_bound_native_scoped_certificate": "PASS" if native_done else "UNKNOWN",
             "source_distinct_upstream_native_semantics": "PASS_SCOPED" if method_done else "UNKNOWN",
+            "external_real_pr_regression_checks": "PASS_SCOPED" if external_pr_done else "UNKNOWN",
+            "external_pr_event_deletion":pr_ablation,
+            "external_pr_typed_revocation":pr_revocation,
             "native_typed_method_grammar_extension": "PASS_SCOPED" if typed_done else "UNKNOWN",
             "native_typed_method_source_ablation":typed_ablation,
             "native_typed_method_revocation":typed_revocation,
