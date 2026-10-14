@@ -1,7 +1,7 @@
 import unittest
 from fractions import Fraction as F
 from consequence_core import (q,canonical,robust_consistency,joint_covariance_diagnostic,
-    Ledger,UnknownEvidence,independent_pooled_mean,contrast_measured_predicted,C)
+    Ledger,UnknownEvidence,independent_pooled_mean,contrast_measured_predicted,C,declared_within_source_correlation)
 
 def nature_radius():
     return q("proton_radius","0.8406","0.0015","fm","nature2026","2026qed",("nature-2s6p","1s2s","qed2026","alpha2022"))
@@ -69,6 +69,17 @@ class Algebra(unittest.TestCase):
     def test_missing_rho(self):
         with self.assertRaisesRegex(UnknownEvidence,"UNKNOWN_WITHIN"):
             joint_covariance_diagnostic(None)
+    def test_source_bound_correlation_positive_and_forged(self):
+        self.assertEqual(declared_within_source_correlation("0.94","nature2026:rp_vs_Rinf"),F(47,50))
+        for forged in (None,"0","-0.94","0.4"):
+            with self.assertRaises(UnknownEvidence):
+                declared_within_source_correlation(forged,"nature2026:rp_vs_Rinf")
+        with self.assertRaisesRegex(UnknownEvidence,"IDENTITY"):
+            declared_within_source_correlation("0.94","bullis2026:rp_vs_Rinf")
+    def test_frequency_label_cannot_disguise_unit_factor(self):
+        with self.assertRaisesRegex(UnknownEvidence,"UNSUPPORTED_DIMENSION"):
+            canonical(q("rydberg_frequency","3289841960252.9","9.7","Hz","bullis2026","new",("bullis-2sns",)))
+
     def test_invalid_rho(self):
         with self.assertRaisesRegex(UnknownEvidence,"NON_POSITIVE"):
             joint_covariance_diagnostic(F("1.01"))
