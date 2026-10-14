@@ -1,0 +1,42 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -4362,8 +4362,13 @@
+         if !matches!(original.lookup_binding_ref(0),Some(EnvBinding::Free(f)) if *f==binder){return None;}
+         let ledger=self.checked_binding_lineage.borrow();
+         if ledger.get(&original.id()).is_some_and(Option::is_none)||ledger.get(&target.id()).is_some_and(Option::is_none){return None;}drop(ledger);
+-        let bvar=self.expressions.iter_raw().find_map(|(id,e)|matches!(e,Expr::BVar(0)).then_some(ExprId(id)))?;
+-        self.instantiate_fixed_pi_body_owned(body,binder,original,&Closure::new(bvar,target.clone()),remaining)
++        if let Some(bvar)=self.expressions.iter_raw().find_map(|(id,e)|matches!(e,Expr::BVar(0)).then_some(ExprId(id))) {
++            return self.instantiate_fixed_pi_body_owned(body,binder,original,&Closure::new(bvar,target.clone()),remaining);
++        }
++        // No replacement syntax is necessary for an independently checked
++        // capture-independent body. A dependent body still declines.
++        if !self.owned_pi_reclosure_capture_valid(body,remaining){return None;}
++        (self.type_depends_on_free_paid(body,binder,remaining)==Some(false)).then(||body.clone())
+     }
+     fn instantiate_fixed_pi_body_owned(&self,body:&TypeValue,binder:FreeId,original:&EnvFrame,actual:&Closure,remaining:&mut usize)->Option<TypeValue> {
+         if !matches!(original.lookup_binding_ref(0),Some(EnvBinding::Free(f)) if *f==binder)
+@@ -8978,3 +8983,23 @@
+   let missing=Closure::with_levels(ExprId(31),EnvFrame::empty(),LevelSubstitution::default());assert!(!c.checked_owned_proof_source_pair(&missing,&q,&[],&mut 16384));
+  }
+ }
++
++#[cfg(test)]
++mod absent_zero_index_reclosure_tests {
++ use super::*;
++ #[test]
++ fn unused_fixed_binder_needs_no_synthetic_bvar_expression(){
++  let mut e=IdTable::default(); let mut l=IdTable::default();
++  l.insert(LevelId(0),Level::Zero).unwrap();
++  e.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();
++  e.insert(ExprId(1),Expr::BVar(1)).unwrap();
++  let env=Environment::empty();let checker=TypeChecker::new(&e,&l,&env);
++  let original=EnvFrame::empty().extend_free(FreeId(0));
++  let target=EnvFrame::empty().extend_free(FreeId(1));
++  let body=TypeValue::Sort(LevelTerm::Zero);
++  assert_eq!(checker.reopen_fixed_pi_body_owned(&body,FreeId(0),&original,&target,&mut 64),Some(body));
++  assert!(checker.reopen_fixed_pi_body_owned(&TypeValue::Sort(LevelTerm::Zero),FreeId(0),&original,&target,&mut 0).is_none());
++  checker.checked_binding_lineage.borrow_mut().insert(original.id(),None);
++  assert!(checker.reopen_fixed_pi_body_owned(&TypeValue::Sort(LevelTerm::Zero),FreeId(0),&original,&target,&mut 64).is_none());
++ }
++}

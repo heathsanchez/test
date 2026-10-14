@@ -1,0 +1,84 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -177,12 +177,31 @@
+     congruence_depth: usize,
+     congruence_attempts: &mut usize,
+ ) -> Judgment<()> {
++    let mut remaining=budget;
++    convert_in_context_with_congruence_remaining(checker,left,right,delta_policy,initial_depth,context,congruence_depth,congruence_attempts,&mut remaining)
++}
++
++pub(crate) fn convert_with_policy_in_context_remaining(
++    checker:&TypeChecker<'_>,left:&TypeValue,right:&TypeValue,
++    delta_policy:DeltaPolicy,initial_depth:usize,context:&[TypeValue],remaining:&mut usize,
++)->Judgment<()> {
++    let mut attempts=32;
++    convert_in_context_with_congruence_remaining(checker,left,right,delta_policy,initial_depth,context,0,&mut attempts,remaining)
++}
++
++fn convert_in_context_with_congruence_remaining(
++    checker:&TypeChecker<'_>,left:&TypeValue,right:&TypeValue,
++    delta_policy:DeltaPolicy,initial_depth:usize,context:&[TypeValue],
++    congruence_depth:usize,congruence_attempts:&mut usize,caller_remaining:&mut usize,
++)->Judgment<()> {
++    let budget=*caller_remaining;
++    let mut remaining=budget;
++    let result=(|| {
+     #[cfg(test)]
+     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
+     #[cfg(feature = "diagnostics")]
+     crate::diagnostics::conversion();
+ 
+-    let mut remaining = budget;
+     let mut work=ConversionWorkList::new((left.clone(),right.clone(),initial_depth,context.to_vec()));
+     let mut visited = ConversionVisitSet::new();
+     let mut unit_like_frees = HashMap::new();
+@@ -647,6 +666,9 @@
+     }
+ 
+     Judgment::proven((), "guarded-relational-conversion")
++    })();
++    *caller_remaining=remaining;
++    result
+ }
+ 
+ #[cfg(test)]
+@@ -2477,3 +2499,22 @@
+   assert!(!convert(&c,&term(8),&term(21),4096).is_proven());assert!(convert(&c,&term(14),&term(22),4096).is_proven(),"whole original proof apps resolve the failed data argument comparison");assert!(!convert(&c,&term(14),&term(23),4096).is_proven(),"the second actual ill-typed argument cannot borrow the first proof type");
+  }
+ }
++
++#[cfg(test)]
++mod caller_conversion_ledger_tests {
++ use super::*;
++ #[test]
++ fn successful_failed_and_empty_conversions_return_actual_remaining(){
++  let expressions=crate::id::IdTable::default();let levels=crate::id::IdTable::default();let environment=crate::environment::Environment::empty();
++  let checker=TypeChecker::new(&expressions,&levels,&environment);
++  let zero=TypeValue::Sort(crate::level::LevelTerm::Zero);
++  let one=TypeValue::Sort(crate::level::succ(crate::level::LevelTerm::Zero));
++  for (right,budget) in [(&zero,64usize),(&one,64),(&one,0)] {
++   let expected=convert_with_policy_in_context(&checker,&zero,right,budget,DeltaPolicy::PreferredOnly,0,&[]);
++   let mut remaining=budget;
++   let result=convert_with_policy_in_context_remaining(&checker,&zero,right,DeltaPolicy::PreferredOnly,0,&[],&mut remaining);
++   assert_eq!(result,expected); assert!(remaining<=budget);
++   if budget>0 && right!=&zero {assert!(remaining<budget);}else if budget==0 {assert_eq!(remaining,0);assert!(!result.is_proven());}
++  }
++ }
++}
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -1433,10 +1433,10 @@
+                 let argument_ty = self.infer_exact_closure_in_context(
+                     &argument, context, remaining, depth + 1,
+                 )?;
+-                let mut domain_check = crate::convert::convert_with_policy_in_context(
+-                    self, &argument_ty, &domain, (*remaining).min(512),
++                let mut domain_check = crate::convert::convert_with_policy_in_context_remaining(
++                    self, &argument_ty, &domain,
+                     crate::convert::DeltaPolicy::PreferredOnly,
+-                    context.len(), context,
++                    context.len(), context, remaining,
+                 );
+                 // This stronger conversion is available only inside the
+                 // independently typed transported-proof rule. The argument

@@ -1,0 +1,76 @@
+name: Nucleus unpromoted source-owned recovery gate
+on:
+  push:
+    branches: [research/nucleus-source-owned-recovery-20261015]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      EXPERIMENT: metatron-kernel/evidence/residuals/source-owned-recovery-2026-10-15/unpromoted-source
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify frozen sources and test experimental library
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD > /tmp/evidence/commit.txt
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path(os.environ['EXPERIMENT'])
+          pins=json.loads((root.parent/'source-hashes.json').read_text())
+          assert all(hashlib.sha256((root/name).read_bytes()).hexdigest()==digest for name,digest in pins.items())
+          PY
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 cargo test --release --locked --features diagnostics --manifest-path "$EXPERIMENT/Cargo.toml" --lib > /tmp/evidence/library-tests.log 2>&1
+          cargo build --release --locked --features diagnostics --manifest-path "$EXPERIMENT/Cargo.toml"
+          sha256sum "$EXPERIMENT/target/release/metatron-kernel" > /tmp/evidence/binary.sha256
+      - name: Recover pinned original196 inputs
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/artifact /tmp/inputs
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/inputs.zip
+          sha256sum /tmp/inputs.zip > /tmp/evidence/input-artifact.sha256
+          unzip -q /tmp/inputs.zip -d /tmp/artifact
+          tar --no-same-owner -xzf /tmp/artifact/lean-arena-tests.tar.gz -C /tmp/inputs
+      - name: Record all verdicts and enforce complete-Fueled promotion requirement
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/inputs');binary=pathlib.Path(os.environ['EXPERIMENT'])/'target/release/metatron-kernel'
+          baseline=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          pinned={r['case']:r for r in baseline['modes']['origin']['rows']}
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in baseline['origin_flags']});env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          def check(path,case):
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              if case in pinned: assert digest==pinned[case]['sha256'],case
+              with path.open('rb') as stream:
+                  try:
+                      p=subprocess.run([str(binary)],stdin=stream,capture_output=True,env=env,timeout=180)
+                      rc,tail=p.returncode,(p.stderr+p.stdout).decode(errors='replace')[-2000:]
+                  except subprocess.TimeoutExpired: rc,tail=124,'TIMEOUT'
+              return dict(case=case,rc=rc,sha256=digest,terminal=tail)
+          rows=[check(p,str(p.relative_to(root))) for group in ['bad','good'] for p in sorted((root/group).rglob('*.ndjson'))]
+          assert len(rows)==196,len(rows)
+          controls=[check(pathlib.Path('metatron-kernel/tests/fixtures')/name,name) for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']]
+          counts=dict(accept=sum(r['rc']==0 for r in rows),reject=sum(r['rc']==1 for r in rows),unknown=sum(r['rc']==2 for r in rows),wrong=sum((r['case'].startswith('bad/') and r['rc']==0) or (r['case'].startswith('good/') and r['rc']==1) for r in rows),errors=sum(r['rc'] not in [0,1,2] for r in rows))
+          regressions=[r for r in rows if pinned[r['case']]['rc'] in [0,1] and r['rc']!=pinned[r['case']]['rc']]
+          fueled=next(r for r in rows if r['case']=='good/perf/fueled-chain.ndjson')
+          qualified=not regressions and not counts['wrong'] and not counts['errors'] and counts['accept']>=120 and counts['reject']==71 and counts['unknown']<=5 and fueled['rc']==0 and all(r['rc'] in [1,2] for r in controls)
+          report=dict(source_commit=os.environ['GITHUB_SHA'],source_status='unpromoted',test_scope='experimental library only',counts=counts,rows=rows,controls=controls,regressions=regressions,qualified=qualified)
+          pathlib.Path('/tmp/evidence/verdicts.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(counts),flush=True)
+          assert qualified,'Promotion requirement not met; see complete individual verdict evidence'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-unpromoted-source-owned-${{ github.sha }}
+          path: /tmp/evidence/
+          if-no-files-found: error

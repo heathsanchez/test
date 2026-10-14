@@ -1,0 +1,18 @@
+[
+  {
+    "case": "good/init-prelude.ndjson",
+    "binary_sha256": "d2e261d445db037b07f60c32f6fc49230417cc0a5ad98080fdada31e447727f9",
+    "input_sha256": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5",
+    "rc": 2,
+    "seconds": 0.6880775410008937,
+    "output": "NUCLEUS_DOWNSTREAM:name=Pow.noConfusion:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+  },
+  {
+    "case": "good/perf/fueled-chain.ndjson",
+    "binary_sha256": "d2e261d445db037b07f60c32f6fc49230417cc0a5ad98080fdada31e447727f9",
+    "input_sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+    "rc": 2,
+    "seconds": 0.1978582079991611,
+    "output": "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+  }
+]
