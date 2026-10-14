@@ -1,0 +1,22 @@
+# Fourth-family Go AST test-operation transfer — frozen before reviewing target patch
+
+Frozen on **2026-10-14 NZDT**. No target patch, test source, or CI regression output from the fourth repository has been inspected before this record.
+
+## Known calibrated native acquisition
+
+Existing human-written generic Go-AST diff selector, inherited unchanged from [source 54e45529](https://github.com/heathsanchez/test/commit/54e455290e5781c66235f6e8558dc4b9f0f9263e), selected `TestUnmarshalEmbeddedUnexportedSet` from [goccy/go-json #697](https://github.com/goccy/go-json/pull/697) without the test name supplied to the algorithm, transplanted only author-written added tests to the original predecessor and observed native RED(original)+GREEN(fixed). Actual separate pristine-predecessor ablation executed ZERO tests despite Go exit 0 => UNKNOWN, and typed withdrawal STALE. [Green native run #38555325155](https://github.com/heathsanchez/test/actions/runs/38555325155) attempts 1–2; same source revision. **No generated new assertion**. The selector currently has fixed goccy/go-json SHA constants for that one launch; parameterizing verified GitHub repo/SHA inputs is permitted, changing generic extraction logic for target family is NOT.
+
+## New fourth independent source — selected on PR title and author description alone
+
+[google/osv-scanner PR #3083](https://github.com/google/osv-scanner/pull/3083), original merged project maintained independently from go-json, OPA and gojq. PR title: *fix: return error when container image is missing*. Exact original BASE `1f87b5cb9781a03a9b8b50dfc1eac1b2056c79d5`; original contributor HEAD `6d23031dad5af57fcec2c49611d73e620609a222`. Original author's public summary says a missing image had caused a panic and a new public API regression test was added, reportedly tested via `go test ./pkg/osvscanner`. These are author-described expectations and do not count as independently observed results.
+
+**Precommitted success/failure gates**, before inspecting the patch:
+- Reuse the same Go AST-based new-test-function extractor and physical test-only-patch selector (no hard-coded fourth-family function/test name/operation rule or manual per-PR test manifest), with frozen validated repo/SHA inputs. The same refactored source must also requalify the original go-json calibration on fresh clean native runners.
+- Confirm actual Git original source, exact base/head metadata and before/after test-file identity. Only original author-written `*_test.go` changes may be transplanted to original base; implementation changes forbidden.
+- Original base + added author's test must actually ENTER at least one derived test and fail **inside a Go test assertion** (a build/import/dependency failure is NOT a behavioural witness). Original contributor head must PASS precisely the same selected test functions. Original full suite is not required. If selector cannot find a new function, or test-source patch cannot compile on base, report `UNKNOWN_GRAMMAR_OR_PATCH_MISMATCH`, not a success. Target **cannot be replaced** after seeing results.
+- The fourth case must pass untouched/pristine-predecessor *physical ablation* (zero test invocations => UNKNOWN), and typed evidence withdrawal => STALE. Wrong SHA, altered test-source digest, untrusted selector name => refuse.
+- Include a matched **competent conventional Git diff + go test** control with identical original repo commits and test patch. Go AST extraction and replay may tie an equally informed baseline; no human time advantage, unique security value, autonomous test invention, L7 or new upstream bug discovery should be claimed.
+- Repeat on a fresh GitHub-hosted runner at identical original source revision and confirm stable selected names, source digest, native test PASS/FAIL, ablation and withdrawal results, excluding nondeterministic output bytes/durations.
+- No third-party PR modification, Check publication, App installation, outreach, Gmail access, Render deployment, ARIA submission, or live Cloudflare/MathGraph modification.
+
+**Research question**: Can an existing human-coded *generic source-derived test-selection operation* transfer to a fourth independently maintained Go codebase without target-specific edits and produce a causally necessary original native regression witness? This is more modest than autonomously creating a new test *generation* operation. A passing result validates selection transfer, not L7 Genesis.
