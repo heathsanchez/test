@@ -35,7 +35,7 @@ jobs:
           root=evidence/cross-repo-native/source_A
           test -s "$root/learned_capability_A.json"
           test -s "$root/frozen_A_capability_sha256.txt"
-          (cd "$root" && sha256sum -c frozen_A_capability_sha256.txt)
+          (cd "$root" && sed "s|evidence/native-observation-basis/||" frozen_A_capability_sha256.txt | sha256sum -c -)
           python - <<'PY'
           import json
           from pathlib import Path
@@ -85,9 +85,9 @@ jobs:
           set -euo pipefail
           p=research/mgcheck_cross_repo_coherence_20261015/cross_source_native.py
           root=evidence/cross-repo-native
-          (cd "$root/source_A" && sha256sum -c frozen_A_capability_sha256.txt)
+          (cd "$root/source_A" && sed "s|evidence/native-observation-basis/||" frozen_A_capability_sha256.txt | sha256sum -c -)
           python "$p" transfer "$root/source_A/learned_capability_A.json" "$root" "$root/cross_repo_transfer_report.json"
-          (cd "$root/source_A" && sha256sum -c frozen_A_capability_sha256.txt)
+          (cd "$root/source_A" && sed "s|evidence/native-observation-basis/||" frozen_A_capability_sha256.txt | sha256sum -c -)
       - name: Archive all original native evidence even when hypothesis RED
         uses: actions/upload-artifact@v4
         if: always()
