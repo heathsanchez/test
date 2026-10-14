@@ -17,7 +17,7 @@ import sys
 import tomllib
 
 HERE = Path(__file__).resolve().parent
-SOURCE_SOLVER = HERE.parents[1] / "flash_genesis_v11" / "learned_repair.py"
+SOURCE_SOLVER = HERE.parent / "flash_genesis_v11" / "learned_repair.py"
 SOURCE_BLOB = "0f7fb6b837cd65aa86b5fef7c097196fc0df4845"
 OBS = ("mut_status", "native", "length", "render", "parse_status", "parsed", "coherence")
 N = len(OBS)
