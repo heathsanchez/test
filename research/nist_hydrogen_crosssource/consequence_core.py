@@ -155,3 +155,16 @@ def contrast_measured_predicted(x:Quantity,pred:Quantity):
 def independent_pooled_mean(*values):
     # No two-event covariance means no justified statistically fused value.
     raise UnknownEvidence("UNKNOWN_CROSS_STUDY_COVARIANCE_NO_POOLED_MEAN")
+
+def declared_within_source_correlation(value, evidence_id: str) -> Fraction:
+    """Explicit human-transcribed source mapping, not generic text understanding.
+
+    Nature 2026: R_inf vs r_p derived from one 2S-6P study, rho=+0.94.
+    Missing or substituted metadata must not silently default to rho=0.
+    """
+    if evidence_id != "nature2026:rp_vs_Rinf" or value is None:
+        raise UnknownEvidence("UNKNOWN_WITHIN_SOURCE_CORRELATION_IDENTITY")
+    rho=F(value)
+    if rho != F("0.94"):
+        raise UnknownEvidence("SOURCE_CORRELATION_MISMATCH")
+    return rho
