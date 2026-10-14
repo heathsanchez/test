@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 import urllib.request
+import trusted_native_receipt
 
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 GO_LINE = re.compile(r"(?:<standard input>|[^:\n]+):(\d+):(?:\d+:)?\s*(.+)")
@@ -191,6 +192,13 @@ def main():
         extra,witnesses=syntax_witnesses(repo,base,head)
         existing={(f["file"],f["start_line"]) for f in findings}
         findings.extend(f for f in extra if (f["file"],f["start_line"]) not in existing)
+        native, evidence_status = trusted_native_receipt.admit(
+            repo, pr, base, head, changed, changed_lines,
+            os.getenv("RB_NATIVE_EVIDENCE_DIR", ""),
+            os.getenv("RB_NATIVE_EVIDENCE_MANIFEST_SHA256", ""))
+        occupied = {(f["file"],f["start_line"]) for f in findings}
+        findings.extend(f for f in native if (f["file"],f["start_line"]) not in occupied)
+        witnesses.append({"native_evidence_status": evidence_status})
     output={"pr":{"repo":pr["repo"],"pr_number":int(pr["pr_number"]),"base":base,"head":head},
             "agent":producer,"findings":findings[:MAX_FINDINGS]}
     out.parent.mkdir(parents=True,exist_ok=True)
