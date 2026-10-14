@@ -1,0 +1,45 @@
+{
+  "schema": "metalogic.external-pr-source-native-heldout.v2",
+  "frozen_at": "2026-10-14",
+  "objective": "Test whether the already-qualified unchanged general Python AST new-test selector and native before/after counterfactual transfer to two previously untested real external PR semantics, without a per-target adapter, new test names, or authored repairs.",
+  "repository": "teorth/IEANTN",
+  "original_source_base": "2a10e721ff645865c45c344333b1934f34c45b41",
+  "source_blob_before": "458fc2bdd62b427e3e33a259c53ea9d5b928962d",
+  "original_test_blob_before": "7a4fb44630145f5d1ba7776867eb14f32ab41ad8",
+  "reused_qualifier_git_blob": "60e90d3858753c6319a6a64336361baf56172ede",
+  "source_files": [
+    "scripts/ieantn.py",
+    "tests/test_ieantn.py"
+  ],
+  "cases": [
+    {
+      "pr": 160,
+      "head": "fcfc2023a9670c0bf097a6e7119abe27761cd57f",
+      "source_blob": "57911de72af093df98a4934a40ff8e537e2ad5c4",
+      "test_blob": "043b4065f23a3b56ca5a8fa9588692cd441d43f4",
+      "family": "malformed receipt object/current evidence validity"
+    },
+    {
+      "pr": 161,
+      "head": "772d67590fd62c4dc1be336edf96e38754ddb130",
+      "source_blob": "cd01b4234cad35db245347b7828c9425192803fb",
+      "test_blob": "ae60b15d72433872a88f06b55da6de929f11902b",
+      "family": "lifecycle transition and Lean import dependencies"
+    }
+  ],
+  "verify": [
+    "Check original upstream Git commit + source and test blobs with unchanged helper",
+    "Check GitHub PR metadata exact base/head and OPEN at check time",
+    "Blindly AST-discover new source-authored unittest methods without preseeded method names",
+    "Old source plus unchanged PR-added tests RED and PR head plus same tests GREEN",
+    "Original old full suite green; new full suite green; complete test counts retained",
+    "Negative controls: changed source blob, prior test mutation, source selection mismatch, missing added tests fail closed",
+    "Retain evidence and exact raw outputs; compare against old green full suite, not naïve no-check baseline"
+  ],
+  "rejection": [
+    "Reject in-scope transfer if either PR lacks an unmodified newly added regression method, source drift, unsupported grammar, or no causal red-to-green",
+    "No generated repair, no proof of bug correctness beyond original native tests, no outside-user installation, no user reaction or value inference",
+    "Do not promote any self-modified generator/L7 or generalized compiler; if old unchanged method succeeds, only its reuse is established"
+  ],
+  "execution": "On isolated heathsanchez/test branch; no external repository writes, no comments, no production changes."
+}
