@@ -40,7 +40,9 @@ type Report struct{
  OldSourceCandidates int `json:"old_source_candidates"`
  HeadSourceCandidates int `json:"head_source_candidates"`
  Comparable int `json:"comparable_patterns"`
- ChangedPatternCount int `json:"changed_patterns"`
+ ChangedPatternCount int `json:"changed_unique_patterns"`
+ ChangedSourceSlots int `json:"changed_source_slots"`
+ DuplicateSourceSlots int `json:"duplicate_source_slots"`
  Changes []Changed `json:"source_changes"`
  Controls map[string]string `json:"executed_controls"`
  Unmatched int `json:"unmatched_source_slots"`
@@ -265,6 +267,7 @@ func main(){
   fmt.Println("RESULT",string(b))
  }
  observedOld,observedHead:=sha(*old),sha(*head)
+ if observedHead==""{rep.Status="UNKNOWN_REFERENCE_REMOVED";rep.Controls["reference_removed"]="EXECUTED_MISSING_HEAD_SOURCE";finish();os.Exit(2)}
  if len(*oldSHA)!=40||len(*headSHA)!=40||observedOld!=*oldSHA||observedHead!=*headSHA{
   rep.Status="UNKNOWN_SOURCE_IDENTITY";finish();os.Exit(2)
  }
@@ -280,12 +283,17 @@ func main(){
  for k:=range prev{keys=append(keys,k)}
  sort.Strings(keys)
  baseline:=weakBaseline()
+ seenSemanticPairs:=map[string]bool{}
  for _,key:=range keys{
   item:=prev[key]
   target,ok:=next[key]
   if !ok{rep.Unmatched++;continue}
   rep.Comparable++
   if item.Text==target.Text{continue}
+  rep.ChangedSourceSlots++
+  sig:=item.Text+"\x00"+target.Text
+  if seenSemanticPairs[sig]{rep.DuplicateSourceSlots++;continue}
+  seenSemanticPairs[sig]=true
   rep.ChangedPatternCount++
   preErrPattern,err1:=regexp.Compile(item.Text)
   newErrPattern,err2:=regexp.Compile(target.Text)
