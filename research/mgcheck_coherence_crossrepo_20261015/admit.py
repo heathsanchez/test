@@ -23,11 +23,12 @@ def main():
  with zipfile.ZipFile(zip_path) as z:
   prev=json.loads(z.read("learned_capability_A.json"))
   origin_report=json.loads(z.read("final_report.json"))
+  source_cap_sha=hashlib.sha256(z.read("learned_capability_A.json")).hexdigest()
  assert prev["selected_channels"]==["coherence"] and origin_report["future"]["B"]["learned_method_recognized_repaired_witnesses"]==8,"UNKNOWN_ORIGIN_CAPABILITY_NOT_QUALIFIED"
  cap={
    "source":"heathsanchez/test Actions 38639050079 artifact 11929272911",
    "source_archive_sha256":A_ZIP_SHA,
-   "source_capability_sha256":hashlib.sha256(z.read("learned_capability_A.json")).hexdigest(),
+   "source_capability_sha256":source_cap_sha,
    "observation":"coherence",
    "source_learned_qualifier":"WARRANTED_BOUNDED_A",
    "new_transfer_adapter":"human-authored common loads/dumps",
