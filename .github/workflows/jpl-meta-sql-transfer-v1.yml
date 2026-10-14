@@ -1,0 +1,85 @@
+name: JPL meta-level transfer to real SQL optimizer
+
+on:
+  push:
+    branches:
+      - research/jpl-meta-transfer-sqlglot-20261014
+    paths:
+      - 'research/jpl_meta_sql_transfer_v1/**'
+      - '.github/workflows/jpl-meta-sql-transfer-v1.yml'
+  pull_request:
+    paths:
+      - 'research/jpl_meta_sql_transfer_v1/**'
+      - '.github/workflows/jpl-meta-sql-transfer-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-sql-correspondence-and-flash-reclosure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout frozen experimental protocol
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 6
+          persist-credentials: false
+      - name: Checkout original independently maintained SQLGlot source
+        uses: actions/checkout@v4
+        with:
+          repository: tobymao/sqlglot
+          ref: b1b244b1f38a3000c94a7b21ee6dfae1959dd4b2
+          path: jpl-target-sqlglot
+          persist-credentials: false
+          submodules: false
+      - name: Import previous verified FLASH engine source unchanged
+        uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: 90d167031bba230399a686252ae5573d57100b94
+          path: flash-v13-source
+          persist-credentials: false
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Enforce preregistration byte-exact before execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show 6451eacf2f5687317579573eab69439307bb3c61:research/jpl_meta_sql_transfer_v1/FROZEN_PROTOCOL.json > /tmp/jpl_meta_original_protocol.json
+          cmp /tmp/jpl_meta_original_protocol.json research/jpl_meta_sql_transfer_v1/FROZEN_PROTOCOL.json
+          test "$(git -C jpl-target-sqlglot rev-parse HEAD)" = b1b244b1f38a3000c94a7b21ee6dfae1959dd4b2
+          test "$(git -C flash-v13-source rev-parse HEAD)" = 90d167031bba230399a686252ae5573d57100b94
+          test "$(git -C jpl-target-sqlglot hash-object sqlglot/optimizer/optimizer.py)" = fb8d216967c68d8e65db4455bdca0c8419cd9efc
+          echo PASS_FROZEN_PROTOCOL_TWO_EXTERNAL_SOURCE_LOCKS
+      - name: Native executable relation and independent closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/jpl_meta_sql_transfer_v1/run.py | tee /tmp/jpl_meta_run.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("research/jpl_meta_sql_transfer_v1/out")
+          r=json.loads((p/"report.json").read_text())
+          assert r["source_query_cases"]==14
+          assert r["finite_worlds"]==1301
+          assert r["graph"]["evented_reclose_equals_independent_batch"]
+          assert r["graph"]["tampered_restart_rejected"]
+          assert r["graph"]["unrelated_conclusions_unchanged"] if "unrelated_conclusions_unchanged" in r["graph"] else r["graph"]["selective_retraction"]["unrelated_conclusions_unchanged"]
+          assert len(r["mutants"])==6 and all(x["caught"] for x in r["mutants"])
+          print("PASS_EXACT_SOURCE_NATIVE_META_CORRESPONDENCE_BOUNDARY")
+          PY
+      - name: Archive source, controls and native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpl-meta-sqlglot-original-native-qualification
+          path: |
+            research/jpl_meta_sql_transfer_v1/FROZEN_PROTOCOL.json
+            research/jpl_meta_sql_transfer_v1/run.py
+            research/jpl_meta_sql_transfer_v1/out/*.json
+          if-no-files-found: warn
