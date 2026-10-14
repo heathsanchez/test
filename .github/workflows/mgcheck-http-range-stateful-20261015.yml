@@ -1,0 +1,39 @@
+name: MathGraph Check held-out HTTP stateful native qualification
+on:
+  push:
+    branches:
+      - research/mgcheck-unseen-stateful-http-range-20261015
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-temporal-retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - name: Checkout frozen owner research
+        uses: actions/checkout@v4
+      - name: Fetch original immutable historical Lima source into disposable worktrees
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch mgcheck-http-range-5229-base https://github.com/heathsanchez/lima.git base
+          git clone --depth 1 --branch mgcheck-http-range-5229-candidate https://github.com/heathsanchez/lima.git candidate
+          test "$(git -C base rev-parse HEAD)" = "f7b1c4f68b90299afc89ffeb47756e5fca590b91"
+          test "$(git -C candidate rev-parse HEAD)" = "335f61397af402ef77977a8e0c7a200f923349d1"
+      - name: Setup native Go from original source requirement
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: candidate/go.mod
+          cache: false
+      - name: Source-directed method and native before/repair/ablation
+        shell: bash
+        run: bash research/mgcheck_http_range_20261015/run_native.sh
+      - name: Preserve native evidence even on RED
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgcheck-http-range-observer-20261015
+          path: research/mgcheck_http_range_20261015/evidence/
+          if-no-files-found: warn
+          retention-days: 30
