@@ -1,0 +1,16 @@
+[
+  {
+    "binary_sha256": "465f1461dd651f0f6e3c802717894b7955ef0e63a79fde96c9472d2490e6e4a9",
+    "source": "experiments/unused-fixed-binder-repair/source",
+    "input_sha256": "856050129c6f620672154aab7df37c2ba73d777034d583739ebcb78a231cfd61",
+    "rc": 2,
+    "output": "NUCLEUS_DOWNSTREAM:name=List.brecOn:stage=definition.value:verdict=UNKNOWN:reason=domain-owned-opening-unavailable\n"
+  },
+  {
+    "binary_sha256": "b7c368839afaf7b8f25c3e8d39efc2072dbdb026cb785fbbbde4ea7e0fae45da",
+    "source": "experiments/init-domain-opening-repair/source",
+    "input_sha256": "856050129c6f620672154aab7df37c2ba73d777034d583739ebcb78a231cfd61",
+    "rc": 2,
+    "output": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.List.Lemmas.0.List.append_of_mem.match_1_9:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+  }
+]

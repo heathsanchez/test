@@ -1,0 +1,60 @@
+{
+  "meta": {
+    "timestamp": "2026-10-14 16:16:39 UTC",
+    "git_revision": "b732b413c4636622b00fc03b1379d1e086175ec1",
+    "git_revision_short": "b732b413",
+    "github_url": "https://github.com/leanprover/lean-kernel-arena/commit/b732b413c4636622b00fc03b1379d1e086175ec1",
+    "github_action_url": "https://github.com/leanprover/lean-kernel-arena/actions/runs/38570293704",
+    "round": null,
+    "doi": null,
+    "zenodo_deposition": null,
+    "github_run_id": "38570293704"
+  },
+  "mathlib_comparators": [
+    {
+      "checker": "sokonanoda",
+      "status": "accepted",
+      "correctness": "correct",
+      "wall_time": 57.477486263,
+      "cpu_time": 199.134718711,
+      "max_rss": 7766028288,
+      "instructions": 488744669857,
+      "version": "7645b1e",
+      "source_rev": "7645b1e1fcacfe410c99141f1234381d995b325d"
+    },
+    {
+      "checker": "mathgraph",
+      "status": "accepted",
+      "correctness": "correct",
+      "wall_time": 105.93651853700001,
+      "cpu_time": 197.849780232,
+      "max_rss": 6992588800,
+      "instructions": 775751124893,
+      "version": "flash",
+      "source_rev": "78c7502bac8a5ba000057b3f083bc0595ac65750"
+    },
+    {
+      "checker": "official",
+      "status": "accepted",
+      "correctness": "correct",
+      "wall_time": 3166.6552510270003,
+      "cpu_time": 3164.711554645,
+      "max_rss": 10658951168,
+      "instructions": 11615435772823,
+      "version": "v4.34.1",
+      "source_rev": null
+    }
+  ],
+  "test_count": 233,
+  "outcomes": {
+    "reject": 72,
+    "accept": 135,
+    "either": 26
+  },
+  "arena_source_now": "e0497d81b364be6104820f41ab940a845ef4f164",
+  "mathlib_pin": {
+    "ref": "v4.34.1",
+    "rev": "d13f23b723b8a846827a245b89c10fc7d3f11612"
+  },
+  "nucleus_full_accept_verified": false
+}
