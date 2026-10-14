@@ -1,0 +1,76 @@
+name: MathGraph seedless regex - untouched independent ozzo transfer
+on:
+  push:
+    branches:
+      - mathgraph-seedless-regex-transfer-20261015-v1
+    paths:
+      - '.github/workflows/seedless-regex-heldout.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-ozzo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: go-ozzo/ozzo-validation
+          ref: 48423ae967b5ed417f9076caa37e83f24b29dccd
+          path: source/ozzo/head
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify frozen source identities and unmodified calibrated constructor
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/seedless_regex/seedless.go)" = 'e50c595e36caf67013b9d45f5a46179bbaf1aa8d'
+          test "$(git -C source/ozzo/head rev-parse HEAD)" = 48423ae967b5ed417f9076caa37e83f24b29dccd
+          git -C source/ozzo/head fetch --no-tags --depth=1 origin dbba76d963f16ad2ea78fd8fb7d36564783cb3c4
+          git -C source/ozzo/head worktree add --detach ../base dbba76d963f16ad2ea78fd8fb7d36564783cb3c4
+          test "$(git -C source/ozzo/base rev-parse HEAD)" = dbba76d963f16ad2ea78fd8fb7d36564783cb3c4
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Run untouched constructor, two-source contract and negative controls
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ozzo"
+          set -- --base source/ozzo/base --head source/ozzo/head --base-sha dbba76d963f16ad2ea78fd8fb7d36564783cb3c4 --head-sha 48423ae967b5ed417f9076caa37e83f24b29dccd --repo go-ozzo/ozzo-validation
+          go run research/seedless_regex/seedless.go "$@" --out "$RUNNER_TEMP/ozzo/heldout.json" > "$RUNNER_TEMP/ozzo/log.txt"
+          go run research/seedless_regex/seedless.go "$@" --identical --out "$RUNNER_TEMP/ozzo/identical.json" >/dev/null
+          go run research/seedless_regex/seedless.go "$@" --ablate --out "$RUNNER_TEMP/ozzo/ablation.json" >/dev/null
+          go run research/seedless_regex/seedless.go "$@" --withdraw --out "$RUNNER_TEMP/ozzo/withdrawal.json" >/dev/null
+          go run research/seedless_regex/seedless.go "$@" --swap --out "$RUNNER_TEMP/ozzo/swap.json" >/dev/null
+          python3 - "$RUNNER_TEMP/ozzo" <<'PY'
+          import json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]);read=lambda n:json.loads((p/(n+'.json')).read_text())
+          a,b,c,d,e=[read(x) for x in ('heldout','identical','ablation','withdrawal','swap')]
+          assert a['source']['repository']=='go-ozzo/ozzo-validation'
+          assert a['positive_example_seed']=='NONE' and a['original_author_test_samples_used'] is False
+          assert a['result']=='WARRANTED_BOUNDED_SOURCE_REGEX_DELTA_WITNESS',a
+          assert a['old_only_count']+a['new_only_count']>0
+          assert b['result']=='UNKNOWN_NO_SOURCE_REGEX_WITNESS_IN_BOUND'
+          assert c['result']=='UNKNOWN_REFERENCE_REMOVED'
+          assert d['result']=='STALE_EVIDENCE_WITHDRAWN'
+          assert e['old_only_count']==a['new_only_count'] and e['new_only_count']==a['old_only_count']
+          assert all(x['action_authorization']=='NONE' for x in (a,b,c,d,e))
+          print('FROZEN_OZZO_SEEDLESS',a['result'],a.get('old_only_shortest'),a.get('new_only_shortest'))
+          PY
+      - name: Reject incorrect original SHA without status inflation
+        run: |
+          set -euo pipefail
+          if go run research/seedless_regex/seedless.go --base source/ozzo/base --head source/ozzo/head --base-sha ffffffffffffffffffffffffffffffffffffffff --head-sha 48423ae967b5ed417f9076caa37e83f24b29dccd --repo go-ozzo/ozzo-validation --out "$RUNNER_TEMP/ozzo/forged.json" >/dev/null 2>&1; then
+            echo SOURCE_IDENTITY_GUARD_FAILURE; exit 1
+          fi
+          test ! -f "$RUNNER_TEMP/ozzo/forged.json"
+          echo SOURCE_IDENTITY_REJECTED
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: sixth-original-source-seedless-regex
+          path: ${{ runner.temp }}/ozzo/
+          if-no-files-found: ignore
