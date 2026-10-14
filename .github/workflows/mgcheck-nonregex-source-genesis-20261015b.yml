@@ -93,9 +93,36 @@ jobs:
           qualified=[x for x in r["results"] if x["status"]==r["status"]]
           assert qualified
           assert all(x["native_generated_test_removed_before"] and x["native_generated_test_removed_after"] for x in qualified)
-          assert all(x["minimum_witness"]["input"] is not None for x in qualified)
-          print("QUALIFIED_NONREGEX_NATIVE_WITNESSES",[(x["source_function_key"],x["minimum_witness"]["input"]) for x in qualified])
+          assert all(x["minimum_semantic_witness"]["input"] is not None for x in qualified)
+          assert all(x["independently_admitted_semantic_inputs"]>0 for x in qualified)
+          print("QUALIFIED_NONREGEX_NATIVE_WITNESSES",[(x["source_function_key"],x["minimum_semantic_witness"]["input"],x["minimum_semantic_witness"]["semantic_class"]) for x in qualified])
           print("FULL_INFO_BASELINE_RESULT=TIE_ON_GIVEN_SOURCE_AND_INPUTS")
+          PY
+      - name: Physically reject false source SHA and missing contributor source
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          go run research/mgcheck_nonregex_20261015/nonregex_method.go \
+            --old "$RUNNER_TEMP/base" --head "$RUNNER_TEMP/head" \
+            --old-sha "$OLD_SHA" --head-sha "0000000000000000000000000000000000000000" \
+            --out "negative-sha-${{ matrix.family }}.json" > /dev/null
+          wrong=$?
+          go run research/mgcheck_nonregex_20261015/nonregex_method.go \
+            --old "$RUNNER_TEMP/base" --head "$RUNNER_TEMP/absent-native-source" \
+            --old-sha "$OLD_SHA" --head-sha "$HEAD_SHA" \
+            --out "negative-missing-${{ matrix.family }}.json" > /dev/null
+          missing=$?
+          set -e
+          test "$wrong" -ne 0
+          test "$missing" -ne 0
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for k in ("sha","missing"):
+              r=json.loads(Path("negative-"+k+"-${{ matrix.family }}.json").read_text())
+              assert r["status"]=="UNKNOWN_SOURCE_IDENTITY",r
+          print("ACTUAL_FALSE_SHA_AND_REFERENCE_REMOVAL_RETURN_UNKNOWN")
           PY
       - uses: actions/upload-artifact@v4
         if: always()
