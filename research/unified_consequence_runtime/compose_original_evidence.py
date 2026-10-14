@@ -33,7 +33,7 @@ def compose(depth5, runtime):
     if depth5.get("claims",{}).get("open_ended_nonmath_scaling",{}).get("state")!="UNKNOWN":
         raise ValueError("historical scope changed")
     flash=runtime.get("flash",{})
-    if len(flash.get("events",[]))!=13 and flash.get("events")!=13:
+    if type(flash.get("events")) is not int or flash["events"] != 13:
         raise ValueError("runtime event count changed")
     if len(flash.get("active_capabilities",[]))!=11:
         raise ValueError("runtime live capability count changed")
