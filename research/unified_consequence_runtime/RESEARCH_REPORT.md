@@ -1,17 +1,29 @@
 # Universal Developmental Machine — native V54 continuation
 
-**Local result: WARRANTED_BOUNDED native O1→O2 developmental execution.**
-The independently reproducible Actions qualification is pending. The machine
+**WARRANTED_BOUNDED native O1→O2 developmental execution.**
+The independently reproducible [full Actions qualification](https://github.com/heathsanchez/test/actions/runs/38682218192)
+is green and its downloaded archive passed all 12 independent evidence-review gates. The machine
 continues from canonical commit `10269fa87dacd47b7d0036935bc8b006e5041adc` on
 `research/universal-developmental-machine-v54-20261015`. Its qualified E/D
 implementation is retained. The original report is preserved in
 [BASE_RESEARCH_REPORT.md](archaeology/v54-continuation/BASE_RESEARCH_REPORT.md).
 
-The corrected full qualification is run `38682218192`, exact source
-`7b8f87ef236c38cae21252d5e47291af68083049`. Earlier run `38679518463`
+The full qualification is exact source `7b8f87ef236c38cae21252d5e47291af68083049`.
+[Artifact11951020294](https://github.com/heathsanchez/test/actions/runs/38682218192/artifacts/11951020294)
+was reopened locally; ZIP SHA256 is
+`883eba3206e7feb44203f340212b68d5fd639588ca3af2fc1584436b95462c16`.
+Earlier run `38679518463`
 completed every native developmental stage but failed an auxiliary selection
 counting assertion. Its archive `11948483784` was reopened and SHA256 checked:
 `7c8324e9ba8885d8d35a7118392c8e723d32da16c372235ed9a9bb1389d80cfa`.
+The reviewed root check is committed at `f14423ddc07b35a8207eee43764f8ed780735fe5`.
+Its [artifact-reuse qualification](https://github.com/heathsanchez/test/actions/runs/38684747298)
+is also green. [Artifact11949902687](https://github.com/heathsanchez/test/actions/runs/38684747298/artifacts/11949902687)
+was independently reopened and reviewed; ZIP SHA256 is
+`7f40ae31cc631ab619c6af5539a4bf1acdc851a7c15bc1024661ee66483ec28b`.
+It checks the hardened runtime against authenticated acquired state without
+repeating acquisition or developmental search. Exact receipts are in
+[QUALIFICATION_RECEIPT.json](QUALIFICATION_RECEIPT.json).
 
 ## What actually executes
 
@@ -43,7 +55,7 @@ The generic token-emission constructor was supplied, not acquired.
 | Reverified restoration | New generations and evidence; old revoked IDs inactive |
 | Separate-process executable cold restart | O1/O2 and six E/D outcomes PASS |
 | Strong equally informed original executable-ledger baseline | TIE on O2, survivors, candidate budget and final source |
-| Source/scope/evidence/corruption/withdrawal contract suite | 91/91 PASS after independent review; focused path/causal guards 25/25 PASS |
+| Source/scope/evidence/corruption/withdrawal contract suite | Full Actions78/78 PASS; maintained-source Actions91/91 PASS; focused local guards25/25 PASS |
 | Formal evidence regression suite | 5/5 PASS |
 | Concrete original VDN finite-table Lean instance | CHECKED, original Lean4.28.0 |
 
@@ -56,6 +68,10 @@ all nine independent gates and six E/D outcomes. All 143 historical records and
 unchanged archived input bytes were checked. That maintenance replay took63.11s;
 acquisition and developmental search were not repeated. An earlier replay launched
 with an interpreter lacking WebArena failed at E/D verification; its logs remain.
+The independently reviewed Actions maintenance packet repeats this check on a
+new runner:143 original records retained,153 final records, exact two-node control
+withdrawal,17 independent native checks, matching six E/D hashes, and82.16s
+separate-process native replay. The archived input remains byte-identical.
 
 ## Existing operation before invention
 
@@ -104,6 +120,8 @@ Independent review additionally found and corrected a pre-preparation world-root
 check; redirected or missing roots now fail before a routed reset. This remains
 a point-in-time local check. Retained native receipts bind the selected interpreter
 pathname; transport to arbitrary execution paths is not qualified.
+The routed withdrawal contract is sequential and assumes a single state writer;
+concurrent hostile-host execution and crash atomicity are not established.
 
 ## Reconciled research and unresolved frontier
 
@@ -150,6 +168,16 @@ was not run; the strong executable-ledger comparator was executed.
 
 ## Costs and status
 
+The fresh Actions qualification took2106.08s, including148.08s original acquisition,
+511.27s cold search,602.68s warm construction/admission,514.65s executable-ledger
+comparison,10.93s withdrawal,167.61s restoration and81.54s separate-process replay.
+Independent native verification across coordinator and restart took385.13s;
+persistence/reclosure took19.14s. These are nested measurements, not additional
+totals. All original 101 records and 11 source admissions survived. The native
+call summary retains22 passes,1140 failures,88 timeouts and0 errors; the frozen
+cold boundary remains497 failures and44 timeouts. The final ledger SHA256 is
+`049fbeab3f968d9e6aabec1d900b6f5201f01385a5c8749e05fef5f93eee905b`.
+
 Local original acquisition took104.12s. Subsequent qualification took1611.45s,
 including445.04s cold search,487.94s warm construction/admission,436.35s fresh
 baseline,124.73s restoration and60.13s separate-process replay. Its recorded
@@ -159,14 +187,16 @@ is shared original knowledge, not falsely counted as free reconstruction.
 The native summary retains22 passes,1142 failures,86 timeouts and0 errors;
 baseline receipts are separate. These are qualification costs, not historical
 research-discovery costs or established lifecycle savings.
+Development engineering effort and long-term maintenance were not measured.
 
 WARRANTED: bounded native developmental execution, selective causal state,
 restart, finite table certificate, and frozen-scope existing-method activation.
 REJECTED: strict advantage over the equally informed executable ledger in this
-experiment; forged/wrong-scope/corrupt/withdrawn routes; historical controls above.
+experiment; the tested forged/wrong-scope/corrupt/withdrawn routes; historical controls above.
 UNKNOWN: non-bypassable action enforcement, prospective unfamiliar-source growth,
 autonomous constructor or policy invention, universal old-world impossibility,
-IKKF cross-model portability through this runtime, and unrestricted intelligence.
+equivalence of source-distinct implementations, IKKF cross-model portability
+through this runtime, and unrestricted intelligence.
 REUSABLE: recovered original native/formal/selector mechanisms within exact scopes.
 SUPERSEDED: the old V54 primary-artifact UNKNOWN after its exact ZIP was recovered,
 and the historical-only interpretation of the current executable machine.

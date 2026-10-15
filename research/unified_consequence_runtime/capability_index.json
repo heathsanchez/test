@@ -2536,7 +2536,7 @@
         "repository": "heathsanchez/triskelion",
         "commit": "2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c",
         "path": "experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py",
-        "sha256": "13c05aea8d6c1ce2db6d3d4b85c566ee3dbd2f3fcc1c2dece7f05ba"
+        "sha256": "13c05aea8d6c1ce2db6d3d4b85c566ee3dbd2f3fcc1c3c8c14c1c2dece7f05ba"
       },
       "implementation": [
         "v54_source.py",
@@ -2546,7 +2546,7 @@
       ],
       "verifier": "Independent native tests in clean authenticated original Django/Requests/Rich archives, root-selected Python and dependency environment",
       "status": "WARRANTED_BOUNDED_V54_TWO_GENERATION_EXTENSION",
-      "verification_boundary": "LOCAL_NATIVE_END_TO_END_PASS; ACTIONS_QUALIFICATION_PENDING",
+      "verification_boundary": "EXACT_SOURCE_NATIVE_ACTIONS_FULL_PASS; INDEPENDENT_ARCHIVE_REVIEW_12_OF_12; REVIEWED_NATIVE_STATE_REPLAY_PASS; NONBYPASSABILITY_UNKNOWN",
       "scope": {
         "acquisition": "Django two-source repair plus Rich learned scope",
         "protected_future": "Original Requests iter_slices two-fault native target",
@@ -2586,15 +2586,25 @@
         "v54_verify.py": "c40a4e1f227ea83b82ceb8fd4a404cf85fd04ced3b87657934c0c92fb72f0456",
         "qualify_v54_machine.py": "9c1c27be5940d7c279f84087d83616ed05e363f1e1e0b8c24e1b298e004103a5"
       },
-      "qualification_run": null,
-      "qualification_artifact": null,
+      "qualification_run": 38682218192,
+      "qualification_artifact": {
+        "id": 11951020294,
+        "sha256": "883eba3206e7feb44203f340212b68d5fd639588ca3af2fc1584436b95462c16",
+        "bytes": 7031908,
+        "archive_reopened": true
+      },
       "local_original_qualification_source_sha256": {
         "v54_source.py": "adda0919fe17eff04646bd217620a6adfc66ef0dd9418e1663e850ed09857892",
         "v54_runtime.py": "3caeeb783c2a2c6d8eb29bc3c21d12683aefd108e36ef278b488c340794d2b13",
         "v54_verify.py": "c40a4e1f227ea83b82ceb8fd4a404cf85fd04ced3b87657934c0c92fb72f0456",
         "qualify_v54_machine.py": "9c1c27be5940d7c279f84087d83616ed05e363f1e1e0b8c24e1b298e004103a5"
       },
-      "current_runtime_replay_evidence": "/workspace/qualification/v54-replay-final/RESULT.json",
+      "current_runtime_replay_evidence": {
+        "run": 38684747298,
+        "artifact_id": 11949902687,
+        "path": "qualification/replay-v54/RESULT.json",
+        "sha256": "b7eea5690aa3a30a3546f781c47f8b7365fa3067c26587ba81d99a71e138e872"
+      },
       "post_review_scope_guard": {
         "status": "REPLAY_VERIFIED_QUALIFIED_V54_STATE",
         "local_evidence": "/workspace/qualification/v54-root-guard-replay-local-udm/RESULT.json",
@@ -2606,8 +2616,41 @@
         "acquisition_rerun": false,
         "native_proof_gates": 9,
         "native_ED_outcomes": 6,
-        "qualification_run": null,
-        "qualification_artifact": null
+        "qualification_run": 38684747298,
+        "qualification_artifact": {
+          "id": 11949902687,
+          "sha256": "7f40ae31cc631ab619c6af5539a4bf1acdc851a7c15bc1024661ee66483ec28b",
+          "bytes": 20322818,
+          "archive_reopened": true
+        },
+        "qualified_source_commit": "f14423ddc07b35a8207eee43764f8ed780735fe5",
+        "actions_result_sha256": "b7eea5690aa3a30a3546f781c47f8b7365fa3067c26587ba81d99a71e138e872",
+        "actions_final_ledger_sha256": "318b3beea80ed38d131b16b85571cd78917918e872083cb840c7748b0c609528",
+        "independent_packet_review_status": "PASS_MAINTENANCE_EVIDENCE",
+        "independent_packet_review_sha256": "fc977be9bfa8096a4697bc7079b8a895f876583803ed1875a9c1af3f262283e8",
+        "contract_tests": 91
+      },
+      "qualified_coordinator_commit": "7b8f87ef236c38cae21252d5e47291af68083049",
+      "actions_evidence": {
+        "result_sha256": "0dab2e86e80219467ae83c4bae47657200073553b174410f6538fb9028dd748e",
+        "final_ledger_sha256": "049fbeab3f968d9e6aabec1d900b6f5201f01385a5c8749e05fef5f93eee905b",
+        "total_seconds": 2106.0754259289997,
+        "all_native_stages": "PASS",
+        "contract_tests": 78,
+        "independent_packet_review": {
+          "status": "PASS_PACKET_EVIDENCE",
+          "gates": 12,
+          "review_sha256": "920c7092e5c9c26a79ad31e1cf1b6799d6378aec66ef94df802aa92383f4b2af"
+        }
+      },
+      "latest_qualified_runtime_commit": "f14423ddc07b35a8207eee43764f8ed780735fe5",
+      "pre_review_runtime_replay_evidence": "/workspace/qualification/v54-replay-final/RESULT.json",
+      "latest_qualified_runtime_source_sha256": {
+        "research/unified_consequence_runtime/consequence_selection.py": "e39f10c5671df25761c4e2bc18c46eccbb14dfd6180834f1befc560e13a4bcaa",
+        "research/unified_consequence_runtime/qualify_v54_machine.py": "9c1c27be5940d7c279f84087d83616ed05e363f1e1e0b8c24e1b298e004103a5",
+        "research/unified_consequence_runtime/v54_runtime.py": "f247361caf1090aa14340071b8f05efff4b3f5af54b3eac0999cd2aac0cde93e",
+        "research/unified_consequence_runtime/v54_source.py": "adda0919fe17eff04646bd217620a6adfc66ef0dd9418e1663e850ed09857892",
+        "research/unified_consequence_runtime/v54_verify.py": "c40a4e1f227ea83b82ceb8fd4a404cf85fd04ced3b87657934c0c92fb72f0456"
       }
     },
     {
@@ -2640,7 +2683,22 @@
         "all-futures MSI quotient",
         "non-bypassable external-action monitor"
       ],
-      "local_receipt": "/workspace/qualification/v54-local/formal/lean-verification-portable.json"
+      "local_receipt": "/workspace/qualification/v54-local/formal/lean-verification-portable.json",
+      "qualification_run": 38682218192,
+      "qualification_artifact": 11951020294,
+      "qualified_coordinator_commit": "7b8f87ef236c38cae21252d5e47291af68083049",
+      "actions_receipt": {
+        "path": "qualification/v54/formal/lean-verification.json",
+        "sha256": "398ea68ed09c5bbc43ef897ddd9df682c3c64a3dd6c833f1a2335eb31e5a1830",
+        "certificate_sha256": "7996b2ec5c60484101eb1b5ebf0d6b497853021dc7571977320c6c8d373136ea",
+        "acquired_operator_identity_checked": true
+      },
+      "maintenance_recheck": {
+        "run": 38684747298,
+        "artifact": 11949902687,
+        "receipt_sha256": "0bd11155437fde7b7f2a790f83b91470c0f659cbea377df30f57e472d0caf287",
+        "status": "CHECKED_BOUNDED_TABLE_CERTIFICATE"
+      }
     },
     {
       "id": "existing-method-activation-msi-jpl-mda",
@@ -2691,7 +2749,15 @@
       "prospective_second_generation": "UNKNOWN_TYPED_NATIVE_FRONTIER_NOT_ADMITTED",
       "retained_state_unchanged": true,
       "local_evidence": "/workspace/qualification/v54-local/mda-consequence-selection.json",
-      "qualification_run": null
+      "qualification_run": 38682218192,
+      "qualification_artifact": 11951020294,
+      "qualified_coordinator_commit": "7b8f87ef236c38cae21252d5e47291af68083049",
+      "maintenance_recheck": {
+        "run": 38684747298,
+        "artifact": 11949902687,
+        "native_outcomes": 6,
+        "baseline": "TIE_SAME_AVAILABLE_OPERATIONS"
+      }
     },
     {
       "id": "msi-rgrs-v12-recursive-consequence-structure",
@@ -2810,7 +2876,9 @@
     "cross_model_compilation": "UNKNOWN",
     "source_distinct_representation_transfer": "UNKNOWN",
     "competent_tool_using_agent_comparator": "NOT_RUN",
-    "production_authorization": "NONE"
+    "production_authorization": "NONE",
+    "source_distinct_implementation_equivalence": "UNKNOWN",
+    "state_writer": "SEQUENTIAL_SINGLE_WRITER; CONCURRENT_HOSTILE_HOST_AND_CRASH_ATOMICITY_UNKNOWN"
   },
   "retrieval_obstruction": "Early combined additional-permission network clone/tool call blocked for approximately 2568 seconds and was cancelled; no current tool call is blocked. Snapshot uses local repositories, original archives, recovered run metadata and available peer reports only.",
   "snapshot_status": "RECONCILED_SOURCE_NATIVE_QUALIFICATION_AND_FORMAL_CORRESPONDENCE_WITH_EXPLICIT_UNKNOWNS",
@@ -2855,10 +2923,31 @@
       {
         "run": 38682218192,
         "source_commit": "7b8f87ef236c38cae21252d5e47291af68083049",
-        "status": "in_progress",
-        "workflow_conclusion": null
+        "status": "completed",
+        "workflow_conclusion": "success",
+        "artifact_id": 11951020294,
+        "artifact_sha256": "883eba3206e7feb44203f340212b68d5fd639588ca3af2fc1584436b95462c16",
+        "archive_reopened_and_hashed": true,
+        "independent_packet_review": "PASS_12_OF_12"
+      },
+      {
+        "run": 38684747298,
+        "source_commit": "f14423ddc07b35a8207eee43764f8ed780735fe5",
+        "kind": "QUALIFIED_STATE_NATIVE_REPLAY_WITHOUT_ACQUISITION_RERUN",
+        "status": "completed",
+        "workflow_conclusion": "success",
+        "artifact_id": 11949902687,
+        "artifact_sha256": "7f40ae31cc631ab619c6af5539a4bf1acdc851a7c15bc1024661ee66483ec28b",
+        "archive_reopened_and_hashed": true,
+        "independent_packet_review": "PASS_MAINTENANCE_EVIDENCE",
+        "acquisition_rerun": false
       }
     ],
-    "independent_review": "archaeology/v54-continuation/INDEPENDENT_REVIEW.md"
-  }
+    "independent_review": "archaeology/v54-continuation/INDEPENDENT_REVIEW.md",
+    "qualification_receipt": "QUALIFICATION_RECEIPT.json",
+    "completion_status": "WARRANTED_BOUNDED_NATIVE_V54_INTEGRATION_AND_REVIEWED_STATE_REPLAY",
+    "authority_enforcement": "UNKNOWN_NONBYPASSABILITY",
+    "comparative_advantage": "REJECTED_MEASURED_EXECUTABLE_LEDGER_TIE"
+  },
+  "retrieval_obstruction_resolution": "Current native qualification archives and canonical base ZIP recovered and independently reopened; early network/tool obstructions retained above as historical records."
 }

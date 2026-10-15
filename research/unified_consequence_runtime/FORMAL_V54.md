@@ -19,6 +19,17 @@ The observations and hashes below identify the preserved local packet at
 binds its own actual calls, timing outcomes and compiler receipt. Resource-bound
 timeouts can vary without changing the declared formal boundary.
 
+The [green Actions packet](https://github.com/heathsanchez/test/actions/runs/38682218192/artifacts/11951020294)
+independently generated the same concrete certificate SHA256 from its fresh
+native traces. Its compiler receipt SHA256 is
+`398ea68ed09c5bbc43ef897ddd9df682c3c64a3dd6c833f1a2335eb31e5a1830`;
+all five compilations and all four theorem axiom audits passed. The packet's
+manifest binds its own actual acquisition result and native calls.
+The [maintained-runtime packet](https://github.com/heathsanchez/test/actions/runs/38684747298/artifacts/11949902687)
+rechecks that frozen instance without another discovery run. Its compiler receipt
+SHA256 is `0bd11155437fde7b7f2a790f83b91470c0f659cbea377df30f57e472d0caf287`;
+all five compilations and four theorem axiom audits pass again.
+
 The exact old table contains 541 actions and 542 covered traces including the
 empty trace. Every candidate hash matches the independently reconstructed
 original cold enumeration in order. The observed outcomes are 497 nonzero

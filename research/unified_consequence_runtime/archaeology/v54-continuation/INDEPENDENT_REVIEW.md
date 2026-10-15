@@ -28,3 +28,18 @@ zero-budget `Developer.run` with a thin projection into the same Metatron state.
 It does not create a SQLite evidence authority. Native response counts are based
 on accepted independent receipts, including a correctly accepted NOT_FOUND_ERROR
 outcome, rather than literal response text.
+
+The green full packet at run38682218192 passed12 independent review gates:
+127 exact source files, original archives, native acquisition and both searches,
+seven independent receipts, causal lineage, cold restart, baseline, tests, the
+concrete Lean instance and six native selections. Its ZIP was reopened and hashed.
+The maintained packet at run38684747298 separately matched134 source files,
+retained143 prior records and removed exactly two unrelated controls. Its actual
+native replay, nine verification gates, six E/D hashes,91 tests and Lean recheck
+were inspected. Both reviews preserve non-bypassability and unfamiliar-frontier
+growth as UNKNOWN, and strict comparative advantage as REJECTED on the tie.
+
+Final reconciliation caught a truncated source-hash string in one V54 index
+field. It was corrected from the exact original Git blob. Executable source
+guards and native receipts had used the full correct hash throughout; prior
+index snapshots remain in Git history and the qualification archives.
