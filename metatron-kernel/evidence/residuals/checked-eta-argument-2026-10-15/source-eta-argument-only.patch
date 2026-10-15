@@ -1,0 +1,253 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -186,6 +186,12 @@
+     strict_origin_probe: bool,
+ }
+ 
++pub(crate) struct CheckedEtaBody { body:Closure, context:Rc<Vec<TypeValue>> }
++impl CheckedEtaBody {
++ pub(crate) fn body(&self)->&Closure{&self.body}
++ pub(crate) fn context(&self)->&[TypeValue]{&self.context}
++}
++
+ impl<'a> TypeChecker<'a> {
+     fn reset_lambda_trials(&self, budget: usize) {
+         *self.lambda_trials.borrow_mut() = LambdaTrialState {
+@@ -596,7 +602,7 @@
+     /// Only the already-checked closed atomic domain rule supplies formation
+     /// and domain equality. The right capture is an owned alias of the one
+     /// actual left local, not a same-number independent introduction.
+-    pub(crate) fn checked_source_eta_opening(&self,lambda_source:&Closure,function_source:&Closure,domain:&Closure,body:&Closure,context:&[TypeValue],free:FreeId,remaining:&mut usize)->Option<Closure> {
++    pub(crate) fn checked_source_eta_opening(&self,lambda_source:&Closure,function_source:&Closure,domain:&Closure,body:&Closure,context:&[TypeValue],free:FreeId,remaining:&mut usize)->Option<CheckedEtaBody> {
+         if usize::try_from(free.0).ok()!=Some(context.len()){return None;}
+         if !self.source_used_capture_authority_available(lambda_source,remaining)||!self.source_used_capture_authority_available(function_source,remaining){return None;}
+         let probe=self.strict_certificate_probe();
+@@ -609,8 +615,39 @@
+         let cost=context.len().checked_add(1)?;if *remaining<cost{return None;}*remaining-=cost;
+         let ty=TypeValue::Term(domain.clone());let mut extended=context.to_vec();extended.push(ty.clone());
+         let owner=body.env.extend_free_paid(free,remaining)?;if !take_step(remaining){return None;}
+-        probe.retain_shared_checked_binding(&owner,ty,Rc::new(extended));Some(body.sibling(body.expr,owner))
+-    }
++        let context=Rc::new(extended);probe.retain_shared_checked_binding(&owner,ty,context.clone());Some(CheckedEtaBody{body:body.sibling(body.expr,owner),context})
++    }
++    pub(crate) fn eta_fresh_argument(&self,opened:&CheckedEtaBody,remaining:&mut usize)->Option<Closure> {
++        let mut pending=vec![opened.body.expr];let mut seen=std::collections::HashSet::new();
++        for _ in 0..64 {
++            let id=pending.pop()?;if !take_step(remaining){return None;}if !seen.insert(id){continue;}
++            match self.expressions.get(id)? {
++                Expr::BVar(0)=>return Some(opened.body.sibling(id,opened.body.env.clone())),
++                Expr::App{fun,arg}=>{pending.push(*fun);pending.push(*arg);},
++                Expr::Lam{domain,body}|Expr::Pi{domain,body}=>{pending.push(*domain);pending.push(*body);},
++                Expr::Let{ty,value,body}=>{pending.push(*ty);pending.push(*value);pending.push(*body);},
++                Expr::Proj{structure,..}=>pending.push(*structure),_=>{},
++            }
++        }None
++    }
++
++    pub(crate) fn eta_body_result_is_rigid(&self,opened:&CheckedEtaBody,remaining:&mut usize)->bool {
++        if !self.source_used_capture_authority_available(opened.body(),remaining){return false;}
++        let probe=self.strict_certificate_probe();let Some(ty)=probe.infer_exact_closure_in_context(opened.body(),opened.context(),remaining,0)else{return false;};
++        let Some(sort)=probe.owned_inferred_type_formation_sort(&ty,opened.context(),remaining,0)else{return false;};
++        if !crate::level::level_equal_with_remaining(sort,LevelTerm::Zero,remaining).is_refuted(){return false;}
++        let TypeValue::Term(source)=ty else{return matches!(ty,TypeValue::Sort(_));};
++        let allowance=(*remaining).min(128);if allowance==0{return false;}*remaining-=allowance;
++        match probe.machine().expose(source,Transparency::Reducible,allowance).proven_value(){
++            Some(Value::Sort(_))=>true,
++            Some(Value::Neutral(Neutral{head:NeutralHead::Free(free,Some(owner)),spine})) if spine.is_empty()=>{
++                if !matches!(owner.lookup_binding_ref(0),Some(EnvBinding::Free(actual)) if actual==free){return false;}
++                let ledger=probe.checked_binding_lineage.borrow();let Some(Some(w))=ledger.get(&owner.id())else{return false;};
++                fresh_local(w.protected_prefix.len().saturating_sub(1))==Some(*free)&&!w.protected_prefix.is_empty()&&opened.context().starts_with(&w.protected_prefix)
++            },_=>false,
++        }
++    }
++
+     // Read the TYPE of an actual source binding, not the type of that TYPE.
+     // The existing checked witness validates original/current ownership and
+     // its exact protected Gamma. Only a literal Sort is sufficient here;
+@@ -2234,6 +2271,60 @@
+     // A completed immutable environment lookup supplies the actual captured
+     // value and its owning node, never a type or a context correspondence.
+     // Retaining the frame pins every node used by this structural certificate.
++    pub(crate) fn same_checked_bvar_origin(&self,left:&Closure,right:&Closure,context:&[TypeValue],remaining:&mut usize)->bool {
++        fn domain_available(c:&TypeChecker<'_>,owner:&EnvFrame,remaining:&mut usize)->bool {
++            let witness=c.checked_binding_lineage.borrow().get(&owner.id()).cloned();
++            match witness {
++                Some(None)=>false,None=>true,
++                Some(Some(w))=>match &w.domain {
++                    TypeValue::Sort(_)=>true,
++                    TypeValue::Term(domain)=>{
++                        if c.checked_binding_lineage.borrow().get(&domain.env.id()).is_some_and(Option::is_none){return false;}
++                        matches!(c.expressions.get(domain.expr),Some(Expr::Sort(_)|Expr::Const{..}))||c.source_used_capture_authority_available(domain,remaining)
++                    },TypeValue::Pi{..}=>false,
++                },
++            }
++        }
++        fn resolve(c:&TypeChecker<'_>,root:&Closure,remaining:&mut usize)->Option<(EnvFrame,FreeId)> {
++            let mut source=root.clone();let mut seen=std::collections::HashSet::new();
++            for _ in 0..48 {
++                if !take_step(remaining)||!seen.insert(source.clone()){return None;}
++                if !domain_available(c,&source.env,remaining){return None;}
++                let Expr::BVar(index)=c.expressions.get(source.expr)? else{return None;};
++                let owner=if *index==0 {source.env.clone()}else{c.source_capture_owner(&source.env,*index,remaining)?};
++                if owner!=source.env&&!domain_available(c,&owner,remaining){return None;}
++                match owner.lookup_binding_ref(0)? {
++                    EnvBinding::Closure(value)=>source=value.clone(),
++                    EnvBinding::Free(free)=>return Some((owner.clone(),*free)),
++                    EnvBinding::Neutral(Neutral{head:NeutralHead::Free(free,Some(original)),spine}) if spine.is_empty()=>{
++                        if !matches!(original.lookup_binding_ref(0),Some(EnvBinding::Free(actual)) if actual==free){return None;}
++                        return Some((original.clone(),*free));
++                    },_=>return None,
++                }
++            }None
++        }
++        if !matches!(self.expressions.get(left.expr),Some(Expr::BVar(_)))||!matches!(self.expressions.get(right.expr),Some(Expr::BVar(_))){return false;}
++        let Some((a,x))=resolve(self,left,remaining)else{return false;};let Some((b,y))=resolve(self,right,remaining)else{return false;};
++        if a!=b||x!=y{return false;}
++        let ledger=self.checked_binding_lineage.borrow();let Some(Some(w))=ledger.get(&a.id())else{return false;};
++        if !matches!(&w.domain,TypeValue::Sort(_))&&!matches!(&w.domain,TypeValue::Term(t) if matches!(self.expressions.get(t.expr),Some(Expr::Sort(_)))){return false;}
++        let Some(last)=w.protected_prefix.len().checked_sub(1)else{return false;};
++        if fresh_local(last)!=Some(x)||context.len()<w.protected_prefix.len()||w.protected_prefix.last()!=Some(&w.domain){return false;}
++        for(actual,protected)in context.iter().zip(w.protected_prefix.iter()) {
++            if !take_step(remaining)||actual!=protected{return false;}
++        }
++        match &w.domain {
++            TypeValue::Sort(_)=>{},
++            TypeValue::Term(domain)=>{
++                if self.checked_binding_lineage.borrow().get(&domain.env.id()).is_some_and(Option::is_none){return false;}
++                // These syntax forms have no captured term variables. Other
++                // declared domains retain the existing complete USED check.
++                if !matches!(self.expressions.get(domain.expr),Some(Expr::Sort(_)|Expr::Const{..}))&&!self.source_used_capture_authority_available(domain,remaining){return false;}
++            },TypeValue::Pi{..}=>return false,
++        }
++        true
++    }
++
+     pub(crate) fn source_capture_owner(&self,frame:&EnvFrame,index:u64,remaining:&mut usize)->Option<EnvFrame> {
+         if !take_step(remaining){return None;}
+         if let Some((_,owner))=self.source_capture_bindings.borrow().get(&(frame.id(),index)) {
+@@ -6642,8 +6733,9 @@
+     pub(crate) fn checked_source_structure_relation(&self,left:&Closure,right:&Closure,left_value:&Value,right_value:&Value,context:&[TypeValue],remaining:&mut usize)->Option<Judgment<()>> {
+         let (Value::Neutral(a),Value::Neutral(b))=(left_value,right_value) else{return None;};
+         let nominal=|n:&Neutral|matches!(n.head,NeutralHead::Free(_,Some(_)))&&n.spine.is_empty();
++        let rigid_spines=matches!(a.head,NeutralHead::Free(_,Some(_)))&&matches!(b.head,NeutralHead::Free(_,Some(_)))&&(!a.spine.is_empty()||!b.spine.is_empty())&&!a.head.same_owned_free(&b.head);
+         let constructor=|n:&Neutral|match n.head {NeutralHead::Const{name,..}=>self.eta_projection_spec_for_constructor(name).is_some()||self.non_eta_structure_for_constructor(name).is_some(),_=>false};
+-        if !((nominal(a)&&constructor(b))||(nominal(b)&&constructor(a))||(nominal(a)&&nominal(b))){return None;}
++        if !rigid_spines&&!((nominal(a)&&constructor(b))||(nominal(b)&&constructor(a))||(nominal(a)&&nominal(b))){return None;}
+         if nominal(a)&&nominal(b) {
+             if a.head.same_owned_free(&b.head){return None;}
+             // Eligibility only: a literal registered structure in an original
+@@ -6671,7 +6763,9 @@
+         // normalized zero nor unresolved zero classification is DATA authority.
+         if !crate::level::level_equal_with_remaining(left_sort,LevelTerm::Zero,remaining).is_refuted()
+             ||!crate::level::level_equal_with_remaining(right_sort,LevelTerm::Zero,remaining).is_refuted(){return None;}
+-        if left_type!=right_type {
++        #[cfg(feature="diagnostics")] if std::env::var_os("TRACE_ETA_ARGUMENT").is_some(){eprintln!("ETA_ARG_TYPES:left={left_type:?}:right={right_type:?}:remaining={remaining}:rigid_spines={rigid_spines}");}
++        let checked_same_type=left_type==right_type||self.same_checked_bvar_origin(left_type_source,right_type_source,context,remaining);
++        if !checked_same_type {
+             let allowance=(*remaining).min(512);if allowance==0{return None;}*remaining-=allowance;
+             if !crate::convert::convert_with_policy_in_context(&probe,&left_type,&right_type,allowance,crate::convert::DeltaPolicy::GuardedSemanticFallback,context.len(),context).is_proven(){return None;}
+         }
+@@ -6688,6 +6782,13 @@
+             if !context.starts_with(&witness.protected_prefix)||fresh_local(witness.protected_prefix.len().checked_sub(1)?)!=Some(*free){return None;}
+             Some(*free)
+         };
++        if rigid_spines&&nominal(type_head) {
++            certified_nominal(type_head)?;
++            let certify_head=|n:&Neutral|->Option<FreeId>{let bare=Neutral{head:n.head.clone(),spine:vec![]};certified_nominal(&bare)};
++            let (x,y)=(certify_head(a)?,certify_head(b)?);
++            if x!=y{return Some(Judgment::refuted("distinct-rigid-local-terms"));}return None;
++        }
++        if rigid_spines{return None;}
+         if nominal(a)&&nominal(b)&&nominal(type_head) {
+             // An abstract, independently formed DATA type cannot unfold to a
+             // proof or an eta-expandable record. All three original binders
+@@ -9363,3 +9464,27 @@
+   }
+  }
+ }
++#[cfg(test)]
++mod source_eta_argument_controls {
++ use super::*;
++ #[test]
++ fn argument_inequality_requires_rigid_data_result_and_actual_owned_scope(){
++  for mode in 0..4 {
++   let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++   for(i,v)in[(0,Expr::Sort(LevelId(1))),(1,Expr::BVar(0)),(2,Expr::BVar(1)),(3,Expr::BVar(2)),(4,Expr::BVar(3)),(5,Expr::BVar(4)),(6,Expr::Const{name:NameId(1),levels:vec![]}),(7,Expr::Pi{domain:ExprId(2),body:ExprId(2)}),(8,Expr::Pi{domain:ExprId(3),body:ExprId(4)}),(9,Expr::App{fun:ExprId(2),arg:ExprId(1)}),(10,Expr::App{fun:ExprId(3),arg:ExprId(9)}),(11,Expr::Lam{domain:ExprId(4),body:ExprId(10)}),(12,Expr::Pi{domain:ExprId(2),body:ExprId(6)}),(13,Expr::App{fun:ExprId(3),arg:ExprId(1)}),(14,Expr::Sort(LevelId(0))),(15,Expr::Lam{domain:ExprId(4),body:ExprId(13)})]{e.insert(ExprId(i),v).unwrap();}
++   let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap();let c=TypeChecker::new(&e,&l,&env).strict_certificate_probe();
++   let sort=TypeValue::Term(c.closure(ExprId(if mode==3{14}else{0}),EnvFrame::empty()));let a=EnvFrame::empty().extend_free(FreeId(0));let mut gamma=vec![sort.clone()];c.retain_checked_binding(&a,sort,&gamma);
++   let beta_sort=TypeValue::Term(c.closure(ExprId(if mode==1{14}else{0}),EnvFrame::empty()));let b=a.extend_free(FreeId(1));gamma.push(beta_sort.clone());c.retain_checked_binding(&b,beta_sort,&gamma);
++   let ft=TypeValue::Term(c.closure(ExprId(if mode==2{12}else{7}),b.clone()));let f=b.extend_free(FreeId(2));gamma.push(ft.clone());c.retain_checked_binding(&f,ft,&gamma);
++   let gt=TypeValue::Term(c.closure(ExprId(8),f.clone()));let g=f.extend_free(FreeId(3));gamma.push(gt.clone());c.retain_checked_binding(&g,gt.clone(),&gamma);
++   let lambda=c.closure(ExprId(11),g.clone());let function=c.closure(ExprId(2),g.clone());
++   let left=c.machine().expose(lambda.clone(),Transparency::Reducible,1024).proven_value().unwrap().clone();let right=c.machine().expose(function.clone(),Transparency::Reducible,1024).proven_value().unwrap().clone();
++   let compare=||crate::convert::source_qualified_free_eta(&c,&lambda,&function,&left,&right,&gamma,4,&mut 16384);
++   let result=compare();if mode==0 {assert!(result.is_some_and(|r|r.is_refuted()),"opaque f:data→abstractData preserves distinct checked neutral arguments");}else{assert!(!result.is_some_and(|r|r.is_refuted()),"proof arguments, proof-valued and Unit-like constant results cannot inherit argument inequality");}
++   let identity=c.closure(ExprId(15),g.clone());let identity_value=c.machine().expose(identity.clone(),Transparency::Reducible,1024).proven_value().unwrap().clone();assert!(crate::convert::source_qualified_free_eta(&c,&identity,&function,&identity_value,&right,&gamma,4,&mut 16384).is_some_and(|r|r.is_proven()));
++   assert!(crate::convert::source_qualified_free_eta(&c,&lambda,&function,&left,&right,&[],0,&mut 16384).is_none());
++   let wrapper=f.extend_neutral(Neutral{head:NeutralHead::Free(FreeId(3),Some(g.clone())),spine:vec![]});c.retain_checked_binding(&wrapper,gt,&gamma);let wrapped=lambda.sibling(lambda.expr,wrapper.clone());c.checked_binding_lineage.borrow_mut().insert(wrapper.id(),None);assert!(crate::convert::source_qualified_free_eta(&c,&wrapped,&function,&left,&right,&gamma,4,&mut 16384).is_none());
++   c.checked_binding_lineage.borrow_mut().insert(g.id(),None);assert!(compare().is_none());
++  }
++ }
++}
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -560,7 +560,7 @@
+                 if depth==context.len()&&let Some(relation)=checker.checked_source_structure_relation(&left,&right,cheap_left,cheap_right,context,&mut remaining){
+                     if relation.is_proven(){continue;}failed_comparison!(relation);
+                 }
+-                if source_qualified_free_eta(checker,&left,&right,cheap_left,cheap_right,context,depth,&mut remaining){continue;}
++                if let Some(relation)=source_qualified_free_eta(checker,&left,&right,cheap_left,cheap_right,context,depth,&mut remaining){if relation.is_proven(){continue;}failed_comparison!(relation);}
+                 match compare_values(
+                     checker,
+                     cheap_left,
+@@ -587,7 +587,7 @@
+                 if depth==context.len()&&let Some(relation)=checker.checked_source_structure_relation(&left,&right,full_left,full_right,context,&mut remaining){
+                     if relation.is_proven(){continue;}failed_comparison!(relation);
+                 }
+-                        if source_qualified_free_eta(checker,&left,&right,full_left,full_right,context,depth,&mut remaining){continue;}
++                        if let Some(relation)=source_qualified_free_eta(checker,&left,&right,full_left,full_right,context,depth,&mut remaining){if relation.is_proven(){continue;}failed_comparison!(relation);}
+                         match compare_values(
+                             checker,
+                             full_left,
+@@ -796,22 +796,29 @@
+ // when evaluating the lambda body under a fresh local yields exactly f x, where
+ // f is the same bare local function and x is that fresh local.  The local's
+ // declared Pi domain is still compared through the ordinary conversion worklist.
+-pub(crate) fn source_qualified_free_eta(checker:&TypeChecker<'_>,left_source:&Closure,right_source:&Closure,left:&Value,right:&Value,context:&[TypeValue],depth:usize,remaining:&mut usize)->bool {
++pub(crate) fn source_qualified_free_eta(checker:&TypeChecker<'_>,left_source:&Closure,right_source:&Closure,left:&Value,right:&Value,context:&[TypeValue],depth:usize,remaining:&mut usize)->Option<Judgment<()>> {
+     let (lambda_source,function_source,neutral,domain,body)=match (left,right) {
+         (Value::Lam{domain,body},Value::Neutral(n))=>(left_source,right_source,n,domain,body),
+-        (Value::Neutral(n),Value::Lam{domain,body})=>(right_source,left_source,n,domain,body),_=>return false,
++        (Value::Neutral(n),Value::Lam{domain,body})=>(right_source,left_source,n,domain,body),_=>return None,
+     };
+-    if !neutral.spine.is_empty()||!matches!(neutral.head,NeutralHead::Free(_,Some(_)))||depth!=context.len(){return false;}
+-    let Some(free)=fresh_local(depth)else{return false;};
+-    let Some(opened)=checker.checked_source_eta_opening(lambda_source,function_source,domain,body,context,free,remaining)else{return false;};
+-    let allowance=(*remaining).min(256);if allowance==0{return false;}*remaining-=allowance;
+-    let result=checker.machine().expose_for_conversion(opened.clone(),Transparency::Reducible,allowance);
+-    let Some(Value::Neutral(actual))=result.proven_value()else{return false;};
+-    if !actual.head.same_owned_free(&neutral.head)||actual.spine.len()!=1{return false;}
+-    let allowance=(*remaining).min(128);if allowance==0{return false;}*remaining-=allowance;
++    if !neutral.spine.is_empty()||!matches!(neutral.head,NeutralHead::Free(_,Some(_)))||depth!=context.len(){return None;}
++    let Some(free)=fresh_local(depth)else{return None;};
++    let Some(opened)=checker.checked_source_eta_opening(lambda_source,function_source,domain,body,context,free,remaining)else{return None;};
++    let allowance=(*remaining).min(256);if allowance==0{return None;}*remaining-=allowance;
++    let result=checker.machine().expose_for_conversion(opened.body().clone(),Transparency::Reducible,allowance);
++    let Some(Value::Neutral(actual))=result.proven_value()else{return None;};
++    if !actual.head.same_owned_free(&neutral.head)||actual.spine.len()!=1{return None;}
++    let fresh=checker.eta_fresh_argument(&opened,remaining);
++    let allowance=(*remaining).min(128);if allowance==0{return None;}*remaining-=allowance;
++    if let Some(fresh)=fresh {
++        let relation=crate::convert::convert_with_policy_in_context(checker,&TypeValue::Term(actual.spine[0].clone()),&TypeValue::Term(fresh),allowance,DeltaPolicy::GuardedSemanticFallback,opened.context().len(),opened.context());
++        if relation.is_proven(){return Some(Judgment::proven((),"source-qualified-function-eta"));}
++        if matches!(&relation,Judgment::Refuted{obstruction} if obstruction.0=="distinct-rigid-local-terms")&&checker.eta_body_result_is_rigid(&opened,remaining){return Some(relation);}
++        return None;
++    }
+     let argument=checker.machine().expose_for_conversion(actual.spine[0].clone(),Transparency::Reducible,allowance);
+-    let Some(Value::Neutral(argument))=argument.proven_value()else{return false;};
+-    argument.spine.is_empty()&&argument.head.same_owned_free(&NeutralHead::Free(free,Some(opened.env)))
++    let Some(Value::Neutral(argument))=argument.proven_value()else{return None;};
++    (argument.spine.is_empty()&&argument.head.same_owned_free(&NeutralHead::Free(free,Some(opened.body().env.clone())))).then(||Judgment::proven((),"source-qualified-function-eta"))
+ }
+ 
+ fn evaluated_free_eta(

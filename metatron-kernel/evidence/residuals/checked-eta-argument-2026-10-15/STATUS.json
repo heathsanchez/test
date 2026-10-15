@@ -1,0 +1,30 @@
+{
+  "status": "UNPROMOTED",
+  "counts": {
+    "accept": 117,
+    "reject": 70,
+    "unknown": 9,
+    "wrong": 0,
+    "errors": 0
+  },
+  "binary_sha256": "b328248a00338c0b37eadd2a769613939ded0521217c167d56e8811af40f37bb",
+  "original_target_residuals_closed": 0,
+  "retained_regressions": [
+    {
+      "case": "bad/bugs/k-rec-conv.ndjson",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "good/init-prelude.ndjson",
+      "before": 0,
+      "after": 2
+    },
+    {
+      "case": "good/tutorial/123_accRecType.ndjson",
+      "before": 0,
+      "after": 2
+    }
+  ],
+  "protected_controls_non_accept": true
+}

@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      EXPERIMENT: metatron-kernel/evidence/residuals/original-owner-data-2026-10-15/unpromoted-source
+      EXPERIMENT: metatron-kernel/evidence/residuals/checked-eta-argument-2026-10-15/unpromoted-source
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
