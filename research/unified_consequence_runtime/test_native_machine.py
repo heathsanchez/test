@@ -28,7 +28,7 @@ class NativeIntegration(unittest.TestCase):
             self.assertTrue(n2.equivalent(0,2))
             new=n2.restore_from_original_support("parity-and-size",cap,
                       lambda x:x>=2,{str(x):x>=2 for x in range(4)})
-            self.assertNotEqual(new["capability_id"],original_id) if False else None
+            self.assertNotEqual(new["capability_id"],original_id)
             self.assertFalse(n2.equivalent(0,2))
             self.assertNotIn(original_id,live_ids(n2.log))
     def test_rejects_bad_observation(self):
