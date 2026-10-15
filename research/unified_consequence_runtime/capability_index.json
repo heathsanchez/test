@@ -1,0 +1,2520 @@
+{
+  "schema": "metalogic.authoritative-capability-index.v1",
+  "snapshot_date_utc": "2026-10-15",
+  "authority_role": "ONE_CAPABILITY_INDEX; documentary and independently checked evidence levels remain explicit per row",
+  "capabilities": [
+    {
+      "capability": "WebArena residual-driven depth-four synthesis",
+      "repo": "heathsanchez/test",
+      "branch": "chollet-autonomous-residual-synthesis-v6",
+      "commit": "94116303cf81aae92251cf8caa588bc084d104dd",
+      "implementation": null,
+      "verifier": "Pinned ServiceNow/webarena-verified@6473f72db5dcefc97b5725b59e734504edc28a21 official scoring",
+      "run": "37585043969",
+      "artifact": "11466771229",
+      "artifact_sha256": "83739146bc7de8d9dfd691dc6fa5a6880a570856d4e59ce593c73e79fa25ba7f",
+      "scope": "Generic BFS operator rebinding finds minimum depth-two D repair; D heldout 3/3 vs baseline 1/3; A-D 19/19 no ancestor training replay",
+      "dependencies": "Frozen A/B/C; human supplied finite semantic operator library",
+      "status": "ROS WARRANTED_BOUNDED",
+      "notion": "3f23e523d7ab81d48e06ed5b72d98bfb",
+      "id": "webarena-residual-driven-depth-four-synthesis",
+      "verification_boundary": "ORIGINAL_RUN_METADATA_RECOVERED; QUALIFICATION_RESULT_DOCUMENTARY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f23e523d7ab81d48e06ed5b72d98bfb",
+        "independently_verified_by_this_agent": false
+      },
+      "source_evidence": {
+        "run_metadata": {
+          "id": 37585043969,
+          "name": "Chollet residual synthesis depth4",
+          "head_sha": "94116303cf81aae92251cf8caa588bc084d104dd",
+          "head_branch": "chollet-autonomous-residual-synthesis-v6",
+          "path": ".github/workflows/chollet_residual_synthesis_depth4.yml",
+          "conclusion": "success",
+          "created_at": "2026-10-07T07:03:46Z",
+          "updated_at": "2026-10-07T07:20:23Z"
+        },
+        "historical_artifact_retrieved_by_this_agent": false,
+        "native_rerun_by_this_agent": false,
+        "boundary": "Original finite semantic operator library and depth-two repair; human-supplied operators"
+      }
+    },
+    {
+      "capability": "WebArena representation E invention",
+      "repo": "heathsanchez/test",
+      "branch": "chollet-representation-invention-v7",
+      "commit": "ae877cefddc2e2335805c396a8bf1f88a4063b94",
+      "implementation": null,
+      "verifier": "Pinned WebArena-Verified official authority",
+      "run": "37587112851",
+      "artifact": "11467591099",
+      "artifact_sha256": null,
+      "scope": "Task 63 + observed grid schema produces grouped_row_count(customer email); heldout 62/64/65 3/3 vs grouping ablation 0/3",
+      "dependencies": "WebArena grid schema; earlier frozen A-D; E semantic digest 66930dc2ea50b944564c46e12d531b6daca8d609cb2495b21152078a3c87267d",
+      "status": "ROS WARRANTED_BOUNDED; repeated independent representation invention UNKNOWN",
+      "notion": "3f23e523d7ab8185bb72c1112d314e52",
+      "id": "webarena-representation-e-invention",
+      "verification_boundary": "ORIGINAL_SOURCE_INSPECTED_AND_REUSED_WITH_NATIVE_VERIFIER_ON_ARCHIVED_SNAPSHOT",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f23e523d7ab8185bb72c1112d314e52",
+        "independently_verified_by_this_agent": false
+      },
+      "source_evidence": {
+        "original_acquisition_commit": "ae877cefddc2e2335805c396a8bf1f88a4063b94",
+        "retention_commit": "c9092fa57c8943e638f95689cd36e6a63310f41e",
+        "reusable_api": {
+          "file": "scripts/webarena_customer_count_representation_synth.py",
+          "sha256": "97f1706fc74f4d481f6a394048a153dc8afe9e9bf64b7aa9d6fb64af3b0df870",
+          "functions": {
+            "induce_representation(task, observation)": 188,
+            "compile_selector(intent)": 228,
+            "execute(observation, representation, selector, ablate_grouping=False)": 249,
+            "load_task(path, task_id)": 288
+          },
+          "cli": [
+            "induce --task-id 63 --task-file NO_EVAL_TASK63_ONLY --observation e_obs.json --output representation.json",
+            "compute --task-id ID --task-file NO_EVAL_TASK_ID_ONLY --observation e_obs.json --representation representation.json --output-dir OUT"
+          ],
+          "source_inspection": "READ_LOCAL_ORIGINAL_PINNED_SOURCE"
+        },
+        "acquisition_scope": "Task63 intent plus observed schema and row semantics; predefined grouped_row_count constructor and bounded selector grammar; evaluation references excluded from capability inputs",
+        "protected_tasks": [
+          62,
+          64,
+          65
+        ],
+        "historical_future_blindness": "HELD_OUT_IN_ORIGINAL_PROTOCOL; NOT_NEWLY_BLINDED_IN_THIS_SESSION",
+        "live_reuse_status": "WARRANTED_BOUNDED_INTEGRATED_EXECUTION",
+        "live_qualification": "/workspace/qualification/local-fixed/out/qualification.json",
+        "native_verifier_commit": "6473f72db5dcefc97b5725b59e734504edc28a21",
+        "live_native_successes": 3,
+        "live_ablation_successes": 0,
+        "fresh_browser_observation": "NOT_CHECKED",
+        "original_and_retention_source_byte_identical_independently_checked": true
+      }
+    },
+    {
+      "capability": "WebArena depth-five retention repair",
+      "repo": "heathsanchez/test",
+      "branch": "chollet-depth5-representation-fix-v8",
+      "commit": "c9092fa57c8943e638f95689cd36e6a63310f41e",
+      "implementation": null,
+      "verifier": "Same pinned WebArena-Verified authority; rescore prior evidence",
+      "run": "37699595758",
+      "artifact": "11517107016",
+      "artifact_sha256": "54916c29b2e89d2d922f5d6bd09273d45a4787c956340f7d6545d28cae5af73e",
+      "scope": "A=4 B=8 C=4 D=3 E=3; 22/22 protected no training replay",
+      "dependencies": "Original combined run 37587520311 artifact 11467013627; original scorer Python false/NameError",
+      "status": "ROS WARRANTED_BOUNDED; supersedes morning UNKNOWN apparatus status",
+      "notion": "3f23e523d7ab8185bb72c1112d314e52",
+      "id": "webarena-depth-five-retention-repair",
+      "verification_boundary": "ORIGINAL_ARCHIVE_AND_SOURCE_RECOVERED; LIVE_NATIVE_REEXECUTION_OF_E_D_SUBSET",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f23e523d7ab8185bb72c1112d314e52",
+        "independently_verified_by_this_agent": false
+      },
+      "source_evidence": {
+        "run_metadata": {
+          "id": 37699595758,
+          "name": "Chollet depth5 artifact qualification",
+          "head_sha": "c9092fa57c8943e638f95689cd36e6a63310f41e",
+          "head_branch": "chollet-depth5-representation-fix-v8",
+          "path": ".github/workflows/chollet_depth5_artifact_qualification.yml",
+          "conclusion": "success",
+          "created_at": "2026-10-07T22:59:33Z",
+          "updated_at": "2026-10-07T23:00:16Z"
+        },
+        "archive": {
+          "repository": "heathsanchez/test",
+          "run": 37699595758,
+          "artifact": 11517107016,
+          "sha256": "54916c29b2e89d2d922f5d6bd09273d45a4787c956340f7d6545d28cae5af73e"
+        },
+        "archive_local_path": "/workspace/archaeology/original-depth5.zip",
+        "lineage_local_path": "/workspace/archaeology/depth5-original/lineage.json",
+        "historical_result": {
+          "protected_successes": 22,
+          "protected_total": 22,
+          "training_replayed": false
+        },
+        "live_reused_subset": {
+          "E": [
+            62,
+            64,
+            65
+          ],
+          "D": [
+            168,
+            169,
+            172
+          ]
+        },
+        "reusable_E_api": {
+          "file": "scripts/webarena_customer_count_representation_synth.py",
+          "sha256": "97f1706fc74f4d481f6a394048a153dc8afe9e9bf64b7aa9d6fb64af3b0df870",
+          "functions": {
+            "induce_representation(task, observation)": 188,
+            "compile_selector(intent)": 228,
+            "execute(observation, representation, selector, ablate_grouping=False)": 249,
+            "load_task(path, task_id)": 288
+          },
+          "cli": [
+            "induce --task-id 63 --task-file NO_EVAL_TASK63_ONLY --observation e_obs.json --output representation.json",
+            "compute --task-id ID --task-file NO_EVAL_TASK_ID_ONLY --observation e_obs.json --representation representation.json --output-dir OUT"
+          ],
+          "source_inspection": "READ_LOCAL_ORIGINAL_PINNED_SOURCE"
+        },
+        "reusable_D_api": {
+          "file": "scripts/webarena_gitlab_star_relation_synth.py",
+          "sha256": "7839bebc4564c2700f711bd04bc36976e8eca1f5854f4274890e761a4e2c8872",
+          "functions": {
+            "compile_description(description)": 92,
+            "derive_binding(binding)": 109,
+            "execute(projects, program, binding)": 119,
+            "make_response(chosen)": 140
+          },
+          "cli": [
+            "compute --task-id ID --task-file NO_EVAL_TASK_ID_ONLY --observation d_obs.json --binding d_binding.json --output-dir OUT"
+          ],
+          "source_inspection": "READ_LOCAL_ORIGINAL_PINNED_SOURCE"
+        },
+        "historical_22_task_rescore_repeated_in_this_session": false,
+        "original_qualified_report_inspected": true,
+        "apparatus_repair": {
+          "earlier_run": 37587520311,
+          "earlier_artifact": 11467013627,
+          "earlier_artifact_digest": "sha256:2a8d2792cd605e4076e6b044a957ed49c913db692b71259e5320da5494d416e8",
+          "scope": "Official rescoring of archived responses after original combined scorer false/NameError apparatus failure; historical protocol says no ancestor training replay"
+        },
+        "original_archive_digest_independently_checked_here": "54916c29b2e89d2d922f5d6bd09273d45a4787c956340f7d6545d28cae5af73e"
+      }
+    },
+    {
+      "capability": "WebArena E+F causal composition",
+      "repo": "heathsanchez/test",
+      "branch": "chollet-two-capability-composition-v1",
+      "commit": "32e2e8f21d642001323237e31fbe7bea01cb975e",
+      "implementation": "scripts/webarena_two_capability_composition_v1.py",
+      "verifier": "Official WebArena task scoring",
+      "run": "38037858569",
+      "artifact": "11665265299",
+      "artifact_sha256": "c07211863fb7e8c006ec94bdbb87121fc6096efbe016c0b1aa6823b047ab5d81",
+      "scope": "1/3/3/9/1 candidate evaluations; tasks 290/292 all pass; strong equal-information stateless ties combined 1",
+      "dependencies": "E run 37587112851; F run 38036286320, commit 6502a30d6ff45814a01bba5f68d7d093b9d2cb1b; F depends on E",
+      "status": "ROS WARRANTED_BOUNDED composition; strict economic superiority REJECTED on fixture",
+      "notion": "3f53e523d7ab81bebbf9eae68abc532f",
+      "id": "webarena-e-f-causal-composition",
+      "verification_boundary": "ORIGINAL_COMPARATOR_SOURCE_INSPECTED; HISTORICAL_OUTCOME_DOCUMENTARY_NOT_RERUN",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f53e523d7ab81bebbf9eae68abc532f",
+        "independently_verified_by_this_agent": false
+      },
+      "source_evidence": {
+        "historical_artifact_retrieved_by_this_agent": false,
+        "live_executed_in_this_integration": false,
+        "equal_information_baseline": "TIE",
+        "strict_economic_superiority": "REJECTED_ON_HISTORICAL_FIXTURE",
+        "prospective_second_generation_from_this_session": "UNKNOWN",
+        "evidence_authority": "ROS documentary map and root supplied frozen historical pin, not a new live reproduction",
+        "original_source_sha256": "e4bf4175331252c2b2d2d192ca80999ee8ba377c9116349ebfbd3bd1de39849c",
+        "original_source_comparator_inspected": true,
+        "reusable_api": {
+          "options(task, obs, e, f)": 59,
+          "candidate(root, wa, empty, ob, budget, options_by_arm)": 88,
+          "parse_date(raw)": 118,
+          "select_winners(obs, key, status)": 188
+        }
+      }
+    },
+    {
+      "capability": "WebArena E+F to G successor",
+      "repo": "heathsanchez/test",
+      "branch": null,
+      "commit": "d497bb6b57ed8f9d9e2913b8d6a2ac9e170b59c9",
+      "implementation": null,
+      "verifier": "Official pinned WebArena source authority",
+      "run": "38038055888",
+      "artifact": "11664821122",
+      "artifact_sha256": "9c5cc8c3a65e40aec91c99112342ab835baa85d5b229acd05b4abee180059247",
+      "scope": "Task 290 training globally already heldout in parallel test; new protected 291 pass; four arms 1/1/1/1",
+      "dependencies": "Frozen E/F; actual purchase date rather than silently substituted order IDs",
+      "status": "ROS WARRANTED_BOUNDED; zero strong-stateless saving; task290 not new globally",
+      "notion": "3f53e523d7ab8188bfd2cd87cfb88ec9",
+      "id": "webarena-e-f-to-g-successor",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f53e523d7ab8188bfd2cd87cfb88ec9",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "MSI consequential completeness and behavioural congruence",
+      "repo": "heathsanchez/Minimal-Sufficient-Interface",
+      "branch": "main (historical pin)",
+      "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+      "implementation": [
+        "lean/Completeness.lean",
+        "lean/BehaviouralCongruence.lean"
+      ],
+      "verifier": "Lean core",
+      "run": "33462718166",
+      "artifact": null,
+      "artifact_sha256": null,
+      "scope": "Protected-consequence quotient, minimum lawful refinement, greatest reachable-action-invariant observation-compatible relation",
+      "dependencies": "Declared protected family, coverage and action assumptions",
+      "status": "ROS WARRANTED in declared formal scope; natural-world completeness and unrestricted invention UNKNOWN",
+      "notion": "3e43e523d7ab81db9001fb34ba0f2e4e",
+      "id": "msi-consequential-completeness-and-behavioural-congruence",
+      "verification_boundary": "EXACT_HISTORICAL_MSI_SOURCE_INSPECTED_BY_PEERS; NATIVE_LEAN_NOT_RECOMPILED_IN_THIS_AUDIT",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3e43e523d7ab81db9001fb34ba0f2e4e",
+        "independently_verified_by_this_agent": false
+      },
+      "source_evidence": {
+        "status": "PEER_EXACT_SOURCE_INSPECTED_NOT_RECOMPILED",
+        "formal_correspondence": [
+          {
+            "repo": "heathsanchez/Minimal-Sufficient-Interface",
+            "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+            "source": "lean/BehaviouralCongruence.lean",
+            "source_line": 25,
+            "symbols": [
+              "BehEq",
+              "greatest_invariant",
+              "finite_recovery"
+            ],
+            "assumptions": "ActionMonoid laws; invariant/observation-compatible relation. finite_recovery additionally all finite action cover,seq0 empty,genuine separator progress."
+          },
+          {
+            "repo": "heathsanchez/Minimal-Sufficient-Interface",
+            "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+            "source": "lean/TypedBehaviouralCongruence.lean",
+            "source_line": 39,
+            "symbols": [
+              "BehEq",
+              "greatest_congruence",
+              "qmap_comp"
+            ],
+            "assumptions": "SmallCategory laws; concrete Action identity/composition laws; typed observations; relation family congruent and observation-compatible."
+          },
+          {
+            "repo": "heathsanchez/Minimal-Sufficient-Interface",
+            "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+            "source": "lean/DevelopmentalCategory.lean",
+            "source_line": 17,
+            "symbols": [
+              "Stage",
+              "Extends",
+              "BehEqAt",
+              "extension_refines",
+              "new_separator_forces_split"
+            ],
+            "assumptions": "Fixed ambient category/action/object/observation family. Stage contains identity and closes composition. Extends is allowed-morphism inclusion."
+          },
+          {
+            "repo": "heathsanchez/Minimal-Sufficient-Interface",
+            "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+            "source": "lean/ResidualRegimeBridge.lean",
+            "source_line": 163,
+            "symbols": [
+              "Residual",
+              "AdmissibleRepair",
+              "CanDescend",
+              "residual_to_minimal_regime_and_capability"
+            ],
+            "assumptions": "ActionMonoid; old EqBy collision and new kernel inequality. CanDescend is quotient-to-O consequence realization."
+          },
+          {
+            "repo": "heathsanchez/Minimal-Sufficient-Interface",
+            "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+            "source": "lean/MinimalRepair.lean",
+            "source_line": 37,
+            "symbols": [
+              "minimal_justified_repair",
+              "meet_unique_minimal_repair"
+            ],
+            "assumptions": "MeetKernel idempotence,commutativity,associativity; refinement order meet x y=x."
+          },
+          {
+            "repo": "heathsanchez/Minimal-Sufficient-Interface",
+            "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+            "source": "lean/BlindRecursiveCrossGrammarGenesis.lean",
+            "source_line": 34,
+            "symbols": [
+              "independentGrammarProgramsAgree",
+              "recursiveSixBitExhaustive",
+              "deletedCarryInterventionExhaustive"
+            ],
+            "assumptions": "Exact frozen Bool programs; finite8 triples,64x64x2 six-bit cases,16x16x2 cut-carry cases by decide."
+          }
+        ],
+        "report": "/workspace/archaeology/semantics/REPORT.md",
+        "runtime_instantiation": "UNKNOWN; no concrete Lean model/refinement theorem for this Python runtime"
+      }
+    },
+    {
+      "capability": "MSI quotient sufficiency falsifier",
+      "repo": "heathsanchez/Minimal-Sufficient-Interface",
+      "branch": "quotient-sufficiency-falsifier-v0",
+      "commit": "af60141ab47a68c67f4c04d7ec6a9adb2a50776a",
+      "implementation": null,
+      "verifier": "Full existing Python + Lean Kernel workflow qualification",
+      "run": "35898526105",
+      "artifact": null,
+      "artifact_sha256": null,
+      "scope": "Same-quotient/different-target witness proves target cannot factor through representation; exact Porter regression",
+      "dependencies": "Original MSI formal boundary",
+      "status": "ROS WARRANTED_REUSABLE",
+      "notion": "3e43e523d7ab81db9001fb34ba0f2e4e",
+      "id": "msi-quotient-sufficiency-falsifier",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3e43e523d7ab81db9001fb34ba0f2e4e",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "VDN FutureEq formal law",
+      "repo": "metalogiclabs/mathgraph",
+      "branch": "main (historical pin)",
+      "commit": "e80fed62b6e58d2f4b62e2ceb012646c60dd1e28",
+      "implementation": null,
+      "verifier": "Lean requalified in consequential-quotient-recovery-v2",
+      "run": "36129339688 (heathsanchez/test authority recheck)",
+      "artifact": null,
+      "artifact_sha256": null,
+      "scope": "FutureEq greatest future-sufficient relation, coarsest safe quotient, separator forces split",
+      "dependencies": "Protected future boundary; test qualifier 4f217813224db43a44c4f560e3017d04add4de6d",
+      "status": "ROS WARRANTED formal boundary",
+      "notion": "3e43e523d7ab81db9001fb34ba0f2e4e",
+      "id": "vdn-futureeq-formal-law",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3e43e523d7ab81db9001fb34ba0f2e4e",
+        "independently_verified_by_this_agent": false
+      },
+      "source_evidence": {
+        "audit_status": "UNKNOWN_PENDING_EXACT_SOURCE",
+        "known_historical_commit": "e80fed62b6e58d2f4b62e2ceb012646c60dd1e28",
+        "documentary_path": "verified-developmental-navigation/lean/VerifiedDevelopmentalNavigation/DevelopmentCertificate.lean",
+        "exact_source_bytes_inspected_here": false,
+        "runtime_theorem_instantiation": "UNKNOWN",
+        "peer_report": "/workspace/archaeology/formal/REPORT.md"
+      }
+    },
+    {
+      "capability": "VDN V23 corrected generator feedback",
+      "repo": "metalogiclabs/mathgraph",
+      "branch": "vdn-verified-generator-feedback-v1",
+      "commit": "087320d43a55340cb8cfd1d984f14f12bd95cd05",
+      "implementation": null,
+      "verifier": "Pinned ARC-AGI-1@399030444e0ab0cc8b4e199870fb20b863846f34 six matched 128-candidate arms",
+      "run": "38040554566",
+      "artifact": "11665691888",
+      "artifact_sha256": "9c56d2e7cb87ceb16d7adef52f15b9e9ac51679732b8a2904d37382b00382d81",
+      "scope": "Automatic common constructor extraction from historical V4; corrected strong-stateless comparator",
+      "dependencies": "Historical V4 CI33038153009 artifact9632884567",
+      "status": "Corrected source-qualified result supersedes positive-vs-weak-baseline classifier",
+      "notion": "3f53e523d7ab81f3a33adc6ba00da313",
+      "id": "vdn-v23-corrected-generator-feedback",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f53e523d7ab81f3a33adc6ba00da313",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "VDN V24 frozen ConceptARC transfer",
+      "repo": "metalogiclabs/mathgraph",
+      "branch": null,
+      "commit": "8600394eb79951e139c2b6cc8b25c4e1a3d0d5d8",
+      "implementation": null,
+      "verifier": "ConceptARC@0e67da6af879e4bad3d7cd3c196e8d551b445725 exact heldout outcomes",
+      "run": "38040720448",
+      "artifact": "11665309864",
+      "artifact_sha256": "1defb614569c4dcc00f2bfd5ab2764c535e433009baa4de7947d093416d08ea3",
+      "scope": "Five 128-budget arms each 1/160; no unique learned-policy success",
+      "dependencies": "Policy frozen before source clone; V23 source artifact11664759577",
+      "status": "ROS WARRANTED_BOUNDED_NEGATIVE; strict new protected gain REJECTED",
+      "notion": "3f53e523d7ab81f3a33adc6ba00da313",
+      "id": "vdn-v24-frozen-conceptarc-transfer",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f53e523d7ab81f3a33adc6ba00da313",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "VDN V25 typed relation and V26 exact diagnostic",
+      "repo": "metalogiclabs/mathgraph",
+      "branch": null,
+      "commit": "9b3d8ea8bf1d774573f02456e9e0b3d24d5a887d (V25); ae1b15e5aa877760c39d25ea447c3f7d674830f2 (V26)",
+      "implementation": null,
+      "verifier": "Pinned ConceptARC native exact output checks",
+      "run": "38041242748 (V25); 38041470111 (V26)",
+      "artifact": "11665702600 (V25); 11665433221 (V26)",
+      "artifact_sha256": "5a45bc9509750138d09b304327b4a0ebc70972d74ba148fe60496d72265610cb (V25); 2114ed99a47870f20c24d3dd212b8c07745d9daafbe4136e7d29b7ed9a7521fe (V26)",
+      "scope": "Designer supplied feature subset grammar; source learns one relation-witness task; protected reach fails; V26 retrospective 16-case diagnostic",
+      "dependencies": "V25 evidence replayed by V26 using exposed protected outcomes",
+      "status": "ROS qualified bounded negative/diagnostic; no new protected gain",
+      "notion": "3f53e523d7ab81f3a33adc6ba00da313",
+      "id": "vdn-v25-typed-relation-and-v26-exact-diagnostic",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f53e523d7ab81f3a33adc6ba00da313",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "JPL serialization proof upstream adoption",
+      "repo": "nasa-jpl/L4YAML",
+      "branch": "fix-a-grammar-completeness (upstream merge); fork heath-serialization-wellformed-v1",
+      "commit": "62bf7077910e888a0bc8adfc8e08a5f500ff3ca3 (merge); fork final named 097b7a29428d1ba8e350e40628cd33a19d191a08",
+      "implementation": "L4YAML.Proofs.Serialization",
+      "verifier": "lake build L4YAML.Proofs.Serialization; independent maintainer rerun/review",
+      "run": "36951241079; 36959095577; 36960149655 (metalogiclabs/L4YAML fork)",
+      "artifact": null,
+      "artifact_sha256": null,
+      "scope": "Lean serialization state/guard theorem contribution merged PR1 2026-10-05T00:16:31Z",
+      "dependencies": "Pinned Lean and upstream source; no full independent source-to-YAML conformance theorem",
+      "status": "ROS WARRANTED_BOUNDED_EXTERNAL_TECHNICAL_ADOPTION; prior OPEN superseded",
+      "notion": "3ed3e523d7ab819da526dd08d55a99b0",
+      "id": "jpl-serialization-proof-upstream-adoption",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3ed3e523d7ab819da526dd08d55a99b0",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "JPL minimal consequence quotient on native h11",
+      "repo": "heathsanchez/test",
+      "branch": "research/mathgraph-minimal-consequential-quotient-h11-20261015",
+      "commit": "52eb1e7995bd877a2b698efe1883ae2b80a03737",
+      "implementation": "independent_residual.py (focused replay; full path not stated)",
+      "verifier": "Original native h11 source PR206/198/207 revisions; original suites",
+      "run": "38558759772",
+      "artifact": "11890667357",
+      "artifact_sha256": "116aa1a91f03150bac215c998461b31ef5313ac0b633d8b3f164d0e518797c0d",
+      "scope": "570 wire/cap cases x four fragmentation schedules; exact event/value observation distinctions; bounded error-hint residual",
+      "dependencies": "Human authored topic-informed HTTP grammar; PR titles/bodies seen prefreeze",
+      "status": "ROS WARRANTED_BOUNDED; normative error precedence UNKNOWN; not blind bug discovery",
+      "notion": "3f93e523d7ab81378670ff39c07bdb32",
+      "id": "jpl-minimal-consequence-quotient-on-native-h11",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f93e523d7ab81378670ff39c07bdb32",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "JPL observation quotient native chi/ServeMux",
+      "repo": "heathsanchez/test",
+      "branch": "research/jpl-semantic-quotient-chi-20261015",
+      "commit": "3692250d80541cc9cbbe1e13b75299b6c629e3e1",
+      "implementation": "research/semantic_quotient/chi1207/",
+      "verifier": "Original chi source native Go + Go net/http ServeMux, original package suites",
+      "run": "38560611428",
+      "artifact": "jpl-quotient-chi1207-evidence (ID not stated)",
+      "artifact_sha256": null,
+      "scope": "Same nine observational states; 105/105 base partial mutations vs0/105 contributor head, one-site ablation105/105; withheld finite futures",
+      "dependencies": "chi base167e1e3bd039d060696b99c8da4e876ae04f42c1/head5a84f0500b8f8f307d615969c1ba4f7cd9126978; human interface",
+      "status": "ROS WARRANTED_BOUNDED_NATIVE_TWO_IMPLEMENTATION_TRANSFER; source PR inspected before freeze",
+      "notion": "3f93e523d7ab81018edec1f032439a78",
+      "id": "jpl-observation-quotient-native-chi-servemux",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f93e523d7ab81018edec1f032439a78",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "MDA V7 source-bound role growth",
+      "repo": "heathsanchez/test",
+      "branch": "mda-v7-next-capability-role-transport-v1",
+      "commit": "13325089c471996b8b68f46540fd4ad449df752c",
+      "implementation": [
+        "open_development/role_transport.py",
+        "open_development/composition.py",
+        "open_development/finite.py",
+        "open_development/lean/check.sh"
+      ],
+      "verifier": "Independent finite evaluator/Python qualification; original Lean4.24.0",
+      "run": "38043019010",
+      "artifact": "11666428875",
+      "artifact_sha256": "b2f6fb3c598dd6327f0b1d158c12e611011d7e76dd604f7a091973a461341a6a",
+      "scope": "Degree4/5 dependent procedures; two proposals/four new verifications;16/16 future variants; deletion/revocation/restart",
+      "dependencies": "Source baseline003e6ccfa91205a1f0ea408656c10b8afbdb10c4; first economics head d15dfebdf93b1a107d832b2c71b8dd8cae437b17 run38042567963",
+      "status": "ROS WARRANTED_BOUNDED; full qualified executable-ledger ties; human role transport",
+      "notion": "3f53e523d7ab81009b43d30ebbb6b7a0",
+      "id": "mda-v7-source-bound-role-growth",
+      "verification_boundary": "ORIGINAL_SOURCE_AND_RUN_METADATA_INSPECTED; HISTORICAL_OUTCOME_DOCUMENTARY_NOT_RERUN",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f53e523d7ab81009b43d30ebbb6b7a0",
+        "independently_verified_by_this_agent": false
+      },
+      "source_evidence": {
+        "run_metadata": {
+          "id": 38043019010,
+          "name": "MDA v7 cross-authority role transport and extra capability generations",
+          "head_sha": "13325089c471996b8b68f46540fd4ad449df752c",
+          "head_branch": "mda-v7-next-capability-role-transport-v1",
+          "path": ".github/workflows/mda-v7-role-transport.yml",
+          "conclusion": "success",
+          "created_at": "2026-10-10T09:54:06Z",
+          "updated_at": "2026-10-10T09:54:27Z"
+        },
+        "historical_artifact_retrieved_by_this_agent": false,
+        "native_rerun_by_this_agent": false,
+        "equal_information_executable_ledger": "TIE",
+        "role_transport": "HUMAN_SUPPLIED",
+        "source_api_independently_inspected_here": true,
+        "original_api": {
+          "file": "open_development/role_transport.py",
+          "class": "QualifiedRoleLiftAdapter(ProofCompositionAdapter)",
+          "role_check": "Checks source record ID, hashes, verified status, evidence verifier and scope before exact certificate replay",
+          "qualification": "open_development/role_transport_qualification.py"
+        },
+        "qualification_boundary": "Human supplied bounded cross-verifier role transport; full grammar inadequacy not proved; candidate counts omit interpreter/source discovery/integration/CI work"
+      }
+    },
+    {
+      "capability": "Unified Consequential Runtime current 13-event state",
+      "repo": "heathsanchez/test",
+      "branch": "research/unified-consequence-runtime-20261013",
+      "commit": "414fc52ebc09b02dfa343b53e298ec35b7346194",
+      "implementation": "research/unified_consequence_runtime; integration/closure.json",
+      "verifier": "Original qckn_flash_live_router.update_live_state; Metatron liveness/cold restore; MathGraph native consumers; exact historical source receipts",
+      "run": "38503758476",
+      "artifact": "11867530272",
+      "artifact_sha256": "2862331276fe358d71cdca7b7f195d3fc90c6a942c7e29a8a8e538b999873085",
+      "scope": "13 source-bound events,11 active scoped capabilities,2 unchanged obstructions;75/75 lineage/63live;source withdrawal and simulated revocation",
+      "dependencies": "FLASH/RealityGraph native emitters; Metatron runtime/metatron/nucleus.py; historical kernels/MSI/Collatz/SAIR; native CSLib and IEANTN events",
+      "status": "ROS WARRANTED_BOUNDED_OPERATIONAL; unmerged draftPR123; L7 UNKNOWN; actionNONE",
+      "notion": "3f93e523d7ab81b292a9e41365cfe78f",
+      "id": "unified-consequential-runtime-current-13-event-state",
+      "verification_boundary": "ORIGINAL_ARCHIVE_RECOVERED; SOURCE_EVENT_AUTHORITY_REUSED_IN_BOUNDED_LIVE_EXECUTION",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f93e523d7ab81b292a9e41365cfe78f",
+        "independently_verified_by_this_agent": false
+      },
+      "source_evidence": {
+        "historical_run_metadata": {
+          "id": 38498825850,
+          "name": "Unified source-bound consequence reclosure",
+          "head_sha": "b8464ac33180e304b7be1b4fe62aea861dd0c7d5",
+          "head_branch": "research/unified-consequence-runtime-20261013",
+          "path": ".github/workflows/unified-consequence-runtime.yml",
+          "conclusion": "success",
+          "created_at": "2026-10-14T02:01:12Z",
+          "updated_at": "2026-10-14T02:02:01Z"
+        },
+        "earlier_snapshot_archive": {
+          "repository": "heathsanchez/test",
+          "run": 38498825850,
+          "artifact": 11865380348,
+          "sha256": "39caaac32331e47b4ae858ee201d1a5f625f105e5b23aba8592a8e720609cef2"
+        },
+        "recovered_original_snapshot": "/workspace/archaeology/runtime-original",
+        "live_original_ledger_nodes_retained": 75,
+        "live_original_source_events_retained": 13,
+        "live_original_active_capabilities_retained": 11,
+        "scope": "Historical source-event closure reused as authority for new bounded E/D execution; original scientific capabilities were not all rerun"
+      }
+    },
+    {
+      "capability": "Source-derived native parametric induction methods",
+      "repo": "heathsanchez/test",
+      "branch": "research/unified-consequence-runtime-20261013",
+      "commit": "f3adc4d72748e61884a30e05ee4627f534080a58",
+      "implementation": "research/unified_consequence_runtime/native_unbounded_v1",
+      "verifier": "Original leanprover/cslib@4b88bcac4c0dec65b3f45b59e85f5397045efd8d Lean4.35.0-rc4",
+      "run": "38489499790",
+      "artifact": "11861096883",
+      "artifact_sha256": "bd8b694399e693809417aef1da91bf966d9c7bae77a9371af8a5c17af3602ffe",
+      "scope": "UP and DOWN universal Nat methods selected through17 native validations; source-distinct successorLTS transfer; wrong-UP negative",
+      "dependencies": "Human authored orientations/stride1..3/four proof atoms/source descriptions; source premises",
+      "status": "ROS WARRANTED_BOUNDED_NATIVE_METHOD_CONSTRUCTION; new meta-language/L7 UNKNOWN",
+      "notion": "3f83e523d7ab81ee807ee22c7710240a",
+      "id": "source-derived-native-parametric-induction-methods",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f83e523d7ab81ee807ee22c7710240a",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "FLASH V14R independent-code source receipt reclosure",
+      "repo": "heathsanchez/test",
+      "branch": null,
+      "commit": "7133a5b4cfa66f9b91de522c534fd4f4431331e6",
+      "implementation": null,
+      "verifier": "Original independent-code RealityGraph11/11 tests and full fixed point; FLASHV13 event engine",
+      "run": "38208892583",
+      "artifact": "11728366241",
+      "artifact_sha256": null,
+      "scope": "Seven claims; JPL48-case evidence admission, local revocationUNKNOWN, restore/restart; six unrelated unchanged",
+      "dependencies": "MathGraph040456fc8862c79c8b384ce63846628274b678be; RealityGraph9b3189a64825e2cb6ebc7b5c17f5f193bdf5cfe3; source flashV13run38203812704",
+      "status": "ROS WARRANTED_BOUNDED_SOURCE_EVENT_CLOSURE; same owner not third-party adoption",
+      "notion": "3f73e523d7ab818f86ddf4340306b016",
+      "id": "flash-v14r-independent-code-source-receipt-reclosure",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f73e523d7ab818f86ddf4340306b016",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "FLASH V16b source-byte-identical executable constructor",
+      "repo": "heathsanchez/test",
+      "branch": "research/flash-v16-executable-crossproject-constructor",
+      "commit": "483b62435c406c364c773246658dbac82f92365e",
+      "implementation": "Original source research/flash_genesis_v11/learned_repair.py blob0f7fb6b837cd65aa86b5fef7c097196fc0df4845",
+      "verifier": "Native MathGraph original420-case oracle and finite-verifier tests; MSI source tests",
+      "run": "38220344126",
+      "artifact": "11734030983",
+      "artifact_sha256": null,
+      "scope": "Unchanged source complete include/exclude solver repurposed for minimum Boolean observation basis; exact protected future negative",
+      "dependencies": "Source test@5b10a853240356b2b00258334ef378e0850eb42c; target MathGraph@280b0200af53033d6f4ee0e1c31e7c2f4f32c172; new human translation/self-reduction adapter",
+      "status": "ROS WARRANTED_BOUNDED_EXECUTABLE_REUSE; strong stateless tie; not auto invention",
+      "notion": "3f73e523d7ab811f8226f660ff022c7b",
+      "id": "flash-v16b-source-byte-identical-executable-constructor",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f73e523d7ab811f8226f660ff022c7b",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "capability": "IKKF V1 portability and V2d verified routing source locator",
+      "repo": "heathsanchez/triskelion",
+      "branch": "ikkf-v1-portable-capability; ikkf-v2d-verified-capability-os",
+      "commit": null,
+      "implementation": [
+        "experiments/IKKF_V1_PORTABLE_CAPABILITY.py",
+        "protocols/IKKF_V2D_VERIFIED_CAPABILITY_OS_PRECOMMIT.txt"
+      ],
+      "verifier": null,
+      "run": null,
+      "artifact": null,
+      "artifact_sha256": null,
+      "scope": "V2d frozen QuixBugs two-module selection; V1 independent-recompilation caveat",
+      "dependencies": "River/Qwen source identified by strategic ROS link only",
+      "status": "Exact native qualification NOT RECOVERED from Notion; verify original source and receipts",
+      "notion": "3f93e523d7ab817aa69bc080c7ed927b",
+      "id": "ikkf-v1-portability-and-v2d-verified-routing-source-locator",
+      "verification_boundary": "ROS_DOCUMENTARY_CLAIM_AND_SOURCE_LOCATOR_ONLY",
+      "documentary_authority": {
+        "file": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+        "notion": "3f93e523d7ab817aa69bc080c7ed927b",
+        "independently_verified_by_this_agent": false
+      }
+    },
+    {
+      "id": "native-cslib-source-mined-proof-grammar",
+      "capability": "Native CSLib source-mined proof grammar extension",
+      "repo": "heathsanchez/test",
+      "branch": "research/unified-consequence-runtime-20261013",
+      "commit": "93b01adc48f47143f13e153f19ea19f401eca577",
+      "run": 38492128421,
+      "implementation": [
+        "research/unified_consequence_runtime/typed_semantic_method_v1/mine_native_methods.py",
+        "research/unified_consequence_runtime/typed_semantic_method_v1/FROZEN_PROTOCOL.json"
+      ],
+      "verifier": "leanprover/cslib@4b88bcac4c0dec65b3f45b59e85f5397045efd8d, Lean4.35.0-rc4",
+      "status": "HISTORICAL_WARRANTED_BOUNDED_NATIVE_METHOD_GRAMMAR_EXTENSION",
+      "verification_boundary": "EXACT_ORIGINAL_SOURCE_AND_FROZEN_PROTOCOL_INSPECTED; ARCHIVED_NATIVE_REPORT_AND_PROOF_HASHES_CHECKED; NATIVE_LEAN_NOT_RERUN_HERE",
+      "source_evidence": {
+        "run_metadata": {
+          "id": 38492128421,
+          "name": "Native source-mined proof grammar extension",
+          "head_sha": "93b01adc48f47143f13e153f19ea19f401eca577",
+          "head_branch": "research/unified-consequence-runtime-20261013",
+          "path": ".github/workflows/unified-native-typed-method.yml",
+          "conclusion": "success",
+          "created_at": "2026-10-14T00:47:20Z",
+          "updated_at": "2026-10-14T00:50:04Z"
+        },
+        "source_sha256": "43a373827dbfb23ed84666aebacc36aa681326093351eeb93a1f7b87a5c3bcea",
+        "frozen_protocol_sha256": "b953fbc2d4346340604a0d553a8582332fcd650508b91676576028434e75e535",
+        "original_workflow": ".github/workflows/unified-native-typed-method.yml",
+        "archived_native_report": "/workspace/archaeology/runtime-original/typed-native-qualification/proofs/report.json",
+        "native_report_is_received_historical_evidence": true,
+        "source_module_pin_format": "Git SHA1 blob IDs (40 hex), notwithstanding historical report field named source_module_sha256s"
+      },
+      "live_executed_in_this_integration": false,
+      "artifact": 11862440093,
+      "artifact_sha256": "d59d91e672ee13fc0224e7dbccecf36869f35a181550fd58750dd786fa779831",
+      "native_qualification": {
+        "schema": "metalogic.typed-source-method-grammar-result.v1",
+        "scientific_status": "WARRANTED_BOUNDED_NATIVE_METHOD_GRAMMAR_EXTENSION",
+        "exact_upstream_sha": "4b88bcac4c0dec65b3f45b59e85f5397045efd8d",
+        "scope": "three user-frozen native goals over original CSLib product/LTS/powerset semantic transports",
+        "protocol_raw_sha256": "b953fbc2d4346340604a0d553a8582332fcd650508b91676576028434e75e535",
+        "native_call_count": 36,
+        "stage_passed": 3,
+        "native_theorem_names_were_mined": true,
+        "source_theorems_are_original_preexisting": true,
+        "meta_generator_substrate_human_written": true,
+        "source_self_modified_generator": "NO_HUMAN_CODE_WRITTEN_AFTER_FREEZE",
+        "strong_equally_informed_stateless_baseline": "UNMEASURED",
+        "general_autonomous_L7": "UNKNOWN",
+        "native_goal_scoped_results": [
+          {
+            "accepted_tactic_program": "simpa [Cslib.FLTS.toLTS_mtr, Prod.mk.injEq, Prod.ext_iff, Set.mem_singleton_iff, exists_eq_left]",
+            "baseline_ties": [],
+            "goal_id": "product_relational_trace",
+            "native_proof_path": "acquisition.lean",
+            "native_proof_sha256": "29029ab40a4b6a7f467384e210dda741e5a0e9d20096672e78c8d1416e3058fe",
+            "new_method_primitives": [
+              "Cslib.FLTS.toLTS_mtr"
+            ],
+            "original_goal": "{S T L : Type} (f : Cslib.FLTS S L) (g : Cslib.FLTS T L) (s t : S \u00d7 T) (w : List L) : Cslib.LTS.MTr (Cslib.FLTS.toLTS (Cslib.FLTS.prod f g)) s w t \u2194 Cslib.FLTS.mtr f s.fst w = t.fst \u2227 Cslib.FLTS.mtr g s.snd w = t.snd",
+            "previous_exact_program_reused": false,
+            "source_lemma_deletion_checks": [
+              {
+                "candidate_passed_without": false,
+                "lemma": "Cslib.FLTS.toLTS_mtr"
+              }
+            ],
+            "source_lemmas_retained": [
+              "Cslib.FLTS.toLTS_mtr"
+            ],
+            "stage": "ACQUISITION",
+            "stage_native_trials": 12,
+            "status": "PASS_SCOPED",
+            "verified_native": true
+          },
+          {
+            "accepted_tactic_program": "simpa [Cslib.FLTS.toLTS_mtr, Cslib.FLTS.mtr_append_eq, Prod.mk.injEq, Prod.ext_iff, Set.mem_singleton_iff, exists_eq_left]",
+            "baseline_ties": [],
+            "goal_id": "product_relational_trace_append",
+            "native_proof_path": "heldout.lean",
+            "native_proof_sha256": "69381aa704202bc82dbdfaaa354324ba77f16772e687e62c0fdf3647cfcf3835",
+            "new_method_primitives": [
+              "Cslib.FLTS.mtr_append_eq"
+            ],
+            "original_goal": "{S T L : Type} (f : Cslib.FLTS S L) (g : Cslib.FLTS T L) (s t : S \u00d7 T) (u v : List L) : Cslib.LTS.MTr (Cslib.FLTS.toLTS (Cslib.FLTS.prod f g)) s (u ++ v) t \u2194 Cslib.FLTS.mtr f (Cslib.FLTS.mtr f s.fst u) v = t.fst \u2227 Cslib.FLTS.mtr g (Cslib.FLTS.mtr g s.snd u) v = t.snd",
+            "previous_exact_program_reused": false,
+            "source_lemma_deletion_checks": [
+              {
+                "candidate_passed_without": false,
+                "lemma": "Cslib.FLTS.mtr_append_eq"
+              }
+            ],
+            "source_lemmas_retained": [
+              "Cslib.FLTS.toLTS_mtr",
+              "Cslib.FLTS.mtr_append_eq"
+            ],
+            "stage": "HELDOUT",
+            "stage_native_trials": 12,
+            "status": "PASS_SCOPED",
+            "verified_native": true
+          },
+          {
+            "accepted_tactic_program": "simpa [Cslib.FLTS.toLTS_mtr, Cslib.FLTS.mtr_append_eq, Cslib.LTS.toFLTS_mem_mtr, Prod.mk.injEq, Prod.ext_iff, Set.mem_singleton_iff, exists_eq_left]",
+            "baseline_ties": [],
+            "goal_id": "product_powerset_trace",
+            "native_proof_path": "grammar_revision.lean",
+            "native_proof_sha256": "1303b615cae78303ec4dadb160747b9a5592c3a4a416d5bd4fb6179733d52e50",
+            "new_method_primitives": [
+              "Cslib.LTS.toFLTS_mem_mtr"
+            ],
+            "original_goal": "{S T L : Type} (f : Cslib.FLTS S L) (g : Cslib.FLTS T L) (s t : S \u00d7 T) (w : List L) : t \u2208 Cslib.FLTS.mtr (Cslib.LTS.toFLTS (Cslib.FLTS.toLTS (Cslib.FLTS.prod f g))) ({s} : Set (S \u00d7 T)) w \u2194 Cslib.FLTS.mtr f s.fst w = t.fst \u2227 Cslib.FLTS.mtr g s.snd w = t.snd",
+            "previous_exact_program_reused": false,
+            "source_lemma_deletion_checks": [
+              {
+                "candidate_passed_without": false,
+                "lemma": "Cslib.LTS.toFLTS_mem_mtr"
+              }
+            ],
+            "source_lemmas_retained": [
+              "Cslib.FLTS.toLTS_mtr",
+              "Cslib.FLTS.mtr_append_eq",
+              "Cslib.LTS.toFLTS_mem_mtr"
+            ],
+            "stage": "GRAMMAR_REVISION",
+            "stage_native_trials": 12,
+            "status": "PASS_SCOPED",
+            "verified_native": true
+          }
+        ],
+        "native_duration_s": 56.03913,
+        "proof_files_match_recorded_sha256": {
+          "acquisition.lean": true,
+          "heldout.lean": true,
+          "grammar_revision.lean": true
+        }
+      },
+      "boundaries": {
+        "meta_language": "HUMAN_DEFINED",
+        "target_goals": "THREE_HUMAN_FROZEN_STATEMENTS_PREDECLARED",
+        "upstream_theorems": "PREEXISTING; NAMES_MINED_FROM_PINNED_SOURCE",
+        "new_open_mathematical_theorem": "NOT_CLAIMED",
+        "equally_informed_stateless_baseline": "UNMEASURED",
+        "autonomous_general_method_language_invention": "UNKNOWN",
+        "live_executed_in_this_integration": false
+      }
+    },
+    {
+      "id": "live-e-d-metatron-flash-execution",
+      "capability": "Live original E/D execution under Metatron and FLASH evidence authority",
+      "repo": "heathsanchez/test",
+      "branch": "research/universal-developmental-machine-20261015",
+      "implementation": [
+        "research/unified_consequence_runtime/developmental_machine.py",
+        "research/unified_consequence_runtime/developmental_verify.py",
+        "research/unified_consequence_runtime/qualify_developmental_machine.py"
+      ],
+      "source_pins": {
+        "development": {
+          "repository": "heathsanchez/test",
+          "commit": "c9092fa57c8943e638f95689cd36e6a63310f41e",
+          "files": {
+            "scripts/webarena_customer_count_representation_synth.py": "97f1706fc74f4d481f6a394048a153dc8afe9e9bf64b7aa9d6fb64af3b0df870",
+            "scripts/webarena_gitlab_star_relation_synth.py": "7839bebc4564c2700f711bd04bc36976e8eca1f5854f4274890e761a4e2c8872"
+          }
+        },
+        "metatron": {
+          "repository": "metalogiclabs/metatron",
+          "commit": "b9d1b5cc10477188be6e55617699be60e70f6dad",
+          "files": {
+            "runtime/metatron/nucleus.py": "13f840fa61ef28803a17a7a7266f80e19fdcbdde90703969dbd83f232f44300d"
+          }
+        },
+        "flash": {
+          "repository": "heathsanchez/realitygraph",
+          "commit": "50c43b14e7272469bc51ff7204dec07682a996d7",
+          "files": {
+            "qckn_flash_live_router.py": "d86a988097c5ff4b1fbc4ea6d8ec364ee4baa5ffd6f7f2d1bcc4341c58858324",
+            "qckn_flash_cross_repo_ingest.py": "0ba8784d3adb243eca24172626921c00fd951a6dd9ce2a4b13a5f2a36b437ed4"
+          }
+        }
+      },
+      "status": "WARRANTED_BOUNDED_INTEGRATED_EXECUTION",
+      "verification_boundary": "ACTUAL_ORIGINAL_SOURCE_EXECUTED; INDEPENDENT_NATIVE_CHECKS_AND_REVIEW; PROVIDER_RUN_LOG_AND_ARTIFACT_DIGEST_CHECKED; GREEN_ZIP_NOT_LOCALLY_REOPENED",
+      "qualification_evidence": {
+        "path": "/workspace/qualification/local-fixed/out/qualification.json",
+        "sha256": "affea4ed0ad2694db62d40646ebdc8eda0ad67701dc0173ee9a0df66d72c0c3c",
+        "coordinator_commit_at_run": "8812d458ded69e26a90d1458553abadd879e41b9",
+        "protected_E_successes": 3,
+        "protected_E_total": 3,
+        "independent_D_successes": 3,
+        "grouping_ablation_successes": 0,
+        "representation_induced_by_original_code": true,
+        "withdrawal": "PASS",
+        "independent_D_survives": 3,
+        "restoration": "PASS",
+        "cold_restart": "PASS",
+        "strong_baseline": "TIE",
+        "total_seconds": 25.462735048000013,
+        "costs": [
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.13817922199996246
+          },
+          {
+            "phase": "acquisition",
+            "operation": "grouping",
+            "seconds": 0.1400834119999672
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.14278736100004608
+          },
+          {
+            "phase": "verification",
+            "task_id": 63,
+            "seconds": 0.6289841349998824,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.14954171299996233
+          },
+          {
+            "phase": "execution",
+            "operation": "stars",
+            "seconds": 0.11046707100013009
+          },
+          {
+            "phase": "verification",
+            "task_id": 169,
+            "seconds": 0.6325634929999069,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.1533772359998693
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.1309283850000611
+          },
+          {
+            "phase": "verification",
+            "task_id": 62,
+            "seconds": 0.7076690829999279,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.17417349300012575
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.1460035190000326
+          },
+          {
+            "phase": "verification",
+            "task_id": 64,
+            "seconds": 0.718131853000159,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.1452911630001381
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.12817443000017192
+          },
+          {
+            "phase": "verification",
+            "task_id": 65,
+            "seconds": 0.6315884829998595,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.13834739700018872
+          },
+          {
+            "phase": "execution",
+            "operation": "stars",
+            "seconds": 0.11865052999996806
+          },
+          {
+            "phase": "verification",
+            "task_id": 168,
+            "seconds": 0.6200510480000503,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.15824991099998442
+          },
+          {
+            "phase": "execution",
+            "operation": "stars",
+            "seconds": 0.10729285799993704
+          },
+          {
+            "phase": "verification",
+            "task_id": 169,
+            "seconds": 0.6104670180000085,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.2949738519998846
+          },
+          {
+            "phase": "execution",
+            "operation": "stars",
+            "seconds": 0.10712657400017633
+          },
+          {
+            "phase": "verification",
+            "task_id": 172,
+            "seconds": 0.776010708000058,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.1563647430000401
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.13105740100013463
+          },
+          {
+            "phase": "verification",
+            "task_id": 62,
+            "seconds": 0.7010127920000286,
+            "status": "rejected"
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.10515306499996768
+          },
+          {
+            "phase": "verification",
+            "task_id": 64,
+            "seconds": 0.5584624470000108,
+            "status": "rejected"
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.11215709199996127
+          },
+          {
+            "phase": "verification",
+            "task_id": 65,
+            "seconds": 0.5527173139998922,
+            "status": "rejected"
+          },
+          {
+            "phase": "verification",
+            "task_id": 62,
+            "seconds": 0.5839708910000354,
+            "status": "rejected"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.8897632180000983
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.1292327319999913
+          },
+          {
+            "phase": "verification",
+            "task_id": 62,
+            "seconds": 0.5942587689999073,
+            "status": "accepted"
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.11423005300002842
+          },
+          {
+            "phase": "verification",
+            "task_id": 64,
+            "seconds": 0.6071263750000071,
+            "status": "accepted"
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.12032154899998204
+          },
+          {
+            "phase": "verification",
+            "task_id": 65,
+            "seconds": 0.6125141719999192,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.22632302800002435
+          },
+          {
+            "phase": "acquisition",
+            "operation": "grouping",
+            "seconds": 0.1464878060000956
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.13600679299997864
+          },
+          {
+            "phase": "verification",
+            "task_id": 63,
+            "seconds": 0.6080215000001772,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.1859509920000164
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.1294288649999089
+          },
+          {
+            "phase": "verification",
+            "task_id": 62,
+            "seconds": 0.5989955459999692,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.1945217049999428
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.12187779000009868
+          },
+          {
+            "phase": "verification",
+            "task_id": 64,
+            "seconds": 0.6087726750001821,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.19363063000014336
+          },
+          {
+            "phase": "execution",
+            "operation": "grouping",
+            "seconds": 0.1204792759999691
+          },
+          {
+            "phase": "verification",
+            "task_id": 65,
+            "seconds": 0.5700958289999107,
+            "status": "accepted"
+          },
+          {
+            "phase": "persistence_and_reclosure",
+            "seconds": 0.1974775910000517
+          }
+        ]
+      },
+      "boundary": {
+        "world": "ORIGINAL_ARCHIVED_WEB_ARENA_SNAPSHOT",
+        "fresh_browser_observation": "NOT_CHECKED",
+        "newly_blinded_discovery": "NOT_CLAIMED",
+        "prospective_second_generation": "UNKNOWN",
+        "source_distinct_representation_transfer": "UNKNOWN",
+        "autonomous_constructor_growth": "UNKNOWN",
+        "cross_model_transport": "UNKNOWN",
+        "competent_tool_using_agent_comparator": "NOT_RUN",
+        "complete_old_language_nonreachability": "NOT_PROVIDED",
+        "production_authorization": "NONE"
+      },
+      "historical_E_F_executed_here": false,
+      "original_native_verifier": {
+        "repository": "ServiceNow/webarena-verified",
+        "commit": "6473f72db5dcefc97b5725b59e734504edc28a21",
+        "producer_process_receives_eval_reference": false,
+        "verifier_process": "isolated Python -I",
+        "regenerated_responses": true
+      },
+      "independent_peer_review": {
+        "independent_review": "NO_FINDINGS_IN_QUALIFIED_FLOW",
+        "checked_sources": [
+          "/workspace/udm/research/unified_consequence_runtime/developmental_machine.py",
+          "/workspace/udm/research/unified_consequence_runtime/qualify_developmental_machine.py",
+          "/workspace/udm/research/unified_consequence_runtime/developmental_verify.py",
+          "/workspace/components/metatron/runtime/metatron/nucleus.py",
+          "/workspace/components/flash/qckn_flash_live_router.py",
+          "/workspace/components/flash/qckn_flash_cross_repo_ingest.py",
+          "/workspace/components/flash/realitygraph/flash.py"
+        ],
+        "independent_native_tests": [
+          {
+            "command": "/workspace/udm-venv/bin/python -B -m unittest research.unified_consequence_runtime.test_developmental_machine -v",
+            "cwd": "/workspace/udm",
+            "count": 2,
+            "seconds": 10.422,
+            "exit_code": 0
+          },
+          {
+            "command": "PYTHONPATH=/workspace/components/metatron/runtime /workspace/udm-venv/bin/python -B -m unittest tests.test_minimal_warrant_graph tests.test_nucleus_exhaustive -v",
+            "cwd": "/workspace/components/metatron",
+            "count": 9,
+            "seconds": 3.614,
+            "exit_code": 0,
+            "exhaustive_cases": {
+              "five_node_dags": 1024,
+              "single_revocations": 5120
+            }
+          },
+          {
+            "command": "/workspace/udm-venv/bin/python -B -m unittest tests.test_flash_live_router tests.test_flash_external_revocation tests.test_flash_cold_restart tests.test_flash_event_restart tests.test_flash_nonlinear -v",
+            "cwd": "/workspace/components/flash",
+            "count": 15,
+            "seconds": 0.017,
+            "exit_code": 0
+          }
+        ],
+        "independent_qualification": {
+          "path": "/workspace/archaeology/state/qualification/out/qualification.json",
+          "sha256": "386729123af5aad93f2512255964c8b2a49e7e2fbb6697dcd7832e98ce394597",
+          "coordinator_commit": "d96000d6a9c36130ddb8255fad04bb6ea321b052",
+          "status": "WARRANTED_BOUNDED_INTEGRATED_EXECUTION",
+          "original_nodes_retained": 75,
+          "final_log_records": 101,
+          "final_live_records": 82,
+          "native_protected_successes": 3,
+          "independent_domain_successes": 3,
+          "grouping_ablation_successes": 0,
+          "withdrawal": "PASS",
+          "restoration": "PASS",
+          "restart": "PASS",
+          "baseline": "TIE",
+          "total_seconds": 23.275093724999806
+        },
+        "not_rerun": [
+          "Lean formal differential qualification",
+          "all historical branch workloads",
+          "fresh browser world observation"
+        ],
+        "implementation_edits_by_reviewer": false
+      },
+      "commit": "f1b142b8e88565c26d579cee27146326db87ae01",
+      "run": "38671739381",
+      "artifact": "11944532542",
+      "artifact_sha256": "d36e2158a7577c2416f8d3e0f6e08d29f89a01306620a9e2ced8070743537c04",
+      "green_qualification_receipt": "QUALIFICATION_RECEIPT.json"
+    },
+    {
+      "id": "metatron-immutable-warrant-log",
+      "source": "metalogiclabs/metatron",
+      "commit": "b9d1b5cc10477188be6e55617699be60e70f6dad",
+      "path": "runtime/metatron/nucleus.py",
+      "import": "from metatron.nucleus import Node, Log, append, ids, live_ids, live, dumps, loads",
+      "authority": "tuple[Node, ...]",
+      "semantics": [
+        "content-addressed immutable nodes",
+        "append requires known distinct premises and deduplicates equal nodes",
+        "live_ids excludes every revoke target and transitively excludes dependent nodes",
+        "dumps/loads persists all historical nodes and validates node hashes"
+      ],
+      "restoration": "revocation is permanent for a content ID; restore by reverified new source-support/capability generation with new IDs",
+      "dependencies": "Python standard library; runtime path imported directly; Lean proof gate separate from Python runtime",
+      "capability": "metatron-immutable-warrant-log",
+      "verification_boundary": "PEER_ORIGINAL_SOURCE_INSPECTED_AND_NATIVE_PYTHON_TESTS_PASSED; LEAN_FORMAL_QUALIFICATION_NOT_RERUN",
+      "peer_verification": {
+        "independent_review": "NO_FINDINGS_IN_QUALIFIED_FLOW",
+        "checked_sources": [
+          "/workspace/udm/research/unified_consequence_runtime/developmental_machine.py",
+          "/workspace/udm/research/unified_consequence_runtime/qualify_developmental_machine.py",
+          "/workspace/udm/research/unified_consequence_runtime/developmental_verify.py",
+          "/workspace/components/metatron/runtime/metatron/nucleus.py",
+          "/workspace/components/flash/qckn_flash_live_router.py",
+          "/workspace/components/flash/qckn_flash_cross_repo_ingest.py",
+          "/workspace/components/flash/realitygraph/flash.py"
+        ],
+        "independent_native_tests": [
+          {
+            "command": "/workspace/udm-venv/bin/python -B -m unittest research.unified_consequence_runtime.test_developmental_machine -v",
+            "cwd": "/workspace/udm",
+            "count": 2,
+            "seconds": 10.422,
+            "exit_code": 0
+          },
+          {
+            "command": "PYTHONPATH=/workspace/components/metatron/runtime /workspace/udm-venv/bin/python -B -m unittest tests.test_minimal_warrant_graph tests.test_nucleus_exhaustive -v",
+            "cwd": "/workspace/components/metatron",
+            "count": 9,
+            "seconds": 3.614,
+            "exit_code": 0,
+            "exhaustive_cases": {
+              "five_node_dags": 1024,
+              "single_revocations": 5120
+            }
+          },
+          {
+            "command": "/workspace/udm-venv/bin/python -B -m unittest tests.test_flash_live_router tests.test_flash_external_revocation tests.test_flash_cold_restart tests.test_flash_event_restart tests.test_flash_nonlinear -v",
+            "cwd": "/workspace/components/flash",
+            "count": 15,
+            "seconds": 0.017,
+            "exit_code": 0
+          }
+        ],
+        "independent_qualification": {
+          "path": "/workspace/archaeology/state/qualification/out/qualification.json",
+          "sha256": "386729123af5aad93f2512255964c8b2a49e7e2fbb6697dcd7832e98ce394597",
+          "coordinator_commit": "d96000d6a9c36130ddb8255fad04bb6ea321b052",
+          "status": "WARRANTED_BOUNDED_INTEGRATED_EXECUTION",
+          "original_nodes_retained": 75,
+          "final_log_records": 101,
+          "final_live_records": 82,
+          "native_protected_successes": 3,
+          "independent_domain_successes": 3,
+          "grouping_ablation_successes": 0,
+          "withdrawal": "PASS",
+          "restoration": "PASS",
+          "restart": "PASS",
+          "baseline": "TIE",
+          "total_seconds": 23.275093724999806
+        },
+        "not_rerun": [
+          "Lean formal differential qualification",
+          "all historical branch workloads",
+          "fresh browser world observation"
+        ],
+        "implementation_edits_by_reviewer": false
+      },
+      "peer_report": "/workspace/archaeology/state/REPORT.md"
+    },
+    {
+      "id": "flash-live-dependency-reclosure",
+      "source": "heathsanchez/realitygraph",
+      "commit": "50c43b14e7272469bc51ff7204dec07682a996d7",
+      "paths": [
+        "qckn_flash_live_router.py",
+        "qckn_flash_cross_repo_ingest.py",
+        "realitygraph/flash.py"
+      ],
+      "import": "import qckn_flash_live_router; from realitygraph.flash import ExternalEventEnvelope",
+      "api": [
+        "ExternalEventEnvelope.capability(..., support_ids=...)",
+        "ExternalEventEnvelope.capability_revocation(..., capability_id=..., reason=...)",
+        "qckn_flash_live_router.update_live_state(previous_state_text, paths)"
+      ],
+      "integration_scope": "support-projection-only singleton node ID -> record hash table; domain-native scientific admission remains separate",
+      "restoration": "reissue generation IDs; preserve original revoked support and event records",
+      "capability": "flash-live-dependency-reclosure",
+      "verification_boundary": "PEER_ORIGINAL_SOURCE_INSPECTED_AND_NATIVE_PYTHON_TESTS_PASSED; LEAN_FORMAL_QUALIFICATION_NOT_RERUN",
+      "peer_verification": {
+        "independent_review": "NO_FINDINGS_IN_QUALIFIED_FLOW",
+        "checked_sources": [
+          "/workspace/udm/research/unified_consequence_runtime/developmental_machine.py",
+          "/workspace/udm/research/unified_consequence_runtime/qualify_developmental_machine.py",
+          "/workspace/udm/research/unified_consequence_runtime/developmental_verify.py",
+          "/workspace/components/metatron/runtime/metatron/nucleus.py",
+          "/workspace/components/flash/qckn_flash_live_router.py",
+          "/workspace/components/flash/qckn_flash_cross_repo_ingest.py",
+          "/workspace/components/flash/realitygraph/flash.py"
+        ],
+        "independent_native_tests": [
+          {
+            "command": "/workspace/udm-venv/bin/python -B -m unittest research.unified_consequence_runtime.test_developmental_machine -v",
+            "cwd": "/workspace/udm",
+            "count": 2,
+            "seconds": 10.422,
+            "exit_code": 0
+          },
+          {
+            "command": "PYTHONPATH=/workspace/components/metatron/runtime /workspace/udm-venv/bin/python -B -m unittest tests.test_minimal_warrant_graph tests.test_nucleus_exhaustive -v",
+            "cwd": "/workspace/components/metatron",
+            "count": 9,
+            "seconds": 3.614,
+            "exit_code": 0,
+            "exhaustive_cases": {
+              "five_node_dags": 1024,
+              "single_revocations": 5120
+            }
+          },
+          {
+            "command": "/workspace/udm-venv/bin/python -B -m unittest tests.test_flash_live_router tests.test_flash_external_revocation tests.test_flash_cold_restart tests.test_flash_event_restart tests.test_flash_nonlinear -v",
+            "cwd": "/workspace/components/flash",
+            "count": 15,
+            "seconds": 0.017,
+            "exit_code": 0
+          }
+        ],
+        "independent_qualification": {
+          "path": "/workspace/archaeology/state/qualification/out/qualification.json",
+          "sha256": "386729123af5aad93f2512255964c8b2a49e7e2fbb6697dcd7832e98ce394597",
+          "coordinator_commit": "d96000d6a9c36130ddb8255fad04bb6ea321b052",
+          "status": "WARRANTED_BOUNDED_INTEGRATED_EXECUTION",
+          "original_nodes_retained": 75,
+          "final_log_records": 101,
+          "final_live_records": 82,
+          "native_protected_successes": 3,
+          "independent_domain_successes": 3,
+          "grouping_ablation_successes": 0,
+          "withdrawal": "PASS",
+          "restoration": "PASS",
+          "restart": "PASS",
+          "baseline": "TIE",
+          "total_seconds": 23.275093724999806
+        },
+        "not_rerun": [
+          "Lean formal differential qualification",
+          "all historical branch workloads",
+          "fresh browser world observation"
+        ],
+        "implementation_edits_by_reviewer": false
+      },
+      "peer_report": "/workspace/archaeology/state/REPORT.md"
+    },
+    {
+      "id": "semantics-triskelion_v54",
+      "capability": "triskelion_v54",
+      "status": "SOURCE_AND_COMMITTED_RUN_REPORT_VERIFIED_PRIMARY_ARTIFACT_UNKNOWN",
+      "verification_boundary": "SOURCE_AND_COMMITTED_RUN_REPORT_VERIFIED_PRIMARY_ARTIFACT_UNKNOWN",
+      "peer_report": "/workspace/archaeology/semantics/REPORT.md",
+      "source_evidence": {
+        "status": "SOURCE_AND_COMMITTED_RUN_REPORT_VERIFIED_PRIMARY_ARTIFACT_UNKNOWN",
+        "run_id": 31761530951,
+        "branch": "v54-compounding-ratchet",
+        "head_sha": "2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c",
+        "program": "experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py",
+        "program_lines": {
+          "old_generator_obstruction": 95,
+          "discover_after_O1": 175,
+          "causal_execution": 199,
+          "gates": 224,
+          "boundary": 236
+        },
+        "documented_effect": {
+          "cold_one_rewrite_survivors": 0,
+          "O1": "< -> <=",
+          "O2": "and -> or",
+          "cold": false,
+          "O1_only": false,
+          "O1_then_O2": true,
+          "O1_ablated_O2_present": false
+        },
+        "primary_artifact": "UNKNOWN",
+        "claim_boundary": "Frozen one-new-rewrite discoverability budget and supplied generic token-emission meta-substrate. Not unrestricted invention.",
+        "naming_collision": "V54_EXTERNAL_QUOTIENT_REFINEMENT_RESULT.txt is a different experiment and must not be cited as this run."
+      },
+      "repo": "heathsanchez/triskelion",
+      "source_pins": [
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c",
+          "path": "experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py",
+          "local_extract": "source/triskelion/v54/experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py",
+          "sha256": "13c05aea8d6c1ce2db6d3d4b85c566ee3dbd2f3fcc1c3c8c14c1c2dece7f05ba",
+          "url": "https://github.com/heathsanchez/triskelion/blob/2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c/experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c",
+          "path": ".github/workflows/metalogic-v54-compounding.yml",
+          "local_extract": "source/triskelion/v54/.github/workflows/metalogic-v54-compounding.yml",
+          "sha256": "0dd9d8e6a3f00e7631a3f24e0c002befe670a06145f770e0f9945e2160bda58f",
+          "url": "https://github.com/heathsanchez/triskelion/blob/2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c/.github/workflows/metalogic-v54-compounding.yml"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": "experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+          "local_extract": "source/triskelion/v161/experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+          "sha256": "a73fd951400435bfc6e20f650f93bba80dfa8fbbd3283f7734a6a391df682ae4",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": "protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md",
+          "local_extract": "source/triskelion/v161/protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md",
+          "sha256": "b15332671b802f83e76685351bcaf34921075db173cea6eece06e80bf7f08bd6",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": ".github/workflows/v161-ast-role-experiential-rescue.yml",
+          "local_extract": "source/triskelion/v161/.github/workflows/v161-ast-role-experiential-rescue.yml",
+          "sha256": "037739bda50e7c015169883fe53921d2b453a51c76985266b55ba0ad3709780c",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/.github/workflows/v161-ast-role-experiential-rescue.yml"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/PROGRESS_V49_V56_2026-08-14.md",
+          "local_extract": "source/triskelion/main/results/PROGRESS_V49_V56_2026-08-14.md",
+          "sha256": "c28679a68617c853e595359cf13f20965d61d1effb961fd6dd5317f5947d0f5e",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/PROGRESS_V49_V56_2026-08-14.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/ATTESTATION_LEDGER.md",
+          "local_extract": "source/triskelion/main/results/ATTESTATION_LEDGER.md",
+          "sha256": "01925228d57b25cf59ea95ca1b1c7ffb92be2e00ba9a87cb44d0497a94daadaa",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/ATTESTATION_LEDGER.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md",
+          "local_extract": "source/triskelion/main/results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md",
+          "sha256": "655831e05e20473a2949d987b54af35a2b5e9707903619973b99aa0de4be5291",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md",
+          "local_extract": "source/triskelion/main/results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md",
+          "sha256": "4b058d6259fec2075f62f389c19288df0e85c6df5d9f8a0dcde20935d00bc61f",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "620e305e4024ba6a818011c7e72a8d138a831875",
+          "path": "results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md",
+          "local_extract": "source/triskelion/v161_report/results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md",
+          "sha256": "05f4a4d899d4864e1bee246530b0b1fda71487f319a545defe952b2e4ce9e717",
+          "url": "https://github.com/heathsanchez/triskelion/blob/620e305e4024ba6a818011c7e72a8d138a831875/results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+          "local_extract": "source/msi/BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+          "sha256": "7f682a6c240fdfb81cd526ae262bac7917c93f56fe4e36830eb781221bf79765",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "CLOSURE_RELATIVE_CAPABILITY.md",
+          "local_extract": "source/msi/CLOSURE_RELATIVE_CAPABILITY.md",
+          "sha256": "c12855a33112af16f83a7e47130e329100075249792015fff457f9684da324ba",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/CLOSURE_RELATIVE_CAPABILITY.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "CONSEQUENTIAL_CORE_CONTRACTS.md",
+          "local_extract": "source/msi/CONSEQUENTIAL_CORE_CONTRACTS.md",
+          "sha256": "4d77d9dbea94f4787eba46355c46097aeaa08d2c37d025d472458fcce8cd42da",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/CONSEQUENTIAL_CORE_CONTRACTS.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "DEVELOPMENTAL_CATEGORY.md",
+          "local_extract": "source/msi/DEVELOPMENTAL_CATEGORY.md",
+          "sha256": "e49abf17fc6018f2c82a3f20e8b1f07bff9472cd9436c7853637777904131043",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/DEVELOPMENTAL_CATEGORY.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "SPEC.md",
+          "local_extract": "source/msi/SPEC.md",
+          "sha256": "258667a43267757b6823fe36eb547da306aa1bcb363080fc65b7f11c8279734f",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/SPEC.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "consequential_core.py",
+          "local_extract": "source/msi/consequential_core.py",
+          "sha256": "2c8be1f9fde571bfcdba6d1daf8a0e680a9636f697687fd4c128a8b214975ad8",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/consequential_core.py"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/BehaviouralCongruence.lean",
+          "local_extract": "source/msi/lean/BehaviouralCongruence.lean",
+          "sha256": "0388d9b7f38661aaa725c1e1e70d3a924cfa98fe3d4179c04e9d4c5b65516f33",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/BehaviouralCongruence.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/BlindRecursiveCrossGrammarGenesis.lean",
+          "local_extract": "source/msi/lean/BlindRecursiveCrossGrammarGenesis.lean",
+          "sha256": "e75c88048245315527274877cde571cc436c99d2369f70e1cf85a36171e4bea6",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/BlindRecursiveCrossGrammarGenesis.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/DevelopmentalCategory.lean",
+          "local_extract": "source/msi/lean/DevelopmentalCategory.lean",
+          "sha256": "9e55bee79fb52c6d47b77897ad17f03a5a8254073e8bba58045e977055e97d3d",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/DevelopmentalCategory.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/Kernel.lean",
+          "local_extract": "source/msi/lean/Kernel.lean",
+          "sha256": "aed8446ede935735103dd443b89e1f1c869f2cf6fc01c7957dcae4f588006b54",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/Kernel.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/MinimalRepair.lean",
+          "local_extract": "source/msi/lean/MinimalRepair.lean",
+          "sha256": "68af4e7cdf9d63ea25b44c466e8b090e0d20f03cbe8e1fcec8c80d32bf512560",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/MinimalRepair.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/ResidualRegimeBridge.lean",
+          "local_extract": "source/msi/lean/ResidualRegimeBridge.lean",
+          "sha256": "9c2eef9ef1a78845b31e650f869e33f9556552d03aa48caed5b95437ea5159ca",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/ResidualRegimeBridge.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/TypedBehaviouralCongruence.lean",
+          "local_extract": "source/msi/lean/TypedBehaviouralCongruence.lean",
+          "sha256": "caf66c64735cff1a9eecdd0237180badbb17ccf3e3c515182e8138c03df8237b",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/TypedBehaviouralCongruence.lean"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "914703653930e204c2677971fb253f239f0d3764",
+          "path": "experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py",
+          "local_extract": "source/triskelion/experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py",
+          "sha256": "f3c9525711f7a666ae47eb01f8a4465b60f26801f1aca28d5440ae47bc9f9131",
+          "url": "https://github.com/heathsanchez/triskelion/blob/914703653930e204c2677971fb253f239f0d3764/experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py"
+        }
+      ],
+      "live_executed_in_this_integration": false
+    },
+    {
+      "id": "semantics-triskelion_v161",
+      "capability": "triskelion_v161",
+      "status": "SOURCE_AND_COMMITTED_RUN_REPORT_VERIFIED_PRIMARY_ARTIFACT_UNKNOWN",
+      "verification_boundary": "SOURCE_AND_COMMITTED_RUN_REPORT_VERIFIED_PRIMARY_ARTIFACT_UNKNOWN",
+      "peer_report": "/workspace/archaeology/semantics/REPORT.md",
+      "source_evidence": {
+        "status": "SOURCE_AND_COMMITTED_RUN_REPORT_VERIFIED_PRIMARY_ARTIFACT_UNKNOWN",
+        "run_id": 32060890023,
+        "branch": "v161-ast-role-experiential-rescue",
+        "run_head_sha": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+        "branch_report_sha": "620e305e4024ba6a818011c7e72a8d138a831875",
+        "artifact_name": "v161-ast-role-experiential-rescue",
+        "reported_artifact_sha256": "8a7d48afbda7262805584e69c0865a035193e9087392f908217a1e0b68d82c4b",
+        "program": "experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+        "source_functions": {
+          "source_roles_A": 78,
+          "source_roles_B": 91,
+          "induce_descriptor": 96,
+          "instantiate": 114,
+          "verify": 60
+        },
+        "hits_out_of_16": {
+          "neural_only": 8,
+          "raw_verified_memory": 8,
+          "compiled_AST_role_map": 16,
+          "shuffled_map": 0
+        },
+        "primary_artifact_bytes": "UNKNOWN; reported digest not re-fetched",
+        "claim_boundary": "Two supplied AST-role descriptors induced from prior verifier-admitted repairs; heterogeneous identifier transfer at frozen regressed neural checkpoint. No claim of O2 discovery or unrestricted AST abstraction."
+      },
+      "repo": "heathsanchez/triskelion",
+      "source_pins": [
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c",
+          "path": "experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py",
+          "local_extract": "source/triskelion/v54/experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py",
+          "sha256": "13c05aea8d6c1ce2db6d3d4b85c566ee3dbd2f3fcc1c3c8c14c1c2dece7f05ba",
+          "url": "https://github.com/heathsanchez/triskelion/blob/2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c/experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c",
+          "path": ".github/workflows/metalogic-v54-compounding.yml",
+          "local_extract": "source/triskelion/v54/.github/workflows/metalogic-v54-compounding.yml",
+          "sha256": "0dd9d8e6a3f00e7631a3f24e0c002befe670a06145f770e0f9945e2160bda58f",
+          "url": "https://github.com/heathsanchez/triskelion/blob/2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c/.github/workflows/metalogic-v54-compounding.yml"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": "experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+          "local_extract": "source/triskelion/v161/experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+          "sha256": "a73fd951400435bfc6e20f650f93bba80dfa8fbbd3283f7734a6a391df682ae4",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": "protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md",
+          "local_extract": "source/triskelion/v161/protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md",
+          "sha256": "b15332671b802f83e76685351bcaf34921075db173cea6eece06e80bf7f08bd6",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": ".github/workflows/v161-ast-role-experiential-rescue.yml",
+          "local_extract": "source/triskelion/v161/.github/workflows/v161-ast-role-experiential-rescue.yml",
+          "sha256": "037739bda50e7c015169883fe53921d2b453a51c76985266b55ba0ad3709780c",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/.github/workflows/v161-ast-role-experiential-rescue.yml"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/PROGRESS_V49_V56_2026-08-14.md",
+          "local_extract": "source/triskelion/main/results/PROGRESS_V49_V56_2026-08-14.md",
+          "sha256": "c28679a68617c853e595359cf13f20965d61d1effb961fd6dd5317f5947d0f5e",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/PROGRESS_V49_V56_2026-08-14.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/ATTESTATION_LEDGER.md",
+          "local_extract": "source/triskelion/main/results/ATTESTATION_LEDGER.md",
+          "sha256": "01925228d57b25cf59ea95ca1b1c7ffb92be2e00ba9a87cb44d0497a94daadaa",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/ATTESTATION_LEDGER.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md",
+          "local_extract": "source/triskelion/main/results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md",
+          "sha256": "655831e05e20473a2949d987b54af35a2b5e9707903619973b99aa0de4be5291",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md",
+          "local_extract": "source/triskelion/main/results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md",
+          "sha256": "4b058d6259fec2075f62f389c19288df0e85c6df5d9f8a0dcde20935d00bc61f",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "620e305e4024ba6a818011c7e72a8d138a831875",
+          "path": "results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md",
+          "local_extract": "source/triskelion/v161_report/results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md",
+          "sha256": "05f4a4d899d4864e1bee246530b0b1fda71487f319a545defe952b2e4ce9e717",
+          "url": "https://github.com/heathsanchez/triskelion/blob/620e305e4024ba6a818011c7e72a8d138a831875/results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+          "local_extract": "source/msi/BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+          "sha256": "7f682a6c240fdfb81cd526ae262bac7917c93f56fe4e36830eb781221bf79765",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "CLOSURE_RELATIVE_CAPABILITY.md",
+          "local_extract": "source/msi/CLOSURE_RELATIVE_CAPABILITY.md",
+          "sha256": "c12855a33112af16f83a7e47130e329100075249792015fff457f9684da324ba",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/CLOSURE_RELATIVE_CAPABILITY.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "CONSEQUENTIAL_CORE_CONTRACTS.md",
+          "local_extract": "source/msi/CONSEQUENTIAL_CORE_CONTRACTS.md",
+          "sha256": "4d77d9dbea94f4787eba46355c46097aeaa08d2c37d025d472458fcce8cd42da",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/CONSEQUENTIAL_CORE_CONTRACTS.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "DEVELOPMENTAL_CATEGORY.md",
+          "local_extract": "source/msi/DEVELOPMENTAL_CATEGORY.md",
+          "sha256": "e49abf17fc6018f2c82a3f20e8b1f07bff9472cd9436c7853637777904131043",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/DEVELOPMENTAL_CATEGORY.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "SPEC.md",
+          "local_extract": "source/msi/SPEC.md",
+          "sha256": "258667a43267757b6823fe36eb547da306aa1bcb363080fc65b7f11c8279734f",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/SPEC.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "consequential_core.py",
+          "local_extract": "source/msi/consequential_core.py",
+          "sha256": "2c8be1f9fde571bfcdba6d1daf8a0e680a9636f697687fd4c128a8b214975ad8",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/consequential_core.py"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/BehaviouralCongruence.lean",
+          "local_extract": "source/msi/lean/BehaviouralCongruence.lean",
+          "sha256": "0388d9b7f38661aaa725c1e1e70d3a924cfa98fe3d4179c04e9d4c5b65516f33",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/BehaviouralCongruence.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/BlindRecursiveCrossGrammarGenesis.lean",
+          "local_extract": "source/msi/lean/BlindRecursiveCrossGrammarGenesis.lean",
+          "sha256": "e75c88048245315527274877cde571cc436c99d2369f70e1cf85a36171e4bea6",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/BlindRecursiveCrossGrammarGenesis.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/DevelopmentalCategory.lean",
+          "local_extract": "source/msi/lean/DevelopmentalCategory.lean",
+          "sha256": "9e55bee79fb52c6d47b77897ad17f03a5a8254073e8bba58045e977055e97d3d",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/DevelopmentalCategory.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/Kernel.lean",
+          "local_extract": "source/msi/lean/Kernel.lean",
+          "sha256": "aed8446ede935735103dd443b89e1f1c869f2cf6fc01c7957dcae4f588006b54",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/Kernel.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/MinimalRepair.lean",
+          "local_extract": "source/msi/lean/MinimalRepair.lean",
+          "sha256": "68af4e7cdf9d63ea25b44c466e8b090e0d20f03cbe8e1fcec8c80d32bf512560",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/MinimalRepair.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/ResidualRegimeBridge.lean",
+          "local_extract": "source/msi/lean/ResidualRegimeBridge.lean",
+          "sha256": "9c2eef9ef1a78845b31e650f869e33f9556552d03aa48caed5b95437ea5159ca",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/ResidualRegimeBridge.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/TypedBehaviouralCongruence.lean",
+          "local_extract": "source/msi/lean/TypedBehaviouralCongruence.lean",
+          "sha256": "caf66c64735cff1a9eecdd0237180badbb17ccf3e3c515182e8138c03df8237b",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/TypedBehaviouralCongruence.lean"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "914703653930e204c2677971fb253f239f0d3764",
+          "path": "experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py",
+          "local_extract": "source/triskelion/experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py",
+          "sha256": "f3c9525711f7a666ae47eb01f8a4465b60f26801f1aca28d5440ae47bc9f9131",
+          "url": "https://github.com/heathsanchez/triskelion/blob/914703653930e204c2677971fb253f239f0d3764/experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py"
+        }
+      ],
+      "live_executed_in_this_integration": false
+    },
+    {
+      "id": "semantics-boolean_certificate_16_to_256",
+      "capability": "boolean_certificate_16_to_256",
+      "status": "PINNED_SOURCE_AND_INDEPENDENT_AUDIT_REPLAY_VERIFIED_ORIGINAL_PRIMARY_ARTIFACT_UNKNOWN",
+      "verification_boundary": "PINNED_SOURCE_AND_INDEPENDENT_AUDIT_REPLAY_VERIFIED_ORIGINAL_PRIMARY_ARTIFACT_UNKNOWN",
+      "peer_report": "/workspace/archaeology/semantics/REPORT.md",
+      "source_evidence": {
+        "status": "PINNED_SOURCE_AND_INDEPENDENT_AUDIT_REPLAY_VERIFIED_ORIGINAL_PRIMARY_ARTIFACT_UNKNOWN",
+        "source_commit": "914703653930e204c2677971fb253f239f0d3764",
+        "introduced_commit": "12b437def08a99f3c3a1301e0297c7c6b9ee89f1",
+        "path": "experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py",
+        "source_lines": {
+          "AFF3": 27,
+          "close_bool": 59,
+          "G3": 129
+        },
+        "certificate": "BOOLEAN_CLOSURE_CERTIFICATE.json",
+        "replay": "replay/artifacts/v104_quotient_identity/RESULT.json",
+        "old_size": 16,
+        "universe_size": 256,
+        "binary_representatives": [
+          1,
+          2,
+          4,
+          7,
+          8,
+          11,
+          13,
+          14
+        ],
+        "expanded_size_per_representative": 256,
+        "verdict": "PASS_V104_ADVERSARIAL_QUOTIENT_IDENTITY",
+        "original_successful_primary_artifact": "UNKNOWN",
+        "original_execution_claim": "Committed results report independent local exact execution. Actions31866781031 and31866821184 had runner_id0/steps[] and are infrastructure failures.",
+        "naming_collision": "Not attributed to v103-verifier-induced-expression-constructor or v104-generic-constructor-synthesis; exact semantic-quotient source history found separately."
+      },
+      "repo": "heathsanchez/triskelion",
+      "source_pins": [
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c",
+          "path": "experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py",
+          "local_extract": "source/triskelion/v54/experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py",
+          "sha256": "13c05aea8d6c1ce2db6d3d4b85c566ee3dbd2f3fcc1c3c8c14c1c2dece7f05ba",
+          "url": "https://github.com/heathsanchez/triskelion/blob/2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c/experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c",
+          "path": ".github/workflows/metalogic-v54-compounding.yml",
+          "local_extract": "source/triskelion/v54/.github/workflows/metalogic-v54-compounding.yml",
+          "sha256": "0dd9d8e6a3f00e7631a3f24e0c002befe670a06145f770e0f9945e2160bda58f",
+          "url": "https://github.com/heathsanchez/triskelion/blob/2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c/.github/workflows/metalogic-v54-compounding.yml"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": "experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+          "local_extract": "source/triskelion/v161/experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+          "sha256": "a73fd951400435bfc6e20f650f93bba80dfa8fbbd3283f7734a6a391df682ae4",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": "protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md",
+          "local_extract": "source/triskelion/v161/protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md",
+          "sha256": "b15332671b802f83e76685351bcaf34921075db173cea6eece06e80bf7f08bd6",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": ".github/workflows/v161-ast-role-experiential-rescue.yml",
+          "local_extract": "source/triskelion/v161/.github/workflows/v161-ast-role-experiential-rescue.yml",
+          "sha256": "037739bda50e7c015169883fe53921d2b453a51c76985266b55ba0ad3709780c",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/.github/workflows/v161-ast-role-experiential-rescue.yml"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/PROGRESS_V49_V56_2026-08-14.md",
+          "local_extract": "source/triskelion/main/results/PROGRESS_V49_V56_2026-08-14.md",
+          "sha256": "c28679a68617c853e595359cf13f20965d61d1effb961fd6dd5317f5947d0f5e",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/PROGRESS_V49_V56_2026-08-14.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/ATTESTATION_LEDGER.md",
+          "local_extract": "source/triskelion/main/results/ATTESTATION_LEDGER.md",
+          "sha256": "01925228d57b25cf59ea95ca1b1c7ffb92be2e00ba9a87cb44d0497a94daadaa",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/ATTESTATION_LEDGER.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md",
+          "local_extract": "source/triskelion/main/results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md",
+          "sha256": "655831e05e20473a2949d987b54af35a2b5e9707903619973b99aa0de4be5291",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md",
+          "local_extract": "source/triskelion/main/results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md",
+          "sha256": "4b058d6259fec2075f62f389c19288df0e85c6df5d9f8a0dcde20935d00bc61f",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "620e305e4024ba6a818011c7e72a8d138a831875",
+          "path": "results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md",
+          "local_extract": "source/triskelion/v161_report/results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md",
+          "sha256": "05f4a4d899d4864e1bee246530b0b1fda71487f319a545defe952b2e4ce9e717",
+          "url": "https://github.com/heathsanchez/triskelion/blob/620e305e4024ba6a818011c7e72a8d138a831875/results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+          "local_extract": "source/msi/BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+          "sha256": "7f682a6c240fdfb81cd526ae262bac7917c93f56fe4e36830eb781221bf79765",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "CLOSURE_RELATIVE_CAPABILITY.md",
+          "local_extract": "source/msi/CLOSURE_RELATIVE_CAPABILITY.md",
+          "sha256": "c12855a33112af16f83a7e47130e329100075249792015fff457f9684da324ba",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/CLOSURE_RELATIVE_CAPABILITY.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "CONSEQUENTIAL_CORE_CONTRACTS.md",
+          "local_extract": "source/msi/CONSEQUENTIAL_CORE_CONTRACTS.md",
+          "sha256": "4d77d9dbea94f4787eba46355c46097aeaa08d2c37d025d472458fcce8cd42da",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/CONSEQUENTIAL_CORE_CONTRACTS.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "DEVELOPMENTAL_CATEGORY.md",
+          "local_extract": "source/msi/DEVELOPMENTAL_CATEGORY.md",
+          "sha256": "e49abf17fc6018f2c82a3f20e8b1f07bff9472cd9436c7853637777904131043",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/DEVELOPMENTAL_CATEGORY.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "SPEC.md",
+          "local_extract": "source/msi/SPEC.md",
+          "sha256": "258667a43267757b6823fe36eb547da306aa1bcb363080fc65b7f11c8279734f",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/SPEC.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "consequential_core.py",
+          "local_extract": "source/msi/consequential_core.py",
+          "sha256": "2c8be1f9fde571bfcdba6d1daf8a0e680a9636f697687fd4c128a8b214975ad8",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/consequential_core.py"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/BehaviouralCongruence.lean",
+          "local_extract": "source/msi/lean/BehaviouralCongruence.lean",
+          "sha256": "0388d9b7f38661aaa725c1e1e70d3a924cfa98fe3d4179c04e9d4c5b65516f33",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/BehaviouralCongruence.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/BlindRecursiveCrossGrammarGenesis.lean",
+          "local_extract": "source/msi/lean/BlindRecursiveCrossGrammarGenesis.lean",
+          "sha256": "e75c88048245315527274877cde571cc436c99d2369f70e1cf85a36171e4bea6",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/BlindRecursiveCrossGrammarGenesis.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/DevelopmentalCategory.lean",
+          "local_extract": "source/msi/lean/DevelopmentalCategory.lean",
+          "sha256": "9e55bee79fb52c6d47b77897ad17f03a5a8254073e8bba58045e977055e97d3d",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/DevelopmentalCategory.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/Kernel.lean",
+          "local_extract": "source/msi/lean/Kernel.lean",
+          "sha256": "aed8446ede935735103dd443b89e1f1c869f2cf6fc01c7957dcae4f588006b54",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/Kernel.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/MinimalRepair.lean",
+          "local_extract": "source/msi/lean/MinimalRepair.lean",
+          "sha256": "68af4e7cdf9d63ea25b44c466e8b090e0d20f03cbe8e1fcec8c80d32bf512560",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/MinimalRepair.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/ResidualRegimeBridge.lean",
+          "local_extract": "source/msi/lean/ResidualRegimeBridge.lean",
+          "sha256": "9c2eef9ef1a78845b31e650f869e33f9556552d03aa48caed5b95437ea5159ca",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/ResidualRegimeBridge.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/TypedBehaviouralCongruence.lean",
+          "local_extract": "source/msi/lean/TypedBehaviouralCongruence.lean",
+          "sha256": "caf66c64735cff1a9eecdd0237180badbb17ccf3e3c515182e8138c03df8237b",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/TypedBehaviouralCongruence.lean"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "914703653930e204c2677971fb253f239f0d3764",
+          "path": "experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py",
+          "local_extract": "source/triskelion/experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py",
+          "sha256": "f3c9525711f7a666ae47eb01f8a4465b60f26801f1aca28d5440ae47bc9f9131",
+          "url": "https://github.com/heathsanchez/triskelion/blob/914703653930e204c2677971fb253f239f0d3764/experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py"
+        }
+      ],
+      "live_executed_in_this_integration": false
+    },
+    {
+      "id": "semantics-msi_formal_assumptions",
+      "capability": "msi_formal_assumptions",
+      "status": "SOURCE_VERIFIED_NOT_RECOMPILED",
+      "verification_boundary": "SOURCE_VERIFIED_NOT_RECOMPILED",
+      "peer_report": "/workspace/archaeology/semantics/REPORT.md",
+      "source_evidence": {
+        "status": "SOURCE_VERIFIED_NOT_RECOMPILED",
+        "sha": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+        "sources": [
+          "lean/Kernel.lean",
+          "lean/BehaviouralCongruence.lean",
+          "lean/TypedBehaviouralCongruence.lean",
+          "lean/DevelopmentalCategory.lean",
+          "lean/ResidualRegimeBridge.lean",
+          "lean/MinimalRepair.lean",
+          "lean/BlindRecursiveCrossGrammarGenesis.lean",
+          "DEVELOPMENTAL_CATEGORY.md",
+          "BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+          "SPEC.md"
+        ],
+        "summary": "Explicit monoid/category/action laws; stage extends a fixed ambient category; finite recovery requires finite action cover and genuine separator progress; residual bridge certifies quotient-to-observation descent; Boolean genesis file certifies frozen finite programs."
+      },
+      "repo": "heathsanchez/Minimal-Sufficient-Interface",
+      "source_pins": [
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c",
+          "path": "experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py",
+          "local_extract": "source/triskelion/v54/experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py",
+          "sha256": "13c05aea8d6c1ce2db6d3d4b85c566ee3dbd2f3fcc1c3c8c14c1c2dece7f05ba",
+          "url": "https://github.com/heathsanchez/triskelion/blob/2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c/experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c",
+          "path": ".github/workflows/metalogic-v54-compounding.yml",
+          "local_extract": "source/triskelion/v54/.github/workflows/metalogic-v54-compounding.yml",
+          "sha256": "0dd9d8e6a3f00e7631a3f24e0c002befe670a06145f770e0f9945e2160bda58f",
+          "url": "https://github.com/heathsanchez/triskelion/blob/2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c/.github/workflows/metalogic-v54-compounding.yml"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": "experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+          "local_extract": "source/triskelion/v161/experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+          "sha256": "a73fd951400435bfc6e20f650f93bba80dfa8fbbd3283f7734a6a391df682ae4",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": "protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md",
+          "local_extract": "source/triskelion/v161/protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md",
+          "sha256": "b15332671b802f83e76685351bcaf34921075db173cea6eece06e80bf7f08bd6",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+          "path": ".github/workflows/v161-ast-role-experiential-rescue.yml",
+          "local_extract": "source/triskelion/v161/.github/workflows/v161-ast-role-experiential-rescue.yml",
+          "sha256": "037739bda50e7c015169883fe53921d2b453a51c76985266b55ba0ad3709780c",
+          "url": "https://github.com/heathsanchez/triskelion/blob/5011d53966618c37ec8d28cc43c13db5e2371e7f/.github/workflows/v161-ast-role-experiential-rescue.yml"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/PROGRESS_V49_V56_2026-08-14.md",
+          "local_extract": "source/triskelion/main/results/PROGRESS_V49_V56_2026-08-14.md",
+          "sha256": "c28679a68617c853e595359cf13f20965d61d1effb961fd6dd5317f5947d0f5e",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/PROGRESS_V49_V56_2026-08-14.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/ATTESTATION_LEDGER.md",
+          "local_extract": "source/triskelion/main/results/ATTESTATION_LEDGER.md",
+          "sha256": "01925228d57b25cf59ea95ca1b1c7ffb92be2e00ba9a87cb44d0497a94daadaa",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/ATTESTATION_LEDGER.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md",
+          "local_extract": "source/triskelion/main/results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md",
+          "sha256": "655831e05e20473a2949d987b54af35a2b5e9707903619973b99aa0de4be5291",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "9419bade0591576b958f6c693231bd72ca745977",
+          "path": "results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md",
+          "local_extract": "source/triskelion/main/results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md",
+          "sha256": "4b058d6259fec2075f62f389c19288df0e85c6df5d9f8a0dcde20935d00bc61f",
+          "url": "https://github.com/heathsanchez/triskelion/blob/9419bade0591576b958f6c693231bd72ca745977/results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "620e305e4024ba6a818011c7e72a8d138a831875",
+          "path": "results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md",
+          "local_extract": "source/triskelion/v161_report/results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md",
+          "sha256": "05f4a4d899d4864e1bee246530b0b1fda71487f319a545defe952b2e4ce9e717",
+          "url": "https://github.com/heathsanchez/triskelion/blob/620e305e4024ba6a818011c7e72a8d138a831875/results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+          "local_extract": "source/msi/BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+          "sha256": "7f682a6c240fdfb81cd526ae262bac7917c93f56fe4e36830eb781221bf79765",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "CLOSURE_RELATIVE_CAPABILITY.md",
+          "local_extract": "source/msi/CLOSURE_RELATIVE_CAPABILITY.md",
+          "sha256": "c12855a33112af16f83a7e47130e329100075249792015fff457f9684da324ba",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/CLOSURE_RELATIVE_CAPABILITY.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "CONSEQUENTIAL_CORE_CONTRACTS.md",
+          "local_extract": "source/msi/CONSEQUENTIAL_CORE_CONTRACTS.md",
+          "sha256": "4d77d9dbea94f4787eba46355c46097aeaa08d2c37d025d472458fcce8cd42da",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/CONSEQUENTIAL_CORE_CONTRACTS.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "DEVELOPMENTAL_CATEGORY.md",
+          "local_extract": "source/msi/DEVELOPMENTAL_CATEGORY.md",
+          "sha256": "e49abf17fc6018f2c82a3f20e8b1f07bff9472cd9436c7853637777904131043",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/DEVELOPMENTAL_CATEGORY.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "SPEC.md",
+          "local_extract": "source/msi/SPEC.md",
+          "sha256": "258667a43267757b6823fe36eb547da306aa1bcb363080fc65b7f11c8279734f",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/SPEC.md"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "consequential_core.py",
+          "local_extract": "source/msi/consequential_core.py",
+          "sha256": "2c8be1f9fde571bfcdba6d1daf8a0e680a9636f697687fd4c128a8b214975ad8",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/consequential_core.py"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/BehaviouralCongruence.lean",
+          "local_extract": "source/msi/lean/BehaviouralCongruence.lean",
+          "sha256": "0388d9b7f38661aaa725c1e1e70d3a924cfa98fe3d4179c04e9d4c5b65516f33",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/BehaviouralCongruence.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/BlindRecursiveCrossGrammarGenesis.lean",
+          "local_extract": "source/msi/lean/BlindRecursiveCrossGrammarGenesis.lean",
+          "sha256": "e75c88048245315527274877cde571cc436c99d2369f70e1cf85a36171e4bea6",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/BlindRecursiveCrossGrammarGenesis.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/DevelopmentalCategory.lean",
+          "local_extract": "source/msi/lean/DevelopmentalCategory.lean",
+          "sha256": "9e55bee79fb52c6d47b77897ad17f03a5a8254073e8bba58045e977055e97d3d",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/DevelopmentalCategory.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/Kernel.lean",
+          "local_extract": "source/msi/lean/Kernel.lean",
+          "sha256": "aed8446ede935735103dd443b89e1f1c869f2cf6fc01c7957dcae4f588006b54",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/Kernel.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/MinimalRepair.lean",
+          "local_extract": "source/msi/lean/MinimalRepair.lean",
+          "sha256": "68af4e7cdf9d63ea25b44c466e8b090e0d20f03cbe8e1fcec8c80d32bf512560",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/MinimalRepair.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/ResidualRegimeBridge.lean",
+          "local_extract": "source/msi/lean/ResidualRegimeBridge.lean",
+          "sha256": "9c2eef9ef1a78845b31e650f869e33f9556552d03aa48caed5b95437ea5159ca",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/ResidualRegimeBridge.lean"
+        },
+        {
+          "repo": "heathsanchez/Minimal-Sufficient-Interface",
+          "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+          "path": "lean/TypedBehaviouralCongruence.lean",
+          "local_extract": "source/msi/lean/TypedBehaviouralCongruence.lean",
+          "sha256": "caf66c64735cff1a9eecdd0237180badbb17ccf3e3c515182e8138c03df8237b",
+          "url": "https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/5d448c0ecc82ff3945d009963064ebbb67d2f308/lean/TypedBehaviouralCongruence.lean"
+        },
+        {
+          "repo": "heathsanchez/triskelion",
+          "commit": "914703653930e204c2677971fb253f239f0d3764",
+          "path": "experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py",
+          "local_extract": "source/triskelion/experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py",
+          "sha256": "f3c9525711f7a666ae47eb01f8a4465b60f26801f1aca28d5440ae47bc9f9131",
+          "url": "https://github.com/heathsanchez/triskelion/blob/914703653930e204c2677971fb253f239f0d3764/experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py"
+        }
+      ],
+      "live_executed_in_this_integration": false
+    },
+    {
+      "id": "formal-native-kernel-lineage",
+      "capability": "native-kernel-lineage",
+      "status": "SOURCE_VERIFIED",
+      "verification_boundary": "SOURCE_VERIFIED",
+      "source_evidence": {
+        "id": "native-kernel-lineage",
+        "status": "SOURCE_VERIFIED",
+        "repository": "metalogiclabs/mathgraph-lean-kernel",
+        "commit": "59570dbc8c57b76f1a6872b1499a2977a673cdad",
+        "path": "README.md",
+        "finding": "Experimental Lean proof checker; nanoda/sokonanoda lineage; not replacement for official kernel."
+      },
+      "peer_report": "/workspace/archaeology/formal/REPORT.md",
+      "live_executed_in_this_integration": false,
+      "repo": "metalogiclabs/mathgraph-lean-kernel",
+      "commit": "59570dbc8c57b76f1a6872b1499a2977a673cdad",
+      "path": "README.md"
+    },
+    {
+      "id": "formal-arena-flash-pin",
+      "capability": "arena-flash-pin",
+      "status": "SOURCE_VERIFIED",
+      "verification_boundary": "SOURCE_VERIFIED",
+      "source_evidence": {
+        "id": "arena-flash-pin",
+        "status": "SOURCE_VERIFIED",
+        "repository": "heathsanchez/lean-kernel-arena",
+        "ref": "origin/mathgraph-latest-draft",
+        "path": "checkers/mathgraph.yaml",
+        "source_commit": "0c3d0b75675249dce4682270a6c554cfa3fa11f5",
+        "checker_commit": "78c7502bac8a5ba000057b3f083bc0595ac65750",
+        "finding": "Arena draft explicitly says close to sokonanoda and not an independent rewrite; its config permits all axioms."
+      },
+      "peer_report": "/workspace/archaeology/formal/REPORT.md",
+      "live_executed_in_this_integration": false,
+      "repo": "heathsanchez/lean-kernel-arena",
+      "path": "checkers/mathgraph.yaml"
+    },
+    {
+      "id": "formal-vdn-development-certificate",
+      "capability": "vdn-development-certificate",
+      "status": "REUSABLE_CONDITIONAL_FORMAL_CERTIFICATE",
+      "verification_boundary": "EXACT_GIT_SOURCE_INSPECTED_NOT_RECOMPILED; CONCRETE_RUNTIME_INSTANCE_UNKNOWN",
+      "source_evidence": {
+        "blob_sha": "3f6ea923d0b3f0727bffcf9b6fd1bb1d975cc466",
+        "base_blob_sha": "e64adf542ba321efbf74787974fa5c5bae795da5",
+        "routing_blob_sha": "abe4f8053d438a6ef596c2cfa37699333046ad8e",
+        "runtime_complete_old_trace_cover": "NOT_SUPPLIED",
+        "native_grouping_ablation_is_complete_nonreachability": false
+      },
+      "peer_report": "/workspace/archaeology/formal/REPORT.md",
+      "live_executed_in_this_integration": false,
+      "path": "VerifiedDevelopmentalNavigation/DevelopmentCertificate.lean",
+      "repo": "metalogiclabs/mathgraph",
+      "branch": "PINNED_UCR_COMPONENT_SOURCE",
+      "commit": "cf359686c74549a132c7a651cd7aabc7c1a870fe",
+      "implementation": "verified-developmental-navigation/lean/VerifiedDevelopmentalNavigation/DevelopmentCertificate.lean",
+      "scope": "Explicit complete finite old trace boundary, verified blocked cover, step-preserving conservative action extension and new reachability witness",
+      "dependencies": [
+        "VerifiedDevelopmentalNavigation.World",
+        "World.CompleteCover",
+        "ActionExtension.step_preserved"
+      ]
+    },
+    {
+      "id": "formal-js-native-arena-checker",
+      "capability": "js-native-arena-checker",
+      "status": "SOURCE_VERIFIED_ARTIFACT_UNKNOWN",
+      "verification_boundary": "SOURCE_VERIFIED_ARTIFACT_UNKNOWN",
+      "source_evidence": {
+        "id": "js-native-arena-checker",
+        "status": "SOURCE_VERIFIED_ARTIFACT_UNKNOWN",
+        "repository": "heathsanchez/lean-kernel-arena",
+        "commit": "debbf137a0470707226e16c87a36364309a4e97f",
+        "paths": [
+          "checkers/mathgraph.yaml",
+          "checkers/mathgraph/main.mjs",
+          "checkers/mathgraph/README.md"
+        ],
+        "finding": "Distinct self-contained JS checker; source says derived from genesis; frozen capability list/budget, ACCEPT0 REJECT1 DECLINE2 ERROR3. No developmental search on checking path. Generic universal kernel correctness not proved by source."
+      },
+      "peer_report": "/workspace/archaeology/formal/REPORT.md",
+      "live_executed_in_this_integration": false,
+      "repo": "heathsanchez/lean-kernel-arena",
+      "commit": "debbf137a0470707226e16c87a36364309a4e97f",
+      "paths": [
+        "checkers/mathgraph.yaml",
+        "checkers/mathgraph/main.mjs",
+        "checkers/mathgraph/README.md"
+      ]
+    },
+    {
+      "id": "formal-serial-composition-conditional",
+      "capability": "serial-composition-conditional",
+      "status": "SOURCE_VERIFIED_ARTIFACT_UNKNOWN",
+      "verification_boundary": "SOURCE_VERIFIED_ARTIFACT_UNKNOWN",
+      "source_evidence": {
+        "id": "serial-composition-conditional",
+        "status": "SOURCE_VERIFIED_ARTIFACT_UNKNOWN",
+        "repository": "metalogiclabs/mathgraph-lean-kernel",
+        "commit": "66b9c4a1d1c30c938f8ac40fdf70cbd629b19bc8",
+        "path": "docs/arena-serial-warrant-v1.md",
+        "finding": "Conditional partial-verdict composition of Soko@7645b1e1 and Flash@78c7502b; correctness assumes constituent correctness. Source records 196 portable outcomes but excludes 9 large exports; source prose not independently checked artifacts."
+      },
+      "peer_report": "/workspace/archaeology/formal/REPORT.md",
+      "live_executed_in_this_integration": false,
+      "repo": "metalogiclabs/mathgraph-lean-kernel",
+      "commit": "66b9c4a1d1c30c938f8ac40fdf70cbd629b19bc8",
+      "path": "docs/arena-serial-warrant-v1.md"
+    }
+  ],
+  "source_inputs": {
+    "ros": "/workspace/archaeology/ros/CAPABILITY_MAP.json",
+    "development": "/workspace/archaeology/development/INDEX.json",
+    "state": "/workspace/archaeology/state/INDEX.json",
+    "semantics": "/workspace/archaeology/semantics/INDEX.json",
+    "live_qualification": "/workspace/qualification/local-fixed/out/qualification.json",
+    "formal": "/workspace/archaeology/formal/INDEX.json"
+  },
+  "global_boundaries": {
+    "documentary_claims_are_not_native_admission": true,
+    "historical_CI_success_alone_is_not_a_scientific_verdict": true,
+    "unknown_inventory_is_not_a_negative_finding": true,
+    "unrestricted_development": "UNKNOWN",
+    "prospective_second_generation": "UNKNOWN",
+    "autonomous_constructor_invention": "UNKNOWN",
+    "cross_model_compilation": "UNKNOWN",
+    "source_distinct_representation_transfer": "UNKNOWN",
+    "competent_tool_using_agent_comparator": "NOT_RUN",
+    "production_authorization": "NONE"
+  },
+  "retrieval_obstruction": "Early combined additional-permission network clone/tool call blocked for approximately 2568 seconds and was cancelled; no current tool call is blocked. Snapshot uses local repositories, original archives, recovered run metadata and available peer reports only.",
+  "snapshot_status": "RECONCILED_SOURCE_NATIVE_QUALIFICATION_AND_FORMAL_CORRESPONDENCE_WITH_EXPLICIT_UNKNOWNS",
+  "peer_inventory_boundaries": {
+    "semantics": "Complete currently reachable clone histories; deleted unreachable branches and garbage-collected objects UNKNOWN",
+    "formal": "Exact MSI and native kernel/Arena source pins inspected; original native run artifacts unexamined, VDN exact-source pending",
+    "state": "230 selected original Metatron/FLASH branch source inventories; original runtime native Python tests and independent integration replay checked",
+    "development": "Selected exact developmental anchors and original artifacts recovered; not an exhaustive qualification of every test repository branch"
+  },
+  "source_input_sha256": {
+    "ros": "7034df2b5a0f10532f8cf534bb96437a2c59b21fdc600aaeb2ca6e3f5731e2e9",
+    "development": "6f4d37884a2fcf11b852de26d6a91c44cf09568f78a835ea645ad8bb11939c89",
+    "state": "7ce1cbdbac164738177330090af47534aadd6238b059def6ab1dfc2c560e0da9",
+    "semantics": "18898feab750abc2439242ea6f157a83fd6b582ed3a4902491746e3e28656406",
+    "live_qualification": "affea4ed0ad2694db62d40646ebdc8eda0ad67701dc0173ee9a0df66d72c0c3c",
+    "formal": "034f583ec83e98cd7b47ebaac333fe29a29e6352e7a122404164ec1dde5c60d2"
+  },
+  "branch_inventory": "archaeology/branches/manifest.json",
+  "formal_correspondence": "FORMAL_CORRESPONDENCE.md",
+  "research_report": "RESEARCH_REPORT.md"
+}

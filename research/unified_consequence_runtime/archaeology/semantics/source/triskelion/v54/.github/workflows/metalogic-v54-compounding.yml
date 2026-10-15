@@ -1,0 +1,32 @@
+name: Metalogic V54 Two-Generation Compounding
+on:
+  push:
+    paths:
+      - '.github/workflows/metalogic-v54-compounding.yml'
+      - 'experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py'
+  workflow_dispatch:
+jobs:
+  v54:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Provision frozen external worlds
+        run: |
+          git clone -q https://github.com/django/django.git /tmp/v54_django
+          cd /tmp/v54_django && git checkout -q c6be0bf3bb744d234947cefd6def9f31d9655800 && python -m pip install -q -e .
+          git clone -q https://github.com/psf/requests.git /tmp/v54_requests
+          cd /tmp/v54_requests && git checkout -q 8068356288978c4f54661ae6f95afe0e0831885e && python -m pip install -q -e . 'pytest<8'
+          git clone -q https://github.com/Textualize/rich.git /tmp/v54_rich
+          cd /tmp/v54_rich && git checkout -q 9d8f9a372cc5916fd4781fec207ced7ddac2f08f && python -m pip install -q -e . 'pytest<8' pytest-cov attrs 'typing-extensions<5'
+      - name: Run V54 combined compounding gate
+        run: python experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py
+      - name: Upload V54 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metalogic-v54-compounding
+          path: artifacts/v54/
