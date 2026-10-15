@@ -24,7 +24,7 @@ PUBLICATION = "native_frontier_route"
 AVAILABLE = "INDEPENDENTLY_WARRANTED_EXECUTABLE_ROUTE_AVAILABLE"
 PREFIX = "udm:warrant:"
 ROUTE_PREFIX = "udm:native-frontier-route:"
-VERIFICATION_KINDS = frozenset(("native_observation_verification", "native_constructor_verification"))
+VERIFICATION_KINDS = frozenset(("native_observation_verification", "native_constructor_verification", "generic_native_verification"))
 
 
 def _contract(value):
@@ -48,11 +48,13 @@ def _nodes(machine):
 
 
 def _validator_source(verification_kind):
-    """The two installed native adapters, rather than a caller-chosen checker."""
+    """Installed source-bound native adapters, rather than a caller-chosen checker."""
     if verification_kind == "native_observation_verification":
         return Path(__file__).with_name("native_observation.py")
     if verification_kind == "native_constructor_verification":
         return Path(__file__).with_name("native_constructor.py")
+    if verification_kind == "generic_native_verification":
+        return Path(__file__).with_name("native_frontier.py")
     raise ValueError("unsupported native frontier verification boundary")
 
 

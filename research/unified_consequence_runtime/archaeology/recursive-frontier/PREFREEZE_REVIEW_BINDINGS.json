@@ -1,0 +1,17 @@
+{
+  "schema": "udm.recursive.prefreeze-review-bindings.v1",
+  "status": "REVIEWED_BOUNDED_NOT_NATIVE_QUALIFIED",
+  "no_target_access_by_workers": true,
+  "source_reviews": {
+    "recursive-mechanism-recovery.json": "f2eace85666fc8857bc3564f6dd65838934a422ff0a79a6a86a877b6c29d1051",
+    "recursive-constructor-recovery.json": "c036888d8fee3bf51a899f471c9d0fbc5bf9183b14591cd9a9b77764bf83f3c1",
+    "recursive-native-boundary-review.json": "9d2079b5d7aafe6b29a965da469460e619ecf1660dcb72032e5eb400eb6f774b",
+    "recursive-verifier-source-review.json": "82e57768ab5f88220897f19342a042de46fcaefa5f4c3e2e762d2b771e17a157",
+    "FINAL_PREFREEZE_REVIEW.json": "569e35d6da99e33c94f3edaf51cb7295b78b14f73cd0a6695e11d6e890e3e4c7"
+  },
+  "final_additive_root_changes": [
+    "Record pip freeze --all via same generic provisioning recipe",
+    "Make archived MANIFEST describe uploaded files only"
+  ],
+  "remaining_science": "Native control and target not executed; O1/O2/O3 UNKNOWN"
+}

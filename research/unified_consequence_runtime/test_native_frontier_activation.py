@@ -61,5 +61,25 @@ class NativeFrontierActivationTests(unittest.TestCase):
         self.assertEqual(result['consequence'],'receipt')
         self.assertEqual(result['new_constructor_invocations'],0)
 
+    @patch('research.unified_consequence_runtime.cross_frontier.require_frontier_route')
+    def test_generic_frontier_executes_exact_registered_source(self,route):
+        machine=self.machine('native.pytest_suite',{'repository':'owner/source','commit':'a'*40})
+        machine.descriptor.return_value.scope={'repository':'owner/source','commit':'a'*40}
+        runtime=SimpleNamespace(machine=machine,_validated=Mock(),execute=Mock(return_value=({'status':'PASS_NATIVE'},'fresh')))
+        route.return_value=self.route(profile='owner/source@'+'a'*40)
+        result=machine.select_and_execute_frontier('generic',runtime)
+        self.assertEqual(result['consequence'],'fresh')
+        runtime.execute.assert_called_once_with('selected-by-flash')
+
+    @patch('research.unified_consequence_runtime.cross_frontier.require_frontier_route')
+    def test_generic_wrong_source_cannot_execute(self,route):
+        machine=self.machine('native.pytest_suite',{'repository':'other/source','commit':'a'*40})
+        machine.descriptor.return_value.scope={'repository':'owner/source','commit':'a'*40}
+        runtime=SimpleNamespace(machine=machine,_validated=Mock(),execute=Mock())
+        route.return_value=self.route(profile='owner/source@'+'a'*40)
+        with self.assertRaisesRegex(ValueError,'request differs'):
+            machine.select_and_execute_frontier('generic',runtime)
+        runtime.execute.assert_not_called()
+
 
 if __name__=='__main__':unittest.main()

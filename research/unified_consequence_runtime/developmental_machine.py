@@ -341,6 +341,12 @@ class Machine:
             if request.get('subject') != cap.scope['target']:
                 raise ValueError('native constructor request differs from verified frontier scope')
             result, consequence = runtime.execute(capability_id)
+        elif cap.operation == 'native.pytest_suite':
+            if (request.get('repository') != cap.scope['repository'] or
+                    request.get('commit') != cap.scope['commit'] or
+                    route['profile'] != cap.scope['repository']+'@'+cap.scope['commit']):
+                raise ValueError('generic native request differs from verified frontier scope')
+            result, consequence = runtime.execute(capability_id)
         else:
             raise ValueError('native capability has no qualified executable adapter')
         return {**route, 'native': result, 'consequence': consequence,

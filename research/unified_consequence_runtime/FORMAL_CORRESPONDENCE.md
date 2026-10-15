@@ -241,3 +241,28 @@ their generic theorem names or green Lean steps from being promoted into a
 proof of this assembled Python runtime. General refinement, new-language
 completeness, unfamiliar-source development and external enforcement remain
 separate UNKNOWN obligations.
+
+
+## Frozen generic native-frontier continuation
+
+The generic bridge adds no proof system or new trusted evidence log. Immutable
+upstream pytest assertions supply bounded native outcomes in an exact source,
+environment, protocol and time scope. Nonempty native PASS can support activation
+of that supplied test operation; a collection error, timeout, skip or empty suite
+cannot license capability or language growth. Replacing an unused function and
+passing a suite does not establish a consequential acquisition.
+
+Metatron and FLASH native liveness still implement selective source-support cuts,
+new-evidence restoration and restart. The generic source adapter must instantiate
+the same provenance obligations as the prior adapters. These checks are not a
+new Lean refinement of Python. `Routing.route_complete` is not a native discovery
+algorithm, and the VDN finite old-trace certificate remains the original V54
+instance rather than a certificate for arbitrary V104 AST candidates.
+
+Recovered MSI statistic/ranking kernels and V104 constructor programs are supplied
+finite grammars. Their original acquisition wrappers close over finite supplied
+tasks or QuixBugs verifiers. Native O1 diagnostic semantics, O2-dependent future
+discoverability, O3 policy improvement and fully charged future cost reduction
+require independent new native evidence. No such result follows from import,
+source recovery or generic admission. Non-bypassable external authority and
+concrete runtime refinement remain UNKNOWN.
