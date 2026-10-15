@@ -1,0 +1,20 @@
+{
+  "run_id": 38708639909,
+  "job_id": 116334233241,
+  "source_commit": "8acd1e3015f3066efaf3c11c83b21ca3fe87936d",
+  "overall_workflow": "FAILURE",
+  "native_stages": "9/9_PASS",
+  "native_restart": "PASS_NATIVE_SEPARATE_PROCESS_RESTART",
+  "V54_persisted_native_replay": "REPLAY_VERIFIED_QUALIFIED_V54_STATE",
+  "contract_suite": "151_tests_11_errors",
+  "cause": "Observation test harness used /workspace/repos/test; workflow omitted its supported UDM_NATIVE_SOURCE_REPO setting",
+  "correction": "Bind UDM_NATIVE_SOURCE_REPO to github.workspace; no native algorithm or Python runtime changed",
+  "artifact_id": 11959787651,
+  "artifact_sha256": "3b9dc749006682ea253e718ef599ece041b4342bc63350994072e5a417bc3aae",
+  "artifact_bytes": 42666283,
+  "archive_reopened_and_digest_checked": true,
+  "corrected_local_path_contracts": "20/20_PASS",
+  "native_result_sha256": "b3b6e046b031fd9ec548529f350393e3f185849a768c27c455beb4a415ba4a90",
+  "raw_log_sha256": "5e9e09a6cd8d9ed93bc5be5170489e3d9d132477b8ef1653619aabf3cd304de2",
+  "committed_log_view": "Trailing whitespace normalized; exact original retained in workflow/archive and workspace"
+}

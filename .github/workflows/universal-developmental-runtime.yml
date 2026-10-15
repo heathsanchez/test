@@ -27,6 +27,7 @@ jobs:
       PYTHONUNBUFFERED: '1'
       UDM_NATIVE_OBSERVATION_TESTS: '1'
       UDM_NATIVE_OBSERVATION_WORLDS: ${{ github.workspace }}/native-observation-worlds
+      UDM_NATIVE_SOURCE_REPO: ${{ github.workspace }}
       PYTHONDONTWRITEBYTECODE: '1'
       UDM_COMPONENTS: ${{ github.workspace }}/components
       UDM_EVALUATOR: ${{ github.workspace }}/components/evaluator
