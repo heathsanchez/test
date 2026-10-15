@@ -24,6 +24,7 @@ jobs:
         run: python -m unittest research.unified_consequence_runtime.test_generic_build_materialization -v
       - name: Qualify native generated-module and physical deletion control
         run: |
+          set -o pipefail
           python -m research.unified_consequence_runtime.qualify_wheel_native_control | tee wheel-native-control.json
       - name: Archive result, including failures
         if: always()
