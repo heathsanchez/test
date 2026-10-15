@@ -1,0 +1,94 @@
+{
+  "experiment": "WORLD_COMPILER_SQLITE_NATIVE_V1",
+  "status": "FROZEN_PROTOCOL_BEFORE_IMPLEMENTATION",
+  "authority": {
+    "source": "CPython sqlite3 binding to real SQLite native library",
+    "runtime": "python 3.12 ubuntu-24.04 GitHub runner; local Python preflight separately",
+    "source_parent_commit": "b12220df5c77e5b7f5ebcbf6772c059d5f74a4cd",
+    "runner_requirements": [
+      "sqlite3 PRAGMA foreign_keys supported",
+      "no remote database",
+      "no production side effects"
+    ]
+  },
+  "objective": "From identical passive observations of a native SQLite schema, construct a state-separating rollback-only probe and discover the minimum permissible configuration change that prevents invalid child references while preserving valid inserts. Compile conditional method; repeat on fresh differently named schemas.",
+  "worlds": {
+    "setup_only_hidden_state": [
+      "PRAGMA foreign_keys=OFF",
+      "PRAGMA foreign_keys=ON"
+    ],
+    "start": "fresh native :memory: database, empty tables, identical SQL schema and tables",
+    "passive_observation": [
+      "sqlite_master schema",
+      "SELECT * from every table",
+      "PRAGMA table_info",
+      "PRAGMA foreign_key_list"
+    ],
+    "disallowed_learner_observation": [
+      "PRAGMA foreign_keys direct read",
+      "Python connection internal flags",
+      "fixture setup state"
+    ],
+    "goal": "Rejected invalid child reference as sqlite3.IntegrityError; valid parent/child inserts must succeed; no mutation by probes; if already safe, no configuration modification"
+  },
+  "primitive_language": {
+    "observations": [
+      "inspect SQLite native foreign_key_list/table_info metadata",
+      "construct INSERT into a child referencing a provably absent parent key",
+      "execute within SAVEPOINT and always ROLLBACK TO plus RELEASE"
+    ],
+    "interventions": [
+      "identity",
+      "PRAGMA <engine-enumerated-name>=ON",
+      "PRAGMA <engine-enumerated-name>=OFF"
+    ],
+    "discover_names_via": "PRAGMA pragma_list on a disposable native connection; do not supply winning name to candidate generator",
+    "candidate_bound": 250,
+    "construction_limit": "one generated violating INSERT with bound parameters; single writable PRAGMA; no synthesis of SQL grammar",
+    "candidate_validation": "native oracle on two fresh instances and independent focused check; privilege restricted to disposable in-memory DB"
+  },
+  "development_schema": {
+    "parent": "inventory(id INTEGER PRIMARY KEY)",
+    "child": "lineitem(id INTEGER PRIMARY KEY, inventory_id INTEGER NOT NULL REFERENCES inventory(id), memo TEXT NOT NULL)"
+  },
+  "protected_schema_distribution": {
+    "seed_source": "sha256(GITHUB_SHA || github.run_id || declared fixed tag); generated after frozen source exists",
+    "cases": 12,
+    "naming": "hash-derived distinct table/key/extra-column names",
+    "column_types": [
+      "INTEGER",
+      "TEXT"
+    ],
+    "nullable_extra_values": [
+      "TEXT NOT NULL",
+      "INTEGER NOT NULL"
+    ],
+    "limits": "one FK referencing single parent primary key, empty tables"
+  },
+  "required_gates": [
+    "two hidden modes identical under declared passive observations",
+    "generated probe separates modes with rollback and no persistent mutation",
+    "discover candidate from engine-listed options without hardcoded winning name in learner",
+    "independent SQLite-native semantics for invalid and valid inserts, both modes",
+    "compilation restores capability on different-name held-out schemas and separate process",
+    "ablation of capability prevents repair on an unsafe instance while unaffected safe instance stays safe",
+    "forged/stale evidence denied; no external effects",
+    "full candidate counts and baseline parity/cost in machine-readable artifact"
+  ],
+  "comparators": [
+    "passive-only baseline",
+    "fully informed native status-query baseline (may outperform)",
+    "fully informed native exhaustive control enumeration with equivalent candidates",
+    "LLM coding agent NOT RUN"
+  ],
+  "claim_boundaries": [
+    "not autonomous invention of SQL or hardware controls",
+    "not a blind external new repository",
+    "not proof of universal world modeling",
+    "not stronger than LLM without actual LLM baseline",
+    "not an L7 meta-language invention",
+    "no claim of economic gain on tie"
+  ],
+  "pass_fail": "PASS_NATIVE_BOUNDED only for all required gates; full-info baseline TIE or win => comparative superiority UNKNOWN/REJECTED for this test; any failed required gate is explicit RED",
+  "side_effects": "No external database, no GitHub production app, no upstream edits, only this isolated owned research branch and Actions."
+}
