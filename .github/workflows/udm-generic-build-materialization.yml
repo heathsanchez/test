@@ -1,0 +1,53 @@
+name: Generic native build-materialization control
+on:
+  push:
+    branches: [research/udm-build-materialization-20261016]
+    paths:
+      - 'research/unified_consequence_runtime/generic_build_materialization.py'
+      - 'research/unified_consequence_runtime/test_generic_build_materialization.py'
+      - '.github/workflows/udm-generic-build-materialization.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generic-build-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run generic preflight contracts
+        run: python -m unittest research.unified_consequence_runtime.test_generic_build_materialization -v
+      - name: Exercise generated module on an unrelated synthetic packaging control
+        run: |
+          mkdir -p /tmp/udm-build-fixture/src/fixture_generated
+          cat > /tmp/udm-build-fixture/pyproject.toml <<'EOF'
+          [build-system]
+          requires = ["setuptools>=68", "wheel"]
+          build-backend = "setuptools.build_meta"
+          [project]
+          name = "udm-generic-build-fixture"
+          version = "0.0.1"
+          EOF
+          echo 'VALUE = 42' > /tmp/udm-build-fixture/src/fixture_generated/__init__.py
+          python -m research.unified_consequence_runtime.generic_build_materialization --source /tmp/udm-build-fixture --out /tmp/udm-build-output > /tmp/udm-build-result.json
+          /tmp/udm-build-output/venv/bin/python -c 'import fixture_generated; assert fixture_generated.VALUE == 42'
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/udm-build-output/build-receipt.json'))
+          assert r['status']=='BUILT_NOT_SCIENTIFICALLY_VERIFIED'
+          assert r['wheel_sha256']
+          PY
+      - name: Archive generic build-control evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generic-build-control
+          path: |
+            /tmp/udm-build-result.json
+            /tmp/udm-build-output/build-receipt.json
+          if-no-files-found: warn
