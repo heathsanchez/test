@@ -2,7 +2,7 @@
 
 Canonical map: `capability_index.json`, **70 rows**. The previous 42 rows remain present; this continuation adds 28 distinct mechanism/result/constraint records after exact source/id reconciliation. The map is one authority; `INDEX_ADDITIONS.json`, ROS recovery inputs and source inventories retain provenance snapshots only.
 
-The existing E/D/V54 native execution,101 original ledger records, original independent evidence, automatic existing-method activation, exact causal cut/restoration, separate-process replay and bounded Lean table remain WARRANTED_BOUNDED. No source archaeology result demotes those warrants. New native adapters are implemented but this index revision deliberately marks their integrated qualification **CANDIDATE_NOT_YET_QUALIFIED** until the parent records its actual reproducible run and inspected artifact.
+The existing E/D/V54 native execution,101 original ledger records, original independent evidence, automatic existing-method activation, exact causal cut/restoration, separate-process replay and bounded Lean table remain WARRANTED_BOUNDED. No source archaeology result demotes those warrants. The new native observation/choice/construction and cross-frontier adapters are now **WARRANTED_BOUNDED** by run 38709973459 and its independently reopened artifact. Exact receipts are in PROGRAMME_QUALIFICATION_RECEIPT.json; broader closure gaps below remain open.
 
 ## Current executable composition boundary
 
@@ -10,10 +10,10 @@ The existing E/D/V54 native execution,101 original ledger records, original inde
 |---|---|---|
 | E/D, V54, Metatron and existing FLASH support closure | Existing original runtime | Inherited WARRANTED_BOUNDED, preserved |
 | Existing-method activation | Original MSI/JPL/MDA path | Inherited bounded 6/6 native routing, informed-ledger tie |
-| Native TOML observation selection/compilation | `native_observation.py` | Supplied seven-channel grammar, original source-A solver and independent receiver; adapter present, new integrated qualification pending |
-| Native source-discovered observer and repair generation | `native_constructor.py` | Two original human-authored constructor families emit executable patches; original cachetools/boltons scopes; new integrated qualification pending |
+| Native TOML observation selection/compilation | `native_observation.py` | Supplied seven-channel grammar, original source-A solver and independent receiver; adapter present, new integrated qualification WARRANTED_BOUNDED |
+| Native source-discovered observer and repair generation | `native_constructor.py` | Two original human-authored constructor families emit executable patches; original cachetools/boltons scopes; new integrated qualification WARRANTED_BOUNDED |
 | Native-profile developmental choice | `developmental_choice.py` | Reuses only original `dominates`/`choose`; content binding grants no independent authority; caller must supply independently verified complete profiles |
-| Cross-frontier readiness reclosure | `cross_frontier.py` | Original FlashClosure/FlashEventRuntime projects exact native receipt readiness from the same Metatron log; native invocation remains separate; new integrated qualification pending |
+| Cross-frontier readiness reclosure | `cross_frontier.py` | Original FlashClosure/FlashEventRuntime projects exact native receipt readiness from the same Metatron log; native invocation remains separate; new integrated qualification WARRANTED_BOUNDED |
 
 Activating a supplied constructor is not acquisition of a new constructor grammar. Selecting a new basis from seven supplied channels is not invention of a new observation primitive. The source constructor, its emitted program, the independent verification warrant and external permission remain separate objects. Readiness facts do not replace executable semantics.
 
@@ -21,7 +21,7 @@ Activating a supplied constructor is not acquisition of a new constructor gramma
 
 | Objective | Smallest currently unclosed obligation |
 |---|---|
-| Bounded assembled native transition | One committed reproducible workflow must execute and archive the whole new native path, reclosure controls, independent verification, informed baseline, withdrawal/restoration and separate-process replay. Imports and focused tests alone do not establish it. |
+| Bounded assembled native transition | CLOSED within the declared supplied native scopes by run 38709973459. All nine native stages, independent archive review, contracts and retained Lean/native regressions pass. This does not close unfamiliar-source or constructor-language growth. |
 | Original constitutional executor over arbitrary native obligations | RealityGraph already contains `route_residual`, `ResidualCertificate`, `Field` and `execute_generation` at the installed FLASH source pin. These generic executor interfaces are not installed as a universal native search dispatcher. A source-native adapter must supply semantically justified completeness/no-resolution evidence; a failed bounded search or timeout cannot instantiate it. |
 | Frozen unfamiliar urllib3 frontier | Current admissible native inputs/verifiers cover E/D, original V54, pinned TOML families and original collection cases. No independently admitted generic urllib3 frontier/verifier bridge exists within the frozen protocol. Preserve UNKNOWN; do not inspect outcomes and add a target-specific bridge after freeze. |
 | New experiment/observation language | Finite experiment-language and Moore-substrate source recovered, but not installed as native observation-language development. Histories/lower substrate are supplied; experiment-language source explicitly includes an XOR target and separate qstar verifier. Target-free autonomous acquisition remains UNKNOWN. |
@@ -29,9 +29,9 @@ Activating a supplied constructor is not acquisition of a new constructor gramma
 | Endogenous retention/compression policy | Original hierarchy, geometry, prospective retention and semantic-certificate mechanisms are recovered; none is installed as a new UDM retention controller. Supplied geometry is not an acquired estimator. Original policy genesis loses to supplied geometry 104887 vs 102558 despite a useful bounded revision. |
 | Capability equivalence and portable neural execution | Exact behavioral comparison/transport certificates are needed per carrier. Original IKKF compilers/routing and finite cross-representation machinery are not installed as neural/cross-model UDM execution. Names or source hashes cannot justify equivalence. |
 | Formal refinement | Original V54 finite table remains concretely checked. New R7.2/CLC/QCKN/Metatron correspondence needs actual semantic instances and Python refinement; generic theorem source does not prove new adapters. RepairSelection True-valued fields and semantic-certificate reflexive commutes field are not missing concrete proofs supplied by a name. |
-| Global propagation outside declared native profiles | New FLASH projection is scoped to registered exact authority/profile contracts. Native integration must show one event affects every matching active profile and no unrelated one; it does not establish arbitrary cross-domain semantic transport. |
+| Global propagation outside declared native profiles | New FLASH projection is scoped to registered exact authority/profile contracts. The qualified instance shows one event affects both matching active TOML profiles, with unrelated and wrong-verifier controls. It does not establish arbitrary cross-domain semantic transport. |
 | External-action enforcement | No independently qualified non-bypassable monitor mediates every Python/direct/external effect under a hostile-process threat model. Scientific integration and local scope checks do not establish an airtight sandbox. |
-| Whole-programme recovery | Sixteen histories were searched under declared extensions/2MB limit; ten repos have limited default-tree content coverage; four run histories stop at HTTP 401. 15,023 matching source objects are candidates, not scientifically adjudicated results. Most named canonical primary papers remain inaccessible. Full consequential scientific closure is UNKNOWN. |
+| Whole-programme recovery | Sixteen histories were searched under declared extensions/2MB limit; ten repos have limited default-tree content coverage; four run histories stop at recorded HTTP 401/503 errors. 15,023 matching source objects are candidates, not scientifically adjudicated results. Most named canonical primary papers remain inaccessible. Full consequential scientific closure is UNKNOWN. |
 
 ## Recovered results absent from the previous 42-entry index
 
@@ -56,9 +56,9 @@ Activating a supplied constructor is not acquisition of a new constructor gramma
 | `prospective-retention-value-v1` | WARRANTED_BOUNDED | False |
 | `retention-policy-representability-boundary-v1` | WARRANTED_BOUNDED | False |
 | `canonical-experiment-language-repair-nonuniqueness-v1` | WARRANTED_BOUNDED | False |
-| `native-obligation-compiler-constructor-integration` | CANDIDATE | ADAPTER_PRESENT_PENDING_NATIVE_QUALIFICATION |
-| `prospective-choice-native-profile-integration` | CANDIDATE | ADAPTER_PRESENT_PENDING_NATIVE_QUALIFICATION |
-| `native-cross-frontier-flash-projection` | CANDIDATE | ADAPTER_PRESENT_PENDING_NATIVE_QUALIFICATION |
+| `native-obligation-compiler-constructor-integration` | WARRANTED_BOUNDED | WARRANTED_BOUNDED_NATIVE_INTEGRATION |
+| `prospective-choice-native-profile-integration` | WARRANTED_BOUNDED | WARRANTED_BOUNDED_NATIVE_INTEGRATION |
+| `native-cross-frontier-flash-projection` | WARRANTED_BOUNDED | WARRANTED_BOUNDED_NATIVE_INTEGRATION |
 | `native-cross-protocol-collection-preflight-repair` | CANDIDATE | False |
 | `r7-2-lean-first-scoped-development-foundations` | REUSABLE | CORRESPONDENCE_ONLY |
 | `clc-nonlinear-lineage-and-certified-flash-seams` | REUSABLE | CORRESPONDENCE_ONLY |
@@ -80,8 +80,8 @@ The 16 initial source additions and ten ROS mechanisms overlap in eight exact so
 
 ## Comparative and cost boundary
 
-Historical V54 and existing-method comparisons tie their equally informed executable-ledger baselines. New adapters must receive the same source/operators/observations/verifier access/evidence and total budget on both sides. A tie warrants integration without comparative advantage. No competent live-agent comparator has been run.
+Historical V54 and existing-method comparisons tie their equally informed executable-ledger baselines. The qualified native observation, original choice and constructor comparisons supply both sides with the same source/operators/observations/verifier access/evidence; measured native outcomes tie. Acquisition knowledge is shared and full lifecycle economic superiority is unestablished. A tie warrants integration without comparative advantage. No competent live-agent comparator has been run.
 
-Measure actual acquisition, independent verification, native execution, compilation, persisted bytes, reclosure, restoration/restart and maintenance in the assembled experiment. Preserve nested versus nonoverlapping timings; do not substitute original finite-accounting constants or unmeasured engineering effort for native lifecycle cost.
+Actual phase timings and persisted bytes are retained in PROGRAMME_QUALIFICATION_RECEIPT.json; phase timing excludes preliminary V54/TOML setup, while collection preparation is included. Full acquisition/economic and engineering lifecycle costs remain unclosed. Preserve nested versus nonoverlapping timings; do not substitute original finite-accounting constants or unmeasured engineering effort for native lifecycle cost.
 
-The source/lineage graph is derived from the canonical index. Documented source bases, theorem correspondence and planned runtime dependency edges are labelled separately; only independently checked concrete runtime admission can establish actual causal support.
+The source/lineage graph is derived from the canonical index. Documented source bases, theorem correspondence and qualified scoped runtime dependency edges are labelled separately; only independently checked concrete runtime admission can establish actual causal support.

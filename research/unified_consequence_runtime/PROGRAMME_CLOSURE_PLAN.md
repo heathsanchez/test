@@ -11,24 +11,24 @@ are reconstructible projections of the same log, never new authorities.
 ## Tasks and ownership
 
 - [x] Verify isolated continuation branch and 91-test clean baseline.
-- [ ] Source coverage: resumable paginated metadata, historical blob signatures,
+- [x] Source coverage: resumable paginated metadata, historical blob signatures,
   exact result/artifact inspection and explicit coverage gaps. Owner source_coverage.
-- [ ] ROS/papers: original sources, primary archives, paper access limitations,
+- [x] ROS/papers: original sources, primary archives, paper access limitations,
   formal assumptions and negative records. Owner papers_ros.
-- [ ] Native observation: native_observation.py and preparation helper; original
+- [x] Native observation: native_observation.py and preparation helper; original
   FLASH constructor, independent audit, executable admission/replay/controls.
   Owner observation_recovery; only these implementation files.
-- [ ] Cross-frontier: cross_frontier.py and tests; registration/publication,
+- [x] Cross-frontier: cross_frontier.py and tests; registration/publication,
   original FlashClosure derived from one log, exact support cuts and restoration.
   Owner cross_frontier; root owns Machine hook.
-- [ ] Native construction: native_constructor.py and tests; original AST observer
+- [x] Native construction: native_constructor.py and tests; original AST observer
   and repair compiler, executed candidate code, independent native qualification.
   Owner constructor_recovery; only these implementation files.
-- [ ] Root integration: one qualification entrypoint and workflow, native controls,
+- [x] Root integration: one qualification entrypoint and workflow, native controls,
   choice/UNKNOWN preservation, informed comparison, persistence and restart.
-- [ ] Independent review: source-level review of actual diff and archived packet;
+- [x] Independent review: source-level review of actual diff and archived packet;
   address consequential findings, commit source, run branch-only Actions.
-- [ ] Reconcile one capability index/graph, formal correspondence and ROS-ready
+- [x] Reconcile one capability index/graph, formal correspondence and ROS-ready
   report with separate bounded verdicts and exact green receipts or obstruction.
 
 ## Shared interfaces and review focus

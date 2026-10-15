@@ -25,9 +25,12 @@ and separate-process restart passed. It retains all 143 input records, produces
 214 final records, leaves input state unchanged and persists 2,097,344 bytes.
 Its final ledger SHA256 is
 `5037f63a7ed17521b574e5767e752de73e06c9a04acaf38271fda7de31c72f56`.
-The exact committed source and independently inspected green Actions/archive
-receipt must still be bound before declaring the maintained workflow qualified.
-**The new Actions gate remains PENDING.** Existing V54 [fresh acquisition qualification
+The final committed source is `34943a589787142e52657d05b0c3021dab5860e3`.
+Run [38709973459](https://github.com/heathsanchez/test/actions/runs/38709973459)
+and independently inspected artifact11960084934 qualify the bounded maintained
+workflow. Exact digests and eleven independent review gates are recorded in
+`PROGRAMME_QUALIFICATION_RECEIPT.json`; the earlier local packets above remain
+historical development evidence. Existing V54 [fresh acquisition qualification
 38682218192](https://github.com/heathsanchez/test/actions/runs/38682218192) and
 [maintained qualification
 38684747298](https://github.com/heathsanchez/test/actions/runs/38684747298) remain
@@ -106,7 +109,7 @@ Sixteen non-shallow histories were searched: **29,319 reachable commits** and
 and limited source inspection. Fifteen oversize blobs were skipped.
 
 The canonical index now contains **70 entries**, with dependency, source-base and
-supersession relations in `CAPABILITY_RELATION_GRAPH.json`. Protected-behavior
+supersession relations in `archaeology/programme-closure/CAPABILITY_GRAPH.json`. Protected-behavior
 equivalence remains UNKNOWN unless separately established. Fifteen original
 qualification archives were independently reopened and hashed during
 reconciliation. These counts describe recovery, not 70 newly executed or
@@ -186,7 +189,7 @@ coexists with a failed publication step; it is not an all-green workflow.
 | --- | --- |
 | Historical capability recovery | Expanded and auditable; scientific-result exhaustiveness **UNKNOWN** |
 | Existing E/D/V54 warrants | **WARRANTED_BOUNDED**, preserved; new workflow authenticates and replays retained behavior without acquisition rerun |
-| New native observation/choice/construction and cross-frontier causality | Reviewed local nine-stage packet **WARRANTED_BOUNDED**; exact committed-source/Actions qualification **PENDING** |
+| New native observation/choice/construction and cross-frontier causality | Reviewed local nine-stage packet **WARRANTED_BOUNDED**; exact committed-source/Actions qualification **WARRANTED_BOUNDED** |
 | Observation or constructor-language invention | **NOT ESTABLISHED**: seven channels, native observation templates and constructor families were supplied |
 | Unfamiliar-source prospective development | **UNKNOWN_TYPED_NATIVE_FRONTIER_NOT_ADMITTED** for the existing frozen urllib3 frontier |
 | Strict comparative developmental advantage | **REJECTED for measured informed-ledger comparisons: tie**; full-lifecycle advantage remains unmeasured |
@@ -212,6 +215,40 @@ Run `.github/workflows/universal-developmental-runtime.yml` on the isolated bran
 It authenticates original archives, replays E/D/V54, executes
 `qualify_programme_closure`, runs contracts, rechecks the original concrete V54
 Lean table and archives evidence even on failure. The exact committed source,
-green run, independently inspected artifact digest and final test counts must be
-recorded here after those gates finish. This initial report supplies no fabricated
-Actions receipt.
+green run, independently inspected artifact digest and final test counts are
+recorded below and in `PROGRAMME_QUALIFICATION_RECEIPT.json`. The offline checker
+`archaeology/programme-closure/inspect_qualification_packet.py` can inspect the
+downloaded packet with the exact source, run and workflow SHA256 recorded in the
+retained independent review. It verifies archived evidence; it does not rerun
+native science or replace the source-native verifiers.
+
+After downloading and safely extracting the exact ZIP, the green-packet review
+can be repeated using the retained provider metadata:
+
+```sh
+python archaeology/programme-closure/inspect_qualification_packet.py EXTRACTED_PACKET \
+  --expected-commit 34943a589787142e52657d05b0c3021dab5860e3 \
+  --expected-run-id 38709973459 \
+  --expected-workflow-sha256 9b7558bddc075fc6cb4b6d94a79f956d3b9aa92697c4057b7779b7fb357d9bf4 \
+  --run-metadata archaeology/programme-closure/GREEN_RUN.json \
+  --artifact-metadata archaeology/programme-closure/GREEN_ARTIFACT.json \
+  --archive EXACT_DOWNLOADED_ZIP --output OFFLINE_REVIEW.json
+```
+
+Run this command from `research/unified_consequence_runtime`. Without the exact
+provider metadata and archive, provider binding remains UNKNOWN. The checker
+retains its first-packet defaults for historical reproducibility; the explicit
+green-source overrides above are required for this qualification.
+
+
+## Exact independently inspected qualification
+
+Green run: [38709973459](https://github.com/heathsanchez/test/actions/runs/38709973459). Exact source: `34943a589787142e52657d05b0c3021dab5860e3`. Artifact: [11960084934](https://github.com/heathsanchez/test/actions/runs/38709973459/artifacts/11960084934). ZIP SHA256: `fe899af52e4453bec23102f68d4dd32476b74b5b8e1bf25669226c5e12828e59`.
+
+All nine native stages passed in 216.23s; 161/161 contracts and 5/5 formal-evidence tests passed. Original native E/D/V54 replay and the five-module/four-theorem bounded Lean check passed without acquisition/search rerun. Original history retained: 153 records; final 224.
+
+The downloaded ZIP, every extracted byte, source snapshot, original independent receiver semantics, ledger/CAS, native construction, original choice, baseline ties, FLASH cuts and restart passed offline independent review. The earlier run38708639909 remains overallFAIL due to a missing test-harness source path; its nine native stages and native restart passed and its failure/archive are preserved.
+
+This closes the declared bounded native transition. The entire research programme, unfamiliar-source development, new constructor/policy language growth, full lifecycle advantage, Python refinement and non-bypassable external enforcement remain unclosed.
+
+A compressed exact qualified Metatron/CAS state and native receipt snapshot is retained at `archaeology/programme-closure/QUALIFIED_NATIVE_STATE.tar.gz`, with digest in the receipt. It is evidence from the same state authority, not a second ledger. Native scope and interpreter bindings still apply. The independent offline archive checker and provider metadata are retained alongside it.

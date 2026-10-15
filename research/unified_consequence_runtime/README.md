@@ -1,3 +1,25 @@
+# Qualified native programme continuation
+
+[Green qualification38709973459](https://github.com/heathsanchez/test/actions/runs/38709973459)
+executes original observation acquisition, native repair choice, executable patch
+construction, multi-frontier FLASH reclosure, exact withdrawal, fresh restoration
+and separate-process native replay. It preserves E/D/V54 and the original
+101-record history without repeating V54 acquisition or search.
+
+The entrypoint is `python -B -m research.unified_consequence_runtime.qualify_programme_closure`; the complete
+pinned setup and invocation are in
+[the qualification workflow](../../.github/workflows/universal-developmental-runtime.yml).
+See [the current report](PROGRAMME_CLOSURE_REPORT.md),
+[exact receipt](PROGRAMME_QUALIFICATION_RECEIPT.json),
+[source coverage](archaeology/programme-closure/SOURCE_COVERAGE.md) and
+[remaining gaps](archaeology/programme-closure/CLOSURE_GAPS.md).
+The native integration is WARRANTED_BOUNDED. Full programme closure, newly
+acquired primitive/constructor languages, unfamiliar-source growth and
+non-bypassable external-action enforcement remain UNKNOWN. Measured informed
+ledger comparisons tie.
+
+The sections below retain the earlier V54 and E/D reproduction instructions.
+
 # Native V54 continuation
 
 The existing E/D machine remains qualified. The continuation executes original

@@ -240,7 +240,7 @@
       "id": "flash-v11-real-source-minimum-basis",
       "type": "capability_or_constraint",
       "classification": "WARRANTED_BOUNDED",
-      "runtime_integration_status": "CANDIDATE_NOT_YET_QUALIFIED"
+      "runtime_integration_status": "WARRANTED_BOUNDED"
     },
     {
       "id": "mgcheck-nonregex-selection-red-and-posthoc",
@@ -371,20 +371,20 @@
     {
       "id": "native-obligation-compiler-constructor-integration",
       "type": "capability_or_constraint",
-      "classification": "CANDIDATE",
-      "runtime_integration_status": "CANDIDATE_NOT_YET_QUALIFIED"
+      "classification": "WARRANTED_BOUNDED",
+      "runtime_integration_status": "WARRANTED_BOUNDED"
     },
     {
       "id": "prospective-choice-native-profile-integration",
       "type": "capability_or_constraint",
-      "classification": "CANDIDATE",
-      "runtime_integration_status": "CANDIDATE_NOT_YET_QUALIFIED"
+      "classification": "WARRANTED_BOUNDED",
+      "runtime_integration_status": "WARRANTED_BOUNDED"
     },
     {
       "id": "native-cross-frontier-flash-projection",
       "type": "capability_or_constraint",
-      "classification": "CANDIDATE",
-      "runtime_integration_status": "CANDIDATE_NOT_YET_QUALIFIED"
+      "classification": "WARRANTED_BOUNDED",
+      "runtime_integration_status": "WARRANTED_BOUNDED"
     },
     {
       "id": "native-cross-protocol-collection-preflight-repair",
@@ -425,22 +425,50 @@
     {
       "id": "frontier:tomlkit:B",
       "type": "declared_native_frontier",
-      "status": "CANDIDATE_NOT_YET_QUALIFIED"
+      "status": "WARRANTED_BOUNDED",
+      "prequalification_status": "CANDIDATE_NOT_YET_QUALIFIED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      },
+      "demonstrated": "Pre-registered; acquired observation enables native verified choice; ancestor withdrawal reopens; fresh restoration and native restart pass."
     },
     {
       "id": "frontier:tomlkit:C",
       "type": "declared_native_frontier",
-      "status": "CANDIDATE_NOT_YET_QUALIFIED"
+      "status": "WARRANTED_BOUNDED",
+      "prequalification_status": "CANDIDATE_NOT_YET_QUALIFIED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      },
+      "demonstrated": "Pre-registered; acquired observation enables native verified choice; ancestor withdrawal reopens; fresh restoration and native restart pass."
     },
     {
       "id": "frontier:unrelated-control",
       "type": "declared_native_frontier",
-      "status": "CANDIDATE_NOT_YET_QUALIFIED"
+      "status": "WARRANTED_BOUNDED",
+      "prequalification_status": "CANDIDATE_NOT_YET_QUALIFIED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      },
+      "demonstrated": "Collection routes survive unrelated TOML ancestor withdrawal; boltons survives cachetools ancestor withdrawal."
     },
     {
       "id": "frontier:wrong-authority-control",
       "type": "declared_native_frontier",
-      "status": "CANDIDATE_NOT_YET_QUALIFIED"
+      "status": "WARRANTED_BOUNDED",
+      "prequalification_status": "CANDIDATE_NOT_YET_QUALIFIED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      },
+      "demonstrated": "Wrong-verifier frontier remains UNKNOWN_SEARCH throughout admission, withdrawal, restoration and restart."
     },
     {
       "id": "commit:29e9c7d1b64fb5080717ff644c9e4614e2309694",
@@ -642,51 +670,128 @@
     {
       "from": "native-obligation-compiler-constructor-integration",
       "to": "metatron-immutable-warrant-log",
-      "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
-      "evidence": "archaeology/programme-closure/constructors/SOURCE_INDEX.json",
-      "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      "relation": "NATIVE_QUALIFIED_COMPOSITION",
+      "evidence": "PROGRAMME_QUALIFICATION_RECEIPT.json",
+      "runtime_causal_instance": "CHECKED_BOUNDED_ADMISSION_WITHDRAWAL_RESTORATION_AND_RESTART",
+      "prequalification_snapshot": {
+        "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
+        "evidence": "archaeology/programme-closure/constructors/SOURCE_INDEX.json",
+        "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      },
+      "status": "WARRANTED_BOUNDED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "native-obligation-compiler-constructor-integration",
       "to": "flash-live-dependency-reclosure",
-      "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
-      "evidence": "archaeology/programme-closure/constructors/SOURCE_INDEX.json",
-      "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      "relation": "NATIVE_QUALIFIED_COMPOSITION",
+      "evidence": "PROGRAMME_QUALIFICATION_RECEIPT.json",
+      "runtime_causal_instance": "CHECKED_BOUNDED_ADMISSION_WITHDRAWAL_RESTORATION_AND_RESTART",
+      "prequalification_snapshot": {
+        "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
+        "evidence": "archaeology/programme-closure/constructors/SOURCE_INDEX.json",
+        "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      },
+      "status": "WARRANTED_BOUNDED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "prospective-choice-native-profile-integration",
       "to": "verified-prospective-repair-selection-v1",
-      "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
-      "evidence": "ORIGINAL_SOURCE_PINNED_IMPLEMENTATION_PRESENT; CONTRACT_CONTROLS_DO_NOT_ESTABLISH_NEW_NATIVE_WHOLE_STACK_QUALIFICATION",
-      "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      "relation": "NATIVE_QUALIFIED_COMPOSITION",
+      "evidence": "PROGRAMME_QUALIFICATION_RECEIPT.json",
+      "runtime_causal_instance": "CHECKED_BOUNDED_ADMISSION_WITHDRAWAL_RESTORATION_AND_RESTART",
+      "prequalification_snapshot": {
+        "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
+        "evidence": "ORIGINAL_SOURCE_PINNED_IMPLEMENTATION_PRESENT; CONTRACT_CONTROLS_DO_NOT_ESTABLISH_NEW_NATIVE_WHOLE_STACK_QUALIFICATION",
+        "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      },
+      "status": "WARRANTED_BOUNDED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "native-cross-frontier-flash-projection",
       "to": "metatron-immutable-warrant-log",
-      "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
-      "evidence": "ORIGINAL_SOURCE_PINNED_IMPLEMENTATION_PRESENT; CONTRACT_CONTROLS_DO_NOT_ESTABLISH_NEW_NATIVE_WHOLE_STACK_QUALIFICATION",
-      "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      "relation": "NATIVE_QUALIFIED_COMPOSITION",
+      "evidence": "PROGRAMME_QUALIFICATION_RECEIPT.json",
+      "runtime_causal_instance": "CHECKED_BOUNDED_ADMISSION_WITHDRAWAL_RESTORATION_AND_RESTART",
+      "prequalification_snapshot": {
+        "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
+        "evidence": "ORIGINAL_SOURCE_PINNED_IMPLEMENTATION_PRESENT; CONTRACT_CONTROLS_DO_NOT_ESTABLISH_NEW_NATIVE_WHOLE_STACK_QUALIFICATION",
+        "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      },
+      "status": "WARRANTED_BOUNDED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "native-cross-frontier-flash-projection",
       "to": "flash-live-dependency-reclosure",
-      "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
-      "evidence": "ORIGINAL_SOURCE_PINNED_IMPLEMENTATION_PRESENT; CONTRACT_CONTROLS_DO_NOT_ESTABLISH_NEW_NATIVE_WHOLE_STACK_QUALIFICATION",
-      "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      "relation": "NATIVE_QUALIFIED_COMPOSITION",
+      "evidence": "PROGRAMME_QUALIFICATION_RECEIPT.json",
+      "runtime_causal_instance": "CHECKED_BOUNDED_ADMISSION_WITHDRAWAL_RESTORATION_AND_RESTART",
+      "prequalification_snapshot": {
+        "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
+        "evidence": "ORIGINAL_SOURCE_PINNED_IMPLEMENTATION_PRESENT; CONTRACT_CONTROLS_DO_NOT_ESTABLISH_NEW_NATIVE_WHOLE_STACK_QUALIFICATION",
+        "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      },
+      "status": "WARRANTED_BOUNDED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "native-cross-frontier-flash-projection",
       "to": "flash-v11-real-source-minimum-basis",
-      "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
-      "evidence": "ORIGINAL_SOURCE_PINNED_IMPLEMENTATION_PRESENT; CONTRACT_CONTROLS_DO_NOT_ESTABLISH_NEW_NATIVE_WHOLE_STACK_QUALIFICATION",
-      "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      "relation": "NATIVE_QUALIFIED_COMPOSITION",
+      "evidence": "PROGRAMME_QUALIFICATION_RECEIPT.json",
+      "runtime_causal_instance": "CHECKED_BOUNDED_ADMISSION_WITHDRAWAL_RESTORATION_AND_RESTART",
+      "prequalification_snapshot": {
+        "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
+        "evidence": "ORIGINAL_SOURCE_PINNED_IMPLEMENTATION_PRESENT; CONTRACT_CONTROLS_DO_NOT_ESTABLISH_NEW_NATIVE_WHOLE_STACK_QUALIFICATION",
+        "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      },
+      "status": "WARRANTED_BOUNDED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "native-cross-frontier-flash-projection",
       "to": "native-obligation-compiler-constructor-integration",
-      "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
-      "evidence": "ORIGINAL_SOURCE_PINNED_IMPLEMENTATION_PRESENT; CONTRACT_CONTROLS_DO_NOT_ESTABLISH_NEW_NATIVE_WHOLE_STACK_QUALIFICATION",
-      "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      "relation": "NATIVE_QUALIFIED_COMPOSITION",
+      "evidence": "PROGRAMME_QUALIFICATION_RECEIPT.json",
+      "runtime_causal_instance": "CHECKED_BOUNDED_ADMISSION_WITHDRAWAL_RESTORATION_AND_RESTART",
+      "prequalification_snapshot": {
+        "relation": "IMPLEMENTED_COMPOSITION_PENDING_QUALIFICATION",
+        "evidence": "ORIGINAL_SOURCE_PINNED_IMPLEMENTATION_PRESENT; CONTRACT_CONTROLS_DO_NOT_ESTABLISH_NEW_NATIVE_WHOLE_STACK_QUALIFICATION",
+        "runtime_causal_instance": "UNKNOWN_UNTIL_EXACT_ADMISSION_LINEAGE_CHECKED"
+      },
+      "status": "WARRANTED_BOUNDED",
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "verified-experiment-language-genesis-v1",
@@ -837,15 +942,35 @@
       "from": "flash-v11-real-source-minimum-basis",
       "to": "native-cross-frontier-flash-projection",
       "relation": "PUBLISHES_EXACT_TYPED_ROUTE_READINESS",
-      "status": "CANDIDATE_NOT_YET_QUALIFIED",
-      "boundary": "Requires independently verified capability, program, native receipt, declared exact profile and live causal parents; native execution remains separate."
+      "status": "WARRANTED_BOUNDED",
+      "boundary": "Requires independently verified capability, program, native receipt, declared exact profile and live causal parents; native execution remains separate.",
+      "prequalification_snapshot": {
+        "relation": "PUBLISHES_EXACT_TYPED_ROUTE_READINESS",
+        "status": "CANDIDATE_NOT_YET_QUALIFIED",
+        "boundary": "Requires independently verified capability, program, native receipt, declared exact profile and live causal parents; native execution remains separate."
+      },
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "native-obligation-compiler-constructor-integration",
       "to": "native-cross-frontier-flash-projection",
       "relation": "PUBLISHES_EXACT_TYPED_ROUTE_READINESS",
-      "status": "CANDIDATE_NOT_YET_QUALIFIED",
-      "boundary": "Requires independently verified capability, program, native receipt, declared exact profile and live causal parents; native execution remains separate."
+      "status": "WARRANTED_BOUNDED",
+      "boundary": "Requires independently verified capability, program, native receipt, declared exact profile and live causal parents; native execution remains separate.",
+      "prequalification_snapshot": {
+        "relation": "PUBLISHES_EXACT_TYPED_ROUTE_READINESS",
+        "status": "CANDIDATE_NOT_YET_QUALIFIED",
+        "boundary": "Requires independently verified capability, program, native receipt, declared exact profile and live causal parents; native execution remains separate."
+      },
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "native-cross-frontier-flash-projection",
@@ -910,31 +1035,69 @@
     {
       "from": "flash-v11-real-source-minimum-basis",
       "to": "frontier:tomlkit:B",
-      "relation": "PLANNED_NATIVE_EVENT_AFFECTS",
-      "status": "CANDIDATE_NOT_YET_QUALIFIED",
-      "boundary": "Must be pre-registered and independently receive actual native consequence; readiness is not oracle semantics."
+      "relation": "NATIVE_EVENT_AFFECTS",
+      "status": "WARRANTED_BOUNDED",
+      "boundary": "One warranted observation publication closes both pre-registered matching TOML routes; selected native consequences independently execute. Exact support withdrawal, fresh restoration and restart checked.",
+      "prequalification_snapshot": {
+        "relation": "PLANNED_NATIVE_EVENT_AFFECTS",
+        "status": "CANDIDATE_NOT_YET_QUALIFIED",
+        "boundary": "Must be pre-registered and independently receive actual native consequence; readiness is not oracle semantics."
+      },
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "flash-v11-real-source-minimum-basis",
       "to": "frontier:tomlkit:C",
-      "relation": "PLANNED_NATIVE_EVENT_AFFECTS",
-      "status": "CANDIDATE_NOT_YET_QUALIFIED",
-      "boundary": "Must be pre-registered and independently receive actual native consequence; readiness is not oracle semantics."
+      "relation": "NATIVE_EVENT_AFFECTS",
+      "status": "WARRANTED_BOUNDED",
+      "boundary": "One warranted observation publication closes both pre-registered matching TOML routes; selected native consequences independently execute. Exact support withdrawal, fresh restoration and restart checked.",
+      "prequalification_snapshot": {
+        "relation": "PLANNED_NATIVE_EVENT_AFFECTS",
+        "status": "CANDIDATE_NOT_YET_QUALIFIED",
+        "boundary": "Must be pre-registered and independently receive actual native consequence; readiness is not oracle semantics."
+      },
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "flash-v11-real-source-minimum-basis",
       "to": "frontier:unrelated-control",
-      "relation": "REQUIRED_NO_PROPAGATION_CONTROL",
-      "status": "CANDIDATE_NOT_YET_QUALIFIED"
+      "relation": "CHECKED_NO_PROPAGATION_CONTROL",
+      "status": "WARRANTED_BOUNDED",
+      "prequalification_snapshot": {
+        "relation": "REQUIRED_NO_PROPAGATION_CONTROL",
+        "status": "CANDIDATE_NOT_YET_QUALIFIED"
+      },
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     },
     {
       "from": "flash-v11-real-source-minimum-basis",
       "to": "frontier:wrong-authority-control",
-      "relation": "REQUIRED_NO_PROPAGATION_CONTROL",
-      "status": "CANDIDATE_NOT_YET_QUALIFIED"
+      "relation": "CHECKED_NO_PROPAGATION_CONTROL",
+      "status": "WARRANTED_BOUNDED",
+      "prequalification_snapshot": {
+        "relation": "REQUIRED_NO_PROPAGATION_CONTROL",
+        "status": "CANDIDATE_NOT_YET_QUALIFIED"
+      },
+      "qualification": {
+        "run": 38709973459,
+        "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+        "receipt": "PROGRAMME_QUALIFICATION_RECEIPT.json"
+      }
     }
   ],
-  "equivalence_boundary": "No general source-distinct capability equivalence inferred from names, hashes, primitive vocabulary or headline counts. Actual current native finite comparison awaits qualification.",
+  "equivalence_boundary": "No general source-distinct capability equivalence inferred from names, hashes, primitive vocabulary or headline counts. Original finite native behavior comparisons and equally informed ledger baseline ties are qualified in their declared scopes by run38709973459; general equivalence remains UNKNOWN.",
   "canonical_capability_rows": 70,
-  "capability_index_sha256": "3db75206b6479f691bfe1a52e18229cbe95809ee553af2abed4a88a4aafb0387"
+  "capability_index_sha256": "520e11a840aaa0791f7bcf76de2ad20fb21ba5e23c1cff70c47196ec44878a21"
 }
