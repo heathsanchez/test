@@ -12,11 +12,11 @@ permissions:
 jobs:
   census:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 360
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      MAX_TREES_PER_REPO: "20"
-      MAX_CONTENT_FILES: "120"
+      MAX_TREES_PER_REPO: "100000"
+      MAX_CONTENT_FILES: "100000"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
