@@ -1,0 +1,37 @@
+name: Universal machine native core
+on:
+  push:
+    branches: [research/universal-machine-native-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-core:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 5d448c0ecc82ff3945d009963064ebbb67d2f308
+          path: original-msi
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: original-metatron
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Execute original MSI and Metatron code through integrated causal machine
+        env:
+          PYTHONPATH: ${{ github.workspace }}/coordinator:${{ github.workspace }}/original-msi:${{ github.workspace }}/original-metatron/runtime
+        run: |
+          set -euo pipefail
+          cd coordinator
+          python -m compileall -q research/unified_consequence_runtime
+          python -m unittest -v research.unified_consequence_runtime.test_integrate research.unified_consequence_runtime.test_consequential_state research.unified_consequence_runtime.test_native_machine
