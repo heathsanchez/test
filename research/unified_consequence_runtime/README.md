@@ -1,5 +1,51 @@
 # Unified Consequential Runtime — evidence-bound native development
 
+## 2026-10-15 — Live executable developmental integration
+
+The new `qualify_developmental_machine` entrypoint invokes the original
+qualified E representation generator and D semantic operators through a
+reloadable executable capability interface. It independently native-checks
+freshly generated WebArena responses, retains causal dependencies in the
+original Metatron log, compares liveness with original FLASH reclosure, and
+tests exact support withdrawal, independently verified restoration and a
+separate-process cold replay.
+
+The local qualification obtained E **3/3**, original grouping ablation **0/3**,
+independent D **3/3**, and a **3/3 tie** with an equally informed executable
+ledger. All 75 original Metatron records, 13 original FLASH events and 11
+source-qualified capabilities are retained. This execution uses the original
+archived real environment observations; fresh browser observation and new
+prospective second-generation discovery remain UNKNOWN.
+
+See [the frozen protocol](DEVELOPMENTAL_PROTOCOL.md),
+[exact source pins](developmental_sources.json), and the
+`universal-developmental-machine.yml` qualification workflow. Existing
+historical-only normalizations remain available with their original boundary.
+
+After checking out the four pinned components and installing the original
+WebArena evaluator plus `playwright` and `jinja2`, run:
+
+```bash
+python -B -m research.unified_consequence_runtime.qualify_developmental_machine \
+  --depth5-archive originals/depth5.zip --runtime-archive originals/runtime.zip \
+  --components components --evaluator components/evaluator \
+  --state qualified-state --out qualification
+```
+
+The two archives are exact original Actions artifacts `11517107016` and
+`11865380348`; the entrypoint rejects digest changes. Reuse a retained
+executable state in a new process with:
+
+```bash
+python -B -m research.unified_consequence_runtime.qualify_developmental_machine \
+  --replay qualification/replay-spec.json --out qualification/new-replay.json
+```
+
+FLASH's support-node projection establishes dependency closure; the
+separate original native evaluator establishes benchmark consequences.
+They retain distinct verification authorities and neither acquires
+production action authorization.
+
 **Status: native certificate repair + cross-repository operational admission qualified.**
 **Scientific autonomous method genesis and system-wide L7 remain UNKNOWN.**
 
