@@ -1,0 +1,21 @@
+{
+  "binary_sha256": "b328248a00338c0b37eadd2a769613939ded0521217c167d56e8811af40f37bb",
+  "source": "experiments/source-eta-argument/source",
+  "parent_full196": "experiments/source-eta-argument/full196-origin.json",
+  "rows": [
+    {
+      "case": "bad/bugs/eta-ctor-alias.ndjson",
+      "sha256": "fd1a643c6c52efe34ec0cc0c22e53cdae32561ff80fb533b3bee7064dbd85ea3",
+      "rc": 2,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=etaCtorAlias:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n",
+      "elapsed_seconds": 0.005310417000146117
+    },
+    {
+      "case": "good/perf/let-fold.ndjson",
+      "sha256": "6dffef7bfa4101598b05f1c6da0af84ec49b2115e7c60ba612798666b2ead1ac",
+      "rc": 2,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.le_trans.match_1_10:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n",
+      "elapsed_seconds": 0.13228958300169325
+    }
+  ]
+}
