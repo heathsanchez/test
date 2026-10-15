@@ -1,0 +1,27 @@
+name: UDM generated wheel evidence seam
+on:
+  push:
+    branches: [research/udm-wheel-evidence-lifecycle-20261016]
+    paths:
+      - 'research/unified_consequence_runtime/generated_wheel_evidence.py'
+      - 'research/unified_consequence_runtime/native_frontier.py'
+      - 'research/unified_consequence_runtime/test_generated_wheel_evidence.py'
+      - '.github/workflows/udm-wheel-evidence-seam.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  evidence-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test typed wheel evidence and forged digest refusal
+        run: python -m unittest research.unified_consequence_runtime.test_generated_wheel_evidence -v
+      - name: Compile modified runtime
+        run: python -m py_compile research/unified_consequence_runtime/generated_wheel_evidence.py research/unified_consequence_runtime/native_frontier.py
