@@ -163,6 +163,10 @@ class Machine:
         (self.state/'flash-state-bundle.json').write_text(self.flash['state_bundle_text'])
         if set(self.mt.live_ids(self.log)) != self.flash_live_ids():
             raise AssertionError('independent causal closure disagreement')
+        # Native frontiers are another original FLASH view of this same log.
+        # Their readiness never replaces independent domain-native execution.
+        from .cross_frontier import reclose_frontiers
+        self.frontiers = reclose_frontiers(self)
         return self.flash['summary']
 
     def flash_live_ids(self):
@@ -311,3 +315,33 @@ class Machine:
         """Activate a unique existing typed route without a caller-selected method."""
         from .consequence_selection import select_and_execute
         return select_and_execute(self, task)
+
+    def select_and_execute_frontier(self, frontier_id, runtime):
+        """Select an existing native route; UNKNOWN never starts construction.
+
+        The domain adapter supplies original executable semantics and independent
+        verification. FLASH supplies current typed applicability, not a verdict
+        on the native program itself. No caller selects a capability identifier.
+        """
+        from .cross_frontier import require_frontier_route
+        if runtime.machine is not self:
+            raise ValueError('native adapter belongs to a different warrant state')
+        route = require_frontier_route(self, frontier_id, validate=runtime._validated)
+        if route['status'] != 'READY':
+            return route
+        capability_id = route['capability_id']
+        cap = self.descriptor(capability_id)
+        request = self.get(route['request'])
+        if cap.operation == 'flash.native_observation':
+            family = request.get('family')
+            if family not in cap.scope['families'] or route['profile'] != 'tomlkit:'+family:
+                raise ValueError('native observation request differs from verified frontier scope')
+            result, consequence = runtime.execute(capability_id, family)
+        elif cap.operation == 'native.source_patch':
+            if request.get('subject') != cap.scope['target']:
+                raise ValueError('native constructor request differs from verified frontier scope')
+            result, consequence = runtime.execute(capability_id)
+        else:
+            raise ValueError('native capability has no qualified executable adapter')
+        return {**route, 'native': result, 'consequence': consequence,
+                'transition': 'ACTIVATION', 'new_constructor_invocations': 0}

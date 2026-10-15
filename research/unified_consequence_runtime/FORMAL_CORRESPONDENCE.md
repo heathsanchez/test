@@ -140,3 +140,104 @@ Metatron's inspected `WarrantGraph.lean` remains pinned to
 `metalogiclabs/metatron@b9d1b5cc10477188be6e55617699be60e70f6dad`; its project
 uses Lean4.35.0-rc2. This continuation does not claim to have recompiled that
 project with the VDN4.28 compiler.
+
+## Native programme continuation: actual transitions and open refinements
+
+The continuation from `b8216cf025b9b0ced686f31e783f46637fd101c4` adds an
+executable observation/choice/construction path through the same Metatron log
+and original FLASH implementation. The frozen scope is
+[PROGRAMME_CLOSURE_PROTOCOL.md](PROGRAMME_CLOSURE_PROTOCOL.md); current evidence
+and separate verdicts are in
+[PROGRAMME_CLOSURE_REPORT.md](PROGRAMME_CLOSURE_REPORT.md).
+
+Its original source pins are:
+
+* FLASH V11 solver and native TOML producer:
+  `heathsanchez/test@bda00d75ac186b02b44eac93d0e64f67d19c5b9a`;
+  independent native/TOML audit:
+  `32a31e261fdef54fce3cdef902077100cf7c7094`.
+* Original prospective choice `dominates` and `choose`:
+  `6031466188046f56b4660d772d13ad731ed4c0f2`,
+  `experiments/verified_prospective_repair_selection_v1/run.py`, SHA256
+  `ef46969e2182a5ced64e3c80f5266c03f864d72dcd8133539e6b1a71c42a4b94`.
+* Original native collection observer and repair compiler:
+  `8befdf9d9d9565bc2640d380f98c6547b3660a63`,
+  `research/mathgraph_obligation_compiler_20261015/`.
+
+The operational sequence is source-native observation → MSI pair residual →
+preserved unresolved choice → activation of an existing observation constructor
+→ independently checked executable policy → typed persistent admission →
+FLASH propagation to both active native frontiers → changed protected native
+repair choice → fresh execution → ancestor withdrawal → fresh restoration →
+separate-process execution. A second path invokes an existing source-AST
+constructor, independently checks its generated executable patch, and retains
+that method through the same admission, frontier and restart machinery.
+
+| Actual runtime transition | Relevant original result | Concrete evidence and exact remaining obligation |
+| --- | --- | --- |
+| Native source-A obligation and residual | MSI executable `EquivalenceRelation`, `PairResidual`; original RealityGraph `route_residual(UNKNOWN_IDENTITY)` | Original native A rows supply old/head pairs merged by `(mut_status,native,length)` but separated by protected native/TOML coherence. The actual finite residual routes to `SPLIT` before acquisition. This is an executable finite instance, not a Lean proof of the native verifier or its state encoding. |
+| Preserve unresolved repair choice | Original prospective `choose` / `dominates` | Equal primitive profiles return `UNKNOWN_CHOICE` and preserve both source candidates. Exact candidate/future keys, nonempty equal-dimensional finite vectors and content bindings prevent truncated or vacuous choices. Binding consistency does not establish independent truth, provenance authentication, completeness or liveness. The native caller separately checks those receipts and live premises. |
+| Activate an existing constructor before new language | Existing MSI/MDA activation/selection discipline; supplied FLASH V11 constructor | Repeated acquisition validates and reuses a unique live applicable observation policy without invoking its constructor; multiple eligible methods remain UNKNOWN_CHOICE. The original 128-mask, seven-channel grammar was supplied. No new observation vocabulary or constructor grammar is acquired. |
+| Refine representation on the fixed A carrier | MSI executable `strictly_refines`; R7.2 `Refine` / `certified_error_forces_split` | The qualifier combines retained primitive observations with the selected channel and checks strict refinement on the same 80 old/head native states. All previously represented distinctions are retained on that carrier. A Lean action monoid/stage, native checker soundness, certificate bank and scope-to-stage inclusion remain uninstantiated. |
+| Independently establish B/C applicability | Original independent `audit_independent.py` semantics and fresh clean-source replay | The A-selected policy is frozen before B/C scope verification. B/C source, complete case grammar, policy and native receipts are independently bound before publication. These historical targets are exposed; their scope verification is not a blinded prospective outcome. No universal cross-repository authority follows. |
+| One publication changes two active frontiers | Original FLASH `FlashClosure` and typed admission/revocation events | B/C registrations exist before admission. A source/program/evidence-bound publication makes both exact routes ready; a wrong-verifier contract stays unresolved. FLASH's support projection agrees with Metatron. Readiness means a verified executable route is available, not that the readiness table itself executes a native program. Actual native execution follows. |
+| Global affected-frontier reclosure | Original FLASH/QCKN typed finite consequence semantics; MSI CLC `Flash` / `Grow` source | The runtime rebuilds the registered finite frontier view from the one log using original FLASH. It does not establish a new dependency-cone complexity bound or a new speed advantage. Every projected contract and profile must be justified by the concrete native adapter. A CLC `AllowedStep` instance and Python-to-Lean commutation remain UNKNOWN. |
+| Observation changes later native repair selection | Original Pareto `choose`; independently checked finite native profiles | Native B/C outcomes replace the all-equal primitive profiles. The returned unique author-head ID gates a fresh native execution. This establishes changed bounded selection and available observation, not a newly invented repair or new second-generation search algorithm. Existing V54 separately retains its original O1-dependent discoverability warrant. |
+| Construct and admit executable native patch | Original `observer_genesis.discover_methods` / `worker`; `repair_compiler.synthesize`; VDN developmental transition contract | Original source-AST discovery supplies a native subject; the supplied constructor emits actual candidate source. Native original FAIL, original author-head PASS, generated patch PASS, physical removal FAIL and inherited suite PASS bind its exact output. No descriptor alone establishes correctness. No concrete VDN certificate for these Python patch executions is supplied. |
+| Withdraw ancestor and preserve unrelated routes | Existing Metatron/FLASH support liveness; R7.2 `valid_least` / `revoke_recloses` | Exact source-support withdrawal invalidates both dependent B/C publications, while E/D/V54 and unrelated collection routes remain live. A separate collection cut reopens its own two profiles without invalidating the other collection. These are causal native checks; no universal revocation proof for the whole Python system follows. |
+| Restore and execute after cold restart | Original immutable lineage and native verifiers | Fresh native receipts create new generations; revoked IDs remain inactive. Separate-process startup rederives routes from the log, reloads executable policies/patches and verifies native consequences again. Arbitrary storage faults, concurrency, hostile hosts and all-effects mediation remain outside this qualification. |
+| Keep external permission independent | Existing independently supplied local research ceiling | Each routed capability remains bounded by local pinned research worktrees/tests. Capability or evidence admission grants no external permission. A non-bypassable monitor for every Python effect has not been independently established. |
+
+R7.2 is recovered at
+`heathsanchez/Minimal-Sufficient-Interface@33a12aac790d91f103ca35de6dd699734e89a022`.
+Its `checker_sound` is an explicit premise. `certified_error_forces_split` also
+needs scope inclusion in the protected stage; a valid separator outside that
+stage cannot force its refinement. Changing lawful continuations or observation
+types requires the corresponding typed regime comparison, not a blanket claim
+that every developmental transition monotonically refines one quotient.
+
+The concrete new MSI partition computation above is native Python evidence.
+The independently checked Lean instance in this workflow remains **the existing
+V54 finite table**, rechecked from authenticated evidence without repeating
+acquisition or cold/warm search. There is no new Lean proof of the TOML
+observation/choice/patch runtime.
+
+### CLC support and transport: stronger source, bounded assumptions
+
+Recovered MSI CLC source is
+`clc-nonlinear-lineage-v0@900a73c1d386ee0eee1205a1cf31d270f3311ef7`.
+`CLC.decisive_preserved` assumes finite forms, protected-test
+pullback/lift, semantic refinement and its split law, accepted/live certificate
+and lawful authority composition. `Grow.grow_dissolve_preserves_protected_queries`
+quantifies over an `AllowedTrace`; its `AllowedStep` carries `rawCommutes`,
+`closedCommutes` and next admissibility as supplied proofs. It does not derive
+those obligations from a Python event adapter.
+
+Metatron's original static bridges were recovered through A9e
+`c079b0e189d73e51f0acf2f33619c5f9619dd6b4`:
+`verifiedTransport_decisive_preserved_with_live_support`,
+`LiveWarrantCertificate` and `CertificateProvenance` explicitly bind an accepted
+CLC transport certificate to a live warrant in a frozen Metatron log.
+Certificate identity alone does not determine its warrant provenance; the
+original fixture admits distinct lawful bindings of the same Unit certificate.
+These static results are reusable within their assumptions. No concrete CLC
+transport or dynamic Python refinement instance is installed by this programme
+continuation, and their source recovery is not a recompilation claim.
+
+### Historical formal limitations retained
+
+The original prospective `RepairSelection.lean` defines
+`CompleteFuture.allEvaluated : True` and `MinimalRepair.certified : True`;
+its dominance proposition is supplied as a field. These type skeletons do not
+prove that this runtime evaluated every protected native future or selected a
+semantically correct repair. Original `SemanticCertificate.lean` defines its
+`commutes` field as the reflexive equation `∀ x, φ x = φ x`, which supplies no
+nontrivial adapter correspondence. Original experiment-meta-substrate Lean
+genuinely proves a fixed same-present/stateless impossibility and fixed
+stateful separator, but does not bind Python's generated Moore table.
+
+These limitations do not erase original finite executable results. They prevent
+their generic theorem names or green Lean steps from being promoted into a
+proof of this assembled Python runtime. General refinement, new-language
+completeness, unfamiliar-source development and external enforcement remain
+separate UNKNOWN obligations.

@@ -497,3 +497,44 @@ Source policy:
 
 **Declared verdict: WARRANTED_BOUNDED_NATIVE_CERTIFICATE_AND_OPERATIONAL_REUSE,
 not E2E-SYSTEM autonomous intelligence.**
+
+---
+
+## Programme continuation: native observation, choice and construction
+
+The continuation from `b8216cf` uses the same qualified E/D/V54 state. Its new
+entrypoint executes original FLASH observation selection, source-native Pareto
+choice, original AST patch construction, cross-frontier reclosure, exact support
+withdrawal/restoration and separate-process native replay. Supplied observation
+and constructor grammars remain explicit; unfamiliar-source development and
+non-bypassable external enforcement remain UNKNOWN.
+
+Use `.github/workflows/universal-developmental-runtime.yml` for the complete
+qualification. It reuses authenticated V54 evidence and re-executes persisted
+behavior without repeating V54 acquisition or cold/warm search. Local execution
+requires the original UDM evaluator environment and a separate native Python
+environment containing the original test dependencies:
+
+```sh
+python -B -m research.unified_consequence_runtime.prepare_native_observation \
+  --worlds PINNED_NATIVE_OBSERVATION_WORLDS
+
+python -B -m research.unified_consequence_runtime.qualify_programme_closure \
+  --components PINNED_UDM_COMPONENTS --evaluator PINNED_WEB_ARENA \
+  --config ORIGINAL_DEPTH5_ASSETS/config.json --base-state QUALIFIED_V54_STATE \
+  --source-repo ORIGINAL_TEST_GIT \
+  --observation-worlds PINNED_NATIVE_OBSERVATION_WORLDS \
+  --constructor-worlds NEW_NATIVE_CONSTRUCTOR_WORLDS \
+  --native-python NATIVE_VENV/bin/python --out NEW_QUALIFICATION_DIR
+```
+
+The output directory must be new and disjoint from input state/native worlds.
+The source Git repository must contain the exact source commits listed in
+`native_observation.py`, `native_constructor.py` and `developmental_choice.py`.
+Run/setup failures are retained rather than overwritten.
+
+See [PROGRAMME_CLOSURE_PROTOCOL.md](PROGRAMME_CLOSURE_PROTOCOL.md),
+[PROGRAMME_CLOSURE_REPORT.md](PROGRAMME_CLOSURE_REPORT.md),
+[FORMAL_CORRESPONDENCE.md](FORMAL_CORRESPONDENCE.md) and
+[source coverage](archaeology/programme-closure/SOURCE_COVERAGE.md) for exact
+scientific boundaries, source pins, qualification status and remaining gaps.

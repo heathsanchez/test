@@ -1,5 +1,10 @@
 # Universal Developmental Machine — native V54 continuation
 
+The subsequent source-native programme closure continuation, its expanded source
+coverage and separate qualification verdicts are recorded in
+[PROGRAMME_CLOSURE_REPORT.md](PROGRAMME_CLOSURE_REPORT.md). The V54 qualification
+below remains its original bounded authority.
+
 **WARRANTED_BOUNDED native O1→O2 developmental execution.**
 The independently reproducible [full Actions qualification](https://github.com/heathsanchez/test/actions/runs/38682218192)
 is green and its downloaded archive passed all 12 independent evidence-review gates. The machine

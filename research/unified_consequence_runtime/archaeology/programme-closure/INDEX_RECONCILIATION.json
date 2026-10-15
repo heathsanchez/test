@@ -1,0 +1,41 @@
+{
+  "schema": "metalogic.canonical-index-reconciliation.v1",
+  "base_commit": "b8216cf025b9b0ced686f31e783f46637fd101c4",
+  "canonical_rows": 70,
+  "inherited_rows_retained": 42,
+  "new_rows_after_exact_id_source_deduplication": 28,
+  "initial_source_additions": 16,
+  "ros_rows": 10,
+  "ros_exact_id_source_overlap": 8,
+  "additional_scientific_runtime_formal_and_constraint_rows": 10,
+  "independently_reopened_unique_original_archives": 15,
+  "original_source_entrypoint_hashes_independently_rechecked": 16,
+  "original_scientific_experiments_rerun": 0,
+  "graph_nodes": 104,
+  "graph_edges": 51,
+  "capability_index_sha256_at_reconciliation": "3db75206b6479f691bfe1a52e18229cbe95809ee553af2abed4a88a4aafb0387",
+  "inherited_fields_changed": [
+    {
+      "id": "flash-v11-real-source-minimum-basis",
+      "fields": [
+        "scope",
+        "status",
+        "verification_boundary",
+        "primary_artifacts_reopened_in_this_continuation"
+      ],
+      "reason": "Later exact original/native receiver archive inspection plus new adapter implementation; prior fields preserved in recovery_snapshots, current integrated qualification pending."
+    }
+  ],
+  "checks": [
+    "70unique canonical ids",
+    "All42inheritedids retained",
+    "All inherited field values unchanged exceptfourexplicit nativeobservation reconciliation fields",
+    "16originalscientific implementationentrypoint hashes matched exactGit source",
+    "All recoveryphase boundaries retained",
+    "All fournewnative integrationstatuses CANDIDATE_NOT_YET_QUALIFIED",
+    "All graphendpoint ids resolve",
+    "Graph binds current canonicalindex SHA256",
+    "All canonicalrecovery inputmanifest digests match"
+  ],
+  "authority_boundary": "This is structural/source/evidence reconciliation, not new native scientific qualification. Root owns later independently warranted promotions and exact workflow/artifact source binding."
+}
