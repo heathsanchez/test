@@ -55,7 +55,7 @@ def run():
             "import json,pytest,sys;"
             "sys.path.insert(0,sys.argv[1]);"
             "raise SystemExit(pytest.main(['-q','-p','no:cacheprovider',"
-            "'--junitxml='+sys.argv[2],sys.argv[3:]]))"
+            "'--junitxml='+sys.argv[2]]+sys.argv[3:]))"
         )
         def native(label):
             xml = root / (label + ".xml")
