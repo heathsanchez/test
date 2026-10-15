@@ -8,6 +8,7 @@ import tokenize
 import unittest
 from unittest.mock import patch
 import json
+import keyword
 
 import generate
 
@@ -75,6 +76,40 @@ class FormalEvidenceTests(unittest.TestCase):
             self.assertEqual(json.loads((out / "evidence-manifest.json").read_text())["status"], "UNKNOWN")
             for name in ("GeneratedV54.lean", "transition-table.json", "lean-verification.json"):
                 self.assertFalse((out / name).exists())
+
+    def test_missing_cold_observation_is_unknown(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            native, out = root / "native", root / "formal"
+            native.mkdir()
+            states = {"broken": "if x < 1 and y:\n    pass\n",
+                      "warm": "if x <= 1 and y:\n    pass\n",
+                      "final": "if x <= 1 or y:\n    pass\n"}
+            for name, source in states.items():
+                (native / f"{name}.json").write_text(json.dumps({
+                    "source_text": source, "source_sha256": generate.sha(source.encode()),
+                    "line_no": 1, "path": "/fixture/requests/" + generate.TARGET_FILE,
+                    "scope": {"world": "requests", "relative_path": generate.TARGET_FILE,
+                              "line_no": 1, "first_word": "if"}}))
+            destinations = sorted(set([s for s in tokenize.EXACT_TOKEN_TYPES if 1 <= len(s) <= 2] + keyword.kwlist))
+            candidates = generate.enumerate_rewrites({"source_text": states["broken"], "line_no": 1}, destinations)
+            calls = [{"id": c["index"], "phase": "cold",
+                      "candidate_source_sha256": {generate.TARGET_FILE: c["source_sha256"]}}
+                     for c in candidates[:-1]]
+            (native / "native-calls.jsonl").write_text("".join(json.dumps(c) + "\n" for c in calls))
+            (native / "source-provenance.json").write_text(json.dumps({
+                "commit": generate.ORIGINAL_COMMIT, "sha256": generate.ORIGINAL_SHA256,
+                "world_pins": {"requests": generate.REQUESTS_COMMIT},
+                "relocated_paths": {"requests": "/fixture/requests"}}))
+            argv = ["generate.py", "--native-calls", str(native / "native-calls.jsonl"),
+                    "--broken", str(native / "broken.json"), "--warm", str(native / "warm.json"),
+                    "--final", str(native / "final.json"), "--output-dir", str(out)]
+            with patch("sys.argv", argv), redirect_stdout(io.StringIO()):
+                self.assertEqual(generate.main(), 1)
+            manifest = json.loads((out / "evidence-manifest.json").read_text())
+            self.assertEqual(manifest["status"], "UNKNOWN")
+            self.assertIn("Incomplete or reordered", manifest["reason"])
+            self.assertFalse((out / "GeneratedV54.lean").exists())
 
 
 if __name__ == "__main__":

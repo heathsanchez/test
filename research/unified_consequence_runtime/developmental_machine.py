@@ -306,3 +306,8 @@ class Machine:
 
     def active_capabilities(self):
         return [node.id for _, node in self.mt.live(self.log, 'executable_capability')]
+
+    def select_and_execute(self, task):
+        """Activate a unique existing typed route without a caller-selected method."""
+        from .consequence_selection import select_and_execute
+        return select_and_execute(self, task)
