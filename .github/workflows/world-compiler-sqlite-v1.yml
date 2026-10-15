@@ -1,0 +1,110 @@
+name: World Compiler native SQLite bounded falsification
+
+on:
+  push:
+    branches: [research/world-compiler-sqlite-20261016]
+    paths:
+      - .github/workflows/world-compiler-sqlite-v1.yml
+      - research/world_compiler/sqlite_v1/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: world-compiler-sqlite-v1
+  cancel-in-progress: false
+
+jobs:
+  native-observation-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      EXPERIMENT: research/world_compiler/sqlite_v1
+      FREEZE_COMMIT: 10983fd4b3b5a21e8f107781cd1724fde06feb1b
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Confirm protocol predates learner code
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$FREEZE_COMMIT" HEAD
+          git cat-file -e "$FREEZE_COMMIT:$EXPERIMENT/FROZEN_PROTOCOL.json"
+          if git cat-file -e "$FREEZE_COMMIT:$EXPERIMENT/engine.py" 2>/dev/null; then
+            echo "Learner existed at protocol freeze — reject" >&2; exit 3
+          fi
+          python - <<'PY'
+          import json, pathlib, ast
+          p=pathlib.Path('research/world_compiler/sqlite_v1')
+          j=json.loads((p/'FROZEN_PROTOCOL.json').read_text())
+          assert j['status']=='FROZEN_PROTOCOL_BEFORE_IMPLEMENTATION'
+          source=(p/'engine.py').read_text()
+          module=ast.parse(source)
+          fn=next(x for x in module.body if isinstance(x,ast.FunctionDef)
+                  and x.name=='discover_intervention')
+          text=ast.get_source_segment(source,fn)
+          assert 'foreign_keys' not in text, 'hardcoded winning key in intervention learner'
+          assert j['primitive_language']['candidate_bound']==250
+          print('PASS_PROTOCOL_FROZEN_AND_METHOD_SELECTION_NOT_HARDCODED')
+          PY
+      - name: Run native SQLite negative control suite
+        working-directory: research/world_compiler/sqlite_v1
+        run: python -B -m unittest test_native -v
+      - name: Construct observation and native intervention on protected schema worlds
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          seed="$GITHUB_SHA-$GITHUB_RUN_ID-world-compiler-v1"
+          printf '%s' "$seed" > qualification/protected-seed.txt
+          (cd "$EXPERIMENT" && python -B engine.py \
+            --out "$GITHUB_WORKSPACE/qualification/native-receipt.json" \
+            --seed "$seed")
+      - name: Independent SQLite native oracle and integrity controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd "$EXPERIMENT" && python -B independent_oracle.py \
+            "$GITHUB_WORKSPACE/qualification/native-receipt.json" \
+            --out "$GITHUB_WORKSPACE/qualification/independent-native-verdict.json")
+      - name: Reopen compiled executable capability in a separate Python process
+        shell: bash
+        run: |
+          set -euo pipefail
+          seed="$(cat qualification/protected-seed.txt)"
+          (cd "$EXPERIMENT" && python -B engine.py \
+            --replay "$GITHUB_WORKSPACE/qualification/native-receipt.json" \
+            --seed "$seed") | tee qualification/restart.log
+          python - <<'PY'
+          import json, pathlib, sqlite3, sys
+          r=json.loads(pathlib.Path('qualification/native-receipt.json').read_text())
+          i=json.loads(pathlib.Path('qualification/independent-native-verdict.json').read_text())
+          assert r['future_cases_pass']==24
+          assert i['native_cases']==24 and i['verdict']=='PASS_INDEPENDENT_NATIVE_ORACLE'
+          assert r['baselines']['native_successes']==24
+          assert r['intervention_selection']['actual_tested']==r['intervention_selection']['candidate_count']
+          pathlib.Path('qualification/ENVIRONMENT.txt').write_text(
+            'Python='+sys.version+'\nSQLite='+sqlite3.sqlite_version+'\n'
+          )
+          print('PASS_WORLD_COMPILER_BOUNDED_NATIVE_AND_BASELINE_PARITY')
+          PY
+          git rev-parse HEAD > qualification/source-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: world-compiler-sqlite-native-evidence
+          path: |
+            qualification/
+            research/world_compiler/sqlite_v1/FROZEN_PROTOCOL.json
+            research/world_compiler/sqlite_v1/engine.py
+            research/world_compiler/sqlite_v1/independent_oracle.py
+            research/world_compiler/sqlite_v1/test_native.py
+          retention-days: 30
