@@ -1,0 +1,105 @@
+{
+  "schema": "udm.recursive.offline-independent-local-review.v1",
+  "reviewed_at_utc": "2026-10-15T18:24:49.882564+00:00",
+  "mode": "OFFLINE_ONLY_NO_NATIVE_SCIENCE_RERUN",
+  "source_commit": "b12220df5c77e5b7f5ebcbf6772c059d5f74a4cd",
+  "packet": "/workspace/qualification/recursive-native-maintenance",
+  "status": "PASS_BOUNDED_PACKET",
+  "checks": [
+    {
+      "gate": "exact_frozen_source_and_chronology",
+      "status": "PASS",
+      "details": {
+        "source_commit": "b12220df5c77e5b7f5ebcbf6772c059d5f74a4cd",
+        "files": 14,
+        "freeze_sha256": "d6260755e0429a27e1717bac981d99a2f7e9370dfc88270871f033ea9d44bd79",
+        "chronology": "COMMITTED_CONTROL_FLOW_PLUS_DECLARED_PROCESS; NOT_ENFORCED_INFORMATION_FLOW"
+      }
+    },
+    {
+      "gate": "hash_only_pinned_native_source_archives",
+      "status": "PASS",
+      "details": {
+        "control": {
+          "commit": "f4f288579dc3c8f82f62d0eaca7774303d9d3768",
+          "git_tree": "5cdf6f106387e0fcf3e7585213ef1d5ac61ad9ac",
+          "tracked_tree_sha256": "fb0151b91605318d3f27c44b6f19e65515e96fd2bf79840ea2b66e8803038eea",
+          "file_count": 43
+        }
+      }
+    },
+    {
+      "gate": "actual_native_JUnit_logs_imports_environment_and_costs",
+      "status": "PASS",
+      "details": {
+        "receipts": 8,
+        "control_passes": 8,
+        "target_unknowns": 0,
+        "actual_junit_verified": true,
+        "native_seconds": 36.37854574299854
+      }
+    },
+    {
+      "gate": "all_ledger_hashes_premises_CAS_and_exact224prefix",
+      "status": "PASS",
+      "details": {
+        "ledger_records": 246,
+        "original_prefix_records": 224,
+        "CAS_objects": 76,
+        "live_records": 187,
+        "ledger_sha256": "95e046fc33c507354439ed0e84d2bf9c27115eaeea02bd6aa0ffceb82e4d9dc9"
+      }
+    },
+    {
+      "gate": "exact_withdrawal_fresh_restoration_unrelated_survival",
+      "status": "PASS",
+      "details": {
+        "old_capability": "a38f6cde7049254d8804e3b1b6b87c881f214ebaadc5efbf6ffe5acdb6bf3472",
+        "restored_capability": "488e299d515296135653dfa59ca2f587e7929b9b6d147f9ce4e8047ba8c80a4d",
+        "new_generation": 2,
+        "fresh_nonce": true
+      }
+    },
+    {
+      "gate": "real_separate_process_native_restart_execution",
+      "status": "PASS",
+      "details": {
+        "native_passed": 346,
+        "restart_process_id": 27594,
+        "coordinator_process_id": 25074,
+        "consequence": "f6eddb6e3b5828595aa47f6309c8f8afa13c88c4bce138b3da399ceb87296db4"
+      }
+    },
+    {
+      "gate": "append_only_retention_after_parent_continuation",
+      "status": "PASS",
+      "details": {
+        "consequence": "f6eddb6e3b5828595aa47f6309c8f8afa13c88c4bce138b3da399ceb87296db4",
+        "live": true
+      }
+    },
+    {
+      "gate": "honest_recursive_prospective_comparator_authority_boundaries",
+      "status": "PASS",
+      "details": {
+        "recursive_growth": "UNKNOWN",
+        "prospective_growth": "UNKNOWN",
+        "comparative_developmental_advantage": "UNKNOWN",
+        "raw_comparative_label": "UNKNOWN",
+        "raw_label_scope": "Native UNKNOWN-status parity only; no protected-outcome or developmental-cost advantage comparison."
+      }
+    }
+  ],
+  "retention_finding": {
+    "status": "PASS",
+    "consequence": "f6eddb6e3b5828595aa47f6309c8f8afa13c88c4bce138b3da399ceb87296db4",
+    "in_final_ledger": true,
+    "raw_orphan_event_retained": true,
+    "orphan_evidence_sha256": "f6eddb6e3b5828595aa47f6309c8f8afa13c88c4bce138b3da399ceb87296db4",
+    "source_cause": "Controller continues using stale parent Machine.log after child commits its consequence; later parent flush overwrites the fresh child entry.",
+    "minimal_fix": "Reload canonical Machine immediately after child returns, preserve already charged parent costs, require child entry before and after subsequent parent write."
+  },
+  "native_target_source_semantics_inspected": false,
+  "native_source_hash_verification_only": true,
+  "new_experiments_executed": false
+}

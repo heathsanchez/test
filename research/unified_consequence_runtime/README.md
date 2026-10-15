@@ -1,3 +1,17 @@
+# Recursive-development experiment result
+
+The prospective O1→O2→O3 criterion remains **UNKNOWN / not achieved**. The
+[maintenance qualification](https://github.com/heathsanchez/test/actions/runs/38784959251)
+passes the generic 346-case native control, repaired restart retention and
+211 contracts (10 optional skips). The frozen unfamiliar target failed import
+before tests; it received no target-specific repair or repeated prospective run.
+
+See [the research report](RECURSIVE_DEVELOPMENT_REPORT.md),
+[exact receipt](RECURSIVE_QUALIFICATION_RECEIPT.json) and
+[ROS-ready checkpoint](ROS_READY_RECURSIVE_REPORT.md).
+The current entrypoint accepts explicit `--maintenance-only` qualification;
+reproduction at the exact qualified commit is documented in the report.
+
 # Qualified native programme continuation
 
 [Green qualification38709973459](https://github.com/heathsanchez/test/actions/runs/38709973459)

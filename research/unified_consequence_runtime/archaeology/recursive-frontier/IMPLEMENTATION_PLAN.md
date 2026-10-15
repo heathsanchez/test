@@ -35,8 +35,13 @@
 - [x] Verifier worker: test actual PASS/FAIL/error/empty/timeout source fixtures, unsafe patches and source/environment mismatch first; implement fixed whole-suite verifier; independently review.
 - [x] Typed native adapter: test evidence/scope/CAS/dependency/revocation contracts first; implement admission/reexecution/restoration through existing state; independently review.
 - [x] Root: add typed FLASH validator branch and route dispatch; implement one generic experiment entrypoint, original V104 source extraction and frozen workflow. Review actual source.
-- [ ] Commit exact freeze before native control or target materialization. Record code manifest and parent commit; preserve old freeze/preflight unchanged.
-- [ ] Execute non-target original cachetools control. Only on verified bridge control, materialize frozen urllib3 using generic setup and invoke original full suite.
-- [ ] If genuine assertion failure exists, run unchanged V104 grammar within frozen cold budget. Install epistemic/policy changes only with an independently typed native meaning and verified effect; no finite-demo wrappers can stand in for native acquisition.
-- [ ] Run matched available conditions, authority/adversarial controls, fresh restoration and separate-process native control restart. Conditions requiring absent acquired objects are NOT_RUN, never simulated.
-- [ ] Run branch qualification workflow, independently inspect evidence, commit ROS-ready report and exact separate verdicts. A green qualification can preserve a negative recursive result.
+- [x] Commit exact freeze before native control or target materialization. Record code manifest and parent commit; preserve old freeze/preflight unchanged.
+- [x] Execute non-target original cachetools control. Only on verified bridge control, materialize frozen urllib3 using generic setup and invoke original full suite.
+- [x] If genuine assertion failure exists, run unchanged V104 grammar within frozen cold budget. Install epistemic/policy changes only with an independently typed native meaning and verified effect; no finite-demo wrappers can stand in for native acquisition.
+- [x] Run matched available conditions, authority/adversarial controls, fresh restoration and separate-process native control restart. Conditions requiring absent acquired objects are NOT_RUN, never simulated.
+- [x] Run branch qualification workflow, independently inspect evidence, commit ROS-ready report and exact separate verdicts. A green qualification can preserve a negative recursive result.
+
+
+## Final experimental boundary
+
+The frozen b450 target probe returned a build/import UNKNOWN with zero native cases and no licensed acquisition. O1/O2/O3 dependent conditions were NOT_RUN. Independent review rejected its stale-parent restart retention. Maintenance sourceb122 repaired that sequencing defect and qualified only the346-case control; it did not reexecute the exposed target. Green run38784959251 preserves recursive/prospective/comparative/enforcement/refinement UNKNOWN. This plan's integration work is complete within that boundary; the recursive mission is not achieved.
