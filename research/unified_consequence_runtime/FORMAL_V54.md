@@ -6,15 +6,37 @@ The exact original toolchain is `leanprover/lean4:v4.28.0`, recovered from its
 `verified-developmental-navigation/lean/lean-toolchain` Git blob
 `4c685fa085fa1c66103533e992fc82c014a12142`.
 
-The reusable [BoundedV54.lean](v54_formal/BoundedV54.lean) glue has been compiled
-successfully with that compiler against the archived upstream sources. A
-concrete certificate is generated only after the complete actual native trace
-has passed evidence admission. Until that evidence and its compiler receipt
-exist, concrete phase-change qualification remains **UNKNOWN**.
+The concrete [GeneratedV54.lean](v54_formal/GeneratedV54.lean) instance is now
+checked against those original sources on that compiler. The
+[compiler receipt](v54_formal/lean-verification.json) reports
+`CHECKED_BOUNDED_TABLE_CERTIFICATE`; the
+[evidence manifest](v54_formal/evidence-manifest.json) binds the actual retained
+native source snapshots and observations. All five compiled modules returned
+zero. The concrete module took 22.086 seconds to check.
 
-The generic phase-change and no-recorded-pass theorems currently report the
-standard Lean axioms `propext` and `Quot.sound`; retention reports `propext`.
-These are explicit logical dependencies, rather than an axiom-free claim.
+The exact old table contains 541 actions and 542 covered traces including the
+empty trace. Every candidate hash matches the independently reconstructed
+original cold enumeration in order. The observed outcomes are 497 nonzero
+native failures and 44 explicit timeouts, with no recorded pass. The actual
+acquired O1 and O2 operator identities also match the two source transitions.
+
+| Actual retained state | Full source SHA256 | Direct native observation |
+| --- | --- | --- |
+| Double-broken start | `9da7fc1e2edb4a6bfa62e39c6dc0cf7fa97b21119abd83ed8229a28ad23f275f` | Timeout, call 705 |
+| O1-only warm state | `8b2f4364c881cef2c98518c52852838ae7b7d63e14cd9be478a76e0c933987d2` | Timeout, call 706 |
+| Final O1 then O2 state | `b879cb3f671cf1c28e8ff9b2b02151bcdb8974b4820a514cfdd1f5a038443cd2` | Pass, exit 0, call 1248 |
+
+The concrete checked theorems are
+`ActualV54.certifiedPhaseChange`, `ActualV54.everyOldCapabilityRetained`,
+`ActualV54.oldBoundaryHasNoRecordedPass`, and
+`ActualV54.finalHasRecordedPass`. The first three report the standard Lean
+axioms `propext` and `Quot.sound`; the final observation theorem reports no
+axiom dependencies. There are no additional proof axioms or `sorry` terms.
+
+The generated source SHA256 is
+`7996b2ec5c60484101eb1b5ebf0d6b497853021dc7571977320c6c8d373136ea`.
+The compiler receipt SHA256 is
+`b445ed50f176f79ff6be187a7bd1cd263fd39d9a4c287da19fa629aab2c22600`.
 
 ## Concrete state and action boundary
 
@@ -83,6 +105,11 @@ index, token coordinates, raw native status, return code, timeout and call ID.
 The enumeration procedure is regression-checked against the exact original
 `one_rewrite_discovery` function on a temporary test input; that test supplies
 no native V54 outcome evidence.
+
+The frozen acquisition checkpoint includes the successful main O1/O2 native
+execution and independent receipt. Later baseline, withdrawal, restoration and
+cold-restart qualification outcomes are reported separately by the native
+qualification journal; this finite certificate does not certify those stages.
 
 Given an adapter output directory `NATIVE`, replay is:
 

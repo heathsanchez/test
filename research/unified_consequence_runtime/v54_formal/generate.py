@@ -50,8 +50,15 @@ def snapshot(path: Path) -> dict:
     line_no = item.get("line_no")
     if type(line_no) is not int or not 1 <= line_no <= len(item["source_text"].splitlines()):
         raise ValueError(f"Snapshot target line missing: {path}")
-    if item.get("scope", {}).get("relative_path", TARGET_FILE) != TARGET_FILE:
+    scope = item.get("scope")
+    if (not isinstance(scope, dict) or scope.get("world") != "requests"
+            or scope.get("relative_path") != TARGET_FILE or scope.get("line_no") != line_no):
         raise ValueError(f"Unexpected snapshot target file: {path}")
+    words = [token.string for token in tokenize.generate_tokens(
+        io.StringIO(item["source_text"].splitlines()[line_no - 1] + "\n").readline)
+             if token.type == tokenize.NAME]
+    if not words or scope.get("first_word") != words[0]:
+        raise ValueError(f"Snapshot line differs from the learned first-word scope: {path}")
     return item
 
 
@@ -297,6 +304,8 @@ def main() -> int:
             qualification = json.loads(paths["acquisition"].read_text())
             learned = {"O1": qualification["O1_acquisition"]["operator"],
                        "O2": qualification["warm"]["construction"]["operator"]}
+            if qualification["O1_acquisition"]["scope_word"] != broken["scope"]["first_word"]:
+                raise ValueError("Retained target differs from the acquired O1 scope")
             for edge in edges:
                 expected_operator = {"kind": "TOKEN_REWRITE", "src": edge["src"], "dst": edge["dst"]}
                 if learned[edge["operator"]] != expected_operator:

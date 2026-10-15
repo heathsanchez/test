@@ -1,3 +1,52 @@
+# Native V54 continuation
+
+The existing E/D machine remains qualified. The continuation executes original
+Triskelion V54 acquisition and O1-dependent O2 discovery through the same
+Metatron/FLASH state, with independent native verification, causal withdrawal,
+restoration, separate-process replay and an informed executable-ledger baseline.
+
+Reproduce on the isolated research branch with
+`.github/workflows/universal-developmental-machine-v54.yml`. It authenticates
+canonical base artifact11944924864, pins all original source/world commits,
+creates separate Python environments, runs native qualification and contracts,
+checks the concrete Lean4.28 table instance, then tests existing-method selection.
+Evidence is uploaded even after failure.
+
+The local executable accepts explicit paths:
+
+```sh
+python -B -m research.unified_consequence_runtime.qualify_v54_machine \
+  --source ORIGINAL_TRISKELION_GIT --worlds PINNED_NATIVE_WORLDS \
+  --components PINNED_UDM_COMPONENTS --base-state CANONICAL_QUALIFIED_STATE \
+  --config ORIGINAL_DEPTH5_ASSETS/config.json --evaluator PINNED_WEB_ARENA \
+  --native-python NATIVE_V54_VENV/bin/python --out NEW_QUALIFICATION_DIR
+```
+
+`setup_v54_worlds.sh WORLDS VENV EVIDENCE` provisions only fresh native worlds.
+The caller Python environment needs the original WebArena evaluator dependencies;
+the original native projects use the separate native interpreter. Preserve its
+virtual-environment path rather than resolving its executable symlink.
+
+`Machine.select_and_execute(task)` invokes original MDA bound assessment with a
+zero construction budget, original JPL finite basis selection and existing native
+applicability/execution. Its CLI copies retained state and accepts no method ID:
+
+```sh
+python -B -m research.unified_consequence_runtime.consequence_selection \
+  --state QUALIFIED_V54_STATE --assets ORIGINAL_DEPTH5_ASSETS \
+  --components PINNED_UDM_COMPONENTS --evaluator PINNED_WEB_ARENA \
+  --out SELECTION_REPORT.json
+```
+
+See [RESEARCH_REPORT.md](RESEARCH_REPORT.md), [V54_PROTOCOL.md](V54_PROTOCOL.md),
+[FORMAL_CORRESPONDENCE.md](FORMAL_CORRESPONDENCE.md) and
+[capability_index.json](capability_index.json) for warranted results, retained
+negatives, scope and open obligations. This is bounded research execution;
+non-bypassable external-action enforcement and prospective unfamiliar-source
+second-generation growth remain UNKNOWN.
+
+---
+
 # Unified Consequential Runtime — evidence-bound native development
 
 ## 2026-10-15 — Live executable developmental integration

@@ -40,6 +40,7 @@ class V54AdversarialRoutingTests(fixtures.V54RuntimeTests):
         super().setUp()
         # All routes that can mutate producer worlds are intercepted, including
         # target preparation during restoration.
+        self.runtime.session.env['rq_path']=self.runtime.worlds/'requests/src/requests/utils.py'
         self.runtime.session.target_scope = Mock(return_value=copy.deepcopy(SCOPE))
         self.runtime.session.apply_operator = Mock(return_value={"fixture": "no native effect"})
         self.runtime.session.prepare_target = Mock(return_value={})
@@ -228,3 +229,35 @@ class V54AdversarialRoutingTests(fixtures.V54RuntimeTests):
                 self.runtime.independent_verify(program, "o1")
         self.assert_no_native_mutation()
 
+
+    def test_unrelated_evidence_withdrawal_preserves_local_authority_and_source(self):
+        machine=self.runtime.machine
+        independent=machine.append('independent_unit_evidence',{'scope':'unrelated'})
+        consequence=machine.append('independent_unit_consequence',{},(independent,))
+        machine.flush()
+        machine.append('revoke',{'target':independent,'reason':'unrelated evidence withdrawal'})
+        machine.flush()
+        self.runtime._live(self.runtime.authority)
+        self.runtime._live(self.runtime.source)
+        self.assertNotIn(independent,machine.mt.live_ids(machine.log))
+        self.assertNotIn(consequence,machine.flash_live_ids())
+        self.assert_no_native_mutation()
+
+    def test_corrupted_persisted_ledger_is_rejected_before_route_recovery(self):
+        from research.unified_consequence_runtime.developmental_machine import Machine
+        machine=self.runtime.machine
+        ledger=machine.state/'metatron-ledger.jsonl'
+        rows=ledger.read_text().splitlines()
+        altered=json.loads(rows[0]);altered['payload']['external_effects']='forged permission'
+        rows[0]=json.dumps(altered)
+        ledger.write_text('\n'.join(rows)+'\n')
+        with self.assertRaisesRegex(ValueError,'node id mismatch'):
+            Machine(machine.components,machine.state,machine.evaluator,machine.config)
+        self.assert_no_native_mutation()
+
+    def test_changed_native_path_is_rejected_before_routed_mutation(self):
+        node,_=self.capability()
+        self.runtime.session.env['rq_path']=self.runtime.machine.state/'outside-native-scope.py'
+        with self.assertRaisesRegex((PermissionError,ValueError),'native.*path'):
+            self.runtime.apply(node)
+        self.assert_no_native_mutation()

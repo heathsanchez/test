@@ -193,6 +193,7 @@ jobs:
             --broken qualification/v54/native/state-double-broken.json \
             --warm qualification/v54/native/state-warm-after-O1.json \
             --final qualification/v54/native/state-final.json \
+            --input qualification/v54/RESULT.json \
             --output-dir qualification/v54/formal \
             2>&1 | tee qualification/formal-generation.log
           "${UDM_PYTHON}" -B research/unified_consequence_runtime/v54_formal/check.py \
@@ -209,6 +210,43 @@ jobs:
             --components "${UDM_COMPONENTS}" --evaluator "${UDM_EVALUATOR}" \
             --out qualification/consequence-selection.json \
             2>&1 | tee qualification/consequence-selection.log
+
+      - name: Bind completed qualification to the exact workflow source
+        run: |
+          "${UDM_PYTHON}" - <<'PYREPORT'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path('qualification')
+          read = lambda name: json.loads((root/name).read_text())
+          native = read('v54/RESULT.json')
+          formal = read('v54/formal/lean-verification.json')
+          selection = read('consequence-selection.json')
+          assert native['status'] == 'WARRANTED_BOUNDED_V54_TWO_GENERATION_EXTENSION'
+          assert formal['status'] == 'CHECKED_BOUNDED_TABLE_CERTIFICATE'
+          assert selection['status'] == 'PASS_BOUNDED_ROUTING_INTEGRATION'
+          assert all(selection['gates'].values()) and native['restart']['status'] == 'PASS'
+          summary = {'schema':'udm.qualified-continuation.v1',
+              'status':native['status'], 'coordinator_commit':os.environ['GITHUB_SHA'],
+              'run_id':int(os.environ['GITHUB_RUN_ID']), 'run_attempt':int(os.environ['GITHUB_RUN_ATTEMPT']),
+              'ledger_sha256':native['retention']['final_ledger_sha256'],
+              'native_existing_method_activation':selection['native_successes'],
+              'formal':formal['status'], 'action_enforcement':'UNKNOWN_NONBYPASSABILITY',
+              'comparative_advantage':'REJECTED_MEASURED_EXECUTABLE_LEDGER_TIE',
+              'prospective_second_generation':'UNKNOWN',
+              'artifacts':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in
+                  ('v54/RESULT.json','v54/formal/lean-verification.json','consequence-selection.json')}}
+          (root/'qualification-summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          url = 'https://github.com/'+os.environ['GITHUB_REPOSITORY']+'/actions/runs/'+os.environ['GITHUB_RUN_ID']
+          (root/'ROS_READY_REPORT.md').write_text(
+              '# Qualified native developmental continuation\n\n'
+              'WARRANTED_BOUNDED: native O1 acquisition, O1-dependent O2 discovery, '
+              'independent verification, causal withdrawal/restoration and executable cold restart.\n\n'
+              + 'Exact source: `'+os.environ['GITHUB_SHA']+'`. Run: '+url+'.\n\n'
+              + 'Existing native method selection: '+str(selection['native_successes'])+'/6; informed baseline TIE.\n\n'
+              + 'Concrete VDN finite-table Lean certificate checked. Python refinement remains UNKNOWN.\n\n'
+              + 'Non-bypassable action enforcement: UNKNOWN. Strict comparative advantage: REJECTED on the measured tie. '
+              + 'Prospective unfamiliar-source second-generation growth: UNKNOWN.\n')
+          PYREPORT
 
       - name: Upload native V54 evidence including failed qualification
         if: always()

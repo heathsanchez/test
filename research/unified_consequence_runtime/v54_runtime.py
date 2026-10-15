@@ -41,6 +41,17 @@ class V54Runtime:
         if node_id not in self.machine.mt.live_ids(self.machine.log) or node_id not in self.machine.flash_live_ids():
             raise PermissionError('causal support or local route authority withdrawn')
 
+    def _world_scope(self,target=False):
+        for name,variable in (('django','DJ'),('requests','RQ'),('rich','RH')):
+            expected=self.worlds/name
+            if self.session.world_paths[name]!=expected or Path(self.session.env[variable])!=expected:
+                raise PermissionError('native world path differs from pinned local scope')
+        if target:
+            expected=self.worlds/'requests/src/requests/utils.py'
+            actual=self.session.env.get('rq_path')
+            if actual is None or Path(actual).absolute()!=expected or Path(actual).resolve()!=expected:
+                raise PermissionError('native executable path differs from pinned local scope')
+
     def _native_evidence_valid(self,receipt,stage,program):
         if not receipt_binding_valid(receipt,stage,program):return False
         required={'learned_scope_matches','django_truncate_repaired','django_pagination_repaired',
@@ -82,6 +93,7 @@ class V54Runtime:
         if node_id in seen:
             raise ValueError('cyclic executable dependency')
         self._live(self.authority);self._live(self.source);self._live(node_id)
+        self._world_scope(target=target)
         cap=self.machine.descriptor(node_id)
         expected_source={'repository':'heathsanchez/triskelion','commit':SOURCE_COMMIT,
                          'path':SOURCE_PATH,'sha256':SOURCE_SHA256}
@@ -137,6 +149,7 @@ class V54Runtime:
 
     def independent_verify(self,program,stage):
         self._live(self.authority);self._live(self.source)
+        self._world_scope()
         folder=self.machine.state/'v54-native';folder.mkdir(exist_ok=True)
         name=uuid.uuid4().hex
         input_file=folder/(name+'-program.json');receipt_file=folder/(name+'-receipt.json')
@@ -202,6 +215,7 @@ class V54Runtime:
 
     def construct_next(self,ancestor=None):
         self._live(self.authority);self._live(self.source)
+        self._world_scope(target=True)
         if ancestor is None:
             result=self.session.cold_search()
             node=self.machine.append('bounded_native_search',{'constructor':asdict(SourceConstructor(SOURCE_COMMIT)),

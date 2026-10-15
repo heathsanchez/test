@@ -7,6 +7,8 @@ when a smaller observation basis explains the finite candidate profiles.
 from __future__ import annotations
 
 import ast
+from dataclasses import asdict
+import time
 import argparse
 from functools import lru_cache
 import hashlib
@@ -22,6 +24,9 @@ from types import ModuleType
 
 
 SOURCE_PINS = {
+    'mda': {'repo':'test','commit':'13325089c471996b8b68f46540fd4ad449df752c',
+            'path':'open_development/runtime.py',
+            'sha256':'48bc8efdbb289697c41d633773208dcbdb53bf39dbc8679127e58d0ed3e80703'},
     'core': {'repo': 'msi', 'commit': '5d448c0ecc82ff3945d009963064ebbb67d2f308',
              'path': 'consequential_core.py',
              'sha256': '2c8be1f9fde571bfcdba6d1daf8a0e680a9636f697687fd4c128a8b214975ad8'},
@@ -77,11 +82,12 @@ def native_selectors(repos=None):
         definitions = ast.Module(body=[function], type_ignores=[])
         namespace = {'itertools': itertools}
         exec(compile(definitions, '<pinned-native-jpl:minimal_basis>', 'exec'), namespace)
-        return {'core': core, 'version_space': version_space,
+        mda = _module('_udm_selection_mda', _source(repos,'mda'))
+    return {'core': core, 'version_space': version_space, 'mda':mda,
                 'minimal_basis': namespace['minimal_basis'], 'sources': SOURCE_PINS}
 
 
-def select_and_execute(machine, task):
+def _route_existing(machine, task):
     """Discover available E/D routes from state; the caller supplies no method ID."""
     from .developmental_machine import safe_task
 
@@ -119,13 +125,73 @@ def select_and_execute(machine, task):
     if len(available) == 1:
         selected = available[0]
         response, consequence = machine.execute(selected, task)
-        result.update(selected_capability=selected, response=response, consequence=consequence)
+        warrant=next(node for node in machine.log if node.id==consequence)
+        result.update(selected_capability=selected, response=response, consequence=consequence,
+                      native_receipt=warrant.payload['receipt'])
         premises = (selected, consequence)
     if tuple(machine.active_capabilities()) != before:
         raise ValueError('selection unexpectedly changed the installed capability language')
     result['selection_event'] = machine.append('existing_method_selection',
         {'task_id': task['task_id'], **result}, premises)
     machine.flush()
+    return result
+
+
+
+def select_and_execute(machine, task):
+    """Run the original MDA bounded assessment loop over the one existing log.
+
+    A zero development budget and no proposed repairs make activation distinct
+    from acquisition. The store is a projection adapter, not another ledger.
+    """
+    from .developmental_machine import safe_task
+    task=safe_task(task)
+    native=native_selectors()['mda']
+    started=time.perf_counter()
+    class Store:
+        def state(self):
+            return {'capabilities':{node:asdict(machine.descriptor(node))
+                    for node in machine.active_capabilities()},
+                    'ledger_sha256':hashlib.sha256(machine.mt.dumps(machine.log).encode()).hexdigest()}
+        def append(self,event):
+            certificate=event.get('evidence',{}).get('certificate') or {}
+            premises=tuple(certificate.get('warrant_ids',()))
+            node=machine.append('mda_existing_method_assessment',event,premises)
+            machine.flush()
+            return node
+    class Adapter:
+        name='udm-archived-native-existing-methods'
+        verifier_id='source-bound-native-route:'+native.digest({'sources':SOURCE_PINS,
+            'adapter_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            'native_verifier_sha256':hashlib.sha256(Path(__file__).with_name('developmental_verify.py').read_bytes()).hexdigest()})
+        contract=native.IRContract('ArchivedWebArenaTask','ExistingCapabilityId','NativeResponse',
+            'Original E/D executable semantics','Full frozen applicability guards',
+            'Original independent native verification warrant')
+        result=None
+        def assess(self,state,obligation):
+            self.result=_route_existing(machine,task)
+            selected=self.result.get('selected_capability')
+            certificate={'warrant_ids':([selected,self.result['consequence']] if selected else []),
+                'scope_profiles':self.result['profiles'],
+                'unsupported_input_schema':self.result['unsupported_input_schema'],
+                'native_receipt':self.result.get('native_receipt'),
+                'grammar_exhaustion':'UNKNOWN'}
+            return native.Evidence('verified' if selected else 'unknown',
+                native.assessment_claim(state,obligation),self.verifier_id,certificate,
+                residual=None,scope=self.name)
+        def propose(self,*args):
+            raise AssertionError('existing-method activation must not propose new repairs')
+    store,adapter=Store(),Adapter()
+    obligation=native.Obligation(adapter.name,{'task_id':task['task_id'],
+        'task_sha256':native.digest(task)},budget=0,kind='object')
+    checked=native.Developer(store,adapter).run(obligation)
+    result=adapter.result
+    expected='verified' if result.get('selected_capability') else 'unknown'
+    if checked.verdict!=expected:
+        raise ValueError('original MDA rejected the exact scoped native assessment binding')
+    result.update(mda=asdict(checked),development_budget=obligation.budget)
+    machine.costs.append({'phase':'mda_existing_method_activation',
+        'seconds':time.perf_counter()-started,'inclusive_of_native_execution_and_reclosure':True})
     return result
 
 
@@ -178,7 +244,8 @@ def qualify(state, assets, components, evaluator, state_out):
     after = _state_digest(state)
     gates = {
         'six_existing_native_outcomes': all(row['selection']['status'] == 'VERIFIED_EXISTING_METHOD_ACTIVATION'
-            and row['selection']['response'].get('status') == 'SUCCESS' for row in outcomes),
+            and row['selection'].get('native_receipt', {}).get('status') == 'accepted'
+            and row['selection']['native_receipt'].get('score') == 1 for row in outcomes),
         'equally_informed_same_operations_tie': all(row['baseline_tie'] for row in outcomes),
         'no_capability_language_change_during_selection': unchanged,
         'withdrawal_refuses_unknown': refused['status'] == 'UNKNOWN_NO_APPLICABLE_METHOD'
@@ -191,7 +258,8 @@ def qualify(state, assets, components, evaluator, state_out):
             'status': 'PASS_BOUNDED_ROUTING_INTEGRATION' if all(gates.values()) else 'FAIL_ROUTING_INTEGRATION',
             'classification': 'NEW_ROUTING_INTEGRATION_NOT_NEW_DOMAIN_RESULT',
             'native_successes': sum(row['selection']['status'] == 'VERIFIED_EXISTING_METHOD_ACTIVATION'
-                and row['selection']['response'].get('status') == 'SUCCESS' for row in outcomes),
+                and row['selection'].get('native_receipt', {}).get('status') == 'accepted'
+            and row['selection']['native_receipt'].get('score') == 1 for row in outcomes),
             'baseline': 'TIE_SAME_AVAILABLE_OPERATIONS' if all(row['baseline_tie'] for row in outcomes) else 'NOT_TIED',
             'gates': gates, 'outcomes': outcomes, 'withdrawal': refused,
             'independent_after_withdrawal': independent, 'sources': SOURCE_PINS,

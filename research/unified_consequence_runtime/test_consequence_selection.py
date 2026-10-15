@@ -54,6 +54,8 @@ class ConsequenceSelectionTests(unittest.TestCase):
                 self.assertEqual(result['status'], 'VERIFIED_EXISTING_METHOD_ACTIVATION')
                 self.assertEqual(result['observation_basis']['size'], 1)
                 self.assertFalse(result['language_changed'])
+                self.assertEqual(result['mda']['verdict'], 'verified')
+                self.assertEqual(result['mda']['retained'], ())
                 self.assertEqual(result['expressivity'], 'NOT_TESTED')
 
     def test_equivalent_active_generations_remain_ambiguous(self):

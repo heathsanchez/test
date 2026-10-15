@@ -1,120 +1,153 @@
-# Executable developmental machine qualification — 2026-10-15
+# Universal Developmental Machine — native V54 continuation
 
-**WARRANTED: bounded native developmental integration, causal maintenance and executable restart.**
+**Local result: WARRANTED_BOUNDED native O1→O2 developmental execution.**
+The independently reproducible Actions qualification is pending. The machine
+continues from canonical commit `10269fa87dacd47b7d0036935bc8b006e5041adc` on
+`research/universal-developmental-machine-v54-20261015`. Its qualified E/D
+implementation is retained. The original report is preserved in
+[BASE_RESEARCH_REPORT.md](archaeology/v54-continuation/BASE_RESEARCH_REPORT.md).
 
-Original qualified E representation acquisition and D semantic operators now
-execute through a source-pinned capability interface, original Metatron state,
-original FLASH reclosure and a separate original WebArena native verifier.
-This is fresh execution of original code on actual archived environment
-observations, with generated responses; it is not a historical receipt join.
+## What actually executes
 
-First fully green qualification: [Actions 38671739381](https://github.com/heathsanchez/test/actions/runs/38671739381),
-source `f1b142b8e88565c26d579cee27146326db87ae01`.
-[Artifact 11944532542](https://github.com/heathsanchez/test/actions/runs/38671739381/artifacts/11944532542),
-ZIP SHA256 `d36e2158a7577c2416f8d3e0f6e08d29f89a01306620a9e2ced8070743537c04`.
-The provider's exact source, completed-successful run, job log, artifact ID and
-digest were checked. Native result files were separately inspected in local
-qualification and an independent worker's rerun. A temporary signed download
-of the green archive expired while a network-permission tool stalled; its ZIP
-has not been independently reopened locally. The original input archives were
-downloaded, hashed, opened and checked.
+The entrypoint is `python -m research.unified_consequence_runtime.qualify_v54_machine`.
+It invokes the original V54 acquisition and fixed-budget constructors from
+`heathsanchez/triskelion@2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c`, SHA256
+`13c05aea8d6c1ce2db6d3d4b85c566ee3dbd2f3fcc1c3c8c14c1c2dece7f05ba`.
+Whole original AST phases run against the original pinned Django, Requests and
+Rich implementations. The adapter relocates paths, records native receipts,
+and reaps timed-out processes. It does not replace the search algorithm.
 
-## Native results
+Original Django searches produced one shared O1 token rewrite; Rich supplied
+its learned applicability guard. Original cold Requests search found no native
+survivor among 541 candidates. Executing admitted O1 through the UDM changed
+the actual source state; the same one-new-rewrite constructor then discovered
+a unique O2. O1 and O2 are retained executable operator data interpreted by the
+original source, with source pins, scope, native evidence and causal parents.
+The generic token-emission constructor was supplied, not acquired.
 
-| Test | Result |
+| Qualification | Local result |
 | --- | --- |
-| Original E induction from task63/schema, independently checked | PASS |
-| E protected tasks62/64/65, regenerated responses | 3/3 |
-| Original grouping deletion ablation | 0/3 |
-| Independent D tasks168/169/172 | 3/3 |
-| Exact E support withdrawal, descendants removed and old route blocked | PASS |
-| D warrants and all 11 prior source capabilities survive E withdrawal | PASS |
-| Reverified restoration creates a new generation without deleting history | PASS |
-| Separate-process six-task executable cold replay | PASS |
-| Equally informed original-code executable-ledger baseline | 3/3 TIE |
-| Source/task/response binding and contract suite in green Actions run | 20/20 |
+| Original O1 acquisition | PASS, 161 native calls |
+| Cold one-new-rewrite search | 541 candidates, 0 pass; 497 failures, 44 timeouts |
+| O1 reuse followed by original O2 search | 541 candidates; unique O2 |
+| Independent clean-source native O1/O2 verification | PASS |
+| Broken, O1-only, and O1-withdrawn native controls | Fail as required |
+| Exact O1 ancestor withdrawal | 10 dependent warrants removed; both routes blocked |
+| Original E/D and all 11 unrelated source admissions | Preserved |
+| Reverified restoration | New generations and evidence; old revoked IDs inactive |
+| Separate-process executable cold restart | O1/O2 and six E/D outcomes PASS |
+| Strong equally informed original executable-ledger baseline | TIE on O2, survivors, candidate budget and final source |
+| Source/scope/evidence/corruption/withdrawal contract suite | 77/77 PASS; updated path/causal guards 23/23 PASS |
+| Formal evidence regression suite | 5/5 PASS |
+| Concrete original VDN finite-table Lean instance | CHECKED, original Lean4.28.0 |
 
-All 75 preceding Metatron records, 13 original FLASH events and 11 active source
-capabilities are retained. The qualified final state has 101 records and 82 live
-records. Actual response bytes are retained as content-addressed objects;
-descriptors retain source, scope, program, observation, dependencies, evidence,
-generation and supersession. Withdrawing a support record removes the route
-and native-checked descendants. Restoring identical revoked IDs is forbidden
-by original log semantics; a new independently checked generation restores use.
+All 101 canonical base ledger records and the original source objects remain.
+Metatron and original FLASH independently agree on support liveness. Restoration
+re-executes native behavior after restart; it is not recovery of receipt text.
 
-Independent review found no correctness issue in this declared flow. That
-worker reran native qualification and 26 tests: 2 integration, 9 original Metatron
-and 15 original FLASH tests. Metatron's original exhaustive tests cover 1,024
-five-node DAGs and 5,120 single-revocation/restart cases. Review receipts and the
-finite Boolean audit certificate are retained under `archaeology/`.
+## Existing operation before invention
 
-## Costs and interpretation
+`Machine.select_and_execute(task)` accepts no caller method ID. It enumerates
+retained live typed routes, uses the original applicability guards, computes a
+source-native JPL minimum finite profile basis, and activates a unique existing
+operation through the original independent verifier. The original MDA
+`Developer.run` checks bound assessments over the same Metatron state with a
+zero development budget. Missing or ambiguous applicability returns UNKNOWN.
+No new constructor or method is proposed on failed lookup.
 
-The first complete local qualification took 25.46 seconds; the independent rerun
-took 23.28 seconds. First-run measured phase totals were acquisition 0.29 seconds,
-execution 2.21 seconds, native verification 11.92 seconds and persistence/reclosure
-3.40 seconds, plus a 6.53 second cold-process replay and orchestration. The
-equally informed executable baseline took 2.25 seconds for its three checked
-futures. Phase costs and individual receipts are preserved in qualification
-JSON; they are not historical research-discovery costs. No speed advantage
-over the informed baseline is established.
+After V54 passed, selection independently regenerated all six retained E/D
+outcomes. The equally informed same-operation baseline tied. Exact grouping
+withdrawal caused UNKNOWN while independent stars execution survived; source
+state bytes were unchanged because qualification used a persisted copy.
+This warrants automatic routing integration in the existing frozen scope.
+It is not a new domain result or general minimum-cost policy theorem. MSI
+coarsest repair/pair selection is tested separately from expressivity. The JPL
+minimum is over current finite scope profiles; full scope validation remains.
 
-## REJECTED
+The first selection report counted only response status SUCCESS. Task168's
+correct NOT_FOUND_ERROR response is native-accepted. That failed report is
+retained; the corrected gate uses the actual independent native receipt.
 
-The original grouping ablation, forged missing result and cross-task response
-replay fail the native verifier. Wrong source, task, dataset, template and
-installed native code are rejected. First CI 38661416153 failed admission on
-package-version metadata from a shallow checkout; no native acceptance was
-claimed. CI 38662301625 passed native integration but failed a local-path
-assertion in one test. Fetching evaluator history and making the test locate
-the actual package corrected those orchestration faults; both failures remain
-in Actions history.
+## Formal and authority boundaries
 
-Strict performance superiority over a fully informed executable ledger is
-rejected by the tie. Historical VDN protected-gain negatives and strong-baseline
-ties remain in the capability index, rather than being erased by this success.
+The unchanged VDN definitions are instantiated with 541 exact cold source-hash
+actions, 542 complete old traces of length<=1, and the two actual acquired source
+edges. Checked facts are bounded phase change, old-action retention, no recorded
+old pass, and a recorded final pass. Native failures and timeouts remain distinct.
+The first three use only standard `propext`/`Quot.sound`; the final fact is
+axiom-free. This proves the finite table, not Python execution, native test
+correctness, unrestricted nonreachability or a universal behavioral quotient.
+The evidence adapter and native execution bridge remain explicit obligations.
+See [FORMAL_CORRESPONDENCE.md](FORMAL_CORRESPONDENCE.md) and
+[FORMAL_V54.md](FORMAL_V54.md).
 
-## UNKNOWN
+Executable ability, independently warranted ability, and action authority are
+separate. Acquired operators have a fixed local research ceiling and grant no
+external permission. Routed effects recheck type, source, evidence, scope and
+live causal support before execution. Ordinary Python, direct callable source
+methods and the public state API do not establish a non-bypassable all-effects
+reference monitor. **Independent non-bypassable external-action enforcement is
+UNKNOWN.** No airtight sandbox or new policy framework is claimed.
 
-Fresh browser observation, newly blinded discovery, source-distinct transfer of
-E's representation, new constructor acquisition, prospective second-generation
-discoverability, autonomous developmental-policy invention, cross-model
-transport and unrestricted intelligence remain UNKNOWN for this integration.
-An actual competent tool-using agent comparator was not run. The present native
-successes are historical held-out task identities on the original archived
-world, not newly blinded scientific tasks. E and D demonstrate independently
-warranted execution in two domains, not transfer of one learned representation
-between those domains. Controlled local support withdrawal is not an upstream
-proof revocation or automatic authenticity/freshness monitoring.
+## Reconciled research and unresolved frontier
 
-No complete old executable-language nonreachability certificate is supplied
-for this runtime. MSI and MathGraph's exact Lean theorem assumptions are mapped
-in [FORMAL_CORRESPONDENCE.md](FORMAL_CORRESPONDENCE.md); the Python runtime is
-not yet a concrete checked Lean instance. FLASH's singleton support projection
-checks dependency closure; independent domain-native verification establishes
-the empirical consequences. Neither is promoted to universal proof authority.
+The single [capability_index.json](capability_index.json) retains the 33 previous
+rows and adds executable/formal/selection and historical-source reconciliations.
+77 distinct additional source objects were independently hash matched. The
+recovery manifests are provenance snapshots, not competing qualification ledgers.
 
-## REUSABLE and SUPERSEDED
+RGRS/MSI V12 and D1→D2→D3 already contain bounded recursive and meta-developmental
+mechanisms. Necessity's original full/decode operations and source-induced rule
+are present; a cost label in fresh_qualify is not an actual dispatcher, while
+verify.py contains the actual original conditional call. FLASH V11's retained
+exact-rank solver selects a minimum sufficient observation subset under its
+supplied finite vocabulary. QCKN V3 provides typed authority/bridge closure.
+These are REUSABLE in their declared scopes; recovery is not current-machine
+installation of all of them. V103/V104 constructor provenance is kept separate
+from the independently audited Boolean closure result.
 
-The capability index preserves 33 reconciled source/evidence entries, including
-all 20 ROS documentary records, exact source overlays, negative results and
-supersession. Full current-ref inventories span all 8 required repositories;
-7 were fetched with non-shallow history. MathGraph branch heads and exact
-relevant Git objects were read through GitHub after clone tools stalled.
-Enumerating a branch is not qualification of its experiments; deleted
-unreachable history remains outside the inventory boundary.
+**Prospective second-generation growth remains UNKNOWN.** Original V54 fixes its
+three native worlds and target tests; the current task router admits only frozen
+E/D inputs. No original independently verified unfamiliar-source frontier harness
+was activated without new target-specific adapters. DIR V6 can admit an arity-five
+schema but its recover operation reads the supplied expansion, so that would not
+test O1-dependent future discovery. Necessity already supplies a full quadratic
+solver and the same decode signal; replaying fresh coefficients would not close
+that stronger obligation. The unexecuted draft frontier is preserved as DRAFT,
+not relabeled a prospective success. Source-native unfamiliar-frontier selection
+and constructor/procedure growth through this runtime remain open.
 
-Existing V54 fixed-budget causal compounding, V161 role rescue, depth-four and
-depth-five synthesis, E+F composition, MDA role transport and source-mined CSLib
-proof-language growth remain reusable within their original scopes. Native
-Lean experiments were not rerun merely to reproduce headlines. IKKF's exact
-native qualification remains unrecovered. The Boolean 16-to-256 computation has
-an exact source and independent finite audit certificate; its original
-successful artifact provenance remains UNKNOWN and is not assigned to unrelated
-V103/V104 constructor branches.
+MathGraph Check's original non-regex RED remains RED; the human-selected
+EDGE_SPACE correction remains post-hoc diagnostic. No SemVer diagnostic was
+repeated as a fresh success. VDN V23 learned17/310 versus cold18/310, V24 ties
+1/160, V25 protected0/16, and V26 retrospective partitions are retained. Selected
+feature collisions are not full-vocabulary impossibility; bounded search failure
+is not complete grammar exhaustion. A live competent tool-using agent comparator
+was not run; the strong executable-ledger comparator was executed.
 
-The historical-only normalized receipt view remains an honest historical view.
-It is superseded as the executable entrypoint by
-`python -m research.unified_consequence_runtime.qualify_developmental_machine`.
-No main branch, upstream source repository, production service or external
-party was changed. Work remains on the owned isolated research branch.
+## Costs and status
+
+Local original acquisition took104.12s. Subsequent qualification took1611.45s,
+including445.04s cold search,487.94s warm construction/admission,436.35s fresh
+baseline,124.73s restoration and60.13s separate-process replay. Its recorded
+independent native verification took243.24s and persistence/reclosure7.95s;
+these are nested phase measurements, not additional totals. Baseline acquisition
+is shared original knowledge, not falsely counted as free reconstruction.
+The native summary retains22 passes,1142 failures,86 timeouts and0 errors;
+baseline receipts are separate. These are qualification costs, not historical
+research-discovery costs or established lifecycle savings.
+
+WARRANTED: bounded native developmental execution, selective causal state,
+restart, finite table certificate, and frozen-scope existing-method activation.
+REJECTED: strict advantage over the equally informed executable ledger in this
+experiment; forged/wrong-scope/corrupt/withdrawn routes; historical controls above.
+UNKNOWN: non-bypassable action enforcement, prospective unfamiliar-source growth,
+autonomous constructor or policy invention, universal old-world impossibility,
+IKKF cross-model portability through this runtime, and unrestricted intelligence.
+REUSABLE: recovered original native/formal/selector mechanisms within exact scopes.
+SUPERSEDED: the old V54 primary-artifact UNKNOWN after its exact ZIP was recovered,
+and the historical-only interpretation of the current executable machine.
+
+No main merge, upstream source modification, deployment, production change or
+external-party contact occurred. Commits and qualification are confined to the
+authorized isolated owned research branch.

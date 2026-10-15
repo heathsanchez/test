@@ -1,10 +1,12 @@
 # Formal correspondence and remaining obligations
 
-The executable integration has bounded native evidence. It is not currently a
-concrete Lean instance of the MathGraph Verified Developmental Navigation (VDN)
-or MSI formalizations. Native consequence checks, causal support closure and
-generic formal theorems establish different facts; no refinement theorem has
-yet connected the Python implementation to those Lean definitions.
+The executable integration has bounded native evidence. The continuation also
+checks a concrete **finite V54 source-hash table** instance of the unchanged
+MathGraph VDN certificate. This does not prove the Python runtime correct. The
+E/D subexperiment and general MSI runtime correspondence remain uninstantiated.
+Native consequence checks, causal support closure, finite table proofs and
+generic formal theorems establish different facts; no Python refinement theorem
+is asserted.
 
 The frozen integration protocol is [DEVELOPMENTAL_PROTOCOL.md](DEVELOPMENTAL_PROTOCOL.md).
 Its executable sources are E/D `heathsanchez/test@c9092fa57c8943e638f95689cd36e6a63310f41e`,
@@ -67,8 +69,9 @@ Exact inspected source: `metalogiclabs/mathgraph@cf359686c74549a132c7a651cd7aabc
 (Git blob `3f6ea923d0b3f0727bffcf9b6fd1bb1d975cc466`), its imported
 `VerifiedDevelopmentalNavigation.lean` (blob `e64adf542ba321efbf74787974fa5c5bae795da5`),
 and `Routing.lean` (blob `abe4f8053d438a6ef596c2cfa37699333046ad8e`).
-These exact GitHub source objects were recovered and read; Lean was not
-recompiled in this session.
+These exact source objects were recovered and read. The V54 continuation
+recompiled the original World, DevelopmentCertificate and Routing modules with
+their original Lean 4.28.0 toolchain as part of its concrete finite table check.
 
 `CapabilityPhaseChangeCertificate` fixes two worlds over the same state,
 context and observation types, allowing different action types. It requires
@@ -81,13 +84,14 @@ nonreachability; `phase_change` combines that with the new witness.
 This retention theorem concerns reachability; it does not by itself establish
 that changed observation interfaces preserve behavioral quotients.
 
-The runtime supplies actual native success witnesses and scoped causal
-withdrawal checks. It does **not** currently supply a Lean `World` instance,
+The original E/D subexperiment supplies native success witnesses and scoped
+causal withdrawal checks. That subexperiment does **not** supply a Lean `World` instance,
 a complete cover of its old executable trace language, checked failure for
 that cover, or a step-preserving action embedding. Original grouping ablation
 and failed search therefore remain native negative controls, never complete
 old-language impossibility certificates. Formal phase-change qualification
-for this concrete Python machine remains **UNKNOWN**.
+for the E/D Python execution semantics remains **UNKNOWN**. The separate bounded
+V54 table certificate below does not close that obligation.
 
 `Routing.route_complete` is a classical logical case split over `CanAct` and
 `CanProbe`, not a computable general search algorithm. `extend_questions_sound`
@@ -102,3 +106,37 @@ index nor a green workflow alone establishes proof replay.
 
 General autonomous generator invention, unrestricted developmental completeness
 and system-wide L7 remain **UNKNOWN**. There is no general intelligence claim.
+
+
+## Executed V54 continuation and existing-method routing
+
+Original V54 is pinned to `heathsanchez/triskelion@2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c`.
+Whole authenticated original AST phases supply acquisition and cold/warm search;
+no new discovery algorithm is substituted. See [FORMAL_V54.md](FORMAL_V54.md) and
+[V54_PROTOCOL.md](V54_PROTOCOL.md) for the exact native/model boundary.
+
+| Actual transition | Existing result or contract | Concrete evidence and remaining obligation |
+| --- | --- | --- |
+| O1 acquisition and O1-dependent O2 construction | MSI `DevelopmentalCategory.extension_refines` is conditional; VDN `CapabilityPhaseChangeCertificate.phase_change` is instantiated for the finite table | Native acquisition, 541 exact cold candidates, 541 warm candidates, source-distinct Requests outcome. The supplied generic token emitter is not acquired. No all-Python or unrestricted metalanguage theorem. |
+| Finite old-language boundary | VDN `World.CompleteCover`; `ActualV54.oldBoundaryHasNoRecordedPass` | Exactly 542 traces: empty plus every singleton cold action. Timeouts are distinct observations. No recorded pass under seven-second native tests; not semantic impossibility with unlimited resources. |
+| O1/O2 execution, scoped admission | Original native Django/Requests/Rich tests and clean archive/import verification | Actual native programs and independent checks bind source, task and scope. Source/tokenizer/test correctness and their mapping to Lean remain trusted executable obligations. |
+| Retain old actions while adding two exact source transitions | VDN `ActionExtension.step_preserved`, `retains_old_capability`; checked `ActualV54.everyOldCapabilityRetained` | Old actions inject unchanged into the table. This is reachability retention, not a proof that every changed observation interface is a monotone behavioral refinement. |
+| Learned applicability and minimum consequential distinction | MSI executable coarsest lawful repairs/discriminating pairs; JPL exact `minimal_basis` | A finite repair-pair test and minimum current route-profile basis. Full scope guards remain mandatory. General future quotient and minimum-cost developmental policy remain UNKNOWN. |
+| Existing method before construction | MDA `Developer.run`, `_bound`, `assessment_claim`, `Evidence` at `test@13325089c471996b8b68f46540fd4ad449df752c` | Original loop executes over a thin projection of the existing Metatron state. Development budget is zero; no new repair is proposed. Exact bound native assessment yields verified or unknown. The MDA SQLite store is not used. No universal applicability/completeness theorem is asserted. |
+| Exact ancestor withdrawal and reclosure | Metatron `WarrantGraph.lean` fixture theorems; original `nucleus.live_ids`; original FLASH reclosure | `warrant_revocation_cuts_dependency_cone` and `warrant_history_is_not_deleted` prove the original four-record fixture. Actual UDM lineage is checked by both native closure implementations and causal experiments, not by promoting that fixture to a universal Python proof. |
+| Restoration and separate-process replay | Original Metatron immutable identities, native requalification and original source adapters | New evidence generations retain revoked history; executable O1/O2 and E/D replay natively. No formal host-storage authenticity, crash-atomicity, or all-effects enforcement theorem. |
+| Independent authority ceiling | Explicit user-authorized local research scope, checked on routed effects | Acquisition grants no external permission. Ordinary Python and public direct-call APIs do not establish a non-bypassable reference monitor; whole-process enforcement is UNKNOWN. |
+
+The concrete checked VDN instance proves `ActualV54.certifiedPhaseChange`,
+`ActualV54.everyOldCapabilityRetained`, `ActualV54.oldBoundaryHasNoRecordedPass`,
+and `ActualV54.finalHasRecordedPass`. The first three use only the reported
+standard Lean axioms `propext` and `Quot.sound`; the final recorded-pass fact is
+axiom-free. The model state is the complete Requests source SHA256 and the
+observation is its retained native outcome. The evidence adapter independently
+reconstructs the original candidate enumeration and actual O1/O2 source edges,
+but its Python implementation is outside the kernel theorem.
+
+Metatron's inspected `WarrantGraph.lean` remains pinned to
+`metalogiclabs/metatron@b9d1b5cc10477188be6e55617699be60e70f6dad`; its project
+uses Lean4.35.0-rc2. This continuation does not claim to have recompiled that
+project with the VDN4.28 compiler.

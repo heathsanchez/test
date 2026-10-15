@@ -100,7 +100,9 @@ def main() -> int:
         receipt["evidence_readmission"] = "MATCHED_FROZEN_INPUTS"
         receipt["evidence_manifest_sha256"] = sha256(evidence_path)
         receipt["candidate_count"] = evidence["candidate_count"]
+        receipt["old_cover_count"] = evidence["old_cover_count"]
         receipt["cold_outcome_counts"] = evidence["cold_outcome_counts"]
+        receipt["acquired_operator_identity_checked"] = evidence.get("acquired_operator_identity_checked", False)
         for proof_source in (certificate, HERE / "BoundedV54.lean"):
             if re.search(r"\b(sorry|admit|axiom|unsafe)\b", proof_source.read_text()):
                 raise ValueError(f"Proof source contains a prohibited proof escape: {proof_source.name}")
@@ -120,7 +122,7 @@ def main() -> int:
         ]
         logs = []
         for src, olean in steps:
-            command = [compiler, "-o", str(olean), str(src)]
+            command = [compiler, "--root="+str(src.parent), "-o", str(olean), str(src)]
             started = time.monotonic()
             run = subprocess.run(command, env=env, text=True, capture_output=True,
                                  timeout=args.timeout)

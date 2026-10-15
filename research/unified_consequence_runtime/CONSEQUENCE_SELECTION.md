@@ -1,6 +1,8 @@
 # Separate consequence-selection integration
 
-Status: **PREPARED; native selection test awaits primary V54 PASS.** No V54 worlds or prospective frontier have been touched by this addition.
+Status: **LOCAL PASS after complete native V54 qualification.** Six original
+E/D tasks were selected without a query method ID and independently accepted.
+The informed executable baseline tied. V54 worlds were not touched by selection.
 
 `Machine.select_and_execute(task)` accepts no method ID. It discovers all active capabilities whose existing scope has the archived E/D input schema, evaluates the existing native `Machine.applicable` guard, and activates exactly one applicable route through `Machine.execute`. No matching route or multiple applicable routes returns typed UNKNOWN. Unsupported input schemas are disclosed. Nothing adds a constructor, changes a capability language, retries invention, or treats failed lookup as grammar exhaustion.
 
@@ -18,10 +20,36 @@ Exact source pins are authenticated before code loads:
 
 The loader reads exact git blobs from `UDM_SOURCE_REPOS` (default `/workspace/repos`). MSI definition modules execute without experiments. Only the original `minimal_basis` function AST is compiled from h11's authenticated file, avoiding the experiment entrypoint and data acquisition. This source loading is not a security isolation boundary.
 
-Prepared verification copies the retained canonical state rather than reacquiring E/D. It covers all six previously qualified archived E/D outcomes, a no-route refusal after exact grouping withdrawal with independent stars preserved, ambiguous active generations, and the independent finite repair distinction. The equally informed direct applicability enumeration uses the same operations and should tie on all six outcomes. These remain historical native domain outcomes; the new result can establish routing integration only, with no claim of new-domain transfer or economic advantage.
+Verification copies the retained canonical state rather than reacquiring E/D. It covers all six previously qualified archived E/D outcomes, a no-route refusal after exact grouping withdrawal with independent stars preserved, ambiguous active generations, and the independent finite repair distinction. The equally informed direct applicability enumeration uses the same operations and tied on all six outcomes. These remain historical native domain outcomes; the new result can establish routing integration only, with no claim of new-domain transfer or economic advantage.
 
-After primary V54 PASS, the prepared entrypoint is `python -m research.unified_consequence_runtime.consequence_selection --state FINAL_V54_STATE --assets ASSETS --components COMPONENTS --evaluator EVALUATOR --out qualification/consequence-selection.json`. It copies the input into `qualification/consequence-selection-state` by default (`--state-out` overrides this), preserves that copied ledger/object store, and binds both state hashes in the report. Output paths inside either state are rejected. The input state is never used as the working state. Tests use `UDM_BASE_STATE`, defaulting to the canonical archived qualified state; no native acquisition headline is rerun.
+After primary V54 PASS, the entrypoint is `python -m research.unified_consequence_runtime.consequence_selection --state FINAL_V54_STATE --assets ASSETS --components COMPONENTS --evaluator EVALUATOR --out qualification/consequence-selection.json`. It copies the input into `qualification/consequence-selection-state` by default (`--state-out` overrides this), preserves that copied ledger/object store, and binds both state hashes in the report. Output paths inside either state are rejected. The input state is never used as the working state. Tests use `UDM_BASE_STATE`, defaulting to the canonical archived qualified state; no native acquisition headline is rerun.
 
-The initial test-first run failed three tests at the missing adapter before implementation, so it ran no selection or native domain work. `py_compile` passed after preparation. The green selection run and its receipt must be recorded only after the primary V54 PASS signal.
+The initial test-first run failed three tests at the missing adapter before implementation, so it ran no selection or native domain work. `py_compile` passed after preparation. The separate native selection run occurred only after the primary V54 PASS. Its
+receipt is `qualification/v54-local/mda-consequence-selection.json` locally.
+The first report incorrectly required a literal response status SUCCESS; task168
+correctly returns NOT_FOUND_ERROR and is accepted by the original native verifier.
+That failed report and its logs remain preserved. The corrected gate uses the
+actual native receipt status accepted and score1, including this valid empty result.
 
-Additional source lineage is recorded in `/workspace/v54-recovery/INDEX.json`, `ANCHORS_CORE.md`, and `ANCHORS_FLASH.md`: MSI V12 and D1/D2/D3 finite meta-developmental chains already exist; necessity's source-induced observation remains supplied GF2 grammar; FLASH V11 automatically selects a minimum source observation basis; MathGraph Check frozen RED and posthoc human EDGE_SPACE diagnostic remain separate; VDN V23–26 negative and retrospective classifications are preserved. No new grammar is introduced on failed lookup. Nonbypassability of the ordinary Python authority boundary remains UNKNOWN, independently of these scientific selection checks.
+Additional source lineage is retained under `archaeology/v54-continuation/`;
+`capability_index.json` is the single scientific status authority: MSI V12 and D1/D2/D3 finite meta-developmental chains already exist; necessity's source-induced observation remains supplied GF2 grammar; FLASH V11 automatically selects a minimum source observation basis; MathGraph Check frozen RED and posthoc human EDGE_SPACE diagnostic remain separate; VDN V23–26 negative and retrospective classifications are preserved. No new grammar is introduced on failed lookup. Nonbypassability of the ordinary Python authority boundary remains UNKNOWN, independently of these scientific selection checks.
+
+
+The original MDA `Developer.run` now executes each selection assessment over a
+thin store projection of the **same Metatron log**. Its source pin is
+`heathsanchez/test@13325089c471996b8b68f46540fd4ad449df752c`,
+`open_development/runtime.py`, SHA256
+`48bc8efdbb289697c41d633773208dcbdb53bf39dbc8679127e58d0ed3e80703`.
+Original `IRContract`, `Obligation`, `Evidence`, `assessment_claim`, `_bound`
+and `Result` retain exact state/obligation/verifier/scope binding. The development
+budget is zero; `propose` cannot be called. Verified existing native execution
+returns a bound verified assessment; absent or ambiguous applicability returns
+unknown with no development residual. The original MDA SQLite store is unused,
+so this adds no second state authority or capability library.
+
+The JPL basis minimizes coordinates preserving current finite **scope-profile**
+classes. It is diagnostic and does not itself prove minimum decision cost,
+general consequential sufficiency, or acquisition expressivity. MSI pair
+selection is tested separately from routing. Existing typed E/D task support
+is not silently generalized to arbitrary source tasks. Additional V54 capability
+schemas are disclosed as unsupported by this specific task router.
