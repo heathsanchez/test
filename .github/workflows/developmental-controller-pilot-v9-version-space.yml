@@ -1,0 +1,24 @@
+name: Developmental controller pilot v9 version space
+
+on:
+  push:
+    branches:
+      - developmental-controller-pilot-v1
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  version-space:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compare single-story versus version-space control
+        run: python experiments/developmental_controller_pilot_v9_version_space.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-v9-version-space-result
+          path: v9_version_space_result.json

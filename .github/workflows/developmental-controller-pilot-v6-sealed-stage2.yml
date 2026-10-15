@@ -1,0 +1,27 @@
+name: Developmental controller pilot v6 sealed replay stage2
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  reveal-score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reveal future and score frozen prediction
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python experiments/developmental_controller_pilot_v6_sealed_replay_stage2.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-v6-sealed-result
+          path: v6_sealed_replay_result.json

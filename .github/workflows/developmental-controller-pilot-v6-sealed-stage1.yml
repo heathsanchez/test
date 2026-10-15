@@ -1,0 +1,30 @@
+name: Developmental controller pilot v6 sealed replay stage1
+
+on:
+  push:
+    branches:
+      - developmental-controller-pilot-v1
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  sealed-packet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate sealed pre-breakthrough packet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python experiments/developmental_controller_pilot_v6_sealed_replay_stage1.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-v6-sealed-packet
+          path: v6_sealed_packet.json
