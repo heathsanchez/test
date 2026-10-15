@@ -1,0 +1,15 @@
+test_child_consequence_survives_parent_continuation (research.unified_consequence_runtime.test_recursive_restart_retention.RestartRetentionTests.test_child_consequence_survives_parent_continuation) ... ERROR
+
+======================================================================
+ERROR: test_child_consequence_survives_parent_continuation (research.unified_consequence_runtime.test_recursive_restart_retention.RestartRetentionTests.test_child_consequence_survives_parent_continuation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_recursive_restart_retention.py", line 31, in test_child_consequence_survives_parent_continuation
+    parent=q.resume_after_restart(parent,child)
+           ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'research.unified_consequence_runtime.qualify_recursive_frontier' has no attribute 'resume_after_restart'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.371s
+
+FAILED (errors=1)

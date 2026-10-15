@@ -1,4 +1,4 @@
-"""Frozen generic native admission and conditional recursive-development probe.
+"""Generic native maintenance after the preserved failed prospective probe.
 
 The native upstream suite supplies the protected obligation. UNKNOWN setup or
 execution and an already satisfied suite never manufacture a developmental
@@ -29,9 +29,11 @@ FREEZE_FILES=[
     'research/unified_consequence_runtime/'+name for name in
     ('generic_native_verify.py','native_frontier.py','qualify_recursive_frontier.py',
      'cross_frontier.py','developmental_machine.py',
-     'archaeology/recursive-frontier/EXPERIMENT.json','capability_index.json',
+     'archaeology/recursive-frontier/EXPERIMENT.json',
+     'archaeology/recursive-frontier/MAINTENANCE_BOUNDARY.md','capability_index.json',
      'test_generic_native_verify.py','test_native_frontier.py',
-     'test_qualify_recursive_frontier.py','test_native_frontier_activation.py')
+     'test_qualify_recursive_frontier.py','test_native_frontier_activation.py',
+     'test_recursive_restart_retention.py')
 ]+['.github/workflows/udm-recursive-native-frontier.yml']
 
 
@@ -59,7 +61,9 @@ def original_candidates(source_repo, source, cap=320):
     return namespace['program_candidates'](source,cap=cap)
 
 
-def freeze(repo,out):
+def freeze(repo,out,*,maintenance_only=False):
+    if not maintenance_only:
+        raise ValueError('original target probe is closed; use maintenance-only or freeze a new independent frontier')
     repo=Path(repo).resolve()
     if subprocess.check_output(['git','-C',str(repo),'diff','--name-only','HEAD']).strip():
         raise ValueError('commit implementation before source freeze')
@@ -71,8 +75,8 @@ def freeze(repo,out):
         'source_commit':subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'],text=True).strip(),
         'frozen_at_utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),
         'files':manifest,'protocol_sha256':digest(PROTOCOL.read_bytes()),
-        'target_source_tests_outcomes_inspected_by_this_experiment':False,
-        'global_prior_exposure':'UNKNOWN',
+        'qualification_mode':'MAINTENANCE_ONLY_NO_NEW_TARGET_EXECUTION',
+        'target_prior_probe':'KNOWN_NATIVE_IMPORT_ERROR_UNDER_B450; PROSPECTIVE_UNKNOWN',
         'original_freeze_sha256':'aec93ebcaed7f4d4c0eff6c0d921acd297dffa3172827503dc1bb5a2c5c7d5a7'}
     original=HERE/'archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json'
     if digest(original.read_bytes())!=result['original_freeze_sha256']:raise ValueError('original freeze changed')
@@ -142,6 +146,16 @@ def machine(components,state):
     return Machine(Path(components),Path(state),Path(components)/'evaluator',Path(state)/'unused-native-config.json')
 
 
+def resume_after_restart(parent,result):
+    """Reload the single canonical log before the parent writes after a child."""
+    charged=list(parent.costs)
+    reloaded=Machine(parent.components,parent.state,parent.evaluator,parent.config)
+    reloaded.costs[:0]=charged
+    if result['consequence'] not in {node.id for node in reloaded.log}:
+        raise AssertionError('native restart consequence missing from canonical ledger')
+    return reloaded
+
+
 def _copy_qualified_state(output):
     archive=HERE/'archaeology/programme-closure/QUALIFIED_NATIVE_STATE.tar.gz'
     if digest(archive.read_bytes())!='5086b999e3f11b08524ea201cb8c2ac24842e6e288a56d17ef3c06c2c281a09d':
@@ -207,6 +221,8 @@ def qualify(args):
     from .cross_frontier import register_frontier,require_frontier_route
     out=Path(args.out).absolute();out.mkdir(parents=True,exist_ok=False)
     frozen=check_freeze(args.repo,args.freeze);binding=digest(Path(args.freeze).read_bytes())
+    if frozen.get('qualification_mode')!='MAINTENANCE_ONLY_NO_NEW_TARGET_EXECUTION':
+        raise ValueError('closed prospective protocol cannot be rerun by maintenance code')
     report={'schema':'udm.recursive-native.result.v1','source_commit':frozen['source_commit'],
         'freeze':frozen,'freeze_sha256':binding,'started_at_utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),
         'verdicts':{'GENERIC_ADMISSION':'UNKNOWN','PROSPECTIVE_NATIVE_DISCOVERY':'UNKNOWN',
@@ -265,11 +281,24 @@ def qualify(args):
         (out/'restart-spec.json').write_text(canonical(spec)+'\n')
         process=_command([sys.executable,'-B','-m',__spec__.name,'--restart',out/'restart-spec.json',
             '--restart-out',out/'cold-restart.json'],out/'restart.log',cwd=args.repo)
+        report['restart_process_cost']=process
         if process['status']!='PASS':raise AssertionError('native separate-process restart failed')
         report['cold_restart']=json.loads((out/'cold-restart.json').read_text())
         if report['cold_restart']['status']!='PASS' or report['cold_restart']['process_id']==os.getpid():
             raise AssertionError('restart did not independently execute native suite')
+        m=resume_after_restart(m,report['cold_restart'])
         report['verdicts']['GENERIC_ADMISSION']='WARRANTED_BOUNDED_NATIVE_CONTROL'
+        if frozen.get('qualification_mode')=='MAINTENANCE_ONLY_NO_NEW_TARGET_EXECUTION':
+            marker=m.append('maintenance_continuation',{'restart_consequence':report['cold_restart']['consequence']})
+            m.flush()
+            if report['cold_restart']['consequence'] not in {node.id for node in m.log}:
+                raise AssertionError('parent continuation lost child restart consequence')
+            report['restart_retention']={'status':'PASS','consequence':report['cold_restart']['consequence'],
+                'parent_continuation':marker,'final_ledger_contains_both':True}
+            report['status']='WARRANTED_BOUNDED_MAINTENANCE_CONTROL_RECURSIVE_UNKNOWN'
+            report['smallest_obstruction']='ORIGINAL_PROSPECTIVE_NATIVE_BUILD_MATERIALIZATION_AND_NATIVE_O1_O3_BINDINGS_UNCLOSED'
+            report['target_reexecuted']=False
+            save();return report
         save()
         # First target materialization is after exact freeze and native control.
         target=provision('target',out/'target',binding);report['target_setup']=target;save()
@@ -313,8 +342,9 @@ def main():
     for key in ('repo','freeze','out','components','constructor-source','restart','restart-out'):
         parser.add_argument('--'+key,type=Path)
     parser.add_argument('--write-freeze',action='store_true')
+    parser.add_argument('--maintenance-only',action='store_true')
     args=parser.parse_args()
-    if args.write_freeze:result=freeze(args.repo,args.out)
+    if args.write_freeze:result=freeze(args.repo,args.out,maintenance_only=args.maintenance_only)
     elif args.restart:result=restart(json.loads(args.restart.read_text()),args.restart_out)
     else:result=qualify(args)
     print(canonical({'status':result.get('status','FROZEN'),'source_commit':result.get('source_commit')}))

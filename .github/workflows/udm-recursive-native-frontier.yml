@@ -29,6 +29,8 @@ jobs:
       UDM_NATIVE_SOURCE_REPO: ${{ github.workspace }}
       UDM_CONSTRUCTOR_SOURCE: ${{ github.workspace }}/components/triskelion
       V54_SOURCE: ${{ github.workspace }}/components/triskelion
+      V54_WORLDS: ${{ github.workspace }}/native-v54-worlds
+      V54_PYTHON: ${{ github.workspace }}/.venv-v54/bin/python
       UDM_ASSETS: ${{ github.workspace }}/prior-green/originals/qualified-v54/originals/base-udm/qualification/original-depth5
       UDM_BASE_STATE: ${{ github.workspace }}/prior-green/originals/qualified-v54/originals/base-udm/qualified-state
     steps:
@@ -61,6 +63,7 @@ jobs:
         with:
           repository: ServiceNow/webarena-verified
           ref: 6473f72db5dcefc97b5725b59e734504edc28a21
+          fetch-depth: 0
           path: components/evaluator
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -80,7 +83,7 @@ jobs:
         run: |
           mkdir -p qualification
           python -B -m research.unified_consequence_runtime.qualify_recursive_frontier \
-            --write-freeze --repo "$GITHUB_WORKSPACE" --out qualification/FREEZE.json
+            --write-freeze --maintenance-only --repo "$GITHUB_WORKSPACE" --out qualification/FREEZE.json
           git rev-parse HEAD > qualification/source-commit.txt
           cp research/unified_consequence_runtime/archaeology/recursive-frontier/EXPERIMENT.json qualification/
       - name: Authenticate original qualification without repeating acquisition
@@ -113,15 +116,18 @@ jobs:
           python -m venv .venv-udm
           .venv-udm/bin/python -m pip install ./components/evaluator playwright jinja2 pytest==8.3.5
           ln -s "$GITHUB_WORKSPACE" "$UDM_SOURCE_REPOS/test"
+          bash research/unified_consequence_runtime/setup_v54_worlds.sh \
+            "$V54_WORLDS" "$GITHUB_WORKSPACE/.venv-v54" "$GITHUB_WORKSPACE/qualification/v54-native-setup"
           .venv-udm/bin/python -B -m unittest discover -s research/unified_consequence_runtime -p 'test_*.py' -v \
             > qualification/contract-tests.log 2>&1
           .venv-udm/bin/python -B -m unittest discover -s research/unified_consequence_runtime/v54_formal -p 'test_*.py' -v \
             > qualification/formal-evidence-tests.log 2>&1
-      - name: Execute frozen independent native control then unfamiliar frontier
+      - name: Qualify native maintenance without reexecuting the closed unfamiliar frontier
         run: |
           .venv-udm/bin/python -B -m research.unified_consequence_runtime.qualify_recursive_frontier \
             --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json \
             --components "$UDM_COMPONENTS" --constructor-source "$UDM_CONSTRUCTOR_SOURCE" \
+            --maintenance-only \
             --out "$GITHUB_WORKSPACE/qualification/recursive" | tee qualification/recursive.log
       - name: Assert bounded qualification and preserve separate recursive verdict
         run: |
@@ -130,6 +136,8 @@ jobs:
           r=json.loads(pathlib.Path('qualification/recursive/RESULT.json').read_text())
           assert r['verdicts']['GENERIC_ADMISSION']=='WARRANTED_BOUNDED_NATIVE_CONTROL',r
           assert r['cold_restart']['status']=='PASS'
+          assert r['restart_retention']['status']=='PASS'
+          assert r['target_reexecuted'] is False
           assert r['verdicts']['O1_O2_O3_RECURSIVE_CAUSALITY']=='UNKNOWN'
           assert r['verdicts']['EXTERNAL_ENFORCEMENT']=='UNKNOWN'
           print(json.dumps(r['verdicts'],indent=2))
@@ -147,9 +155,10 @@ jobs:
               parts=f.relative_to(p).parts
               if len(parts)==1:return f.suffix in ('.json','.txt','.log')
               if parts[0]=='source':return True
+              if parts[0]=='v54-native-setup':return True
               if parts[0]!='recursive':return False
               if len(parts)==2:return f.suffix in ('.json','.log')
-              if parts[1]=='state' or parts[1].endswith(('-evidence','-search')):return True
+              if parts[1] in ('state','restart-native') or parts[1].endswith(('-evidence','-search')):return True
               return parts[1] in ('control','target') and len(parts)==3 and (f.suffix in ('.json','.log') or f.name=='pinned-source.tar.gz')
           files={str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest()
                  for f in p.rglob('*') if f.is_file() and archived(f)}
@@ -167,10 +176,12 @@ jobs:
             qualification/*.txt
             qualification/*.log
             qualification/source/
+            qualification/v54-native-setup/
             qualification/recursive/RESULT.json
             qualification/recursive/state/
             qualification/recursive/*-evidence/
             qualification/recursive/*-search/
+            qualification/recursive/restart-native/
             qualification/recursive/*.json
             qualification/recursive/*.log
             qualification/recursive/control/*.json
