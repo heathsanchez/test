@@ -1,0 +1,26 @@
+name: Source-pinned generated-overlay gate
+on:
+  push:
+    branches: [research/udm-build-verifier-seam-20261016]
+    paths:
+      - 'research/unified_consequence_runtime/generated_overlay_gate.py'
+      - 'research/unified_consequence_runtime/test_generated_overlay_gate.py'
+      - '.github/workflows/udm-generated-overlay-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  overlay-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate source-pinned overlay gate
+        run: python -m unittest research.unified_consequence_runtime.test_generated_overlay_gate -v
+      - name: Validate Python source
+        run: python -m py_compile research/unified_consequence_runtime/generated_overlay_gate.py research/unified_consequence_runtime/test_generated_overlay_gate.py
