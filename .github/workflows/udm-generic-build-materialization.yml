@@ -34,8 +34,23 @@ jobs:
           version = "0.0.1"
           EOF
           echo 'VALUE = 42' > /tmp/udm-build-fixture/src/fixture_generated/__init__.py
+          cat > /tmp/udm-build-fixture/setup.py <<'EOF'
+          from setuptools import setup
+          from setuptools.command.build_py import build_py
+          from pathlib import Path
+
+          class BuildGenerated(build_py):
+              def run(self):
+                  super().run()
+                  target = Path(self.build_lib) / "fixture_generated" / "_version.py"
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_text('GENERATED_VERSION = "0.0.1"\\n')
+
+          setup(cmdclass={"build_py": BuildGenerated})
+          EOF
+          test ! -e /tmp/udm-build-fixture/src/fixture_generated/_version.py
           python -m research.unified_consequence_runtime.generic_build_materialization --source /tmp/udm-build-fixture --out /tmp/udm-build-output > /tmp/udm-build-result.json
-          /tmp/udm-build-output/venv/bin/python -c 'import fixture_generated; assert fixture_generated.VALUE == 42'
+          /tmp/udm-build-output/venv/bin/python -c 'import fixture_generated; assert fixture_generated.VALUE == 42; from fixture_generated._version import GENERATED_VERSION; assert GENERATED_VERSION == "0.0.1"'
           python - <<'PY'
           import json
           r=json.load(open('/tmp/udm-build-output/build-receipt.json'))
