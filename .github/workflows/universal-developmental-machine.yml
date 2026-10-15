@@ -38,6 +38,7 @@ jobs:
         with:
           repository: ServiceNow/webarena-verified
           ref: 6473f72db5dcefc97b5725b59e734504edc28a21
+          fetch-depth: 0
           path: components/evaluator
           persist-credentials: false
       - uses: actions/setup-python@v5
