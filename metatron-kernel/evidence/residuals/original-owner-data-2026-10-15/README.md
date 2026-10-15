@@ -5,3 +5,5 @@ The exact196 origin replay is117 ACCEPT/69 REJECT/10 UNKNOWN/0incorrect/0errors.
 The constructor validation repair reuses the ONE derived parameter frame instead of reintroducing the same numeric FreeId. The data refuter independently types both original operands in actual Gamma, proves both actual TYPEs form nonzero sorts and agree, and requires the TYPE and both distinct terms to expose separately certified original local binders in that Gamma. Proof, missing-scope, quarantine and unrelated same-number owners decline. No equality is licensed by a numeric local ID.
 
 140 library tests pass under normal and CI relevance/expected-lambda flags. Source hashes and all input hashes/individual verdicts are recorded. Production runtime remains unchanged.
+
+Initial Linux run38669112929 stopped before replay because the archived crate omitted8 files used by include_bytes! (10 include sites). The packaging-only follow-up includes and hashes all8 and freshly tests the exact archive:140passed/0failed/10ignored under CI flags. Runtime source and local196 verdicts are unchanged; the initial run is NOT a Linux semantic qualification.
