@@ -1,0 +1,34 @@
+name: Native generated-wheel integration control
+on:
+  push:
+    branches: [research/udm-wheel-native-verifier-20261016]
+    paths:
+      - 'research/unified_consequence_runtime/qualify_wheel_native_control.py'
+      - 'research/unified_consequence_runtime/generic_build_materialization.py'
+      - '.github/workflows/udm-wheel-native-control.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-wheel-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify generic materialization preflights
+        run: python -m unittest research.unified_consequence_runtime.test_generic_build_materialization -v
+      - name: Qualify native generated-module and physical deletion control
+        run: |
+          python -m research.unified_consequence_runtime.qualify_wheel_native_control | tee wheel-native-control.json
+      - name: Archive result, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-native-control
+          path: wheel-native-control.json
+          if-no-files-found: warn
