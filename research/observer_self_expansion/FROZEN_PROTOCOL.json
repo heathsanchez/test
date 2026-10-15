@@ -1,0 +1,34 @@
+{
+  "experiment": "NATIVE_OBSERVER_SELF_EXPANSION_V1",
+  "created_utc": "2026-10-16",
+  "frozen_parent_commit": "abcea78918743c386d15a15152474adce7518cc0",
+  "objective": "Can verified native observation O1 become a new executable grammar atom, making a second protected observation O2 attainable under the same bounded description length?",
+  "development": "CPython collections.deque with all permutations length 4 and 5",
+  "protected": "NumPy 2.1.3 ndarray with 48 deterministic frozen-seed length-6 permutations plus 6 duplicate-value variants; candidate O1/O2 frozen before target replay",
+  "grammar": [
+    "TAKE",
+    "PUT",
+    "SHIFT_LEFT",
+    "SHIFT_RIGHT"
+  ],
+  "extension": "CALL_O1 after independently qualified G1; no winner supplied",
+  "candidate_horizon": 3,
+  "old_frontier_size": 84,
+  "extended_frontier_size": 155,
+  "G1": "Observe next native left-removal item, restoring original sequence exactly.",
+  "G2": "Observe second native left-removal item, restoring original sequence exactly.",
+  "native_adapters": "Human-authored generic adapters for deque and ndarray. Same operation programs; no target-specific winning code.",
+  "required_controls": [
+    "complete old-frontier census on G2",
+    "candidate selected on development only",
+    "protected two-implementation replay",
+    "physical O1 deletion",
+    "independently checked restoration and cold process restart",
+    "exact artifact hash and wrong-source rejection",
+    "actual fully informed executable-ledger comparator",
+    "actual native unrestricted-index comparator"
+  ],
+  "result_boundary": "WARRANTED_BOUNDED if all native gates pass. Comparative advantage, autonomous primitive-language invention, novel scientific discoveries and unrestricted L7 remain UNKNOWN or negative if matched baselines tie.",
+  "permissions": "Isolated research only; no production/deployment/external writes.",
+  "seed": "observer-self-expansion-20261016-fixed"
+}
