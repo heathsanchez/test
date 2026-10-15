@@ -1,0 +1,444 @@
+   Compiling metatron-kernel v0.1.0 (/Users/heath/Documents/ChatGPT/Nucleus Lean Kernel/experiments/normalized-proof-sort/source)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2173:20
+     |
+2173 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2174 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2173 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2174 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: variable does not need to be mutable
+   --> src/convert.rs:191:9
+    |
+191 |     let mut unit_like_frees = HashMap::new();
+    |         ----^^^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src/convert.rs:192:9
+    |
+192 |     let mut proposition_frees:HashSet<FreeId> = HashSet::new();
+    |         ----^^^^^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/convert.rs:193:9
+    |
+193 |     let mut proof_frees = HashMap::new();
+    |         ----^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `proposition_frees`
+   --> src/convert.rs:192:9
+    |
+192 |     let mut proposition_frees:HashSet<FreeId> = HashSet::new();
+    |         ^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_proposition_frees`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `checker`
+   --> src/convert.rs:672:5
+    |
+672 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+   --> src/convert.rs:673:5
+    |
+673 |     left: &TypeValue,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> src/convert.rs:674:5
+    |
+674 |     right: &TypeValue,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `context`
+   --> src/convert.rs:675:5
+    |
+675 |     context: &[TypeValue],
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:676:5
+    |
+676 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:721:5
+    |
+721 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+   --> src/convert.rs:722:5
+    |
+722 |     left: &Closure,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> src/convert.rs:723:5
+    |
+723 |     right: &Closure,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `proof_functions`
+   --> src/convert.rs:724:5
+    |
+724 |     proof_functions: &HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    |     ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_proof_functions`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:725:5
+    |
+725 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:732:5
+    |
+732 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+   --> src/convert.rs:733:5
+    |
+733 |     left: &Closure,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> src/convert.rs:734:5
+    |
+734 |     right: &Closure,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `proof_frees`
+   --> src/convert.rs:735:5
+    |
+735 |     proof_frees: &HashMap<FreeId, FreeId>,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_proof_frees`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:736:5
+    |
+736 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:743:5
+    |
+743 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+   --> src/convert.rs:744:5
+    |
+744 |     left: &Closure,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> src/convert.rs:745:5
+    |
+745 |     right: &Closure,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `unit_like_frees`
+   --> src/convert.rs:746:5
+    |
+746 |     unit_like_frees: &HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    |     ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_unit_like_frees`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:747:5
+    |
+747 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:803:5
+    |
+803 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `neutral`
+   --> src/convert.rs:804:5
+    |
+804 |     neutral: &Neutral,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_neutral`
+
+warning: unused variable: `lambda_domain`
+   --> src/convert.rs:805:5
+    |
+805 |     lambda_domain: &Closure,
+    |     ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_lambda_domain`
+
+warning: unused variable: `lambda_body`
+   --> src/convert.rs:806:5
+    |
+806 |     lambda_body: &Closure,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_lambda_body`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:807:5
+    |
+807 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `depth`
+   --> src/convert.rs:808:5
+    |
+808 |     depth: usize,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_depth`
+
+warning: unused variable: `work`
+   --> src/convert.rs:809:5
+    |
+809 |     work: &mut ConversionWorkList,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_work`
+
+warning: unused variable: `context`
+   --> src/convert.rs:810:5
+    |
+810 |     context: &[TypeValue],
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:891:5
+    |
+891 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `target`
+   --> src/convert.rs:892:5
+    |
+892 |     target: &Neutral,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_target`
+
+warning: unused variable: `constructed`
+   --> src/convert.rs:893:5
+    |
+893 |     constructed: &Neutral,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_constructed`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:894:5
+    |
+894 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `depth`
+   --> src/convert.rs:895:5
+    |
+895 |     depth: usize,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_depth`
+
+warning: unused variable: `work`
+   --> src/convert.rs:896:5
+    |
+896 |     work: &mut ConversionWorkList,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_work`
+
+warning: unused variable: `context`
+   --> src/convert.rs:897:5
+    |
+897 |     context: &[TypeValue],
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:904:5
+    |
+904 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `target`
+   --> src/convert.rs:905:5
+    |
+905 |     target: &Neutral,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_target`
+
+warning: unused variable: `constructed`
+   --> src/convert.rs:906:5
+    |
+906 |     constructed: &Neutral,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_constructed`
+
+warning: unused variable: `context`
+   --> src/convert.rs:907:5
+    |
+907 |     context: &[TypeValue],
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:908:5
+    |
+908 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:915:5
+    |
+915 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+   --> src/convert.rs:916:5
+    |
+916 |     left: &Neutral,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> src/convert.rs:917:5
+    |
+917 |     right: &Neutral,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `context`
+   --> src/convert.rs:918:5
+    |
+918 |     context: &[TypeValue],
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:919:5
+    |
+919 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+    --> src/convert.rs:2244:5
+     |
+2244 |     checker: &TypeChecker<'_>,
+     |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+    --> src/convert.rs:2245:5
+     |
+2245 |     left: &Neutral,
+     |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+    --> src/convert.rs:2246:5
+     |
+2246 |     right: &Neutral,
+     |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `context`
+    --> src/convert.rs:2247:5
+     |
+2247 |     context: &[TypeValue],
+     |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `budget`
+    --> src/convert.rs:2248:5
+     |
+2248 |     budget: usize,
+     |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `depth`
+    --> src/convert.rs:2249:5
+     |
+2249 |     depth: usize,
+     |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_depth`
+
+warning: unused variable: `started`
+    --> src/convert.rs:2334:9
+     |
+2334 |     let started=*budget;
+     |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_started`
+
+warning: unused variable: `initial`
+    --> src/typecheck.rs:2625:13
+     |
+2625 |         let initial=*remaining;
+     |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_initial`
+
+warning: unused variable: `after_dependencies`
+    --> src/typecheck.rs:2627:13
+     |
+2627 |         let after_dependencies=*remaining;
+     |             ^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_after_dependencies`
+
+warning: unused variable: `expression`
+    --> src/typecheck.rs:3277:9
+     |
+3277 |         expression: ExprId,
+     |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_expression`
+
+warning: unused variable: `binder_owner`
+    --> src/typecheck.rs:4490:56
+     |
+4490 |                 TypeValue::Pi { domain, body, binder , binder_owner,} => Some(
+     |                                                        ^^^^^^^^^^^^ help: try ignoring the field: `binder_owner: _`
+
+warning: unused variable: `binder_owner`
+    --> src/typecheck.rs:7454:57
+     |
+7454 |         let Some(TypeValue::Pi { domain, body, binder , binder_owner,}) = checker.instantiate_fixed_pi_body(
+     |                                                         ^^^^^^^^^^^^ help: try ignoring the field: `binder_owner: _`
+
+warning: function `opaque_free` is never used
+   --> src/convert.rs:682:4
+    |
+682 | fn opaque_free(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> Option<FreeId> {
+    |    ^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `bare_free_type` is never used
+   --> src/convert.rs:701:4
+    |
+701 | fn bare_free_type(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> Option<FreeId> {
+    |    ^^^^^^^^^^^^^^
+
+warning: field `nested_direct` is never read
+   --> src/typecheck.rs:136:5
+    |
+129 | struct LambdaTrialState {
+    |        ---------------- field in this struct
+...
+136 |     nested_direct: usize,
+    |     ^^^^^^^^^^^^^
+    |
+    = note: `LambdaTrialState` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: methods `diagnostic_captured_recursor_major_chain`, `checked_captured_prop_type_in_context`, `reopen_fixed_pi_body`, and `type_value_is_prop_sort` are never used
+    --> src/typecheck.rs:1816:19
+     |
+ 189 | impl<'a> TypeChecker<'a> {
+     | ------------------------ methods in this implementation
+...
+1816 |     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+1950 |     pub(crate) fn checked_captured_prop_type_in_context(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+4475 |     pub(crate) fn reopen_fixed_pi_body(
+     |                   ^^^^^^^^^^^^^^^^^^^^
+...
+6914 |     pub(crate) fn type_value_is_prop_sort(&self, ty: &TypeValue, budget: usize) -> bool {
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `metatron-kernel` (lib test) generated 66 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 62 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.98s
+     Running unittests src/lib.rs (experiments/normalized-proof-sort/source/target/debug/deps/metatron_kernel-1c6bf25f7e12882a)
+
+running 1 test
+test typecheck::normalized_proof_sort_regression::noncanonical_zero_substitution_certifies_actual_proofs_not_data ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 143 filtered out; finished in 0.00s
+

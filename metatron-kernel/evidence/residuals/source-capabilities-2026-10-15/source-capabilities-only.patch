@@ -1,0 +1,244 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -13,6 +13,10 @@
+     Closure, EnvBinding, EnvFrame, FreeId, LevelSubstitution, Neutral, NeutralHead, Value,
+ };
+ 
++thread_local! {static SOURCE_STRUCTURE_RELATION_ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};}
++struct SourceStructureRelationOwner;
++impl SourceStructureRelationOwner {fn enter()->Option<Self>{SOURCE_STRUCTURE_RELATION_ACTIVE.with(|flag|if flag.get(){None}else{flag.set(true);Some(Self)})}}
++impl Drop for SourceStructureRelationOwner {fn drop(&mut self){SOURCE_STRUCTURE_RELATION_ACTIVE.with(|flag|flag.set(false));}}
+ thread_local! {static GENERAL_DOMAIN_FORMATION_ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};}
+ struct GeneralDomainFormationOwner;
+ impl GeneralDomainFormationOwner{fn enter()->Self{GENERAL_DOMAIN_FORMATION_ACTIVE.with(|f|f.set(true));Self}}
+@@ -21,6 +25,11 @@
+ struct StructuralPiFormationOwner;
+ impl StructuralPiFormationOwner{fn enter()->Option<Self>{STRUCTURAL_PI_FORMATION_ACTIVE.with(|f|{if f.get(){None}else{f.set(true);Some(Self)}})}}
+ impl Drop for StructuralPiFormationOwner{fn drop(&mut self){STRUCTURAL_PI_FORMATION_ACTIVE.with(|f|f.set(false));}}
++
++thread_local! {static STRUCTURAL_APP_FORMATION_ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};}
++struct StructuralAppFormationOwner;
++impl StructuralAppFormationOwner{fn enter()->Option<Self>{STRUCTURAL_APP_FORMATION_ACTIVE.with(|f|{if f.get(){None}else{f.set(true);Some(Self)}})}}
++impl Drop for StructuralAppFormationOwner{fn drop(&mut self){STRUCTURAL_APP_FORMATION_ACTIVE.with(|f|f.set(false));}}
+ 
+ #[derive(Clone, Debug, Eq, Hash, PartialEq)]
+ pub enum TypeValue {
+@@ -636,6 +645,14 @@
+     // allowance; a recursive structural trial conservatively declines.
+     fn checked_active_source_sort(&self,source:&Closure,context:&[TypeValue],remaining:&mut usize)->Option<LevelTerm> {
+         if matches!(self.expressions.get(source.expr),Some(Expr::BVar(_))){if let Some(sort)=self.checked_bound_literal_sort(source,context,remaining){return Some(sort);}}
++        // This derives the TYPE of the original application under actual Gamma.
++        // It keeps the outer formation guard and one shared work owner active;
++        // a recursive application-formation trial cannot supply a certificate.
++        if GENERAL_DOMAIN_FORMATION_ACTIVE.with(|f|f.get())&&matches!(self.expressions.get(source.expr),Some(Expr::App{..})) {
++            let _application=StructuralAppFormationOwner::enter()?;
++            if !self.source_used_capture_authority_available(source,remaining){return None;}
++            return self.strict_certificate_probe().shared_strict_source_sort(source,context,remaining);
++        }
+         if !GENERAL_DOMAIN_FORMATION_ACTIVE.with(|f|f.get())||!matches!(self.expressions.get(source.expr),Some(Expr::Pi{..})){return None;}
+         let _structural=StructuralPiFormationOwner::enter()?;
+         if !self.source_used_capture_authority_available(source,remaining){return None;}
+@@ -6613,6 +6630,75 @@
+         self.environment.recursor_reduction(name).is_some()
+     }
+ 
++    /// Eta and rigid non-eta cases retain BOTH original typing sources.
++    /// Evaluated heads select this trial; they supply no typing authority.
++    pub(crate) fn checked_source_structure_relation(&self,left:&Closure,right:&Closure,left_value:&Value,right_value:&Value,context:&[TypeValue],remaining:&mut usize)->Option<Judgment<()>> {
++        let (Value::Neutral(a),Value::Neutral(b))=(left_value,right_value) else{return None;};
++        let nominal=|n:&Neutral|matches!(n.head,NeutralHead::Free(_,Some(_)))&&n.spine.is_empty();
++        let constructor=|n:&Neutral|match n.head {NeutralHead::Const{name,..}=>self.eta_projection_spec_for_constructor(name).is_some()||self.non_eta_structure_for_constructor(name).is_some(),_=>false};
++        if !((nominal(a)&&constructor(b))||(nominal(b)&&constructor(a))||(nominal(a)&&nominal(b))){return None;}
++        if nominal(a)&&nominal(b) {
++            if a.head.same_owned_free(&b.head){return None;}
++            // Eligibility only: a literal registered structure in an original
++            // retained domain avoids a strict typing trial for ordinary locals.
++            let possible=|n:&Neutral|->bool{
++                let NeutralHead::Free(_,Some(owner))=&n.head else{return false;};
++                let ledger=self.checked_binding_lineage.borrow();let Some(Some(w))=ledger.get(&owner.id()) else{return false;};
++                let TypeValue::Term(domain)=&w.domain else{return false;};let mut id=domain.expr;
++                for _ in 0..16 {match self.expressions.get(id){Some(Expr::App{fun,..})=>id=*fun,Some(Expr::Const{name,..})=>return self.environment.shared_projection_specs().contains_key(name),_=>return false,}}
++                false
++            };
++            if !possible(a)||!possible(b){return None;}
++        }
++        let _guard=SourceStructureRelationOwner::enter()?;
++        if !self.source_used_capture_authority_available(left,remaining)||!self.source_used_capture_authority_available(right,remaining){return None;}
++        let probe=self.strict_certificate_probe();
++        let left_type=probe.infer_exact_closure_in_context(left,context,remaining,0)?;
++        let right_type=probe.infer_exact_closure_in_context(right,context,remaining,0)?;
++        let (TypeValue::Term(left_type_source),TypeValue::Term(right_type_source))=(&left_type,&right_type) else{return None;};
++        // Proof irrelevance is not a rigid data inequality. Form both actual
++        // types, with each closure's own captured universe substitution.
++        let left_sort=probe.shared_strict_source_sort(left_type_source,context,remaining)?;
++        let right_sort=probe.shared_strict_source_sort(right_type_source,context,remaining)?;
++        if left_sort==LevelTerm::Zero||right_sort==LevelTerm::Zero{return None;}
++        if left_type!=right_type {
++            let allowance=(*remaining).min(512);if allowance==0{return None;}*remaining-=allowance;
++            if !crate::convert::convert_with_policy_in_context(&probe,&left_type,&right_type,allowance,crate::convert::DeltaPolicy::GuardedSemanticFallback,context.len(),context).is_proven(){return None;}
++        }
++        let allowance=(*remaining).min(256);if allowance==0{return None;}*remaining-=allowance;
++        let actual_type=self.machine().expose(left_type_source.clone(),Transparency::Reducible,allowance);
++        let Value::Neutral(Neutral{head:NeutralHead::Const{name:type_name,..},..})=actual_type.proven_value()? else{return None;};
++        // A nominal is rigid only when its ORIGINAL introduction is certified
++        // in this actual Gamma; unrelated same-number owners are not unequal.
++        let certified_nominal=|n:&Neutral|->Option<FreeId>{
++            if !n.spine.is_empty(){return None;}
++            let NeutralHead::Free(free,Some(owner))=&n.head else{return None;};
++            if !matches!(owner.lookup_binding_ref(0),Some(EnvBinding::Free(actual)) if actual==free){return None;}
++            let ledger=self.checked_binding_lineage.borrow();let witness=ledger.get(&owner.id())?.as_ref()?;
++            if !context.starts_with(&witness.protected_prefix)||fresh_local(witness.protected_prefix.len().checked_sub(1)?)!=Some(*free){return None;}
++            Some(*free)
++        };
++        if nominal(a)&&nominal(b) {
++            let (x,y)=(certified_nominal(a)?,certified_nominal(b)?);
++            if x!=y&&self.is_non_eta_structure_type(*type_name){return Some(Judgment::refuted("non-eta-structure-mismatch"));}
++            return None;
++        }
++        let (target,constructed)=if nominal(a){(a,b)}else{(b,a)};
++        certified_nominal(target)?;
++        let NeutralHead::Const{name:ctor,..}=&constructed.head else{return None;};
++        if let Some((actual_type,arity))=self.non_eta_structure_for_constructor(*ctor) {
++            if actual_type==*type_name&&constructed.spine.len()==arity{return Some(Judgment::refuted("non-eta-structure-mismatch"));}
++            return None;
++        }
++        let (actual_type,params,fields)=self.eta_projection_spec_for_constructor(*ctor)?;
++        if actual_type!=*type_name||constructed.spine.len()!=params.checked_add(fields)?{return None;}
++        for(index,field)in constructed.spine[params..].iter().enumerate(){
++            let allowance=(*remaining).min(256);if allowance==0{return None;}*remaining-=allowance;
++            if !self.certified_eta_projection_field(field,*type_name,index,target,params,allowance){return None;}
++        }
++        Some(Judgment::proven((),"source-certified-structure-eta"))
++    }
++
+     pub(crate) fn eta_projection_spec_for_constructor(
+         &self,
+         constructor: NameId,
+@@ -6659,9 +6745,12 @@
+         num_params: usize,
+         budget: usize,
+     ) -> bool {
++        let mut remaining=budget;
++        let mut seen=std::collections::HashSet::new();
+         let mut closure = field.clone();
+         let mut arguments = Vec::new();
+         let (projection, levels) = loop {
++            if !take_step(&mut remaining)||!seen.insert((closure.expr,closure.env.id(),closure.levels.identity())){return false;}
+             let Some(expression) = self.expressions.get(closure.expr) else {
+                 return false;
+             };
+@@ -6700,6 +6789,7 @@
+             return false;
+         }
+         for _ in 0..=num_params {
++            if !take_step(&mut remaining){return false;}
+             let Some(Expr::Lam { body: next, .. }) = self.expressions.get(body) else {
+                 return false;
+             };
+@@ -6725,7 +6815,7 @@
+         };
+         let exposed = self
+             .machine()
+-            .expose(target_argument, Transparency::Reducible, budget);
++            .expose(target_argument, Transparency::Reducible, remaining);
+         matches!(exposed.proven_value(), Some(Value::Neutral(actual)) if actual == target)
+     }
+ 
+@@ -9102,3 +9192,75 @@
+  }
+ 
+ }
++
++#[cfg(test)]
++mod active_original_application_formation_tests {
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
++  let mut e=IdTable::default();let mut l=IdTable::default();for(id,level)in[(0,Level::Zero),(1,Level::Succ(LevelId(0))),(2,Level::Param(NameId(10)))]{l.insert(LevelId(id),level).unwrap();}
++  for(id,node)in[(0,Expr::Sort(LevelId(0))),(1,Expr::Sort(LevelId(1))),(2,Expr::BVar(0)),(3,Expr::Const{name:NameId(1),levels:vec![]}),(4,Expr::App{fun:ExprId(3),arg:ExprId(2)}),(5,Expr::Pi{domain:ExprId(1),body:ExprId(1)}),(6,Expr::Const{name:NameId(2),levels:vec![]}),(7,Expr::Const{name:NameId(3),levels:vec![]}),(8,Expr::Pi{domain:ExprId(6),body:ExprId(6)}),(9,Expr::Const{name:NameId(6),levels:vec![]}),(10,Expr::App{fun:ExprId(9),arg:ExprId(7)}),(11,Expr::Const{name:NameId(4),levels:vec![]}),(12,Expr::Const{name:NameId(5),levels:vec![]}),(13,Expr::Pi{domain:ExprId(11),body:ExprId(11)}),(14,Expr::Const{name:NameId(7),levels:vec![]}),(15,Expr::App{fun:ExprId(14),arg:ExprId(12)}),(16,Expr::BVar(99)),(17,Expr::App{fun:ExprId(3),arg:ExprId(16)}),(18,Expr::App{fun:ExprId(3),arg:ExprId(7)}),(19,Expr::App{fun:ExprId(19),arg:ExprId(2)}),(20,Expr::Sort(LevelId(2))),(21,Expr::Pi{domain:ExprId(20),body:ExprId(20)}),(22,Expr::Const{name:NameId(8),levels:vec![LevelId(2)]}),(23,Expr::App{fun:ExprId(22),arg:ExprId(2)}),(25,Expr::App{fun:ExprId(3),arg:ExprId(12)}),(26,Expr::App{fun:ExprId(3),arg:ExprId(11)})]{e.insert(ExprId(id),node).unwrap();}
++  let mut env=Environment::empty();for(name,ty)in[(1,5),(2,0),(3,6),(4,1),(5,11),(6,8),(7,13)]{env=env.extend(NameId(name),crate::environment::ConstantDecl::axiom(vec![],ExprId(ty))).unwrap();}env=env.extend(NameId(8),crate::environment::ConstantDecl::axiom(vec![NameId(10)],ExprId(21))).unwrap();(e,l,env)
++ }
++ #[test]
++ fn cold_actual_application_forms_its_type_under_the_real_owned_gamma(){
++  let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let owner=EnvFrame::empty().extend_free(FreeId(0));let ty=TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));let gamma=vec![ty.clone()];c.retain_checked_binding(&owner,ty,&gamma);let source=c.closure(ExprId(4),owner.clone());let _outer=GeneralDomainFormationOwner::enter();let mut work=256;
++  assert_eq!(c.checked_active_source_sort(&source,&gamma,&mut work),Some(succ(LevelTerm::Zero)),"F(A):Type must be formed from the original F declaration and actual typed A");assert!(work<256&&work>0);assert!(GENERAL_DOMAIN_FORMATION_ACTIVE.with(|f|f.get()));
++  for id in[10,15,17,18,19,25]{assert!(c.checked_active_source_sort(&c.closure(ExprId(id),owner.clone()),&gamma,&mut 256).is_none(),"proof/data/malformed application {id} is not a formed TYPE");}
++  assert!(c.checked_active_source_sort(&source,&[],&mut 256).is_none());assert!(c.checked_active_source_sort(&source,&gamma,&mut 0).is_none());assert!(GENERAL_DOMAIN_FORMATION_ACTIVE.with(|f|f.get()));
++ }
++ #[test]
++ fn application_formation_uses_own_universes_and_preserves_original_and_wrapper_quarantine(){
++  let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let theta=LevelSubstitution::new(vec![(NameId(10),succ(LevelTerm::Zero)),(NameId(11),LevelTerm::Param("unused".into()))]);let ty=TypeValue::Term(Closure::with_levels(ExprId(20),EnvFrame::empty(),theta.clone()));let gamma=vec![ty.clone()];let owner=EnvFrame::empty().extend_free(FreeId(0));c.retain_checked_binding(&owner,ty.clone(),&gamma);let source=Closure::with_levels(ExprId(23),owner.clone(),theta.clone());let _outer=GeneralDomainFormationOwner::enter();assert_eq!(c.checked_active_source_sort(&source,&gamma,&mut 256),Some(succ(LevelTerm::Zero)));
++  let wrong=Closure::with_levels(ExprId(23),owner.clone(),LevelSubstitution::new(vec![(NameId(10),LevelTerm::Zero)]));assert!(c.checked_active_source_sort(&wrong,&gamma,&mut 256).is_none());let missing=Closure::with_levels(ExprId(23),owner.clone(),LevelSubstitution::default());assert!(c.checked_active_source_sort(&missing,&gamma,&mut 256).is_none());
++  let wrapper=EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(0),Some(owner.clone())),spine:vec![]});c.retain_checked_binding(&wrapper,ty,&gamma);let wrapped=Closure::with_levels(ExprId(23),wrapper.clone(),theta);assert!(c.checked_active_source_sort(&wrapped,&gamma,&mut 256).is_some());c.checked_binding_lineage.borrow_mut().insert(wrapper.id(),None);assert!(c.checked_active_source_sort(&wrapped,&gamma,&mut 256).is_none());c.checked_binding_lineage.borrow_mut().insert(owner.id(),None);assert!(c.checked_active_source_sort(&source,&gamma,&mut 256).is_none());
++ }
++}
++
++#[cfg(test)]
++mod source_structure_relation_tests {
++ use super::*;
++ fn fixture(prop:bool,eta:bool)->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(id,node)in[(0,Expr::Sort(LevelId(if prop{0}else{1}))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::Const{name:NameId(2),levels:vec![]}),(3,Expr::BVar(0)),(4,Expr::App{fun:ExprId(4),arg:ExprId(3)})]{e.insert(ExprId(id),node).unwrap();}
++  let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![],ExprId(1))).unwrap().install_projection_spec(NameId(1),crate::machine::ProjectionSpec{constructor:NameId(2),num_params:0,field_types:vec![],eta_expandable:eta}).unwrap();(e,l,env)
++ }
++ fn value(owner:&EnvFrame,free:FreeId)->Value{Value::Neutral(Neutral{head:NeutralHead::Free(free,Some(owner.clone())),spine:vec![]})}
++ #[test]
++ fn non_eta_requires_real_nominal_scope_and_refuses_same_number_siblings_and_proofs(){
++  let(e,l,env)=fixture(false,false);let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let ty=TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));
++  let a=EnvFrame::empty().extend_free(FreeId(0));let ga=vec![ty.clone()];c.retain_checked_binding(&a,ty.clone(),&ga);
++  let b=a.extend_free(FreeId(1));let gb=vec![ty.clone(),ty.clone()];c.retain_checked_binding(&b,ty.clone(),&gb);
++  let left=c.closure(ExprId(3),a.clone());let right=c.closure(ExprId(3),b.clone());
++  assert!(c.checked_source_structure_relation(&left,&right,&value(&a,FreeId(0)),&value(&b,FreeId(1)),&gb,&mut 4096).unwrap().is_refuted());
++  let sibling=EnvFrame::empty().extend_free(FreeId(0));c.retain_checked_binding(&sibling,ty.clone(),&ga);assert!(c.checked_source_structure_relation(&left,&c.closure(ExprId(3),sibling.clone()),&value(&a,FreeId(0)),&value(&sibling,FreeId(0)),&ga,&mut 4096).is_none());
++  assert!(c.checked_source_structure_relation(&left,&right,&value(&a,FreeId(0)),&value(&b,FreeId(1)),&[],&mut 4096).is_none());assert!(c.checked_source_structure_relation(&left,&right,&value(&a,FreeId(0)),&value(&b,FreeId(1)),&gb,&mut 0).is_none());
++  let(pe,pl,penv)=fixture(true,false);let mut pc=TypeChecker::new(&pe,&pl,&penv);pc.strict_origin_probe=true;let p=TypeValue::Term(pc.closure(ExprId(1),EnvFrame::empty()));let pa=EnvFrame::empty().extend_free(FreeId(0));let pb=pa.extend_free(FreeId(1));let pg=vec![p.clone(),p.clone()];pc.retain_checked_binding(&pa,p.clone(),&pg[..1]);pc.retain_checked_binding(&pb,p,&pg);assert!(pc.checked_source_structure_relation(&pc.closure(ExprId(3),pa.clone()),&pc.closure(ExprId(3),pb.clone()),&value(&pa,FreeId(0)),&value(&pb,FreeId(1)),&pg,&mut 4096).is_none());
++ }
++ #[test]
++ fn source_structure_domains_keep_own_universes_and_missing_or_prop_instantiation_declines(){
++  let(mut e,mut l,_)=fixture(false,false);l.insert(LevelId(2),Level::Param(NameId(10))).unwrap();e.insert(ExprId(5),Expr::Sort(LevelId(2))).unwrap();e.insert(ExprId(6),Expr::Const{name:NameId(1),levels:vec![LevelId(2)]}).unwrap();
++  let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![NameId(10)],ExprId(5))).unwrap().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![NameId(10)],ExprId(6))).unwrap().install_projection_spec(NameId(1),crate::machine::ProjectionSpec{constructor:NameId(2),num_params:0,field_types:vec![],eta_expandable:false}).unwrap();
++  for level in [Some(succ(LevelTerm::Zero)),Some(LevelTerm::Zero),None]{
++   let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let theta=LevelSubstitution::new(level.clone().map(|x|vec![(NameId(10),x)]).unwrap_or_default());let ty=TypeValue::Term(Closure::with_levels(ExprId(6),EnvFrame::empty(),theta));let a=EnvFrame::empty().extend_free(FreeId(0));let b=a.extend_free(FreeId(1));let gamma=vec![ty.clone(),ty.clone()];c.retain_checked_binding(&a,ty.clone(),&gamma[..1]);c.retain_checked_binding(&b,ty,&gamma);let r=c.checked_source_structure_relation(&c.closure(ExprId(3),a.clone()),&c.closure(ExprId(3),b.clone()),&value(&a,FreeId(0)),&value(&b,FreeId(1)),&gamma,&mut 4096);
++   if level==Some(succ(LevelTerm::Zero)){assert!(r.unwrap().is_refuted());}else{assert!(r.is_none());}
++  }
++ }
++ #[test]
++ fn projection_field_requires_exact_registered_body_index_major_arity_and_finite_source(){
++  let(mut e,l,env)=fixture(false,true);
++  for(id,node)in[(5,Expr::Proj{type_name:NameId(1),index:0,structure:ExprId(3)}),(6,Expr::Lam{domain:ExprId(1),body:ExprId(5)}),(7,Expr::Pi{domain:ExprId(1),body:ExprId(1)}),(8,Expr::Const{name:NameId(3),levels:vec![]}),(9,Expr::App{fun:ExprId(8),arg:ExprId(3)}),(10,Expr::App{fun:ExprId(9),arg:ExprId(3)}),(11,Expr::Proj{type_name:NameId(1),index:1,structure:ExprId(3)}),(12,Expr::App{fun:ExprId(12),arg:ExprId(3)}),(13,Expr::Lam{domain:ExprId(1),body:ExprId(11)}),(14,Expr::Const{name:NameId(4),levels:vec![]}),(15,Expr::App{fun:ExprId(14),arg:ExprId(3)})]{e.insert(ExprId(id),node).unwrap();}
++  let env=env.extend(NameId(3),crate::environment::ConstantDecl::definition(vec![],ExprId(7),ExprId(6),true)).unwrap().extend(NameId(4),crate::environment::ConstantDecl::definition(vec![],ExprId(7),ExprId(13),true)).unwrap();let c=TypeChecker::new(&e,&l,&env);let owner=EnvFrame::empty().extend_free(FreeId(0));let target=Neutral{head:NeutralHead::Free(FreeId(0),Some(owner.clone())),spine:vec![]};
++  assert!(c.certified_eta_projection_field(&c.closure(ExprId(9),owner.clone()),NameId(1),0,&target,0,128));
++  for id in[8,10,12,15]{assert!(!c.certified_eta_projection_field(&c.closure(ExprId(id),owner.clone()),NameId(1),0,&target,0,128));}
++  assert!(!c.certified_eta_projection_field(&c.closure(ExprId(9),owner.clone()),NameId(1),1,&target,0,128));assert!(!c.certified_eta_projection_field(&c.closure(ExprId(9),owner.clone()),NameId(5),0,&target,0,128));assert!(!c.certified_eta_projection_field(&c.closure(ExprId(9),owner.clone()),NameId(1),0,&target,0,0));
++  let other=EnvFrame::empty().extend_free(FreeId(0));assert!(!c.certified_eta_projection_field(&c.closure(ExprId(9),other),NameId(1),0,&target,0,128));
++ }
++ #[test]
++ fn eta_keeps_original_and_wrapper_quarantine_and_declines_bad_arity_cycles_and_low_work(){
++  let(e,l,env)=fixture(false,true);let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let ty=TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));let owner=EnvFrame::empty().extend_free(FreeId(0));let gamma=vec![ty.clone()];c.retain_checked_binding(&owner,ty.clone(),&gamma);let target=c.closure(ExprId(3),owner.clone());let ctor=c.closure(ExprId(2),EnvFrame::empty());let cv=Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(2),levels:vec![]},spine:vec![]});let tv=value(&owner,FreeId(0));
++  assert!(c.checked_source_structure_relation(&target,&ctor,&tv,&cv,&gamma,&mut 4096).unwrap().is_proven());assert!(c.checked_source_structure_relation(&target,&ctor,&tv,&cv,&gamma,&mut 1).is_none());
++  let bad=Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(2),levels:vec![]},spine:vec![ctor.clone()]});assert!(c.checked_source_structure_relation(&target,&ctor,&tv,&bad,&gamma,&mut 4096).is_none());
++  assert!(c.checked_source_structure_relation(&target,&c.closure(ExprId(4),owner.clone()),&tv,&cv,&gamma,&mut 4096).is_none());
++  let wrapper=EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(0),Some(owner.clone())),spine:vec![]});c.retain_checked_binding(&wrapper,ty,&gamma);let wrapped=c.closure(ExprId(3),wrapper.clone());assert!(c.checked_source_structure_relation(&wrapped,&ctor,&tv,&cv,&gamma,&mut 4096).unwrap().is_proven());c.checked_binding_lineage.borrow_mut().insert(wrapper.id(),None);assert!(c.checked_source_structure_relation(&wrapped,&ctor,&tv,&cv,&gamma,&mut 4096).is_none());c.checked_binding_lineage.borrow_mut().insert(owner.id(),None);assert!(c.checked_source_structure_relation(&target,&ctor,&tv,&cv,&gamma,&mut 4096).is_none());
++ }
++}
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -539,6 +539,9 @@
+                     }
+                     failed_comparison!(Judgment::unknown("conversion-exposure"));
+                 };
++                if depth==context.len()&&let Some(relation)=checker.checked_source_structure_relation(&left,&right,cheap_left,cheap_right,context,&mut remaining){
++                    if relation.is_proven(){continue;}failed_comparison!(relation);
++                }
+                 if source_qualified_free_eta(checker,&left,&right,cheap_left,cheap_right,context,depth,&mut remaining){continue;}
+                 match compare_values(
+                     checker,
+@@ -563,6 +566,9 @@
+                         else {
+                             failed_comparison!(Judgment::unknown("full-conversion-exposure"));
+                         };
++                if depth==context.len()&&let Some(relation)=checker.checked_source_structure_relation(&left,&right,full_left,full_right,context,&mut remaining){
++                    if relation.is_proven(){continue;}failed_comparison!(relation);
++                }
+                         if source_qualified_free_eta(checker,&left,&right,full_left,full_right,context,depth,&mut remaining){continue;}
+                         match compare_values(
+                             checker,

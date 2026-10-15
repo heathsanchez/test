@@ -1,0 +1,142 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -658,7 +658,7 @@
+         let bound=self.checked_active_source_sort(left_domain,context,remaining).is_some()&&self.checked_active_source_sort(right_domain,context,remaining).is_some();
+         let _owner=if bound{None}else{if GENERAL_DOMAIN_FORMATION_ACTIVE.with(|f|f.get()){return None;}Some(GeneralDomainFormationOwner::enter())};
+         if !bound{let probe=self.strict_certificate_probe();probe.shared_strict_source_sort(left_domain,context,remaining)?;probe.shared_strict_source_sort(right_domain,context,remaining)?;}
+-        self.checked_formed_joint_opening(left_domain,left_body,right_body,context,free,remaining)
++        self.checked_formed_joint_opening_with_prefix(left_domain,left_body,right_body,context,free,proven.completed_body_context(),remaining)
+     }
+     pub(crate) fn checked_fixed_pi_joint_bodies(&self,proven:&crate::convert::ProvenDomainPair<'_>,left_domain:&Closure,right_domain:&Closure,left_body:&TypeValue,right_body:&TypeValue,left_binder:FreeId,right_binder:FreeId,left_owner:&EnvFrame,right_owner:&EnvFrame,context:&[TypeValue],free:FreeId,remaining:&mut usize)->Option<(TypeValue,TypeValue)> {
+         if !proven.is_for(left_domain,right_domain,context)||usize::try_from(free.0).ok()!=Some(context.len()){return None;}
+@@ -677,10 +677,9 @@
+         };
+         let probe=self.strict_certificate_probe();
+         if !formed{probe.shared_strict_source_sort(left_domain,context,remaining)?;probe.shared_strict_source_sort(right_domain,context,remaining)?;}
+-        let cost=context.len().checked_add(1)?;if *remaining<cost{return None;}*remaining-=cost;
+-        let domain=TypeValue::Term(left_domain.clone());let mut extended=context.to_vec();extended.push(domain.clone());
++        let domain=TypeValue::Term(left_domain.clone());
+         let target=left_owner.parent_frame()?.extend_free_paid(free,remaining)?;if !take_step(remaining){return None;}
+-        probe.retain_shared_checked_binding(&target,domain,Rc::new(extended));
++        probe.retain_shared_checked_binding(&target,domain,proven.completed_body_context().clone());
+         let left=self.reopen_fixed_pi_body_owned(left_body,left_binder,left_owner,&target,remaining);
+         let left=left?;
+         let right=self.reopen_fixed_pi_body_owned(right_body,right_binder,right_owner,&target,remaining);
+@@ -695,22 +694,29 @@
+         self.checked_formed_joint_opening(left_domain,left_body,right_body,context,free,remaining)
+     }
+     fn checked_formed_joint_opening(&self,left_domain:&Closure,left_body:&Closure,right_body:&Closure,context:&[TypeValue],free:FreeId,remaining:&mut usize)->Option<(Closure,Closure)> {
++        let cost=context.len().checked_add(1)?;
++        if *remaining<cost{return None;}*remaining-=cost;
++        let domain=TypeValue::Term(left_domain.clone());
++        let mut extended=context.to_vec();extended.push(domain);
++        self.checked_formed_joint_opening_with_prefix(left_domain,left_body,right_body,context,free,&Rc::new(extended),remaining)
++    }
++    // This private continuation consumes the exact immutable body Gamma built
++    // for these domains before their completed comparison. Formation and domain
++    // equality are still mandatory; only a second allocation/copy is avoided.
++    // The original opening path constructs its own prefix above.
++    fn checked_formed_joint_opening_with_prefix(&self,left_domain:&Closure,left_body:&Closure,right_body:&Closure,context:&[TypeValue],free:FreeId,extended:&Rc<Vec<TypeValue>>,remaining:&mut usize)->Option<(Closure,Closure)> {
+         if usize::try_from(free.0).ok()!=Some(context.len()){return None;}
+         if !take_step(remaining)||!self.has_source_opening_proof(left_body,free){return None;}
+         if !take_step(remaining)||!self.has_source_opening_proof(right_body,free){return None;}
+-        let cost=context.len().checked_add(1)?;
+-        if *remaining<cost{return None;}*remaining-=cost;
+         let domain=TypeValue::Term(left_domain.clone());
+-        let mut extended=context.to_vec();extended.push(domain.clone());
+-        let extended=Rc::new(extended);
+         let original=left_body.env.extend_free_paid(free,remaining)?;
+         if !take_step(remaining){return None;}
+         self.retain_shared_checked_binding(&original,domain.clone(),extended.clone());
+         let wrapper=right_body.env.extend_neutral_paid(Neutral{head:NeutralHead::Free(free,Some(original.clone())),spine:vec![]},remaining)?;
+         if !take_step(remaining){return None;}
+         self.retain_shared_checked_binding(&wrapper,domain.clone(),extended.clone());
+-        if !matches!(self.checked_binding_lineage.borrow().get(&original.id()),Some(Some(w)) if w.domain==domain && w.protected_prefix==extended){return None;}
+-        if !matches!(self.checked_binding_lineage.borrow().get(&wrapper.id()),Some(Some(w)) if w.domain==domain && w.protected_prefix==extended){return None;}
++        if !matches!(self.checked_binding_lineage.borrow().get(&original.id()),Some(Some(w)) if w.domain==domain && w.protected_prefix==*extended){return None;}
++        if !matches!(self.checked_binding_lineage.borrow().get(&wrapper.id()),Some(Some(w)) if w.domain==domain && w.protected_prefix==*extended){return None;}
+         Some((left_body.sibling(left_body.expr,original),right_body.sibling(right_body.expr,wrapper)))
+     }
+ 
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1,3 +1,4 @@
++use std::rc::Rc;
+ use std::collections::{HashMap, HashSet};
+ 
+ use crate::id::ExprId;
+@@ -8,17 +9,19 @@
+ use crate::typecheck::{RuleKAttempt, TypeChecker, TypeValue};
+ use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
+ 
+-pub(crate) struct ProvenDomainPair<'a> {left:&'a Closure,right:&'a Closure,context:&'a [TypeValue]}
+-impl ProvenDomainPair<'_>{pub(crate) fn is_for(&self,left:&Closure,right:&Closure,context:&[TypeValue])->bool{std::ptr::eq(self.left,left)&&std::ptr::eq(self.right,right)&&std::ptr::eq(self.context,context)}}
+-type ComparisonWork=(TypeValue,TypeValue,usize,Vec<TypeValue>);
+-struct DomainContinuation {left_domain:Closure,right_domain:Closure,left_body:Closure,right_body:Closure,depth:usize,context:Vec<TypeValue>,body_context:Vec<TypeValue>,free:FreeId,audit:usize,parent_audit:Option<usize>}
+-struct FixedDomainContinuation {left_domain:Closure,right_domain:Closure,left_body:TypeValue,right_body:TypeValue,left_binder:FreeId,right_binder:FreeId,left_owner:crate::value::EnvFrame,right_owner:crate::value::EnvFrame,context:Vec<TypeValue>,body_context:Vec<TypeValue>,free:FreeId,depth:usize,audit:usize,parent_audit:Option<usize>}
++pub(crate) struct ProvenDomainPair<'a> {left:&'a Closure,right:&'a Closure,context:&'a [TypeValue],body_context:&'a Rc<Vec<TypeValue>>}
++impl ProvenDomainPair<'_>{pub(crate) fn is_for(&self,left:&Closure,right:&Closure,context:&[TypeValue])->bool{std::ptr::eq(self.left,left)&&std::ptr::eq(self.right,right)&&std::ptr::eq(self.context,context)}
++ pub(crate) fn completed_body_context(&self)->&Rc<Vec<TypeValue>>{self.body_context}
++}
++type ComparisonWork=(TypeValue,TypeValue,usize,Rc<Vec<TypeValue>>);
++struct DomainContinuation {left_domain:Closure,right_domain:Closure,left_body:Closure,right_body:Closure,depth:usize,context:Rc<Vec<TypeValue>>,body_context:Rc<Vec<TypeValue>>,free:FreeId,audit:usize,parent_audit:Option<usize>}
++struct FixedDomainContinuation {left_domain:Closure,right_domain:Closure,left_body:TypeValue,right_body:TypeValue,left_binder:FreeId,right_binder:FreeId,left_owner:crate::value::EnvFrame,right_owner:crate::value::EnvFrame,context:Rc<Vec<TypeValue>>,body_context:Rc<Vec<TypeValue>>,free:FreeId,depth:usize,audit:usize,parent_audit:Option<usize>}
+ struct AppProofFallback {left:Closure,right:Closure,context:Vec<TypeValue>,checkpoint:usize,audit:Option<usize>}
+ enum ConversionWork {Compare(ComparisonWork,Option<usize>),OpenPairedBinder(DomainContinuation),OpenFixedBinder(FixedDomainContinuation),FinishAppProof(usize)}
+ struct DomainAudit {parent:Option<usize>,incomplete_visit:bool}
+ struct ConversionWorkList {items:Vec<ConversionWork>,current_audit:Option<usize>,audits:Vec<DomainAudit>,app_proof_fallbacks:Vec<AppProofFallback>}
+ impl ConversionWorkList {
+-    fn new(root:ComparisonWork)->Self{Self{items:vec![ConversionWork::Compare(root,None)],current_audit:None,audits:Vec::new(),app_proof_fallbacks:Vec::new()}}
++    fn new<C:Into<Rc<Vec<TypeValue>>>>(root:(TypeValue,TypeValue,usize,C))->Self{let(a,b,d,c)=root;let root=(a,b,d,c.into());Self{items:vec![ConversionWork::Compare(root,None)],current_audit:None,audits:Vec::new(),app_proof_fallbacks:Vec::new()}}
+     fn defer_app_proof(&mut self,left:&Closure,right:&Closure,context:&[TypeValue]) {
+         let id=self.app_proof_fallbacks.len();
+         self.app_proof_fallbacks.push(AppProofFallback{left:left.clone(),right:right.clone(),context:context.to_vec(),checkpoint:self.items.len(),audit:self.current_audit});
+@@ -36,8 +39,8 @@
+         }
+         false
+     }
+-    fn push(&mut self,work:ComparisonWork){self.items.push(ConversionWork::Compare(work,self.current_audit));}
+- fn extend(&mut self,work:impl IntoIterator<Item=ComparisonWork>){for pair in work{self.push(pair);}}
++    fn push<C:Into<Rc<Vec<TypeValue>>>>(&mut self,work:(TypeValue,TypeValue,usize,C)){let(a,b,d,c)=work;let work=(a,b,d,c.into());self.items.push(ConversionWork::Compare(work,self.current_audit));}
++ fn extend<C:Into<Rc<Vec<TypeValue>>>>(&mut self,work:impl IntoIterator<Item=(TypeValue,TypeValue,usize,C)>){for pair in work{self.push(pair);}}
+  fn pop(&mut self)->Option<ConversionWork>{self.items.pop()}
+  fn note_incomplete_visit(&mut self){let mut next=self.current_audit;while let Some(id)=next{self.audits[id].incomplete_visit=true;next=self.audits[id].parent;}}
+  fn defer_domain(&mut self,mut c:DomainContinuation){let id=self.audits.len();self.audits.push(DomainAudit{parent:self.current_audit,incomplete_visit:false});c.audit=id;c.parent_audit=self.current_audit;let pair=(TypeValue::Term(c.left_domain.clone()),TypeValue::Term(c.right_domain.clone()),c.depth,c.context.clone());self.items.push(ConversionWork::OpenPairedBinder(c));self.items.push(ConversionWork::Compare(pair,Some(id)));}
+@@ -209,7 +212,7 @@
+                 work.current_audit=c.parent_audit;
+                 if remaining==0{failed_comparison!(Judgment::unknown("domain-continuation-budget"));}remaining-=1;
+                 if work.audits[c.audit].incomplete_visit{failed_comparison!(Judgment::unknown("domain-completion-unavailable"));}
+-                let proven=ProvenDomainPair{left:&c.left_domain,right:&c.right_domain,context:&c.context};
++                let proven=ProvenDomainPair{left:&c.left_domain,right:&c.right_domain,context:c.context.as_slice(),body_context:&c.body_context};
+                 let Some((left,right))=checker.checked_proven_domain_joint_opening(&proven,&c.left_domain,&c.right_domain,&c.left_body,&c.right_body,&c.context,c.free,&mut remaining)else{failed_comparison!(Judgment::unknown("domain-owned-opening-unavailable"));};
+                 work.push((TypeValue::Term(left),TypeValue::Term(right),c.depth.saturating_add(1),c.body_context));continue;
+             },
+@@ -217,7 +220,7 @@
+                 work.current_audit=c.parent_audit;
+                 if remaining==0{failed_comparison!(Judgment::unknown("fixed-domain-continuation-budget"));}remaining-=1;
+                 if work.audits[c.audit].incomplete_visit{failed_comparison!(Judgment::unknown("fixed-domain-completion-unavailable"));}
+-                let proven=ProvenDomainPair{left:&c.left_domain,right:&c.right_domain,context:&c.context};
++                let proven=ProvenDomainPair{left:&c.left_domain,right:&c.right_domain,context:c.context.as_slice(),body_context:&c.body_context};
+                 let Some((left,right))=checker.checked_fixed_pi_joint_bodies(&proven,&c.left_domain,&c.right_domain,&c.left_body,&c.right_body,c.left_binder,c.right_binder,&c.left_owner,&c.right_owner,&c.context,c.free,&mut remaining)else{failed_comparison!(Judgment::unknown("fixed-domain-owned-opening-unavailable"));};
+                 work.push((left,right,c.depth.saturating_add(1),c.body_context));continue;
+             },
+@@ -379,8 +382,8 @@
+                     failed_comparison!(Judgment::unknown("binder-depth-overflow"));
+                 };
+                 let (Some(left_owner),Some(right_owner),TypeValue::Term(left_domain),TypeValue::Term(right_domain))=(left_owner,right_owner,*left_domain,*right_domain)else{failed_comparison!(Judgment::unknown("fixed-pi-source-owner-unavailable"));};
+-                let mut body_context=local_context.clone();if body_context.len()!=depth{failed_comparison!(Judgment::unknown("fixed-pi-source-context-unavailable"));}body_context.push(TypeValue::Term(left_domain.clone()));
+-                work.defer_fixed_domain(FixedDomainContinuation{left_domain,right_domain,left_body:*left_body,right_body:*right_body,left_binder,right_binder,left_owner,right_owner,context:local_context,body_context,free,depth,audit:0,parent_audit:None});
++                let mut body_context=local_context.as_ref().clone();if body_context.len()!=depth{failed_comparison!(Judgment::unknown("fixed-pi-source-context-unavailable"));}body_context.push(TypeValue::Term(left_domain.clone()));
++                work.defer_fixed_domain(FixedDomainContinuation{left_domain,right_domain,left_body:*left_body,right_body:*right_body,left_binder,right_binder,left_owner,right_owner,context:local_context,body_context:Rc::new(body_context),free,depth,audit:0,parent_audit:None});
+             }
+             (TypeValue::Term(left), TypeValue::Term(right)) => {
+                 if delta_policy == DeltaPolicy::GuardedSemanticFallback
+@@ -1015,7 +1018,7 @@
+                 if let Some((left_opened,right_opened))=checker.checked_atomic_joint_opening(left_domain,right_domain,left_body,right_body,context,free,&mut current_budget){
+                     work.push((TypeValue::Term(left_opened),TypeValue::Term(right_opened),depth.saturating_add(1),body_context));
+                 }else{
+-                    work.defer_domain(DomainContinuation{left_domain:left_domain.clone(),right_domain:right_domain.clone(),left_body:left_body.clone(),right_body:right_body.clone(),context:context.to_vec(),body_context,free,depth,audit:0,parent_audit:None});
++                    work.defer_domain(DomainContinuation{left_domain:left_domain.clone(),right_domain:right_domain.clone(),left_body:left_body.clone(),right_body:right_body.clone(),context:Rc::new(context.to_vec()),body_context:Rc::new(body_context),free,depth,audit:0,parent_audit:None});
+                 }
+             }
+             (

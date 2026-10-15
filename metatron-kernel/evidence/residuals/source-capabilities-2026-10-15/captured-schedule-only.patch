@@ -1,0 +1,52 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -235,9 +235,24 @@
+         remaining -= 1;
+         if !visited.insert((checker.authority(),left.clone(),right.clone()))&&work.current_audit.is_none(){work.note_incomplete_visit();continue;}
+ 
+-        let defer_app_proof=depth==context.len()&&matches!((&left,&right),(TypeValue::Term(lhs),TypeValue::Term(rhs))
+-            if matches!(checker.expression(lhs.expr),Some(Expr::App{..}))
+-            && matches!(checker.expression(rhs.expr),Some(Expr::App{..})));
++        // A real captured substitution has an ordinary exposure step before
++        // any optional proof classification. This paid eligibility lookup
++        // grants no typing or equality authority; the saved original sources
++        // still undergo strict proof checking if ordinary conversion fails.
++        let defer_app_proof=depth==context.len()&&match (&left,&right) {
++            (TypeValue::Term(lhs),TypeValue::Term(rhs))=>{
++                let both_apps=matches!(checker.expression(lhs.expr),Some(Expr::App{..}))
++                    &&matches!(checker.expression(rhs.expr),Some(Expr::App{..}));
++                let mut captured_substitution=|source:&Closure| {
++                    let Some(Expr::BVar(index))=checker.expression(source.expr)else{return false;};
++                    let Some(cost)=index.checked_add(1).and_then(|cost|usize::try_from(cost).ok())else{return false;};
++                    if remaining<cost{return false;}remaining-=cost;
++                    matches!(source.env.lookup_binding_ref(*index),Some(EnvBinding::Closure(_)))
++                };
++                both_apps||captured_substitution(lhs)||captured_substitution(rhs)
++            },
++            _=>false,
++        };
+         if defer_app_proof && let (TypeValue::Term(lhs),TypeValue::Term(rhs))=(&left,&right) {
+             work.defer_app_proof(lhs,rhs,context);
+         }
+@@ -2466,6 +2481,21 @@
+  }
+  fn term(id:u64)->TypeValue{TypeValue::Term(Closure::new(ExprId(id),EnvFrame::empty()))}
+  #[test]
++ fn productive_captured_substitution_keeps_ordinary_exposure_allowance(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);
++  let captured=TypeValue::Term(Closure::new(ExprId(4),EnvFrame::empty().extend(Closure::new(ExprId(19),EnvFrame::empty()))));
++  for budget in 16..384 {let result=convert(&c,&captured,&term(19),budget);assert!(result.is_proven(),"actual captured substitution must expose before optional proof typing at {budget}: {result:?}");}
++  assert!(convert(&c,&captured,&term(19),0).is_unknown());
++ }
++ #[test]
++ fn deferred_captured_proof_rechecks_whole_original_sources(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);
++  let capture=|id|TypeValue::Term(Closure::new(ExprId(4),EnvFrame::empty().extend(Closure::new(ExprId(id),EnvFrame::empty()))));
++  assert!(convert(&c,&capture(14),&term(15),4096).is_proven());
++  assert!(!convert(&c,&capture(19),&term(20),4096).is_proven());
++  assert!(!convert(&c,&TypeValue::Term(Closure::new(ExprId(4),EnvFrame::empty())),&term(10),4096).is_proven());
++ }
++ #[test]
+  fn productive_beta_applications_use_ordinary_comparison_before_proof_typing(){
+   let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let result=convert(&c,&term(9),&term(10),16);assert!(result.is_proven(),"productive ordinary beta should retain its allowance: {result:?}");
+  }

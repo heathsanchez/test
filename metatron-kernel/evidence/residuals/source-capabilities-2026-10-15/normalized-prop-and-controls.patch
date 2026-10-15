@@ -1,0 +1,128 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -899,7 +899,8 @@
+                                 .proven_value().cloned()
+                         },
+                     };
+-                    if level != Some(LevelTerm::Zero) { return false; }
++                    let Some(level)=level else{return false;};
++                    if !crate::level::level_equal_with_remaining(level,LevelTerm::Zero,&mut work).is_proven(){return false;}
+                 },
+                 TypeValue::Pi { .. } => {
+                     let Some(level) = probe.owned_inferred_type_formation_sort(ty, context, &mut work, 0)
+@@ -6666,7 +6667,10 @@
+         // types, with each closure's own captured universe substitution.
+         let left_sort=probe.shared_strict_source_sort(left_type_source,context,remaining)?;
+         let right_sort=probe.shared_strict_source_sort(right_type_source,context,remaining)?;
+-        if left_sort==LevelTerm::Zero||right_sort==LevelTerm::Zero{return None;}
++        // Raw substituted levels can hide zero (e.g. imax 1 0). Neither
++        // normalized zero nor unresolved zero classification is DATA authority.
++        if !crate::level::level_equal_with_remaining(left_sort,LevelTerm::Zero,remaining).is_refuted()
++            ||!crate::level::level_equal_with_remaining(right_sort,LevelTerm::Zero,remaining).is_refuted(){return None;}
+         if left_type!=right_type {
+             let allowance=(*remaining).min(512);if allowance==0{return None;}*remaining-=allowance;
+             if !crate::convert::convert_with_policy_in_context(&probe,&left_type,&right_type,allowance,crate::convert::DeltaPolicy::GuardedSemanticFallback,context.len(),context).is_proven(){return None;}
+@@ -9246,7 +9250,7 @@
+  fn source_structure_domains_keep_own_universes_and_missing_or_prop_instantiation_declines(){
+   let(mut e,mut l,_)=fixture(false,false);l.insert(LevelId(2),Level::Param(NameId(10))).unwrap();e.insert(ExprId(5),Expr::Sort(LevelId(2))).unwrap();e.insert(ExprId(6),Expr::Const{name:NameId(1),levels:vec![LevelId(2)]}).unwrap();
+   let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![NameId(10)],ExprId(5))).unwrap().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![NameId(10)],ExprId(6))).unwrap().install_projection_spec(NameId(1),crate::machine::ProjectionSpec{constructor:NameId(2),num_params:0,field_types:vec![],eta_expandable:false}).unwrap();
+-  for level in [Some(succ(LevelTerm::Zero)),Some(LevelTerm::Zero),None]{
++  for level in [Some(succ(LevelTerm::Zero)),Some(LevelTerm::Zero),Some(LevelTerm::IMax(Box::new(succ(LevelTerm::Zero)),Box::new(LevelTerm::Zero))),Some(LevelTerm::Max(Box::new(LevelTerm::Zero),Box::new(LevelTerm::Zero))),None]{
+    let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let theta=LevelSubstitution::new(level.clone().map(|x|vec![(NameId(10),x)]).unwrap_or_default());let ty=TypeValue::Term(Closure::with_levels(ExprId(6),EnvFrame::empty(),theta));let a=EnvFrame::empty().extend_free(FreeId(0));let b=a.extend_free(FreeId(1));let gamma=vec![ty.clone(),ty.clone()];c.retain_checked_binding(&a,ty.clone(),&gamma[..1]);c.retain_checked_binding(&b,ty,&gamma);let r=c.checked_source_structure_relation(&c.closure(ExprId(3),a.clone()),&c.closure(ExprId(3),b.clone()),&value(&a,FreeId(0)),&value(&b,FreeId(1)),&gamma,&mut 4096);
+    if level==Some(succ(LevelTerm::Zero)){assert!(r.unwrap().is_refuted());}else{assert!(r.is_none());}
+   }
+@@ -9270,3 +9274,55 @@
+   let wrapper=EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(0),Some(owner.clone())),spine:vec![]});c.retain_checked_binding(&wrapper,ty,&gamma);let wrapped=c.closure(ExprId(3),wrapper.clone());assert!(c.checked_source_structure_relation(&wrapped,&ctor,&tv,&cv,&gamma,&mut 4096).unwrap().is_proven());c.checked_binding_lineage.borrow_mut().insert(wrapper.id(),None);assert!(c.checked_source_structure_relation(&wrapped,&ctor,&tv,&cv,&gamma,&mut 4096).is_none());c.checked_binding_lineage.borrow_mut().insert(owner.id(),None);assert!(c.checked_source_structure_relation(&target,&ctor,&tv,&cv,&gamma,&mut 4096).is_none());
+  }
+ }
++
++#[cfg(test)]
++mod normalized_proof_sort_regression {
++ use super::*;
++ #[test]
++ fn noncanonical_zero_substitution_certifies_actual_proofs_not_data() {
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Param(NameId(1))).unwrap();
++  e.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();e.insert(ExprId(1),Expr::Const{name:NameId(2),levels:vec![LevelId(0)]}).unwrap();e.insert(ExprId(2),Expr::BVar(0)).unwrap();e.insert(ExprId(3),Expr::Const{name:NameId(3),levels:vec![LevelId(0)]}).unwrap();
++  let env=Environment::empty().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![NameId(1)],ExprId(0))).unwrap().extend(NameId(3),crate::environment::ConstantDecl::axiom(vec![NameId(1)],ExprId(0))).unwrap();
++  for zero in [LevelTerm::IMax(Box::new(succ(LevelTerm::Zero)),Box::new(LevelTerm::Zero)),LevelTerm::Max(Box::new(LevelTerm::Zero),Box::new(LevelTerm::Zero))] {
++   let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;
++   let theta=LevelSubstitution::new(vec![(NameId(1),zero)]);let ty=TypeValue::Term(Closure::with_levels(ExprId(1),EnvFrame::empty(),theta));
++   let a=EnvFrame::empty().extend_free(FreeId(0));let b=a.extend_free(FreeId(1));let gamma=vec![ty.clone(),ty.clone()];c.retain_checked_binding(&a,ty.clone(),&gamma[..1]);c.retain_checked_binding(&b,ty,&gamma);
++   let p=c.closure(ExprId(2),a.clone());let q=c.closure(ExprId(2),b.clone());assert!(c.checked_owned_proof_source_pair(&p,&q,&gamma,&mut 4096),"both sources are independently proofs of the SAME proposition at a normalized-zero universe");
++   c.checked_binding_lineage.borrow_mut().insert(a.id(),None);assert!(!c.checked_owned_proof_source_pair(&p,&q,&gamma,&mut 4096));
++  }
++  let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;
++  let theta=LevelSubstitution::new(vec![(NameId(1),LevelTerm::IMax(Box::new(succ(LevelTerm::Zero)),Box::new(LevelTerm::Zero)))]);
++  let pty=TypeValue::Term(Closure::with_levels(ExprId(1),EnvFrame::empty(),theta.clone()));let qty=TypeValue::Term(Closure::with_levels(ExprId(3),EnvFrame::empty(),theta));
++  let a=EnvFrame::empty().extend_free(FreeId(0));let b=a.extend_free(FreeId(1));let gamma=vec![pty.clone(),qty.clone()];c.retain_checked_binding(&a,pty,&gamma[..1]);c.retain_checked_binding(&b,qty,&gamma);
++  assert!(!c.checked_owned_proof_source_pair(&c.closure(ExprId(2),a),&c.closure(ExprId(2),b),&gamma,&mut 4096),"independently formed DIFFERENT propositions do not license proof irrelevance");
++  let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let ty=TypeValue::Term(Closure::with_levels(ExprId(1),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(1),succ(LevelTerm::Zero))])));let a=EnvFrame::empty().extend_free(FreeId(0));let b=a.extend_free(FreeId(1));let gamma=vec![ty.clone(),ty.clone()];c.retain_checked_binding(&a,ty.clone(),&gamma[..1]);c.retain_checked_binding(&b,ty,&gamma);assert!(!c.checked_owned_proof_source_pair(&c.closure(ExprId(2),a),&c.closure(ExprId(2),b),&gamma,&mut 4096),"Type data has no proof-irrelevance certificate");
++ }
++}
++
++#[cfg(test)]
++mod carried_context_scope_review_tests {
++ use super::*;
++ #[test]
++ fn completed_context_opening_preserves_own_universes_and_both_revocations(){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(id,node)in[(0,Expr::Sort(LevelId(1))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::BVar(0)),(3,Expr::BVar(1))]{e.insert(ExprId(id),node).unwrap();}
++  let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap();let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;
++  let d=c.closure(ExprId(1),EnvFrame::empty());let gamma=Rc::new(vec![TypeValue::Term(d.clone());3]);let fresh=FreeId(3);
++  let lp=EnvFrame::empty();let rp=EnvFrame::empty().extend_free(FreeId(9));let lb=c.closure(ExprId(2),lp.clone());let rb=Closure::with_levels(ExprId(2),rp.clone(),LevelSubstitution::new(vec![(NameId(77),LevelTerm::Succ(Box::new(LevelTerm::Zero)))]));
++  assert!(crate::convert::source_opening_avoids_capture(&c,&lb,fresh,&mut 64));assert!(crate::convert::source_opening_avoids_capture(&c,&rb,fresh,&mut 64));
++  crate::convert::with_completed_domain_pair_for_test(&c,&d,&d,&gamma,|proof|{
++   let mut zero=0;assert!(c.checked_proven_domain_joint_opening(proof,&d,&d,&lb,&rb,&gamma,fresh,&mut zero).is_none());
++   let other=(*gamma).clone();assert!(c.checked_proven_domain_joint_opening(proof,&d,&d,&lb,&rb,&other,fresh,&mut 128).is_none());
++   let changed=d.sibling(ExprId(0),d.env.clone());assert!(c.checked_proven_domain_joint_opening(proof,&changed,&d,&lb,&rb,&gamma,fresh,&mut 128).is_none());
++   assert!(c.checked_proven_domain_joint_opening(proof,&d,&d,&lb,&rb,&gamma,FreeId(2),&mut 128).is_none());
++   let (left,right)=c.checked_proven_domain_joint_opening(proof,&d,&d,&lb,&rb,&gamma,fresh,&mut 4096).expect("completed current domains and actual carried context permit one owned introduction");
++   assert_eq!(left.env.parent_id(),Some(lp.id()));assert_eq!(right.env.parent_id(),Some(rp.id()));assert_eq!(right.levels,rb.levels);assert_eq!(left.levels,lb.levels);
++   assert!(matches!(right.env.lookup_binding_ref(0),Some(EnvBinding::Neutral(Neutral{head:NeutralHead::Free(f,Some(owner)),spine})) if *f==fresh&&owner.id()==left.env.id()&&spine.is_empty()));
++   let body_gamma=proof.completed_body_context();let witness=c.checked_binding_lineage.borrow()[&left.env.id()].clone().unwrap();assert!(Rc::ptr_eq(&witness.protected_prefix,body_gamma));
++   assert_eq!(c.infer_exact_closure_in_context(&right,body_gamma,&mut 128,0),Some(TypeValue::Term(d.clone())));
++   let saved=c.checked_binding_lineage.borrow()[&right.env.id()].clone();c.checked_binding_lineage.borrow_mut().insert(right.env.id(),None);assert!(c.infer_exact_closure_in_context(&right,body_gamma,&mut 128,0).is_none());
++   c.checked_binding_lineage.borrow_mut().insert(right.env.id(),saved);c.checked_binding_lineage.borrow_mut().insert(left.env.id(),None);assert!(c.infer_exact_closure_in_context(&right,body_gamma,&mut 128,0).is_none());
++  });
++  let dangling=c.closure(ExprId(3),EnvFrame::empty());assert!(!crate::convert::source_opening_avoids_capture(&c,&dangling,fresh,&mut 64));
++ }
++}
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -2486,3 +2486,36 @@
+   assert!(!convert(&c,&term(8),&term(21),4096).is_proven());assert!(convert(&c,&term(14),&term(22),4096).is_proven(),"whole original proof apps resolve the failed data argument comparison");assert!(!convert(&c,&term(14),&term(23),4096).is_proven(),"the second actual ill-typed argument cannot borrow the first proof type");
+  }
+ }
++
++#[cfg(test)]
++pub(crate) fn with_completed_domain_pair_for_test<R>(
++ checker:&TypeChecker<'_>,left:&Closure,right:&Closure,context:&Rc<Vec<TypeValue>>,
++ f:impl FnOnce(&ProvenDomainPair<'_>)->R,
++)->R {
++ assert!(convert_with_policy_in_context(checker,&TypeValue::Term(left.clone()),&TypeValue::Term(right.clone()),4096,DeltaPolicy::GuardedSemanticFallback,0,context).is_proven());
++ let mut body=(**context).clone();body.push(TypeValue::Term(left.clone()));let body=Rc::new(body);
++ let pair=ProvenDomainPair{left,right,context,body_context:&body};f(&pair)
++}
++#[cfg(test)]
++mod carried_context_identity_review_tests {
++ use super::*;
++ use crate::id::{IdTable,LevelId,NameId};
++ use crate::syntax::Level;
++ use crate::environment::{Environment,ConstantDecl};
++ use crate::value::{EnvFrame,LevelSubstitution};
++ use crate::level::LevelTerm;
++ #[test]
++ fn completed_pair_pins_actual_source_and_context_namespace(){
++  let mut e=IdTable::default();e.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();e.insert(ExprId(1),Expr::Const{name:NameId(1),levels:vec![]}).unwrap();
++  let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();let env=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap();let c=TypeChecker::new(&e,&l,&env);
++  let left=Closure::new(ExprId(1),EnvFrame::empty());let right=left.clone();let gamma=Rc::new(vec![TypeValue::Term(left.clone())]);
++  with_completed_domain_pair_for_test(&c,&left,&right,&gamma,|proof|{
++   assert!(proof.is_for(&left,&right,&gamma));
++   let left_clone=left.clone();assert!(!proof.is_for(&left_clone,&right,&gamma),"equal syntax cannot replace the completed source reference");
++   let separate_gamma=(*gamma).clone();assert!(!proof.is_for(&left,&right,&separate_gamma),"equal-length/equal-type context in a separate namespace is not the original proof context");
++   let changed=Closure::with_levels(left.expr,left.env.clone(),LevelSubstitution::new(vec![(NameId(90),LevelTerm::Zero)]));assert!(!proof.is_for(&changed,&right,&gamma));
++   let changed_owner=Closure::new(left.expr,left.env.extend_free(FreeId(9)));assert!(!proof.is_for(&changed_owner,&right,&gamma));
++   let pin=proof.completed_body_context().clone();assert!(Rc::ptr_eq(&pin,proof.completed_body_context()));assert_eq!(pin.len(),gamma.len()+1);assert_eq!(pin.last(),Some(&TypeValue::Term(left.clone())));
++  });
++ }
++}
