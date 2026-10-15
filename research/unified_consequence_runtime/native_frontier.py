@@ -39,19 +39,22 @@ def _sha(path):
 
 class NativeFrontierRuntime:
     """One exact externally frozen native frontier; Machine owns all causal state."""
-    def __init__(self, machine, contract, output):
+    def __init__(self, machine, contract, output, *, generated_wheel_evidence=None):
         self.machine, self.contract = machine, _copy(contract)
+        self.generated_wheel_evidence = _copy(generated_wheel_evidence) if generated_wheel_evidence else None
         self.contract_sha256 = digest(canonical(self.contract).encode())
         self.output = Path(output).absolute()
         self._check_configuration()
         self.output.mkdir(parents=True, exist_ok=True)
+        self.generated_wheel_digest = digest(canonical(self.generated_wheel_evidence).encode()) if self.generated_wheel_evidence else None
         self.authority_ceiling = _copy(AUTHORITY)
         self.source_descriptor = {
             'repository': self.contract['repository'], 'commit': self.contract['commit'],
             'git_tree': self.contract['git_tree'],
             'tracked_tree_sha256': self.contract['tracked_tree_sha256'],
             'protocol_binding': self.contract['protocol_binding'],
-            'adapter_sha256': _sha(__file__), 'verifier_sha256': _sha(verifier.__file__)}
+            'adapter_sha256': _sha(__file__), 'verifier_sha256': _sha(verifier.__file__),
+            'generated_wheel_evidence_sha256': self.generated_wheel_digest}
         self.authority = self._record_once('execution_authority_ceiling', AUTHORITY)
         self.source = self._record_once('generic_native_source', {
             'source': self.source_descriptor, 'contract': self.machine.put(self.contract),
@@ -119,7 +122,18 @@ class NativeFrontierRuntime:
         self._scope()
         run = self.output/'native-runs'/secrets.token_hex(16)
         started = time.perf_counter()
-        receipt = verifier.verify(self.contract, candidate, run)
+        generated = None
+        if self.generated_wheel_evidence is not None:
+            from .generated_wheel_evidence import authenticated_generated_modules
+            if self.generated_wheel_digest != digest(canonical(self.generated_wheel_evidence).encode()):
+                raise ValueError('generated wheel evidence changed')
+            identity, source_files, _ = verifier._snapshot(self.contract['repo_path'], self.contract['commit'])
+            evidence = self.generated_wheel_evidence
+            if (evidence['source_commit'] != self.contract['commit'] or
+                    evidence['source_tree_sha256'] != identity['tracked_tree_sha256']):
+                raise ValueError('generated wheel wrong source identity')
+            generated = authenticated_generated_modules(source_files, evidence)
+        receipt = verifier.verify(self.contract, candidate, run, generated_modules=generated)
         self._scope()
         self.machine.costs.append({'phase': 'generic_native_independent_verification',
             'seconds': time.perf_counter()-started, 'costs': receipt['costs'],
