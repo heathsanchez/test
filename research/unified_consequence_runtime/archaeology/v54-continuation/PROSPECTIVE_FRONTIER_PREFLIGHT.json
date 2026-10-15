@@ -1,0 +1,52 @@
+{
+  "schema": "udm.prospective-frontier.preflight.v1",
+  "status": "UNKNOWN_TYPED_NATIVE_FRONTIER_NOT_ADMITTED",
+  "protocol_sha256": "aec93ebcaed7f4d4c0eff6c0d921acd297dffa3172827503dc1bb5a2c5c7d5a7",
+  "frontier": {
+    "repository": "urllib3/urllib3",
+    "commit": "a37bc93b65d6bcf00d3dc43d966bab6bd130ecd8",
+    "selection": "Actual Requests dependency; HEAD metadata only; source and tests not inspected at freeze",
+    "lineage": {
+      "repository": "psf/requests",
+      "commit": "8068356288978c4f54661ae6f95afe0e0831885e",
+      "path": "pyproject.toml",
+      "dependency": "urllib3>=1.26,<3"
+    }
+  },
+  "states": [
+    {
+      "state": "before_O1",
+      "available_capabilities": [
+        "fc8150511ae286bbdc7599468a65210b09dcb7baa2d3c50bf64931d9a7d2a2d7",
+        "c3a08c1028ef0d5e50db15083d9bf8095bc53a94b821e7660fd371dc4e65be5b"
+      ],
+      "result": {
+        "status": "UNKNOWN_INPUT_OUTSIDE_ADMITTED_SCOPE",
+        "reason": "task changed or outside original frozen scope"
+      },
+      "ledger_unchanged": true
+    },
+    {
+      "state": "after_verified_O1_O2",
+      "available_capabilities": [
+        "fc8150511ae286bbdc7599468a65210b09dcb7baa2d3c50bf64931d9a7d2a2d7",
+        "c3a08c1028ef0d5e50db15083d9bf8095bc53a94b821e7660fd371dc4e65be5b",
+        "9773fa693b4e51e81ec9390fe23946b7c65fefe946821825250ff3d37e2f55c9",
+        "100ef3a28c8de00b6ccfd8c7ecc8d81ae76421bb68d992885e330bc58f005d80"
+      ],
+      "result": {
+        "status": "UNKNOWN_INPUT_OUTSIDE_ADMITTED_SCOPE",
+        "reason": "task changed or outside original frozen scope"
+      },
+      "ledger_unchanged": true
+    }
+  ],
+  "candidate_tests_used": 0,
+  "frontier_native_tests_executed": 0,
+  "frontier_source_inspected": false,
+  "acquisition_changes_discoverability": "UNKNOWN",
+  "complete_old_language_obstruction": "NOT_PROVIDED",
+  "baseline": "SAME_TYPED_INTERFACE_REFUSAL; NOT_A_DISCOVERY_COMPARATOR",
+  "smallest_exact_obstruction": "Current lawful task/verification interface is frozen to archived WebArena tasks and original V54 Requests scope. No admitted NativeRepositoryFrontier continuation or independently supplied frontier-native verifier exists. Scope refusal is not evidence that a resolving algorithm is absent.",
+  "required_next_step": "Reuse an existing independently qualified source-native frontier adapter if found; otherwise specify the smallest typed adapter and verifier bridge before widening continuations. Do not infer a new operation is necessary."
+}

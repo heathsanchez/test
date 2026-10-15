@@ -2451,13 +2451,14 @@
       "id": "formal-vdn-development-certificate",
       "capability": "vdn-development-certificate",
       "status": "REUSABLE_CONDITIONAL_FORMAL_CERTIFICATE",
-      "verification_boundary": "EXACT_GIT_SOURCE_INSPECTED_NOT_RECOMPILED; CONCRETE_RUNTIME_INSTANCE_UNKNOWN",
+      "verification_boundary": "CANONICAL_E_D_REPORT: EXACT_SOURCE_INSPECTED_NOT_RECOMPILED; E_D_CONCRETE_INSTANCE_UNKNOWN. V54_FINITE_TABLE_CHECK_SUPPLIED_SEPARATELY",
       "source_evidence": {
         "blob_sha": "3f6ea923d0b3f0727bffcf9b6fd1bb1d975cc466",
         "base_blob_sha": "e64adf542ba321efbf74787974fa5c5bae795da5",
         "routing_blob_sha": "abe4f8053d438a6ef596c2cfa37699333046ad8e",
         "runtime_complete_old_trace_cover": "NOT_SUPPLIED",
-        "native_grouping_ablation_is_complete_nonreachability": false
+        "native_grouping_ablation_is_complete_nonreachability": false,
+        "historical_scope": "These uninstantiated obligations describe the canonical E/D experiment; they are not the status of the later checked V54 finite native-observation table."
       },
       "peer_report": "/workspace/archaeology/formal/REPORT.md",
       "live_executed_in_this_integration": false,
@@ -2471,7 +2472,13 @@
         "VerifiedDevelopmentalNavigation.World",
         "World.CompleteCover",
         "ActionExtension.step_preserved"
-      ]
+      ],
+      "superseded_for_scope": {
+        "scope": "V54 finite recorded native outcomes, exact one-new-rewrite horizon",
+        "capability_id": "vdn-concrete-v54-finite-native-table",
+        "status": "CHECKED_BOUNDED_TABLE_CERTIFICATE",
+        "E_D_runtime_refinement": "UNKNOWN"
+      }
     },
     {
       "id": "formal-js-native-arena-checker",
@@ -2587,7 +2594,21 @@
         "v54_verify.py": "c40a4e1f227ea83b82ceb8fd4a404cf85fd04ced3b87657934c0c92fb72f0456",
         "qualify_v54_machine.py": "9c1c27be5940d7c279f84087d83616ed05e363f1e1e0b8c24e1b298e004103a5"
       },
-      "current_runtime_replay_evidence": "/workspace/qualification/v54-replay-final/RESULT.json"
+      "current_runtime_replay_evidence": "/workspace/qualification/v54-replay-final/RESULT.json",
+      "post_review_scope_guard": {
+        "status": "REPLAY_VERIFIED_QUALIFIED_V54_STATE",
+        "local_evidence": "/workspace/qualification/v54-root-guard-replay-local-udm/RESULT.json",
+        "result_sha256": "b698435bda1ab6a60af198d277bdfe83c3fd1c8762584a11e71a88d4700be1fb",
+        "runtime_sha256": "f247361caf1090aa14340071b8f05efff4b3f5af54b3eac0999cd2aac0cde93e",
+        "historical_records_retained": 143,
+        "input_state_unchanged": true,
+        "unrelated_nodes_removed": 2,
+        "acquisition_rerun": false,
+        "native_proof_gates": 9,
+        "native_ED_outcomes": 6,
+        "qualification_run": null,
+        "qualification_artifact": null
+      }
     },
     {
       "id": "vdn-concrete-v54-finite-native-table",
@@ -2667,7 +2688,7 @@
       "grammar_exhaustion": "UNKNOWN",
       "new_operation_construction": "NOT_ATTEMPTED_ON_UNKNOWN",
       "new_domain_result": "NOT_CLAIMED",
-      "prospective_second_generation": "UNKNOWN",
+      "prospective_second_generation": "UNKNOWN_TYPED_NATIVE_FRONTIER_NOT_ADMITTED",
       "retained_state_unchanged": true,
       "local_evidence": "/workspace/qualification/v54-local/mda-consequence-selection.json",
       "qualification_run": null
@@ -2795,7 +2816,7 @@
   "snapshot_status": "RECONCILED_SOURCE_NATIVE_QUALIFICATION_AND_FORMAL_CORRESPONDENCE_WITH_EXPLICIT_UNKNOWNS",
   "peer_inventory_boundaries": {
     "semantics": "Complete currently reachable clone histories; deleted unreachable branches and garbage-collected objects UNKNOWN",
-    "formal": "Exact MSI and native kernel/Arena source pins inspected; original native run artifacts unexamined, VDN exact-source pending",
+    "formal": "Exact MSI and native kernel/Arena source pins inspected. Original VDN cf359686 source compiled with Lean4.28.0 and concrete bounded V54 finite-table instance checked; Python/runtime refinement and E/D concrete instance remain UNKNOWN.",
     "state": "230 selected original Metatron/FLASH branch source inventories; original runtime native Python tests and independent integration replay checked",
     "development": "Selected exact developmental anchors and original artifacts recovered; not an exhaustive qualification of every test repository branch"
   },
@@ -2817,6 +2838,27 @@
     "all_source_hashes_match": true,
     "source_manifest": "archaeology/v54-continuation/SOURCE_MANIFEST.json",
     "scientific_status_authority": "THIS_INDEX; recovery manifests record provenance only",
-    "unresolved_prospective_growth": "UNKNOWN; no unexposed source-native prospective harness activated without target-specific additions"
+    "unresolved_prospective_growth": "UNKNOWN_TYPED_NATIVE_FRONTIER_NOT_ADMITTED; frozen urllib3 source frontier refused before/after acquisition without source inspection or candidate execution",
+    "prospective_frontier_protocol": "archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json",
+    "prospective_frontier_preflight": "archaeology/v54-continuation/PROSPECTIVE_FRONTIER_PREFLIGHT.json",
+    "actions_attempts": [
+      {
+        "run": 38679518463,
+        "source_commit": "aab7542a879bc9cfbef008cae0e711a1c1d233e6",
+        "workflow_conclusion": "failure",
+        "native_qualification": "WARRANTED_BOUNDED_V54_TWO_GENERATION_EXTENSION",
+        "failure": "Auxiliary selection response-status counting; actual native receipt accepted task168 NOT_FOUND_ERROR",
+        "artifact_id": 11948483784,
+        "artifact_sha256": "7c8324e9ba8885d8d35a7118392c8e723d32da16c372235ed9a9bb1389d80cfa",
+        "archive_reopened_and_hashed": true
+      },
+      {
+        "run": 38682218192,
+        "source_commit": "7b8f87ef236c38cae21252d5e47291af68083049",
+        "status": "in_progress",
+        "workflow_conclusion": null
+      }
+    ],
+    "independent_review": "archaeology/v54-continuation/INDEPENDENT_REVIEW.md"
   }
 }

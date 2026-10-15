@@ -44,7 +44,11 @@ class V54Runtime:
     def _world_scope(self,target=False):
         for name,variable in (('django','DJ'),('requests','RQ'),('rich','RH')):
             expected=self.worlds/name
-            if self.session.world_paths[name]!=expected or Path(self.session.env[variable])!=expected:
+            try:
+                canonical_root=expected.is_dir() and expected.resolve(strict=True)==expected
+            except (OSError,RuntimeError):
+                canonical_root=False
+            if not canonical_root or self.session.world_paths[name]!=expected or Path(self.session.env[variable])!=expected:
                 raise PermissionError('native world path differs from pinned local scope')
         if target:
             expected=self.worlds/'requests/src/requests/utils.py'

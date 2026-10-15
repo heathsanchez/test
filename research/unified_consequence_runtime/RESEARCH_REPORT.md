@@ -7,6 +7,12 @@ continues from canonical commit `10269fa87dacd47b7d0036935bc8b006e5041adc` on
 implementation is retained. The original report is preserved in
 [BASE_RESEARCH_REPORT.md](archaeology/v54-continuation/BASE_RESEARCH_REPORT.md).
 
+The corrected full qualification is run `38682218192`, exact source
+`7b8f87ef236c38cae21252d5e47291af68083049`. Earlier run `38679518463`
+completed every native developmental stage but failed an auxiliary selection
+counting assertion. Its archive `11948483784` was reopened and SHA256 checked:
+`7c8324e9ba8885d8d35a7118392c8e723d32da16c372235ed9a9bb1389d80cfa`.
+
 ## What actually executes
 
 The entrypoint is `python -m research.unified_consequence_runtime.qualify_v54_machine`.
@@ -37,13 +43,19 @@ The generic token-emission constructor was supplied, not acquired.
 | Reverified restoration | New generations and evidence; old revoked IDs inactive |
 | Separate-process executable cold restart | O1/O2 and six E/D outcomes PASS |
 | Strong equally informed original executable-ledger baseline | TIE on O2, survivors, candidate budget and final source |
-| Source/scope/evidence/corruption/withdrawal contract suite | 77/77 PASS; updated path/causal guards 23/23 PASS |
+| Source/scope/evidence/corruption/withdrawal contract suite | 91/91 PASS after independent review; focused path/causal guards 25/25 PASS |
 | Formal evidence regression suite | 5/5 PASS |
 | Concrete original VDN finite-table Lean instance | CHECKED, original Lean4.28.0 |
 
 All 101 canonical base ledger records and the original source objects remain.
 Metatron and original FLASH independently agree on support liveness. Restoration
 re-executes native behavior after restart; it is not recovery of receipt text.
+The reviewed root check was additionally exercised by loading qualified state in
+a separate process, withdrawing two unrelated controls, and re-executing O1/O2,
+all nine independent gates and six E/D outcomes. All 143 historical records and
+unchanged archived input bytes were checked. That maintenance replay took63.11s;
+acquisition and developmental search were not repeated. An earlier replay launched
+with an interpreter lacking WebArena failed at E/D verification; its logs remain.
 
 ## Existing operation before invention
 
@@ -88,6 +100,10 @@ live causal support before execution. Ordinary Python, direct callable source
 methods and the public state API do not establish a non-bypassable all-effects
 reference monitor. **Independent non-bypassable external-action enforcement is
 UNKNOWN.** No airtight sandbox or new policy framework is claimed.
+Independent review additionally found and corrected a pre-preparation world-root
+check; redirected or missing roots now fail before a routed reset. This remains
+a point-in-time local check. Retained native receipts bind the selected interpreter
+pathname; transport to arbitrary execution paths is not qualified.
 
 ## Reconciled research and unresolved frontier
 
@@ -106,15 +122,22 @@ These are REUSABLE in their declared scopes; recovery is not current-machine
 installation of all of them. V103/V104 constructor provenance is kept separate
 from the independently audited Boolean closure result.
 
-**Prospective second-generation growth remains UNKNOWN.** Original V54 fixes its
-three native worlds and target tests; the current task router admits only frozen
-E/D inputs. No original independently verified unfamiliar-source frontier harness
-was activated without new target-specific adapters. DIR V6 can admit an arity-five
+**Prospective second-generation growth remains UNKNOWN.** After native V54 passed,
+an unfamiliar frontier was frozen at `urllib3/urllib3@a37bc93b65d6bcf00d3dc43d966bab6bd130ecd8`,
+following the original Requests dependency. Only HEAD metadata was read; no
+frontier source, tests or outcomes were inspected. Both canonical and post-V54
+states refused its NativeRepositoryFrontier input before any candidate or native
+frontier test ran, leaving both ledgers unchanged. This is a blocked applicability
+preflight, not a prospective discovery result. The exact missing bridge is an
+admitted typed native-frontier continuation and independently supplied verifier.
+Original V54 fixes its three native worlds and target tests; the task router
+admits frozen E/D inputs. No new target-specific adapter was supplied after freeze. DIR V6 can admit an arity-five
 schema but its recover operation reads the supplied expansion, so that would not
 test O1-dependent future discovery. Necessity already supplies a full quadratic
 solver and the same decode signal; replaying fresh coefficients would not close
-that stronger obligation. The unexecuted draft frontier is preserved as DRAFT,
-not relabeled a prospective success. Source-native unfamiliar-frontier selection
+that stronger obligation. The older arity-five draft remains DRAFT. The new frozen frontier and explicit
+UNKNOWN preflight are preserved in `archaeology/v54-continuation/PROSPECTIVE_FRONTIER_*.json`;
+neither is relabeled a prospective success. Source-native unfamiliar-frontier selection
 and constructor/procedure growth through this runtime remain open.
 
 MathGraph Check's original non-regex RED remains RED; the human-selected

@@ -7,6 +7,11 @@ on:
       - 'research/unified_consequence_runtime/**'
       - '.github/workflows/universal-developmental-machine-v54.yml'
   workflow_dispatch:
+    inputs:
+      reuse_qualified_v54:
+        description: Reuse the frozen qualified acquisition and re-execute persisted native behavior
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -157,6 +162,7 @@ jobs:
           echo "${GITHUB_WORKSPACE}/.venv-v54/bin" >> "${GITHUB_PATH}"
 
       - name: Acquire, execute, verify, withdraw, restore and cold restart native V54
+        if: ${{ !inputs.reuse_qualified_v54 }}
         run: |
           "${UDM_PYTHON}" -B -m research.unified_consequence_runtime.qualify_v54_machine \
             --source "${V54_SOURCE}" --worlds "${V54_WORLDS}" \
@@ -165,6 +171,52 @@ jobs:
             --config "${UDM_ASSETS}/config.json" --evaluator "${UDM_EVALUATOR}" \
             --out qualification/v54 --native-python "${V54_PYTHON}" \
             2>&1 | tee qualification/v54-run.log
+          echo "V54_QUALIFIED_STATE=${GITHUB_WORKSPACE}/qualification/v54/state" >> "${GITHUB_ENV}"
+
+      - name: Authenticate qualified acquisition and re-execute persisted native behavior
+        if: ${{ inputs.reuse_qualified_v54 }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api /repos/heathsanchez/test/actions/runs/38682218192 > qualification/reused-run.json
+          gh api /repos/heathsanchez/test/actions/runs/38682218192/artifacts > qualification/reused-artifacts.json
+          python - <<'PY'
+          import hashlib, json, subprocess, zipfile
+          from pathlib import Path
+          root = Path('qualification')
+          run = json.loads((root/'reused-run.json').read_text())
+          pin = '7b8f87ef236c38cae21252d5e47291af68083049'
+          assert run['id'] == 38682218192 and run['head_sha'] == pin
+          assert run['status'] == 'completed' and run['conclusion'] == 'success'
+          artifacts = json.loads((root/'reused-artifacts.json').read_text())['artifacts']
+          assert len(artifacts) == 1
+          artifact = artifacts[0]
+          assert artifact['workflow_run']['head_sha'] == pin
+          assert artifact['workflow_run']['id'] == run['id'] and not artifact['expired']
+          archive = Path('originals/qualified-v54.zip')
+          with archive.open('wb') as handle:
+              subprocess.run(['gh','api',f"/repos/heathsanchez/test/actions/artifacts/{artifact['id']}/zip"],
+                             stdout=handle, check=True)
+          actual = hashlib.sha256(archive.read_bytes()).hexdigest()
+          assert artifact['digest'] == 'sha256:'+actual
+          destination = Path('originals/qualified-v54')
+          with zipfile.ZipFile(archive) as z:
+              names = z.namelist()
+              assert len(names) == len(set(names))
+              assert all(not Path(n).is_absolute() and '..' not in Path(n).parts for n in names)
+              z.extractall(destination)
+          summary = json.loads((destination/'qualification/qualification-summary.json').read_text())
+          assert summary['coordinator_commit'] == pin and summary['run_id'] == run['id']
+          (root/'reused-qualification-binding.json').write_text(json.dumps({
+              'run_id':run['id'], 'source_commit':pin, 'artifact_id':artifact['id'],
+              'artifact_sha256':actual, 'qualification_summary':summary}, indent=2)+'\n')
+          PY
+          "${UDM_PYTHON}" -B -m research.unified_consequence_runtime.replay_v54_qualification \
+            --qualified-root originals/qualified-v54 --out qualification/replay-v54 \
+            --source "${V54_SOURCE}" --worlds "${V54_WORLDS}" --components "${UDM_COMPONENTS}" \
+            --evaluator "${UDM_EVALUATOR}" --config "${UDM_ASSETS}/config.json" \
+            --native-python "${V54_PYTHON}" 2>&1 | tee qualification/replay-v54.log
+          echo "V54_QUALIFIED_STATE=${GITHUB_WORKSPACE}/qualification/replay-v54/state" >> "${GITHUB_ENV}"
 
       - name: Check native authority, source adapter, routing and selection contracts after V54
         run: |
@@ -187,6 +239,7 @@ jobs:
           "${V54_LEAN}" --version > qualification/lean-version.txt
 
       - name: Bind actual native traces and compile bounded V54 certificate
+        if: ${{ !inputs.reuse_qualified_v54 }}
         run: |
           "${UDM_PYTHON}" -B research/unified_consequence_runtime/v54_formal/generate.py \
             --native-calls qualification/v54/native/native-calls.jsonl \
@@ -203,15 +256,26 @@ jobs:
             --receipt qualification/v54/formal/lean-verification.json \
             2>&1 | tee qualification/formal-check.log
 
+      - name: Recheck the frozen concrete Lean certificate without repeating acquisition
+        if: ${{ inputs.reuse_qualified_v54 }}
+        run: |
+          "${UDM_PYTHON}" -B research/unified_consequence_runtime/v54_formal/check.py \
+            --lean "${V54_LEAN}" \
+            --certificate originals/qualified-v54/qualification/v54/formal/GeneratedV54.lean \
+            --output-dir qualification/replay-v54/formal/build \
+            --receipt qualification/replay-v54/formal/lean-verification.json \
+            2>&1 | tee qualification/formal-recheck.log
+
       - name: Select and execute retained methods from a copy of qualified V54 state
         run: |
           "${UDM_PYTHON}" -B -m research.unified_consequence_runtime.consequence_selection \
-            --state qualification/v54/state --assets "${UDM_ASSETS}" \
+            --state "${V54_QUALIFIED_STATE}" --assets "${UDM_ASSETS}" \
             --components "${UDM_COMPONENTS}" --evaluator "${UDM_EVALUATOR}" \
             --out qualification/consequence-selection.json \
             2>&1 | tee qualification/consequence-selection.log
 
       - name: Bind completed qualification to the exact workflow source
+        if: ${{ !inputs.reuse_qualified_v54 }}
         run: |
           "${UDM_PYTHON}" - <<'PYREPORT'
           import hashlib, json, os
@@ -247,6 +311,33 @@ jobs:
               + 'Non-bypassable action enforcement: UNKNOWN. Strict comparative advantage: REJECTED on the measured tie. '
               + 'Prospective unfamiliar-source second-generation growth: UNKNOWN.\n')
           PYREPORT
+
+      - name: Bind maintained executable behavior to the exact workflow source
+        if: ${{ inputs.reuse_qualified_v54 }}
+        run: |
+          "${UDM_PYTHON}" - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path('qualification')
+          read = lambda name: json.loads((root/name).read_text())
+          native = read('replay-v54/RESULT.json')
+          formal = read('replay-v54/formal/lean-verification.json')
+          selection = read('consequence-selection.json')
+          assert native['status'] == 'REPLAY_VERIFIED_QUALIFIED_V54_STATE'
+          assert formal['status'] == 'CHECKED_BOUNDED_TABLE_CERTIFICATE'
+          assert selection['status'] == 'PASS_BOUNDED_ROUTING_INTEGRATION'
+          assert all(selection['gates'].values())
+          summary = {'schema':'udm.qualified-maintenance.v1', 'status':native['status'],
+              'coordinator_commit':os.environ['GITHUB_SHA'], 'run_id':int(os.environ['GITHUB_RUN_ID']),
+              'acquisition_rerun':False, 'original_qualification':read('reused-qualification-binding.json'),
+              'native_existing_method_activation':selection['native_successes'],
+              'formal':formal['status'], 'action_enforcement':'UNKNOWN_NONBYPASSABILITY',
+              'comparative_advantage':'REJECTED_MEASURED_EXECUTABLE_LEDGER_TIE',
+              'prospective_second_generation':'UNKNOWN',
+              'artifacts':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in
+                  ('replay-v54/RESULT.json','replay-v54/formal/lean-verification.json','consequence-selection.json')}}
+          (root/'qualification-summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          PY
 
       - name: Upload native V54 evidence including failed qualification
         if: always()

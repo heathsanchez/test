@@ -6,13 +6,18 @@ The exact original toolchain is `leanprover/lean4:v4.28.0`, recovered from its
 `verified-developmental-navigation/lean/lean-toolchain` Git blob
 `4c685fa085fa1c66103533e992fc82c014a12142`.
 
-The concrete [GeneratedV54.lean](v54_formal/GeneratedV54.lean) instance is now
-checked against those original sources on that compiler. The
-[compiler receipt](v54_formal/lean-verification.json) reports
-`CHECKED_BOUNDED_TABLE_CERTIFICATE`; the
-[evidence manifest](v54_formal/evidence-manifest.json) binds the actual retained
-native source snapshots and observations. All five compiled modules returned
-zero. The concrete module took 22.086 seconds to check.
+The concrete `GeneratedV54.lean` instance is checked against those original
+sources on that compiler. The generated packet is archived under
+`qualification/v54/formal/`, including `lean-verification.json`,
+`evidence-manifest.json`, source snapshots and the transition table; generated
+experiment outputs are not checked into the source tree. The compiler receipt
+reports `CHECKED_BOUNDED_TABLE_CERTIFICATE`. All five compiled modules returned
+zero. The local concrete module took 22.086 seconds to check.
+
+The observations and hashes below identify the preserved local packet at
+`/workspace/qualification/v54-local/formal`. Each independent Actions packet
+binds its own actual calls, timing outcomes and compiler receipt. Resource-bound
+timeouts can vary without changing the declared formal boundary.
 
 The exact old table contains 541 actions and 542 covered traces including the
 empty trace. Every candidate hash matches the independently reconstructed
@@ -37,6 +42,8 @@ The generated source SHA256 is
 `7996b2ec5c60484101eb1b5ebf0d6b497853021dc7571977320c6c8d373136ea`.
 The compiler receipt SHA256 is
 `b445ed50f176f79ff6be187a7bd1cd263fd39d9a4c287da19fa629aab2c22600`.
+The later portable-path recheck receipt SHA256 is
+`c059dd077664d3ec3a901e6c20b8922129382c8fb5c66141bb7adab0f00c5d6d`.
 
 ## Concrete state and action boundary
 
@@ -97,7 +104,7 @@ executable operators; that identity check is recorded in the manifest.
 The evidence manifest binds original source, native calls, actual source
 snapshots, optional complete acquisition artifact, emitted transition table,
 and emitted Lean source by SHA256. The admitted native-call prefix and source
-snapshots are frozen under `v54_formal/evidence/`, allowing later restoration
+snapshots are frozen under the packet's `evidence/` directory, allowing later restoration
 calls to append to the live qualification log without changing this proof's
 evidence. Artifact references are relative to the manifest for replay from a
 different checkout. The transition table retains candidate
@@ -111,7 +118,8 @@ execution and independent receipt. Later baseline, withdrawal, restoration and
 cold-restart qualification outcomes are reported separately by the native
 qualification journal; this finite certificate does not certify those stages.
 
-Given an adapter output directory `NATIVE`, replay is:
+Given an adapter output directory `NATIVE` and a fresh generated output
+directory `PACKET`, replay is:
 
 ```sh
 python research/unified_consequence_runtime/v54_formal/generate.py \
@@ -119,18 +127,20 @@ python research/unified_consequence_runtime/v54_formal/generate.py \
   --broken NATIVE/state-double-broken.json \
   --warm NATIVE/state-warm-after-O1.json \
   --final NATIVE/state-final.json \
-  --input NATIVE/../RESULT.json
+  --input NATIVE/../RESULT.json \
+  --output-dir PACKET
 python research/unified_consequence_runtime/v54_formal/check.py \
-  --lean /workspace/v54-lean/lean-4.28.0-linux/bin/lean
+  --lean /workspace/v54-lean/lean-4.28.0-linux/bin/lean \
+  --certificate PACKET/GeneratedV54.lean \
+  --output-dir PACKET/build --receipt PACKET/lean-verification.json
 ```
 
 The compiler checker authenticates all three original VDN source files,
 requires exact Lean v4.28.0, rechecks evidence hashes, compiles the original
 World, DevelopmentCertificate and Routing modules, then the glue and concrete
 generated module. It records commands, return codes, source hashes and
-`#print axioms` output in `.build/verification.json` and `.build/lean.log`.
-A reviewable copy is retained beside the concrete source as
-`v54_formal/lean-verification.json`.
+`#print axioms` output in the chosen build directory. A reviewable receipt is
+retained beside the concrete source as `lean-verification.json`.
 `sorry`, `admit`, new axioms, unsafe proof escapes and `sorryAx` are rejected.
 The checker regenerates the table and concrete source from the frozen inputs
 and requires byte equality, then requires all four concrete theorem axiom

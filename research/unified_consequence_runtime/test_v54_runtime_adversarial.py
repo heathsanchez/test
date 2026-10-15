@@ -261,3 +261,27 @@ class V54AdversarialRoutingTests(fixtures.V54RuntimeTests):
         with self.assertRaisesRegex((PermissionError,ValueError),'native.*path'):
             self.runtime.apply(node)
         self.assert_no_native_mutation()
+
+    def test_redirected_world_root_is_rejected_before_target_preparation(self):
+        root=self.runtime.machine.state/'isolated-worlds';root.mkdir()
+        outside=self.runtime.machine.state/'outside-world';outside.mkdir()
+        for name,variable in (('django','DJ'),('requests','RQ'),('rich','RH')):
+            path=root/name
+            if name=='requests':path.symlink_to(outside,target_is_directory=True)
+            else:path.mkdir()
+            self.runtime.session.world_paths[name]=path
+            self.runtime.session.env[variable]=path
+        self.runtime.worlds=root
+        with self.assertRaisesRegex(PermissionError,'native world'):
+            self.runtime._world_scope(target=False)
+        self.assert_no_native_mutation()
+
+    def test_missing_world_root_is_rejected_before_target_preparation(self):
+        root=self.runtime.machine.state/'missing-worlds'
+        for name,variable in (('django','DJ'),('requests','RQ'),('rich','RH')):
+            self.runtime.session.world_paths[name]=root/name
+            self.runtime.session.env[variable]=root/name
+        self.runtime.worlds=root
+        with self.assertRaisesRegex(PermissionError,'native world'):
+            self.runtime._world_scope(target=False)
+        self.assert_no_native_mutation()

@@ -1,5 +1,9 @@
 # Live executable developmental integration protocol
 
+This is the preserved canonical E/D experiment protocol. The source-pinned V54
+continuation and its separate verification boundary are specified in
+[V54_PROTOCOL.md](V54_PROTOCOL.md).
+
 Objective: execute previously qualified developmental source through the existing
 Metatron/FLASH authority, independently check actual consequences, and test causal
 withdrawal, restoration and cold restart. This protocol fixes the integration
