@@ -1,5 +1,14 @@
 name: Frozen generic native frontier and recursive-development probe
 on:
+  push:
+    branches: [research/udm-generic-native-frontier-20261016]
+    paths:
+      - .github/workflows/udm-recursive-native-frontier.yml
+      - research/unified_consequence_runtime/generic_native_verify.py
+      - research/unified_consequence_runtime/native_frontier.py
+      - research/unified_consequence_runtime/qualify_recursive_frontier.py
+      - research/unified_consequence_runtime/cross_frontier.py
+      - research/unified_consequence_runtime/developmental_machine.py
   workflow_dispatch:
 permissions:
   contents: read
