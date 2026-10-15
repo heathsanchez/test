@@ -167,7 +167,8 @@ class NativeVerifierTests(unittest.TestCase):
     def test_native_imports_compile_pinned_source_instead_of_cached_bytecode(self):
         self.verify(ARCHIVE / "e/62/agent_response.json", 62)
         import sys
-        package = Path("/workspace/udm-venv/lib/python3.12/site-packages/webarena_verified")
+        import webarena_verified
+        package = Path(webarena_verified.__file__).resolve().parent
         native_modules = [module for name, module in sys.modules.items() if name == "webarena_verified" or name.startswith("webarena_verified.")]
         self.assertTrue(native_modules)
         for module in native_modules:
