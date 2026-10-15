@@ -53,7 +53,8 @@ class Machine:
         if not witness:
             raise ValueError("observation adds no consequential distinction")
         source=append(self.log,Node("source",{"source":cap.source,"scope":cap.scope,
-                 "implementation_sha256":cap.implementation_sha256,\n                 "supersedes":supersedes}))
+                 "implementation_sha256":cap.implementation_sha256,
+                 "supersedes":supersedes}))
         evidence=append(source,Node("independent_observation",{
             "verifier":cap.verifier,"expected_sha256":sha256(
               json.dumps(expected,sort_keys=True).encode()).hexdigest()},
