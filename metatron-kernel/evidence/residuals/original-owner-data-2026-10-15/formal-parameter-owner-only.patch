@@ -1,0 +1,46 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -6272,10 +6272,10 @@
+             limits.judgment_steps,
+         ))?;
+ 
+-        let rule_field_frame = parameter_frame.extend_free(motive).extend_free(minor);
++        let rule_field_frame = parameter_frame.clone().extend_free(motive).extend_free(minor);
+         verdict_boundary(checker.convert(
+             &TypeValue::Term(
+-                checker.closure(*constructor_field, EnvFrame::empty().extend_free(alpha)),
++                checker.closure(*constructor_field, parameter_frame),
+             ),
+             &TypeValue::Term(checker.closure(rule_field, rule_field_frame)),
+             limits.judgment_steps,
+@@ -6461,10 +6461,10 @@
+             limits.judgment_steps,
+         ))?;
+ 
+-        let rule_field_frame = parameter_frame.extend_free(motive).extend_free(minor);
++        let rule_field_frame = parameter_frame.clone().extend_free(motive).extend_free(minor);
+         verdict_boundary(checker.convert(
+             &TypeValue::Term(
+-                checker.closure(*constructor_field, EnvFrame::empty().extend_free(alpha)),
++                checker.closure(*constructor_field, parameter_frame),
+             ),
+             &TypeValue::Term(checker.closure(rule_field, rule_field_frame)),
+             limits.judgment_steps,
+@@ -12969,3 +12969,17 @@
+     }
+     certified
+ }
++#[cfg(test)]
++mod derived_formal_parameter_owner_tests {
++ use super::*;
++ use crate::id::{IdTable,LevelId};
++ #[test]
++ fn shifted_derived_parameter_reuses_one_actual_owner_and_rejects_recreated_owner(){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(i,v)in[(0,Expr::Sort(LevelId(1))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::Pi{domain:ExprId(1),body:ExprId(0)}),(3,Expr::Const{name:NameId(2),levels:vec![]}),(4,Expr::BVar(0)),(5,Expr::BVar(1)),(6,Expr::App{fun:ExprId(3),arg:ExprId(4)}),(7,Expr::App{fun:ExprId(3),arg:ExprId(5)})]{e.insert(ExprId(i),v).unwrap();}
++  let env=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(2))).unwrap();let c=TypeChecker::new(&e,&l,&env);
++  let original=EnvFrame::empty().extend_free(FreeId(10001));let shifted=original.clone().extend_free(FreeId(10003));
++  let lhs=TypeValue::Term(c.closure(ExprId(6),original));let rhs=TypeValue::Term(c.closure(ExprId(7),shifted));assert!(c.convert(&lhs,&rhs,4096).is_proven(),"a shifted body still refers to the ONE original formal parameter");
++  let unrelated=TypeValue::Term(c.closure(ExprId(6),EnvFrame::empty().extend_free(FreeId(10001))));assert!(!c.convert(&unrelated,&rhs,4096).is_proven(),"reusing a numeric FreeId cannot identify independently introduced parameters");
++ }
++}

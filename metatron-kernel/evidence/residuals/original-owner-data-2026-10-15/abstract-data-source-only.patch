@@ -1,0 +1,68 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -6652,7 +6652,7 @@
+                 let NeutralHead::Free(_,Some(owner))=&n.head else{return false;};
+                 let ledger=self.checked_binding_lineage.borrow();let Some(Some(w))=ledger.get(&owner.id()) else{return false;};
+                 let TypeValue::Term(domain)=&w.domain else{return false;};let mut id=domain.expr;
+-                for _ in 0..16 {match self.expressions.get(id){Some(Expr::App{fun,..})=>id=*fun,Some(Expr::Const{name,..})=>return self.environment.shared_projection_specs().contains_key(name),_=>return false,}}
++                for _ in 0..16 {match self.expressions.get(id){Some(Expr::App{fun,..})=>id=*fun,Some(Expr::Const{name,..})=>return self.environment.shared_projection_specs().contains_key(name),Some(Expr::BVar(_))=>return true,_=>return false,}}
+                 false
+             };
+             if !possible(a)||!possible(b){return None;}
+@@ -6677,7 +6677,7 @@
+         }
+         let allowance=(*remaining).min(256);if allowance==0{return None;}*remaining-=allowance;
+         let actual_type=self.machine().expose(left_type_source.clone(),Transparency::Reducible,allowance);
+-        let Value::Neutral(Neutral{head:NeutralHead::Const{name:type_name,..},..})=actual_type.proven_value()? else{return None;};
++        let Value::Neutral(type_head)=actual_type.proven_value()? else{return None;};
+         // A nominal is rigid only when its ORIGINAL introduction is certified
+         // in this actual Gamma; unrelated same-number owners are not unequal.
+         let certified_nominal=|n:&Neutral|->Option<FreeId>{
+@@ -6688,6 +6688,17 @@
+             if !context.starts_with(&witness.protected_prefix)||fresh_local(witness.protected_prefix.len().checked_sub(1)?)!=Some(*free){return None;}
+             Some(*free)
+         };
++        if nominal(a)&&nominal(b)&&nominal(type_head) {
++            // An abstract, independently formed DATA type cannot unfold to a
++            // proof or an eta-expandable record. All three original binders
++            // must be certified in this actual Gamma; numbers alone confer
++            // neither identity nor inequality.
++            certified_nominal(type_head)?;
++            let (x,y)=(certified_nominal(a)?,certified_nominal(b)?);
++            if x!=y{return Some(Judgment::refuted("distinct-rigid-local-terms"));}
++            return None;
++        }
++        let NeutralHead::Const{name:type_name,..}=&type_head.head else{return None;};
+         if nominal(a)&&nominal(b) {
+             let (x,y)=(certified_nominal(a)?,certified_nominal(b)?);
+             if x!=y&&self.is_non_eta_structure_type(*type_name){return Some(Judgment::refuted("non-eta-structure-mismatch"));}
+@@ -9326,3 +9337,29 @@
+   let dangling=c.closure(ExprId(3),EnvFrame::empty());assert!(!crate::convert::source_opening_avoids_capture(&c,&dangling,fresh,&mut 64));
+  }
+ }
++
++#[cfg(test)]
++mod source_abstract_data_local_controls {
++ use super::*;use crate::syntax::Level;
++ #[test] fn distinct_abstract_data_locals_require_the_actual_owned_gamma(){
++  for proof in [false,true] {
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(i,v)in[(0,Expr::Sort(LevelId(if proof {0}else{1}))),(1,Expr::BVar(0)),(2,Expr::BVar(1))]{e.insert(ExprId(i),v).unwrap();}
++  let env=Environment::empty();let c=TypeChecker::new(&e,&l,&env).strict_certificate_probe();
++  let sort=TypeValue::Term(Closure::new(ExprId(0),EnvFrame::empty()));let p=EnvFrame::empty().extend_free(FreeId(0));c.retain_shared_checked_binding(&p,sort.clone(),Rc::new(vec![sort.clone()]));
++  let ty=TypeValue::Term(Closure::new(ExprId(1),p.clone()));let x=p.extend_free(FreeId(1));c.retain_shared_checked_binding(&x,ty.clone(),Rc::new(vec![sort.clone(),ty.clone()]));
++  let y=x.extend_free(FreeId(2));let gamma=vec![sort,ty.clone(),ty.clone()];c.retain_shared_checked_binding(&y,ty,Rc::new(gamma.clone()));
++  let left=Closure::new(ExprId(2),y.clone());let right=Closure::new(ExprId(1),y.clone());
++  let lv=Value::Neutral(Neutral{head:NeutralHead::Free(FreeId(1),Some(x.clone())),spine:vec![]});let rv=Value::Neutral(Neutral{head:NeutralHead::Free(FreeId(2),Some(y.clone())),spine:vec![]});
++  let compare=||c.checked_source_structure_relation(&left,&right,&lv,&rv,&gamma,&mut 4096);
++  if proof {assert!(compare().is_none(),"proof locals cannot receive rigid data inequality");}
++  else {assert!(compare().is_some_and(|r|r.is_refuted()),"distinct certified data locals of abstract p:Type are rigidly unequal");}
++  assert!(c.checked_source_structure_relation(&left,&left,&lv,&lv,&gamma,&mut 4096).is_none(),"same owned local is never distinct");
++  let forged=Value::Neutral(Neutral{head:NeutralHead::Free(FreeId(2),Some(EnvFrame::empty().extend_free(FreeId(2)))),spine:vec![]});
++  assert!(c.checked_source_structure_relation(&left,&right,&lv,&forged,&gamma,&mut 4096).is_none(),"matching numeric local IDs in unrelated owners do not certify inequality");
++  assert!(c.checked_source_structure_relation(&left,&right,&lv,&rv,&[],&mut 4096).is_none());
++  assert!(c.checked_source_structure_relation(&left,&right,&lv,&rv,&gamma,&mut 0).is_none());
++  c.checked_binding_lineage.borrow_mut().insert(x.id(),None);assert!(compare().is_none());
++  }
++ }
++}

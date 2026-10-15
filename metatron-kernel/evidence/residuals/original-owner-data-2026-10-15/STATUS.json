@@ -1,0 +1,39 @@
+{
+  "status": "UNPROMOTED",
+  "counts": {
+    "accept": 117,
+    "reject": 69,
+    "unknown": 10,
+    "wrong": 0,
+    "errors": 0
+  },
+  "binary_sha256": "62710508b0eb98257af9346fcf47a22ffb7e64c666b9d8363a96136a34dcef1f",
+  "original_target_residuals_closed": 0,
+  "protected_controls_non_accept": true,
+  "capabilities": [
+    "preserve original formal parameter owner in constructor rule validation",
+    "strictly certified rigid inequality of abstract data locals"
+  ],
+  "retained_regressions": [
+    {
+      "case": "bad/bugs/k-rec-conv.ndjson",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "bad/tutorial/116_funEtaBad.ndjson",
+      "before": 1,
+      "after": 2
+    },
+    {
+      "case": "good/init-prelude.ndjson",
+      "before": 0,
+      "after": 2
+    },
+    {
+      "case": "good/tutorial/123_accRecType.ndjson",
+      "before": 0,
+      "after": 2
+    }
+  ]
+}
