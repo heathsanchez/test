@@ -83,9 +83,11 @@ class Machine:
 
     def restore_from_original_support(self,name,cap,observe,expected):
         # Restoration must use a new source/receipt, never un-revoke old evidence.
-        self.capabilities.pop(name)
+        previous=self.capabilities.pop(name)
         self.observers.pop(name)
-        return self.admit_observation(cap,observe,expected)
+        if previous in live_ids(self.log):
+            raise ValueError("old support not withdrawn")
+        return self.admit_observation(cap,observe,expected,supersedes=previous)
 
     def persist(self,path):
         Path(path).write_text(dumps(self.log))
