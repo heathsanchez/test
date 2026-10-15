@@ -5,6 +5,8 @@ on:
     paths:
       - 'research/unified_consequence_runtime/generated_overlay_gate.py'
       - 'research/unified_consequence_runtime/test_generated_overlay_gate.py'
+      - 'research/unified_consequence_runtime/generic_native_verify.py'
+      - 'research/unified_consequence_runtime/test_native_generated_overlay_integration.py'
       - '.github/workflows/udm-generated-overlay-gate.yml'
   workflow_dispatch:
 permissions:
@@ -22,5 +24,9 @@ jobs:
           python-version: '3.12'
       - name: Validate source-pinned overlay gate
         run: python -m unittest research.unified_consequence_runtime.test_generated_overlay_gate -v
+      - name: Install independent native pytest authority
+        run: python -m pip install pytest==8.3.5
+      - name: Verify native source-pinned generated-module execution and ablation
+        run: python -m unittest research.unified_consequence_runtime.test_native_generated_overlay_integration -v
       - name: Validate Python source
         run: python -m py_compile research/unified_consequence_runtime/generated_overlay_gate.py research/unified_consequence_runtime/test_generated_overlay_gate.py
