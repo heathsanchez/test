@@ -1,0 +1,11 @@
+{
+  "runtime_change": "Both literal BVar subjects use existing saved original-source proof fallback after ordinary comparison. No equality/type authority added.",
+  "source": "bvar-proof-schedule-source",
+  "binary_sha256": "cb1e1112ab1b82c8beec3d7bb5d80a9f82f7cc874db95435290dc6e2e3b667d8",
+  "library": "142 passed,0 failed,10 ignored",
+  "corpus": "118A70R8U zero wrong/errors; immutable",
+  "delta": "Only full good/tutorial/123_accRecType UNKNOWN\u2192ACCEPT vs b328. All previous verdicts retained.",
+  "init": "Nat.le_trans exactprefix ACCEPT; fullInit UNKNOWN Nat.modCore_lt firstApp7214 Gamma3 remaining64724",
+  "fueled": "UNKNOWN same firstApp6130 Gamma7 remaining169",
+  "next": "Actualdifferentproof Free2 vsFree3 at Nat.modCore_lt; passive strictproofhelper guard/cost audit only"
+}

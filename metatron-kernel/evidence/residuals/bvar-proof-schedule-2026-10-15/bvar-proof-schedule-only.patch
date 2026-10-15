@@ -1,0 +1,13 @@
+--- experiments/source-eta-argument/source/src/convert.rs	2026-10-15 15:39:27
++++ experiments/init-le-trans-review/bvar-proof-schedule-source/src/convert.rs	2026-10-15 16:28:11
+@@ -249,7 +249,9 @@
+                     if remaining<cost{return false;}remaining-=cost;
+                     matches!(source.env.lookup_binding_ref(*index),Some(EnvBinding::Closure(_)))
+                 };
+-                both_apps||captured_substitution(lhs)||captured_substitution(rhs)
++                let both_bvars=matches!(checker.expression(lhs.expr),Some(Expr::BVar(_)))
++                    &&matches!(checker.expression(rhs.expr),Some(Expr::BVar(_)));
++                both_apps||both_bvars||captured_substitution(lhs)||captured_substitution(rhs)
+             },
+             _=>false,
+         };
