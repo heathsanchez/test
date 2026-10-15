@@ -44,7 +44,7 @@ jobs:
                   super().run()
                   target = Path(self.build_lib) / "fixture_generated" / "_version.py"
                   target.parent.mkdir(parents=True, exist_ok=True)
-                  target.write_text('GENERATED_VERSION = "0.0.1"\\n')
+                  target.write_text('GENERATED_VERSION = "0.0.1"' + chr(10))
 
           setup(cmdclass={"build_py": BuildGenerated})
           EOF
