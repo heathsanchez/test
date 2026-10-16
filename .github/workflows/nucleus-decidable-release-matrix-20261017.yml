@@ -1,0 +1,95 @@
+name: Nucleus stable Lean 4.35-4.36 Decidable ABI gate
+on:
+  push:
+    branches: [research/nucleus-decidable-intro-20261017]
+    paths: [".github/workflows/nucleus-decidable-release-matrix-20261017.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - toolchain: leanprover/lean4:v4.35.0
+            exporter: 5a9a355dc6c5fd82b69058d433e2ae2e8dfbf8fe
+            label: 4-35-0
+          - toolchain: leanprover/lean4:v4.36.0-rc1
+            exporter: df81913eee5519d5a88ae5b0fd701b5298cc29ab
+            label: 4-36-rc1
+    env:
+      TOOLCHAIN: ${{ matrix.version.toolchain }}
+      EXPORTER_SHA: ${{ matrix.version.exporter }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact same Nucleus source and record SHA
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Compile source proof with frozen Lean release and lean4export
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain "$TOOLCHAIN"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --version | tee /tmp/evidence/lean-version.txt
+          lean --githash > /tmp/evidence/lean-githash.txt
+          mkdir -p /tmp/abi
+          echo "$TOOLCHAIN" > /tmp/abi/lean-toolchain
+          cat > /tmp/abi/lakefile.toml <<'EOF'
+          name = "nucleus_lean_release_compatibility"
+          [[lean_lib]]
+          name = "ABI"
+          EOF
+          cat > /tmp/abi/ABI.lean <<'EOF'
+          import Init
+          theorem release_decide : (1 + 2 : Nat) = 3 := by decide
+          theorem release_rfl : (1 + 2 : Nat) = 3 := by rfl
+          EOF
+          (cd /tmp/abi && lake build ABI)
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter
+          git -C /tmp/exporter checkout -q "$EXPORTER_SHA"
+          echo "$TOOLCHAIN" > /tmp/exporter/lean-toolchain
+          (cd /tmp/exporter && lake build)
+      - name: Compare new struct constructor, proof verification, and control
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          python3 - <<'PY'
+          import pathlib,json,hashlib,os,subprocess
+          evidence=pathlib.Path('/tmp/evidence')
+          baseline=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in baseline['origin_flags']})
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1';env['METATRON_KERNEL_DIAGNOSTICS']='1'
+          result=[]
+          for theorem in ['release_decide','release_rfl']:
+              p=evidence/(theorem+'.ndjson')
+              with p.open('wb') as f:subprocess.run(['lake','env','/tmp/exporter/.lake/build/bin/lean4export','ABI','--',theorem],cwd='/tmp/abi',stdout=f,check=True)
+              data=p.read_bytes(); rows=[json.loads(l) for l in data.splitlines()]
+              assert rows[0]['meta']['format']['version']=='3.1.0'
+              names={0:''}
+              for r in rows:
+                  if 'in' in r:
+                      n=r.get('str') or r.get('num');names[r['in']]=names[n['pre']]+('.' if names[n['pre']] else '')+str(n.get('str',n.get('i')))
+              abi=[(len(r['inductive']['ctors']),[c['numFields'] for c in r['inductive']['ctors']]) for r in rows if 'inductive'in r and names[r['inductive']['types'][0]['name']]=='Decidable']
+              run=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=data,env=env,capture_output=True,timeout=90)
+              record={'name':theorem,'sha256':hashlib.sha256(data).hexdigest(),'bytes':len(data),'rc':run.returncode,'decidable_abi':abi,'trace':(run.stderr+run.stdout).decode(errors='replace')[-1500:]}
+              result.append(record)
+              print(theorem,record['rc'],abi,flush=True)
+              p.unlink()
+          warrant=all(r['rc']==0 for r in result) and result[0]['decidable_abi']==[(1,[2])]
+          (evidence/'release-gate.json').write_text(json.dumps({'source':os.environ['GITHUB_SHA'],'toolchain':os.environ['TOOLCHAIN'],'exporter':os.environ['EXPORTER_SHA'],'results':result,'warranted':warrant},indent=2)+'\n')
+          assert warrant,'Native new Decidable ABI mismatch for this exact release'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-decidable-${{ matrix.version.label }}-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
