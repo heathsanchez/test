@@ -1,0 +1,11 @@
+# Unpromoted research: derived Pi conversion retains actual checked context
+
+Original196 origin: 119 ACCEPT / 71 REJECT / 6 UNKNOWN / 0 incorrect / 0 errors; all individual retained verdicts preserved. 160 library tests pass / 0 fail / 10 ignored. Both protected controls remain UNKNOWN. Production remains unchanged.
+
+**No original positive full export closes.** Deep Magma n21 and n36 now pass Nat.bitwise._unary and reach countermodel. Source-complete Nat.bitwise._unary prefix (14,598 lines / 785,592 bytes), SHA256 324e8c0daefffd0f760e7182a6c697011c7bf235848b7553466d994f18b0f8f2: before UNKNOWN, candidate ACCEPT. This is a declaration-prefix gain, not a whole-export ACCEPT.
+
+A private checked-application continuation consumes only actual strict argument TYPE inference and the actual function Pi domain. The formation premise derived by those typing judgments is retained for dependent Pi comparison, rather than reconstructed after conversion has lost it. Require the original left physical Free owner, actual parent, exact complete protected Gamma plus actual domain, independently compare domains, then open the original right source codomain using one typed alias to that same checked owner. Preserve original lexical parents and each own universe substitution. Recursion carries this premise only into the instantiated codomains. Ordinary conversion is used for domain and final body obligations within the original bounded allowance. A legacy/non-strict inference route cannot invoke the continuation. Wrong Gamma, revoked ownership, exhausted work, bad argument universe and beta-erased malformed arguments decline in controls.
+
+Includes previously isolated complete AST Pi-lift and monomorphic captured-constant pure reductions, plus original fixed-Pi owner preservation. Every component retains its source/capture authority checks. No new fuel, unrestricted unfolding, theorem-name special case, environment quotient, global judgment cache or external checking backend.
+
+Remaining whole exports: Fueled chain6_datF; Grind CommRing.mul_comm; all four Magma countermodels. Full Mathlib ACCEPT and competitive hardware instruction qualification remain unachieved. CI promotion gate is unchanged: complete Fueled ACCEPT, >=120/71/<=5, no regression/wrong/error, protected controls non-ACCEPT.

@@ -1,0 +1,21 @@
+{
+  "case": "source-complete declaration prefix through Nat.bitwise._unary",
+  "original_input_sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+  "prefix_sha256": "324e8c0daefffd0f760e7182a6c697011c7bf235848b7553466d994f18b0f8f2",
+  "lines": 14598,
+  "bytes": 785592,
+  "rows": [
+    {
+      "candidate": "before",
+      "rc": 2,
+      "binary_sha256": "e23e3a4edfaebd7dd76fd435442b4ee785cd6b550ebd08b975c5c97be1361eea",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.bitwise._unary:stage=definition.value:verdict=UNKNOWN:reason=domain-owned-opening-unavailable\n"
+    },
+    {
+      "candidate": "strict-derived-pi",
+      "rc": 0,
+      "binary_sha256": "44449b7a22add455e7bdd1adbc9313cfe2999f631624f4be994369a32146fa17",
+      "terminal": ""
+    }
+  ]
+}

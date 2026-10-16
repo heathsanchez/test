@@ -1,0 +1,48 @@
+{
+  "binary_sha256": "44449b7a22add455e7bdd1adbc9313cfe2999f631624f4be994369a32146fa17",
+  "qualification_scope": "six targeted full exports only",
+  "rows": [
+    {
+      "case": "good/perf/fueled-chain.ndjson",
+      "rc": 2,
+      "sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "seconds": 0.6785933339999701,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/grind-ring-5.ndjson",
+      "rc": 2,
+      "sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "seconds": 0.8949305829999048,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Lean.Grind.CommRing.mul_comm:stage=theorem.value:verdict=UNKNOWN:reason=source-binder-capture-or-support-unavailable\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n21.ndjson",
+      "rc": 2,
+      "sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "seconds": 0.48664545800011183,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n36.ndjson",
+      "rc": 2,
+      "sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "seconds": 0.4911955410000246,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n21.ndjson",
+      "rc": 2,
+      "sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "seconds": 0.26370495799983473,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n7.ndjson",
+      "rc": 2,
+      "sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "seconds": 0.2606218329999592,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    }
+  ]
+}

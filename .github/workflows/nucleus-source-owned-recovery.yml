@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      EXPERIMENT: metatron-kernel/evidence/residuals/checked-rule-k-parity-2026-10-16/unpromoted-source
+      EXPERIMENT: metatron-kernel/evidence/residuals/derived-pi-context-2026-10-16/unpromoted-source
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +56,12 @@ jobs:
                       rc,tail=p.returncode,(p.stderr+p.stdout).decode(errors='replace')[-2000:]
                   except subprocess.TimeoutExpired: rc,tail=124,'TIMEOUT'
               return dict(case=case,rc=rc,sha256=digest,terminal=tail)
+          prefix=pathlib.Path(os.environ['EXPERIMENT']).parent/'bitwise-prefix.ndjson'
+          assert hashlib.sha256(prefix.read_bytes()).hexdigest()=='324e8c0daefffd0f760e7182a6c697011c7bf235848b7553466d994f18b0f8f2'
+          assert (root/'good/perf/magma-list-deep-n21.ndjson').read_bytes().startswith(prefix.read_bytes())
+          prefix_result=check(prefix,'source-complete Nat.bitwise._unary prefix')
+          pathlib.Path('/tmp/evidence/bitwise-prefix.json').write_text(json.dumps(prefix_result,indent=2)+'\n')
+          assert prefix_result['rc']==0,'Source-complete declaration prefix must ACCEPT; this is not the full export'
           rows=[check(p,str(p.relative_to(root))) for group in ['bad','good'] for p in sorted((root/group).rglob('*.ndjson'))]
           assert len(rows)==196,len(rows)
           controls=[check(pathlib.Path('metatron-kernel/tests/fixtures')/name,name) for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']]
