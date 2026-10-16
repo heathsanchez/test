@@ -1,8 +1,10 @@
 name: Nucleus Decidable upstream representation ABI separator
 on:
   push:
-    branches: [research/nucleus-arena-reachability-20261017]
-    paths: [".github/workflows/nucleus-decidable-version-separator-20261017.yml"]
+    branches: [research/nucleus-decidable-intro-20261017]
+    paths:
+      - ".github/workflows/nucleus-decidable-version-separator-20261017.yml"
+      - "metatron-kernel/**"
   workflow_dispatch:
 permissions:
   contents: read
