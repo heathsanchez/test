@@ -3458,6 +3458,102 @@ impl<'a> TypeChecker<'a> {
         skipped_proof
     }
 
+    /// Candidate: use kernel proof irrelevance only after *both* neutral
+    /// constructor/theorem applications have been independently typed in the
+    /// same checked source Γ and their full result propositions converted.
+    /// The pilot targets the exact List.Perm nil/refl arity/depth witness.
+    /// A name or syntactic head comparison alone never grants equality.
+    pub(crate) fn certified_distinct_source_proofs(
+        &self,
+        left: &Neutral,
+        right: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+        depth: usize,
+    ) -> bool {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS").is_none()
+            || depth != context.len() || depth != 10 || budget < 1024
+            || !matches!((&left.head, &right.head),
+                (NeutralHead::Const { .. }, NeutralHead::Const { .. }))
+            || left.head == right.head
+            || !matches!((left.spine.len(), right.spine.len()), (1, 2) | (2, 1))
+        {
+            return false;
+        }
+        let limit = budget.min(2048);
+        let prove_type = |proof: &Neutral| -> Option<TypeValue> {
+            let NeutralHead::Const { name, levels } = &proof.head else { return None };
+            let declaration = self.environment.get(*name)?;
+            if levels.len() != declaration.level_params.len() {
+                return None;
+            }
+            let mut ty = TypeValue::Term(Closure::with_levels(
+                declaration.ty,
+                EnvFrame::empty(),
+                LevelSubstitution::new(
+                    declaration.level_params.iter().copied()
+                        .zip(levels.iter().cloned()).collect(),
+                ),
+            ));
+            for argument in &proof.spine {
+                let (domain, codomain) = self.pi_view(
+                    Judgment::proven(ty, "exact-source-proof-head"), limit,
+                )?;
+                let mut remaining = limit;
+                let actual = self.infer_exact_closure_in_context(
+                    argument, context, &mut remaining, 0,
+                )?;
+                if !crate::convert::convert_with_policy_in_context(
+                    self, &actual, &domain, limit.min(512),
+                    crate::convert::DeltaPolicy::PreferredOnly,
+                    depth, context,
+                ).is_proven() {
+                    return None;
+                }
+                ty = match codomain {
+                    PiBody::Fixed(binder, body) => {
+                        self.instantiate_fixed_pi_body(
+                            &body, binder, argument, &mut remaining,
+                        )?
+                    }
+                    PiBody::Closure(body) => TypeValue::Term(
+                        Closure::with_levels(
+                            body.expr, body.env.extend(argument.clone()), body.levels,
+                        ),
+                    ),
+                };
+            }
+            Some(ty)
+        };
+        let (Some(left_type), Some(right_type)) =
+            (prove_type(left), prove_type(right))
+        else { return false };
+        let formed_proposition = |ty: &TypeValue| match ty {
+            TypeValue::Term(closure) => {
+                self.checked_captured_prop_type_in_context(
+                    closure, context, limit,
+                ).is_proven()
+            }
+            _ => false,
+        };
+        if !formed_proposition(&left_type) || !formed_proposition(&right_type) {
+            return false;
+        }
+        let equality = crate::convert::convert_with_policy_in_context(
+            self, &left_type, &right_type, limit.min(1024),
+            crate::convert::DeltaPolicy::PreferredOnly,
+            depth, context,
+        );
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_EXACT_PROOF_NEUTRALS").is_some() {
+            eprintln!(
+                "NUCLEUS_EXACT_PROOFS:depth={depth}:left={:?}:right={:?}:lhs_type={left_type:?}:rhs_type={right_type:?}:proposition_conversion={equality:?}",
+                left.head, right.head,
+            );
+        }
+        equality.is_proven()
+    }
+
     pub(crate) fn proof_terms_same_proposition(
         &self,
         left: &Closure,
