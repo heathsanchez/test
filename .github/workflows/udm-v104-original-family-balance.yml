@@ -1,0 +1,126 @@
+name: Exposed V104 original-grammar family scheduling diagnostic
+on:
+  push:
+    branches: [research/udm-v7-exposed-balanced-v104-20261017]
+    paths:
+      - .github/workflows/udm-v104-original-family-balance.yml
+      - research/unified_consequence_runtime/v104_family_balance_v7.py
+      - research/unified_consequence_runtime/test_v104_family_balance_v7.py
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: udm-v104-family-balance-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  exact-original-grammar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      UDM_V7_TRISKELION: ${{ github.workspace }}/components/triskelion
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Freeze original V104 grammar and test source pre-exposure
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/balanced-v104
+          git rev-parse HEAD > qualification/balanced-v104/SOURCE_COMMIT.txt
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/test_v104_family_balance_v7.py)" = 8d3bd3dd48727daad779ce10c30fdc771512c6da
+          for path in \
+            research/unified_consequence_runtime/decisive_constructor.py \
+            research/unified_consequence_runtime/qualify_v7_exposed_msi_policy_census.py \
+            research/unified_consequence_runtime/typed_native_authority_v6.py \
+            research/unified_consequence_runtime/typed_source_inventory_v5.py \
+            research/unified_consequence_runtime/archaeology/typed-v104-v7/PROTOCOL.json; do
+            test "$(git rev-parse HEAD:"$path")" = \
+                 "$(git rev-parse 14bb10b6941dfb7a6efba353f72baad52e58cd93:"$path")"
+          done
+      - name: Checkout only source-pinned original V104 method (no task head)
+        run: |
+          set -euo pipefail
+          mkdir -p components
+          git init -q components/triskelion
+          git -C components/triskelion fetch -q --depth=1 \
+            https://github.com/heathsanchez/triskelion.git \
+            426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C components/triskelion checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q qualification/balanced-v104/original
+          git -C qualification/balanced-v104/original fetch -q --no-tags --depth=1 \
+            https://github.com/pallets/click.git \
+            bb695aaecdef95832d167fc1d508921745aa824e
+          git -C qualification/balanced-v104/original rev-parse FETCH_HEAD > qualification/balanced-v104/CLICKSOURCE.txt
+          test "$(cat qualification/balanced-v104/CLICKSOURCE.txt)" = bb695aaecdef95832d167fc1d508921745aa824e
+      - name: Check original V104 method binding and precommitted synthetic contracts
+        run: |
+          set -euo pipefail
+          python -B -m pip install --disable-pip-version-check --no-input \
+            packaging==26.3 pytest==8.3.5
+          python -B -m unittest \
+            research.unified_consequence_runtime.test_v104_family_balance_v7 \
+            -v 2>&1 | tee qualification/balanced-v104/CONTRACTS.log
+      - name: Compare original 64 emissions versus original-grammar family-balanced 64
+        run: |
+          set -euo pipefail
+          python -B - <<'PY' | tee qualification/balanced-v104/SUMMARY.log
+          import collections,hashlib,json,os,subprocess,time
+          from pathlib import Path
+          from research.unified_consequence_runtime import decisive_constructor as original
+          from research.unified_consequence_runtime import v104_family_balance_v7 as balance
+          repo=Path('qualification/balanced-v104/original').absolute()
+          raw=subprocess.check_output(['git','-C',str(repo),'show',
+               'bb695aaecdef95832d167fc1d508921745aa824e:src/click/core.py'])
+          source=raw.decode()
+          methods=Path(os.environ['UDM_V7_TRISKELION'])
+          t=time.monotonic()
+          old=original.generate_candidates(methods,source,cap=64)
+          original_wall=time.monotonic()-t
+          t=time.monotonic()
+          new=balance.emit(methods,source,cap=64)
+          balanced_wall=time.monotonic()-t
+          old_family=collections.Counter(str((tuple(s),tuple(b))) for s,b,_ in old)
+          new_family=collections.Counter(str((tuple(x['selector']),tuple(x['builder']))) for x in new['rows'])
+          record={
+            'schema':'UDM_V7_EXPOSED_BALANCED_V104_SOURCE_ONLY',
+            'source':'pallets/click original PR3884 base, already exposed',
+            'base_commit':'bb695aaecdef95832d167fc1d508921745aa824e',
+            'source_sha256':hashlib.sha256(raw).hexdigest(),
+            'original_V104_commit':'426c54f7c774560e0fabe7213c5ef333b1327c71',
+            'original_cap64_count':len(old),
+            'original_cap64_distinct_families':len(old_family),
+            'original_cap64_families':dict(sorted(old_family.items())),
+            'balanced_cap64_count':len(new['rows']),
+            'balanced_cap64_distinct_families':len(new_family),
+            'balanced_cap64_families':dict(sorted(new_family.items())),
+            'balanced_method':'REUSE_AUTHENTICATED_V104_ALLOWED_BEFORE_CAP',
+            'original_emit_wall_seconds':original_wall,
+            'balanced_emit_wall_seconds':balanced_wall,
+            'balanced_source_program_calls':new['program_generator_calls'],
+            'native_calls':0,'learning_acquisitions':0,
+            'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN',
+            'scientific_status':'SOURCE_ONLY_CANDIDATE_DIVERSITY_NOT_NATIVE_WARRANT'
+          }
+          Path('qualification/balanced-v104/RESULT.json').write_text(
+              json.dumps(record,sort_keys=True,indent=2)+'\n')
+          assert record['original_cap64_count']==record['balanced_cap64_count']==64
+          assert record['balanced_cap64_distinct_families']>record['original_cap64_distinct_families']
+          assert record['G2']=='UNKNOWN'
+          print(json.dumps({k:v for k,v in record.items() if k.endswith('count') or k.endswith('families') and not isinstance(v,dict) or k in ('G2','scientific_status')},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-v7-original-family-balance-${{ github.sha }}-${{ github.run_attempt }}
+          path: qualification/balanced-v104/*.json
+          retention-days: 90
+          if-no-files-found: warn
