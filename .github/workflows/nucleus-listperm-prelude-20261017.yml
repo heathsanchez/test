@@ -1,0 +1,70 @@
+name: Nucleus exact List.Perm prelude witness
+on:
+  push:
+    branches: [research/nucleus-listperm-source-20261017]
+    paths: [".github/workflows/nucleus-listperm-prelude-20261017.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LEAN_REF: 5045d0056413266e57c625dcd7c365b10e377c52
+      EXPORT_REF: 076e8e57707e813375e8f9da8bf989799ace9680
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile independently pinned candidate
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Install exact Lean/lean4export and export only the source theorem closure
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          export PATH="$HOME/.elan/bin:$PATH"
+          test "$(lean --githash)" = "$LEAN_REF"
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter
+          git -C /tmp/exporter checkout -q "$EXPORT_REF"
+          echo leanprover/lean4:v4.34.1 > /tmp/exporter/lean-toolchain
+          (cd /tmp/exporter && lake build)
+          (cd /tmp/exporter && lake env .lake/build/bin/lean4export Init.Data.List.Perm -- "List.Perm.recOnSwap'" > /tmp/evidence/list-perm-reconswap.ndjson)
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          p=pathlib.Path('/tmp/evidence/list-perm-reconswap.ndjson')
+          with p.open('rb') as f:hdr=json.loads(f.readline())
+          assert hdr['meta']['format']['version']=='3.1.0'
+          metadata={'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size,'records':len(p.read_bytes().splitlines()),'metadata':hdr['meta']}
+          pathlib.Path('/tmp/evidence/metadata.json').write_text(json.dumps(metadata,indent=2)+'\n')
+          print(json.dumps(metadata),flush=True)
+          PY
+      - name: Localize complete source-derived typing residual
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,subprocess,pathlib,time,hashlib
+          base=pathlib.Path('/tmp/evidence')
+          source=pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json')
+          frozen=json.loads(source.read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in frozen['origin_flags']})
+          env.update({'METATRON_KERNEL_DIAGNOSTICS':'1','NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1','NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_ORIGIN_REPLAY':'1'})
+          data=(base/'list-perm-reconswap.ndjson').read_bytes()
+          start=time.monotonic()
+          r=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=data,capture_output=True,env=env,timeout=60)
+          stderr=r.stderr.decode(errors='replace')
+          report={'exit':r.returncode,'seconds':round(time.monotonic()-start,4),'stderr':stderr[-64000:],'stdout':r.stdout.decode(errors='replace')[-4000:]}
+          (base/'verdict.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps({'exit':r.returncode,'seconds':report['seconds'],'last_trace':stderr[-3800:]},sort_keys=True),flush=True)
+          assert r.returncode in (0,1,2),'Checker crashed or unexpectedly errored'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-listperm-prelude-source-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
