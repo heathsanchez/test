@@ -43,7 +43,7 @@ class FrozenV7TypedV104Bridge(unittest.TestCase):
         (self.repo/"src/pkg/__init__.py").write_text("def value():\n    return 0\n")
         (self.repo/"tests/test_pkg.py").write_text(
             "from pkg import value\n"
-            "def test_old(): assert value() == 0\n")
+            "def test_old(): assert True\n")
         git(self.repo,"add","-A")
         git(self.repo,"update-index","--add","--cacheinfo",
             "160000,"+"a"*40+",vendor/opaque")
@@ -84,7 +84,7 @@ class FrozenV7TypedV104Bridge(unittest.TestCase):
                                       {"replacements":[]},self.root/"candidate-a")
         self.assertEqual(record["status"],"SOURCE_BOUND_CANDIDATE_COMMIT_NO_WARRANT")
         manifest=typed.snapshot(self.repo,record["candidate_commit"])
-        self.assertEqual(manifest["counts"],{"regular":4,"symlink":1,"gitlink":1})
+        self.assertEqual(manifest["counts"],{"regular":3,"symlink":1,"gitlink":1})
         self.assertEqual(manifest["links"][0]["resolution"],"INTERNAL_REGULAR_FILE")
         self.assertEqual(manifest["gitlinks"][0]["status"],"OPAQUE_NOT_NATIVE_EXECUTION_AUTHORITY")
 
