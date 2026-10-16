@@ -1,0 +1,60 @@
+{
+  "baseline_files_preserved": 1406,
+  "expected_controls": {
+    "binding": 31,
+    "legacy": 5,
+    "modern_frozen": 29
+  },
+  "frozen_acceptance_sha256": "652c2f5117be0e61d6953c509228580a7441e2a8bc23fa1b67c2b5fc240b8671",
+  "frozen_source_pins": {
+    "decisive_native_verify.py": true,
+    "native_admission_v2.py": true,
+    "native_environment_selection_v3.py": true,
+    "native_environment_v3.py": true,
+    "native_execution_v2.py": true,
+    "native_execution_v3.py": true,
+    "test_native_admission_v2_adversarial.py": true,
+    "test_native_authority_v4.py": true,
+    "test_native_environment_selection_v3.py": true,
+    "test_native_execution_v3.py": true
+  },
+  "no_fresh_task_source_or_outcome_queries": true,
+  "noartifact_code_or_native_experiments": true,
+  "noartifact_download_attempted": true,
+  "other_checks": [
+    "APIartifactrun/source/digest/size provenance",
+    "allouterandnestedmanifestSHA256s and safeentries",
+    "completeall1479filefreeze andsourcearchivecommitbytes;1406baselineunchanged",
+    "31exactbinding,5exactlegacy,29exactmodern IDs no skips/errors/failures",
+    "modern39hashpinnedandlegacy22profile identity, distribution/pytest/executable/stdlib bindings",
+    "completeattemptledger53rawreportsreconciled withoutdoublecountinglegacy13",
+    "CIindexsourcefreeze+qualificationbefore/after andpostruntimeunchanged",
+    "sevenexactpreviouslyexposedmetadatarows remainmetadataonly with0native/collection; no taskeligibilitypromotion",
+    "strictfirstgateonlyG2-G6UNKNOWN; acquisitions=candidates0"
+  ],
+  "prior_retention_static_review": "../RETENTION_ONLY_REVIEW.json",
+  "qualifier_sha256": "e1516f57bf9ba564d747a8944d3d636f17836e56fb71a0ea52909bae842f11b4",
+  "run_id": 38944901241,
+  "schema": "UDM_NATIVE_AUTHORITY_V4_CI3_AUDIT_PREPARED_SCOPE_V1",
+  "source_commit": "a6521e27dcabdf69cf8e6ecd283432730d6aa846",
+  "source_tracked_files": 1479,
+  "status": "PREPARED_WAITING_FOR_ROOT_ARTIFACT_PATH",
+  "strict_raw_requirements": {
+    "all_current_run_reports": 66,
+    "default_collection_context": "admission-v4/default-collection-evidence",
+    "default_collection_recollections": 2,
+    "legacy_collection_reports": 9,
+    "legacy_native_reports": 4,
+    "legacy_total_reports": 13,
+    "modern_collection_reports": 39,
+    "modern_native_reports": 14,
+    "modern_total_reports": 53,
+    "must_compare": [
+      "recovered original full3-parameter-node positive collection vs originalcertificate",
+      "recovered original full3-parameter-node collection vs resealed2node forgery specified by unchangedfrozennegative test",
+      "allretained packet/report/disk/sourcebindings",
+      "bothprimary selected-runtime malformed original+replay nativePASS with2originalprotectedassertions"
+    ]
+  },
+  "utc": "2026-10-16T18:11:11.933589+00:00"
+}

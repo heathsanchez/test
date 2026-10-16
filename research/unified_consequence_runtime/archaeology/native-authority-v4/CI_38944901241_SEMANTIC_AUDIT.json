@@ -1,0 +1,401 @@
+{
+  "acquisitions": 0,
+  "admission_status": "ADMISSION_ONLY_QUALIFIED",
+  "artifact_code_executed": false,
+  "candidates": 0,
+  "catalog_canonical_sha256": "80237c3a540758e6a1d102150cf9209aa13963cff2ad4c478467ba289328b2a8",
+  "controls": {
+    "binding": {
+      "final_ok": true,
+      "ids": [
+        "research.unified_consequence_runtime.test_native_environment_v4.EnvironmentBindingV4.test_original_modules_and_all_bound_function_globals_remain_unmodified",
+        "research.unified_consequence_runtime.test_native_environment_v4.EnvironmentBindingV4.test_versioned_selector_preserves_original_derivation_bytecode_in_private_globals",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_comparison_detects_same_size_change_creation_removal_and_new_worktree",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_failed_git_read_retains_before_after_and_reports_change_without_restoring",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_git_directory_overrides_are_refused_instead_of_auditing_wrong_repository",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_missing_git_still_retains_interval_evidence",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_mutating_commands_and_output_or_external_tool_flags_are_refused",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_real_git_status_preserves_index_bytes",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_snapshot_hashes_all_linked_indexes_and_explicit_absence_without_git",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_snapshot_includes_inherited_alternate_index",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_native_v3_execution_and_original_search_algorithms_remain_bound",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_profile_checker_has_real_importable_v4_source_identity",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_qualified_environment_v4_is_used_without_mutating_v3_globals",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_screening_keeps_pass_and_fail_equal_in_fixed_source_order",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_unqualified_metadata_bridge_cannot_freeze_or_read_source",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_v3_admission_result_does_not_qualify_v4_metadata_inference",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_v4_freeze_rejects_an_omitted_committed_file_set",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_v4_source_reading_cli_refuses_missing_external_authority",
+        "research.unified_consequence_runtime.test_native_frontier_v4_entrypoint.NativeFrontierV4Entrypoint.test_module_execution_dispatches_through_importable_checker_module",
+        "research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_curator_excludes_all_previous_v3_universe_members",
+        "research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_curator_has_no_universe_before_a_qualified_v4_gate",
+        "research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_curator_query_imports_v4_gate_before_any_metadata_query",
+        "research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_record_assembly_uses_v4_without_changing_original_helper",
+        "research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_fresh_output_directory_cannot_start_a_replacement_query_round",
+        "research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_new_process_cannot_replay_a_retained_query_receipt",
+        "research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_replacement_universe_filename_is_rejected_before_its_contents",
+        "research.unified_consequence_runtime.test_frontier_v4_historical_portability.FrontierV4HistoricalPortability.test_changed_versioned_copy_cannot_silently_replace_frozen_history",
+        "research.unified_consequence_runtime.test_frontier_v4_historical_portability.FrontierV4HistoricalPortability.test_missing_untracked_original_keeps_complete_frozen_history",
+        "research.unified_consequence_runtime.test_frontier_v4_historical_portability.FrontierV4HistoricalPortability.test_other_missing_history_inputs_remain_explicit",
+        "research.unified_consequence_runtime.test_qualify_environment_v4_retention.DefaultEvidenceRetentionV4.test_original_setting_is_restored_on_failed_control",
+        "research.unified_consequence_runtime.test_qualify_environment_v4_retention.DefaultEvidenceRetentionV4.test_persistent_default_directory_is_retained_and_temp_setting_restored"
+      ],
+      "outcomes": {
+        "ok": 31
+      },
+      "run": 31,
+      "wall_seconds": 0.399
+    },
+    "legacy": {
+      "final_ok": true,
+      "ids": [
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_collection_time_import_of_same_malformed_fixture_is_refused",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_missing_protected_assertion_is_refused",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass"
+      ],
+      "outcomes": {
+        "ok": 5
+      },
+      "run": 5,
+      "wall_seconds": 18.25
+    },
+    "modern": {
+      "final_ok": true,
+      "ids": [
+        "research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_collection_time_import_of_same_malformed_fixture_is_refused",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_missing_protected_assertion_is_refused",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+        "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_dynamic_and_unsupported_metadata_have_precise_unknown_reasons",
+        "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_every_tracked_byte_affects_inventory_even_unparsed_and_binary_files",
+        "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_external_catalog_license_and_selection_are_not_self_asserted",
+        "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_malformed_authoritative_setup_remains_precise_unknown",
+        "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_malformed_nonmetadata_python_does_not_veto_generic_environment_choice",
+        "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_nonutf8_nonmetadata_python_is_byte_inventory_without_parser_veto",
+        "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_parseable_nonmetadata_api_mentions_are_deferred_to_native_authority",
+        "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_selection_cannot_replay_after_ignored_fixture_byte_change",
+        "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_static_authoritative_dependencies_and_python_still_constrain_catalog",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_changed_execution_or_plugin_policy",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_preloaded_installed_project_name_cannot_replace_frozen_source",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_self_declared_extra_authority_and_missing_certificate_fields_are_rejected",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_weaker_required_assertions_are_not_certificate_authority"
+      ],
+      "outcomes": {
+        "ok": 29
+      },
+      "run": 29,
+      "wall_seconds": 145.25
+    }
+  },
+  "diagnostics": [
+    {
+      "case_id": "case-000",
+      "collection_calls": 0,
+      "native_calls": 0,
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "repository": "davidhalter/parso",
+      "selected_profile": null,
+      "selection_status": "UNKNOWN",
+      "source_file_count": 133,
+      "source_inventory_sha256": "6606bb358b2c4c8d1e9b05abf2354d8fc8c8b674f7b8f0688da106c73b11cc0c",
+      "status": "EXPOSED_DIAGNOSTIC_ONLY_NOT_NATIVE_ADMISSION"
+    },
+    {
+      "case_id": "case-001",
+      "collection_calls": 0,
+      "native_calls": 0,
+      "reason": null,
+      "repository": "grantjenks/python-sortedcontainers",
+      "selected_profile": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+      "selection_status": "CANDIDATE_SOURCE_ENVIRONMENT",
+      "source_file_count": 260,
+      "source_inventory_sha256": "a5fff3038cf8061a6e2cb8901c375ab2c1e7c7c9104cb8e8ff4df86a25bef1b7",
+      "status": "EXPOSED_DIAGNOSTIC_ONLY_NOT_NATIVE_ADMISSION"
+    },
+    {
+      "case_id": "case-002",
+      "collection_calls": 0,
+      "native_calls": 0,
+      "reason": "UNKNOWN_DYNAMIC_METADATA",
+      "repository": "keleshev/schema",
+      "selected_profile": null,
+      "selection_status": "UNKNOWN",
+      "source_file_count": 20,
+      "source_inventory_sha256": "4b8b00f667dd44db88b8f7add79180011435a23e850cc7941804622ae442d060",
+      "status": "EXPOSED_DIAGNOSTIC_ONLY_NOT_NATIVE_ADMISSION"
+    },
+    {
+      "case_id": "case-003",
+      "collection_calls": 0,
+      "native_calls": 0,
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "repository": "mahmoud/boltons",
+      "selected_profile": null,
+      "selection_status": "UNKNOWN",
+      "source_file_count": 112,
+      "source_inventory_sha256": "9dfdb5cc6e533f38fede59ec5b94844ed2342fdd71ef1e649eb9ba0baabbaa92",
+      "status": "EXPOSED_DIAGNOSTIC_ONLY_NOT_NATIVE_ADMISSION"
+    },
+    {
+      "case_id": "case-004",
+      "collection_calls": 0,
+      "native_calls": 0,
+      "reason": "UNKNOWN_DYNAMIC_METADATA",
+      "repository": "mverleg/pyjson_tricks",
+      "selected_profile": null,
+      "selection_status": "UNKNOWN",
+      "source_file_count": 33,
+      "source_inventory_sha256": "39f0e33ba700c3b22c38d3244d7c20c1d5b17d7beb227a69b138dbd45e28c50b",
+      "status": "EXPOSED_DIAGNOSTIC_ONLY_NOT_NATIVE_ADMISSION"
+    },
+    {
+      "case_id": "case-005",
+      "collection_calls": 0,
+      "native_calls": 0,
+      "reason": "UNKNOWN_METADATA_GRAMMAR",
+      "repository": "python-humanize/humanize",
+      "selected_profile": null,
+      "selection_status": "UNKNOWN",
+      "source_file_count": 86,
+      "source_inventory_sha256": "9eaf9e01efc163e6bf28d41eace1281ec56b13fe12aeb92412edd7634dcb60c9",
+      "status": "EXPOSED_DIAGNOSTIC_ONLY_NOT_NATIVE_ADMISSION"
+    },
+    {
+      "case_id": "case-006",
+      "collection_calls": 0,
+      "native_calls": 0,
+      "reason": "UNKNOWN_METADATA_GRAMMAR",
+      "repository": "tkem/cachetools",
+      "selected_profile": null,
+      "selection_status": "UNKNOWN",
+      "source_file_count": 43,
+      "source_inventory_sha256": "179316b66b6f6b45a09cd13e5d34de2e2b16a1bd209324ee4a673e421f0ddf37",
+      "status": "EXPOSED_DIAGNOSTIC_ONLY_NOT_NATIVE_ADMISSION"
+    }
+  ],
+  "evidence_limits": [
+    {
+      "explanation": "Legacy five controls retain13rawcheckedreports (9collection4native), but run outside qualification attempt_snapshot, so no separate legacy private launch-attempt ledger is emitted. Full lifecycle/model/tool/engineering costs remain UNKNOWN.",
+      "id": "LEGACY_COST_SCOPE",
+      "severity": "scope_limit"
+    }
+  ],
+  "first_task_gate": {
+    "boundary": "Frozen metadata/native adversarial controls only",
+    "status": "PASS"
+  },
+  "index_audit": {
+    "freeze": {
+      "after": {
+        "git_common_dir": "/home/runner/work/test/test/.git",
+        "indexes": [
+          {
+            "exists": true,
+            "path": "/home/runner/work/test/test/.git/index",
+            "sha256": "02d3a19e8d19df0d5241f052b139c2ade0be156512e1b401be2423e7f167f2e5",
+            "size_bytes": 199173
+          }
+        ],
+        "schema": "UDM_GIT_INDEX_SNAPSHOT_V4"
+      },
+      "before": {
+        "git_common_dir": "/home/runner/work/test/test/.git",
+        "indexes": [
+          {
+            "exists": true,
+            "path": "/home/runner/work/test/test/.git/index",
+            "sha256": "02d3a19e8d19df0d5241f052b139c2ade0be156512e1b401be2423e7f167f2e5",
+            "size_bytes": 199173
+          }
+        ],
+        "schema": "UDM_GIT_INDEX_SNAPSHOT_V4"
+      },
+      "changes": []
+    },
+    "qualification": {
+      "after": {
+        "git_common_dir": "/home/runner/work/test/test/.git",
+        "indexes": [
+          {
+            "exists": true,
+            "path": "/home/runner/work/test/test/.git/index",
+            "sha256": "02d3a19e8d19df0d5241f052b139c2ade0be156512e1b401be2423e7f167f2e5",
+            "size_bytes": 199173
+          }
+        ],
+        "schema": "UDM_GIT_INDEX_SNAPSHOT_V4"
+      },
+      "before": {
+        "git_common_dir": "/home/runner/work/test/test/.git",
+        "indexes": [
+          {
+            "exists": true,
+            "path": "/home/runner/work/test/test/.git/index",
+            "sha256": "02d3a19e8d19df0d5241f052b139c2ade0be156512e1b401be2423e7f167f2e5",
+            "size_bytes": 199173
+          }
+        ],
+        "schema": "UDM_GIT_INDEX_SNAPSHOT_V4"
+      },
+      "changes": []
+    }
+  },
+  "issues": [],
+  "legacy_profile": {
+    "all_catalog_names_versions_download_hashes_match": true,
+    "download_receipts": 22,
+    "installed_packages": 22
+  },
+  "modern_attempt_costs": {
+    "collection_calls": 39,
+    "native_calls": 14,
+    "subprocess_attempts": 53
+  },
+  "modern_case_retained_costs": {
+    "collection_calls": 37,
+    "native_calls": 14,
+    "observed_worker_seconds": 11.46618273099989,
+    "subprocess_reports": 51
+  },
+  "modern_profile": {
+    "all_catalog_names_versions_hashrequirements_match": true,
+    "environment": {
+      "base_prefix": "/opt/hostedtoolcache/Python/3.12.14/x64",
+      "distribution_count": 39,
+      "distributions_sha256": "695848723a48fdb22c435ff946557fb4f0ff2898f5a4b9e853ed867d519db1d1",
+      "executable": "/home/runner/work/_temp/v4-modern-control/venv/bin/python",
+      "executable_sha256": "bef88f140b625959f8af25c7b75cce2cd5d4b29cc2f2b079befd7f68eda4dba0",
+      "prefix": "/home/runner/work/_temp/v4-modern-control/venv",
+      "pytest_import": {
+        "path": "/home/runner/work/_temp/v4-modern-control/venv/lib/python3.12/site-packages/pytest/__init__.py",
+        "sha256": "66993a5e3905005e0981159b4794d10b1adacf341a58a44d696ad2c4442dcdc6"
+      },
+      "pytest_version": "8.4.1",
+      "runtime_identity": {
+        "base_prefix": "/opt/hostedtoolcache/Python/3.12.14/x64",
+        "executable_sha256": "bef88f140b625959f8af25c7b75cce2cd5d4b29cc2f2b079befd7f68eda4dba0",
+        "implementation": "cpython",
+        "stdlib_manifest_sha256": "307220702bbe4963d8306fce30ca4b3abbfdb0ff1e23d293d7b2399c5cc5bd91",
+        "version_info": [
+          3,
+          12,
+          14,
+          "final",
+          0
+        ]
+      },
+      "runtime_import_roots": [
+        "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12",
+        "/home/runner/work/_temp/v4-modern-control/venv/lib/python3.12",
+        "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/lib-dynload"
+      ],
+      "version": "3.12.14 (main, Aug 13 2026, 02:47:42) [GCC 13.3.0]"
+    },
+    "hash_requirements_sha256": "b7e906af55609894e3b58b1f54b4e587c31585c96a7427b6fbef1bdf2ffe22e6",
+    "installed_packages": 39,
+    "prep_seconds": 17.74566777200002,
+    "profile": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+    "pytest_version": "8.4.1",
+    "status": "PREPARED_COMPLETE_MODERN_CATALOG_PROFILE"
+  },
+  "no_native_or_collection_experiments_by_auditor": true,
+  "post_control_runtime_status": "PASS_FROZEN_RUNTIME_BYTES",
+  "qualification_wall_seconds": 152.43682614899998,
+  "raw_retained_costs": {
+    "default_collections": {
+      "collection_calls": 2,
+      "native_calls": 0,
+      "observed_worker_seconds": 0.43132849799997075,
+      "subprocess_reports": 2
+    },
+    "legacy": {
+      "collection_calls": 9,
+      "native_calls": 4,
+      "observed_worker_seconds": 2.854664673000059,
+      "subprocess_reports": 13
+    },
+    "modern": {
+      "collection_calls": 39,
+      "native_calls": 14,
+      "observed_worker_seconds": 11.89751122899986,
+      "subprocess_reports": 53
+    }
+  },
+  "retention_gap_resolution": {
+    "coverage": "COMPLETE_ALL53MODERN_ATTEMPTS_HAVE_RAW_REPORTS",
+    "current_default_collection_reports": 2,
+    "current_default_file_count": 12,
+    "current_modern_actual_attempts": {
+      "collection_calls": 39,
+      "native_calls": 14,
+      "subprocess_attempts": 53
+    },
+    "current_modern_total_reports": 53,
+    "prior_missing_collection_reports": 2,
+    "prior_run": 38942832565,
+    "raw_case_bindings": "See independent RAW_RECEIPT_REVIEW for source/node and original/forged comparison."
+  },
+  "runtimes": [
+    {
+      "interpreter": "/home/runner/work/_temp/v4-modern-control/venv/bin/python",
+      "profile": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+      "runtime_identity": {
+        "base_prefix": "/opt/hostedtoolcache/Python/3.12.14/x64",
+        "executable_sha256": "bef88f140b625959f8af25c7b75cce2cd5d4b29cc2f2b079befd7f68eda4dba0",
+        "implementation": "cpython",
+        "stdlib_manifest_sha256": "307220702bbe4963d8306fce30ca4b3abbfdb0ff1e23d293d7b2399c5cc5bd91",
+        "version_info": [
+          3,
+          12,
+          14,
+          "final",
+          0
+        ]
+      },
+      "stdlib_files": 7239
+    },
+    {
+      "interpreter": "/home/runner/work/_temp/v4-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python",
+      "profile": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+      "runtime_identity": {
+        "base_prefix": "/home/runner/work/_temp/v4-runtimes/miniconda-base",
+        "executable_sha256": "b7c7ad29e8ed7ede17af35769be505c7f20331e0c548bfa036f94aedfeffba0e",
+        "implementation": "cpython",
+        "stdlib_manifest_sha256": "f6ea19d43c263957e3715cae39d94ed2784ee339deb3060df6c543ba3b2e2cb3",
+        "version_info": [
+          3,
+          6,
+          5,
+          "final",
+          0
+        ]
+      },
+      "stdlib_files": 3318
+    }
+  ],
+  "schema": "UDM_NATIVE_AUTHORITY_V4_CI3_SEMANTIC_AUDIT_V1",
+  "status": "PASS_STRICT_COUNTS_AND_SEMANTICS",
+  "utc": "2026-10-16T18:13:56.428407+00:00",
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "artifact_code_executed_by_reviewer": false,
+  "expected_next_artifact": {
+    "cases": [
+      "NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass",
+      "NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection"
+    ],
+    "modern_attempts_if_same_control_paths": {
+      "collection_calls": 39,
+      "native_calls": 14,
+      "subprocess_attempts": 53
+    },
+    "modern_retained_checked_reports_expected": 53,
+    "newly_retained_checked_reports_expected": 2,
+    "not_observed_yet": true,
+    "prior_modern_retained_checked_reports": 51,
+    "required_audit": "New committed source/freeze/full runtime identity, unchanged frozen29 judgments, both original/replay pairs, all53modern rawreports and12new standalone recollection files with source/manifest comparisons must be checked from CI3artifact before strict raw gate passes."
+  },
+  "frozen_acceptance_sha256": "652c2f5117be0e61d6953c509228580a7441e2a8bc23fa1b67c2b5fc240b8671",
+  "frozen_source_pins_unchanged": {
+    "decisive_native_verify.py": true,
+    "native_admission_v2.py": true,
+    "native_environment_selection_v3.py": true,
+    "native_environment_v3.py": true,
+    "native_execution_v2.py": true,
+    "native_execution_v3.py": true,
+    "test_native_admission_v2_adversarial.py": true,
+    "test_native_authority_v4.py": true,
+    "test_native_environment_selection_v3.py": true,
+    "test_native_execution_v3.py": true
+  },
+  "git_reads_this_review": 0,
+  "index_audit": {
+    "after": [
+      {
+        "exists": false,
+        "path": "/workspace/repos/test/.git/index",
+        "sha256": null,
+        "size_bytes": null
+      },
+      {
+        "exists": true,
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29",
+        "size_bytes": 113571
+      },
+      {
+        "exists": true,
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786",
+        "size_bytes": 176832
+      },
+      {
+        "exists": true,
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064",
+        "size_bytes": 111030
+      },
+      {
+        "exists": true,
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "sha256": "aabc31edf2e0a18954f45844cad62437d9871a0046e952d8e3e59a965964d3a2",
+        "size_bytes": 199173
+      }
+    ],
+    "before": {
+      "before_any_git_read_this_review": true,
+      "git_common_dir": "/workspace/repos/test/.git",
+      "indexes": [
+        {
+          "exists": false,
+          "path": "/workspace/repos/test/.git/index",
+          "sha256": null,
+          "size_bytes": null
+        },
+        {
+          "exists": true,
+          "path": "/workspace/repos/test/.git/worktrees/development/index",
+          "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29",
+          "size_bytes": 113571
+        },
+        {
+          "exists": true,
+          "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+          "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786",
+          "size_bytes": 176832
+        },
+        {
+          "exists": true,
+          "path": "/workspace/repos/test/.git/worktrees/udm/index",
+          "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064",
+          "size_bytes": 111030
+        },
+        {
+          "exists": true,
+          "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+          "sha256": "39af8f2c7b151a73485f0589713a8710a287dfe0ac67af44ada8f6f5f36a5a82",
+          "size_bytes": 197997
+        }
+      ],
+      "utc": "2026-10-16T18:06:39.145231+00:00"
+    },
+    "changes": [
+      {
+        "after": {
+          "exists": true,
+          "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+          "sha256": "aabc31edf2e0a18954f45844cad62437d9871a0046e952d8e3e59a965964d3a2",
+          "size_bytes": 199173
+        },
+        "before": {
+          "exists": true,
+          "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+          "sha256": "39af8f2c7b151a73485f0589713a8710a287dfe0ac67af44ada8f6f5f36a5a82",
+          "size_bytes": 197997
+        }
+      }
+    ],
+    "restoration_or_reset": false
+  },
+  "issues": [],
+  "native_G2_G6": "UNKNOWN",
+  "native_or_collection_calls_by_reviewer": 0,
+  "new_functions_added": [
+    "retained_temporary_outputs"
+  ],
+  "new_retention_tests_static": {
+    "cases": [
+      "persistent default mkdtemp output retained and global setting restored",
+      "global setting restored after raised RuntimeError"
+    ],
+    "execution_by_reviewer": false,
+    "reported_root_result": "prefeature2RED then31combinedGREEN; not rerun by this reviewer",
+    "test_file_sha256": "d70881fccf29afefe32f300fb7a9dd4ebcdbe3dd1bc51828315041f3a0563f81"
+  },
+  "no_fresh_target_source_or_outcomes_accessed": true,
+  "original_functions_changed": [
+    "_qualify"
+  ],
+  "original_functions_removed": [],
+  "original_qualify_AST_equal_after_removing_only_retention_context": true,
+  "prior_audited_qualifier_sha256": "941a4d408597fe56f429b43971a4983ee5ca3446618d688c8a2ce83e435fdce4",
+  "prior_green_artifact_run": 38942832565,
+  "prior_green_audit_preserved_sha256": "068239dd204f53b5cdbac7f1c1e6a174e42a77a8b140f717f96fc443215ec324",
+  "retention_scope": {
+    "active_only_during": "frozen29 unittest.TextTestRunner.run(suite)",
+    "artifact_archiver_includes_default_evidence": "Current existing os.walk collection includes default-collection-evidence and udm-v2-independent-*/recollection; none is an excluded directory name.",
+    "context_path": "out/default-collection-evidence",
+    "new_directory_refuses_existing_path": true,
+    "restores_tempfile_tempdir_in_finally": true,
+    "scope_note": "tempfile.tempdir is process-global while the single synchronous frozen control runner executes; originals and V3 private globals reference that same stdlib tempfile module. Only filesystem destinations change; native collection/execution/validation algorithms and frozen assertions remain unchanged."
+  },
+  "reviewed_qualifier_sha256": "e1516f57bf9ba564d747a8944d3d636f17836e56fb71a0ea52909bae842f11b4",
+  "schema": "UDM_NATIVE_AUTHORITY_V4_RETENTION_ONLY_STATIC_REVIEW_V1",
+  "status": "NO_MATERIAL_AUTHORITY_WEAKENING_FOUND",
+  "utc": "2026-10-16T18:07:26.688728+00:00",
+  "verifier_authority_weakened": false
+}
