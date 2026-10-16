@@ -23,6 +23,7 @@ from . import native_admission_v2 as admission
 SCHEMA='UDM_GENERIC_NATIVE_PYTEST_V2'
 CERTIFICATE_SCHEMA='UDM_NATIVE_ADMISSION_CERTIFICATE_V2'
 POLICY_SCHEMA='UDM_NATIVE_EXECUTION_POLICY_V2'
+ADMISSION_REVISION='2.1'
 canonical=original.canonical
 fingerprint=original.fingerprint
 sha256=original.sha256
@@ -223,7 +224,9 @@ def _collection(data,authority,files):
     if data.get('source_mutations') or data.get('unexpected_imports') or data.get('external_project_imports') or data.get('plugin_violations'):
         raise ValueError('UNKNOWN_SOURCE_OR_IMPORT_IDENTITY')
     nodes=data.get('collected_test_nodes',[])
-    if not nodes or len(set(nodes))!=len(nodes) or data.get('selected_test_nodes')!=nodes or data.get('deselected_test_nodes'):
+    selected=data.get('selected_test_nodes',[])
+    if (not nodes or len(set(nodes))!=len(nodes) or len(set(selected))!=len(selected)
+            or set(selected)!=set(nodes) or data.get('deselected_test_nodes')):
         raise ValueError('UNKNOWN_EXACT_COLLECTION_OR_DESELECTION')
     if any(row['path'] not in files or row['sha256']!=sha256(files[row['path']]) for row in data['test_items']):
         raise ValueError('UNKNOWN_NATIVE_TEST_IDENTITY')
@@ -235,7 +238,8 @@ def _collection(data,authority,files):
 
 
 def _binding(contract,authority,policy,environment,plugins):
-    return {'schema':CERTIFICATE_SCHEMA,'contract_sha256':fingerprint(contract),'authority_sha256':fingerprint(authority),
+    return {'schema':CERTIFICATE_SCHEMA,'admission_revision':ADMISSION_REVISION,
+        'contract_sha256':fingerprint(contract),'authority_sha256':fingerprint(authority),
         'policy_sha256':fingerprint(policy),'runner_sha256':_runner_hash(),
         'environment':environment,'plugins':plugins}
 
@@ -296,7 +300,7 @@ def _status(data,counts,original_collection):
             or data.get('test_items')!=original_collection['test_items'] or data.get('deselected_test_nodes') or data.get('collection_errors')):
         status='UNKNOWN_EXACT_COLLECTION'
     else:
-        reports=data.get('reports',[]);nodes=original_collection['collected_test_nodes']
+        reports=data.get('reports',[]);nodes=original_collection['selected_test_nodes']
         if any(not isinstance(r,dict) or set(r)!={'nodeid','when','outcome','wasxfail'}
                 or r['when'] not in ('setup','call','teardown')
                 or r['outcome'] not in ('passed','failed','skipped') or not isinstance(r['wasxfail'],str)
@@ -322,7 +326,8 @@ def verify(contract,candidate,output_dir,*,authority,admission_certificate,polic
     data,packet=_run(contract,files,manifest,environment,plugins,out/'execution','run',policy['execution_seconds'],candidate)
     counts=original._junit(out/'execution/native.xml')
     status=_status(data,counts,checked['collection'])
-    receipt={'schema':SCHEMA,'status':status,'source':{k:contract[k] for k in ('git_tree','tracked_tree_sha256','file_count')},
+    receipt={'schema':SCHEMA,'admission_revision':ADMISSION_REVISION,
+        'status':status,'source':{k:contract[k] for k in ('git_tree','tracked_tree_sha256','file_count')},
         'repository':contract['repository'],'commit':contract['commit'],'protocol_binding':contract['protocol_binding'],
         'contract_sha256':fingerprint(contract),'candidate_sha256':fingerprint(candidate),'authority_sha256':fingerprint(authority),
         'certificate_sha256':fingerprint(admission_certificate),'policy_sha256':fingerprint(policy),
@@ -344,7 +349,8 @@ def validate_receipt(contract,candidate,authority,certificate,receipt,*,policy,o
     """
     files,manifest,environment,plugins=_context(contract,authority,policy)
     admission.validate_candidate(candidate,files)
-    expected={'schema':SCHEMA,'source':{k:contract[k] for k in ('git_tree','tracked_tree_sha256','file_count')},
+    expected={'schema':SCHEMA,'admission_revision':ADMISSION_REVISION,
+        'source':{k:contract[k] for k in ('git_tree','tracked_tree_sha256','file_count')},
         'repository':contract['repository'],'commit':contract['commit'],'protocol_binding':contract['protocol_binding'],
         'contract_sha256':fingerprint(contract),'candidate_sha256':fingerprint(candidate),'authority_sha256':fingerprint(authority),
         'certificate_sha256':fingerprint(certificate),'policy_sha256':fingerprint(policy),'runner_sha256':_runner_hash(),

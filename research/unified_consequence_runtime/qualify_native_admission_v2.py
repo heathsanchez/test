@@ -16,7 +16,7 @@ from . import native_execution_v2 as execution
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 RECORDS = HERE / 'archaeology/native-admission-v2'
-PROTOCOL = RECORDS / 'PROTOCOL.json'
+PROTOCOL = RECORDS / 'PROTOCOL_V2_1.json'
 
 
 def inputs():

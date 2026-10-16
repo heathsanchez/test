@@ -115,6 +115,50 @@ class NativeAdmissionV2AdversarialTests(unittest.TestCase):
         self.assertEqual(receipt['status'], 'PASS_NATIVE')
         self.assertEqual(receipt['junit']['passed'], 3)
 
+    def test_original_fixture_reorder_binds_collection_and_final_execution_orders(self):
+        (self.repo / 'conftest.py').write_text(
+            'def pytest_collection_modifyitems(items):\n'
+            '    items.reverse()\n')
+        (self.repo / 'tests/test_native.py').write_text('def test_old(): assert True\n')
+        self.base = self.commit()
+        (self.repo / 'tests/test_native.py').write_text(TESTS)
+        self.refresh()
+        certificate = self.collect()
+        collection = certificate['collection']
+        self.assertEqual(collection['collected_test_nodes'], [
+            'tests/test_native.py::test_old', 'tests/test_native.py::test_new[1]',
+            'tests/test_native.py::test_new[2]'])
+        self.assertEqual(collection['selected_test_nodes'],
+                         list(reversed(collection['collected_test_nodes'])))
+        self.assertEqual(set(collection['selected_test_nodes']),
+                         set(collection['collected_test_nodes']))
+        self.assertFalse(collection['deselected_test_nodes'])
+        receipt = self.verify(certificate)
+        self.assertEqual(receipt['status'], 'PASS_NATIVE')
+        self.assertEqual(receipt['junit']['passed'], 3)
+        self.assertEqual([row['nodeid'] for row in receipt['execution']['reports']
+                          if row['when'] == 'call'], collection['selected_test_nodes'])
+
+    def test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes(self):
+        (self.repo / 'conftest.py').write_text(
+            'def pytest_collection_modifyitems(items):\n'
+            '    from sample import VALUE\n'
+            '    if VALUE == 2:\n'
+            '        items.reverse()\n'
+            '    elif VALUE == 1:\n'
+            '        items[:] = items[1:] + items[:1]\n'
+            '    else:\n'
+            '        items.pop()\n')
+        (self.repo / 'tests/test_native.py').write_text('def test_old(): assert True\n')
+        self.base = self.commit()
+        (self.repo / 'tests/test_native.py').write_text(TESTS)
+        self.refresh()
+        certificate = self.collect()
+        for value, change in [(1, 'order'), (0, 'discard')]:
+            with self.subTest(change=change):
+                receipt = self.verify(certificate, f'VALUE = {value}\nVALUES = [1, 2]\n')
+                self.assertEqual(receipt['status'], 'UNKNOWN_EXACT_COLLECTION')
+
     def test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix(self):
         certificate = self.collect()
         for values in ('[1]', '[1, 2, 3]'):

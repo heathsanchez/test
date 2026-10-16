@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/workspace/qualification/native-admission-v2-audit/audit.py", line 220, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/qualification/native-admission-v2-audit/audit.py", line 127, in main
+    require(name in source and digest(source[name])==expected,'archived frozen source differs: '+name)
+  File "/workspace/qualification/native-admission-v2-audit/audit.py", line 10, in require
+    if not condition: raise ValueError(description)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: archived frozen source differs: .github/workflows/udm-decisive-native.yml

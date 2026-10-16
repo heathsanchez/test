@@ -1,0 +1,299 @@
+{
+  "actual_collection_call_count": 5,
+  "actual_native_call_count": 2,
+  "actual_native_subprocesses": [
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 2.8823722840000414
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-0/collection/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "horizon_seconds": 600,
+        "native_calls": 1,
+        "seconds": 33.30545163800002
+      },
+      "mode": "run",
+      "path": "admission-v2/task-0/native/execution/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 1.5292023279999967
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-0/native/independent-collection/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "horizon_seconds": 600,
+        "native_calls": 1,
+        "seconds": 33.10565389299995
+      },
+      "mode": "run",
+      "path": "admission-v2/task-0/receipt-recheck/execution/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 1.5291682330000071
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-0/receipt-recheck/independent-collection/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 2.6030076129999884
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-1/collection/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 2.611548139999968
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-2/collection/checked-report.json"
+    }
+  ],
+  "artifact_id": 12027280675,
+  "audit_seconds": 1.1729617180026253,
+  "contracts": {
+    "all_individual_entries_ok": true,
+    "count": 189,
+    "seconds": 276.986
+  },
+  "controller_wall_seconds": 149.53060647499996,
+  "manifest_files_checked": 874,
+  "missing_frozen_source_from_original_archive": {
+    ".github/workflows/udm-decisive-native.yml": "894db6cbb788aca797bf69925436988bbf21f930fd38201b3909875f2d4f2bee"
+  },
+  "provider_zip_bytes": 39693812,
+  "provider_zip_sha256": "eaa19d81d953d0514ec8808aa20c017cdf31e9eebe5a5d01e43c591428b4d061",
+  "remaining_residual": "Freeze untouched source-distinct tasks after this bounded admission gate; execute existing UDM and matched ledger/coding-agent comparisons. Attrs/cattrs are UNKNOWN here before native execution because collection order changes (sets agree); earlier exposed diagnostics independently retain skip/xfail limitations.",
+  "retention": {
+    "CAS_objects": 76,
+    "exact_bytes": true,
+    "inventory_rows": 70,
+    "records": 246
+  },
+  "run_id": "38854401920",
+  "runtime_fixtures": "Actual existing Machine/Metatron/FLASH contract fixtures include native execution, fresh restoration, and separate-process restart. Supplied fixture repair is not a developmental scientific result; raw per-fixture subprocess outputs are not separately archived.",
+  "schema": "UDM_NATIVE_ADMISSION_V2_INDEPENDENT_ARCHIVE_AUDIT",
+  "scope": "Read-only independent parsing of provider/source/raw collection/native/JUnit/cost evidence; no native rerun or fresh task exposure.",
+  "source_commit": "d92561d8cfb0f740805dc00fbf4bcab5aadfb194",
+  "source_files_archived": 365,
+  "source_files_frozen": 82,
+  "source_supplement": "Exact frozen Git bytes independently fetched locally into git-source-supplement; original provider artifact remains unmodified.",
+  "status": "PASS_NATIVE_ADMISSION_AUDIT_WITH_SOURCE_SUPPLEMENT",
+  "tasks": [
+    {
+      "independent_native": {
+        "all_exact_calls": true,
+        "all_exact_nodes": true,
+        "all_plugins": true,
+        "all_test_items": true,
+        "calls": 768,
+        "collected": 768,
+        "costs": {
+          "collection_calls": 1,
+          "native_calls": 1,
+          "native_seconds": 33.10565389299995,
+          "total_seconds": 39.71736620200005
+        },
+        "failed_nodes": [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ],
+        "junit": {
+          "errors": 0,
+          "failures": 1,
+          "passed": 767,
+          "skipped": 0,
+          "tests": 768
+        },
+        "native_horizon_seconds": 600,
+        "negative_violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "deselected_test_nodes": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        },
+        "protected_failed_nodes": [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ],
+        "selected": 768,
+        "skip_or_xfail_reports": 0,
+        "status": "FAIL_NATIVE"
+      },
+      "native": {
+        "all_exact_calls": true,
+        "all_exact_nodes": true,
+        "all_plugins": true,
+        "all_test_items": true,
+        "calls": 768,
+        "collected": 768,
+        "costs": {
+          "collection_calls": 1,
+          "native_calls": 1,
+          "native_seconds": 33.30545163800002,
+          "total_seconds": 39.606729949
+        },
+        "failed_nodes": [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ],
+        "junit": {
+          "errors": 0,
+          "failures": 1,
+          "passed": 767,
+          "skipped": 0,
+          "tests": 768
+        },
+        "native_horizon_seconds": 600,
+        "negative_violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "deselected_test_nodes": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        },
+        "protected_failed_nodes": [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ],
+        "selected": 768,
+        "skip_or_xfail_reports": 0,
+        "status": "FAIL_NATIVE"
+      },
+      "raw_collection": {
+        "collected": 768,
+        "controller_error": null,
+        "costs": {
+          "collection_calls": 1,
+          "horizon_seconds": 60,
+          "native_calls": 0,
+          "seconds": 2.8823722840000414
+        },
+        "deselected": 0,
+        "duplicate_collected": 0,
+        "duplicate_selected": 0,
+        "interpretation": "Exact ordered node identity observed.",
+        "native_execution_archived": true,
+        "node_sets_equal": true,
+        "order_mismatch_positions": 0,
+        "process_exit_code": 0,
+        "selected": 768,
+        "violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        }
+      },
+      "raw_git_source_identity_independently_reconstructed": true,
+      "repository": "more-itertools/more-itertools",
+      "setup_status": "PREPARED",
+      "status": "FAIL_NATIVE",
+      "total_wall_seconds": 103.06255629600003
+    },
+    {
+      "raw_collection": {
+        "collected": 1383,
+        "controller_error": "UNKNOWN_EXACT_COLLECTION_OR_DESELECTION",
+        "costs": {
+          "collection_calls": 1,
+          "horizon_seconds": 60,
+          "native_calls": 0,
+          "seconds": 2.6030076129999884
+        },
+        "deselected": 0,
+        "duplicate_collected": 0,
+        "duplicate_selected": 0,
+        "interpretation": "Strict ordered identity rejects any lawful pytest reordering even when exact node sets agree; no relaxation or native promotion in this audit.",
+        "native_execution_archived": false,
+        "node_sets_equal": true,
+        "order_mismatch_positions": 20,
+        "process_exit_code": 0,
+        "selected": 1383,
+        "violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        }
+      },
+      "raw_git_source_identity_independently_reconstructed": true,
+      "repository": "python-attrs/attrs",
+      "setup_status": "PREPARED",
+      "status": "UNKNOWN_DIAGNOSTIC",
+      "total_wall_seconds": 21.432916215000034
+    },
+    {
+      "raw_collection": {
+        "collected": 1027,
+        "controller_error": "UNKNOWN_EXACT_COLLECTION_OR_DESELECTION",
+        "costs": {
+          "collection_calls": 1,
+          "horizon_seconds": 60,
+          "native_calls": 0,
+          "seconds": 2.611548139999968
+        },
+        "deselected": 0,
+        "duplicate_collected": 0,
+        "duplicate_selected": 0,
+        "interpretation": "Strict ordered identity rejects any lawful pytest reordering even when exact node sets agree; no relaxation or native promotion in this audit.",
+        "native_execution_archived": false,
+        "node_sets_equal": true,
+        "order_mismatch_positions": 898,
+        "process_exit_code": 0,
+        "selected": 1027,
+        "violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        }
+      },
+      "raw_git_source_identity_independently_reconstructed": true,
+      "repository": "python-attrs/cattrs",
+      "setup_status": "PREPARED",
+      "status": "UNKNOWN_DIAGNOSTIC",
+      "total_wall_seconds": 21.309492946999967
+    }
+  ],
+  "verdicts": {
+    "G0_G1": "PRESERVED",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "admission": "WARRANTED_BOUNDED"
+  }
+}

@@ -137,7 +137,8 @@ jobs:
         run: |
           mkdir -p qualification
           git archive --format=tar.gz --output=qualification/SOURCE.tar.gz HEAD \
-            research/unified_consequence_runtime .github/workflows/udm-native-admission-v2.yml
+            research/unified_consequence_runtime .github/workflows/udm-native-admission-v2.yml \
+            .github/workflows/udm-decisive-native.yml
           python - <<'PY'
           import hashlib,json,os,pathlib,tarfile
           p=pathlib.Path('qualification');d=p/'admission-v2';files={}
