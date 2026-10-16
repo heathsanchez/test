@@ -97,7 +97,7 @@ def execute():
             "    spec.loader.exec_module(module)\n")
         imported=invoke(root)
         if imported["exit_code"]==0 or "TabError" not in imported["stdout_tail"]:
-            raise AssertionError("native execution did not expose imported broken fixture")
+            raise AssertionError("native execution did not expose imported broken fixture: "+json.dumps(imported,sort_keys=True))
 
         # A collected malformed test cannot inherit fixture-data exemption.
         (root/"tests/test_invalid.py").write_bytes(INVALID)
