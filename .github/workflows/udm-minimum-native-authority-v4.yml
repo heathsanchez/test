@@ -94,6 +94,24 @@ jobs:
               'deferred_source_sha256':hashlib.sha256(bad).hexdigest(),
           },sort_keys=True))
           PY
+      - name: Recheck all seven exposed static admission cases without native execution
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          python -B research/unified_consequence_runtime/archaeology/native-authority-v4/diagnose_exposed_v3_pool.py \
+            2> qualification/minimum-native-authority-v4/EXPOSED_DIAGNOSTIC_PROGRESS.log \
+            | tee qualification/minimum-native-authority-v4/EXPOSED_DIAGNOSTICS.json
+          python -B - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('qualification/minimum-native-authority-v4/EXPOSED_DIAGNOSTICS.json')
+          result=json.loads(p.read_text())
+          assert result['classification']=='EXPOSED_DIAGNOSTICS_NOT_PROSPECTIVE'
+          assert len(result['cases'])==7
+          assert result['native_test_calls']==result['coding_agent_calls']==0
+          assert all(result[x]=='UNKNOWN' for x in ('G2','G3','G4'))
+          print('Seven exposed cases preserved as nonprospective diagnostics')
+          PY
       - name: Archive source-bound contracts
         if: always()
         uses: actions/upload-artifact@v4
