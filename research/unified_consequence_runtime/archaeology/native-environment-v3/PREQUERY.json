@@ -1,0 +1,669 @@
+{
+  "api_allowlist": {
+    "changed_file_pages": "[.[] | {filename,status,additions,deletions,changes,sha}]",
+    "closed_pr_list": "[.[] | {number,title,merged_at,closed_at,updated_at,labels:[.labels[].name],base:{sha:.base.sha},head:{sha:.head.sha},merge_commit_sha,url:.html_url}]",
+    "git_commit_metadata": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+    "git_tree_metadata": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}"
+  },
+  "commitment_rule": "A separate PREQUERY_EXECUTION.json may claim commitment only after exact plan and code bytes are verified against an existing Git commit before any target query.",
+  "curation_code_sha256": "44455d61c8144261e2db2ce2a6de8b6b2671d9ca504353e03bb9dcd487fa3c14",
+  "exposure_boundary": {
+    "ci_results_read": false,
+    "git_fetch_or_clone": false,
+    "native_execution": false,
+    "outcomes_read": false,
+    "pr_bodies_read": false,
+    "production_patches_read": false,
+    "projection": "Original gh api --jq allowed fields only; never contents/blob/raw endpoints, PR bodies, patches, CI or commit messages.",
+    "raw_patch_or_body_persisted": false,
+    "target_source_read": false,
+    "test_contents_read": false
+  },
+  "historical_metadata_inputs": [
+    {
+      "path": "capability_index.json",
+      "repositories": [
+        "ServiceNow/webarena-verified",
+        "heathsanchez/Minimal-Sufficient-Interface",
+        "heathsanchez/lean-kernel-arena",
+        "heathsanchez/realitygraph",
+        "heathsanchez/test",
+        "heathsanchez/triskelion",
+        "metalogiclabs/mathgraph",
+        "metalogiclabs/mathgraph-lean-kernel",
+        "metalogiclabs/metatron",
+        "nasa-jpl/L4YAML"
+      ],
+      "sha256": "c290a1b313868406cd79362b52ddb2b90b67f5cdf941569f753617dbd526ab75"
+    },
+    {
+      "path": "sources.json",
+      "repositories": [],
+      "sha256": "9500c9e0a017a715a8c39a03e3c150d7082eaf5e8ef6613eac2925b55c4ba07b"
+    },
+    {
+      "path": "developmental_sources.json",
+      "repositories": [
+        "heathsanchez/realitygraph",
+        "heathsanchez/test",
+        "metalogiclabs/metatron"
+      ],
+      "sha256": "fb3ea01b7579c3bd4a9118ff3034ece36a5eea96e570d85704cdbcd451aaa32a"
+    },
+    {
+      "path": "native_policy.json",
+      "repositories": [
+        "leanprover/cslib"
+      ],
+      "sha256": "fafdb75d97bef7f00f0a7ffd7f956b7df301b8ac5554f5e8290480fcee2e1406"
+    },
+    {
+      "path": "archaeology/decisive-native/FRESH_TASK_METADATA.json",
+      "repositories": [
+        "more-itertools/more-itertools",
+        "pallets/blinker",
+        "pallets/itsdangerous",
+        "python-attrs/attrs",
+        "python-attrs/cattrs",
+        "python-hyper/h11"
+      ],
+      "sha256": "8809d19fbff05fdf38d2d71e0f52e7a0e501bf7906dded5cfe8cce0dad19f8a5"
+    },
+    {
+      "path": "archaeology/decisive-native/CODING_AGENT_FREEZE.json",
+      "repositories": [],
+      "sha256": "a80bfc32abe78d7c5930ab4ba9448aba25ca76a7e049f40b00a647253a3f57f4"
+    },
+    {
+      "path": "archaeology/decisive-native/QUALIFICATION_FREEZE.json",
+      "repositories": [],
+      "sha256": "cee4c3da786f2b7426aff350faab8e6e9b25b6f7409fd5ae254c357f85b00b49"
+    },
+    {
+      "path": "archaeology/decisive-native/PROTOCOL.json",
+      "repositories": [],
+      "sha256": "4af55a3e6f370d9e190f1ca367aa275871f4b3b7019a14cf94a5001b6e5ef839"
+    },
+    {
+      "path": "archaeology/decisive-native/AUTHOR_TEST_BLOBS.json",
+      "repositories": [],
+      "sha256": "a756a645350a5df8e663d1f827cee87627a8a82f39bcdfe07fb445f9483279bd"
+    },
+    {
+      "path": "archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json",
+      "repositories": [
+        "psf/requests",
+        "urllib3/urllib3"
+      ],
+      "sha256": "aec93ebcaed7f4d4c0eff6c0d921acd297dffa3172827503dc1bb5a2c5c7d5a7"
+    },
+    {
+      "path": "archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "repositories": [
+        "heathsanchez/Minimal-Sufficient-Interface",
+        "heathsanchez/realitygraph",
+        "heathsanchez/test",
+        "heathsanchez/triskelion",
+        "metalogiclabs/mathgraph"
+      ],
+      "sha256": "1ffaa9d1f97d05d2883fc69c1ba52c3109b778acac16c9e0d8b46dc33a72220a"
+    },
+    {
+      "path": "archaeology/recursive-frontier/GREEN_MAINTENANCE_FREEZE.json",
+      "repositories": [],
+      "sha256": "a5aad0a7ba83952871c36c3c93bc728c624bc32124c5a83f96268d98dca96076"
+    },
+    {
+      "path": "archaeology/programme-closure/REPOSITORIES.json",
+      "repositories": [
+        "heathsanchez/FormalBook",
+        "heathsanchez/Minimal-Sufficient-Interface",
+        "heathsanchez/OpenGauss",
+        "heathsanchez/QuantumOptics.jl",
+        "heathsanchez/equational-theories-lean-stage2",
+        "heathsanchez/equational_theories",
+        "heathsanchez/latent-coordinate-law-engine",
+        "heathsanchez/lean-kernel-arena",
+        "heathsanchez/lean4lean",
+        "heathsanchez/lima",
+        "heathsanchez/mathgraph",
+        "heathsanchez/mathgraph-fork",
+        "heathsanchez/mathgraph-igp24-continuation-engine",
+        "heathsanchez/parameter-golf",
+        "heathsanchez/realitygraph",
+        "heathsanchez/specimen",
+        "heathsanchez/test",
+        "heathsanchez/triskelion",
+        "heathsanchez/vericoding-benchmark",
+        "licenses/apache-2.0",
+        "licenses/gpl-3.0",
+        "licenses/lgpl-3.0",
+        "licenses/mit",
+        "metalogiclabs/L4YAML",
+        "metalogiclabs/PropertyKindCalculus",
+        "metalogiclabs/Stockfish",
+        "metalogiclabs/go-ethereum",
+        "metalogiclabs/mathgraph",
+        "metalogiclabs/mathgraph-lean-kernel",
+        "metalogiclabs/metatron",
+        "repos/heathsanchez",
+        "repos/metalogiclabs",
+        "users/heathsanchez",
+        "users/metalogiclabs"
+      ],
+      "sha256": "0d48c74467e8c493c1579104588d3745a4126cc4eff36464b84ce15a29bb3fb6"
+    },
+    {
+      "path": "archaeology/programme-closure/FROZEN_UNIVERSE.json",
+      "repositories": [],
+      "sha256": "6d910fbe4207255deed7f19ca16f094d68d40e1b4398a5198ebda3aeb79967b4"
+    },
+    {
+      "path": "archaeology/programme-closure/DISCOVERED_CANDIDATES.json",
+      "repositories": [
+        "heathsanchez/test"
+      ],
+      "sha256": "8d56ce65068426469c5cf40a59c4d1eb38ec924cb343472a368ed087b0b4346b"
+    },
+    {
+      "path": "archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json",
+      "repositories": [
+        "heathsanchez/Minimal-Sufficient-Interface",
+        "heathsanchez/realitygraph",
+        "metalogiclabs/metatron"
+      ],
+      "sha256": "31645d68a8e8c79272ef95c8ccec715cead7c4840685791697bf50cac2523925"
+    },
+    {
+      "path": "external_pr_v1/FROZEN_PROTOCOL.json",
+      "repositories": [],
+      "sha256": "412a6b43bcf156bd99e083d3621141a14fd4fca3b0fc7d04b59e8d7285aaa34d"
+    },
+    {
+      "path": "external_pr_v1/admission_policy.json",
+      "repositories": [
+        "teorth/IEANTN"
+      ],
+      "sha256": "1f7286ae15af7cc84d44d8defaaa3aed74dd46dbdc82d9ae817d0a8f82ef5b30"
+    },
+    {
+      "path": "native_semantic_genesis_v1/FROZEN_PROTOCOL.json",
+      "repositories": [
+        "leanprover/cslib"
+      ],
+      "sha256": "7b4414ae9afc92048591c7690dcaff5da43426585a326f60bdf723b0a7820856"
+    },
+    {
+      "path": "native_unbounded_v1/FROZEN_PROTOCOL.json",
+      "repositories": [
+        "heathsanchez/test",
+        "leanprover/cslib"
+      ],
+      "sha256": "726ad175cbb6fa7510031bdc54f61bf81a602c4c610288cc508276fc47d45f43"
+    },
+    {
+      "path": "typed_semantic_method_v1/FROZEN_PROTOCOL.json",
+      "repositories": [
+        "heathsanchez/test",
+        "leanprover/cslib"
+      ],
+      "sha256": "b953fbc2d4346340604a0d553a8582332fcd650508b91676576028434e75e535"
+    },
+    {
+      "path": "archaeology/native-frontier-v2/PREQUERY.json",
+      "repositories": [
+        "ServiceNow/webarena-verified",
+        "dateutil/dateutil",
+        "grahamdumpleton/wrapt",
+        "heathsanchez/FormalBook",
+        "heathsanchez/Minimal-Sufficient-Interface",
+        "heathsanchez/OpenGauss",
+        "heathsanchez/QuantumOptics.jl",
+        "heathsanchez/equational-theories-lean-stage2",
+        "heathsanchez/equational_theories",
+        "heathsanchez/latent-coordinate-law-engine",
+        "heathsanchez/lean-kernel-arena",
+        "heathsanchez/lean4lean",
+        "heathsanchez/lima",
+        "heathsanchez/mathgraph",
+        "heathsanchez/mathgraph-fork",
+        "heathsanchez/mathgraph-igp24-continuation-engine",
+        "heathsanchez/parameter-golf",
+        "heathsanchez/realitygraph",
+        "heathsanchez/specimen",
+        "heathsanchez/test",
+        "heathsanchez/triskelion",
+        "heathsanchez/vericoding-benchmark",
+        "jab/bidict",
+        "leanprover/cslib",
+        "licenses/apache-2.0",
+        "licenses/gpl-3.0",
+        "licenses/lgpl-3.0",
+        "licenses/mit",
+        "metalogiclabs/L4YAML",
+        "metalogiclabs/PropertyKindCalculus",
+        "metalogiclabs/Stockfish",
+        "metalogiclabs/go-ethereum",
+        "metalogiclabs/mathgraph",
+        "metalogiclabs/mathgraph-lean-kernel",
+        "metalogiclabs/metatron",
+        "more-itertools/more-itertools",
+        "nasa-jpl/L4YAML",
+        "pallets/blinker",
+        "pallets/click",
+        "pallets/itsdangerous",
+        "pallets/markupsafe",
+        "psf/requests",
+        "pypa/packaging",
+        "python-attrs/attrs",
+        "python-attrs/cattrs",
+        "python-hyper/h11",
+        "repos/heathsanchez",
+        "repos/metalogiclabs",
+        "teorth/IEANTN",
+        "urllib3/urllib3",
+        "users/heathsanchez",
+        "users/metalogiclabs"
+      ],
+      "sha256": "24c3e562c5fb638a162930d9aa71d2b8b50d67dc5741ab2ae9c6e5e30ceafba9"
+    },
+    {
+      "path": "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json",
+      "repositories": [
+        "GrahamDumpleton/wrapt",
+        "ServiceNow/webarena-verified",
+        "dateutil/dateutil",
+        "grahamdumpleton/wrapt",
+        "heathsanchez/FormalBook",
+        "heathsanchez/Minimal-Sufficient-Interface",
+        "heathsanchez/OpenGauss",
+        "heathsanchez/QuantumOptics.jl",
+        "heathsanchez/equational-theories-lean-stage2",
+        "heathsanchez/equational_theories",
+        "heathsanchez/latent-coordinate-law-engine",
+        "heathsanchez/lean-kernel-arena",
+        "heathsanchez/lean4lean",
+        "heathsanchez/lima",
+        "heathsanchez/mathgraph",
+        "heathsanchez/mathgraph-fork",
+        "heathsanchez/mathgraph-igp24-continuation-engine",
+        "heathsanchez/parameter-golf",
+        "heathsanchez/realitygraph",
+        "heathsanchez/specimen",
+        "heathsanchez/test",
+        "heathsanchez/triskelion",
+        "heathsanchez/vericoding-benchmark",
+        "jab/bidict",
+        "leanprover/cslib",
+        "licenses/apache-2.0",
+        "licenses/gpl-3.0",
+        "licenses/lgpl-3.0",
+        "licenses/mit",
+        "metalogiclabs/L4YAML",
+        "metalogiclabs/PropertyKindCalculus",
+        "metalogiclabs/Stockfish",
+        "metalogiclabs/go-ethereum",
+        "metalogiclabs/mathgraph",
+        "metalogiclabs/mathgraph-lean-kernel",
+        "metalogiclabs/metatron",
+        "more-itertools/more-itertools",
+        "nasa-jpl/L4YAML",
+        "pallets/blinker",
+        "pallets/click",
+        "pallets/itsdangerous",
+        "pallets/markupsafe",
+        "psf/requests",
+        "pypa/packaging",
+        "python-attrs/attrs",
+        "python-attrs/cattrs",
+        "python-hyper/h11",
+        "repos/heathsanchez",
+        "repos/metalogiclabs",
+        "teorth/IEANTN",
+        "urllib3/urllib3",
+        "users/heathsanchez",
+        "users/metalogiclabs"
+      ],
+      "sha256": "38f7670e93a620f95ad75b042ce7390302a8547490095e3caecdf8ba88abb731"
+    }
+  ],
+  "historically_touched_repository_exclusions": {
+    "dateutil/dateutil": [
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "go-chi/chi": [
+      "capability_index.json#jpl-observation-quotient-native-chi-servemux"
+    ],
+    "grahamdumpleton/wrapt": [
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/equational-theories-lean-stage2": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/equational_theories": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/formalbook": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/latent-coordinate-law-engine": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/lean-kernel-arena": [
+      "capability_index.json",
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/lean4lean": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/lima": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/mathgraph": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/mathgraph-fork": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/mathgraph-igp24-continuation-engine": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/minimal-sufficient-interface": [
+      "capability_index.json",
+      "archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/opengauss": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/parameter-golf": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/quantumoptics.jl": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/realitygraph": [
+      "capability_index.json",
+      "developmental_sources.json",
+      "archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/specimen": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/test": [
+      "capability_index.json",
+      "developmental_sources.json",
+      "archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/programme-closure/DISCOVERED_CANDIDATES.json",
+      "native_unbounded_v1/FROZEN_PROTOCOL.json",
+      "typed_semantic_method_v1/FROZEN_PROTOCOL.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/triskelion": [
+      "capability_index.json",
+      "archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "heathsanchez/vericoding-benchmark": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "jab/bidict": [
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "leanprover/cslib": [
+      "native_policy.json",
+      "native_semantic_genesis_v1/FROZEN_PROTOCOL.json",
+      "native_unbounded_v1/FROZEN_PROTOCOL.json",
+      "typed_semantic_method_v1/FROZEN_PROTOCOL.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "licenses/apache-2.0": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "licenses/gpl-3.0": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "licenses/lgpl-3.0": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "licenses/mit": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "metalogiclabs/go-ethereum": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "metalogiclabs/l4yaml": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "metalogiclabs/mathgraph": [
+      "capability_index.json",
+      "archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "metalogiclabs/mathgraph-lean-kernel": [
+      "capability_index.json",
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "metalogiclabs/metatron": [
+      "capability_index.json",
+      "developmental_sources.json",
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "metalogiclabs/propertykindcalculus": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "metalogiclabs/stockfish": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "more-itertools/more-itertools": [
+      "archaeology/decisive-native/FRESH_TASK_METADATA.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "nasa-jpl/l4yaml": [
+      "capability_index.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "pallets/blinker": [
+      "archaeology/decisive-native/FRESH_TASK_METADATA.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "pallets/click": [
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "pallets/itsdangerous": [
+      "archaeology/decisive-native/FRESH_TASK_METADATA.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "pallets/markupsafe": [
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "psf/requests": [
+      "archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "pypa/packaging": [
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "python-attrs/attrs": [
+      "archaeology/decisive-native/FRESH_TASK_METADATA.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "python-attrs/cattrs": [
+      "archaeology/decisive-native/FRESH_TASK_METADATA.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "python-hyper/h11": [
+      "archaeology/decisive-native/FRESH_TASK_METADATA.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "repos/heathsanchez": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "repos/metalogiclabs": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "servicenow/webarena-verified": [
+      "capability_index.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "teorth/ieantn": [
+      "external_pr_v1/admission_policy.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "urllib3/urllib3": [
+      "archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "users/heathsanchez": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ],
+    "users/metalogiclabs": [
+      "archaeology/programme-closure/REPOSITORIES.json",
+      "archaeology/native-frontier-v2/PREQUERY.json",
+      "archaeology/native-frontier-v2/FRESH_TASK_METADATA.json"
+    ]
+  },
+  "metadata_predicates": {
+    "file_metadata_pagination": "Original v2 scan: per_page=100 until fewer than 100; refusal if 3000-file API ceiling is not closed.",
+    "merged": true,
+    "no_changed_file_renamed_or_removed": true,
+    "production_changed_status": "Every production .py file is modified, hence preexisting.",
+    "production_py_files_min": 1,
+    "production_total_additions_max": 6,
+    "production_total_deletions_inclusive": [
+      1,
+      4
+    ],
+    "test_py_files_min": 1,
+    "tests_classifier": "Original v2 is_test: .py plus test/tests/testing component, test_ basename, _test.py suffix, or conftest.py.",
+    "title_or_label": "Case-insensitive title starts fix OR a label contains bug."
+  },
+  "metadata_seconds": 900,
+  "original_curator": {
+    "path": "archaeology/native-frontier-v2/curate_metadata.py",
+    "sha256": "b2885099eb904395cb297ba17a0c3f1270975061b24d46ac5742a07804b8e251"
+  },
+  "repository_universe_fixed_before_github_queries": [
+    "davidhalter/parso",
+    "grantjenks/python-sortedcontainers",
+    "jd/tenacity",
+    "keleshev/schema",
+    "mahmoud/boltons",
+    "mverleg/pyjson_tricks",
+    "python-humanize/humanize",
+    "tartley/colorama",
+    "tkem/cachetools"
+  ],
+  "requested_roles": 2,
+  "role_assignment_after_independent_admission": [
+    "TRAINING",
+    "PROTECTED_FUTURE_1"
+  ],
+  "schema": "UDM_NATIVE_ENVIRONMENT_V3_METADATA_PREQUERY_V1",
+  "scientific_verdict": "NONE_METADATA_AND_ADMISSION_SCREENING_CANNOT_ESTABLISH_G2_G3_OR_G4",
+  "screening_budget": {
+    "all_refusals_and_partial_costs_retained": true,
+    "collection_seconds_per_call": 60,
+    "execution_seconds_per_call": 600,
+    "maximum_cases": 9,
+    "maximum_native_executions_per_case": 2,
+    "native_and_independent_verification_costs_charged": true,
+    "total_screening_wall_seconds": 7200
+  },
+  "selection_algorithm": "Inspect the latest at most 100 closed PRs per nonexcluded repository, page=1, per_page=100, sort=updated, direction=desc. Retain every PR and fixed-predicate reason. Take the first qualifying PR per repository in returned order. Bind every chosen base/head commit and changed blob using Git metadata only, retaining any binding failure without retargeting. The complete resulting pool, in fixed repository order, is committed before independent admission screening. Screen every pool member; choose the first two source-distinct admitted members. Native PASS and FAIL are identical for eligibility and remain sealed from the learner. If the selected training case has no failing native residual, stop G2 UNKNOWN; do not replace it.",
+  "state": "PREQUERY_PREPARED_NO_QUERIES",
+  "universe_order": "Ascending lexicographic full name; no expansion on shortfall.",
+  "untouched_assessment": {
+    "basis": "Exact frozen historical metadata, both prior frontier universes and selected tasks, and original known native-domain identifier.",
+    "boundary": "Bounded accessible-record unfamiliarity only; no claim about all prior human/model knowledge or all inaccessible research."
+  }
+}

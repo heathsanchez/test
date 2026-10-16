@@ -21,7 +21,9 @@ class NativeFrontierV3Contracts(unittest.TestCase):
         self.q = importlib.import_module(MODULE)
 
     def test_prepared_defaults_cannot_freeze_without_exact_environment_gate(self):
-        value = self.q.protocol()
+        with tempfile.TemporaryDirectory() as folder, \
+             patch.object(self.q, 'PROTOCOL', Path(folder)/'NOT_YET_AUTHORED.json'):
+            value = self.q.protocol()
         self.assertEqual(value['state'], 'PREPARED_NOT_FROZEN')
         self.assertIsNone(value['environment_gate'])
         self.assertEqual((value['search_budget'], value['candidate_cap_per_file']), (8, 64))
@@ -90,6 +92,7 @@ class NativeFrontierV3Contracts(unittest.TestCase):
                         {'pool_index': 1, 'spec': spec, 'protocol_binding': 'b'*64},
                         {'pool_index': 0, 'spec': spec, 'protocol_binding': 'c'*64}):
             with self.subTest(request=request), \
+                 patch.object(self.q, 'protocol', return_value=copy.deepcopy(self.q.DEFAULTS)), \
                  patch.object(self.q, '_committed_record', side_effect=[prequery, pool]), \
                  patch.object(self.q.environment, 'provision') as source:
                 with self.assertRaisesRegex(ValueError, 'committed prequery, pool member, order or binding'):
