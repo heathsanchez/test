@@ -1,0 +1,170 @@
+name: Nucleus source-checked proof-neutrals full frozen qualification
+on:
+  push:
+    branches: [research/nucleus-proof-irrel-reconswap-20261017]
+    paths:
+      - ".github/workflows/nucleus-proof-neutral-qualification-20261017.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen:
+    name: Frozen196 exact inputs, mode ${{ matrix.mode }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [default, origin, demand]
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODE: ${{ matrix.mode }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build and run Nucleus native test suite
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD > /tmp/evidence/commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/tree.txt
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/evidence/test.log 2>&1
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/evidence/bin.sha256
+      - name: Recover exact published Arena 196 NDJSON inputs
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/artifact /tmp/inputs
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/inputs.zip
+          sha256sum /tmp/inputs.zip > /tmp/evidence/input-artifact.sha256
+          unzip -q /tmp/inputs.zip -d /tmp/artifact
+          tar --no-same-owner -xzf /tmp/artifact/lean-arena-tests.tar.gz -C /tmp/inputs
+      - name: Enforce exact per-input frozen verdict preservation and adversarial controls
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          mode=os.environ['MODE'];root=pathlib.Path('/tmp/inputs')
+          binary='metatron-kernel/target/release/metatron-kernel'
+          source=pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json')
+          original=json.loads(source.read_text())
+          baseline={r['case']:r for r in original['modes'][mode]['rows']}
+          assert len(baseline)==196
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          if mode!='default':env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in original['origin_flags']})
+          if mode=='demand':env['NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR']='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          env['NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS']='1'
+          results=[]
+          for group in ['good','bad']:
+              for path in sorted((root/group).rglob('*.ndjson')):
+                  case=str(path.relative_to(root))
+                  digest=hashlib.sha256(path.read_bytes()).hexdigest()
+                  assert case in baseline and digest==baseline[case]['sha256'],case
+                  with path.open('rb') as f:
+                      try:
+                          run=subprocess.run([binary],stdin=f,capture_output=True,env=env,timeout=180)
+                          rc=run.returncode
+                          tail=(run.stdout+run.stderr).decode(errors='replace')[-1200:]
+                      except subprocess.TimeoutExpired:rc,tail=124,'TIMEOUT'
+                  results.append({'case':case,'sha256':digest,'rc':rc,'terminal':tail})
+          controls=[]
+          for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']:
+              path=pathlib.Path('metatron-kernel/tests/fixtures')/name
+              with path.open('rb') as f:run=subprocess.run([binary],stdin=f,capture_output=True,env=env,timeout=60)
+              controls.append({'name':name,'rc':run.returncode,'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'terminal':(run.stderr+run.stdout).decode(errors='replace')[-900:]})
+          assert len(results)==196
+          regressions=[r for r in results if baseline[r['case']]['rc'] in (0,1) and r['rc']!=baseline[r['case']]['rc']]
+          counts={'accept':sum(r['rc']==0 for r in results),'reject':sum(r['rc']==1 for r in results),'unknown':sum(r['rc']==2 for r in results),
+              'errors':sum(r['rc']not in (0,1,2) for r in results),
+              'wrong':sum((r['case'].startswith('bad/') and r['rc']==0) or (r['case'].startswith('good/') and r['rc']==1) for r in results)}
+          report={'candidate_commit':os.environ['GITHUB_SHA'],'mode':mode,'original':original['modes'][mode]['counts'],'counts':counts,'regressions':regressions,'controls':controls,'cases':results,
+              'qualified':not regressions and counts['wrong']==0 and counts['errors']==0 and all(r['rc']!=0 for r in controls)}
+          pathlib.Path('/tmp/evidence/frozen196.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps({k:v for k,v in report.items() if k not in ('cases','regressions')},sort_keys=True),flush=True)
+          assert report['qualified'],regressions[:15]
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-proof-neutral-frozen-${{ matrix.mode }}-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
+
+  latest-fixture:
+    name: Exact PR #15738 computed proof plus malicious new-ABI mutations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile candidate checker
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Retrieve SHA-sealed upstream PR proof exports from previous independent CI
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pr-archive /tmp/inputs
+          gh api repos/heathsanchez/test/actions/artifacts/12073873558/zip > /tmp/pr-archive.zip
+          unzip -q /tmp/pr-archive.zip -d /tmp/pr-archive
+          tar --no-same-owner -xzf /tmp/pr-archive/exported-inputs.tar.gz -C /tmp/inputs
+          echo 'fdf11cd5b38b18dc7a1dfc545cbd632ef3c221040eacdfca1929d55da82f4a44  /tmp/inputs/f-proof.ndjson' | sha256sum --check
+      - name: Compare five official witness closures and reject forged export semantics
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib,subprocess
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          frozen=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in frozen['origin_flags']})
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1';env['METATRON_KERNEL_DIAGNOSTICS']='1';env['NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS']='1'
+          checker='metatron-kernel/target/release/metatron-kernel'
+          root=pathlib.Path('/tmp/inputs');out=pathlib.Path('/tmp/evidence')
+          def run_raw(name,payload):
+              p=subprocess.run([checker],input=payload,capture_output=True,env=env,timeout=60)
+              return {'name':name,'rc':p.returncode,'sha256':hashlib.sha256(payload).hexdigest(),'bytes':len(payload),
+                  'trace':(p.stderr+p.stdout).decode(errors='replace')[-1800:]}
+          rows=[]
+          for name in ['f','g','f-proof','g-proof','step-proof','joint']:
+              rows.append(run_raw(name,(root/(name+'.ndjson')).read_bytes()))
+              print(name,rows[-1]['rc'],flush=True)
+          original=[json.loads(l) for l in (root/'f-proof.ndjson').read_text().splitlines()]
+          mutated=[]
+          def mutate(label,predicate,change):
+              obj=json.loads(json.dumps(original))
+              targets=[rec for rec in obj if predicate(rec)]
+              assert len(targets)==1,(label,len(targets))
+              change(targets[0])
+              payload=('\n'.join(json.dumps(r,separators=(',',':')) for r in obj)+'\n').encode()
+              r=run_raw(label,payload);mutated.append(r);print(label,r['rc'],flush=True)
+          owner=lambda rec:'inductive'in rec and rec['inductive']['types'][0]['name']==201
+          # The original Decidable constructor has exactly two dependent fields.
+          mutate('bad-ctor-arity',owner,lambda r:r['inductive']['ctors'][0].update(numFields=1))
+          mutate('bad-constructor-owner',owner,lambda r:r['inductive']['ctors'][0].update(induct=169))
+          mutate('bad-recursor-minors',owner,lambda r:r['inductive']['recs'][0].update(numMinors=2))
+          mutate('bad-recursor-rule',owner,lambda r:r['inductive']['recs'][0]['rules'][0].update(rhs=0))
+          # Change a theorem's alleged proof to an expression that does not inhabit its proposition.
+          mutate('bad-proof-value',lambda r:'thm'in r and r['thm']['name']==472,lambda r:r['thm'].update(value=0))
+          for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']:
+              p=pathlib.Path('metatron-kernel/tests/fixtures')/name
+              mutated.append(run_raw(name,p.read_bytes()))
+          report={'source':os.environ['GITHUB_SHA'],'baseline':rows,'negatives':mutated,
+              'pass':all(r['rc']==0 for r in rows) and all(r['rc']!=0 for r in mutated)}
+          (out/'decidable-pr15738-mutants.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps({'positives':[(r['name'],r['rc']) for r in rows],'negatives':[(r['name'],r['rc']) for r in mutated],'pass':report['pass']},sort_keys=True),flush=True)
+          assert report['pass'],'A named source-derived witness or adversarial negative did not meet qualification'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-proof-neutral-decidable-retained-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
