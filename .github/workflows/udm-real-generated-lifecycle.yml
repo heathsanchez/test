@@ -1,0 +1,83 @@
+name: Real UDM generated-wheel lifecycle
+on:
+  push:
+    branches: [research/udm-wheel-evidence-lifecycle-20261016]
+    paths:
+      - 'research/unified_consequence_runtime/qualify_real_generated_lifecycle.py'
+      - '.github/workflows/udm-real-generated-lifecycle.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  real-generated-lifecycle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+          path: components/development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: components/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: components/flash
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ServiceNow/webarena-verified
+          ref: 6473f72db5dcefc97b5725b59e734504edc28a21
+          path: components/evaluator
+          persist-credentials: false
+      - name: Install pinned native test and UDM dependencies
+        run: python -m pip install pytest==8.3.5 jinja2 playwright
+      - name: Authenticate original qualified state archive
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          p=Path('research/unified_consequence_runtime/archaeology/programme-closure/QUALIFIED_NATIVE_STATE.tar.gz')
+          assert hashlib.sha256(p.read_bytes()).hexdigest() == '5086b999e3f11b08524ea201cb8c2ac24842e6e288a56d17ef3c06c2c281a09d'
+          PY
+      - name: Execute real Metatron FLASH native lifecycle and separate-process restart
+        run: |
+          python -m research.unified_consequence_runtime.qualify_real_generated_lifecycle --components "$GITHUB_WORKSPACE/components" --out "$GITHUB_WORKSPACE/real-generated-qualification" | tee real-generated.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('real-generated-qualification/RESULT.json').read_text())
+          assert r['status']=='PASS_REAL_METATRON_FLASH_FIXTURE_LIFECYCLE'
+          assert r['original_records_retained']==224
+          assert r['restart']['status']=='PASS'
+          PY
+      - name: Archive exact result and restart evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-generated-wheel-lifecycle
+          path: |
+            real-generated.log
+            real-generated-qualification/RESULT.json
+            real-generated-qualification/restart-spec.json
+            real-generated-qualification/child/restart.json
+            real-generated-qualification/state/metatron-ledger.jsonl
+          if-no-files-found: warn
