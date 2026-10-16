@@ -1,0 +1,31 @@
+{
+  "auditor_collection_calls": 0,
+  "auditor_git_calls": 0,
+  "auditor_native_calls": 0,
+  "auditor_network_calls": 0,
+  "ci_attempts": {
+    "legacy": {
+      "collection_calls": 3,
+      "native_calls": 2,
+      "subprocess_attempts": 5
+    },
+    "modern": {
+      "collection_calls": 42,
+      "native_calls": 16,
+      "subprocess_attempts": 58
+    }
+  },
+  "ci_qualification_wall_seconds": {
+    "legacy": 41.90938847299992,
+    "modern": 240.358403319
+  },
+  "full_lifecycle_model_tool_engineering_cost": "UNKNOWN",
+  "offline_audit_seconds": 1.8376928540001245,
+  "preparation_seconds": 21.51958029000002,
+  "retained_raw_worker_seconds": {
+    "legacy": 1.3368884790000948,
+    "modern": 16.22313890299972
+  },
+  "schema": "UDM_V41_OFFLINE_AUDIT_COSTS_V1",
+  "supplement_seconds": 0.030830410998532898
+}
