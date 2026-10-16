@@ -1,0 +1,118 @@
+name: UDM V6 typed Git native transport and execution authority
+on:
+  push:
+    branches: [research/udm-typed-native-authority-v6-20261017]
+    paths:
+      - .github/workflows/udm-typed-native-authority-v6.yml
+      - research/unified_consequence_runtime/typed_native_authority_v6.py
+      - research/unified_consequence_runtime/test_typed_native_authority_v6.py
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: udm-typed-native-v6-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  protected-typed-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+      GIT_CONFIG_NOSYSTEM: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 12
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Install independently fixed native test dependencies
+        run: |
+          python -B -m pip install --disable-pip-version-check --no-input \
+            packaging==26.3 pytest==8.4.1 pytest-cov==6.2.1 coverage==7.10.6 pluggy==1.6.0
+      - name: Bind exact frozen tests and preserve V5 plus previous verifiers
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/v6
+          git rev-parse HEAD > qualification/v6/SOURCE_COMMIT.txt
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/test_typed_native_authority_v6.py)" = \
+            "0489cd0eebdd9880eb8065c2fbe8a554ea248a0d"
+          for path in \
+            research/unified_consequence_runtime/typed_source_inventory_v5.py \
+            research/unified_consequence_runtime/decisive_native_verify.py \
+            research/unified_consequence_runtime/native_execution_v3.py \
+            research/unified_consequence_runtime/native_environment_selection_v41.py \
+            research/unified_consequence_runtime/native_environment_v41.py \
+            research/unified_consequence_runtime/capability_index.json; do
+            before="$(git rev-parse 0231fc7d77378009271250788875bdf53a7a3d07:"$path")"
+            after="$(git rev-parse HEAD:"$path")"
+            test "$before" = "$after"
+            printf '%s\t%s\n' "$path" "$after" >> qualification/v6/PRESERVED_SOURCE_BLOBS.txt
+          done
+      - name: Execute all frozen typed native and inherited V5 tests
+        run: |
+          set -euo pipefail
+          python -B -m unittest \
+            research.unified_consequence_runtime.test_typed_native_authority_v6 \
+            research.unified_consequence_runtime.test_typed_source_inventory_v5 \
+            research.unified_consequence_runtime.test_native_suite_authority \
+            -v 2>&1 | tee qualification/v6/CONTRACTS.log
+      - name: Source-pinned exposed real wcwidth diagnostic (never prospective G2)
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          original="$RUNNER_TEMP/wcwidth-v6"
+          git init -q "$original"
+          git -C "$original" fetch --quiet --no-tags --depth=1 \
+            https://github.com/jquast/wcwidth.git \
+            784d08c6cf6b67e19f34ae5ddb9bb8b4aa4f17fe
+          mkdir -p qualification/v6/real-world
+          UDM_V6_ORIGINAL_SOURCE="$original" \
+          UDM_V6_NATIVE_STAGE="$RUNNER_TEMP/wcwidth-v6-typed-stage" \
+            python -B -m research.unified_consequence_runtime.qualify_typed_native_v6 \
+            > qualification/v6/real-world/RECEIPT.json
+          python -B - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("qualification/v6/real-world/RECEIPT.json").read_text())
+          assert r["type"]=="EXPOSED_SOURCE_DIAGNOSTIC_ONLY"
+          assert r["stage"]["counts"]=={"regular":108,"symlink":1,"gitlink":1}
+          assert r["first"]["status"]=="PASS_SCOPED_NATIVE",r["first"]
+          assert r["second"]["status"]=="PASS_SCOPED_NATIVE",r["second"]
+          assert r["first"]["executed"]==r["second"]["executed"]
+          assert r["first"]["imported_project_files"]==r["second"]["imported_project_files"]
+          assert r["G2"]=="UNKNOWN" and r["G3"]=="UNKNOWN" and r["G4"]=="UNKNOWN"
+          print("PASS_EXPOSED_SOURCE_TYPED_NATIVE_SCOPED_ONLY",
+                len(r["first"]["executed"]),"protected pytest calls")
+          PY
+      - name: Archive exact outcome and prevent scientific promotion
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/v6
+          python - <<'PY'
+          import hashlib,json,subprocess
+          from pathlib import Path
+          root=Path("qualification/v6")
+          source=Path("research/unified_consequence_runtime/typed_native_authority_v6.py")
+          out={"schema":"UDM_TYPED_NATIVE_V6_CI_BOUNDARY",
+               "head":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),
+               "v6_source_sha256":hashlib.sha256(source.read_bytes()).hexdigest() if source.exists() else None,
+               "frozen_test_git_sha":"0489cd0eebdd9880eb8065c2fbe8a554ea248a0d",
+               "G2":"UNKNOWN","G3":"UNKNOWN","G4":"UNKNOWN","G5":"UNKNOWN","G6":"UNKNOWN",
+               "prior_green_v5":38967093241,"prior_red_v41":38957756405,
+               "no_prospective_learning_in_this_job":True}
+          (root/"BOUNDARY.json").write_text(json.dumps(out,sort_keys=True,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-v6-typed-native-${{ github.sha }}-${{ github.run_attempt }}
+          path: qualification/v6/
+          retention-days: 90
+          if-no-files-found: warn
