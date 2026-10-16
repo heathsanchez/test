@@ -1,0 +1,69 @@
+{
+  "blockers": [
+    {
+      "finding": "CAS profile replay uses independent=False receipt validation and lacks exact producer probe-event premises; fully resealed false PASS is structurally acceptable by design.",
+      "id": "F1_PROFILE_AUTHORITY",
+      "location": "qualify_native_frontier_v2.py:140",
+      "required": "Independent candidate revalidation with actual charged bounded calls, plus exact source/authority/probe-event lineage.",
+      "resolution_status": "CLOSED_BY_READ_ONLY_REVIEW_AND_LOCAL_FIXTURE_CONTRACTS"
+    },
+    {
+      "finding": "Training-only policy choice promotes G2 before untouched future cold FAIL and selected warm native PASS; early future failure retains promotion. Warm probe ancestry omits selected policy.",
+      "id": "F2_PREMATURE_G2",
+      "location": "qualify_native_frontier_v2.py:402",
+      "required": "Defer G2 until complete eligible cold failure and actual policy-causal warm success; retain policy ancestor and live checks.",
+      "resolution_status": "CLOSED_BY_READ_ONLY_REVIEW_AND_LOCAL_FIXTURE_CONTRACTS"
+    },
+    {
+      "finding": "Search checks time only before launching native call, so an over-ceiling returned PASS can win; closed_failure ignores elapsed ceiling.",
+      "id": "F3_WALL_HORIZON",
+      "location": "qualify_native_frontier_v2.py:150",
+      "required": "Retain receipts/costs but mark ineligible over-ceiling/truncated episodes UNKNOWN; exclude from closed failure and G2.",
+      "resolution_status": "CLOSED_BY_READ_ONLY_REVIEW_AND_LOCAL_FIXTURE_CONTRACTS"
+    }
+  ],
+  "confirmed_design": [
+    "V2 process-exit shape used correctly",
+    "Pinned actual original MSI/MDA selection/invocation path",
+    "Separate native ledger calls, not cache-only simulation",
+    "Agent arm honestly READY_NOT_EXECUTED; actual root tool-using run still required",
+    "Failed probes retained in CAS/events/raw output",
+    "G3 remains explicit UNKNOWN when second-generation correspondence/controls absent",
+    "G4 remains UNKNOWN; training-only arm is not a future matched-agent result"
+  ],
+  "created_utc": "2026-10-16T05:14:54.658647+00:00",
+  "final_fixture_log": {
+    "duration_seconds": 0.004,
+    "exit_code": 0,
+    "name": "contracts-final.log",
+    "sha256": "8bab5b203e6dbf285a467948fa03403bfa5c475faf4f870980793bb1a635b018",
+    "tests": 9
+  },
+  "initial_fixture_log": "frontier-contracts-initial.log",
+  "initial_fixture_log_sha256": "05bf2afa64ee243ce8de49fc779c9eb4030efd0e41301a0aa6980d407fe8ba99",
+  "known_limits": [
+    "Trusted original tests/hooks and licensed plugins",
+    "Hostile Python introspection and G6 UNKNOWN",
+    "No fresh task source access licensed by review",
+    "No weakened UNKNOWN or complete-language inadequacy inference"
+  ],
+  "prepared_gate": "admission_gate=null correctly blocks prospective freeze; actual separate Actions qualification and archived audit required before fill",
+  "resolution": {
+    "comparison": "Ledger uses separate native calls; agent readiness does not simulate execution or claim G4.",
+    "g2": "Promotion deferred until complete eligible cold FAIL and actual selected-policy warm PASS, followed by native capability admission/execution with policy dependency.",
+    "g3": "Explicitly UNKNOWN when versioned second-generation/restoration correspondence absent.",
+    "prepared_gate": "Admission gate remains null; no prospective freeze or task source access is authorized by this review.",
+    "profile_authority": "Distinct CAS records independently reexecuted with independent=True; exact live probe/source/authority/dependency lineage and exact profile-event trace retained; recheck costs charged.",
+    "wall_horizon": "Post-call overrun retains attempted evidence while clearing winner and marking UNKNOWN; closed failures and future gate require within_budget; inclusive acquisition/recheck budgets enforced."
+  },
+  "review_completed_utc": "2026-10-16T05:26:52.065215+00:00",
+  "reviewed_source_sha256": {
+    ".github/workflows/udm-native-frontier-v2.yml": "db2b09eece5c9c4797786446ed4d0c04191ee8f6bfa7419b79549f0c237a7dc3",
+    "research/unified_consequence_runtime/archaeology/native-frontier-v2/PROTOCOL.json": "dc46b2348bf8e6475c00d1986037c3359156e3679e8736fa7d800a087c811a5d",
+    "research/unified_consequence_runtime/qualify_native_frontier_v2.py": "a8b89ece49940388bcdda03669e645a25d0f85cf4b6eb5f8b97878e40ed86c46",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v2.py": "2765576f68b60d274e691c28c3eca8968a57b395e06fb43b9573b61f574cb865"
+  },
+  "schema": "UDM_NATIVE_FRONTIER_V2_PREEXPOSURE_SECURITY_REVIEW",
+  "scope": "Local controller, fixture tests, workflow and prepared protocol only. No selected task source, tests, contents or outcomes accessed.",
+  "status": "NO_OPEN_BLOCKER_IN_PREPARED_CONTROLLER_WITHIN_DECLARED_SCOPE"
+}

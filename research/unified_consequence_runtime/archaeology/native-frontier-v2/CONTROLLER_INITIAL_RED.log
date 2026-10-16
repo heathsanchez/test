@@ -1,0 +1,41 @@
+test_incomplete_or_unknown_native_prefix_is_never_closed_failure (research.unified_consequence_runtime.test_qualify_native_frontier_v2.NativeFrontierV2ProtocolContracts.test_incomplete_or_unknown_native_prefix_is_never_closed_failure) ... FAIL
+test_protocol_requires_independently_qualified_first_gate (research.unified_consequence_runtime.test_qualify_native_frontier_v2.NativeFrontierV2ProtocolContracts.test_protocol_requires_independently_qualified_first_gate) ... FAIL
+test_same_budget_charges_separate_baseline_execution (research.unified_consequence_runtime.test_qualify_native_frontier_v2.NativeFrontierV2ProtocolContracts.test_same_budget_charges_separate_baseline_execution) ... FAIL
+test_unknown_native_search_stops_without_promotion_or_hidden_calls (research.unified_consequence_runtime.test_qualify_native_frontier_v2.NativeFrontierV2ProtocolContracts.test_unknown_native_search_stops_without_promotion_or_hidden_calls) ... FAIL
+
+======================================================================
+FAIL: test_incomplete_or_unknown_native_prefix_is_never_closed_failure (research.unified_consequence_runtime.test_qualify_native_frontier_v2.NativeFrontierV2ProtocolContracts.test_incomplete_or_unknown_native_prefix_is_never_closed_failure)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v2.py", line 15, in setUp
+    self.assertIsNotNone(experiment, 'versioned prospective controller is missing')
+AssertionError: unexpectedly None : versioned prospective controller is missing
+
+======================================================================
+FAIL: test_protocol_requires_independently_qualified_first_gate (research.unified_consequence_runtime.test_qualify_native_frontier_v2.NativeFrontierV2ProtocolContracts.test_protocol_requires_independently_qualified_first_gate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v2.py", line 15, in setUp
+    self.assertIsNotNone(experiment, 'versioned prospective controller is missing')
+AssertionError: unexpectedly None : versioned prospective controller is missing
+
+======================================================================
+FAIL: test_same_budget_charges_separate_baseline_execution (research.unified_consequence_runtime.test_qualify_native_frontier_v2.NativeFrontierV2ProtocolContracts.test_same_budget_charges_separate_baseline_execution)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v2.py", line 15, in setUp
+    self.assertIsNotNone(experiment, 'versioned prospective controller is missing')
+AssertionError: unexpectedly None : versioned prospective controller is missing
+
+======================================================================
+FAIL: test_unknown_native_search_stops_without_promotion_or_hidden_calls (research.unified_consequence_runtime.test_qualify_native_frontier_v2.NativeFrontierV2ProtocolContracts.test_unknown_native_search_stops_without_promotion_or_hidden_calls)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v2.py", line 15, in setUp
+    self.assertIsNotNone(experiment, 'versioned prospective controller is missing')
+AssertionError: unexpectedly None : versioned prospective controller is missing
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+FAILED (failures=4)

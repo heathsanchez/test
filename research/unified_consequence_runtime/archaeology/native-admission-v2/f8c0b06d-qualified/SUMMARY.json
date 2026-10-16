@@ -1,0 +1,479 @@
+{
+  "actual_collection_call_count": 7,
+  "actual_native_call_count": 4,
+  "actual_native_subprocesses": [
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 1.578205276999995
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-0/collection/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "horizon_seconds": 600,
+        "native_calls": 1,
+        "seconds": 27.544781290999993
+      },
+      "mode": "run",
+      "path": "admission-v2/task-0/native/execution/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 1.37640705299998
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-0/native/independent-collection/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "horizon_seconds": 600,
+        "native_calls": 1,
+        "seconds": 27.99824456800002
+      },
+      "mode": "run",
+      "path": "admission-v2/task-0/receipt-recheck/execution/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 1.4275686710000173
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-0/receipt-recheck/independent-collection/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 2.4459873889999812
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-1/collection/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "horizon_seconds": 600,
+        "native_calls": 1,
+        "seconds": 13.576984145999972
+      },
+      "mode": "run",
+      "path": "admission-v2/task-1/native/execution/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 2.2914339980000022
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-1/native/independent-collection/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 2.3999191170000245
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-2/collection/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "horizon_seconds": 600,
+        "native_calls": 1,
+        "seconds": 240.24361812099994
+      },
+      "mode": "run",
+      "path": "admission-v2/task-2/native/execution/checked-report.json"
+    },
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 2.3492462849999924
+      },
+      "mode": "collect",
+      "path": "admission-v2/task-2/native/independent-collection/checked-report.json"
+    }
+  ],
+  "artifact_id": 12027916982,
+  "audit_seconds": 1.4314295669973944,
+  "contracts": {
+    "all_individual_entries_ok": true,
+    "count": 193,
+    "seconds": 248.685
+  },
+  "controller_wall_seconds": 398.645547712,
+  "manifest_files_checked": 902,
+  "missing_frozen_source_from_original_archive": {},
+  "preserved_history": {
+    "cancelled_run": 38855850906,
+    "cancelled_source": "1e0bf1d1d6ff951033da7fd7503e76fefccac666",
+    "control_log_sha256": {
+      "code-identity-interning-green.log": "23c38b9072bcc07fed52f1b0c3fd1231d548d28daa8047ea828f9e096d27f917",
+      "code-identity-interning-red.log": "aff35e16d77b0873b69ddd71ba4f3f406628589867eac153e929646cc37e7750",
+      "reasonless-xpass-both-red.log": "d527cb4b4845b595fedf97a97465e896c7c0dec9100eb4588e473f70772da418",
+      "reasonless-xpass-green.log": "637955fd539e51aa391ce7fddb719b9424170ad22c554cbdb5a16b5f8022158b",
+      "reasonless-xpass-red.log": "656e87ce77827dba273cd55f532ffaca4c28ca290bdd80f9b9da8a6c5e4f5a6b",
+      "reorder-v21-green.log": "c5ec755e80018ac25b5c9511c0aa47d7b99576d07f420325f61f668658eea522",
+      "reorder-v21-red.log": "aa5e036a3e26fdc3b2cd10a33af00cde1c5aba0a6df2f33e33b74c8b4a4d3421"
+    },
+    "earlier_cattrs_identity_mismatch_cause": "UNRESOLVED_IN_THIS_NATIVE_RUN. Pure control demonstrates generic marshal susceptibility but does not prove this actual case cause.",
+    "earlier_diagnostic_remains_failed": true,
+    "new_result_is_separate_from_preserved_UNKNOWN": true,
+    "old_2_0_protocol_byte_exact": true,
+    "target_native_step": "SKIPPED"
+  },
+  "provider_zip_bytes": 44068256,
+  "provider_zip_sha256": "de8534883c760c2129b592a665c3cb735a4af360794409debe23660366853510",
+  "remaining_residual": "Freeze untouched source-distinct tasks after this bounded admission gate; execute existing UDM and matched ledger/coding-agent comparisons. Attrs/cattrs strict native authority remains UNKNOWN where original skips/xfails or source/code identity controls fire. Prior 2.0 reorder refusal and marshal-encoding UNKNOWNs remain preserved historical results.",
+  "retention": {
+    "CAS_objects": 76,
+    "exact_bytes": true,
+    "inventory_rows": 70,
+    "records": 246
+  },
+  "run_id": "38856738333",
+  "runtime_fixtures": "Actual existing Machine/Metatron/FLASH contract fixtures include native execution, fresh restoration, and separate-process restart. Supplied fixture repair is not a developmental scientific result; raw per-fixture subprocess outputs are not separately archived.",
+  "schema": "UDM_NATIVE_ADMISSION_V21_INDEPENDENT_ARCHIVE_AUDIT",
+  "scope": "Read-only independent parsing of provider/source/raw collection/native/JUnit/cost evidence; no native rerun or fresh task exposure.",
+  "source_commit": "f8c0b06da1bbaddfd67229ca87cb53a0dab67ae0",
+  "source_files_archived": 402,
+  "source_files_frozen": 83,
+  "source_supplement": "Not needed: all 83 frozen source files are present in the original authenticated source TAR.",
+  "status": "PASS_ARCHIVE_AUDIT",
+  "tasks": [
+    {
+      "independent_native": {
+        "all_exact_calls": true,
+        "all_exact_nodes": true,
+        "all_exact_setup_order": true,
+        "all_exact_teardown_order": true,
+        "all_plugins": true,
+        "all_selected_cases_have_reports": true,
+        "all_test_items": true,
+        "calls": 768,
+        "collected": 768,
+        "collection_and_selected_order_differ": false,
+        "costs": {
+          "collection_calls": 1,
+          "native_calls": 1,
+          "native_seconds": 27.99824456800002,
+          "total_seconds": 34.01207689399996
+        },
+        "failed_nodes": [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ],
+        "junit": {
+          "errors": 0,
+          "failures": 1,
+          "passed": 767,
+          "skipped": 0,
+          "tests": 768
+        },
+        "native_horizon_seconds": 600,
+        "negative_violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "deselected_test_nodes": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        },
+        "phase_counts": {
+          "call": 768,
+          "setup": 768,
+          "teardown": 768
+        },
+        "plain_skip_reports": 0,
+        "protected_failed_nodes": [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ],
+        "selected": 768,
+        "skip_or_xfail_reports": 0,
+        "status": "FAIL_NATIVE",
+        "xfail_or_xpass_reports": 0
+      },
+      "native": {
+        "all_exact_calls": true,
+        "all_exact_nodes": true,
+        "all_exact_setup_order": true,
+        "all_exact_teardown_order": true,
+        "all_plugins": true,
+        "all_selected_cases_have_reports": true,
+        "all_test_items": true,
+        "calls": 768,
+        "collected": 768,
+        "collection_and_selected_order_differ": false,
+        "costs": {
+          "collection_calls": 1,
+          "native_calls": 1,
+          "native_seconds": 27.544781290999993,
+          "total_seconds": 33.08763596099999
+        },
+        "failed_nodes": [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ],
+        "junit": {
+          "errors": 0,
+          "failures": 1,
+          "passed": 767,
+          "skipped": 0,
+          "tests": 768
+        },
+        "native_horizon_seconds": 600,
+        "negative_violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "deselected_test_nodes": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        },
+        "phase_counts": {
+          "call": 768,
+          "setup": 768,
+          "teardown": 768
+        },
+        "plain_skip_reports": 0,
+        "protected_failed_nodes": [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ],
+        "selected": 768,
+        "skip_or_xfail_reports": 0,
+        "status": "FAIL_NATIVE",
+        "xfail_or_xpass_reports": 0
+      },
+      "raw_collection": {
+        "collected": 768,
+        "controller_error": null,
+        "costs": {
+          "collection_calls": 1,
+          "horizon_seconds": 60,
+          "native_calls": 0,
+          "seconds": 1.578205276999995
+        },
+        "deselected": 0,
+        "duplicate_collected": 0,
+        "duplicate_selected": 0,
+        "interpretation": "Exact original collection and final execution order agree.",
+        "native_execution_archived": true,
+        "node_sets_equal": true,
+        "order_mismatch_positions": 0,
+        "process_exit_code": 0,
+        "selected": 768,
+        "violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        }
+      },
+      "raw_git_source_identity_independently_reconstructed": true,
+      "repository": "more-itertools/more-itertools",
+      "setup_status": "PREPARED",
+      "status": "FAIL_NATIVE",
+      "total_wall_seconds": 88.35491286299998
+    },
+    {
+      "native": {
+        "all_exact_calls": false,
+        "all_exact_nodes": true,
+        "all_exact_setup_order": true,
+        "all_exact_teardown_order": true,
+        "all_plugins": true,
+        "all_selected_cases_have_reports": true,
+        "all_test_items": true,
+        "calls": 1375,
+        "collected": 1383,
+        "collection_and_selected_order_differ": true,
+        "costs": {
+          "collection_calls": 1,
+          "native_calls": 1,
+          "native_seconds": 13.576984145999972,
+          "total_seconds": 18.97389443999998
+        },
+        "failed_nodes": [
+          "tests/test_validators.py::TestDisableValidators::test_disabled_ctx_nested"
+        ],
+        "junit": {
+          "errors": 0,
+          "failures": 1,
+          "passed": 1373,
+          "skipped": 9,
+          "tests": 1383
+        },
+        "native_horizon_seconds": 600,
+        "negative_violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "deselected_test_nodes": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        },
+        "phase_counts": {
+          "call": 1375,
+          "setup": 1383,
+          "teardown": 1383
+        },
+        "plain_skip_reports": 8,
+        "protected_failed_nodes": [
+          "tests/test_validators.py::TestDisableValidators::test_disabled_ctx_nested"
+        ],
+        "selected": 1383,
+        "skip_or_xfail_reports": 9,
+        "status": "UNKNOWN_SKIPPED_OR_XFAIL",
+        "xfail_or_xpass_reports": 1
+      },
+      "raw_collection": {
+        "collected": 1383,
+        "controller_error": null,
+        "costs": {
+          "collection_calls": 1,
+          "horizon_seconds": 60,
+          "native_calls": 0,
+          "seconds": 2.4459873889999812
+        },
+        "deselected": 0,
+        "duplicate_collected": 0,
+        "duplicate_selected": 0,
+        "interpretation": "Both original itemcollected order and original final execution order remain separately exact and independently reconstructed; their complete unique node sets agree.",
+        "native_execution_archived": true,
+        "node_sets_equal": true,
+        "order_mismatch_positions": 20,
+        "process_exit_code": 0,
+        "selected": 1383,
+        "violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        }
+      },
+      "raw_git_source_identity_independently_reconstructed": true,
+      "repository": "python-attrs/attrs",
+      "setup_status": "PREPARED",
+      "status": "UNKNOWN_SKIPPED_OR_XFAIL",
+      "total_wall_seconds": 41.23792993500001
+    },
+    {
+      "native": {
+        "all_exact_calls": true,
+        "all_exact_nodes": true,
+        "all_exact_setup_order": true,
+        "all_exact_teardown_order": true,
+        "all_plugins": true,
+        "all_selected_cases_have_reports": true,
+        "all_test_items": true,
+        "calls": 1027,
+        "collected": 1027,
+        "collection_and_selected_order_differ": true,
+        "costs": {
+          "collection_calls": 1,
+          "native_calls": 1,
+          "native_seconds": 240.24361812099994,
+          "total_seconds": 245.63129216899995
+        },
+        "failed_nodes": [
+          "tests/test_tuples.py::test_dict_namedtuples_detailed_validation"
+        ],
+        "junit": {
+          "errors": 0,
+          "failures": 1,
+          "passed": 1011,
+          "skipped": 15,
+          "tests": 1027
+        },
+        "native_horizon_seconds": 600,
+        "negative_violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "deselected_test_nodes": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        },
+        "phase_counts": {
+          "call": 1027,
+          "setup": 1027,
+          "teardown": 1027
+        },
+        "plain_skip_reports": 0,
+        "protected_failed_nodes": [
+          "tests/test_tuples.py::test_dict_namedtuples_detailed_validation"
+        ],
+        "selected": 1027,
+        "skip_or_xfail_reports": 15,
+        "status": "UNKNOWN_SKIPPED_OR_XFAIL",
+        "xfail_or_xpass_reports": 15
+      },
+      "raw_collection": {
+        "collected": 1027,
+        "controller_error": null,
+        "costs": {
+          "collection_calls": 1,
+          "horizon_seconds": 60,
+          "native_calls": 0,
+          "seconds": 2.3999191170000245
+        },
+        "deselected": 0,
+        "duplicate_collected": 0,
+        "duplicate_selected": 0,
+        "interpretation": "Both original itemcollected order and original final execution order remain separately exact and independently reconstructed; their complete unique node sets agree.",
+        "native_execution_archived": true,
+        "node_sets_equal": true,
+        "order_mismatch_positions": 898,
+        "process_exit_code": 0,
+        "selected": 1027,
+        "violations": {
+          "changed_test_code": 0,
+          "collection_errors": 0,
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        }
+      },
+      "raw_git_source_identity_independently_reconstructed": true,
+      "repository": "python-attrs/cattrs",
+      "setup_status": "PREPARED",
+      "status": "UNKNOWN_SKIPPED_OR_XFAIL",
+      "total_wall_seconds": 265.652556504
+    }
+  ],
+  "verdicts": {
+    "G0_G1": "PRESERVED",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "admission": "WARRANTED_BOUNDED"
+  }
+}
