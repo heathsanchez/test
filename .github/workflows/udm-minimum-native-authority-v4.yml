@@ -1,0 +1,104 @@
+name: UDM minimum sufficient native authority V4
+on:
+  push:
+    branches:
+      - research/udm-minimum-native-authority-v4-20261017
+    paths:
+      - .github/workflows/udm-minimum-native-authority-v4.yml
+      - research/unified_consequence_runtime/native_environment_selection_v4.py
+      - research/unified_consequence_runtime/test_native_environment_selection_v4.py
+      - research/unified_consequence_runtime/archaeology/native-authority-v4/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: udm-minimum-native-authority-v4-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  minimum-native-authority-v4:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 12
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Install pinned qualification dependencies
+        run: |
+          set -euo pipefail
+          python -B -m pip install --disable-pip-version-check --no-input packaging==26.3 pytest==8.3.5
+      - name: Freeze source evidence and assert original authority was not changed
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/minimum-native-authority-v4
+          for path in \
+            research/unified_consequence_runtime/native_environment_selection_v3.py \
+            research/unified_consequence_runtime/native_environment_v3.py \
+            research/unified_consequence_runtime/native_execution_v3.py \
+            research/unified_consequence_runtime/decisive_native_verify.py \
+            research/unified_consequence_runtime/generic_native_verify.py \
+            research/unified_consequence_runtime/capability_index.json; do
+            old=$(git rev-parse 95029db0d0b2122836bee7268299461bfbdb5a66:"$path")
+            new=$(git rev-parse HEAD:"$path")
+            test "$old" = "$new"
+            printf '%s %s\n' "$path" "$new" >> qualification/minimum-native-authority-v4/ORIGINAL_BLOBS.txt
+          done
+          git rev-parse HEAD > qualification/minimum-native-authority-v4/SOURCE_COMMIT.txt
+          git rev-parse HEAD:research/unified_consequence_runtime/test_native_environment_selection_v4.py > qualification/minimum-native-authority-v4/FROZEN_TEST_BLOB.txt
+          git status --porcelain > qualification/minimum-native-authority-v4/WORKTREE_STATUS.txt
+      - name: Execute original, inherited, and native V4 adversarial obligations
+        run: |
+          set -euo pipefail
+          python -B -m unittest \
+            research.unified_consequence_runtime.test_native_environment_selection_v3 \
+            research.unified_consequence_runtime.test_native_environment_selection_v4 \
+            research.unified_consequence_runtime.test_native_suite_authority \
+            research.unified_consequence_runtime.test_decisive_task_admission \
+            -v 2>&1 | tee qualification/minimum-native-authority-v4/CONTRACTS.log
+      - name: Independently reproduce selection, changed-source refusal and provenance
+        run: |
+          set -euo pipefail
+          python -B - <<'PY' | tee qualification/minimum-native-authority-v4/VERDICT.json
+          import hashlib,json,subprocess
+          from research.unified_consequence_runtime import native_environment_selection_v4 as v4
+          from research.unified_consequence_runtime.test_native_environment_selection_v3 import catalog,profile
+          meta=b'[project]\nrequires-python=">=3.11"\n'
+          bad=b'if True:\n\tvalue=1\n        value=2\n'
+          files={'pyproject.toml':meta,'fixtures/python-looking-data.py':bad}
+          external=catalog(profile())
+          result=v4.select_profile(files,external)
+          assert result['status']=='CANDIDATE_SOURCE_ENVIRONMENT'
+          assert len(result['constraints']['deferred_source_parse'])==1
+          assert result['constraints']['deferred_source_parse'][0]['sha256']==hashlib.sha256(bad).hexdigest()
+          assert v4.validate_selection(files,external,result)==result
+          mutated=dict(files,**{'fixtures/python-looking-data.py':bad+b'# changed\n'})
+          try:
+              v4.validate_selection(mutated,external,result)
+          except ValueError:
+              pass
+          else:
+              raise RuntimeError('source mutation admitted')
+          print(json.dumps({
+              'verdict':'PASS_BOUNDED_SOURCE_MEANING_DIAGNOSTIC_ONLY',
+              'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN',
+              'old_source_unchanged':True,
+              'v4_selection_schema':v4.SELECTION_SCHEMA,
+              'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'deferred_source_sha256':hashlib.sha256(bad).hexdigest(),
+          },sort_keys=True))
+          PY
+      - name: Archive source-bound contracts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimum-native-authority-v4-${{ github.sha }}
+          path: qualification/minimum-native-authority-v4/
+          if-no-files-found: warn
+          retention-days: 90
