@@ -2549,6 +2549,16 @@ fn check_inductive(
     if let [inductive] = block.types.as_slice()
         && name_is_root_str(export, inductive.name, "Decidable")
     {
+        // Lean #8309 replaced Decidable.isFalse/isTrue with a dependent
+        // Bool/Reflects two-field record. Do not grant authority from the
+        // constructor's name: require the generic checker to reconstruct the
+        // parameter, constructor telescope, motive, minor and iota rule.
+        if block.constructors.len() == 1 && generic_nonrecursive_type_candidate(export, block) {
+            return check_generic_nonrecursive_type(
+                export, environment, block, limits, delta_policy,
+            );
+        }
+        // Retain the independently qualified legacy two-constructor logic.
         return check_exact_decidable(export, environment, block, limits, delta_policy);
     }
 
@@ -2809,6 +2819,23 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         && constructor.num_params == 0
         && constructor.num_fields == 1;
 
+    // Lean #8309: a parameterized dependent record with a Boolean field
+    // followed by a proof field whose type depends on that very Boolean.
+    // Admission here ONLY selects full source-derived signature/recursor
+    // validation; it does not accept a proof without that validation.
+    let decidable_dependent_intro = name_is_root_str(export, inductive.name, "Decidable")
+        && name_is_child_str(export, constructor.name, inductive.name, "intro")
+        && inductive.num_params == 1
+        && constructor.num_params == 1
+        && constructor.num_fields == 2
+        && pi_spine(export, inductive.ty, 1).is_some_and(|(params, _)|
+            params.len() == 1 && is_prop_sort(export, params[0]))
+        && pi_spine(export, constructor.ty, 3).is_some_and(|(domains, _)|
+            is_prop_sort(export, domains[0])
+                && expression_contains_bvar(export, domains[2], 0)
+                && !expression_contains_constant(export, domains[1], inductive.name)
+                && !expression_contains_constant(export, domains[2], inductive.name));
+
     // A closed nonrecursive two-field dependent record is only selected
     // for the already checked generic inductive derivation below.
     let closed_dependent_pair = inductive.num_params == 0
@@ -2849,6 +2876,7 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
 
     if !dependent_pair
         && !scalar_structure
+        && !decidable_dependent_intro
         && !closed_dependent_pair
         && !four_parameter_three_field_record
         && !relation_proof_structure
