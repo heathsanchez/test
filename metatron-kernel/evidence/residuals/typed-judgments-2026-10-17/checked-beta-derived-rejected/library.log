@@ -1,0 +1,611 @@
+   Compiling metatron-kernel v0.1.0 (/Users/heath/Documents/ChatGPT/Nucleus Lean Kernel/experiments/checked-beta-derived/source)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2273:20
+     |
+2273 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2274 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2273 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2274 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: unused import: `hash_map::Entry`
+ --> src/typecheck.rs:5:24
+  |
+5 | use std::collections::{hash_map::Entry, HashMap};
+  |                        ^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src/convert.rs:210:9
+    |
+210 |     let mut unit_like_frees = HashMap::new();
+    |         ----^^^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src/convert.rs:211:9
+    |
+211 |     let mut proposition_frees:HashSet<FreeId> = HashSet::new();
+    |         ----^^^^^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/convert.rs:212:9
+    |
+212 |     let mut proof_frees = HashMap::new();
+    |         ----^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `proposition_frees`
+   --> src/convert.rs:211:9
+    |
+211 |     let mut proposition_frees:HashSet<FreeId> = HashSet::new();
+    |         ^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_proposition_frees`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `checker`
+   --> src/convert.rs:742:5
+    |
+742 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+   --> src/convert.rs:743:5
+    |
+743 |     left: &TypeValue,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> src/convert.rs:744:5
+    |
+744 |     right: &TypeValue,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `context`
+   --> src/convert.rs:745:5
+    |
+745 |     context: &[TypeValue],
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:746:5
+    |
+746 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:791:5
+    |
+791 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+   --> src/convert.rs:792:5
+    |
+792 |     left: &Closure,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> src/convert.rs:793:5
+    |
+793 |     right: &Closure,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `proof_functions`
+   --> src/convert.rs:794:5
+    |
+794 |     proof_functions: &HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    |     ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_proof_functions`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:795:5
+    |
+795 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:802:5
+    |
+802 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+   --> src/convert.rs:803:5
+    |
+803 |     left: &Closure,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> src/convert.rs:804:5
+    |
+804 |     right: &Closure,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `proof_frees`
+   --> src/convert.rs:805:5
+    |
+805 |     proof_frees: &HashMap<FreeId, FreeId>,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_proof_frees`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:806:5
+    |
+806 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:813:5
+    |
+813 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+   --> src/convert.rs:814:5
+    |
+814 |     left: &Closure,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> src/convert.rs:815:5
+    |
+815 |     right: &Closure,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `unit_like_frees`
+   --> src/convert.rs:816:5
+    |
+816 |     unit_like_frees: &HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    |     ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_unit_like_frees`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:817:5
+    |
+817 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:880:5
+    |
+880 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `neutral`
+   --> src/convert.rs:881:5
+    |
+881 |     neutral: &Neutral,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_neutral`
+
+warning: unused variable: `lambda_domain`
+   --> src/convert.rs:882:5
+    |
+882 |     lambda_domain: &Closure,
+    |     ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_lambda_domain`
+
+warning: unused variable: `lambda_body`
+   --> src/convert.rs:883:5
+    |
+883 |     lambda_body: &Closure,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_lambda_body`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:884:5
+    |
+884 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `depth`
+   --> src/convert.rs:885:5
+    |
+885 |     depth: usize,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_depth`
+
+warning: unused variable: `work`
+   --> src/convert.rs:886:5
+    |
+886 |     work: &mut ConversionWorkList,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_work`
+
+warning: unused variable: `context`
+   --> src/convert.rs:887:5
+    |
+887 |     context: &[TypeValue],
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:968:5
+    |
+968 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `target`
+   --> src/convert.rs:969:5
+    |
+969 |     target: &Neutral,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_target`
+
+warning: unused variable: `constructed`
+   --> src/convert.rs:970:5
+    |
+970 |     constructed: &Neutral,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_constructed`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:971:5
+    |
+971 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `depth`
+   --> src/convert.rs:972:5
+    |
+972 |     depth: usize,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_depth`
+
+warning: unused variable: `work`
+   --> src/convert.rs:973:5
+    |
+973 |     work: &mut ConversionWorkList,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_work`
+
+warning: unused variable: `context`
+   --> src/convert.rs:974:5
+    |
+974 |     context: &[TypeValue],
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:981:5
+    |
+981 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `target`
+   --> src/convert.rs:982:5
+    |
+982 |     target: &Neutral,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_target`
+
+warning: unused variable: `constructed`
+   --> src/convert.rs:983:5
+    |
+983 |     constructed: &Neutral,
+    |     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_constructed`
+
+warning: unused variable: `context`
+   --> src/convert.rs:984:5
+    |
+984 |     context: &[TypeValue],
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:985:5
+    |
+985 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+   --> src/convert.rs:992:5
+    |
+992 |     checker: &TypeChecker<'_>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+   --> src/convert.rs:993:5
+    |
+993 |     left: &Neutral,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> src/convert.rs:994:5
+    |
+994 |     right: &Neutral,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `context`
+   --> src/convert.rs:995:5
+    |
+995 |     context: &[TypeValue],
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `budget`
+   --> src/convert.rs:996:5
+    |
+996 |     budget: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `checker`
+    --> src/convert.rs:2344:5
+     |
+2344 |     checker: &TypeChecker<'_>,
+     |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_checker`
+
+warning: unused variable: `left`
+    --> src/convert.rs:2345:5
+     |
+2345 |     left: &Neutral,
+     |     ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+    --> src/convert.rs:2346:5
+     |
+2346 |     right: &Neutral,
+     |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `context`
+    --> src/convert.rs:2347:5
+     |
+2347 |     context: &[TypeValue],
+     |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+
+warning: unused variable: `budget`
+    --> src/convert.rs:2348:5
+     |
+2348 |     budget: usize,
+     |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_budget`
+
+warning: unused variable: `depth`
+    --> src/convert.rs:2349:5
+     |
+2349 |     depth: usize,
+     |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_depth`
+
+warning: unused variable: `binder_owner`
+    --> src/typecheck.rs:4509:92
+     |
+4509 |                         TypeValue::Pi { domain: actual_domain, body: actual_body, binder , binder_owner,},
+     |                                                                                            ^^^^^^^^^^^^ help: try ignoring the field: `binder_owner: _`
+
+warning: unused variable: `binder_owner`
+    --> src/typecheck.rs:4574:38
+     |
+4574 | ...                   binder_owner,},
+     |                       ^^^^^^^^^^^^ help: try ignoring the field: `binder_owner: _`
+
+warning: unused variable: `binder_owner`
+    --> src/typecheck.rs:5079:56
+     |
+5079 |                 TypeValue::Pi { domain, body, binder , binder_owner,} => Some(
+     |                                                        ^^^^^^^^^^^^ help: try ignoring the field: `binder_owner: _`
+
+warning: unused variable: `binder_owner`
+    --> src/typecheck.rs:8079:57
+     |
+8079 |         let Some(TypeValue::Pi { domain, body, binder , binder_owner,}) = checker.instantiate_fixed_pi_body(
+     |                                                         ^^^^^^^^^^^^ help: try ignoring the field: `binder_owner: _`
+
+warning: function `opaque_free` is never used
+   --> src/convert.rs:752:4
+    |
+752 | fn opaque_free(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> Option<FreeId> {
+    |    ^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `bare_free_type` is never used
+   --> src/convert.rs:771:4
+    |
+771 | fn bare_free_type(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> Option<FreeId> {
+    |    ^^^^^^^^^^^^^^
+
+warning: methods `diagnostic_applied_telescope`, `checked_captured_prop_type_in_context`, `reopen_fixed_pi_body`, and `type_value_is_prop_sort` are never used
+    --> src/typecheck.rs:2230:19
+     |
+ 205 | impl<'a> TypeChecker<'a> {
+     | ------------------------ methods in this implementation
+...
+2230 |     pub(crate) fn diagnostic_applied_telescope(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+2288 |     pub(crate) fn checked_captured_prop_type_in_context(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+5064 |     pub(crate) fn reopen_fixed_pi_body(
+     |                   ^^^^^^^^^^^^^^^^^^^^
+...
+7539 |     pub(crate) fn type_value_is_prop_sort(&self, ty: &TypeValue, budget: usize) -> bool {
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `metatron-kernel` (lib test) generated 64 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 61 suggestions)
+    Finished `release` profile [optimized] target(s) in 32.97s
+     Running unittests src/lib.rs (experiments/checked-beta-derived/source/target/release/deps/metatron_kernel-08a56865f0291c46)
+
+running 183 tests
+test checker::nested_nullary_source_tests::source_checked_multi_motive_nullary_rule_is_derived ... ignored, requires pinned frozen196 NUCLEUS_FROZEN196
+test capability::tests::duplicate_declared_names_reject ... ok
+test capability::tests::distinct_declared_names_do_not_fire ... ok
+test checker::tests::universe_parameter_uniqueness_keeps_distinct_binders ... ok
+test convert::caller_conversion_ledger_tests::successful_failed_and_empty_conversions_return_actual_remaining ... ok
+test checker::tests::exact_and_fixture_satisfies_each_independently_derived_claim ... ok
+test checker::tests::good_beta_definition_uses_the_trusted_conversion_route ... ok
+test convert::carried_context_identity_review_tests::completed_pair_pins_actual_source_and_context_namespace ... ok
+test checker::tests::g26_rejects_impossible_owned_recursor_metadata ... ok
+test checker::derived_formal_parameter_owner_tests::shifted_derived_parameter_reuses_one_actual_owner_and_rejects_recreated_owner ... ok
+test convert::deferred_application_proof_tests::deferred_source_fallback_finishes_after_children_and_keeps_the_parent_checkpoint ... ok
+test checker::tests::rejected_twobool_block_cannot_partially_extend_authority ... ok
+test checker::tests::g25_boolprop_reconstructs_prop_only_binary_recursor ... ok
+test checker::tests::g3_001_ablation_requires_guarded_semantic_delta ... ok
+test convert::deferred_application_proof_tests::deferred_captured_proof_rechecks_whole_original_sources ... ok
+test convert::deferred_application_proof_tests::failed_proof_application_heads_retry_the_original_whole_source ... ok
+test convert::deferred_application_proof_tests::productive_beta_applications_use_ordinary_comparison_before_proof_typing ... ok
+test convert::owned_free_head_scope_tests::same_number_without_joint_scope_is_unknown_not_refuted ... ok
+test convert::deferred_application_proof_tests::original_proof_parent_can_resolve_failed_data_children_but_requires_both_typed_apps ... ok
+test environment::owned_append_tests::borrowed_and_pinned_snapshots_keep_their_maps_and_authority ... ok
+test environment::owned_append_tests::retained_machine_delta_witness_cannot_observe_future_owned_appends ... ok
+test environment::owned_append_tests::validation_errors_do_not_modify_shared_snapshots_and_siblings_remain_distinct ... ok
+test machine::bounded_checked_replay_tests::checked_replay_refuses_a_constructor_at_a_different_declared_universe ... ok
+test machine::bounded_checked_replay_tests::checked_replay_reuses_a_resolved_major_returned_again_by_the_rule_rhs ... ok
+test machine::bounded_checked_replay_tests::checked_replay_resolves_eight_captured_majors_without_guessing_a_branch ... ok
+test machine::bounded_checked_replay_tests::completed_replay_clone_declines_deep_projection_heads_before_recursive_copy ... ok
+test machine::bounded_checked_replay_tests::completed_replay_constructs_one_source_key_and_shares_it_through_finish ... ok
+test machine::captured_beta_frame_tests::repeated_exact_beta_capture_reuses_its_dependent_domain_evidence ... ok
+test environment::owned_append_tests::unique_owned_append_preserves_both_map_allocations_across_many_definitions ... ok
+test machine::captured_recursor_spine_tests::checked_neutral_iota_retains_surplus_arguments_and_actual_major_position ... ok
+test machine::captured_nat_projection_tests::projection_replays_a_cached_nat_recursor_on_its_actual_numeric_major ... ok
+test convert::deferred_application_proof_tests::productive_captured_substitution_keeps_ordinary_exposure_allowance ... ok
+test machine::exposure_clock_tests::clock_keys_preserve_capture_authority_and_exposure_modes ... ok
+test machine::captured_native_nat_replay_tests::native_nat_successor_reuses_its_exact_numeric_field_carrier ... ok
+test machine::checked_one_step_replay_tests::actual_field_enum_iota_can_return_a_symbolic_registered_recursor_without_completing_it ... ok
+test machine::captured_native_nat_replay_tests::qualified_nat_replay_uses_exact_literal_major_and_predecessor ... ok
+test machine::neutral_projection_tests::projection_conversion_preserves_a_constant_neutral_receiver ... ok
+test machine::symbolic_major_cache_tests::demand_reuses_a_normal_form_blocked_on_an_immutable_local ... ok
+test nat::tests::bounded_products_and_powers_are_exact_beyond_machine_words ... ok
+test machine::exposure_clock_tests::exhausted_clock_bookkeeping_declines_only_optional_publication ... ok
+test nat::tests::parses_beyond_u64_and_steps_exactly ... ok
+test nat::tests::subtraction_truncates_at_zero ... ok
+test typecheck::absent_zero_index_reclosure_tests::unused_fixed_binder_needs_no_synthetic_bvar_expression ... ok
+test typecheck::active_bound_type_sort_controls::recorded_type_alias_exposes_sort_without_confusing_proofs_or_data ... ok
+test typecheck::active_fixed_atomic_recovery_tests::active_atomic_rule_never_forms_data_or_dangling_domains_and_never_borrows_quota ... ok
+test typecheck::active_fixed_atomic_recovery_tests::active_formation_can_use_the_actual_type_variable_sort_witness_without_reinference ... ok
+test nat::tests::bounded_bit_operations_match_exact_native_arithmetic ... ok
+test typecheck::active_fixed_atomic_recovery_tests::actual_bound_type_sort_avoids_optional_proof_reservation_but_proofs_remain_eligible ... ok
+test typecheck::active_fixed_atomic_recovery_tests::active_literal_pi_forms_its_original_dependent_source_independently ... ok
+test typecheck::active_fixed_atomic_recovery_tests::bound_sort_classification_rejects_proof_data_wrong_gamma_missing_and_revoked_origins ... ok
+test typecheck::active_fixed_atomic_recovery_tests::bound_type_sort_uses_the_actual_recorded_types_own_universes ... ok
+test typecheck::active_fixed_atomic_recovery_tests::completed_atomic_domains_can_open_fixed_bodies_inside_outer_formation_without_clearing_guard ... ok
+test typecheck::active_fixed_atomic_recovery_tests::shape_support_compiler_publishes_no_occurrence_or_typing_facts ... ok
+test typecheck::active_fixed_atomic_recovery_tests::lambda_versus_neutral_is_not_a_rigid_inequality_when_source_eta_is_unavailable ... ok
+test typecheck::active_fixed_atomic_recovery_tests::structural_pi_trial_checks_dependent_body_scope_quarantine_and_same_allowance ... ok
+test typecheck::active_original_application_formation_tests::application_formation_uses_own_universes_and_preserves_original_and_wrapper_quarantine ... ok
+test typecheck::active_original_application_formation_tests::cold_actual_application_forms_its_type_under_the_real_owned_gamma ... ok
+test typecheck::atomic_joint_opening_tests::atomic_joint_intro_preserves_sources_and_requires_complete_premises ... ok
+test typecheck::beta_derivation_obligation_controls::a_checked_payload_does_not_require_an_unrelated_binding_introduction ... ok
+test typecheck::beta_derivation_obligation_controls::unused_bad_beta_argument_is_still_an_original_source_obligation ... ok
+test typecheck::beta_provenance_lifetime_controls::a_fresh_strict_probe_cannot_forget_an_invalid_beta_origin ... ok
+test typecheck::beta_provenance_lifetime_controls::an_owned_substitution_preserves_the_actual_evaluator_source_obligation ... ok
+test typecheck::beta_provenance_lifetime_controls::evaluator_without_a_cache_keeps_the_actual_source_obligation ... ok
+test typecheck::captured_cell_constant_tests::explicit_levels_missing_params_different_constants_and_nonclosure_cells_decline ... ok
+test typecheck::bvar_proof_schedule_controls::deferred_bvars_keep_nominal_scope_and_original_proof_retry ... ok
+test nat::tests::bounded_division_preserves_euclidean_and_zero_divisor_semantics ... ok
+test typecheck::captured_cell_constant_tests::monomorphic_actual_payload_keeps_own_theta_and_ignores_only_unused_constant_scope ... ok
+test typecheck::captured_cell_constant_tests::original_cell_current_wrapper_and_stored_payload_revocation_decline ... ok
+test typecheck::carried_context_scope_review_tests::completed_context_opening_preserves_own_universes_and_both_revocations ... ok
+test typecheck::checked_binding_lineage_tests::a_different_typing_prefix_is_a_protected_future_separator ... ignored, explicit source-scoped binding authority A/B only
+test typecheck::checked_binding_lineage_tests::captured_typed_substitution_uses_validated_source_domain_without_reinfer ... ignored, explicit checked value substitution witness A/B only
+test typecheck::checked_binding_lineage_tests::checked_pi_elimination_registers_its_actual_typed_substitution ... ignored, explicit checked source substitution reclosure A/B
+test typecheck::certified_nat_local_controls::certified_nat_locals_keep_original_owners_and_context ... ok
+test typecheck::checked_binding_lineage_tests::conflicting_or_absent_witnesses_do_not_grant_type_authority ... ignored, explicit source-scoped binding authority A/B only
+test typecheck::checked_binding_lineage_tests::typed_binder_uses_its_witness_not_unrelated_latest_context_type ... ignored, explicit source-scoped binding authority A/B only
+test typecheck::checked_binding_lineage_tests::strict_origin_requires_immutable_checked_binding_and_exact_context ... ok
+test typecheck::closed_spine_inference_tests::captured_original_lambda_freshness_uses_caller_and_never_erases_bad_body_or_collision ... ok
+test typecheck::checked_parameter_telescope_controls::complete_telescope_forms_original_domains_before_shared_introduction ... ok
+test typecheck::closed_spine_inference_tests::bound_goal_candidates_require_actual_payload_scope_and_old_ownership ... ok
+test typecheck::closed_spine_inference_tests::captured_pi_frame_key_preserves_own_codomain_levels_domain_and_quarantine ... ok
+test typecheck::closed_spine_inference_tests::closed_arrow_goal_still_checks_unbound_original_lambda_body ... ok
+test typecheck::closed_spine_inference_tests::checked_frame_tuple_separates_source_role_context_domain_actual_and_authority ... ok
+test typecheck::closed_spine_inference_tests::closed_spine_eligibility_exhaustion_does_not_poison_a_later_proof ... ok
+test typecheck::closed_spine_inference_tests::closed_spine_universe_instantiation_stays_with_its_checker ... ok
+test typecheck::closed_spine_inference_tests::completed_actual_capture_support_is_pure_exact_and_not_fresh_id_authority ... ok
+test typecheck::closed_spine_inference_tests::closed_spine_is_shared_across_distinct_lexical_binders_with_one_step ... ok
+test typecheck::closed_spine_inference_tests::completed_application_pattern_requires_joint_actual_source_goal_and_domains ... ok
+test machine::captured_beta_frame_tests::completed_replay_still_matches_after_beta_binding_saturation ... ok
+test typecheck::closed_spine_inference_tests::completed_lambda_bucket_requires_full_paired_source_and_owned_shifted_domains ... ok
+test typecheck::closed_spine_inference_tests::completed_checking_renames_owned_binders_jointly_and_injectively ... ok
+test typecheck::closed_spine_inference_tests::completed_lexical_patterns_preserve_occurrences_intrinsic_binders_and_let_scope ... ok
+test typecheck::closed_spine_inference_tests::completed_lambda_transport_requires_owned_recursive_type_premises ... ok
+test typecheck::closed_spine_inference_tests::completed_application_check_retains_actual_domain_and_quarantine ... ok
+test typecheck::closed_spine_inference_tests::completed_single_child_alias_support_reuses_immutable_set_with_paid_bounds ... ok
+test typecheck::closed_spine_inference_tests::exact_bvar_support_fuses_paid_source_node_with_zero_offset_payload ... ok
+test typecheck::closed_spine_inference_tests::exact_capture_identity_requires_the_actual_free_owner_not_its_number ... ok
+test typecheck::closed_spine_inference_tests::exact_captured_pi_substitution_reuses_only_completed_same_scope_bindings ... ok
+test typecheck::closed_spine_inference_tests::expected_opening_shares_only_the_same_checked_lambda_scope ... ok
+test typecheck::closed_spine_inference_tests::failed_binder_formation_and_argument_typing_do_not_create_checked_frames ... ok
+test typecheck::closed_spine_inference_tests::formed_fixed_pi_checking_does_not_bypass_capture_safe_reopening ... ok
+test machine::captured_beta_frame_tests::beta_binding_saturation_preserves_existing_exact_captures_and_leaves_new_ones_fresh ... ok
+test typecheck::closed_spine_inference_tests::immutable_capture_lookup_preserves_owner_and_unfinished_work ... ok
+test typecheck::closed_spine_inference_tests::nondependent_arrow_failure_remains_nonaccepting_under_finite_allowance ... ok
+test typecheck::closed_spine_inference_tests::immutable_ancestor_lookup_pays_actual_hops_and_preserves_physical_owners ... ok
+test typecheck::closed_spine_inference_tests::primary_formed_lambda_failure_uses_only_the_global_finite_allowance ... ok
+test typecheck::closed_spine_inference_tests::open_spines_keep_their_distinct_typed_binders_and_wrong_closed_arguments_fail ... ok
+test typecheck::closed_spine_inference_tests::formed_lambda_entry_rejects_failed_expected_formation_bad_bodies_and_wrong_domains ... ok
+test typecheck::closed_spine_inference_tests::root_bvar_alias_conversion_keeps_budget_for_actual_source_exposure ... ok
+test typecheck::closed_spine_inference_tests::singleton_source_operands_do_not_merge_distinct_universes ... ok
+test typecheck::closed_spine_inference_tests::singleton_source_operands_require_actual_owned_domains_and_quarantine ... ok
+test typecheck::closed_spine_inference_tests::strict_probe_reuses_only_complete_pure_support_and_rechecks_actual_capture ... ok
+test typecheck::closed_spine_inference_tests::repeated_checked_open_let_reuses_only_its_exact_source_scope ... ok
+test typecheck::completed_pi_lift_tests::lift_conversion_checks_used_original_and_current_wrapper_authority ... ok
+test typecheck::completed_pi_lift_tests::completed_publication_is_bounded_and_queries_preserve_exact_source_environment_and_theta ... ok
+test typecheck::completed_pi_lift_tests::lift_tracks_nested_cutoffs_lets_and_projection_metadata ... ok
+test typecheck::domain_source_alias_tests::domain_aliases_follow_only_actual_closures_and_their_own_levels ... ok
+test typecheck::derived_pi_context_controls::actual_checked_application_carries_pi_formation_and_declines_invalid_arguments_and_owners ... ok
+test typecheck::closed_spine_inference_tests::repeated_literal_beta_spine_reuses_only_its_exact_checked_source_frame ... ok
+test typecheck::evaluated_binding_typing_controls::an_erased_ill_typed_beta_argument_does_not_certify_its_reduced_lambda ... ok
+test typecheck::exact_source_support_controls::captured_source_inference_cannot_type_an_ambient_local_by_opening_a_binder ... ok
+test typecheck::exact_source_support_controls::every_annotation_value_projection_and_external_capture_is_accounted_for ... ok
+test typecheck::exact_source_support_controls::paired_support_preserves_binder_capture_constructor_and_level_distinctions ... ok
+test typecheck::exact_source_support_controls::root_source_alias_uses_the_captured_lambda_and_its_own_level_map ... ok
+test typecheck::fixed_pi_capture_tests::fixed_pi_substitution_preserves_shadowing_and_refuses_unsupported_or_low_fuel ... ok
+test typecheck::fixed_pi_capture_tests::fixed_pi_substitution_refuses_actual_captured_by_unrelated_inner_binder ... ok
+test typecheck::fused_shape_support_tests::canonical_bvar_holes_do_not_erase_exact_lexical_support ... ok
+test typecheck::fused_shape_support_tests::cached_shape_alone_is_not_a_support_certificate_and_partial_roots_stay_unpublished ... ok
+test typecheck::lambda_role_sharing_tests::declined_goal_keeps_proven_subject_types_in_the_identical_lambda_scope ... ok
+test typecheck::lambda_role_sharing_tests::lambda_role_sharing_preserves_every_scope_field_and_other_roles ... ok
+test typecheck::lambda_role_sharing_tests::lambda_shared_scope_obeys_quarantine_fixed_pi_and_configuration ... ok
+test typecheck::evaluated_binding_typing_controls::evaluated_beta_binding_preserves_the_already_checked_argument_type ... ok
+test typecheck::literal_sort_codomains::checked_application_preserves_original_sort_codomain_own_universe_and_rejects_bad_argument ... ok
+test typecheck::closed_spine_inference_tests::formed_dependent_literal_lambda_checks_before_whole_function_inference_at_bounded_fuel ... ok
+test typecheck::minimal_context_binder_tests::actual_missing_bvar_still_rejected ... ignored, explicit bounded binder-context transport A/B
+test typecheck::minimal_context_binder_tests::actual_source_captured_free_zero_overrules_unrelated_latest_context_entry ... ignored, explicit bounded binder-context transport A/B
+test typecheck::minimal_context_binder_tests::high_synthetic_free_id_does_not_claim_unproved_context_correspondence ... ignored, explicit bounded binder-context transport A/B
+test typecheck::minimal_context_binder_tests::source_captured_free_one_retains_different_data_type ... ignored, explicit bounded binder-context transport A/B
+test typecheck::normalized_proof_sort_regression::noncanonical_zero_substitution_certifies_actual_proofs_not_data ... ok
+test typecheck::opening_memo_tests::completed_exact_freshness_proof_reuses_at_paid_one_step ... ok
+test typecheck::opening_memo_tests::freshness_memo_separates_source_frame_level_instance_and_actual_free ... ok
+test typecheck::original_fixed_owner_tests::completed_existing_binder_keeps_original_owned_body ... ok
+test typecheck::original_fixed_owner_tests::equal_beta_erasure_does_not_certify_ill_typed_right_domain ... ok
+test typecheck::original_fixed_owner_tests::old_owner_is_not_reused_across_a_different_full_gamma ... ok
+test typecheck::original_fixed_owner_tests::used_body_only_revocation_and_original_owner_revocation_decline ... ok
+test typecheck::owned_neutral_typing_tests::owned_neutral_alias_reuses_only_original_unchanged_scope_and_wrapper ... ok
+test typecheck::owned_prop_field_telescope_controls::only_independently_typed_proof_fields_receive_owned_introductions ... ok
+test typecheck::paired_hint_completed_tests::active_cycles_are_not_completed_syntax_facts_and_identity_uses_no_slot ... ok
+test typecheck::paired_hint_completed_tests::coarse_bound_variable_hint_never_proves_capture_or_typing_transport ... ok
+test typecheck::paired_hint_completed_tests::complete_hint_facts_are_confined_to_their_actual_expression_table ... ok
+test typecheck::paired_hint_completed_tests::completed_child_pair_reuses_under_a_distinct_root_only_after_postorder ... ok
+test typecheck::paired_hint_completed_tests::completed_paired_hint_is_lookup_only_for_the_exact_source_pair ... ok
+test typecheck::paired_hint_completed_tests::incomplete_parent_never_publishes_and_child_mismatch_propagates ... ok
+test typecheck::fused_shape_support_tests::fused_support_capacity_does_not_make_a_shape_only_hit_complete ... ok
+test typecheck::paired_hint_completed_tests::unfinished_zero_and_saturated_hint_work_never_publish_authority ... ok
+test typecheck::proof_domain_universe_tests::proof_domain_transport_does_not_require_proof_valued_codomain ... ok
+test typecheck::proof_pi_classification_review_tests::actual_lambda_proof_type_pi_must_be_independently_formed_and_admitted ... ok
+test typecheck::proof_pi_classification_review_tests::actual_pi_formation_requires_matching_scope_owner_and_current_used_wrapper ... ok
+test typecheck::proof_pi_classification_review_tests::application_with_actual_lambda_proof_is_independently_typed ... ok
+test typecheck::proof_pi_classification_review_tests::actual_own_universe_substitutions_classify_pi_proofs_and_data_independently ... ok
+test typecheck::proof_pi_classification_review_tests::data_illtyped_flipped_domain_and_quarantine_do_not_supply_proof_authority ... ok
+test typecheck::proof_transport_tests::original_formed_proof_pi_certifies_actual_opening_and_separate_one_slot_transport ... ok
+test typecheck::sort_joint_domain_tests::sorts_use_each_original_universe_and_one_paid_work_owner ... ok
+test typecheck::proof_pi_classification_review_tests::dependent_proposition_lambda_forms_both_domains_and_actual_owned_codomain ... ok
+test typecheck::source_abstract_data_local_controls::distinct_abstract_data_locals_require_the_actual_owned_gamma ... ok
+test typecheck::source_structure_relation_tests::eta_keeps_original_and_wrapper_quarantine_and_declines_bad_arity_cycles_and_low_work ... ok
+test typecheck::source_structure_relation_tests::non_eta_requires_real_nominal_scope_and_refuses_same_number_siblings_and_proofs ... ok
+test typecheck::source_structure_relation_tests::projection_field_requires_exact_registered_body_index_major_arity_and_finite_source ... ok
+test typecheck::source_structure_relation_tests::source_structure_domains_keep_own_universes_and_missing_or_prop_instantiation_declines ... ok
+test typecheck::substituted_pi_scope_controls::applied_polymorphic_lambda_retains_a_formed_result_pi_in_actual_context ... ok
+test typecheck::typed_substitution_dependency_controls::derived_pi_keeps_both_original_introduction_dependencies ... ok
+test typecheck::source_eta_argument_controls::argument_inequality_requires_rigid_data_result_and_actual_owned_scope ... ok
+test typecheck::typed_substitution_dependency_controls::equal_context_types_do_not_replace_actual_caller_frame_identity ... ok
+test typecheck::typed_substitution_dependency_controls::isolated_lineage_copies_preserve_substitution_dependencies ... ok
+test typecheck::used_capture_binary_owner_cost_controls::actual_binary_hops_preserve_owned_used_capture_revocation ... ok
+test typecheck::typed_substitution_dependency_controls::revocation_is_immediate_even_if_a_mutation_guard_restores_the_original ... ok
+test value::owned_neutral_substitution_tests::rebuilding_a_surviving_free_retains_original_capture_owner ... ok
+test value::owned_neutral_substitution_tests::substitution_declines_mixed_same_number_original_owners ... ok
+test typecheck::opening_memo_tests::cold_freshness_cost_and_saturation_preserve_original_guard ... ok
+test machine::exposure_clock_tests::hot_certified_exposure_survives_cold_churn_at_the_same_capacity ... ok
+test typecheck::closed_spine_inference_tests::checked_frame_saturation_preserves_old_scopes_and_uses_fresh_fallback ... ok
+test typecheck::lambda_role_sharing_tests::lambda_shared_scope_saturation_preserves_exact_old_proofs ... ok
+test typecheck::beta_provenance_lifetime_controls::binding_interner_capacity_cannot_erase_a_new_source_obligation ... ok
+test machine::bounded_checked_replay_tests::completed_inner_replay_survives_outer_exhaustion_without_caching_the_outer ... ok
+
+test result: ok. 173 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 0.11s
+

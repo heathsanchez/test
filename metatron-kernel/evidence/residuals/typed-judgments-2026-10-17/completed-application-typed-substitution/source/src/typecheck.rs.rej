@@ -1,0 +1,48 @@
+@@ -9944,3 +10028,47 @@
+   let ordinary=TypeChecker::new(&e,&l,&env);assert!(ordinary.compare_derived_fixed_pi_types(&left,&right,&[],&mut 8192,0).is_none(),"a legacy inference route cannot create this formation premise");
+  }
+ }
++
++#[cfg(test)]
++mod checked_application_judgment_controls {
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(i,n)in[(0,Expr::Sort(LevelId(0))),(1,Expr::Sort(LevelId(1))),(2,Expr::Const{name:NameId(1),levels:vec![]}),(3,Expr::Const{name:NameId(2),levels:vec![]}),(4,Expr::Pi{domain:ExprId(2),body:ExprId(2)}),(5,Expr::BVar(0)),(6,Expr::App{fun:ExprId(3),arg:ExprId(0)})]{e.insert(ExprId(i),n).unwrap();}
++  let mut previous=ExprId(5);for i in 100..160{e.insert(ExprId(i),Expr::App{fun:ExprId(3),arg:previous}).unwrap();previous=ExprId(i);}
++  let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(1))).unwrap().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![],ExprId(4))).unwrap();(e,l,env)
++ }
++ #[test] fn checked_source_application_carries_its_exact_type_into_captured_inference(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env).strict_certificate_probe();let a=TypeValue::Term(c.closure(ExprId(2),EnvFrame::empty()));let gamma=vec![a.clone()];let owner=EnvFrame::empty().extend_free(FreeId(0));c.retain_checked_binding(&owner,a.clone(),&gamma);
++  let mut remaining=65536;let inferred=c.infer_in(ExprId(159),&gamma,&owner,&mut remaining,&mut HashMap::new());assert!(inferred.is_proven(),"actual checked source derivation is required: {inferred:?}");
++  let source=c.closure(ExprId(159),owner.clone());assert_eq!(c.infer_exact_closure_in_context(&source,&gamma,&mut 4096,0),inferred.proven_value().cloned(),"a completed source application must carry its type; strict checking must not rediscover an already checked sixty-application chain");
++  assert!(c.infer_exact_closure_in_context(&source,&[],&mut 4096,0).is_none(),"no implicit caller context transport");
++  let other=source.sibling(source.expr,EnvFrame::empty().extend_free(FreeId(0)));assert!(c.infer_exact_closure_in_context(&other,&gamma,&mut 4096,0).is_none(),"numeric FreeId coincidence does not establish the original scope");
++  let changed=Closure::with_levels(source.expr,source.env.clone(),LevelSubstitution::new(vec![(NameId(99),LevelTerm::Zero)]));assert!(c.infer_exact_closure_in_context(&changed,&gamma,&mut 4096,0).is_none(),"own Theta is part of the completed judgment");
++  c.checked_binding_lineage.borrow_mut().insert(owner.id(),None);assert!(c.infer_exact_closure_in_context(&source,&gamma,&mut 4096,0).is_none(),"the original owner must remain authoritative after completion");
++ }
++ #[test] fn ill_typed_application_never_supplies_a_completed_judgment(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env).strict_certificate_probe();let mut cache=HashMap::new();assert!(!c.infer_in(ExprId(6),&[],&EnvFrame::empty(),&mut 4096,&mut cache).is_proven());assert!(c.infer_exact_closure_in_context(&c.closure(ExprId(6),EnvFrame::empty()),&[],&mut 4096,0).is_none());
++ }
++}
++
++#[cfg(test)]
++mod application_judgment_scope_boundary {
++ use super::*;
++ #[test] fn ordinary_numeric_binder_inference_is_not_strict_source_authority(){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();for(i,n)in[(0,Expr::Sort(LevelId(1))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::Const{name:NameId(2),levels:vec![]}),(3,Expr::Pi{domain:ExprId(1),body:ExprId(1)}),(4,Expr::BVar(0)),(5,Expr::App{fun:ExprId(2),arg:ExprId(4)})]{e.insert(ExprId(i),n).unwrap();}
++  let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![],ExprId(3))).unwrap();let c=TypeChecker::new(&e,&l,&env).strict_certificate_probe();let gamma=vec![TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()))];let ambient=EnvFrame::empty().extend_free(FreeId(0));
++  assert!(c.infer_in(ExprId(5),&gamma,&ambient,&mut 4096,&mut HashMap::new()).is_proven());assert!(c.consume_checked_application(&c.closure(ExprId(5),ambient),&gamma,&mut 4096).is_none(),"a bare numeric context lookup must not be promoted into checked original binder authority");
++ }
++}
++
++#[cfg(test)]
++mod substituted_pi_scope_controls {
++ use super::*;
++ #[test] fn applied_polymorphic_lambda_retains_a_formed_result_pi_in_actual_context(){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(i,n)in[(0,Expr::Sort(LevelId(1))),(1,Expr::BVar(0)),(2,Expr::Lam{domain:ExprId(1),body:ExprId(1)}),(3,Expr::Lam{domain:ExprId(0),body:ExprId(2)}),(4,Expr::Const{name:NameId(1),levels:vec![]}),(5,Expr::App{fun:ExprId(3),arg:ExprId(4)})]{e.insert(ExprId(i),n).unwrap();}
++  let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap();let c=TypeChecker::new(&e,&l,&env).strict_certificate_probe();let result=c.infer(ExprId(5),65536);let ty=result.proven_value().expect("checked application of a polymorphic identity");
++  assert!(c.owned_inferred_type_formation_sort(ty,&[],&mut 4096,0).is_some(),"the returned dependent Pi must retain its actual checked context after substituting A, rather than an introduction still requiring the eliminated A binder: {ty:?}");
++ }
++}

@@ -16,3 +16,17 @@ The second snapshot attempts to preserve completed argument judgments across act
 Trace the first new regression and distinguish typing the already-substituted term from certifying the original source substitution. Source typing evidence must be attached to the exact checked derivation that authorizes transport; neither global rejection of every evaluator binding nor forgetting erased obligations is an adequate rule. Require an actual complete positive export ACCEPT before promotion, with all original per-case verdicts and adversarial controls preserved.
 
 No full Mathlib replay or performance qualification occurred for either snapshot. No new GitHub CI run is claimed here. Previous CI runs do not qualify these sources.
+
+## Subsequent rejected mandatory ambient beta derivation
+
+`checked-beta-derived-rejected` distinguishes completed strict payload typing from ambient evaluation-origin validity, including an unused ill-typed beta argument. Two new controls were RED before implementation. Library 173 pass / 0 fail / 10 ignored. Optional argument-retention copying is capped at256 total work units shared by strict probes; no work allowance increases. This restores app-lam and shift-cascade from the earlier beta regression, but ambient reconstruction introduces other failures. Full196 **115 ACCEPT / 71 REJECT / 10 UNKNOWN / 0 incorrect / 0 errors**; init-prelude, church-numerals, peano2 and peano3 regress from ACCEPT to UNKNOWN. All original six remain UNKNOWN. REJECT; not a production candidate. Further reconstruction fallbacks are not justified by this outcome.
+
+## Independently downloaded CI evidence for165 snapshot
+
+Actions https://github.com/heathsanchez/test/actions/runs/38960915917 at057b724f9ae0d1ed21c45e550d671f7a7418b070 verifies165 library passes, input pins and119/71/6/0 incorrect/0 errors. All196 individual input hashes and verdicts exactly match local replay. Strict promotion gate FAILS as required: complete Fueled remains UNKNOWN. Artifact12072926661 ZIP SHA256 dc5fcfd23a81b620016b7f436e983760db9a8b48e08f56f8fe8a5b6fc2daf01e; verified downloaded contents in typed-substitution/ci-38960915917. Previous run38960483514 failed library compilation due to omitted embedded fixtures and never qualified the corpus; fixed in057b724.
+
+## Composed completed application and typed substitution
+
+169 library tests pass / 0 fail / 10 ignored. The composition retains exact completed App premises, original scope guards and whole-TYPE typed substitution. Fresh review found no concrete wrong-ACCEPT hole and requested an explicit original outer/inner Pi revocation control for the memo consumer; that control now passes. Optional recording copies are capped at256 total work units, shared by strict probes. Full196 **119 ACCEPT / 71 REJECT / 6 UNKNOWN / 0 incorrect / 0 errors**, all individual verdicts preserved, all six original full exports still UNKNOWN at original declarations. This is unpromoted, not closure.
+
+A passive typed-substitution audit on complete Fueled found zero declined whole-Pi substitutions: the existing whole-TYPE path does not decline a nested Pi in this replay. Therefore weakening that path is not justified by this witness; no context weakening was implemented.

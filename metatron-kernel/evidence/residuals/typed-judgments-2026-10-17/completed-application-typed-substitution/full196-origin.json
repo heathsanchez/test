@@ -1,0 +1,1433 @@
+{
+  "mode": "origin",
+  "binary_sha256": "3245a5f21b7d97cfdd09a88c9f77eaad7afe6af4bfb4e4c635345b966f056e8b",
+  "source_hashes": {
+    "src/capability.rs": "465c7b8f6a8e23f7e6900320aebb356f2f6291795a5923565685022e3d730953",
+    "src/checker.rs": "679bcfd57f234749a4abc09ebbae6a6a87b12b8153939455f4ec647c94415d61",
+    "src/convert.rs": "87d784066c467d133fa5daf5d6a7470f113993c8ab90ae306a83fa177f951d11",
+    "src/diagnostics.rs": "2d94c257aa27566aaa6dbdd45a9b5f7beed41e4eda054176b026116c6cfedfdc",
+    "src/environment.rs": "c4dd73062d4f269098af1bb38f5de00b2cf1d13fd20bd390e98304996191a09a",
+    "src/id.rs": "79f7d6e2c32b0f50a391d197e4eee32dc0bf9bc4ec96d27a1e31eed833dd215b",
+    "src/indexed_prop.rs": "ab9f35c77c8c285e12f60bca2b50d40faa8ae1673e1a6bfb300f00e1fd683e76",
+    "src/inductive.rs": "f8111184a6c4a37ebfa362679d4c79d2a9f3297c41fd524cc45b71ca7b39e1dd",
+    "src/judgment.rs": "41714ffe0ba04ae42a1329f0a083f632eec6ae3102d1cc9e0c7ab3ca8c082f6d",
+    "src/level.rs": "8d8de4bfb311f3285d3fcfdf0ce3dbf4c931b01564d5c47f36ebbb19dc1c6af0",
+    "src/lib.rs": "220c4510c23dbed492432e1f53913133468e0f572e5d97e04046084a17c06f83",
+    "src/machine.rs": "e6c22b386fbe794d85d8e642d065f816312ea5879714a30794c47851448ac28e",
+    "src/main.rs": "0e10bfafdc3395ca48b3e7bd33d096e542feffb02e66840915ed70fb552601ec",
+    "src/nat.rs": "b1767ff422548733e756056e2470771bfa9eed2bcbb71082e8d494cfa1869b88",
+    "src/parser.rs": "c65393a6fba7da46f5bd9bef14608d7a47c4cca3041442d3c96eccdcabbe7161",
+    "src/syntax.rs": "6ba86a3b6820d9739f8cb5ad1ede3906f456cf2a16119d712a85795cda376116",
+    "src/typecheck.rs": "82b66bd55f5a568be955784c260fe352c0a26d86e1e963e85ed9e6c0a107eee3",
+    "src/typed_lineage.rs": "7458d510199ca26192988325a6c33df1653c9110cbbe827d850d85901e8d7dd8",
+    "src/value.rs": "2e8119056339cfc953225424ff12654a7217167f2007db79c429e49424c24662",
+    "src/verdict.rs": "e2154540cb78dee760db6800999d6d134bec90ae6c03a0a1bd297efb0eb5885c",
+    "Cargo.toml": "6c468f969d98044d06290e04ed471e8d26e721f28192c7d22bb34db34f0cf670",
+    "Cargo.lock": "3dbbd0693d6caa92c41330d6fcd7cb67072def7113dacc340a9ff2d2ff9e7b47"
+  },
+  "inputs_match_immutable196": true,
+  "immutable_during_replay": true,
+  "qualified": true,
+  "retained_verdicts_preserved": true,
+  "qualification_scope": "full196",
+  "requires_fueled_gain": false,
+  "counts": {
+    "accept": 119,
+    "reject": 71,
+    "unknown": 6,
+    "wrong": 0,
+    "errors": 0
+  },
+  "changes": [],
+  "regressions": [],
+  "rows": [
+    {
+      "case": "bad/bugs/constlevels.ndjson",
+      "rc": 1,
+      "sha256": "2fa6a967f15f76cfdcea3ef1992ff31a4cc4aa647b0f8fabf0ff61eedb3afbf1",
+      "elapsed_seconds": 0.3094962499963003,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=_test:stage=theorem.proposition:verdict=REJECT:reason=rigid-value-constructor-mismatch\n"
+    },
+    {
+      "case": "bad/bugs/ctor-num-fields.ndjson",
+      "rc": 1,
+      "sha256": "134ba7d444a9015a073a84b2a919738968a1742e0ba00ecb3535eaece9908278",
+      "elapsed_seconds": 0.306771249997837,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Test.0.S:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/k-rec-conv.ndjson",
+      "rc": 1,
+      "sha256": "04a692635fe2c6755bc973c4520a29ef3707b5dad6ba23eadcd5dd6e71c0f06e",
+      "elapsed_seconds": 0.01139241700002458,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=bad:stage=theorem.value:verdict=REJECT:reason=rule-k-target-mismatch\n"
+    },
+    {
+      "case": "bad/bugs/large-elim-param.ndjson",
+      "rc": 1,
+      "sha256": "df7d23ff199c4956620f3b1b4d17976c6bbe99ec6c1b5a4e803a7f9f415e331f",
+      "elapsed_seconds": 0.005943457996181678,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=MyBool:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/large-elim-prop-bool.ndjson",
+      "rc": 1,
+      "sha256": "f3e9ff227b49feedb76e24332ec070498e9d82e4d04d371066dffc243a8de36b",
+      "elapsed_seconds": 0.009631291999539826,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=NewBool:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/level-imax-leq.ndjson",
+      "rc": 1,
+      "sha256": "497eaa80a214386c679356c33a72c8beab5019c4938494b1608e3772a2756191",
+      "elapsed_seconds": 0.004805917000339832,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/level-imax-normalization.ndjson",
+      "rc": 1,
+      "sha256": "d368d5569321b717b7ec95bd1f4fa5bbd7d6e1f8d6ebdf1a0644dc8bc76bc2ec",
+      "elapsed_seconds": 0.004350541996245738,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=down:stage=definition.value:verdict=REJECT:reason=distinct-canonical-universes\n"
+    },
+    {
+      "case": "bad/bugs/nat-rec-k-lie.ndjson",
+      "rc": 1,
+      "sha256": "5a49d132bb0c7dca091baa481333f5e97e390fde72c8ec18c6124a690ec47d7c",
+      "elapsed_seconds": 0.0035681660010595806,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Nat:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/nat-rec-rules.ndjson",
+      "rc": 1,
+      "sha256": "934e59fdc4f2a978605c4a44e90b94b57e9940f3828620c0db337b7125cdd169",
+      "elapsed_seconds": 0.0033697499966365285,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/nested-unused-param.ndjson",
+      "rc": 1,
+      "sha256": "25afcc9267523cfd26edf94ca01ebe34ca0e8a24954e4b4e3d397a61688b8778",
+      "elapsed_seconds": 0.00413158399896929,
+      "terminal": "NUCLEUS_DOWNSTREAM_DETAIL:stage=preflight-external-recursor-constructor:owner=E:recursor=E.rec_1:constructor=L.mk\nNUCLEUS_DOWNSTREAM:name=<direct>:stage=preflight-external-recursor-constructor:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/orphan-rec.ndjson",
+      "rc": 1,
+      "sha256": "738f28bc1175d70faf09f4b45ae7ca92e8b8d397f6c5d0183240cd695f6d7bc4",
+      "elapsed_seconds": 0.0036413749985513277,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=environment.recursor-name-coherence.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/proj-non-structure.ndjson",
+      "rc": 1,
+      "sha256": "3ab758759629ad56f872cb43671b765d05f63ce5033ae36a7c7e237b3565bcc1",
+      "elapsed_seconds": 0.003701875000842847,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=projection.single-constructor-owner.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/proj-of-imax-prop.ndjson",
+      "rc": 1,
+      "sha256": "d7d0c58b3e62b9b73f7228c121818e9e0602b3fe8284b43a6b41f7c0b2137f65",
+      "elapsed_seconds": 0.0036041659986949526,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=projection.prop-dependent-safety.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/proj-of-stuck-prop.ndjson",
+      "rc": 1,
+      "sha256": "4bdc45de8980cf9cb6e712ab6260f42a89201876f096441fb5ec49e3a0052a22",
+      "elapsed_seconds": 0.009894374998111743,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<direct>:stage=preflight-proof-dependent-result-sort:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/proj-of-subst-prop.ndjson",
+      "rc": 1,
+      "sha256": "c1e3e96748ade2a9806837460821ea725f460a1f8bc1601d7ce121a9b28ffed0",
+      "elapsed_seconds": 0.010008417004428338,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<direct>:stage=preflight-proof-dependent-result-sort:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/rec-k-lie.ndjson",
+      "rc": 1,
+      "sha256": "e800053a06ad3f9af370f4377b500d52231d6b8522c3b1f35d15fbe1d75f2257",
+      "elapsed_seconds": 0.004167375001998153,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=inductive.binary-enum-k-coherence.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/rec-missing-ih.ndjson",
+      "rc": 1,
+      "sha256": "8a240552317ba17d44d175c10531e5f988f55569db5eff734701735ce598fa73",
+      "elapsed_seconds": 0.009378666996781249,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<direct>:stage=preflight-recursor-drops-required-minor:verdict=Reject\n"
+    },
+    {
+      "case": "bad/bugs/rec-of-subst-prop.ndjson",
+      "rc": 1,
+      "sha256": "572d2eb54a4e7d98d2e1a7bad01c5574f85ed5dacfd5bd1734f88ac37d515759",
+      "elapsed_seconds": 0.009128208002948668,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<direct>:stage=preflight-proof-dependent-result-sort:verdict=Reject\n"
+    },
+    {
+      "case": "bad/other/extra-rec.ndjson",
+      "rc": 1,
+      "sha256": "eab650028a71177bd4d9fcb6a84b4e92dd91cf4e7af67023af458d18729be0e2",
+      "elapsed_seconds": 0.003957209002692252,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=environment.recursor-name-coherence.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/other/nat-lit-add-bad.ndjson",
+      "rc": 1,
+      "sha256": "9fcac9c9e16cda51f60bbd91fd14c359bf8b2272aaf02fef86ef0c2aba9333f0",
+      "elapsed_seconds": 0.010071917000459507,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=natAddLitBad:stage=theorem.value:verdict=REJECT:reason=distinct-Nat-literals\n"
+    },
+    {
+      "case": "bad/other/orphan-ctor.ndjson",
+      "rc": 1,
+      "sha256": "2c9b12979ea3da11272d6eca4b0a39523a863d6fb501daf61c4edb8996a97daa",
+      "elapsed_seconds": 0.0033817910007201135,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=False:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/other/proj-of-prop.ndjson",
+      "rc": 1,
+      "sha256": "d7c5ab71c706123991510274596d1c36026201e7ccfd15fc134664fe7dee9116",
+      "elapsed_seconds": 0.003716749997693114,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=badFalse:stage=theorem.value:verdict=REJECT:reason=distinct-opaque-proposition-types\n"
+    },
+    {
+      "case": "bad/perf/refute-cheap-first.ndjson",
+      "rc": 1,
+      "sha256": "5484b765b659b0d4a77aa75d82ae3d81f04d9731de30ee08dd5e4c58d0076fba",
+      "elapsed_seconds": 0.008647832997667138,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_first:stage=theorem.value:verdict=REJECT:reason=certified-constructor-argument-mismatch\n"
+    },
+    {
+      "case": "bad/perf/refute-cheap-last.ndjson",
+      "rc": 1,
+      "sha256": "ea6fdc9ab4986b6a97e494c7af868704a3e15552506ca2014743a91a83a0e2ec",
+      "elapsed_seconds": 0.008903624999220483,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=kernel_refute_cheap_last:stage=theorem.value:verdict=REJECT:reason=rigid-value-constructor-mismatch\n"
+    },
+    {
+      "case": "bad/tutorial/002_badDef.ndjson",
+      "rc": 1,
+      "sha256": "18c9ea60e02b97067822697e4c9dc716e5e7ba63cacd5688b753c8e92845f415",
+      "elapsed_seconds": 0.0035322080002515577,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=badDef:stage=definition.value:verdict=REJECT:reason=distinct-canonical-universes\n"
+    },
+    {
+      "case": "bad/tutorial/009_forallSortBad.ndjson",
+      "rc": 1,
+      "sha256": "64b1823f5bc87e743ad9e61b0a5b4907d141cd7434e4a9d9316deec82148891f",
+      "elapsed_seconds": 0.003194666998751927,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=forallSortBad:stage=definition.value:verdict=REJECT:reason=term-type-is-rigid-nonsort\n"
+    },
+    {
+      "case": "bad/tutorial/010_nonTypeType.ndjson",
+      "rc": 1,
+      "sha256": "3a9f600737260fecac39cce77739eba58b52e1bb79c59d5d1d583e3d33b62842",
+      "elapsed_seconds": 0.0031212920002872124,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=nonTypeType:stage=definition.type:verdict=REJECT:reason=term-is-not-a-type\n"
+    },
+    {
+      "case": "bad/tutorial/011_nonTypeAxiom.ndjson",
+      "rc": 1,
+      "sha256": "b4f10c5b711b37f776c31f73fde48de4f0c040c4c7cd54483d6ff61d81ce3105",
+      "elapsed_seconds": 0.003115583000180777,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=nonTypeAxiom:stage=axiom.type:verdict=REJECT:reason=term-is-not-a-type\n"
+    },
+    {
+      "case": "bad/tutorial/012_nonPropThm.ndjson",
+      "rc": 1,
+      "sha256": "388e6d33ebe9e93e6bfa0ab7a35eb260461850cf3e975842beeb196205a0b990",
+      "elapsed_seconds": 0.0029102080006850883,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=nonPropThm:stage=theorem.proposition:verdict=REJECT:reason=distinct-canonical-universes\n"
+    },
+    {
+      "case": "bad/tutorial/014_selfProof.ndjson",
+      "rc": 1,
+      "sha256": "53d4c834fb25b5169a4d3847507b7dc7125552f54d81a8970d29cb57682a6f19",
+      "elapsed_seconds": 0.002884667002945207,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=selfProof:stage=theorem.value:verdict=REJECT:reason=unknown-constant\n"
+    },
+    {
+      "case": "bad/tutorial/019_tut06_bad01.ndjson",
+      "rc": 1,
+      "sha256": "d33d515d2f0d6688cff31b9c3e5c69d4ec488a4b921c3ea6df2ccf5e6234e422",
+      "elapsed_seconds": 0.002696999996260274,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<direct>:stage=duplicate-level-parameter:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/046_inductBadNonSort.ndjson",
+      "rc": 1,
+      "sha256": "0b5743d6dca5ca51a5966d5b1b1a2883fd0ddd0548b36a9c8b66d0fedda3e9c8",
+      "elapsed_seconds": 0.0028131660001236014,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=inductBadNonSort:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/047_inductBadNonSort2.ndjson",
+      "rc": 1,
+      "sha256": "bc9abb544e1e918b8cadf898b7251f0b4fb6ba43a89569343b094be27ad83c56",
+      "elapsed_seconds": 0.0027844169962918386,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=inductBadNonSort2:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/048_inductLevelParam.ndjson",
+      "rc": 1,
+      "sha256": "00e01ad9e397d9ac2f53a0a0932c15681c097fd42eb5f81d3d1779ba8706875e",
+      "elapsed_seconds": 0.002760832998319529,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=inductLevelParam:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/049_inductTooFewParams.ndjson",
+      "rc": 1,
+      "sha256": "a7aa4192b8e986b2cf7c3845d208e818b27db7edda2492d3e5e180f8c379746b",
+      "elapsed_seconds": 0.0028666660000453703,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=inductTooFewParams:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/050_inductWrongCtorParams.ndjson",
+      "rc": 1,
+      "sha256": "e00ec458cd70b88e1f8ef6938dbf38b431c5a2d09086f22b8f46216a412625b4",
+      "elapsed_seconds": 0.0028340830031083897,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=inductWrongCtorParams:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/051_inductWrongCtorResParams.ndjson",
+      "rc": 1,
+      "sha256": "376541e4a12f98f6c3bddd3f2137ff92347ec8cc802de17147154f14fc539af7",
+      "elapsed_seconds": 0.0027451670030131936,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=inductWrongCtorResParams:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/052_inductWrongCtorResLevel.ndjson",
+      "rc": 1,
+      "sha256": "37bdaecc5ee679e398f190217c451777f14f5ea82d4d45472909574cb2a875d3",
+      "elapsed_seconds": 0.002706792001845315,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=inductWrongCtorResLevel:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/053_inductInIndex.ndjson",
+      "rc": 1,
+      "sha256": "ae3f46380ddb3b87ec47dd94f11facfb3b095d68a7e43fea1c051a54ea7df94a",
+      "elapsed_seconds": 0.0027723329985747114,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=inductInIndex:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/054_indNeg.ndjson",
+      "rc": 1,
+      "sha256": "891ebd478f35c1b58597f8d5b90855c05683d1945c3392a1b8a49c7036618c72",
+      "elapsed_seconds": 0.0026890000008279458,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=indNeg:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/056_reduceCtorType.mk.ndjson",
+      "rc": 1,
+      "sha256": "2bd8aa0b62145bfb04c3292516dd8df438594e104efb89f5de6b653db13ed19b",
+      "elapsed_seconds": 0.0028692500054603443,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=reduceCtorType:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/057_indNegReducible.ndjson",
+      "rc": 1,
+      "sha256": "ac00e7cb143dfa35fb91c578756027daac4518aace7b27bdbd0097c1d2eae139",
+      "elapsed_seconds": 0.002890125004341826,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=indNegReducible:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/061_typeWithTooHighTypeField.mk.ndjson",
+      "rc": 1,
+      "sha256": "6852310d3ee1571f605ea6447f85d0e01c867fd209d1185321318078549cf45a",
+      "elapsed_seconds": 0.002818415996443946,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=typeWithTooHighTypeField:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/073_BogusRecursor.ndjson",
+      "rc": 1,
+      "sha256": "32fa46330a24a77b132ba55d9f9c88c89b4b2730d75fae453d066678a03ef0ca",
+      "elapsed_seconds": 0.0027915410028072074,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=BogusRecursor:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/087_projOutOfRange.ndjson",
+      "rc": 1,
+      "sha256": "c523a27118e7e081c515535d7f9e3d69e623f7a1c04a900213086510063dae79",
+      "elapsed_seconds": 0.003206458000931889,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=projOutOfRange:stage=definition.value:verdict=REJECT:reason=projection-index-out-of-range\n"
+    },
+    {
+      "case": "bad/tutorial/088_projNotStruct.ndjson",
+      "rc": 1,
+      "sha256": "ca8056aa5df3b0f96a7a5eca355cce043d91c49563ae228cd4768f0bbe1bfaf4",
+      "elapsed_seconds": 0.0033179579986608587,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=projection.single-constructor-owner.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/090_projProp2.ndjson",
+      "rc": 1,
+      "sha256": "710944c5a71c80cae0913c31ebe13186401e2717f4e5e731128590acd591d4f9",
+      "elapsed_seconds": 0.0031958339968696237,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=projection.prop-dependent-safety.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/092_projProp4.ndjson",
+      "rc": 1,
+      "sha256": "958d3fdb2f292912c18fbc8ed3686c60d7d2fa19504385b7062276e20f0e5589",
+      "elapsed_seconds": 0.003135041995847132,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=projection.prop-dependent-safety.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/093_projProp5.ndjson",
+      "rc": 1,
+      "sha256": "c6b12e00b68eb80438a619d29a523d4af0907e56e058541b675f34e26f98164e",
+      "elapsed_seconds": 0.0031145419998210855,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=projection.prop-dependent-safety.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/094_projProp6.ndjson",
+      "rc": 1,
+      "sha256": "b8da2aaeb0422306639a720608ff66ffa6c50a75426e18bb3bd58c5f483d13b2",
+      "elapsed_seconds": 0.003072166997299064,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=projection.prop-dependent-safety.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/096_projIndexData.ndjson",
+      "rc": 1,
+      "sha256": "5153a2bfdb3191f67bcedeccfc2306bf2514fba530a58237660664de1f8f2b6a",
+      "elapsed_seconds": 0.003945875003410038,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=projIndexData:stage=definition.value:verdict=REJECT:reason=projection-type-name-mismatch\n"
+    },
+    {
+      "case": "bad/tutorial/097_projIndexData2.ndjson",
+      "rc": 1,
+      "sha256": "e044fa7d4fc048c6103e60a5c1b41e07070c54cc998403ae323b04ed5cea7793",
+      "elapsed_seconds": 0.0038980419994913973,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=projIndexData2:stage=definition.value:verdict=REJECT:reason=projection-type-name-mismatch\n"
+    },
+    {
+      "case": "bad/tutorial/100_ruleKbad.ndjson",
+      "rc": 1,
+      "sha256": "2147c3416825e1c7f78382501f4c3e2f8165d23d464c998a077e69a12e51697a",
+      "elapsed_seconds": 0.0039014170033624396,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=REJECT:reason=rule-k-target-mismatch\n"
+    },
+    {
+      "case": "bad/tutorial/101_ruleKAcc.ndjson",
+      "rc": 1,
+      "sha256": "59a4dc34b1175f59d9efd17c4c5b9d9f07bdb54c882dc66a65737d29be6d4356",
+      "elapsed_seconds": 0.0052787919994443655,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=REJECT:reason=certified-stuck-recursor-mismatch\n"
+    },
+    {
+      "case": "bad/tutorial/105_proofIrrelevanceBad.ndjson",
+      "rc": 1,
+      "sha256": "2a1fa7289c339a899efdc2a1e4db11cc3d27064caa6cfb4b345a0bc1c247e95d",
+      "elapsed_seconds": 0.0034696670045377687,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=proofIrrelevanceBad:stage=definition.value:verdict=REJECT:reason=distinct-rigid-local-terms\n"
+    },
+    {
+      "case": "bad/tutorial/111_indexedUnitEta.ndjson",
+      "rc": 1,
+      "sha256": "cbb7373c1ca899628177c7d6eb97dc6cf2f1faa3d14cdd1b1d90a5103e15f5d4",
+      "elapsed_seconds": 0.0036442499986151233,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=indexedUnitEta:stage=definition.value:verdict=REJECT:reason=non-eta-structure-mismatch\n"
+    },
+    {
+      "case": "bad/tutorial/113_indexedStructEta.ndjson",
+      "rc": 1,
+      "sha256": "68793088cc096a96a4b7ed07f7417d88a4dafcc7ca4e8b53f6a756aed91e1b2d",
+      "elapsed_seconds": 0.0034870000017690472,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=indexedStructEta:stage=definition.value:verdict=REJECT:reason=non-eta-structure-mismatch\n"
+    },
+    {
+      "case": "bad/tutorial/116_funEtaBad.ndjson",
+      "rc": 1,
+      "sha256": "54a1fa957b69925682e54479b3c152bfd131ca7f4a9713c05b195c83e9cd239a",
+      "elapsed_seconds": 0.003650291997473687,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=funEtaBad:stage=theorem.value:verdict=REJECT:reason=distinct-rigid-local-terms\n"
+    },
+    {
+      "case": "bad/tutorial/117_reflOccLeft.ndjson",
+      "rc": 1,
+      "sha256": "cb1cb23af8bccc7eea0d76f643fe26948f6181a420128743f3ac7b08cd188427",
+      "elapsed_seconds": 0.003314583998871967,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=reflOccLeft:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/118_reflOccInIndex.ndjson",
+      "rc": 1,
+      "sha256": "f7e26071a31d8a99affda951e49d5ddbe7ba2d387d4641733759a9e0e6e375bd",
+      "elapsed_seconds": 0.0031045840005390346,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=reflOccInIndex:stage=inductive:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/125_accRecNoEta.ndjson",
+      "rc": 1,
+      "sha256": "7868dfaa2a5574fa383e4fbf42f84d3eab78c43614f0034d2f78f2069ca00f64",
+      "elapsed_seconds": 0.006027667004673276,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=accRecNoEta:stage=theorem.value:verdict=REJECT:reason=certified-stuck-recursor-mismatch\n"
+    },
+    {
+      "case": "bad/tutorial/132_dup_defs.ndjson",
+      "rc": 1,
+      "sha256": "3ddcdcf8426bc589d22186cbb600585763982f4cf5d6c097d1ba506add38562c",
+      "elapsed_seconds": 0.00266958300198894,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=environment.declared-name-uniqueness.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/133_dup_ind_def.ndjson",
+      "rc": 1,
+      "sha256": "5215371a7c7f856b51f2da56aef208ca4ca729642dc778ad3e0ce8ab1906da0d",
+      "elapsed_seconds": 0.002989041000546422,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=environment.declared-name-uniqueness.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/134_dup_ctor_def.ndjson",
+      "rc": 1,
+      "sha256": "2ac3801ead3ade2a80fbfc1eabe5afc32191dc6fe92a327a3c04877788298788",
+      "elapsed_seconds": 0.0030983749966253527,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=environment.declared-name-uniqueness.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/135_dup_rec_def.ndjson",
+      "rc": 1,
+      "sha256": "c151eff211496e19088a099de9647fc09c5d8862c844f5cbac4922fd000aeb99",
+      "elapsed_seconds": 0.002990250002767425,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=environment.declared-name-uniqueness.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/136_misnamed_rec_user.ndjson",
+      "rc": 1,
+      "sha256": "084cbdbf52408c13578c9b5e603917d9cbe4f4eed72c8363a9955532c50bf9f9",
+      "elapsed_seconds": 0.0028495000005932525,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=environment.recursor-name-coherence.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/137_dup_rec_def2.ndjson",
+      "rc": 1,
+      "sha256": "1491e5f6039864c0b1107e47b981951a82f704213e082400dbc09e8f42c70043",
+      "elapsed_seconds": 0.002793166000628844,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=environment.recursor-name-coherence.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/138_dup_ctor_rec.ndjson",
+      "rc": 1,
+      "sha256": "8298ec6977778857c4e5a6325eba54b1e81d03c09119342d8dc983b97f2ef1cc",
+      "elapsed_seconds": 0.0027938330022152513,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=environment.declared-name-uniqueness.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/139_DupConCon.ndjson",
+      "rc": 1,
+      "sha256": "5ab46914e77307c3d93780fff5ff2c85f717ce1de2dbf3784049ccd6bab6aaa2",
+      "elapsed_seconds": 0.00279762499849312,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=<capability>:stage=environment.declared-name-uniqueness.v0:verdict=Reject\n"
+    },
+    {
+      "case": "bad/tutorial/140_falseFromUnsafe.ndjson",
+      "rc": 1,
+      "sha256": "210d79a51f88327822ee74f0dd95cc375d8ac95e634c2764f91ed6f3a9766d1d",
+      "elapsed_seconds": 0.0029202079967944883,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=unsafeLoop:stage=definition.value:verdict=REJECT:reason=unknown-constant\n"
+    },
+    {
+      "case": "bad/tutorial/141_falseFromPartial.ndjson",
+      "rc": 1,
+      "sha256": "54e78ff1b3f6335f31703983abb67f840c9b13ca9c2d6bbb3aae9398f8232fe1",
+      "elapsed_seconds": 0.0027836659937747754,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=partialLoop:stage=definition.value:verdict=REJECT:reason=unknown-constant\n"
+    },
+    {
+      "case": "good/corner-cases/proof-param-ok.ndjson",
+      "rc": 0,
+      "sha256": "7f9b3c07a64b441f8dd0f7dd2912274241fdb17118953fb089f796fdd1590af4",
+      "elapsed_seconds": 0.002988082997035235,
+      "terminal": ""
+    },
+    {
+      "case": "good/init-prelude.ndjson",
+      "rc": 0,
+      "sha256": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5",
+      "elapsed_seconds": 1.446401875000447,
+      "terminal": ""
+    },
+    {
+      "case": "good/other/level-index-out-of-order.ndjson",
+      "rc": 0,
+      "sha256": "7db8148079e2e8160a1a4c71258ad11b17ce18edfa84ab1e12eae937ec9538d1",
+      "elapsed_seconds": 0.0025458339951001108,
+      "terminal": ""
+    },
+    {
+      "case": "good/other/nat-lit-add.ndjson",
+      "rc": 0,
+      "sha256": "2eec8aaa1d9c5009f69e7507b08e3f81c23adf56fb8d541a96393b721a715150",
+      "elapsed_seconds": 0.0070364999992307276,
+      "terminal": ""
+    },
+    {
+      "case": "good/other/nat-lit-ble.ndjson",
+      "rc": 0,
+      "sha256": "f5295492eefe75bdd5714183ccbbebede81bd8d7338e2db98569246f836f1107",
+      "elapsed_seconds": 0.007420207999530248,
+      "terminal": ""
+    },
+    {
+      "case": "good/other/nat-lit-sub.ndjson",
+      "rc": 0,
+      "sha256": "ce96962a24c958b86fa2a37cfc8a3477255c7e67ab69f1ba927e8a5d6cc85d12",
+      "elapsed_seconds": 0.008105624998279382,
+      "terminal": ""
+    },
+    {
+      "case": "good/other/sparse-name-index.ndjson",
+      "rc": 0,
+      "sha256": "3279c9c8ae24d5b3a8433ddee5d4a421c4e15e3cd84117fb4873d1284112b96d",
+      "elapsed_seconds": 0.0031283330026781186,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/app-lam.ndjson",
+      "rc": 0,
+      "sha256": "552d6e8398f579fcf59ab9abd8187fc7a8a037697da66c129aacb4cc1b9dd414",
+      "elapsed_seconds": 3.9423059160035336,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/args-before-unfold.ndjson",
+      "rc": 0,
+      "sha256": "08e16707dc6623394c62125592462b7548dd647d0b8a93138dce433d80411d22",
+      "elapsed_seconds": 0.01909449999948265,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/beta-ladder.ndjson",
+      "rc": 0,
+      "sha256": "9e31c146f590cd29a464f45eb2a9ec6aec092dfd0d146a3c5f744b3fc674133a",
+      "elapsed_seconds": 0.5323626249955851,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/church-numerals.ndjson",
+      "rc": 0,
+      "sha256": "4895c59c421bb395f830aaa778db01cf166e9319b546a994e373e640298f4bb7",
+      "elapsed_seconds": 0.050812832996598445,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/discarded-argument-match.ndjson",
+      "rc": 0,
+      "sha256": "0152a64c923590cc1ef4209652d2ceac248d8668ad11c9b74e183bb3da6ca7e2",
+      "elapsed_seconds": 0.011116459005279467,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/discarded-argument.ndjson",
+      "rc": 0,
+      "sha256": "ee46aa31d32fe7cc04c1428bd58597c7b843d3fd98340f0fa6c9ab20a6bc7147",
+      "elapsed_seconds": 0.007654875000298489,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/folded-constant-first.ndjson",
+      "rc": 0,
+      "sha256": "f11febc1959dd30a0c2b4f3491635b4d1279946d51286bd7dfec5fb19229d773",
+      "elapsed_seconds": 0.018642457995156292,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/folded-constant-last.ndjson",
+      "rc": 0,
+      "sha256": "e1a9380283d3285a7242a45e79ce760056c34201089d21fdc3b25a22e4997494",
+      "elapsed_seconds": 0.019110749999526888,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/fueled-chain.ndjson",
+      "rc": 2,
+      "sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "elapsed_seconds": 0.219666375000088,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/grind-ring-5.ndjson",
+      "rc": 2,
+      "sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "elapsed_seconds": 0.4700611670050421,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Lean.Grind.CommRing.mul_comm:stage=theorem.value:verdict=UNKNOWN:reason=source-binder-capture-or-support-unavailable\n"
+    },
+    {
+      "case": "good/perf/identical-nesting.ndjson",
+      "rc": 0,
+      "sha256": "4d23216f53395a334f8788b052e268587503317af5f79ca4251416ce617c9df9",
+      "elapsed_seconds": 0.005232625000644475,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/irrelevance-before-evaluation.ndjson",
+      "rc": 0,
+      "sha256": "8cc3996fb088522e56c3670b0bd3b2397ee7b5a81c7fdc634c69a5f052e02e7f",
+      "elapsed_seconds": 0.010174208997341339,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/let-ladder.ndjson",
+      "rc": 0,
+      "sha256": "d02afad06729004912e5feeaf25379240b106d98b571cfcfffd974d08853ad65",
+      "elapsed_seconds": 0.6429581660049735,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/magma-list-deep-n21.ndjson",
+      "rc": 2,
+      "sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "elapsed_seconds": 0.485802249997505,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n36.ndjson",
+      "rc": 2,
+      "sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "elapsed_seconds": 0.48908374999882653,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n21.ndjson",
+      "rc": 2,
+      "sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "elapsed_seconds": 0.2557792080042418,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n7.ndjson",
+      "rc": 2,
+      "sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "elapsed_seconds": 0.26266466599918203,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/proj-cheap-struct.ndjson",
+      "rc": 0,
+      "sha256": "67725ab1b59ee3886c97c9120d4d2e0f2b5d193c1a68796193d544dc33f697f5",
+      "elapsed_seconds": 0.02005454200116219,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/proj-lazy-struct.ndjson",
+      "rc": 0,
+      "sha256": "948fbbb87ef6368f57bcd9799afc0b4ad3d1fe040a418b3ac38045b1489f78fa",
+      "elapsed_seconds": 71.14372787500179,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/proj-stuck-struct.ndjson",
+      "rc": 0,
+      "sha256": "b2fed80e90e956f24bcbe898ce7cfef5ae4c92d0f81daf42e0a2a3c817012f6f",
+      "elapsed_seconds": 0.017877584003144875,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/repeated-subproblem.ndjson",
+      "rc": 0,
+      "sha256": "831bb058c28d82bf4c2c6146ae9f91b22b44a914ef362ee19dd66f3211104d37",
+      "elapsed_seconds": 0.005391874998167623,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/shared-subterm.ndjson",
+      "rc": 0,
+      "sha256": "dbc065108aa98512149c3f1a5bb6279630c53bdf64256516ba10ed256322883b",
+      "elapsed_seconds": 0.019251792000432033,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/shift-cascade.ndjson",
+      "rc": 0,
+      "sha256": "73b80da0cfca3226068945fe617eafba6da87d8e24803ff1a987a5d10c1f1a57",
+      "elapsed_seconds": 0.10543720800342271,
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/unroll-versus-evaluate.ndjson",
+      "rc": 0,
+      "sha256": "3839db32d95b2ded9bf2ac70960ae4a060b9a998bd67422ed41bc087b1f74179",
+      "elapsed_seconds": 0.018601042000227608,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/001_basicDef.ndjson",
+      "rc": 0,
+      "sha256": "66160bdc748c91306eddc888fe8a268dd336c385979902022c2902da0680efd5",
+      "elapsed_seconds": 0.0039840840036049485,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/003_arrowType.ndjson",
+      "rc": 0,
+      "sha256": "aa2c0aa79d56f1ad43b41df7bd9a5e1876eafcba560a39845f5a9a5c290a72a2",
+      "elapsed_seconds": 0.0030308749992400408,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/004_dependentType.ndjson",
+      "rc": 0,
+      "sha256": "74d890dafbd178c44ef0d1b8b5ef339f628efcd5c2a84d33307330b512ee8a08",
+      "elapsed_seconds": 0.0030757920030737296,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/005_constType.ndjson",
+      "rc": 0,
+      "sha256": "50e86e6b9f1c07c40359497444fc8b9645fc8565550aac1875d0856129f71c46",
+      "elapsed_seconds": 0.002917875004641246,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/006_betaReduction.ndjson",
+      "rc": 0,
+      "sha256": "e20bf2f42a95fc8edf901b00f1c99d3f8d2f4293abebe50d835269a1187283dd",
+      "elapsed_seconds": 0.0033935000028577633,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/007_betaReduction2.ndjson",
+      "rc": 0,
+      "sha256": "d5157c04725cc6c0b1940e7050d1a2d6d564675930d8c8a77a9cab1cd35ea2dd",
+      "elapsed_seconds": 0.0032452079976792447,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/008_forallSortWhnf.ndjson",
+      "rc": 0,
+      "sha256": "4b8379c48d2018983f1edad8fc7437743f77ceed517a73db9d5b344042ad52aa",
+      "elapsed_seconds": 0.003229250003641937,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/013_thmProof.ndjson",
+      "rc": 0,
+      "sha256": "3bdd74e5e5c4b6413961de59db89ec750ac301dd86c6f8cfedf91e8f01a5ee2c",
+      "elapsed_seconds": 0.0033764580002753064,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/015_levelComp1.ndjson",
+      "rc": 0,
+      "sha256": "93618512baf81894760413b5d79aca2021f954ac4d95d8d21bd6a7e8ded87b74",
+      "elapsed_seconds": 0.0028715000007650815,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/016_levelComp2.ndjson",
+      "rc": 0,
+      "sha256": "6caaf69b531f7e0729782aee92680d531394251e51ae96471f5934e55b0cd502",
+      "elapsed_seconds": 0.0031419579972862266,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/017_levelComp3.ndjson",
+      "rc": 0,
+      "sha256": "de86ba3543bfe36e79071304f1dd974208bf6e1bb936a2afb3e2057e6fdf61dc",
+      "elapsed_seconds": 0.0033927080003195442,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/018_levelParams.ndjson",
+      "rc": 0,
+      "sha256": "67f5ee4d9bebc000d57f0bbf08b84481634209b78844f31409bc737c82625a20",
+      "elapsed_seconds": 0.0032716659989091568,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/020_levelComp4.ndjson",
+      "rc": 0,
+      "sha256": "6f318f55f779e71bbdd005b8cd3773ac1196188c47a86c68f8647734d4526160",
+      "elapsed_seconds": 0.0029562079944298603,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/021_levelComp5.ndjson",
+      "rc": 0,
+      "sha256": "04d8623e060042fc0063306d129928e1b754f3e8fe73116358ae5d4b5f1e7fdb",
+      "elapsed_seconds": 0.002790833998005837,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/022_imax1.ndjson",
+      "rc": 0,
+      "sha256": "eab978e8b1707d4d570b8b9ac8317f5f3f624c90bafdfd015c7c881ec4e24d9d",
+      "elapsed_seconds": 0.0031688750023022294,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/023_imax2.ndjson",
+      "rc": 0,
+      "sha256": "a680737e27fc6636484fbe312a401f3b3f18b64c21bb5f0beae24cbae5810a2a",
+      "elapsed_seconds": 0.0031583750023855828,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/024_levelMaxComm.ndjson",
+      "rc": 0,
+      "sha256": "8b6dd66b224c828c90e312ff9a4c17add5addd50e2a8132bf0edceb53cb5bede",
+      "elapsed_seconds": 0.0029563749994849786,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/025_levelMaxAssoc.ndjson",
+      "rc": 0,
+      "sha256": "c1374bd0f3ac87765db5f0b5b0cf48263b5c1c00fabd07db25cd014e05fc845a",
+      "elapsed_seconds": 0.0028392919994075783,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/026_levelMaxIdem.ndjson",
+      "rc": 0,
+      "sha256": "d8dfa08ce074504e6aedf2ae8b2a2696af429d6cb8901bde4a26cca603762f52",
+      "elapsed_seconds": 0.002808416997140739,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/027_levelMaxAbsorb.ndjson",
+      "rc": 0,
+      "sha256": "e1fc01bc9246e2f9dce058722fbeeea7d0cd48ee189f0f0d00c10d34ab812d77",
+      "elapsed_seconds": 0.0032591670023975894,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/028_inferVar.ndjson",
+      "rc": 0,
+      "sha256": "c7f349ea6d7d5a1fd2e9cfd1467f230e6ff8cc3b280bf6f1f38241b1487b3010",
+      "elapsed_seconds": 0.003434124999330379,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/029_defEqLambda.ndjson",
+      "rc": 0,
+      "sha256": "16e32a5cdb9b653f3ea28ca44eefd1915e18cba958a0017ad7646b3d6f7d08ca",
+      "elapsed_seconds": 0.0033682499997667037,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/030_peano1.ndjson",
+      "rc": 0,
+      "sha256": "c0bfe06648cd6fc49ca8b9488a88ab79cc4d518613e7eb5b81db4508389716fb",
+      "elapsed_seconds": 0.0038871249998919666,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/031_peano2.ndjson",
+      "rc": 0,
+      "sha256": "107b66eff6598febc300a0dcd89c5e658bdb41f9e79e5c869ca9ea84560ef61d",
+      "elapsed_seconds": 0.0043299590033711866,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/032_peano3.ndjson",
+      "rc": 0,
+      "sha256": "a155941886992c8340cfed582f0c73b634c347b4525b2e58ee93ff91895492da",
+      "elapsed_seconds": 0.004279916000086814,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/033_letType.ndjson",
+      "rc": 0,
+      "sha256": "b9a44f49220a12951ac34ae4a4269a899fd81093949ea216e37744f519b5fbea",
+      "elapsed_seconds": 0.0033476669996161945,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/034_letTypeDep.ndjson",
+      "rc": 0,
+      "sha256": "c42e3dca20c90a0e942b394ec729548dee81114f0faf2e03dec503cf3ac7a234",
+      "elapsed_seconds": 0.003228790999855846,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/035_letRed.ndjson",
+      "rc": 0,
+      "sha256": "648dcc1d99fb02a44fcb00bccdfeb7221bff807cd1f184239c9f4aa8749677e3",
+      "elapsed_seconds": 0.003374709005584009,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/036_empty.ndjson",
+      "rc": 0,
+      "sha256": "18b97de6ae61b368ae7eb7fbe34c768590ba2a9e06249edb40a1e53fd932ffdb",
+      "elapsed_seconds": 0.003411208002944477,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/037_boolType.ndjson",
+      "rc": 0,
+      "sha256": "60f0170efef96a411a34d9fed5b53f421d04537fdb4fbf3129c2733991c4af07",
+      "elapsed_seconds": 0.0037774160009576008,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/038_twoBool.ndjson",
+      "rc": 0,
+      "sha256": "023dc45dfe86c392d1253bd438b9bb3b1da07a80a5e5083acd751149c652411d",
+      "elapsed_seconds": 0.003740792002645321,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/039_andType.ndjson",
+      "rc": 0,
+      "sha256": "656a1be9f3bb92fd10d459cf3e3a860dbb7213dbce10d2c788d94aed8e0e9b59",
+      "elapsed_seconds": 0.003951124999730382,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/040_prodType.ndjson",
+      "rc": 0,
+      "sha256": "2f82e7d70c3c170a7fb5b9d081c328a0075c8109f4979862cf5666355b94fd7d",
+      "elapsed_seconds": 0.003828917004284449,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/041_pprodType.ndjson",
+      "rc": 0,
+      "sha256": "08970427c4e28233478d7e73fdfb47fc26776805f71f36cc83e3cad434a41791",
+      "elapsed_seconds": 0.003660624999611173,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/042_pUnitType.ndjson",
+      "rc": 0,
+      "sha256": "29f904a27e80054d1667118acdfc3595d238a45376062117d5e9eee136608248",
+      "elapsed_seconds": 0.003131041994492989,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/043_eqType.ndjson",
+      "rc": 0,
+      "sha256": "17e2890610e6c4f97c9f8d62919736f27928d058aa6df4f769e285418b9eba2e",
+      "elapsed_seconds": 0.0033121670057880692,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/044_natDef.ndjson",
+      "rc": 0,
+      "sha256": "e1ea8ce5e5814320ec6f9c1d10bfe7fa0955432595627a40f629e56366bf49be",
+      "elapsed_seconds": 0.0036244160000933334,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/045_rbTreeDef.ndjson",
+      "rc": 0,
+      "sha256": "10f50558c3fafe8d13f4129fa45d6b2d3732768e50eb9989d2f2ba66c696e14c",
+      "elapsed_seconds": 0.005123709001054522,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/055_reduceCtorParam.mk.ndjson",
+      "rc": 0,
+      "sha256": "7927f942d5f7c496d93352e55955110fb22e0195707b73e6f3897b5cd88a8894",
+      "elapsed_seconds": 0.004781084004207514,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/058_predWithTypeField.ndjson",
+      "rc": 0,
+      "sha256": "4ead0880735e18eb8317edbe6608f1891b35bd321a8062cb279f75a3fd74f753",
+      "elapsed_seconds": 0.003461459004029166,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/059_typeWithTypeField.ndjson",
+      "rc": 0,
+      "sha256": "35536ab3714f8d578c1c07776eb9be463b9cda56a05ed3113bc8658f27465814",
+      "elapsed_seconds": 0.0035425839960225858,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/060_typeWithTypeFieldPoly.ndjson",
+      "rc": 0,
+      "sha256": "ed5a51876b8dde1bd53599ba783c213a7648ac461fd85c6e5892a411c3a0b5df",
+      "elapsed_seconds": 0.003210833005141467,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/062_emptyRec.ndjson",
+      "rc": 0,
+      "sha256": "0f2b78a85ead0e23165febd2f3a83f251e12d2c1cadc293f528a7fa444016f36",
+      "elapsed_seconds": 0.0030982500029494986,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/063_boolRec.ndjson",
+      "rc": 0,
+      "sha256": "3da418a44a96a39dcbf70cd482c6ef8320d8cbb2593de2c21f163dd862551afd",
+      "elapsed_seconds": 0.0034106669991160743,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/064_twoBoolRec.ndjson",
+      "rc": 0,
+      "sha256": "9dfcc750a51b3e8ab9954696c40177bad30d486287b627fe06408086d468016b",
+      "elapsed_seconds": 0.003522332997818012,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/065_andRec.ndjson",
+      "rc": 0,
+      "sha256": "6d876dc6840102814fc56ba83bd2008855e0fbc41f691f4795885fc4b5da51a9",
+      "elapsed_seconds": 0.0033072910009650514,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/066_prodRec.ndjson",
+      "rc": 0,
+      "sha256": "a599e1935d3291f405a860c0507cfd39d2d719162ba10d797c0251c858969aec",
+      "elapsed_seconds": 0.0037024160046712495,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/067_pprodRec.ndjson",
+      "rc": 0,
+      "sha256": "537333591de9684245331a0ba1e051ae79b9dc5749e02b8c623b8c3725a82340",
+      "elapsed_seconds": 0.0038875829995959066,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/068_punitRec.ndjson",
+      "rc": 0,
+      "sha256": "41d98f6240e8fb36c63b4baa22fbf940a28195c482dc584399a407c69cee1d39",
+      "elapsed_seconds": 0.003330957995785866,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/069_eqRec.ndjson",
+      "rc": 0,
+      "sha256": "5af40a654e735fbe4a4c5f244a36afd8b606932c054abe822b06493ccef0663b",
+      "elapsed_seconds": 0.003642957999545615,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/070_nRec.ndjson",
+      "rc": 0,
+      "sha256": "d68c2401d23beda918b8e8017ac45965be44e60920a9bab158412d6fb65b3556",
+      "elapsed_seconds": 0.0030179169989423826,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/071_rbTreeRef.ndjson",
+      "rc": 0,
+      "sha256": "2c88f371f5859df7de86e51fe52fc85d9be7fb242ad61ef0d4155b1263812ab6",
+      "elapsed_seconds": 0.0071438750019297,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/072_boolPropRec.ndjson",
+      "rc": 0,
+      "sha256": "a360387a4cef76fa0a83ea4e9080f65d6170289b25aaaece7ff6301ffe11b305",
+      "elapsed_seconds": 0.003227375003916677,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/074_existsRec.ndjson",
+      "rc": 0,
+      "sha256": "572a2975c19e88123eca7c032a4915e7641c4d2fe6d81f95ee52597ef33f057e",
+      "elapsed_seconds": 0.003348457998072263,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/075_typeSingletonRecReduction.ndjson",
+      "rc": 0,
+      "sha256": "055d92f0c45196c33862eeca4610d988a9be97375009725ca51e3ef64a10b832",
+      "elapsed_seconds": 0.003719833999639377,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/076_sortElimPropRec.ndjson",
+      "rc": 0,
+      "sha256": "9b443e52e98b316eb0ee92484016986db4b7a62397de64d2ed1f8b6323905d3e",
+      "elapsed_seconds": 0.0035970419994555414,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/077_sortElimProp2Rec.ndjson",
+      "rc": 0,
+      "sha256": "eaaa3909ab1527239fa0373e392464e6941097162531033d9a7ad422e7cb9945",
+      "elapsed_seconds": 0.0042905410009552725,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/078_boolRecEqns.ndjson",
+      "rc": 0,
+      "sha256": "4fc92c213242a1fadda56ef895988f4407df5fbb495805eb565e76c794ebe92d",
+      "elapsed_seconds": 0.0047689589991932735,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/079_prodRecEqns.ndjson",
+      "rc": 0,
+      "sha256": "f6d9afec199974f6658dfd9609b5eb6256ef562d6ab9ee1c8899620314d233a6",
+      "elapsed_seconds": 0.00467262500023935,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/080_nRecReduction.ndjson",
+      "rc": 0,
+      "sha256": "36eb71b330ee527eb6b3171b4f691c111ff229ad46ba58d4e450b95dae8a412d",
+      "elapsed_seconds": 0.005282083999190945,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/081_listRecReduction.ndjson",
+      "rc": 0,
+      "sha256": "09c0bde7c1899d49cad18951123ed5fe6f54d6bf2cef6c6d0ba464e4571ae370",
+      "elapsed_seconds": 0.006865666000521742,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/082_RBTree.id_spec.ndjson",
+      "rc": 0,
+      "sha256": "88349328dd81100fb22396180bef9b5c2b0997275b7c3c672b19a7ac87ed72f9",
+      "elapsed_seconds": 0.02069258299889043,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/083_And.right.ndjson",
+      "rc": 0,
+      "sha256": "9d2b8259b2c66875bcad6be7401d02efa153c01f00a24d03bd9e908ec5e97c42",
+      "elapsed_seconds": 0.004286666997359134,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/084_Prod.snd.ndjson",
+      "rc": 0,
+      "sha256": "8cdc1c4b40f2ae776fc7bc898b01d9a9c4efb9f7bf0099162dbd7d2aff705464",
+      "elapsed_seconds": 0.003890459003741853,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/085_PProd.snd.ndjson",
+      "rc": 0,
+      "sha256": "c1936a363731616d9a7971eac15ae781fbf8ccd5c4d545e289e4020eb02772a5",
+      "elapsed_seconds": 0.003638417001639027,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/086_PSigma.snd.ndjson",
+      "rc": 0,
+      "sha256": "9a84a3af533679eadb262be72db7a2d17798aaeba1aea38d4144c9c003c4e179",
+      "elapsed_seconds": 0.0038142090052133426,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/089_projProp1.ndjson",
+      "rc": 0,
+      "sha256": "f5619c6c975d73e06ed3b80fa20142f62f7ce0696dc7c8fdce648a9ecfcc800d",
+      "elapsed_seconds": 0.0041152500052703544,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/091_projProp3.ndjson",
+      "rc": 0,
+      "sha256": "a9d95724c06cc3571103baff68ce75eb3dad454bf935ced5da20deb2e7993348",
+      "elapsed_seconds": 0.004321374995924998,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/095_projDataIndexRec.ndjson",
+      "rc": 0,
+      "sha256": "ac7867ab127119a680f62464f4cde3491cb4a5e73b496f2f13b8e3d650f99a5a",
+      "elapsed_seconds": 0.00393445800000336,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/098_projRed.ndjson",
+      "rc": 0,
+      "sha256": "2fe756cf6d2b1e6e2c819f8858b1881d88f4f99564257911c730ca2756aa959d",
+      "elapsed_seconds": 0.0041350410028826445,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/099_ruleK.ndjson",
+      "rc": 0,
+      "sha256": "39dab799309ad05a2f30670776d74b4e6b177175271291dd078a3d3737eef338",
+      "elapsed_seconds": 0.003760374995181337,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/102_aNatLit.ndjson",
+      "rc": 0,
+      "sha256": "46963fdc4eab7dca74ccaaaa9986f28bbf15fef7f3ba2055681f7b10ee83f930",
+      "elapsed_seconds": 0.0033498330012662336,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/103_natLitEq.ndjson",
+      "rc": 0,
+      "sha256": "1918f1c8c5454442474d1db51cf6480182f7e13e31b5b1dd1319751aa8991f90",
+      "elapsed_seconds": 0.003509291993395891,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/104_proofIrrelevance.ndjson",
+      "rc": 0,
+      "sha256": "cf25561da46b200deb6aef5aa82fb3bb6051913dae7e92dca1c8b6bb8ff35ba0",
+      "elapsed_seconds": 0.0036930420028511435,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/106_proofIrrelevanceWhnf.ndjson",
+      "rc": 0,
+      "sha256": "f697489bbf650d37795af2f6f347029016e7b517bb19b03179d51a065c2fefa2",
+      "elapsed_seconds": 0.0035839580013998784,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/107_proofIrrelevanceUnderBinder.ndjson",
+      "rc": 0,
+      "sha256": "f7b2b47cff6e252ac53454889406ef852a97357ccd0a03fcbfcd1f0cae3b83ee",
+      "elapsed_seconds": 0.0032644590028212406,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/108_unitEta1.ndjson",
+      "rc": 0,
+      "sha256": "2771b6cf7b538a8718718696b9d1bcae86f9612a0a933c15140012aa6b7cf733",
+      "elapsed_seconds": 0.0037062080009491183,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/109_unitEta2.ndjson",
+      "rc": 0,
+      "sha256": "14b6411c82f6401fedd29cffdf8a27d8adfc41938a5f28801d5ffbf151b5da0c",
+      "elapsed_seconds": 0.0035470420043566264,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/110_unitEta3.ndjson",
+      "rc": 0,
+      "sha256": "650b2ff08d1c246397a1605cbaa8a6f756cc68ef6304c2476ac1d13ced56087e",
+      "elapsed_seconds": 0.0034612080053193495,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/112_structEta.ndjson",
+      "rc": 0,
+      "sha256": "a686b22362e05728ef0fce00646dd6f63996ab66e89290bf13ecd492cac17a6d",
+      "elapsed_seconds": 0.004910583003947977,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/114_funEta.ndjson",
+      "rc": 0,
+      "sha256": "da363ebc05eca706a952bc9496fe76999850a12b63fe59243707e2c8a581e76d",
+      "elapsed_seconds": 0.003777041994908359,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/115_funEtaDep.ndjson",
+      "rc": 0,
+      "sha256": "a7fbe049abfd96e27d3904a6aea9dd7b9d4fe9c49e5095aacf369678f7af6438",
+      "elapsed_seconds": 0.0036166670033708215,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/119_reduceCtorParamRefl.mk.ndjson",
+      "rc": 0,
+      "sha256": "dfc7393cbdc2b2de3d98494acaef6d91d258fd7b3f5f5aa3ddc4ef8b9bfe072f",
+      "elapsed_seconds": 0.0034237079962622374,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/120_reduceCtorParamRefl2.mk.ndjson",
+      "rc": 0,
+      "sha256": "755bcadfde765454067ad543e81f61cef5ee0e50a724cb0c838d4078a62fad97",
+      "elapsed_seconds": 0.0034635839983820915,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/121_rTreeRec.ndjson",
+      "rc": 0,
+      "sha256": "c6a0ad6e173b048457b5b768ba6f8e257d949df3b65c3c6982cdb18d69e031dd",
+      "elapsed_seconds": 0.0038614580043940805,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/122_rtreeRecReduction.ndjson",
+      "rc": 0,
+      "sha256": "a191e8bf9036a3bae39b6095ac535eb23ee2ecffc7d80f1560eb3625358492a6",
+      "elapsed_seconds": 0.004506792000029236,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/123_accRecType.ndjson",
+      "rc": 0,
+      "sha256": "7b8b4753ff45ddbd9f93f61e78bfa9cf6cb0d217e6901e9fee6d81fc8894fbee",
+      "elapsed_seconds": 0.00605395800084807,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/124_accRecReduction.ndjson",
+      "rc": 0,
+      "sha256": "8cfbf2d3768db33e875e6b5a00856a257146a508bc5a11c63eecdaed9a78cca9",
+      "elapsed_seconds": 0.005742540997744072,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/126_quotMkType.ndjson",
+      "rc": 0,
+      "sha256": "98824b3b879da8e81d1801ced0b42430fcec33e686014f36b69ac908b1da19c8",
+      "elapsed_seconds": 0.00390999999945052,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/127_quotIndType.ndjson",
+      "rc": 0,
+      "sha256": "312dc3ffc10c664b544a22df7c4a19a5b843bdf5f44ee56e99cb3a2faaf13da7",
+      "elapsed_seconds": 0.0038615840021520853,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/128_quotLiftType.ndjson",
+      "rc": 0,
+      "sha256": "3abbf269039bfe725e22e5ae35438451f87ea200b2434e2e402deac0b9c8faf3",
+      "elapsed_seconds": 0.003862291996483691,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/129_quotSoundType.ndjson",
+      "rc": 0,
+      "sha256": "eb746a91c6b322e9db9e6db05c23a534afd377055246e1e317a15794bdceece8",
+      "elapsed_seconds": 0.004000875000201631,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/130_quotLiftReduction.ndjson",
+      "rc": 0,
+      "sha256": "24ddef406335a38ac813223668785b6bfc456f0125aa5f54559c1d7fbacc9113",
+      "elapsed_seconds": 0.004624958004569635,
+      "terminal": ""
+    },
+    {
+      "case": "good/tutorial/131_quotIndReduction.ndjson",
+      "rc": 0,
+      "sha256": "1afa34bb26783ac3305dca53b2d205efab560dbf38ca3dd84962115f5bab3198",
+      "elapsed_seconds": 0.004184416997304652,
+      "terminal": ""
+    }
+  ],
+  "controls": [
+    {
+      "case": "protected-false-index.ndjson",
+      "rc": 2,
+      "sha256": "2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688",
+      "elapsed_seconds": 0.07752208299643826,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.succ_le_succ:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "case": "protected-eta-ctor-alias.ndjson",
+      "rc": 2,
+      "sha256": "fd1a643c6c52efe34ec0cc0c22e53cdae32561ff80fb533b3bee7064dbd85ea3",
+      "elapsed_seconds": 0.004932165997161064,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=etaCtorAlias:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    }
+  ]
+}

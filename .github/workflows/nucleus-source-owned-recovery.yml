@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      EXPERIMENT: metatron-kernel/evidence/residuals/typed-judgments-2026-10-17/typed-substitution/source
+      EXPERIMENT: metatron-kernel/evidence/residuals/typed-judgments-2026-10-17/completed-application-typed-substitution/source
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
