@@ -1,0 +1,154 @@
+name: Nucleus decisive kernel-computation separators 2026-10-17
+on:
+  push:
+    branches: [research/nucleus-arena-reachability-20261017]
+    paths: [".github/workflows/nucleus-computation-separators-20261017.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  decide-prefix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PR_TOOLCHAIN: leanprover/lean4-pr-releases:pr-release-15738
+      PR_SHA: 154f744b2596e28b4fb75ef9fc6d0ba13557e047
+      LEAN_MERGE: 136fe94cf04a62e91141a840a5ed7d3cd18936bf
+      EXPORTER_SHA: df81913eee5519d5a88ae5b0fd701b5298cc29ab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build unchanged qualified Nucleus and official Lean PR fixture
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.36.0-rc1
+          export PATH="$HOME/.elan/bin:$PATH"
+          elan toolchain install "$PR_TOOLCHAIN"
+          test "$(elan run "$PR_TOOLCHAIN" lean --githash)" = "$PR_SHA"
+          mkdir -p /tmp/issue15727
+          curl -sSfL "https://raw.githubusercontent.com/leanprover/lean4/$LEAN_MERGE/tests/elab/issue15727.lean" > /tmp/issue15727/Issue15727.lean
+          cat >> /tmp/issue15727/Issue15727.lean <<'EOF'
+
+          theorem decide_nat : (1 + 2 : Nat) = 3 := by decide
+          theorem rfl_nat : (1 + 2 : Nat) = 3 := by rfl
+          theorem f_empty_decide : f [] = 0 := by decide
+          theorem f_one_decide : f [1] = 1 := by decide
+          theorem f_two_decide : f [1, 2] = 2 := by decide
+          theorem f_three_decide : f [1, 2, 3] = 6 := by decide
+          EOF
+          echo "$PR_TOOLCHAIN" > /tmp/issue15727/lean-toolchain
+          cat > /tmp/issue15727/lakefile.toml <<'EOF'
+          name = "nucleus_decide_prefix"
+          [[lean_lib]]
+          name = "Issue15727"
+          EOF
+          (cd /tmp/issue15727 && lake build Issue15727)
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter36
+          git -C /tmp/exporter36 checkout -q "$EXPORTER_SHA"
+          echo "$PR_TOOLCHAIN" > /tmp/exporter36/lean-toolchain
+          (cd /tmp/exporter36 && lake build)
+      - name: Compare official-by-decide numerical prefixes with independent Nucleus
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          python3 - <<'PY'
+          import subprocess,json,os,pathlib,time,hashlib
+          tmp=pathlib.Path('/tmp');out=tmp/'evidence';proj=tmp/'issue15727'
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel')
+          exporter=tmp/'exporter36/.lake/build/bin/lean4export'
+          pins=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pins['origin_flags']})
+          env['METATRON_KERNEL_DIAGNOSTICS']='1';env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          decls=['decide_nat','rfl_nat','f_empty_decide','f_one_decide','f_two_decide','f_three_decide']
+          rows=[]
+          for name in decls:
+              p=out/(name+'.ndjson')
+              with p.open('wb') as f:
+                  subprocess.run(['lake','env',str(exporter),'Issue15727','--',name],cwd=proj,stdout=f,check=True,timeout=90)
+              with p.open('rb') as f:
+                  t=time.monotonic();v=subprocess.run([str(binary)],stdin=f,capture_output=True,env=env,timeout=90)
+              rows.append({'decl':name,'rc':v.returncode,'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'time_sec':round(time.monotonic()-t,4),'trace':(v.stderr+v.stdout).decode(errors='replace')[-8000:]})
+              print(name,v.returncode,rows[-1]['bytes'],flush=True)
+              p.unlink()
+          (out/'decide-prefix-report.json').write_text(json.dumps({'lean_sha':os.environ['PR_SHA'],'rows':rows},indent=2)+'\n')
+          PY
+      - name: Preserve decision-prefix evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-decision-prefix
+          path: /tmp/evidence
+  reachability-singletons:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      REACH_SHA: d822b1c70b4a6ec858b54ee51f12b0cb30628982
+      EXPORTER_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build unchanged Nucleus and pinned upstream Arena reachability
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          export PATH="$HOME/.elan/bin:$PATH"
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter34
+          git -C /tmp/exporter34 checkout -q "$EXPORTER_SHA"
+          echo leanprover/lean4:v4.34.1 > /tmp/exporter34/lean-toolchain
+          (cd /tmp/exporter34 && lake build)
+          git clone -q https://github.com/Arrow7000/reachability /tmp/reach
+          git -C /tmp/reach checkout -q "$REACH_SHA"
+          mkdir -p /tmp/reach/bench/Bench
+          cat > /tmp/reach/bench/Bench/Arena.lean <<'EOF'
+          import Bench.Graphs
+          namespace Bench.Arena
+          open Relation
+          set_option Elab.async false
+          theorem path_reachable : TransGen (path 100).Adj 0 99 := by decide +kernel
+          theorem path_unreachable : ¬TransGen (path 100).Adj 1 0 := by decide +kernel
+          theorem grid_reachable : TransGen (grid 10).Adj 0 99 := by decide +kernel
+          theorem random_reachable : TransGen (random 100 3 0).Adj 0 99 := by decide +kernel
+          theorem dag_reachable : TransGen (dag 300).Adj 0 299 := by decide +kernel
+          theorem grid_shortest :
+              (grid 5).shortest 0 24 = some [1, 2, 3, 4, 9, 14, 19] := by decide +kernel
+          end Bench.Arena
+          EOF
+          (cd /tmp/reach && lake update && lake exe cache get && lake build Bench.Arena)
+      - name: Export six singleton dependent closures and classify every Nucleus verdict
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          python3 - <<'PY'
+          import subprocess,json,os,pathlib,time,hashlib
+          tmp=pathlib.Path('/tmp');out=tmp/'evidence';proj=tmp/'reach'
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel')
+          exporter=tmp/'exporter34/.lake/build/bin/lean4export'
+          pins=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pins['origin_flags']})
+          env['METATRON_KERNEL_DIAGNOSTICS']='1';env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          decls=['path_reachable','path_unreachable','grid_reachable','random_reachable','dag_reachable','grid_shortest']
+          rows=[]
+          for name in decls:
+              p=out/(name+'.ndjson')
+              with p.open('wb') as f:subprocess.run(['lake','env',str(exporter),'Bench.Arena','--','Bench.Arena.'+name],cwd=proj,stdout=f,check=True,timeout=120)
+              with p.open('rb') as f:
+                  t=time.monotonic();v=subprocess.run([str(binary)],stdin=f,capture_output=True,env=env,timeout=120)
+              rows.append({'decl':name,'rc':v.returncode,'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'time_sec':round(time.monotonic()-t,4),'trace':(v.stderr+v.stdout).decode(errors='replace')[-8000:]})
+              print(name,v.returncode,rows[-1]['bytes'],flush=True)
+              p.unlink()
+          (out/'reach-singletons-report.json').write_text(json.dumps({'reach_sha':os.environ['REACH_SHA'],'rows':rows},indent=2)+'\n')
+          PY
+      - name: Preserve reachability singleton evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-reachability-singletons
+          path: /tmp/evidence
