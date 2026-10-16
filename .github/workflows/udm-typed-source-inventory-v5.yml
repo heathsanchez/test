@@ -102,6 +102,52 @@ jobs:
                   'native_test_calls_on_real_frontier':0,
               },sort_keys=True))
           PY
+      - name: Read-only typed inventory of pinned exposed real wcwidth Git history
+        timeout-minutes: 4
+        run: |
+          set -euo pipefail
+          source_dir="$RUNNER_TEMP/wcwidth-v5-source"
+          mkdir -p "$source_dir"
+          git -C "$source_dir" init -q
+          git -C "$source_dir" fetch --quiet --no-tags --depth=1 \
+            https://github.com/jquast/wcwidth.git \
+            784d08c6cf6b67e19f34ae5ddb9bb8b4aa4f17fe
+          export UDM_V5_EXPOSED_SOURCE="$source_dir"
+          python -B - <<'PY' | tee qualification/typed-source-v5/EXPOSED_REAL_GIT_DIAGNOSTIC.json
+          import hashlib,json,os
+          from pathlib import Path
+          from research.unified_consequence_runtime import typed_source_inventory_v5 as typed
+          from research.unified_consequence_runtime import decisive_native_verify as original
+          commit='784d08c6cf6b67e19f34ae5ddb9bb8b4aa4f17fe'
+          root=Path(os.environ['UDM_V5_EXPOSED_SOURCE']).absolute()
+          result=typed.snapshot(root,commit)
+          modes={m['path']:m['mode'] for m in result['manifest']}
+          assert result['status']=='TYPED_INVENTORY_ONLY'
+          assert modes.get('README.rst')=='120000'
+          assert result['counts']['regular']>0
+          assert result['counts']['symlink']>0
+          assert result['counts']['gitlink']>0
+          assert len(result['manifest'])==sum(result['counts'].values())
+          try:
+              original._snapshot(root,commit)
+          except ValueError as e:
+              assert 'only regular tracked files' in str(e)
+          else:
+              raise AssertionError('original native verifier unexpectedly admitted nonregular source')
+          report={
+            'status':'EXPOSED_REAL_SOURCE_TYPED_INVENTORY_ONLY',
+            'repository':'jquast/wcwidth',
+            'original_source_commit':commit,
+            'mode_counts':result['counts'],
+            'mode_120000_readme':'README.rst',
+            'git_tree':result['git_tree'],
+            'manifest_sha256':result['manifest_sha256'],
+            'original_native_verifier_still_refuses':True,
+            'native_test_calls':0,'agent_calls':0,
+            'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN','G5':'UNKNOWN','G6':'UNKNOWN',
+          }
+          print(json.dumps(report,sort_keys=True))
+          PY
       - name: Archive reproducible source evidence
         if: always()
         uses: actions/upload-artifact@v4
