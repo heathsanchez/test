@@ -51,6 +51,18 @@ jobs:
         run: |
           set -euo pipefail
           python -B -m unittest research.unified_consequence_runtime.test_native_environment_selection_v4 -v 2>&1 | tee qualification-v4/contracts.log
+      - name: Diagnose the one strict legacy compatibility expectation without modifying frozen tests
+        if: failure()
+        run: |
+          python -B - <<'PY'
+          import json
+          from research.unified_consequence_runtime.test_native_environment_selection_v4 import FrozenV4Contracts,profile
+          t=FrozenV4Contracts()
+          files={"setup.py":b'from setuptools import setup\\nsetup(python_requires=">=3.6")\\n',
+                 "tests/conftest.py":b"import pytest\\nclass Dummy(pytest.collect.File): pass\\n"}
+          result=t.choose(files,profile("old","3.6.12","5.4.3"),profile())
+          print("FROZEN_A08_DIAGNOSTIC="+json.dumps(result,sort_keys=True))
+          PY
       - name: Preserve qualification boundary
         if: always()
         run: |
