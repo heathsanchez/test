@@ -18,6 +18,7 @@ import zipfile
 from packaging.utils import canonicalize_name
 
 from metadata_receipt import validate
+from stdlib_cache import manifest, RUNTIME_SUFFIXES
 
 HERE = Path(__file__).resolve().parent
 
@@ -25,6 +26,63 @@ HERE = Path(__file__).resolve().parent
 def write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, sort_keys=True, indent=2) + '\n')
+
+
+def runtime_import_roots(interpreter):
+    raw = subprocess.check_output([str(interpreter), '-I', '-B', '-c',
+        "import json,sysconfig;print(json.dumps([sysconfig.get_path('stdlib'),sysconfig.get_path('platstdlib'),sysconfig.get_config_var('DESTSHARED')]))"],
+        text=True, env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'})
+    return sorted({str(Path(path).absolute()) for path in json.loads(raw) if path})
+
+
+def warm_runtime(interpreter, receipt_path):
+    """Compile original stdlib sources before freezing their executable caches."""
+    roots = runtime_import_roots(interpreter)
+    before = manifest(roots, exclude_bytecode=True)
+    compilation = None; failure = None; stderr = ''
+    try:
+        process = subprocess.run([str(interpreter), '-I', '-B', str(HERE / 'stdlib_cache.py'),
+            json.dumps(roots)], capture_output=True, text=True, timeout=600,
+            env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'})
+        stderr = process.stderr
+        if process.returncode:
+            raise ValueError('original stdlib compiler failed: ' + str(process.returncode))
+        compilation = json.loads(process.stdout)
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        failure = type(error).__name__ + ': ' + str(error)
+    after = manifest(roots, exclude_bytecode=True)
+    status = ('UNKNOWN_STDLIB_SOURCE_CHANGED' if before != after else
+              'UNKNOWN_STDLIB_COMPILER_FAILURE' if failure else 'PREPARED_STDLIB_BYTECODE')
+    receipt = {'schema': 'UDM_ORIGINAL_STDLIB_CACHE_PREPARATION_V3', 'status': status,
+        'interpreter': str(interpreter), 'import_roots': roots,
+        'source_manifest_before': before, 'source_manifest_after': after,
+        'bytecode_manifest': manifest(roots, suffixes=('.pyc', '.pyo')),
+        'compilation': compilation, 'compiler_error': failure, 'compiler_stderr': stderr}
+    write_json(Path(receipt_path), receipt)
+    if before != after:
+        raise ValueError('original stdlib nonbytecode source bytes changed during preparation')
+    if failure:
+        raise ValueError(failure)
+    return receipt
+
+
+def audit_runtime_freeze(frozen):
+    """Name host byte differences after fixtures; never adjust frozen authority."""
+    runtimes = {}; good = True
+    for ident, record in sorted(frozen['runtimes'].items()):
+        before = dict(record['stdlib_files'])
+        after = dict(manifest(record['import_roots'], suffixes=RUNTIME_SUFFIXES))
+        executable = hashlib.sha256(Path(record['interpreter']).read_bytes()).hexdigest()
+        row = {'added': sorted(after.keys() - before.keys()), 'removed': sorted(before.keys() - after.keys()),
+               'changed': sorted(name for name in before.keys() & after.keys() if before[name] != after[name]),
+               'executable_changed': executable != record['identity']['executable_sha256']}
+        row['changes'] = {name: {'before': before.get(name), 'after': after.get(name)}
+                         for name in row['added'] + row['removed'] + row['changed']}
+        good = good and not (row['added'] or row['removed'] or row['changed'] or row['executable_changed'])
+        runtimes[ident] = row
+    return {'schema': 'UDM_POST_FIXTURE_RUNTIME_BYTE_AUDIT_V3',
+            'status': 'PASS_FROZEN_RUNTIME_BYTES' if good else 'UNKNOWN_RUNTIME_BYTES_CHANGED',
+            'runtimes': runtimes, 'frozen_authority_modified': False}
 
 
 def download(record, directory):
@@ -129,6 +187,8 @@ def prepare(catalog_path, destination, output):
             raise ValueError('runtime version differs from catalog')
         write_json(folder / 'installed-packages.json', actual)
         runtime_map[profile['id']] = str(python)
+    for ident, interpreter in sorted(runtime_map.items()):
+        warm_runtime(interpreter, destination / (ident + '-stdlib-cache.json'))
     write_json(output, runtime_map)
     write_json(destination / 'preparation-receipt.json', {
         'schema': 'UDM_CATALOG_RUNTIME_PREPARATION_V3', 'status': 'PREPARED',
@@ -142,7 +202,14 @@ def main():
     parser.add_argument('--catalog', type=Path, default=HERE.parent / 'ENVIRONMENT_CATALOG.json')
     parser.add_argument('--dest-root', type=Path, default=Path('qualification/runtime-bootstrap'))
     parser.add_argument('--out', type=Path, default=Path('qualification/RUNTIMES.json'))
+    parser.add_argument('--audit-freeze', type=Path)
     args = parser.parse_args()
+    if args.audit_freeze:
+        result = audit_runtime_freeze(json.loads(args.audit_freeze.read_text()))
+        write_json(args.out, result)
+        print(json.dumps(result, sort_keys=True))
+        if result['status'] != 'PASS_FROZEN_RUNTIME_BYTES': raise SystemExit(1)
+        return
     print(json.dumps(prepare(args.catalog, args.dest_root, args.out), sort_keys=True))
 
 

@@ -6,7 +6,6 @@ Selection never supplies execution evidence or widens the research authority.
 from __future__ import annotations
 import json
 import importlib.metadata
-import os
 from pathlib import Path
 import sys
 import time
@@ -44,19 +43,7 @@ def freeze_runtime(interpreter):
 
 
 def _host_stdlib(roots):
-    paths=set()
-    for root in roots:
-        if not Path(root).exists():continue
-        if not Path(root).is_dir():raise ValueError('runtime identity import root unavailable')
-        for folder,dirs,files in os.walk(root):
-            dirs[:]=sorted(name for name in dirs if name not in ('site-packages','dist-packages'))
-            if any(Path(folder,name).is_symlink() for name in dirs):
-                raise ValueError('runtime identity symlink import directory unsupported')
-            for name in files:
-                if name.endswith(('.py','.pyc','.pyo','.so','.pyd','.dll','.dylib')):
-                    paths.add(Path(folder,name).resolve())
-    if not paths:raise ValueError('runtime identity standard library unavailable')
-    return [[str(path),sha256(path.read_bytes())] for path in sorted(paths)]
+    return execution.host_stdlib(roots)
 
 
 def _validate_host_runtime(record,interpreter):
@@ -74,6 +61,7 @@ def validate_runtime(profile,record,*,interpreter=None):
     path=record['interpreter'] if interpreter is None else interpreter
     _validate_host_runtime(record,path)
     actual=execution.runtime_identity(path)
+    _validate_host_runtime(record,path)
     if actual!=record['identity']:raise ValueError('frozen runtime identity differs from executable or stdlib')
     version='.'.join(str(x) for x in actual['version_info'][:3])
     if version!=profile['python_version'] or actual['implementation'].lower()!=profile['python_implementation'].lower():

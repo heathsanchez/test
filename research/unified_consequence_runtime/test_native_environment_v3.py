@@ -77,5 +77,21 @@ class EnvironmentProvisionV3(unittest.TestCase):
   self.assertEqual(current.package_requirements(profile),'pytest==8.3.5 --hash=sha256:'+('a'*64)+'\n')
   profile['package_artifacts']['pytest']['sha256']='forged'
   with self.assertRaisesRegex(ValueError,'artifact'):current.package_requirements(profile)
+ def test_runtime_identity_child_cannot_change_frozen_host_bytes(self):
+  for target in ('executable','stdlib'):
+   with self.subTest(target=target),tempfile.TemporaryDirectory() as tmp:
+    root=pathlib.Path(tmp);exe=root/'python';exe.write_bytes(b'frozen runtime')
+    lib=root/'lib';lib.mkdir();module=lib/'module.py';module.write_text('VALUE=1\n')
+    files=current._host_stdlib([str(lib)])
+    identity={'implementation':'cpython','version_info':[3,11,0,'final',0],
+     'executable_sha256':current.sha256(exe.read_bytes()),'base_prefix':str(root),
+     'stdlib_manifest_sha256':current.fingerprint(files)}
+    record={'interpreter':str(exe),'identity':identity,'import_roots':[str(lib)],'stdlib_files':files}
+    def child(path):
+     (exe if target=='executable' else module).write_bytes(b'changed during child\n')
+     return json.loads(json.dumps(identity))
+    profile=dict(self.profile(),python_version='3.11.0')
+    with patch.object(current.execution,'runtime_identity',side_effect=child):
+     with self.assertRaisesRegex(ValueError,'runtime identity'):current.validate_runtime(profile,record)
 
 if __name__=='__main__':unittest.main()

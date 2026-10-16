@@ -96,32 +96,34 @@ jobs:
           git -C "$UDM_SOURCE_REPOS/msi" fetch --no-tags --depth=1 origin \
             5d448c0ecc82ff3945d009963064ebbb67d2f308
           ln -s "$GITHUB_WORKSPACE" "$UDM_SOURCE_REPOS/test"
-      - name: Run original regressions and v3 fixture contracts
+      - name: Verify pinned unchanged regression source and retained passing logs
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/environment-v3-controller/bin/python" -B - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          path = Path('research/unified_consequence_runtime/archaeology/native-environment-v3/REGRESSION_REUSE.json')
+          receipt = json.loads(path.read_text())
+          assert receipt['status'] == 'REUSE_EXACT_UNCHANGED_TESTED_SOURCE'
+          for group in ('source_pins', 'retained_logs'):
+              for name, digest in receipt[group].items():
+                  assert hashlib.sha256(Path(name).read_bytes()).hexdigest() == digest, (group, name)
+          Path('qualification/REGRESSION_REUSE.json').write_bytes(path.read_bytes())
+          print(json.dumps({'status': receipt['status'], 'original_run_id': receipt['original_run_id'],
+              'original_stage_results': receipt['original_stage_results'],
+              'reuse_boundary': receipt['reuse_boundary'], 'reran_unchanged_regressions': False}, sort_keys=True))
+          PY
+      - name: Run affected v3 contracts including the complete changed worker and runtime
         run: |
           set -euo pipefail
           "$RUNNER_TEMP/environment-v3-controller/bin/python" -B -m unittest \
-            research.unified_consequence_runtime.test_generated_build_materialization \
-            research.unified_consequence_runtime.test_native_suite_authority \
-            research.unified_consequence_runtime.test_generic_native_verify \
-            research.unified_consequence_runtime.test_native_frontier \
-            research.unified_consequence_runtime.test_native_meta_decision \
-            research.unified_consequence_runtime.test_decisive_constructor \
-            research.unified_consequence_runtime.test_decisive_native \
-            research.unified_consequence_runtime.test_qualify_decisive_native \
-            research.unified_consequence_runtime.test_decisive_task_admission \
-            research.unified_consequence_runtime.test_recursive_restart_retention \
-            research.unified_consequence_runtime.test_native_admission_v2 \
-            research.unified_consequence_runtime.test_native_execution_v2 \
-            research.unified_consequence_runtime.test_native_admission_v2_adversarial \
-            research.unified_consequence_runtime.test_native_environment_v2 \
-            research.unified_consequence_runtime.test_native_runtime_v2 \
-            research.unified_consequence_runtime.test_qualify_native_admission_v2 \
             research.unified_consequence_runtime.test_native_environment_selection_v3 \
             research.unified_consequence_runtime.test_native_execution_v3 \
             research.unified_consequence_runtime.test_native_runtime_v3 \
             research.unified_consequence_runtime.test_native_environment_v3 \
             research.unified_consequence_runtime.test_native_environment_bootstrap_v3 \
             research.unified_consequence_runtime.test_qualify_environment_selection_v3 \
+            research.unified_consequence_runtime.test_qualify_native_frontier_v3 \
             -v 2>&1 | tee qualification/contracts.log
       - name: Verify the portable worker against the frozen legacy runtime
         run: |
@@ -131,6 +133,14 @@ jobs:
             research.unified_consequence_runtime.test_native_execution_v3.SelectedInterpreterNativeContracts \
             research.unified_consequence_runtime.test_native_execution_v3.PortableNativeWorkerContracts \
             -v 2>&1 | tee qualification/legacy-contracts.log
+      - name: Retain exact post-fixture runtime byte differences before target access
+        if: ${{ always() && hashFiles('qualification/FREEZE.json') != '' }}
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/environment-v3-controller/bin/python" -B \
+            research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py \
+            --audit-freeze qualification/FREEZE.json \
+            --out qualification/POST_FIXTURE_RUNTIME_AUDIT.json
       - name: Qualify frozen source-derived native environments with raw evidence and costs
         env:
           GH_TOKEN: ${{ github.token }}

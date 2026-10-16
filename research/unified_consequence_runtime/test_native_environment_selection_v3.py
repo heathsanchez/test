@@ -394,6 +394,45 @@ setup(**kw)
             with self.subTest(text=text):
                 self.assertEqual(self.select({'setup.py': text.encode()}, profile())['reason'], 'UNKNOWN_DYNAMIC_METADATA')
 
+    def test_dynamic_execution_namespace_and_builtin_aliases_refuse_literal_metadata_authority(self):
+        statements = [
+            'exec("classifiers[0]=\'Programming Language :: Python :: 3.6\'")',
+            'eval("classifiers.__setitem__(0,\'Programming Language :: Python :: 3.6\')")',
+            'compile("classifiers[0]=\'Programming Language :: Python :: 3.6\'", "<dynamic>", "exec")',
+            'run=exec\nrun("classifiers.clear()")',
+            'from builtins import exec as run\nrun("classifiers.clear()")',
+            'import builtins as b\nb.exec("classifiers.clear()")',
+            'import builtins as b\nnamespace=b.__dict__\nnamespace["exec"]("classifiers.clear()")',
+            'namespace=globals()\nnamespace["classifiers"][0]="Programming Language :: Python :: 3.6"',
+            'namespace=locals()\nnamespace["classifiers"].clear()',
+            'namespace=vars()\nnamespace["classifiers"].clear()',
+            'from builtins import globals as current\ncurrent()["classifiers"].clear()',
+            'import builtins as b\nrun=getattr(b,"exec")\nrun("classifiers.clear()")',
+            '__builtins__["exec"]("classifiers.clear()")',
+            '__import__("builtins").exec("classifiers.clear()")',
+            'def helper(): pass\nhelper.__globals__["classifiers"].clear()',
+            'import sys\nsys._getframe().f_globals["classifiers"].clear()',
+            'import inspect\ninspect.currentframe().f_locals["classifiers"].clear()',
+        ]
+        for statement in statements:
+            raw = ("from setuptools import setup\nclassifiers=['Programming Language :: Python :: 3.12']\n"
+                   + statement + "\nsetup(classifiers=classifiers)\n").encode()
+            with self.subTest(statement=statement):
+                self.assertEqual(self.select({'setup.py': raw}, profile())['reason'], 'UNKNOWN_DYNAMIC_METADATA')
+
+    def test_dynamic_execution_words_in_comments_and_strings_do_not_refuse_literal_metadata(self):
+        files = {'setup.py': b'''from setuptools import setup
+# exec eval compile globals locals vars getattr __builtins__
+description="exec eval compile globals locals vars getattr __builtins__"
+setup(python_requires='>=3.11', description=description)
+'''}
+        self.assertEqual(self.select(files, profile())['status'], 'CANDIDATE_SOURCE_ENVIRONMENT')
+
+    def test_dynamic_setup_call_is_unknown_even_without_literal_setup_call(self):
+        files = {'tox.ini': b'[tox]\nenvlist=py312\n',
+                 'setup.py': b'exec("setup(python_requires=\'<3.7\')")\n'}
+        self.assertEqual(self.select(files, profile())['reason'], 'UNKNOWN_DYNAMIC_METADATA')
+
     def test_every_source_and_metadata_hash_is_bound_and_tamper_is_rejected(self):
         files = {'pyproject.toml': b'[project]\nrequires-python=">=3.11"\n', 'pkg.py': b'x=1\n'}
         cat = catalog(profile())

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -43,7 +44,7 @@ DEFAULTS = {
     'training_unique_calls': 128, 'acquisition_native_calls': 512,
     'training_seconds': 3600, 'per_search_seconds': 3600,
     'collection_seconds': 60, 'execution_seconds': 600,
-    'future_native_reserve': 64, 'requested_roles': 3,
+    'future_native_reserve': 64, 'requested_roles': 2,
     'selection_ties': 'UNKNOWN; original 36-policy plus cold carrier unchanged',
     'G3': 'UNKNOWN_UNQUALIFIED_SECOND_GENERATION_AND_CAUSAL_CONTROLS',
 }
@@ -58,7 +59,7 @@ ENVIRONMENT_GATE_FILES = tuple('research/unified_consequence_runtime/'+name+'.py
     'research/unified_consequence_runtime/archaeology/native-environment-v3/ENVIRONMENT_CATALOG.json',
     'research/unified_consequence_runtime/archaeology/native-environment-v3/PACKAGE_METADATA.json',
     *(('research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/'+name)
-      for name in ('prepare_runtimes.py', 'metadata_receipt.py', 'METADATA_RECEIPT.json',
+      for name in ('prepare_runtimes.py', 'stdlib_cache.py', 'metadata_receipt.py', 'METADATA_RECEIPT.json',
                    'official-legacy-installer.json', 'legacy-pins.txt')))
 
 
@@ -79,6 +80,35 @@ def _bound_json(record):
     return json.loads(path.read_text())
 
 
+def _external_json(record):
+    if (not isinstance(record, dict) or set(record) != {'path', 'sha256'}
+            or not re.fullmatch('[0-9a-f]{64}', record.get('sha256', ''))):
+        raise ValueError('exact external authority descriptor required')
+    path = Path(record['path'])
+    if (not path.is_absolute() or path.is_symlink() or path.resolve() != path or not path.is_file()
+            or digest(path.read_bytes()) != record['sha256']):
+        raise ValueError('external authority bytes differ')
+    return json.loads(path.read_text())
+
+
+def _write_record(path, value):
+    path = Path(path).resolve(); path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(canonical(value)+'\n')
+    return {'path': str(path), 'sha256': digest(path.read_bytes())}
+
+
+def _committed_record(repo, record, commit='HEAD', *, as_json=True):
+    repo = Path(repo).resolve(); path = Path(record['path'])
+    path = path if path.is_absolute() else repo/path
+    if path.is_symlink() or path.resolve() != path or not path.is_relative_to(repo):
+        raise ValueError('authority input must be a canonical committed repository path')
+    raw = subprocess.check_output(['git', '--no-replace-objects', '-C', str(repo),
+                                   'show', commit+':'+path.relative_to(repo).as_posix()], stderr=subprocess.PIPE)
+    if (digest(raw) != record['sha256'] or path.read_bytes() != raw):
+        raise ValueError('authority input differs from its committed Git bytes')
+    return json.loads(raw) if as_json else raw
+
+
 def protocol():
     _guard()
     if not PROTOCOL.is_file():
@@ -87,7 +117,7 @@ def protocol():
     if (value.get('schema') != DEFAULTS['schema']
             or value.get('search_budget') != 8 or value.get('candidate_cap_per_file') != 64
             or value.get('acquisition_native_calls') != 512 or value.get('training_seconds') != 3600
-            or value.get('requested_roles') != 3):
+            or value.get('requested_roles') != 2):
         raise ValueError('wrong prospective v3 policy or resource boundary')
     return value
 
@@ -147,7 +177,7 @@ def validate_runtime_inventory(inventory, catalog):
     return inventory['runtimes']
 
 
-def select_screened_roles(pool, reports, requested=3):
+def select_screened_roles(pool, reports, requested=2):
     """Pure fixed-order eligibility; native PASS and FAIL are equivalent here."""
     if not isinstance(pool, list) or not isinstance(reports, list) or len(pool) != len(reports):
         raise ValueError('complete ordered screening pool and all reports required')
@@ -201,6 +231,23 @@ def require_screening_manifest(value):
             or audit.get('eligibility_rule') != 'PASS_NATIVE_OR_FAIL_NATIVE_IDENTICAL'
             or audit.get('all_screened_cases_and_costs_retained') is not True):
         raise ValueError('independent screening audit does not bind exact retained cases and costs')
+    authority = _external_json(screening['screening_authority'])
+    _committed_record(HERE.parents[1], screening['screening_authority'])
+    meter = _external_json(screening['screening_meter'])
+    if (authority.get('schema') != 'UDM_NATIVE_CLI_AUTHORITY_V3' or authority.get('operation') != 'screen'
+            or meter.get('schema') != 'UDM_ORDERED_SCREENING_METER_V3'
+            or meter.get('authority_sha256') != screening['screening_authority']['sha256']
+            or meter.get('pending') is not None or meter.get('accounting_complete') is not True
+            or len(meter.get('cases', [])) != len(pool)):
+        raise ValueError('all predeclared pool members require complete retained ordered screening')
+    for index, (spec, report, case) in enumerate(zip(pool, screening['reports'], meter['cases'])):
+        if (case.get('index') != index or case.get('spec_sha256') != worker.fingerprint(spec)
+                or case.get('accounting_complete') is not True or case.get('report') != report['sealed_report']):
+            raise ValueError('screening envelope differs from complete ordered meter and sealed report')
+    prepared_source = subprocess.check_output(['git', '--no-replace-objects', '-C', str(HERE.parents[1]),
+        'show', meter['source_commit']+':research/unified_consequence_runtime/qualify_native_frontier_v3.py'])
+    if digest(prepared_source) != _LOADED_SHA256:
+        raise ValueError('prospective controller changed after screening source access')
     return screening
 
 
@@ -209,21 +256,13 @@ def write_freeze(repo, out, runtime_paths=None):
     if value.get('state') != 'READY_TO_FREEZE_NO_LEARNER_SOURCE_ACCESS':
         raise ValueError('prospective protocol is prepared but not ready to freeze')
     repo = Path(repo).resolve()
-    if subprocess.check_output(['git', '-C', str(repo), 'status', '--porcelain']).strip():
-        raise ValueError('commit complete v3 protocol and implementation before learner source access')
-    inventory = freeze_runtime_inventory(runtime_paths, _bound_json(value['catalog']))
+    from .qualify_environment_selection_v3 import freeze_source, _source_paths
     head = subprocess.check_output(['git', '-C', str(repo), 'rev-parse', 'HEAD'], text=True).strip()
-    names = subprocess.check_output(['git', '-C', str(repo), 'ls-files',
-        'research/unified_consequence_runtime', '.github/workflows/udm-native-frontier-v3.yml',
-        '.github/workflows/udm-native-environment-selection-v3.yml'], text=True).splitlines()
-    files = {}
-    for name in names:
-        raw = subprocess.check_output(['git', '--no-replace-objects', '-C', str(repo), 'show', head+':'+name])
-        if (repo/name).read_bytes() != raw: raise ValueError('working source differs from commit')
-        files[name] = digest(raw)
+    source = freeze_source(repo, 'fa6bb190eff9b374ab7a95aaf9c618ad2db31419', _source_paths(repo, head))
+    inventory = freeze_runtime_inventory(runtime_paths, _bound_json(value['catalog']))
     committed = int(subprocess.check_output(['git', '-C', str(repo), 'show', '-s', '--format=%ct', head], text=True))
-    result = {'schema': 'UDM_NATIVE_FRONTIER_FREEZE_V3', 'source_commit': head,
-        'frozen_at_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(committed)), 'files': files,
+    result = {'schema': 'UDM_NATIVE_FRONTIER_FREEZE_V3', **source,
+        'frozen_at_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(committed)),
         'protocol_sha256': digest(PROTOCOL.read_bytes()), 'environment_gate': gate,
         'runtime_inventory': inventory,
         'screening_sha256': value['screening']['sha256'], 'screening_costs': screening.get('costs'),
@@ -234,12 +273,20 @@ def write_freeze(repo, out, runtime_paths=None):
 
 
 def check_freeze(repo, path):
+    from .qualify_environment_selection_v3 import _source_paths, _preserved_baseline
     result = json.loads(Path(path).read_text()); repo = Path(repo); value = protocol()
     head = subprocess.check_output(['git', '-C', str(repo), 'rev-parse', 'HEAD'], text=True).strip()
     if result.get('schema') != 'UDM_NATIVE_FRONTIER_FREEZE_V3' or result.get('source_commit') != head:
         raise ValueError('prospective freeze/execution source differs')
+    if (result.get('baseline_commit') != 'fa6bb190eff9b374ab7a95aaf9c618ad2db31419'
+            or result.get('all_baseline_files_preserved') is not True
+            or set(result.get('files', {})) != set(_source_paths(repo, head))):
+        raise ValueError('prospective freeze omits exact committed source or baseline preservation')
+    _preserved_baseline(repo, result['baseline_commit'], head)
     for name, expected in result['files'].items():
-        if digest((repo/name).read_bytes()) != expected: raise ValueError('frozen v3 implementation changed')
+        raw = subprocess.check_output(['git', '--no-replace-objects', '-C', str(repo), 'show', head+':'+name])
+        if digest(raw) != expected or (repo/name).read_bytes() != raw:
+            raise ValueError('frozen v3 implementation changed or differs from committed source')
     if (result['protocol_sha256'] != digest(PROTOCOL.read_bytes())
             or require_environment_gate(value) != result['environment_gate']
             or result['screening_sha256'] != value['screening']['sha256']):
@@ -247,6 +294,143 @@ def check_freeze(repo, path):
     require_screening_manifest(value)
     validate_runtime_inventory(result.get('runtime_inventory'), _bound_json(value['catalog']))
     return result
+
+
+def cli_authority(path, expected_sha256, operation):
+    """A source-reading CLI requires an externally pinned parent authority."""
+    if not path or not expected_sha256:
+        raise ValueError('external authority and its independently supplied SHA256 are required')
+    value = protocol(); require_environment_gate(value)
+    descriptor = {'path': str(Path(path).resolve()), 'sha256': expected_sha256}
+    ticket = _external_json(descriptor)
+    if (ticket.get('schema') != 'UDM_NATIVE_CLI_AUTHORITY_V3' or ticket.get('operation') != operation
+            or Path(ticket.get('repo', '')).resolve() != HERE.parents[1]):
+        raise ValueError('wrong external CLI authority type or repository')
+    if operation == 'screen':
+        _committed_record(ticket['repo'], descriptor)
+        return ticket, descriptor, None
+    if operation not in ('catalog', 'agent'):
+        raise ValueError('unsupported external CLI authority operation')
+    frozen = check_freeze(ticket['repo'], ticket['freeze']['path'])
+    if digest(Path(ticket['freeze']['path']).read_bytes()) != ticket['freeze']['sha256']:
+        raise ValueError('external CLI authority freeze bytes differ')
+    parent = _external_json(ticket['parent'])
+    if (parent.get('freeze') != ticket['freeze'] or parent.get('controller_source_sha256') != _LOADED_SHA256
+            or frozen['files'].get('research/unified_consequence_runtime/qualify_native_frontier_v3.py') != _LOADED_SHA256):
+        raise ValueError('external parent receipt has wrong freeze or controller lineage')
+    return ticket, descriptor, parent
+
+
+def _prepared_context(parent, freeze_descriptor):
+    if parent.get('schema') != 'UDM_PREPARED_NATIVE_CONTEXT_V3' or parent.get('freeze') != freeze_descriptor:
+        raise ValueError('wrong prepared native parent context')
+    spec = parent['spec']; selected = json.loads(METADATA.read_text())['selected']
+    if spec not in selected: raise ValueError('prepared source is outside exact frozen role metadata')
+    release = _external_json(parent['source_release'])
+    if (release.get('schema') != 'UDM_NATIVE_SOURCE_RELEASE_V3' or release.get('freeze') != freeze_descriptor
+            or release.get('spec_sha256') != worker.fingerprint(spec)
+            or release.get('role') != spec['role']
+            or spec['role'] != 'TRAINING' and (release.get('policy_fixed') is not True
+                or not release.get('policy_id') or not release.get('program'))):
+        raise ValueError('prepared future source has no exact post-selection release receipt')
+    setup = parent['setup']; contract = setup['contract']; bounds = setup['source_boundaries']
+    if (setup['status'] != 'PREPARED' or contract['repository'] != spec['repo']
+            or contract['protocol_binding'] != freeze_descriptor['sha256']
+            or bounds.get('base_commit') != spec['base_commit']
+            or bounds.get('author_test_head_commit') != spec['head_commit']
+            or bounds.get('augmented_commit') != contract['commit']
+            or bounds.get('head_production_fetched') is not False or bounds.get('production_preserved') is not True):
+        raise ValueError('prepared context differs from frozen source-preserving frontier')
+    identity, files, _ = worker.original._snapshot(contract['repo_path'], contract['commit'])
+    if any(contract[key] != expected for key, expected in identity.items()):
+        raise ValueError('prepared source identity changed')
+    _, base, _ = worker.original._snapshot(contract['repo_path'], spec['base_commit'])
+    tests = {row['filename']: row for row in spec['files'] if is_test(row['filename'])}
+    if any(name not in files or hashlib.sha1(b'blob '+str(len(files[name])).encode()+b'\0'+files[name]).hexdigest()
+           != row['sha'] for name, row in tests.items()) or files != {**base, **{name: files[name] for name in tests}}:
+        raise ValueError('prepared catalog source changed production or author-test Git blobs')
+    baseline = parent['baseline']
+    if baseline['contract'] != contract or baseline['candidate'] != {'replacements': []}:
+        raise ValueError('prepared context has wrong unrepaired native residual')
+    worker.validate_receipt(contract, baseline['candidate'], setup['authority'], parent['certificate'],
+                            baseline['receipt'], policy=setup['policy'], independent=False)
+    return spec, setup, baseline
+
+
+def catalog_request(spec, ticket, parent):
+    role, setup, baseline = _prepared_context(parent, ticket['freeze'])
+    expected = {'repo': setup['contract']['repo_path'], 'commit': setup['contract']['commit'],
+        'production_paths': [row['filename'] for row in role['files']
+                             if row['filename'].endswith('.py') and not is_test(row['filename'])],
+        'triskelion': str(Path(parent['source_repos'])/'triskelion'),
+        'observation': native_observation(baseline['receipt']), 'cap': 64}
+    spec = dict(spec); spec.pop('msi', None)
+    if spec != expected or baseline['receipt']['status'] != 'FAIL_NATIVE':
+        raise ValueError('catalog request differs from exact frozen constructor source and observation')
+    return expected
+
+
+def screening_request(request, ticket, descriptor):
+    from .qualify_environment_selection_v3 import freeze_source, _source_paths
+    value = protocol()
+    if ticket.get('environment_gate') != value['environment_gate']:
+        raise ValueError('screening ticket has wrong qualified environment gate')
+    prequery = _committed_record(ticket['repo'], ticket['prequery'])
+    pool = _committed_record(ticket['repo'], ticket['pool'])
+    if (prequery.get('state') != 'PREQUERY_COMMITTED_BEFORE_QUERIES'
+            or pool.get('prequery_execution_sha256') != ticket['prequery']['sha256']
+            or request.get('protocol_binding') != descriptor['sha256']
+            or type(request.get('pool_index')) is not int or not 0 <= request['pool_index'] < len(pool['pool'])
+            or request.get('spec') != pool['pool'][request['pool_index']]):
+        raise ValueError('screening request differs from committed prequery, pool member, order or binding')
+    commit = prequery.get('source_commit')
+    if (not isinstance(commit, str) or not re.fullmatch('[0-9a-f]{40}', commit)
+            or prequery.get('environment_gate') != ticket['environment_gate']
+            or prequery.get('target_query_count_before_receipt') != 0):
+        raise ValueError('prequery execution lacks exact source commitment and qualified query boundary')
+    records = {}
+    for key in ('plan', 'code', 'gate_descriptor'):
+        record = prequery.get(key)
+        if not isinstance(record, dict) or record.get('source_commit') != commit:
+            raise ValueError('prequery plan/code/gate descriptor is not source-committed')
+        records[key] = _committed_record(ticket['repo'], record, commit=commit, as_json=key != 'code')
+        _committed_record(ticket['repo'], record, as_json=key != 'code')
+    wrapper = records['gate_descriptor']
+    if (set(wrapper) != {'environment_gate', 'catalog'} or wrapper['environment_gate'] != ticket['environment_gate']
+            or wrapper['catalog'] != value['catalog']):
+        raise ValueError('committed prequery gate/catalog differs from independently qualified source')
+    require_environment_gate(wrapper)
+    head = subprocess.check_output(['git', '-C', ticket['repo'], 'rev-parse', 'HEAD'], text=True).strip()
+    source = freeze_source(ticket['repo'], 'fa6bb190eff9b374ab7a95aaf9c618ad2db31419',
+                           _source_paths(ticket['repo'], head))
+    output_root = Path(ticket['output_root'])
+    if not output_root.is_absolute() or output_root.resolve() != output_root:
+        raise ValueError('fixed canonical screening output root required')
+    return pool, source, output_root
+
+
+def agent_request(arm_path, ticket, parent):
+    if parent.get('schema') != 'UDM_NATIVE_AGENT_PARENT_RECEIPT_V3':
+        raise ValueError('immutable external agent parent receipt required')
+    arm_path = Path(arm_path).resolve(); arm = _external_json(parent['arm'])
+    if str(arm_path) != parent['arm']['path']:
+        raise ValueError('agent arm differs from immutable parent publication')
+    prepared = _external_json(parent['prepared_context'])
+    _prepared_context(prepared, ticket['freeze'])
+    if (arm.get('protocol_binding') != ticket['freeze']['sha256']
+            or arm.get('meter_path') != str(arm_path.parent/'ARM_METER.json')
+            or arm.get('released_at_unix') != parent['released_at_unix']
+            or worker.fingerprint(arm.get('common_acquisition_costs')) != parent['common_costs_sha256']
+            or arm.get('common_acquisition_wall_seconds') != parent['common_wall_seconds']):
+        raise ValueError('agent catalog, source, common costs or fixed meter differs from parent authority')
+    meter_path = arm_path.parent/'ARM_METER.json'
+    if not meter_path.is_file(): raise ValueError('published agent meter is missing; budget cannot restart')
+    meter = json.loads(meter_path.read_text())
+    if (meter['arm_sha256'] != worker.fingerprint(arm)
+            or meter['started_at_unix'] != parent['started_at_unix']
+            or meter['native_calls'] < parent['common_native_calls']):
+        raise ValueError('published agent meter was reset or replayed')
+    return arm
 
 
 def isolated_binding(name):
@@ -287,6 +471,22 @@ def _attempt_delta(before):
     return delta, all(value >= 0 for value in delta.values())
 
 
+def _partial_report(path):
+    """Optional recovery never prevents private launch deltas being retained."""
+    raw = None
+    try:
+        raw = Path(path).read_bytes(); value = json.loads(raw)
+        if not isinstance(value, dict) or not isinstance(value.get('costs', {}), dict):
+            raise ValueError('checked report and costs must be objects')
+        costs = value.get('costs', {})
+        if any(type(costs.get(key, 0)) is not int or costs.get(key, 0) < 0
+               for key in ('native_calls', 'collection_calls', 'subprocess_attempts')):
+            raise ValueError('invalid checked report launch counts')
+        return {'sha256': digest(raw), 'costs': costs, 'valid': True}
+    except (OSError, ValueError, TypeError):
+        return {'sha256': digest(raw) if raw is not None else None, 'costs': {}, 'valid': False}
+
+
 def acquisition_budget(machine, scope, *, reserve=True):
     arm = getattr(machine, '_v3_arm', 'COMMON')
     if any(row.get('accounting_complete') is False and row.get('arm', 'COMMON') in ('COMMON', arm)
@@ -315,15 +515,25 @@ def _tag_new_costs(machine, before, attempt_before=...):
         row.setdefault('arm', getattr(machine, '_v3_arm', 'COMMON'))
         if row.get('phase') in NATIVE_PHASES and row.get('output') and not row.get('costs'):
             path = Path(row['output'])/'execution/checked-report.json'
-            if path.is_file():
-                try: row['costs'] = json.loads(path.read_text()).get('costs', {})
-                except (OSError, ValueError): pass
-        if row.get('phase') in NATIVE_PHASES and complete is not None:
-            row['controller_attempts'] = delta; row['accounting_complete'] = complete
-            if complete:
-                costs = dict(row.get('costs', {}))
-                for key in ('native_calls', 'collection_calls'): costs[key] = max(costs.get(key, 0), delta[key])
-                row['costs'] = costs
+            if path.is_file(): row['costs'] = _partial_report(path)['costs']
+    if complete is not None:
+        rows = [row for row in machine.costs[before:] if row.get('phase') in NATIVE_PHASES]
+        if complete:
+            if any(not isinstance(row.get('costs', {}), dict) or any(
+                    type(row.get('costs', {}).get(key, 0)) is not int or row.get('costs', {}).get(key, 0) < 0
+                    for key in ('native_calls', 'collection_calls')) for row in rows):
+                complete = False
+            else:
+                totals = {key: sum(row.get('costs', {}).get(key, 0) for row in rows)
+                          for key in ('native_calls', 'collection_calls')}
+                remainder = {key: max(0, delta[key]-totals[key]) for key in totals}
+                if any(remainder.values()):
+                    row = {'phase': 'independent_native_v2_receipt_reexecution', 'costs': remainder,
+                           'status': 'UNKNOWN_INTERRUPTED_NATIVE_EVIDENCE', 'arm': getattr(machine, '_v3_arm', 'COMMON')}
+                    machine.costs.append(row); rows.append(row)
+        for index, row in enumerate(rows):
+            row['accounting_complete'] = row.get('accounting_complete', True) and complete
+            if index == 0: row['interval_controller_attempts'] = delta
     if complete is False: raise ValueError('UNKNOWN_NATIVE_ATTEMPT_ACCOUNTING')
 
 
@@ -338,7 +548,20 @@ def checked_record(record, machine=None, **kwargs):
     try: return isolated_binding('checked_record')(record, machine, **kwargs)
     finally:
         if machine is not None: _tag_new_costs(machine, before, attempts)
-def bounded_catalog(*args, **kwargs): return isolated_binding('bounded_catalog')(*args, **kwargs)
+def bounded_catalog(spec, out, timeout, machine):
+    execution = getattr(machine, '_v3_execution', None)
+    contexts = getattr(machine, '_v3_prepared_contexts', {})
+    parent = contexts.get(str(Path(spec['repo']).resolve()))
+    if execution is None or parent is None:
+        raise ValueError('external authority for exact prepared catalog context is required')
+    ticket = _write_record(Path(out).with_suffix('.authority.json'), {
+        'schema': 'UDM_NATIVE_CLI_AUTHORITY_V3', 'operation': 'catalog',
+        'repo': execution['repo'], 'freeze': execution['freeze'], 'parent': parent})
+    bound = isolated_binding('bounded_catalog')
+    def run(argv, **kwargs):
+        return subprocess.run([*argv, '--authority', ticket['path'], '--authority-sha256', ticket['sha256']], **kwargs)
+    bound.__globals__['subprocess'] = types.SimpleNamespace(**{**vars(subprocess), 'run': run})
+    return bound(spec, out, timeout, machine)
 def search(*args, **kwargs): return isolated_binding('search')(*args, **kwargs)
 def passed(receipt): return previous.passed(receipt)
 def native_observation(receipt): return previous.native_observation(receipt)
@@ -424,7 +647,7 @@ def admission_only_screen(spec, destination, binding, *, catalog, runtimes):
                       certificate=certificate, baseline=receipt)
         report['costs'] += [receipt['costs'], checked['independent_reexecution']['costs']]
         return report
-    except (ValueError, RuntimeError, OSError, subprocess.SubprocessError) as error:
+    except (ValueError, RuntimeError, OSError, TypeError, AttributeError, subprocess.SubprocessError) as error:
         report.update(status='UNKNOWN_ADMISSION_SCREENING', reason=str(error)); return report
     finally:
         delta, complete = _attempt_delta(attempts)
@@ -436,9 +659,9 @@ def admission_only_screen(spec, destination, binding, *, catalog, runtimes):
         report['retained_raw_directory'] = str(destination)
         report['partial_native_reports'] = []
         for path in sorted(destination.rglob('checked-report.json')):
-            raw = json.loads(path.read_text())
-            report['partial_native_reports'].append({'path': str(path), 'sha256': digest(path.read_bytes()),
-                                                     'costs': raw.get('costs', {})})
+            recovered = _partial_report(path)
+            if not recovered['valid']: report.update(status='UNKNOWN_INVALID_CHECKED_REPORT', eligible=False)
+            report['partial_native_reports'].append({'path': str(path), **recovered})
         (destination/'SCREENING_CASE.json').write_text(canonical(report)+'\n')
 
 
@@ -463,8 +686,73 @@ def screening_envelope(report, path):
     return envelope
 
 
+def execute_screening_request(request, ticket, descriptor, inventory, destination):
+    pool, source, output_root = screening_request(request, ticket, descriptor)
+    index = request['pool_index']; expected = output_root/('case-'+format(index, '03d'))
+    if Path(destination).resolve() != expected:
+        raise ValueError('screening output differs from fixed ordered case destination')
+    budget = pool['screening_budget']
+    if (budget['maximum_native_executions_per_case'] != 2
+            or budget['collection_seconds_per_call'] != 60 or budget['execution_seconds_per_call'] != 600
+            or len(pool['pool']) > budget['maximum_cases']):
+        raise ValueError('screening budget differs from declared admission-only ceiling')
+    output_root.mkdir(parents=True, exist_ok=True); lock = output_root/'SCREENING_METER.lock'
+    try: fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError as error: raise ValueError('ordered screening execution already active') from error
+    os.close(fd); path = output_root/'SCREENING_METER.json'
+    try:
+        meter = json.loads(path.read_text()) if path.is_file() else {
+            'schema': 'UDM_ORDERED_SCREENING_METER_V3', 'authority_sha256': descriptor['sha256'],
+            'source_commit': source['source_commit'], 'runtime_inventory_sha256': worker.fingerprint(inventory),
+            'started_at_unix': time.time(), 'cases': [], 'native_calls': 0, 'collection_calls': 0,
+            'accounting_complete': True, 'pending': None}
+        if (meter['authority_sha256'] != descriptor['sha256'] or meter['source_commit'] != source['source_commit']
+                or meter['runtime_inventory_sha256'] != worker.fingerprint(inventory)
+                or meter['pending'] is not None or meter['accounting_complete'] is not True
+                or index != len(meter['cases']) or expected.exists()
+                or time.time()-meter['started_at_unix'] >= budget['total_screening_wall_seconds']):
+            raise ValueError('screening order, once-only identity, interrupted accounting or budget differs')
+        meter['pending'] = {'index': index, 'spec_sha256': worker.fingerprint(request['spec']), 'output': str(expected)}
+        _write_record(path, meter); before = _attempt_snapshot(); report = None
+        try:
+            report = admission_only_screen(request['spec'], expected, descriptor['sha256'],
+                catalog=_bound_json(protocol()['catalog']), runtimes=inventory['runtimes'])
+        except (ValueError, RuntimeError, OSError, TypeError, AttributeError, subprocess.SubprocessError) as error:
+            report = {'schema': 'UDM_ADMISSION_ONLY_CASE_V3', 'repository': request['spec']['repo'],
+                'spec_sha256': worker.fingerprint(request['spec']), 'eligible': False,
+                'screening_mode': 'ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH',
+                'status': 'UNKNOWN_INTERRUPTED_SCREENING', 'reason': str(error), 'partial_native_reports': [],
+                'total_wall_seconds': time.time()-meter['started_at_unix']}
+        finally:
+            delta, complete = _attempt_delta(before)
+            if report is None:
+                meter['accounting_complete'] = False
+            else:
+                report['controller_attempts'] = delta; report['accounting_complete'] = complete
+                if (not complete or delta.get('native_calls', 0) > 2
+                        or time.time()-meter['started_at_unix'] > budget['total_screening_wall_seconds']):
+                    report.update(status='UNKNOWN_SCREENING_BUDGET_OR_ACCOUNTING', eligible=False)
+                _write_record(expected/'SCREENING_CASE.json', report)
+                meter['accounting_complete'] = meter['accounting_complete'] and complete
+                for key in ('native_calls', 'collection_calls'): meter[key] += delta.get(key, 0)
+                meter['cases'].append({'index': index, 'spec_sha256': report['spec_sha256'],
+                    'report': {'path': str(expected/'SCREENING_CASE.json'),
+                               'sha256': digest((expected/'SCREENING_CASE.json').read_bytes())},
+                    'costs': delta, 'accounting_complete': complete})
+                meter['pending'] = None
+            _write_record(path, meter)
+        return screening_envelope(report, expected/'SCREENING_CASE.json')
+    finally: lock.unlink()
+
+
 def agent_arm(context, destination, binding, budget):
+    execution = context.get('_execution'); prepared = context.get('_prepared_context')
+    if execution is None or prepared is None:
+        raise ValueError('external frozen prepared parent is required to publish an agent arm')
+    if Path(destination).exists(): raise ValueError('new immutable agent arm destination required')
+    released = time.time()
     value = {'schema': AGENT_SCHEMA, 'status': 'READY_NOT_EXECUTED', 'protocol_binding': binding,
+        'released_at_unix': released,
         'candidate_budget': budget, 'total_acquisition_native_calls': 512,
         'total_acquisition_wall_seconds': 3600, 'native_budget_includes_independent_verification': True,
         'contract': context['setup']['contract'], 'authority': context['setup']['authority'],
@@ -478,9 +766,30 @@ def agent_arm(context, destination, binding, budget):
         'common_acquisition_costs': context.get('common_acquisition_costs', []),
         'common_acquisition_wall_seconds': context.get('common_acquisition_wall_seconds', 0),
         'meter_path': str(Path(destination).resolve().parent/'ARM_METER.json'),
-        'native_command': 'python -B -m '+MODULE+' --agent-spec ARM.json --candidate CANDIDATE.json --out NEW_EVIDENCE_DIR',
+        'native_command': 'python -B -m '+MODULE+' --agent-spec ARM.json --authority AGENT_AUTHORITY.json --authority-sha256 ROOT_SUPPLIED_AUTHORITY_SHA256 --candidate CANDIDATE.json --out NEW_EVIDENCE_DIR',
         'comparability': 'Independent equal 512-native-call/3600-second meters, including learning and independent verification; at most eight ordered proposals per declared search; all model/tool/lifecycle costs retained or UNKNOWN'}
-    Path(destination).write_text(canonical(value)+'\n'); return value
+    arm = _write_record(destination, value)
+    common = sum(row.get('costs', {}).get('native_calls', 0) for row in value['common_acquisition_costs']
+                 if row.get('phase') in NATIVE_PHASES)
+    started = released-value['common_acquisition_wall_seconds']
+    meter = {'schema': 'UDM_NATIVE_AGENT_METER_V3', 'arm_sha256': worker.fingerprint(value),
+        'started_at_unix': started, 'native_calls': common, 'proposals': 0, 'attempts': [], 'accounting_complete': True}
+    if Path(value['meter_path']).exists(): raise ValueError('agent budget meter already exists')
+    _write_record(value['meter_path'], meter)
+    parent = _write_record(Path(destination).with_name('AGENT_PARENT_RECEIPT.json'), {
+        'schema': 'UDM_NATIVE_AGENT_PARENT_RECEIPT_V3', 'freeze': execution['freeze'],
+        'controller_source_sha256': _LOADED_SHA256, 'prepared_context': prepared, 'arm': arm,
+        'released_at_unix': released, 'started_at_unix': started, 'common_native_calls': common,
+        'common_costs_sha256': worker.fingerprint(value['common_acquisition_costs']),
+        'common_wall_seconds': value['common_acquisition_wall_seconds']})
+    ticket = _write_record(Path(destination).with_name('AGENT_AUTHORITY.json'), {
+        'schema': 'UDM_NATIVE_CLI_AUTHORITY_V3', 'operation': 'agent', 'repo': execution['repo'],
+        'freeze': execution['freeze'], 'parent': parent})
+    return {**value, 'arm': arm, 'parent_receipt': parent, 'cli_authority': ticket,
+            'execution_status': 'PENDING_ACTUAL_EXECUTION',
+            'execute_command_argv': [sys.executable, '-B', '-m', MODULE, '--agent-spec', arm['path'],
+                '--authority', ticket['path'], '--authority-sha256', ticket['sha256'],
+                '--candidate', 'CANDIDATE.json', '--out', 'NEW_EVIDENCE_DIR']}
 
 
 def execute_agent_candidate(arm, candidate, destination):
@@ -523,7 +832,7 @@ def _execute_agent_candidate(arm, candidate, destination):
         raise ValueError('coding-agent aggregate acquisition budget exhausted or arm changed')
     if destination.exists(): raise ValueError('new agent evidence directory required')
     meter['proposals'] += 1; meter_path.write_text(canonical(meter)+'\n')
-    started = time.monotonic(); receipt = None; checked = None; attempts = _attempt_snapshot()
+    started = time.monotonic(); receipt = None; checked = None; attempts = _attempt_snapshot(); result = None
     try:
         receipt = worker.verify(arm['contract'], candidate, destination,
             authority=arm['authority'], admission_certificate=arm['certificate'], policy=arm['policy'])
@@ -532,15 +841,20 @@ def _execute_agent_candidate(arm, candidate, destination):
         eligible = (meter['native_calls'] + receipt['costs']['native_calls']
                     + checked['independent_reexecution']['costs']['native_calls'] <= 512
                     and time.time()-meter['started_at_unix'] <= 3600)
-        return {'schema': 'UDM_NATIVE_AGENT_EXECUTION_V3', 'status': receipt['status'] if eligible
+        result = {'schema': 'UDM_NATIVE_AGENT_EXECUTION_V3', 'status': receipt['status'] if eligible
                 else 'UNKNOWN_ACQUISITION_BUDGET', 'budget_eligibility': 'ELIGIBLE' if eligible else 'UNKNOWN_OVER_BUDGET',
                 'native_receipt': receipt, 'independent_check': checked.get('independent_reexecution')}
+        return result
     finally:
         delta, complete = _attempt_delta(attempts)
         producer_calls = receipt['costs']['native_calls'] if receipt else 0
         independent_calls = checked['independent_reexecution']['costs']['native_calls'] if checked else 0
+        raw_errors = []
         for path in destination.rglob('checked-report.json'):
-            calls = json.loads(path.read_text()).get('costs', {}).get('native_calls', 0)
+            recovered = _partial_report(path)
+            if not recovered['valid']:
+                raw_errors.append(str(path)); continue
+            calls = recovered['costs'].get('native_calls', 0)
             if 'independent-agent-check' in path.parts:
                 if checked is None: independent_calls += calls
             elif receipt is None: producer_calls += calls
@@ -548,9 +862,12 @@ def _execute_agent_candidate(arm, candidate, destination):
         meter['accounting_complete'] = meter.get('accounting_complete', True) and complete
         meter['attempts'].append({'candidate': ident, 'output': str(destination),
             'seconds': time.monotonic()-started, 'status': receipt.get('status') if receipt else 'UNKNOWN_INTERRUPTED',
-            'controller_attempts': delta, 'accounting_complete': complete})
+            'controller_attempts': delta, 'accounting_complete': complete, 'invalid_raw_reports': raw_errors})
         meter['within_budget'] = meter['accounting_complete'] and meter['native_calls'] <= 512 and time.time()-meter['started_at_unix'] <= 3600
         meter_path.write_text(canonical(meter)+'\n')
+        if result is not None and not meter['within_budget']:
+            result.update(status='UNKNOWN_ACQUISITION_BUDGET', budget_eligibility='UNKNOWN_OVER_BUDGET')
+        if result is not None and raw_errors: result.update(status='UNKNOWN_INVALID_CHECKED_REPORT')
         if not complete: raise ValueError('UNKNOWN_NATIVE_ATTEMPT_ACCOUNTING')
 
 
@@ -579,7 +896,17 @@ def _prepare(machine, spec, destination, binding, value, scope):
                               destination/'native-evidence')
     baseline = isolated_binding('budgeted_native_probe')(machine, runtime, {'replacements': []},
                                                         'unrepaired-baseline', scope)
+    execution = getattr(machine, '_v3_execution', None); release = getattr(machine, '_v3_source_release', None)
+    if execution is None or release is None:
+        raise ValueError('prepared context requires external freeze and exact source release authority')
+    parent = _write_record(destination/'PREPARED_CONTEXT.json', {
+        'schema': 'UDM_PREPARED_NATIVE_CONTEXT_V3', 'controller_source_sha256': _LOADED_SHA256,
+        'freeze': execution['freeze'], 'source_release': release, 'spec': spec,
+        'source_repos': execution['source_repos'], 'setup': setup, 'certificate': certificate, 'baseline': baseline})
+    if not hasattr(machine, '_v3_prepared_contexts'): machine._v3_prepared_contexts = {}
+    machine._v3_prepared_contexts[str(Path(setup['contract']['repo_path']).resolve())] = parent
     return {'setup': setup, 'certificate': certificate, 'runtime': runtime, 'baseline': baseline,
+            '_execution': execution, '_prepared_context': parent,
             'status': baseline['receipt']['status'] if baseline['budget_eligibility'] == 'ELIGIBLE'
                       else 'UNKNOWN_ACQUISITION_BUDGET'}
 
@@ -595,6 +922,8 @@ def physical_removal_counterfactual(machine, decision, task, context, rows, all_
     initialization = clone.costs
     for row in initialization: row.setdefault('arm', 'warm')
     clone.costs = [*copy.deepcopy(machine.costs), *initialization]; clone._v3_arm = 'warm'
+    for name in ('_v3_execution', '_v3_source_release'):
+        if hasattr(machine, name): setattr(clone, name, getattr(machine, name))
     program = clone.state/'objects'/decision['program']; removed = digest(program.read_bytes()); program.unlink()
     route = operation_order(clone, decision['policy_id'], all_orders, binding=binding,
                             catalog_sha256=decision['catalog_sha256'])
@@ -639,7 +968,8 @@ def qualify(args):
         'verdicts': {'G0_G1': 'PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY', 'G2': 'UNKNOWN',
             'G3': DEFAULTS['G3'], 'G4': 'UNKNOWN', 'G5': 'UNKNOWN', 'G6': 'UNKNOWN'},
         'agent_comparator': {'status': 'NOT_EXECUTED; ACTUAL_MATCHED_AGENT_REQUIRED'},
-        'future_2_remains_sealed': True,
+        'G2_scope': 'Bounded non-comparative native policy-order selection. Informed ledger may tie; no advantage or executed-agent claim. G4 remains UNKNOWN.',
+        'additional_G3_frontier': 'NOT_SELECTED_FOR_G2; CONSTRUCTOR_CORRESPONDENCE_UNQUALIFIED',
         'cost_boundary': 'Independent equal 512-call/3600s acquisition meters per arm, including common learning and all native checks. All screened cases retained. Nested wall times nonadditive; unmeasured model/tool/engineering lifecycle costs UNKNOWN.'}
     def save():
         result['total_wall_seconds'] = time.monotonic()-started
@@ -647,7 +977,7 @@ def qualify(args):
             for row in machine.costs:
                 if row.get('phase') in NATIVE_PHASES and row.get('output') and not row.get('costs'):
                     path = Path(row['output'])/'execution/checked-report.json'
-                    if path.is_file(): row['costs'] = json.loads(path.read_text()).get('costs', {})
+                    if path.is_file(): row['costs'] = _partial_report(path)['costs']
             result['machine_costs'] = machine.costs
             raw = (machine.state/'metatron-ledger.jsonl').read_bytes()
             result['retention'] = {'original_prefix_preserved': raw.startswith(original),
@@ -657,8 +987,14 @@ def qualify(args):
         copy_state(out); original = (out/'state/metatron-ledger.jsonl').read_bytes()
         machine = Machine(Path(args.components), out/'state', Path(args.components)/'evaluator',
                           out/'state/unused-native-config.json'); machine._v3_arm = 'COMMON'
+        machine._v3_execution = {'repo': str(Path(args.repo).resolve()),
+            'freeze': {'path': str(Path(args.freeze).resolve()), 'sha256': binding},
+            'source_repos': str(Path(args.source_repos).resolve())}
         scope = {'acquisition_started_monotonic': started, 'stage': 'PREPARE'}
-        result['source_release_log'].append({'role': 'TRAINING', 'policy_fixed': False})
+        release = {'schema': 'UDM_NATIVE_SOURCE_RELEASE_V3', 'freeze': machine._v3_execution['freeze'],
+                   'role': 'TRAINING', 'spec_sha256': worker.fingerprint(tasks[0]), 'policy_fixed': False}
+        machine._v3_source_release = _write_record(out/'TRAINING_SOURCE_RELEASE.json', release)
+        result['source_release_log'].append({**release, 'receipt': machine._v3_source_release})
         training = _prepare(machine, tasks[0], out/'training', binding, value, scope)
         result['training_setup'] = training['setup']; result['training_baseline'] = training.get('baseline')
         if training['status'] != 'FAIL_NATIVE':
@@ -712,19 +1048,29 @@ def qualify(args):
             independent_check=reconstruct_profiles, source_repo=Path(args.source_repos))
         result['meta_decision'] = decision
         if decision['status'] != 'WARRANTED_BOUNDED_POLICY_SELECTION':
+            training.update(common_acquisition_costs=copy.deepcopy(machine.costs),
+                            common_acquisition_wall_seconds=time.monotonic()-started)
+            result['agent_comparator'] = agent_arm(training, out/'AGENT_ARM.json', binding, 8)
             result.update(status='UNKNOWN_META_CHOICE', smallest_obstruction=decision.get('reason', decision['status']))
             return result
         selected = invoke_meta_policy(machine, decision['policy_id'], protocol_binding=binding,
                                       candidate_catalog_sha256=scope['candidate_catalog_sha256'])
         result['selected_policy'] = selected
         decision['catalog_sha256'] = scope['candidate_catalog_sha256']
-        result['source_release_log'].append({'role': 'PROTECTED_FUTURE_1', 'policy_fixed': True,
+        release = {'schema': 'UDM_NATIVE_SOURCE_RELEASE_V3', 'freeze': machine._v3_execution['freeze'],
+            'spec_sha256': worker.fingerprint(tasks[1]), 'role': 'PROTECTED_FUTURE_1', 'policy_fixed': True,
             'policy_id': decision['policy_id'], 'program': decision['program'],
-            'ledger_checkpoint': digest((machine.state/'metatron-ledger.jsonl').read_bytes())})
+            'ledger_checkpoint': digest((machine.state/'metatron-ledger.jsonl').read_bytes())}
+        machine._v3_source_release = _write_record(out/'FUTURE_ONE_SOURCE_RELEASE.json', release)
+        result['source_release_log'].append({**release, 'receipt': machine._v3_source_release})
         scope['stage'] = 'FUTURE_PREPARE'
         future = _prepare(machine, tasks[1], out/'future-one', binding, value, scope)
         result['future_setup'] = future['setup']; result['future_baseline'] = future.get('baseline')
         if future['status'] != 'FAIL_NATIVE':
+            if future.get('baseline'):
+                future.update(common_acquisition_costs=copy.deepcopy(machine.costs),
+                              common_acquisition_wall_seconds=time.monotonic()-started)
+                result['agent_comparator'] = agent_arm(future, out/'AGENT_ARM.json', binding, 8)
             result.update(status='UNKNOWN_FUTURE_NATIVE_RESIDUAL', smallest_obstruction=future['status']); return result
         future_paths = [row['filename'] for row in tasks[1]['files'] if row['filename'].endswith('.py') and not is_test(row['filename'])]
         future_spec = dict(spec, repo=future['setup']['contract']['repo_path'], commit=future['setup']['contract']['commit'],
@@ -770,7 +1116,7 @@ def qualify(args):
         result.update(status='BOUNDED_NATIVE_POLICY_SELECTION_ONLY',
             smallest_obstruction='Versioned constructor-support/restoration correspondence remains unqualified')
         return result
-    except (ValueError, RuntimeError, OSError, PermissionError, subprocess.SubprocessError) as error:
+    except (ValueError, RuntimeError, OSError, TypeError, AttributeError, PermissionError, subprocess.SubprocessError) as error:
         result.update(status='UNKNOWN_QUALIFICATION_OBSTRUCTION', smallest_obstruction=type(error).__name__+': '+str(error))
         result['verdicts']['G2'] = 'UNKNOWN'; return result
     finally: save()
@@ -783,6 +1129,7 @@ def main():
     parser.add_argument('--agent-spec'); parser.add_argument('--candidate'); parser.add_argument('--screen-spec')
     parser.add_argument('--runtimes'); parser.add_argument('--catalog')
     parser.add_argument('--write-runtime-inventory', action='store_true')
+    parser.add_argument('--authority'); parser.add_argument('--authority-sha256')
     args = parser.parse_args()
     if args.write_runtime_inventory:
         if not args.runtimes or not args.catalog: parser.error('--runtimes and --catalog are required')
@@ -793,21 +1140,22 @@ def main():
         if not args.runtimes: parser.error('--runtimes is required before any task source access')
         result = write_freeze(args.repo, args.out, json.loads(Path(args.runtimes).read_text()))
     elif args.catalog_spec:
-        spec = json.loads(Path(args.catalog_spec).read_text()); spec.pop('msi', None)
+        ticket, _, parent = cli_authority(args.authority, args.authority_sha256, 'catalog')
+        spec = catalog_request(json.loads(Path(args.catalog_spec).read_text()), ticket, parent)
         result = catalog(**spec); Path(args.out).write_text(canonical(result)+'\n')
     elif args.agent_spec:
-        result = execute_agent_candidate(json.loads(Path(args.agent_spec).read_text()),
+        ticket, _, parent = cli_authority(args.authority, args.authority_sha256, 'agent')
+        result = execute_agent_candidate(agent_request(args.agent_spec, ticket, parent),
                                          json.loads(Path(args.candidate).read_text()), args.out)
     elif args.screen_spec:
-        value = protocol(); require_environment_gate(value)
+        ticket, descriptor, _ = cli_authority(args.authority, args.authority_sha256, 'screen')
+        value = protocol()
         if not args.runtimes: parser.error('--runtimes is required before screening source access')
         inventory = freeze_runtime_inventory(json.loads(Path(args.runtimes).read_text()), _bound_json(value['catalog']))
         inventory_path = Path(args.out).with_name(Path(args.out).name+'.RUNTIME_INVENTORY.json')
         inventory_path.parent.mkdir(parents=True, exist_ok=True); inventory_path.write_text(canonical(inventory)+'\n')
         request = json.loads(Path(args.screen_spec).read_text())
-        screened = admission_only_screen(request['spec'], args.out, request['protocol_binding'],
-                                      catalog=_bound_json(value['catalog']), runtimes=inventory['runtimes'])
-        result = screening_envelope(screened, Path(args.out)/'SCREENING_CASE.json')
+        result = execute_screening_request(request, ticket, descriptor, inventory, args.out)
     else: result = qualify(args)
     print(canonical({'status': result.get('status', result.get('schema')), 'verdicts': result.get('verdicts', {})})
           if isinstance(result, dict) else canonical({'catalog_candidates': len(result)}))

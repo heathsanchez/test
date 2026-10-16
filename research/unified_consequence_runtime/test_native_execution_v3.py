@@ -10,6 +10,7 @@ import sys
 import tempfile
 import types
 import unittest
+from unittest.mock import patch
 
 from . import decisive_native_verify as original
 from . import native_admission_v2 as admission
@@ -28,7 +29,7 @@ class PortableNativeWorkerContracts(unittest.TestCase):
 
     @unittest.skipIf(worker is None, 'portable worker missing')
     def test_controller_bytecode_and_original_globals_are_unchanged(self):
-        self.assertEqual(worker.ADMISSION_REVISION, '3.0')
+        self.assertEqual(worker.ADMISSION_REVISION, '3.1')
         self.assertEqual(worker.SCHEMA, 'UDM_GENERIC_NATIVE_PYTEST_V3')
         self.assertEqual(worker.CERTIFICATE_SCHEMA, 'UDM_NATIVE_ADMISSION_CERTIFICATE_V3')
         self.assertEqual(worker.POLICY_SCHEMA, 'UDM_NATIVE_EXECUTION_POLICY_V3')
@@ -98,12 +99,60 @@ with tempfile.TemporaryDirectory() as folder:
                                          'base_prefix', 'stdlib_manifest_sha256'})
         self.assertEqual(len(identity['stdlib_manifest_sha256']), 64)
         self.assertEqual(len(identity['executable_sha256']), 64)
-        self.assertEqual(worker.environment_identity(interpreter)['runtime_identity'], identity)
+        environment = worker.environment_identity(interpreter)
+        self.assertEqual(environment['runtime_identity'], identity)
+        self.assertEqual(len(environment['runtime_import_roots']), 3)
+        roots = sorted({str(Path(root).resolve()) for root in environment['runtime_import_roots']})
+        self.assertEqual(original.fingerprint(worker.host_stdlib(roots)), identity['stdlib_manifest_sha256'])
         # -S removes site-packages, proving the pre-provisioning child needs no pytest.
         result = subprocess.run([interpreter, '-I', '-B', '-S', '-c', worker._RUNTIME],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout), identity)
+
+    @unittest.skipIf(worker is None, 'portable worker missing')
+    def test_environment_identity_refuses_an_executable_replaying_old_identity(self):
+        interpreter = os.environ.get('UDM_NATIVE_V3_INTERPRETER', sys.executable)
+        retained = worker.environment_identity(interpreter)
+        with tempfile.TemporaryDirectory() as folder:
+            wrapper = Path(folder) / 'python'
+            wrapper.write_text('#!' + sys.executable + '\nimport sys\nsys.stdout.write(' +
+                               repr(json.dumps(retained)) + ')\n')
+            wrapper.chmod(0o755)
+            with self.assertRaisesRegex(ValueError, 'UNKNOWN_ENVIRONMENT_HOST_EXECUTABLE'):
+                worker.environment_identity(wrapper)
+
+    @unittest.skipIf(worker is None, 'portable worker missing')
+    def test_environment_identity_refuses_a_forged_standard_library_digest(self):
+        interpreter = os.environ.get('UDM_NATIVE_V3_INTERPRETER', sys.executable)
+        retained = worker.environment_identity(interpreter)
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source = root / 'stdlib_probe.py'
+            source.write_text('VALUE = 1\n')
+            retained['runtime_import_roots'] = [str(root)] * 3
+            retained['runtime_identity']['stdlib_manifest_sha256'] = original.fingerprint(
+                [[str(source), original.sha256(source.read_bytes())]])
+            source.write_text('VALUE = 2\n')
+            with patch.object(worker, '_portable_environment_identity', return_value=retained):
+                with self.assertRaisesRegex(ValueError, 'UNKNOWN_ENVIRONMENT_HOST_STDLIB'):
+                    worker.environment_identity(interpreter)
+
+    @unittest.skipIf(worker is None, 'portable worker missing')
+    def test_environment_identity_refuses_an_executable_changed_during_child_check(self):
+        interpreter = os.environ.get('UDM_NATIVE_V3_INTERPRETER', sys.executable)
+        retained = worker.environment_identity(interpreter)
+        with tempfile.TemporaryDirectory() as folder:
+            executable = Path(folder) / 'python'
+            executable.write_bytes(b'before child check')
+            def changed_child(path):
+                executable.write_bytes(b'after child check')
+                retained['executable_sha256'] = original.sha256(executable.read_bytes())
+                retained['runtime_identity']['executable_sha256'] = retained['executable_sha256']
+                return retained
+            with patch.object(worker, '_portable_environment_identity', side_effect=changed_child):
+                with self.assertRaisesRegex(ValueError, 'UNKNOWN_ENVIRONMENT_HOST_EXECUTABLE'):
+                    worker.environment_identity(executable)
 
     @unittest.skipIf(worker is None, 'portable worker missing')
     def test_runtime_identity_detects_loadable_bytecode_changes(self):

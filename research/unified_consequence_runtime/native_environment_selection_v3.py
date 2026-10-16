@@ -27,6 +27,11 @@ CATALOG_SCHEMA = 'UDM_NATIVE_ENVIRONMENT_CATALOG_V3'
 SELECTION_SCHEMA = 'UDM_NATIVE_ENVIRONMENT_SELECTION_V3'
 _SETUP_KEYS = {'python_requires', 'classifiers', 'install_requires', 'extras_require', 'tests_require'}
 _TEST_GROUPS = {'test', 'tests', 'testing'}
+_DYNAMIC_METADATA_NAMES = {
+    'exec', 'eval', 'compile', 'globals', 'locals', 'vars', 'getattr', 'setattr',
+    'delattr', '__import__', '__builtins__', '__dict__', '__getattribute__',
+    '__globals__', '_getframe', 'currentframe', 'f_globals', 'f_locals',
+}
 
 
 def _canonical(value):
@@ -173,6 +178,16 @@ def _setup_metadata(tree):
         return False
     calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
              and setup_call(node.func)]
+    # Dynamic setup construction can hide the setup call itself; this rejection
+    # therefore applies to the entire setup.py AST, even without a literal call.
+    for node in ast.walk(tree):
+        dynamic = (isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+                   and node.id in _DYNAMIC_METADATA_NAMES)
+        dynamic |= isinstance(node, ast.Attribute) and node.attr in _DYNAMIC_METADATA_NAMES
+        dynamic |= (isinstance(node, ast.ImportFrom) and node.module in ('builtins', '__builtin__')
+                    and any(value.name in _DYNAMIC_METADATA_NAMES | {'*'} for value in node.names))
+        if dynamic:
+            _unknown('UNKNOWN_DYNAMIC_METADATA', 'dynamic execution or namespace reflection in setup metadata scope')
     if calls and any(name in symbols for name in setup_names | module_aliases.keys()):
         _unknown('UNKNOWN_DYNAMIC_METADATA', 'rebound setup import')
     callable_names = setup_names | module_aliases.keys()

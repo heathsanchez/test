@@ -14,6 +14,44 @@
       "source_files_checked": 499,
       "status": "PASS_INDEPENDENT_RED_ARTIFACT_AUDIT",
       "target_source_access": false
+    },
+    {
+      "archive_sha256": "d70344d98d64e8145da3eaa0c4901fc003dcc181e19587aacd849fad869dc49c",
+      "artifact_bytes": 151966820,
+      "artifact_id": 12031624043,
+      "contracts": {
+        "passed": 328,
+        "seconds": 762.569,
+        "sha256": "4219ce56d1fd122dfb23c28d7197bccf659ad84ae3cbef781048e44b77030bc3"
+      },
+      "frozen_files_checked": 830,
+      "legacy_contracts": {
+        "passed": 15,
+        "seconds": 29.137,
+        "sha256": "2d9f105d9dad5eaf1e55c931525782eca6bb4c370117ae36b412ad2a390077f6"
+      },
+      "manifest_entries_checked": 21,
+      "native_error": {
+        "acquisitions": 0,
+        "attempt_costs": {
+          "collection_calls": 0,
+          "native_calls": 0,
+          "subprocess_attempts": 0
+        },
+        "candidates": 0,
+        "error": "ValueError: frozen runtime identity differs from host standard-library bytes",
+        "schema": "UDM_NATIVE_ENVIRONMENT_QUALIFICATION_ERROR_V3",
+        "status": "UNKNOWN_PREFLIGHT",
+        "total_wall_seconds": 0.9601149570000871
+      },
+      "native_tests_executed": false,
+      "result_preserved": true,
+      "run_id": 38867186884,
+      "scientific_status": "UNKNOWN_PREFLIGHT_NO_TARGET_ACCESS",
+      "source_commit": "334c8a01e4869b31819212cc9440776006948c72",
+      "source_files_checked": 503,
+      "status": "PASS_INDEPENDENT_RED_ARTIFACT_AUDIT",
+      "target_source_access": false
     }
   ]
 }

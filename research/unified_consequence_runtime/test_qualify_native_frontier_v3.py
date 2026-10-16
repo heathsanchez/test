@@ -4,6 +4,8 @@ import importlib
 import importlib.util
 import json
 import inspect
+import sys
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 import tempfile
@@ -23,9 +25,87 @@ class NativeFrontierV3Contracts(unittest.TestCase):
         self.assertEqual(value['state'], 'PREPARED_NOT_FROZEN')
         self.assertIsNone(value['environment_gate'])
         self.assertEqual((value['search_budget'], value['candidate_cap_per_file']), (8, 64))
+        self.assertEqual(value['requested_roles'], 2)
         self.assertEqual((value['acquisition_native_calls'], value['training_seconds']), (512, 3600))
         with self.assertRaisesRegex(ValueError, 'environment qualification'):
             self.q.require_environment_gate(value)
+
+    def test_source_reading_cli_requires_external_authority_before_dispatch(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); request = root/'request.json'; request.write_text('{}')
+            for flag, target in (('--catalog-spec', 'catalog'), ('--screen-spec', 'admission_only_screen'),
+                                 ('--agent-spec', 'execute_agent_candidate')):
+                with self.subTest(flag=flag), \
+                     patch.object(sys, 'argv', [MODULE, flag, str(request), '--out', str(root/'out')]), \
+                     patch.object(self.q, target, side_effect=AssertionError('ungated source dispatch')) as operation:
+                    with self.assertRaisesRegex(ValueError, 'external authority'):
+                        self.q.main()
+                    operation.assert_not_called()
+
+    def test_interval_attempt_delta_is_charged_once_across_multiple_native_rows(self):
+        machine = SimpleNamespace(costs=[{'phase': 'generic_native_v2_independent_verification',
+            'costs': {'native_calls': 1, 'collection_calls': 1}} for _ in range(2)])
+        before = {'native_calls': 0, 'collection_calls': 0, 'subprocess_attempts': 0}
+        after = {'native_calls': 2, 'collection_calls': 2, 'subprocess_attempts': 4}
+        with patch.object(self.q.worker, 'attempt_snapshot', return_value=after):
+            self.q._tag_new_costs(machine, 0, before)
+        self.assertEqual(self.q._native_calls(machine), 2)
+
+    def test_committed_curator_code_is_authenticated_as_raw_bytes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            repo = Path(folder); raw = b'"""Pure synthetic curator fixture."""\n'
+            path = repo/'curator.py'; path.write_bytes(raw)
+            subprocess.run(['git', '-C', str(repo), 'init', '-q'], check=True)
+            subprocess.run(['git', '-C', str(repo), 'add', 'curator.py'], check=True)
+            subprocess.run(['git', '-C', str(repo), '-c', 'user.name=Fixture',
+                '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'source fixture'], check=True)
+            descriptor = {'path': 'curator.py', 'sha256': self.q.digest(raw)}
+            self.assertEqual(self.q._committed_record(repo, descriptor, as_json=False), raw)
+            path.write_bytes(raw+b'changed = True\n')
+            with self.assertRaisesRegex(ValueError, 'committed Git bytes'):
+                self.q._committed_record(repo, descriptor, as_json=False)
+
+    def test_agent_parent_hash_refuses_catalog_cost_and_meter_edits_before_source_read(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); path = root/'ARM.json'
+            original = {'candidate_catalog': ['original'], 'common_acquisition_costs': ['charged'],
+                        'meter_path': str(root/'ARM_METER.json')}
+            descriptor = self.q._write_record(path, original)
+            parent = {'schema': 'UDM_NATIVE_AGENT_PARENT_RECEIPT_V3', 'arm': descriptor}
+            for field, value in (('candidate_catalog', ['extra operator']),
+                                 ('common_acquisition_costs', []), ('meter_path', str(root/'reset.json'))):
+                path.write_text(json.dumps(dict(original, **{field: value})))
+                with self.subTest(field=field), patch.object(self.q, '_prepared_context') as source:
+                    with self.assertRaisesRegex(ValueError, 'external authority bytes differ'):
+                        self.q.agent_request(path, {}, parent)
+                    source.assert_not_called()
+
+    def test_screening_request_refuses_pool_substitution_or_binding_before_source(self):
+        prequery = {'state': 'PREQUERY_COMMITTED_BEFORE_QUERIES'}
+        spec = {'repo': 'fixture/original'}
+        pool = {'prequery_execution_sha256': 'a'*64, 'pool': [spec]}
+        ticket = {'repo': '/unused', 'environment_gate': None,
+                  'prequery': {'path': 'prequery.json', 'sha256': 'a'*64}, 'pool': {}}
+        for request in ({'pool_index': 0, 'spec': {'repo': 'fixture/replacement'}, 'protocol_binding': 'b'*64},
+                        {'pool_index': 1, 'spec': spec, 'protocol_binding': 'b'*64},
+                        {'pool_index': 0, 'spec': spec, 'protocol_binding': 'c'*64}):
+            with self.subTest(request=request), \
+                 patch.object(self.q, '_committed_record', side_effect=[prequery, pool]), \
+                 patch.object(self.q.environment, 'provision') as source:
+                with self.assertRaisesRegex(ValueError, 'committed prequery, pool member, order or binding'):
+                    self.q.screening_request(request, ticket, {'sha256': 'b'*64})
+                source.assert_not_called()
+
+    def test_empty_freeze_file_set_is_rejected_against_actual_git_tree(self):
+        repo = Path(self.q.HERE).parents[1]
+        head = subprocess.check_output(['git', '-C', str(repo), 'rev-parse', 'HEAD'], text=True).strip()
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder)/'freeze.json'
+            path.write_text(json.dumps({'schema': 'UDM_NATIVE_FRONTIER_FREEZE_V3', 'source_commit': head,
+                'baseline_commit': 'fa6bb190eff9b374ab7a95aaf9c618ad2db31419',
+                'all_baseline_files_preserved': True, 'files': {}}))
+            with self.assertRaisesRegex(ValueError, 'omits exact committed source'):
+                self.q.check_freeze(repo, path)
 
     def test_gate_names_resolve_to_actual_qualified_sources_and_bootstrap(self):
         self.assertTrue(hasattr(self.q, 'ENVIRONMENT_GATE_FILES'), 'actual gate source list required')
@@ -35,6 +115,8 @@ class NativeFrontierV3Contracts(unittest.TestCase):
         self.assertIn('research/unified_consequence_runtime/qualify_environment_selection_v3.py',
                       self.q.ENVIRONMENT_GATE_FILES)
         self.assertIn('.github/workflows/udm-native-environment-selection-v3.yml', self.q.ENVIRONMENT_GATE_FILES)
+        self.assertIn('research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/stdlib_cache.py',
+                      self.q.ENVIRONMENT_GATE_FILES)
         self.assertIn('runtime_paths', inspect.signature(self.q.write_freeze).parameters)
 
     def test_runner_runtime_inventory_is_fresh_identity_not_qualified_ci_paths(self):
@@ -67,13 +149,13 @@ class NativeFrontierV3Contracts(unittest.TestCase):
                     'status': status, 'eligible': status in ('PASS_NATIVE', 'FAIL_NATIVE'),
                     'screening_mode': 'ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH'}
                    for row, status in zip(pool, ('UNKNOWN_COLLECTION_ERROR', 'PASS_NATIVE', 'FAIL_NATIVE', 'PASS_NATIVE'))]
-        selected = self.q.select_screened_roles(pool, reports, requested=3)
-        self.assertEqual([r['repo'] for r in selected], ['fixture/two', 'fixture/three', 'fixture/four'])
-        self.assertEqual([r['role'] for r in selected], ['TRAINING', 'PROTECTED_FUTURE_1', 'PROTECTED_FUTURE_2'])
+        selected = self.q.select_screened_roles(pool, reports)
+        self.assertEqual([r['repo'] for r in selected], ['fixture/two', 'fixture/three'])
+        self.assertEqual([r['role'] for r in selected], ['TRAINING', 'PROTECTED_FUTURE_1'])
         self.assertEqual(len(reports), 4)
         altered = copy.deepcopy(reports); altered[1]['eligible'] = False
         with self.assertRaisesRegex(ValueError, 'eligibility'):
-            self.q.select_screened_roles(pool, altered, requested=3)
+            self.q.select_screened_roles(pool, altered)
 
     def test_screening_forbids_catalog_or_policy_outcome_fields(self):
         pool = [{'repo': 'fixture/one'}]
@@ -81,7 +163,7 @@ class NativeFrontierV3Contracts(unittest.TestCase):
                   'status': 'FAIL_NATIVE', 'eligible': True,
                   'screening_mode': 'ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH', 'candidate_catalog': []}
         with self.assertRaisesRegex(ValueError, 'search information'):
-            self.q.select_screened_roles(pool, [report], requested=1)
+            self.q.select_screened_roles(pool, [report])
 
     def test_screening_envelope_seals_future_native_packets_and_failure_bit(self):
         self.assertTrue(hasattr(self.q, 'screening_envelope'), 'sealed screening envelope required')
@@ -102,7 +184,7 @@ class NativeFrontierV3Contracts(unittest.TestCase):
 
     def test_screening_shortfall_never_selects_unlisted_replacement(self):
         with self.assertRaisesRegex(ValueError, 'shortfall'):
-            self.q.select_screened_roles([], [], requested=3)
+            self.q.select_screened_roles([], [])
 
     def test_acquisition_budget_counts_both_producer_and_independent_calls(self):
         machine = SimpleNamespace(costs=[
@@ -301,6 +383,48 @@ class NativeFrontierV3Contracts(unittest.TestCase):
                                                  'a'*64, catalog={}, runtimes={})
             self.assertFalse(report['eligible'])
             self.assertEqual(report.get('controller_attempts', {}).get('native_calls'), 1)
+
+    def test_malformed_checked_json_cannot_erase_agent_meter(self):
+        candidate = {'replacements': []}; ident = self.q.worker.fingerprint(candidate)
+        arm = {'schema': self.q.AGENT_SCHEMA, 'protocol_binding': 'b'*64,
+               'candidate_budget': 8, 'total_acquisition_native_calls': 512,
+               'total_acquisition_wall_seconds': 3600, 'candidate_catalog': [{'id': ident, 'candidate': candidate}],
+               'contract': {'protocol_binding': 'b'*64}, 'authority': {}, 'certificate': {}, 'policy': {}}
+        for raw in ('{', '[]', 'null', '{"costs":[]}'):
+            snapshots = [{'native_calls': 0, 'collection_calls': 0, 'subprocess_attempts': 0},
+                         {'native_calls': 1, 'collection_calls': 1, 'subprocess_attempts': 2}]
+            def malformed(contract, candidate, out, **kwargs):
+                (out/'execution').mkdir(parents=True); (out/'execution/checked-report.json').write_text(raw)
+                raise ValueError('malformed checked report')
+            with self.subTest(raw=raw), tempfile.TemporaryDirectory() as folder, \
+                 patch.object(self.q.worker, 'attempt_snapshot', side_effect=snapshots), \
+                 patch.object(self.q.worker, 'verify', side_effect=malformed):
+                with self.assertRaisesRegex(ValueError, 'malformed checked report'):
+                    self.q.execute_agent_candidate(arm, candidate, Path(folder)/'run')
+                meter = json.loads((Path(folder)/'ARM_METER.json').read_text())
+                self.assertEqual(meter['native_calls'], 1)
+                self.assertTrue(meter['attempts'][-1]['invalid_raw_reports'])
+
+    def test_malformed_checked_json_cannot_erase_screening_case(self):
+        for raw in ('{', '[]', 'null', '{"costs":[]}'):
+            snapshots = [{'native_calls': 0, 'collection_calls': 0, 'subprocess_attempts': 0},
+                         {'native_calls': 1, 'collection_calls': 2, 'subprocess_attempts': 3}]
+            def malformed(contract, candidate, out, **kwargs):
+                (out/'execution').mkdir(parents=True); (out/'execution/checked-report.json').write_text(raw)
+                raise ValueError('malformed checked report')
+            with self.subTest(raw=raw), tempfile.TemporaryDirectory() as folder, \
+                 patch.object(self.q.worker, 'attempt_snapshot', side_effect=snapshots), \
+                 patch.object(self.q.environment, 'provision', return_value={
+                     'status': 'PREPARED', 'contract': {}, 'authority': {}, 'policy': {}}), \
+                 patch.object(self.q.worker, 'collect', return_value={}), \
+                 patch.object(self.q.worker, 'validate_certificate', return_value={}), \
+                 patch.object(self.q.worker, 'verify', side_effect=malformed):
+                report = self.q.admission_only_screen({'repo': 'fixture/future'}, Path(folder)/'screen',
+                                                     'a'*64, catalog={}, runtimes={})
+                self.assertFalse(report['eligible'])
+                retained = json.loads((Path(folder)/'screen/SCREENING_CASE.json').read_text())
+                self.assertEqual(retained['controller_attempts']['native_calls'], 1)
+                self.assertEqual(retained['status'], 'UNKNOWN_INVALID_CHECKED_REPORT')
 
     def test_versioned_partial_probe_cost_is_retained_once(self):
         with tempfile.TemporaryDirectory() as folder:

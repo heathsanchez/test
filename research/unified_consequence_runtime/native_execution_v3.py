@@ -1,6 +1,6 @@
 """Portable child scripts over the byte-identical, frozen v2 native controller.
 
-Only child-interpreter compatibility and explicit version bindings change.
+Portable child scripts, host identity checks, and attempt accounting bind v3.
 The qualified collection, execution, evidence, and independent replay algorithms
 are bound unchanged into a private globals dictionary; old modules are untouched.
 """
@@ -13,7 +13,7 @@ from . import native_execution_v2 as frozen
 SCHEMA = 'UDM_GENERIC_NATIVE_PYTEST_V3'
 CERTIFICATE_SCHEMA = 'UDM_NATIVE_ADMISSION_CERTIFICATE_V3'
 POLICY_SCHEMA = 'UDM_NATIVE_EXECUTION_POLICY_V3'
-ADMISSION_REVISION = '3.0'
+ADMISSION_REVISION = '3.1'
 canonical = frozen.canonical
 fingerprint = frozen.fingerprint
 sha256 = frozen.sha256
@@ -53,11 +53,11 @@ except ImportError:
     import importlib_metadata as md'''
 _RUNTIME_HELPER = '''import os,sysconfig
 def h(p):return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
-def runtime_identity():
+def runtime_import_roots():
+    return [sysconfig.get_path('stdlib'),sysconfig.get_path('platstdlib'),sysconfig.get_config_var('DESTSHARED')]
+def stdlib_files(roots):
     paths=set()
-    roots={sysconfig.get_path(name) for name in ('stdlib','platstdlib')}
-    roots.add(sysconfig.get_config_var('DESTSHARED'))
-    for location in sorted(p for p in roots if p):
+    for location in sorted({p for p in roots if p}):
         root=pathlib.Path(location)
         if root.is_symlink():raise RuntimeError('UNKNOWN_RUNTIME_SYMLINK_DIRECTORY')
         root=root.resolve()
@@ -69,7 +69,9 @@ def runtime_identity():
                 if name.endswith(('.py','.pyc','.pyo','.so','.pyd','.dll','.dylib')):
                     paths.add(pathlib.Path(folder,name).resolve())
     if not paths:raise RuntimeError('original standard library unavailable')
-    rows=[[str(path),h(path)] for path in sorted(paths)]
+    return [[str(path),h(path)] for path in sorted(paths)]
+def runtime_identity():
+    rows=stdlib_files(runtime_import_roots())
     return {'implementation':sys.implementation.name,'version_info':list(sys.version_info),
         'executable_sha256':h(sys.executable),'base_prefix':sys.base_prefix,
         'stdlib_manifest_sha256':hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(',',':')).encode()).hexdigest()}
@@ -81,7 +83,7 @@ _ENVIRONMENT = _replace(frozen.original._ENVIRONMENT,
 _ENVIRONMENT = _replace(_ENVIRONMENT,
     'def h(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()', _RUNTIME_HELPER)
 _ENVIRONMENT = _replace(_ENVIRONMENT, "'distribution_count':len(rows)",
-    "'distribution_count':len(rows),'runtime_identity':runtime_identity()")
+    "'distribution_count':len(rows),'runtime_identity':runtime_identity(),'runtime_import_roots':runtime_import_roots()")
 _ENVIRONMENT = _replace(_ENVIRONMENT,
     "if location != pathlib.Path(md.distribution('pytest').locate_file('pytest/__init__.py')).resolve():",
     "if location not in {pathlib.Path(md.distribution('pytest').locate_file(entry)).resolve()\n"
@@ -121,11 +123,31 @@ _BOOTSTRAP = _replace(_BOOTSTRAP, "field(c,'co_exceptiontable')]",
 _environment_globals = dict(vars(frozen.original), _ENVIRONMENT=_ENVIRONMENT)
 _portable_environment_identity = FunctionType(frozen.original.environment_identity.__code__,
     _environment_globals, 'environment_identity', frozen.original.environment_identity.__defaults__)
+_host_runtime_globals = dict(hashlib=frozen.original.hashlib, json=frozen.json,
+                            pathlib=SimpleNamespace(Path=Path), sys=frozen.original.sys)
+exec(_RUNTIME_HELPER, _host_runtime_globals)
+
+
+def host_stdlib(roots):
+    """Hash host-visible library bytes with the exact child inventory helper."""
+    _runner_hash()
+    return _host_runtime_globals['stdlib_files'](roots)
 
 
 def environment_identity(interpreter):
     _runner_hash()
-    return _portable_environment_identity(interpreter)
+    before = sha256(Path(interpreter).read_bytes())
+    identity = _portable_environment_identity(interpreter)
+    if not (before == sha256(Path(interpreter).read_bytes()) == identity['executable_sha256']
+            == identity['runtime_identity']['executable_sha256']):
+        raise ValueError('UNKNOWN_ENVIRONMENT_HOST_EXECUTABLE')
+    roots = identity.get('runtime_import_roots')
+    if (not isinstance(roots, list) or len(roots) != 3
+            or any(not isinstance(root, str) or not Path(root).is_absolute() for root in roots)):
+        raise ValueError('UNKNOWN_ENVIRONMENT_RUNTIME_IMPORT_ROOTS')
+    if fingerprint(host_stdlib(roots)) != identity['runtime_identity']['stdlib_manifest_sha256']:
+        raise ValueError('UNKNOWN_ENVIRONMENT_HOST_STDLIB')
+    return identity
 
 
 def runtime_identity(interpreter):
