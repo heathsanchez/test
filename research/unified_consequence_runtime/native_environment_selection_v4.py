@@ -764,9 +764,17 @@ def _evaluate(profile, constraints):
             if not req.marker.evaluate(environment=current):
                 continue
         name = canonicalize_name(req.name)
-        if name not in pins or pins[name] not in req.specifier:
+        if name not in pins:
+            # Catalogue closure is asserted but an absent pin has no
+            # independently installed-version witness. Do not invent one.
             reasons.append({'reason': 'UNKNOWN_DEPENDENCY_UNSATISFIED', 'detail': str(req),
-                            'installed_pin': str(pins[name]) if name in pins else None})
+                            'installed_pin': None})
+        elif pins[name] not in req.specifier:
+            # A *known exact* pin contradicts an original source requirement.
+            # This is a decisive incompatibility, not an unresolved higher
+            # alternative able to block an independently compatible profile.
+            reasons.append({'reason': 'INCOMPATIBLE_PINNED_DEPENDENCY', 'detail': str(req),
+                            'installed_pin': str(pins[name])})
         if req.extras:
             if name not in metadata:
                 reasons.append({'reason': 'UNKNOWN_EXTRA_DEPENDENCY_METADATA', 'detail': str(req)})
