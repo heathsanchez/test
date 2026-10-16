@@ -101,7 +101,6 @@ def run(out):
                              "junit":baseline["first"]["junit"],
                              "native_calls":baseline["native_calls"]}
         report["native_calls"]+=baseline["native_calls"]
-        if diagnosis.status if False else False:pass
         if (baseline["first"]["status"]!="FAIL_NATIVE_PROTECTED" or
                 baseline["second"]["status"]!="FAIL_NATIVE_PROTECTED"):
             report["status"]="UNKNOWN_NO_AUTHENTIC_PROTECTED_RESIDUAL"
