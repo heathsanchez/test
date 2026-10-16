@@ -1,0 +1,55 @@
+{
+  "schema": "UDM_MINIMUM_SUFFICIENT_AUTHORITY_V4_RESULT",
+  "source_base": "95029db0d0b2122836bee7268299461bfbdb5a66",
+  "qualification_source": "70bd44527d151e175831085af9a3692f48bc5e50",
+  "branch": "research/udm-minimum-sufficient-authority-v4-20261017",
+  "interpretation": "WARRANTED_BOUNDED_STATIC_SELECTION_AND_GENERATED_PYTEST_NATIVE_SMOKE",
+  "static_contracts": {
+    "total": 17,
+    "passed": 17,
+    "failed": 0,
+    "run": 38968231057,
+    "status": "PASS"
+  },
+  "native_fixture": {
+    "run": 38968634892,
+    "status": "PASS_NATIVE_SMOKE_ONLY",
+    "artifact_id": 12075573009,
+    "artifact_sha256": "d405b5632bc67e908de49c82241420ad37a44f3265688b975252e0a5dbadd3a1",
+    "invalid_fixture_data_test_exit": 0,
+    "invalid_fixture_imported_test_exit": 1,
+    "invalid_collected_test_exit": 2
+  },
+  "boundary": {
+    "source_identity": "all tracked bytes included in SHA256",
+    "environment_inference": "only explicit test fixture/data directories excluded from source API AST inference",
+    "selection": "candidate environment only, not native warrant",
+    "pinned_conflict": "exact version conflict is decidable incompatibility, missing dependency remains UNKNOWN",
+    "old_verifier": "unchanged",
+    "previously_exposed_7": "NOT_RERUN_NO_RETROSPECTIVE_PROMOTION",
+    "fresh_frontier": "NOT_RUN_NO_INTEGRATED_INDEPENDENT_V4_NATIVE_ADMISSION",
+    "agent_comparator": "NOT_RUN",
+    "fully_informed_ledger": "NOT_RUN",
+    "actual_source_native_external_tasks": "NOT_RUN",
+    "costs": "INCOMPLETE_LIFECYCLE",
+    "v3_audit_git_index_limit": "PRESERVED_UNKNOWN"
+  },
+  "verdicts": {
+    "G0_G1": "PRESERVED_PREVIOUS_AUTHORITY",
+    "V4_SELECTOR": "WARRANTED_BOUNDED",
+    "V4_GENERATED_NATIVE_SMOKE": "PASS",
+    "GENERIC_EXTERNAL_NATIVE_ADMISSION": "UNKNOWN",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "difference_against_parent": [
+    "added .github/workflows/udm-native-authority-v4.yml",
+    "added native_environment_selection_v4.py",
+    "added test_native_environment_selection_v4.py",
+    "added qualify_native_source_role_v4.py"
+  ],
+  "smallest_unresolved": "Independently integrate and qualify the V4 selector through the unmodified authenticated native-admission worker, then prefreeze a genuinely new external source pool. Four additional V3 categories remain UNKNOWN (dynamic metadata, metadata grammar, interface, catalog profile). No present support for full lifecycle superiority."
+}
