@@ -96,7 +96,8 @@ def execute():
             "    module=importlib.util.module_from_spec(spec)\n"
             "    spec.loader.exec_module(module)\n")
         imported=invoke(root)
-        if imported["exit_code"]==0 or "TabError" not in imported["stdout_tail"]:
+        if (imported["exit_code"]!=1 or "broken.py" not in imported["stdout_tail"] or
+                not any(name in imported["stdout_tail"] for name in ("TabError","IndentationError"))):
             raise AssertionError("native execution did not expose imported broken fixture: "+json.dumps(imported,sort_keys=True))
 
         # A collected malformed test cannot inherit fixture-data exemption.
@@ -105,7 +106,8 @@ def execute():
         if refused["reason"]!="UNKNOWN_SOURCE_PARSER":
             raise AssertionError("malformed collected test escaped conservative selector")
         collected=invoke(root)
-        if collected["exit_code"]==0 or "TabError" not in collected["stdout_tail"]:
+        if (collected["exit_code"]==0 or
+                not any(name in collected["stdout_tail"] for name in ("TabError","IndentationError"))):
             raise AssertionError("native pytest failed to report broken test collection")
 
         return {"schema":"UDM_V4_SOURCE_ROLE_NATIVE_SMOKE_V1",
