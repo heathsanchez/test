@@ -177,8 +177,8 @@ def run(out):
         plans={name:order[:HORIZON] for name,order in sorted(orders.items())}
         universe=sorted({ident for seq in plans.values() for ident in seq})
         report.update(policy_count=len(plans),row_count=len(rows),
-                      builder_classes=sorted({str(r["builder"][0]) for r in rows}),
-                      distinct_signatures=len({str((r["selector"],r["builder"])) for r in rows}),
+                      builder_classes=sorted({str(r["builder"][0]) for r in rows.values()}),
+                      distinct_signatures=len({str((r["selector"],r["builder"])) for r in rows.values()}),
                       eligible_original_operations=len(universe),
                       stratified_original_signatures=True,
                       frozen_plans_sha256=bridge.digest(bridge.canonical(plans).encode()),
