@@ -1,0 +1,35 @@
+test_certificate_validation_reexecutes_independent_original_collection (research.unified_consequence_runtime.test_native_execution_v2.NativeExecutionCertificateContracts.test_certificate_validation_reexecutes_independent_original_collection) ... ERROR
+test_independent_collection_and_honest_protected_failure_then_native_success (research.unified_consequence_runtime.test_native_execution_v2.NativeExecutionCertificateContracts.test_independent_collection_and_honest_protected_failure_then_native_success) ... ERROR
+
+======================================================================
+ERROR: test_certificate_validation_reexecutes_independent_original_collection (research.unified_consequence_runtime.test_native_execution_v2.NativeExecutionCertificateContracts.test_certificate_validation_reexecutes_independent_original_collection)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v2.py", line 52, in test_certificate_validation_reexecutes_independent_original_collection
+    certificate=worker.collect(self.contract,self.authority,self.root/'collect-replay',policy=self.policy)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v2.py", line 234, in collect
+    'collection':_collection(data,authority,files),'packet':packet,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v2.py", line 211, in _collection
+    raise ValueError('UNKNOWN_SOURCE_OR_IMPORT_IDENTITY')
+ValueError: UNKNOWN_SOURCE_OR_IMPORT_IDENTITY
+
+======================================================================
+ERROR: test_independent_collection_and_honest_protected_failure_then_native_success (research.unified_consequence_runtime.test_native_execution_v2.NativeExecutionCertificateContracts.test_independent_collection_and_honest_protected_failure_then_native_success)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v2.py", line 39, in test_independent_collection_and_honest_protected_failure_then_native_success
+    certificate=worker.collect(self.contract,self.authority,self.root/'collect-positive',policy=self.policy)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v2.py", line 234, in collect
+    'collection':_collection(data,authority,files),'packet':packet,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v2.py", line 211, in _collection
+    raise ValueError('UNKNOWN_SOURCE_OR_IMPORT_IDENTITY')
+ValueError: UNKNOWN_SOURCE_OR_IMPORT_IDENTITY
+
+----------------------------------------------------------------------
+Ran 2 tests in 1.382s
+
+FAILED (errors=2)
