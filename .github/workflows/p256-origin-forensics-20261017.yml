@@ -1,0 +1,66 @@
+name: P256 origin bounded forensics
+on:
+  push:
+    branches:
+      - research/p256-origin-forensics-20261017
+    paths:
+      - research/p256_origin_20261017/**
+      - .github/workflows/p256-origin-forensics-20261017.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-scoped-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify toolchain and Boost headers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 --version
+          g++ --version | head -n 1
+          openssl version
+          if [[ ! -f /usr/include/boost/multiprecision/cpp_int.hpp ]]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y libboost-dev
+          fi
+      - name: Reproduce source calibration and new bounded negatives
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/p256_origin_20261017/p256_origin_probe.py --out /tmp/p256_origin_results.json
+      - name: Validate explicit boundaries (not a general origin claim)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          r = json.load(open('/tmp/p256_origin_results.json'))
+          assert r['calibration']['freeLIP_matches']==6
+          assert r['calibration']['lrand48_matches']==14
+          assert r['target']['order_n_check'] is True
+          assert r['scanner_positive_control']['pass'] is True
+          assert r['scanner_historical_positive_control']['pass'] is True
+          small=r['searches']['freeLIP_small_seeds']
+          timewin=r['searches']['freeLIP_timestamp_window']
+          assert small['seed_count']==65536 and small['first_prng_outputs']==192
+          assert small['checked_windows']==95682560 and not small['hits']
+          assert timewin['seed_count']==172801 and timewin['first_prng_outputs']==192
+          assert timewin['seed_start']==871609954
+          assert timewin['checked_windows']==252289460 and not timewin['hits']
+          assert not any(x['hits'] for x in r['searches']['historical_lrand48_raw_substring']['runs'])
+          assert r['status']=='NO_EXACT_MATCH_IN_DECLARED_GRAMMARS; GENERAL_ORIGIN_UNKNOWN'
+          print('PASS_BOUNDARY_EXACT_NEGATIVE; historical P-256 basepoint origin remains UNKNOWN')
+          PY
+          sha256sum research/p256_origin_20261017/*.py research/p256_origin_20261017/*.cpp /tmp/p256_origin_results.json | tee /tmp/source-hashes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p256-exact-scope-evidence
+          path: |
+            /tmp/p256_origin_results.json
+            /tmp/source-hashes.txt
+            research/p256_origin_20261017/p256_origin_probe.py
+            research/p256_origin_20261017/p256_scan_freelip.cpp
