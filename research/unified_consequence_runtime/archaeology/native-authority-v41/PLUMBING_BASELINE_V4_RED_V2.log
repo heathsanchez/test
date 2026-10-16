@@ -1,0 +1,184 @@
+test_canonical_module_entrypoint_keeps_checker_identity (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_canonical_module_entrypoint_keeps_checker_identity) ... FAIL
+test_checker_is_a_real_importable_v41_function (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_checker_is_a_real_importable_v41_function) ... FAIL
+test_default_frontier_is_versioned_and_stays_unprepared (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_default_frontier_is_versioned_and_stays_unprepared) ... FAIL
+test_gate_pins_new_selector_qualifier_catalog_and_workflow (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_gate_pins_new_selector_qualifier_catalog_and_workflow) ... FAIL
+test_new_environment_is_bound_without_changing_native_worker (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_new_environment_is_bound_without_changing_native_worker) ... FAIL
+test_new_paths_and_baseline_preserve_all_previous_v4_bytes (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_new_paths_and_baseline_preserve_all_previous_v4_bytes) ... FAIL
+test_no_source_reading_cli_can_self_authorize (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_no_source_reading_cli_can_self_authorize) ... ok
+test_old_catalog_path_is_not_an_authority_for_v41 (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_old_catalog_path_is_not_an_authority_for_v41) ... FAIL
+test_original_policy_search_uses_private_v41_dispatch (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_original_policy_search_uses_private_v41_dispatch) ... FAIL
+test_screening_and_original_matched_budgets_do_not_change (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_screening_and_original_matched_budgets_do_not_change) ... ok
+test_v41_result_and_exact_new_catalog_can_satisfy_the_gate (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_v41_result_and_exact_new_catalog_can_satisfy_the_gate) ... FAIL
+test_v4_result_cannot_qualify_the_new_dependency_metadata_policy (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_v4_result_cannot_qualify_the_new_dependency_metadata_policy) ... FAIL
+test_curator_cannot_retarget_an_existing_query_lineage (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_curator_cannot_retarget_an_existing_query_lineage) ... ok
+test_curator_import_has_no_universe_and_uses_v41_authority (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_curator_import_has_no_universe_and_uses_v41_authority) ... FAIL
+test_every_prior_v4_universe_member_is_excluded (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_every_prior_v4_universe_member_is_excluded) ... FAIL
+test_local_record_assembler_is_bound_to_new_records (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_local_record_assembler_is_bound_to_new_records) ... FAIL
+test_v41_gate_precedes_any_universe_file_read (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_v41_gate_precedes_any_universe_file_read) ... ok
+test_workflow_is_new_source_pinned_and_does_not_claim_an_actual_agent (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_workflow_is_new_source_pinned_and_does_not_claim_an_actual_agent) ... FAIL
+
+======================================================================
+FAIL: test_canonical_module_entrypoint_keeps_checker_identity (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_canonical_module_entrypoint_keeps_checker_identity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 146, in test_canonical_module_entrypoint_keeps_checker_identity
+    self.assertEqual(called, [MODULE])
+AssertionError: Lists differ: ['research.unified_consequence_runtime.qualify_native_frontier_v4'] != ['research.unified_consequence_runtime.qualify_native_frontier_v41']
+
+First differing element 0:
+'research.unified_consequence_runtime.qualify_native_frontier_v4'
+'research.unified_consequence_runtime.qualify_native_frontier_v41'
+
+- ['research.unified_consequence_runtime.qualify_native_frontier_v4']
++ ['research.unified_consequence_runtime.qualify_native_frontier_v41']
+?                                                                  +
+
+
+======================================================================
+FAIL: test_checker_is_a_real_importable_v41_function (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_checker_is_a_real_importable_v41_function)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 101, in test_checker_is_a_real_importable_v41_function
+    self.assertEqual(record['module'], MODULE)
+AssertionError: 'research.unified_consequence_runtime.qualify_native_frontier_v4' != 'research.unified_consequence_runtime.qualify_native_frontier_v41'
+- research.unified_consequence_runtime.qualify_native_frontier_v4
++ research.unified_consequence_runtime.qualify_native_frontier_v41
+?                                                                +
+
+
+======================================================================
+FAIL: test_default_frontier_is_versioned_and_stays_unprepared (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_default_frontier_is_versioned_and_stays_unprepared)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 65, in test_default_frontier_is_versioned_and_stays_unprepared
+    self.assertEqual(value['schema'], 'UDM_NATIVE_FRONTIER_PROTOCOL_V41')
+AssertionError: 'UDM_NATIVE_FRONTIER_PROTOCOL_V4' != 'UDM_NATIVE_FRONTIER_PROTOCOL_V41'
+- UDM_NATIVE_FRONTIER_PROTOCOL_V4
++ UDM_NATIVE_FRONTIER_PROTOCOL_V41
+?                                +
+
+
+======================================================================
+FAIL: test_gate_pins_new_selector_qualifier_catalog_and_workflow (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_gate_pins_new_selector_qualifier_catalog_and_workflow)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 135, in test_gate_pins_new_selector_qualifier_catalog_and_workflow
+    self.assertTrue(required <= set(self.q.ENVIRONMENT_GATE_FILES),
+AssertionError: False is not true : the independent V41 qualification must pin all new authority sources
+
+======================================================================
+FAIL: test_new_environment_is_bound_without_changing_native_worker (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_new_environment_is_bound_without_changing_native_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 81, in test_new_environment_is_bound_without_changing_native_worker
+    self.assertEqual(self.q.environment.__name__,
+AssertionError: 'research.unified_consequence_runtime.native_environment_v4' != 'research.unified_consequence_runtime.native_environment_v41'
+- research.unified_consequence_runtime.native_environment_v4
++ research.unified_consequence_runtime.native_environment_v41
+?                                                           +
+
+
+======================================================================
+FAIL: test_new_paths_and_baseline_preserve_all_previous_v4_bytes (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_new_paths_and_baseline_preserve_all_previous_v4_bytes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 70, in test_new_paths_and_baseline_preserve_all_previous_v4_bytes
+    self.assertEqual(self.q.RECORDS, RESEARCH/'archaeology/native-authority-v41')
+AssertionError: Posix[33 chars]/unified_consequence_runtime/archaeology/native-authority-v4') != Posix[33 chars]/unified_consequence_runtime/archaeology/native-authority-v41')
+
+======================================================================
+FAIL: test_old_catalog_path_is_not_an_authority_for_v41 (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_old_catalog_path_is_not_an_authority_for_v41)
+----------------------------------------------------------------------
+ValueError: v4 environment qualification is not a separate admission-only gate
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 126, in test_old_catalog_path_is_not_an_authority_for_v41
+    with self.assertRaisesRegex(ValueError, r'V41 catalog|v41 catalog|v4\.1 catalog'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "V41 catalog|v41 catalog|v4\.1 catalog" does not match "v4 environment qualification is not a separate admission-only gate"
+
+======================================================================
+FAIL: test_original_policy_search_uses_private_v41_dispatch (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_original_policy_search_uses_private_v41_dispatch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 96, in test_original_policy_search_uses_private_v41_dispatch
+    self.assertEqual(bound.__globals__['MODULE'], MODULE)
+AssertionError: 'research.unified_consequence_runtime.qualify_native_frontier_v4' != 'research.unified_consequence_runtime.qualify_native_frontier_v41'
+- research.unified_consequence_runtime.qualify_native_frontier_v4
++ research.unified_consequence_runtime.qualify_native_frontier_v41
+?                                                                +
+
+
+======================================================================
+FAIL: test_v41_result_and_exact_new_catalog_can_satisfy_the_gate (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_v41_result_and_exact_new_catalog_can_satisfy_the_gate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 116, in test_v41_result_and_exact_new_catalog_can_satisfy_the_gate
+    actual = self.q.require_environment_gate(value)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v4.py", line 120, in require_environment_gate
+    raise ValueError('v4 environment qualification is not a separate admission-only gate')
+ValueError: v4 environment qualification is not a separate admission-only gate
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 118, in test_v41_result_and_exact_new_catalog_can_satisfy_the_gate
+    self.fail('V41 gate/schema/catalog binding is missing: '+str(error))
+AssertionError: V41 gate/schema/catalog binding is missing: v4 environment qualification is not a separate admission-only gate
+
+======================================================================
+FAIL: test_v4_result_cannot_qualify_the_new_dependency_metadata_policy (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_v4_result_cannot_qualify_the_new_dependency_metadata_policy)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 108, in test_v4_result_cannot_qualify_the_new_dependency_metadata_policy
+    with self.assertRaisesRegex(ValueError, r'V41|v41|v4\.1'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_curator_import_has_no_universe_and_uses_v41_authority (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_curator_import_has_no_universe_and_uses_v41_authority)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 181, in test_curator_import_has_no_universe_and_uses_v41_authority
+    self.assertEqual(curator.q.MODULE, MODULE)
+AssertionError: 'research.unified_consequence_runtime.qualify_native_frontier_v4' != 'research.unified_consequence_runtime.qualify_native_frontier_v41'
+- research.unified_consequence_runtime.qualify_native_frontier_v4
++ research.unified_consequence_runtime.qualify_native_frontier_v41
+?                                                                +
+
+
+======================================================================
+FAIL: test_every_prior_v4_universe_member_is_excluded (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_every_prior_v4_universe_member_is_excluded)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 198, in test_every_prior_v4_universe_member_is_excluded
+    self.assertTrue(set(prior['repositories']) <= set(excluded),
+AssertionError: False is not true : all nine previously queried V4 repositories are historical exposures
+
+======================================================================
+FAIL: test_local_record_assembler_is_bound_to_new_records (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_local_record_assembler_is_bound_to_new_records)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 206, in test_local_record_assembler_is_bound_to_new_records
+    self.assertEqual(assembler.q.MODULE, MODULE)
+AssertionError: 'research.unified_consequence_runtime.qualify_native_frontier_v4' != 'research.unified_consequence_runtime.qualify_native_frontier_v41'
+- research.unified_consequence_runtime.qualify_native_frontier_v4
++ research.unified_consequence_runtime.qualify_native_frontier_v41
+?                                                                +
+
+
+======================================================================
+FAIL: test_workflow_is_new_source_pinned_and_does_not_claim_an_actual_agent (research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_workflow_is_new_source_pinned_and_does_not_claim_an_actual_agent)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v41.py", line 228, in test_workflow_is_new_source_pinned_and_does_not_claim_an_actual_agent
+    self.assertTrue('research/udm-native-authority-v4-includes-20261016' in raw,
+AssertionError: False is not true : V41 workflow must use the new declared research branch
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.124s
+
+FAILED (failures=14)
