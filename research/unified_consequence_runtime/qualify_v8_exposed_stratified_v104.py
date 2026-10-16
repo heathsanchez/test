@@ -146,7 +146,8 @@ def run(out):
     root.mkdir(parents=True)
     report={"schema":SCHEMA,"state":"EXPOSED_DIAGNOSTIC_ONLY",
             "status":"UNKNOWN","G2":"UNKNOWN","G3":"UNKNOWN","G4":"UNKNOWN",
-            "source":"pallets/click PR3884, original baseline + head tests only",\n            "preceding_complete_cap64_run":38978813909,
+            "source":"pallets/click PR3884, original baseline + head tests only",
+            "preceding_complete_cap64_run":38978813909,
             "full_suite_red_run":38977284706,
             "first_scoped_native_run":38977751776,
             "futures_unopened":["jd/tenacity","pypa/packaging"],
@@ -167,8 +168,11 @@ def run(out):
         # Bound the candidate candidate universe BEFORE looking at outcomes.
         plans={name:order[:HORIZON] for name,order in sorted(orders.items())}
         universe=sorted({ident for seq in plans.values() for ident in seq})
-        report.update(policy_count=len(plans),row_count=len(rows),\n                      builder_classes=sorted({str(r["builder"][0]) for r in rows}),\n                      distinct_signatures=len({str((r["selector"],r["builder"])) for r in rows}),
-                      eligible_original_operations=len(universe),\n                      stratified_original_signatures=True,
+        report.update(policy_count=len(plans),row_count=len(rows),
+                      builder_classes=sorted({str(r["builder"][0]) for r in rows}),
+                      distinct_signatures=len({str((r["selector"],r["builder"])) for r in rows}),
+                      eligible_original_operations=len(universe),
+                      stratified_original_signatures=True,
                       frozen_plans_sha256=bridge.digest(bridge.canonical(plans).encode()),
                       original_policy_source=catalog["source"],
                       total_native_call_ceiling=TOTAL_NATIVE_BUDGET)
