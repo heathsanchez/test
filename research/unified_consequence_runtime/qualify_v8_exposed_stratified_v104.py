@@ -93,7 +93,12 @@ def stratified_catalog(repo,base,production_paths,triskelion,msi,*,cap=64):
         raise ValueError("frozen source production files required")
     ns,pin=_original_program_namespace(triskelion)
     signatures=[(sel,builder) for sel in ns["SELECTORS"] for builder in ns["BUILDERS"]]
-    if len(signatures)!=75 or len(set(signatures))!=75:
+    # Python equality merges ('CONST', False) with ('CONST', 0) and
+    # ('CONST', True) with ('CONST', 1). These are declared original
+    # signatures but not separately discriminable by V104's allowed set.
+    # Retain all 75 declared source signatures and require an exact repr
+    # match before treating any original emission as that signature.
+    if len(signatures)!=75:
         raise ValueError("original V104 signature grammar changed")
     signatures.sort(key=lambda t:ns["h"]("program|"+repr(t)))
     snap,regular=bridge._blobs(repo,base)
@@ -109,7 +114,7 @@ def stratified_catalog(repo,base,production_paths,triskelion,msi,*,cap=64):
             if not candidates:
                 continue
             selector,builder,text=candidates[0]
-            if (selector,builder)!=sig or text==src or text in seen:
+            if repr((selector,builder))!=repr(sig) or text==src or text in seen:
                 continue
             seen.add(text)
             locations=bridge.original.changed_lines(src,text)
@@ -136,6 +141,8 @@ def stratified_catalog(repo,base,production_paths,triskelion,msi,*,cap=64):
                       "msi_policy":"ORIGINAL_PINNED_MSI_V10",
                       "search_variant":"ROUND_ROBIN_ONE_PER_ORIGINAL_SIGNATURE",
                       "v104_signature_count":len(signatures),
+                      "v104_equality_distinct_signature_count":len(set(signatures)),
+                      "source_python_bool_int_signature_aliases":len(signatures)-len(set(signatures)),
                       "original_method_pin":pin,
                       "additional_operators":0},
             "budget_horizon":"64 max distinct one-per-signature emitted, two native runs each"}
