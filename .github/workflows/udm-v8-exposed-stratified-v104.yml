@@ -85,11 +85,11 @@ jobs:
           test "$(git rev-parse HEAD:research/unified_consequence_runtime/test_v8_original_signature_stratification.py)" = c3e6e5e65781e859594dab6194be071e3e77b61f
           git show HEAD:research/unified_consequence_runtime/archaeology/typed-v104-v8/PROTOCOL.json > qualification/v8-stratified/PROTOCOL_FROZEN.json
           python -B -m unittest research.unified_consequence_runtime.test_v8_original_signature_stratification -v 2>&1 | tee qualification/v8-stratified/CONTRACTS.log
-      - name: Execute original V104 signature-stratified, predeclared cap64 native diagnostic
+      - name: Execute *verified V8 module* with guarded diverse signatures and bounded native observations
         run: |
           set +e
           # No GitHub token is injected into execution of original upstream tests.
-          python -B -m research.unified_consequence_runtime.qualify_v7_exposed_v104_cap64 \
+          python -B -m research.unified_consequence_runtime.qualify_v8_exposed_stratified_v104 \
             > qualification/v8-stratified/SCIENCE.log 2>&1
           exitcode=$?
           echo "$exitcode" > qualification/v8-stratified/SCIENCE_EXIT.txt
@@ -107,10 +107,15 @@ jobs:
           else:
               r=json.loads(p.read_text())
               assert r['state']=='EXPOSED_DIAGNOSTIC_ONLY'
+              assert r['schema']=='UDM_V8_EXPOSED_STRATIFIED_ORIGINAL_V104_CENSUS',r.get('schema')
+              assert r['stratified_original_signatures'] is True
+              assert len(r['builder_classes'])>=2, r['builder_classes']
+              assert r['distinct_signatures']>=2
+              assert r['preceding_complete_cap64_run']==38978813909
               assert r['G2']==r['G3']==r['G4']=='UNKNOWN'
               assert r['futures_unopened']==['jd/tenacity','pypa/packaging']
               assert r['native_calls']<=130
-              print('V7_EXPOSED_MSI_RESULT',r['status'],
+              print('V8_EXPOSED_STRATIFIED_RESULT',r['status'],
                     'candidate_native_calls',r['native_calls'],
                     'unique_candidate_count',len(r['native_evaluations']),
                     'original_policies',r['policy_count'])
