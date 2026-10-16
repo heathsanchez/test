@@ -1,0 +1,124 @@
+name: V8 exposed original V104 stratified source-native diagnostic (G2 UNKNOWN)
+on:
+  push:
+    branches: [research/udm-v8-balanced-v104-exposed-20261017]
+    paths:
+      - .github/workflows/udm-v8-exposed-stratified-v104.yml
+      - research/unified_consequence_runtime/qualify_v8_exposed_stratified_v104.py
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: udm-v8-exposed-stratified-v104-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  frozen-original-v104-stratified:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+      GIT_CONFIG_NOSYSTEM: '1'
+      UDM_V7_TRISKELION: ${{ github.workspace }}/components/triskelion
+      UDM_V7_MSI: ${{ github.workspace }}/components/msi
+      UDM_V7_MSI_CENSUS_OUT: ${{ github.workspace }}/qualification/v8-stratified/native
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Authenticate already qualified V7 bridge, previously exposed source and budget
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/v8-stratified
+          git rev-parse HEAD > qualification/v8-stratified/SOURCE_COMMIT.txt
+          for path in \
+            research/unified_consequence_runtime/typed_native_authority_v6.py \
+            research/unified_consequence_runtime/typed_source_inventory_v5.py \
+            research/unified_consequence_runtime/typed_v104_msi_bridge_v7.py \
+            research/unified_consequence_runtime/qualify_typed_v104_prospective_v7.py \
+            research/unified_consequence_runtime/qualify_v7_exposed_protected_scope.py \
+            research/unified_consequence_runtime/archaeology/typed-v104-v7/PROTOCOL.json \
+            research/unified_consequence_runtime/archaeology/typed-v104-v7/FROZEN_AUTHOR_TEST_REFS.json; do
+            test "$(git rev-parse HEAD:"$path")" = \
+                 "$(git rev-parse c8b90210d54d79a039c128bca699525845bf6691:"$path")"
+          done
+          python - <<'PY' | tee qualification/v8-stratified/FREEZE.json
+          import hashlib,json,subprocess
+          from pathlib import Path
+          path=Path('research/unified_consequence_runtime/qualify_v8_exposed_stratified_v104.py')
+          print(json.dumps({'mode':'EXPOSED_DIAGNOSTIC_NOT_G2',
+                  'old_full_suite_red':38977284706,'old_scoped_qual':38977751776,
+                  'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                  'script_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+                  'native_budget_ceiling':130,'per_method_horizon':64,
+                  'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN','GH_TOKEN_IN_TEST_ENV':False},sort_keys=True))
+          PY
+      - name: Fetch original V104 and MSI exact source, no historical experiments
+        run: |
+          set -euo pipefail
+          mkdir -p components
+          git fetch --no-tags --depth=1 origin 6031466188046f56b4660d772d13ad731ed4c0f2
+          git init -q components/triskelion
+          git -C components/triskelion fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C components/triskelion checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q components/msi
+          git -C components/msi fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C components/msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+      - name: Fixed native Python packages, no outcome-dependent install
+        run: |
+          set -euo pipefail
+          python -B -m pip install --disable-pip-version-check --no-input \
+            pytest==8.3.5 pytest-cov==6.2.1 pluggy==1.6.0 coverage==7.10.6 \
+            packaging==26.3 attrs==24.3.0 hypothesis==6.122.3 \
+            typing_extensions==4.12.2 colorama==0.4.6 rich==13.9.4 \
+            click==8.2.0 tenacity==9.1.2 markupsafe==3.0.2
+      - name: Check precommitted V8 source-exposed policy and frozen original-method tests
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/test_v8_original_signature_stratification.py)" = c3e6e5e65781e859594dab6194be071e3e77b61f
+          git show HEAD:research/unified_consequence_runtime/archaeology/typed-v104-v8/PROTOCOL.json > qualification/v8-stratified/PROTOCOL_FROZEN.json
+          python -B -m unittest research.unified_consequence_runtime.test_v8_original_signature_stratification -v 2>&1 | tee qualification/v8-stratified/CONTRACTS.log
+      - name: Execute original V104 signature-stratified, predeclared cap64 native diagnostic
+        run: |
+          set +e
+          # No GitHub token is injected into execution of original upstream tests.
+          python -B -m research.unified_consequence_runtime.qualify_v7_exposed_v104_cap64 \
+            > qualification/v8-stratified/SCIENCE.log 2>&1
+          exitcode=$?
+          echo "$exitcode" > qualification/v8-stratified/SCIENCE_EXIT.txt
+          tail -n 35 qualification/v8-stratified/SCIENCE.log
+          exit "$exitcode"
+      - name: Verify no retrospective G2 or method-uniqueness promotion
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('qualification/v8-stratified/native/RESULT.json')
+          if not p.exists():
+              print('UNKNOWN_NO_REAL_SOURCE_CENSUS_RECEIPT')
+          else:
+              r=json.loads(p.read_text())
+              assert r['state']=='EXPOSED_DIAGNOSTIC_ONLY'
+              assert r['G2']==r['G3']==r['G4']=='UNKNOWN'
+              assert r['futures_unopened']==['jd/tenacity','pypa/packaging']
+              assert r['native_calls']<=130
+              print('V7_EXPOSED_MSI_RESULT',r['status'],
+                    'candidate_native_calls',r['native_calls'],
+                    'unique_candidate_count',len(r['native_evaluations']),
+                    'original_policies',r['policy_count'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-v8-exposed-stratified-v104-${{ github.sha }}-${{ github.run_attempt }}
+          path: qualification/v8-stratified/
+          retention-days: 90
+          if-no-files-found: warn
