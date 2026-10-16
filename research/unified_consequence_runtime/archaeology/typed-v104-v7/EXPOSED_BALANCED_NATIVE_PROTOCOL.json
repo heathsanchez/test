@@ -1,0 +1,34 @@
+{
+  "schema": "UDM_V7_EXPOSED_BALANCED_V104_NATIVE_PROTOCOL",
+  "upstream_science": "G2 UNKNOWN; previously exposed Click training; original frozen V7 RED 38977284706 remains immutable",
+  "exact_source": {
+    "repository": "pallets/click",
+    "pr": 3884,
+    "base": "bb695aaecdef95832d167fc1d508921745aa824e",
+    "head_test_blob": "b35277fcbb74b7bfed6f615ede9039a97f737c74",
+    "production_path": "src/click/core.py",
+    "author_test_path": "tests/test_options.py"
+  },
+  "source_only_balanced_gate": {
+    "source_commit": "0ff7b75b91c262bb6cd3cbde3cdc4f950a1ea42e",
+    "CI_run": 38979430841,
+    "original_cap64_families": 1,
+    "balanced_cap64_families": 64
+  },
+  "native_methods": {
+    "original_v104": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "v104_balanced": "v104_family_balance_v7.py",
+    "v6_worker": "74b1bd4b9357a32e6ec3d68fc26ea12d23c7780f"
+  },
+  "test_contract": "Entire exact independently authored tests/test_options.py, original config, all protected changed nodes executed, zero skip, source/import digests rechecked; two native executions per candidate",
+  "frozen_horizon": {
+    "distinct_candidate_cap": 64,
+    "native_evaluations_per_candidate": 2,
+    "baseline_native_evaluations": 2,
+    "total_native_calls_ceiling": 130,
+    "wall_seconds_ceiling": 3300
+  },
+  "privacy_authority": "No secrets, tokens, emails or user data supplied to upstream tests. No upstream repository writes. Only local ephemerals and isolated research branch.",
+  "baseline": "Original emitted cap64 tested separately in Actions #38978813909; matched source, 130 native call budget, original V104 exact grammar.",
+  "verdict_policy": "This is a retrospective exposed diagnostic. A verified balanced-native win is only a bounded method-emission scheduling result, NEVER G2; G3-G6 UNKNOWN. No superiority or cost advantage without charged full lifecycle comparison."
+}
