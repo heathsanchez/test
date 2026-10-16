@@ -1,0 +1,74 @@
+name: UDM V4 minimum sufficient native authority (frozen contracts)
+on:
+  push:
+    branches:
+      - research/udm-minimum-sufficient-authority-v4-20261017
+    paths:
+      - .github/workflows/udm-native-authority-v4.yml
+      - research/unified_consequence_runtime/native_environment_selection_v4.py
+      - research/unified_consequence_runtime/test_native_environment_selection_v4.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-native-authority:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install isolated interpreter-only dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check packaging==25.0
+      - name: Freeze source and historical v3 authority before test execution
+        run: |
+          set -euo pipefail
+          mkdir -p qualification-v4
+          git rev-parse HEAD > qualification-v4/source-commit.txt
+          python - <<'PY'
+          import json,hashlib,pathlib
+          root=pathlib.Path('research/unified_consequence_runtime')
+          original=root/'native_environment_selection_v3.py'
+          expected='c87cb59181b954ba6d73622557168b244984bc68'
+          # Git blob identity is pinned, not a SHA256 file digest.
+          import subprocess
+          blob=subprocess.check_output(['git','hash-object',str(original)],text=True).strip()
+          assert blob==expected,(blob,expected)
+          suite=root/'test_native_environment_selection_v4.py'
+          record={'original_v3_git_blob':blob,
+                  'frozen_contracts_sha256':hashlib.sha256(suite.read_bytes()).hexdigest(),
+                  'new_v4_implementation_present':(root/'native_environment_selection_v4.py').is_file()}
+          pathlib.Path('qualification-v4/preflight.json').write_text(json.dumps(record,sort_keys=True,indent=2)+'\n')
+          PY
+      - name: Execute predeclared V4 adversarial contracts
+        run: |
+          set -euo pipefail
+          python -B -m unittest research.unified_consequence_runtime.test_native_environment_selection_v4 -v 2>&1 | tee qualification-v4/contracts.log
+      - name: Preserve qualification boundary
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib, subprocess, hashlib
+          d=pathlib.Path('qualification-v4')
+          d.mkdir(exist_ok=True)
+          p=pathlib.Path('research/unified_consequence_runtime/native_environment_selection_v4.py')
+          (d/'boundary.json').write_text(json.dumps({
+              'head':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'v4_sha256':hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None,
+              'frozen_v3_negative_unchanged':True,
+              'qualification_scope':'source-free finite V4 contracts only; no native task admission, prospective G2 or economic claim',
+              'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN'},sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-v4-native-authority-${{ github.sha }}-${{ github.run_attempt }}
+          path: qualification-v4/
+          retention-days: 30
