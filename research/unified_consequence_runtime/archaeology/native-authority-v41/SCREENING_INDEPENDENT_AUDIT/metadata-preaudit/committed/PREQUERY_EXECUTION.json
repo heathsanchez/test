@@ -1,0 +1,53 @@
+{
+  "archive_sha256": "90dcaba5ecc47761890ad17a3761924863eb4b33ae4acf38f6aa1d870af455e0",
+  "code": {
+    "path": "research/unified_consequence_runtime/archaeology/native-authority-v41/curate_frontier.py",
+    "sha256": "6f61fb5f9faec1f1e282627fa9ffc428b89ecc9cc4aecebd97b53d5f6790aa5c",
+    "source_commit": "a7d03cf43227fcdd40779e8a8aef8a2bb163f95d"
+  },
+  "committed_bytes_verified_at_utc": "2026-10-16T19:37:32.084127+00:00",
+  "environment_gate": {
+    "artifact_id": 12069448596,
+    "artifact_sha256": "90dcaba5ecc47761890ad17a3761924863eb4b33ae4acf38f6aa1d870af455e0",
+    "qualification_result_sha256": "0ea3843c9b9d80c59a9102312813cf586216c1ce78d69dc9b47b400b2029de43",
+    "result_path": "research/unified_consequence_runtime/archaeology/native-authority-v41/CI_38954969411_RESULT.json",
+    "run_id": 38954969411,
+    "source_commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac",
+    "status": "ADMISSION_ONLY_QUALIFIED"
+  },
+  "gate_descriptor": {
+    "path": "research/unified_consequence_runtime/archaeology/native-authority-v41/ENVIRONMENT_GATE.json",
+    "sha256": "c865badc44406d65db19a604981c44f4d4d701fb0deba9f4d4163e684d00cccb",
+    "source_commit": "a7d03cf43227fcdd40779e8a8aef8a2bb163f95d"
+  },
+  "plan": {
+    "path": "research/unified_consequence_runtime/archaeology/native-authority-v41/PREQUERY.json",
+    "sha256": "86ec0464b589736e0e43bcdc49d14841d3006bda37f9a4b759eb19291715d547",
+    "source_commit": "a7d03cf43227fcdd40779e8a8aef8a2bb163f95d"
+  },
+  "repository_universe_fixed_before_github_queries": [
+    "arrow-py/arrow",
+    "jquast/wcwidth",
+    "networkx/networkx",
+    "pyca/cryptography",
+    "pyparsing/pyparsing",
+    "pytest-dev/pluggy",
+    "python-babel/babel",
+    "python-semver/python-semver",
+    "yaml/pyyaml"
+  ],
+  "requested_roles": 2,
+  "schema": "UDM_COMMITTED_METADATA_PREQUERY_EXECUTION_V41",
+  "screening_budget": {
+    "all_refusals_and_partial_costs_retained": true,
+    "collection_seconds_per_call": 60,
+    "execution_seconds_per_call": 600,
+    "maximum_cases": 9,
+    "maximum_native_executions_per_case": 2,
+    "native_and_independent_verification_costs_charged": true,
+    "total_screening_wall_seconds": 7200
+  },
+  "source_commit": "a7d03cf43227fcdd40779e8a8aef8a2bb163f95d",
+  "state": "PREQUERY_COMMITTED_BEFORE_QUERIES",
+  "target_query_count_before_receipt": 0
+}

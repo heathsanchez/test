@@ -1,0 +1,426 @@
+{
+  "schema": "UDM_V41_BOUNDED_HISTORICAL_EXCLUSION_AUDIT",
+  "status": "PASS",
+  "check_count": 82,
+  "checks": [
+    {
+      "check": "exact_original_plus_versioned_history_inventory",
+      "pass": true,
+      "detail": {
+        "count": 39
+      }
+    },
+    {
+      "check": "historical_bytes:capability_index.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:capability_index.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:sources.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:sources.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:developmental_sources.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:developmental_sources.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:native_policy.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:native_policy.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/decisive-native/FRESH_TASK_METADATA.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/decisive-native/FRESH_TASK_METADATA.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/decisive-native/CODING_AGENT_FREEZE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/decisive-native/CODING_AGENT_FREEZE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/decisive-native/QUALIFICATION_FREEZE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/decisive-native/QUALIFICATION_FREEZE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/decisive-native/PROTOCOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/decisive-native/PROTOCOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/decisive-native/AUTHOR_TEST_BLOBS.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/decisive-native/AUTHOR_TEST_BLOBS.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/recursive-frontier/GREEN_MAINTENANCE_FREEZE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/recursive-frontier/GREEN_MAINTENANCE_FREEZE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-authority-v4/HISTORICAL_REPOSITORIES.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-authority-v4/HISTORICAL_REPOSITORIES.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/programme-closure/FROZEN_UNIVERSE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/programme-closure/FROZEN_UNIVERSE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/programme-closure/DISCOVERED_CANDIDATES.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/programme-closure/DISCOVERED_CANDIDATES.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:external_pr_v1/FROZEN_PROTOCOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:external_pr_v1/FROZEN_PROTOCOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:external_pr_v1/admission_policy.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:external_pr_v1/admission_policy.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:native_semantic_genesis_v1/FROZEN_PROTOCOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:native_semantic_genesis_v1/FROZEN_PROTOCOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:native_unbounded_v1/FROZEN_PROTOCOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:native_unbounded_v1/FROZEN_PROTOCOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:typed_semantic_method_v1/FROZEN_PROTOCOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:typed_semantic_method_v1/FROZEN_PROTOCOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-frontier-v2/PREQUERY.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-frontier-v2/PREQUERY.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-frontier-v2/FRESH_TASK_METADATA.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-frontier-v2/FRESH_TASK_METADATA.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-environment-v3/PREQUERY.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-environment-v3/PREQUERY.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-environment-v3/PREQUERY_EXECUTION.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-environment-v3/PREQUERY_EXECUTION.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-environment-v3/METADATA_CURATION.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-environment-v3/METADATA_CURATION.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-environment-v3/FROZEN_POOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-environment-v3/FROZEN_POOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-environment-v3/SCREENING_ENVELOPES.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-environment-v3/SCREENING_ENVELOPES.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-environment-v3/SCREENING_AUTHORITY.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-environment-v3/SCREENING_AUTHORITY.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-environment-v3/SCREENING_METER.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-environment-v3/SCREENING_METER.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-environment-v3/SCREENING_SHORTFALL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-environment-v3/SCREENING_SHORTFALL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-authority-v4/DECLARED_UNIVERSE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-authority-v4/DECLARED_UNIVERSE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-authority-v4/PREQUERY.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-authority-v4/PREQUERY.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-authority-v4/PREQUERY_EXECUTION.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-authority-v4/PREQUERY_EXECUTION.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-authority-v4/METADATA_CURATION.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-authority-v4/METADATA_CURATION.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-authority-v4/FROZEN_POOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-authority-v4/FROZEN_POOL.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-authority-v4/SCREENING_AUTHORITY.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-authority-v4/SCREENING_AUTHORITY.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-authority-v4/SCREENING_ENVELOPES.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-authority-v4/SCREENING_ENVELOPES.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_bytes:archaeology/native-authority-v4/SCREENING_METER.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "historical_repo_extract:archaeology/native-authority-v4/SCREENING_METER.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "exact_exclusion_evidence",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "all_nine_declared_repositories_disjoint",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "prequery_commit_without_query_or_screening_records",
+      "pass": true,
+      "detail": null
+    }
+  ],
+  "failures": [],
+  "history_input_count": 39,
+  "reconstructed_exclusion_count": 71,
+  "limitations": [
+    "This reconstructs the original bounded accessible metadata scan, not all prior human/model exposure or unlogged external access.",
+    "Missing input records remain explicit; source pinning and local ancestry do not independently timestamp network access."
+  ]
+}

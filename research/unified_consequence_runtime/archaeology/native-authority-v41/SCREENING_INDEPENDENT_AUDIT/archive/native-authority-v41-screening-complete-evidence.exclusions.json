@@ -1,0 +1,33 @@
+{
+  "schema": "UDM_V41_SCREENING_ARCHIVE_EXCLUSIONS",
+  "exclusions": [
+    {
+      "path": "/workspace/qualification/native-authority-v41-screening-audit/committed-source",
+      "reason": "Complete owned committed source is already Git-pinned bd46699ea9933794a1c3fee161039c24a630bf4b and must be supplied as CI_SOURCE by CI; omit duplicate 160MB source bytes from this evidence Git blob. Exact 1694-file Gitblob/SHA256 inventory and verified gate source copies are included.",
+      "file_count": 1694,
+      "total_bytes": 160181849,
+      "inventory": "audit/metadata-preaudit/FULL_SOURCE_IDENTITY.json"
+    },
+    {
+      "path": "/workspace/qualification/native-authority-v41-38954969411.zip",
+      "reason": "Original independently audited Actions38954969411 artifact retained externally; exact hash bound in gate and LINEAGE_PREAUDIT. This packet is screening evidence and does not duplicate 182MB qualification archive.",
+      "sha256": "90dcaba5ecc47761890ad17a3761924863eb4b33ae4acf38f6aa1d870af455e0",
+      "size_bytes": 190257365
+    },
+    {
+      "paths": "External runtime executables, standard libraries, venv/site-packages and downloaded wheel bytes",
+      "reason": "Binary runtime storage excluded; complete all7frozen runtime inventories, independent FS byte audit, package inventory and preparation receipts included. No runtime/native process is replayed from this packet."
+    },
+    {
+      "paths": [
+        "audit/SCREENING_AUDIT.json",
+        "audit/AUDIT_SUMMARY.json",
+        "audit/archive/*"
+      ],
+      "reason": "Final enclosing attestation/summary and archive descriptors accompany archive separately; excluded from payload to avoid circular/self hashes."
+    }
+  ],
+  "no_foreign_base_source_excluded": true,
+  "all_foreign_git_objects_indexes_symlinks_gitlink_directories_retained": true,
+  "head_materialization_absent": "No protected head Git object, head checkout or native overlay exists in any7retained source root; independently verified in SOURCE_IDENTITY_AUDIT, not silently omitted."
+}

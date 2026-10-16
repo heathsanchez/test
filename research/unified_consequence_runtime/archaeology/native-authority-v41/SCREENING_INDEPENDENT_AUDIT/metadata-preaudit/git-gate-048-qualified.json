@@ -1,0 +1,94 @@
+{
+  "schema": "UDM_GIT_INDEX_READ_AUDIT_V4",
+  "argv": [
+    "git",
+    "--no-pager",
+    "--no-replace-objects",
+    "-c",
+    "core.fsmonitor=false",
+    "-C",
+    "/workspace/udm-v54",
+    "show",
+    "--no-ext-diff",
+    "--no-textconv",
+    "4c3f7e276567b4ea8df96c7a8797a889040dc0ac:research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/metadata-evidence/ast-serialize==0.13.0.METADATA"
+  ],
+  "git_optional_locks": "0",
+  "before": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "returncode": 0,
+  "stdout_base64": "TWV0YWRhdGEtVmVyc2lvbjogMi40Ck5hbWU6IGFzdF9zZXJpYWxpemUKVmVyc2lvbjogMC4xMy4wCkNsYXNzaWZpZXI6IERldmVsb3BtZW50IFN0YXR1cyA6OiAzIC0gQWxwaGEKQ2xhc3NpZmllcjogRW52aXJvbm1lbnQgOjogQ29uc29sZQpDbGFzc2lmaWVyOiBJbnRlbmRlZCBBdWRpZW5jZSA6OiBEZXZlbG9wZXJzCkNsYXNzaWZpZXI6IFByb2dyYW1taW5nIExhbmd1YWdlIDo6IFB5dGhvbiA6OiAzCkNsYXNzaWZpZXI6IFByb2dyYW1taW5nIExhbmd1YWdlIDo6IFB5dGhvbiA6OiAzLjkKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTAKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTEKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTIKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTMKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTQKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTUKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUnVzdApDbGFzc2lmaWVyOiBUb3BpYyA6OiBTb2Z0d2FyZSBEZXZlbG9wbWVudApDbGFzc2lmaWVyOiBUeXBpbmcgOjogVHlwZWQKTGljZW5zZS1GaWxlOiBMSUNFTlNFCkxpY2Vuc2UtRmlsZTogY3JhdGVzL0xJQ0VOU0UKU3VtbWFyeTogUHl0aG9uIGJpbmRpbmdzIGZvciBteXB5IEFTVCBzZXJpYWxpemF0aW9uCkF1dGhvci1lbWFpbDogSnVra2EgTGVodG9zYWxvIDxqdWtrYS5sZWh0b3NhbG9AaWtpLmZpPgpMaWNlbnNlLUV4cHJlc3Npb246IE1JVApSZXF1aXJlcy1QeXRob246ID49My43CkRlc2NyaXB0aW9uLUNvbnRlbnQtVHlwZTogdGV4dC94LXJzdApQcm9qZWN0LVVSTDogSG9tZXBhZ2UsIGh0dHBzOi8vZ2l0aHViLmNvbS9teXB5Yy9hc3Rfc2VyaWFsaXplClByb2plY3QtVVJMOiBJc3N1ZXMsIGh0dHBzOi8vZ2l0aHViLmNvbS9teXB5Yy9hc3Rfc2VyaWFsaXplL2lzc3VlcwoKYXN0X3NlcmlhbGl6ZSAtIFB5dGhvbiBQYXJzZXIgYW5kIEFTVCBTZXJpYWxpemVyCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQoKVGhpcyBpcyBhIGZhc3QgUHl0aG9uIGV4dGVuc2lvbiBmb3IgcGFyc2luZyBQeXRob24gZmlsZXMgYW5kIHNlcmlhbGl6aW5nIHRoZSBBU1QgdXNpbmcKdGhlIG5hdGl2ZSBiaW5hcnkgZm9ybWF0IHVzZWQgYnkgbXlweS4gVGhpcyB3aWxsIGV2ZW50dWFsbHkgcmVwbGFjZSB0aGUgY3VycmVudCBteXB5IHBhcnNlciwKd2hpY2ggdXNlcyB0aGUgUHl0aG9uIHN0ZGxpYiBgYGFzdGBgIG1vZHVsZSBmb3IgcGFyc2luZy4KCg==",
+  "stderr_base64": "",
+  "after": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "index_changes": [],
+  "indexes_unchanged": true
+}

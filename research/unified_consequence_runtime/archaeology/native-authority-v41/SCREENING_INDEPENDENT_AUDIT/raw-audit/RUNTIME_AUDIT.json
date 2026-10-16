@@ -1,0 +1,4272 @@
+{
+  "audit_script": {
+    "path": "/workspace/qualification/native-authority-v41-screening-audit/raw-audit/audit_runtime_filesystem.py",
+    "sha256": "b6abd83687e3e887d9e3f99b25faa15d66521e1a84143b6a976549f80cd257e7",
+    "size": 21845
+  },
+  "authority": "OFFLINE_RETAINED_EVIDENCE_AND_CURRENT_HOST_BYTES_ONLY_NO_NATIVE_REPLAY",
+  "catalog": {
+    "canonical_sha256": "c71b043cd4da5d87ed7295095081c7aa9059ab2ab177a1798b8b362acf9f381d",
+    "path": "/workspace/qualification/native-authority-v41-screening-audit/metadata-preaudit/source-binding/research/unified_consequence_runtime/archaeology/native-authority-v41/ENVIRONMENT_CATALOG.json",
+    "sha256": "2050def754f8b0b7d39f3ea256a6c4a5997876fd21ebd6a1afb134b06cb8dfc6",
+    "size": 66236
+  },
+  "checks": [
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "all seven inventories byte-identical",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "all seven inventories JSON-identical",
+      "verified": true
+    },
+    {
+      "actual": [
+        "authority",
+        "catalog_sha256",
+        "runtime_paths_sha256",
+        "runtimes",
+        "schema"
+      ],
+      "expected": [
+        "authority",
+        "catalog_sha256",
+        "runtime_paths_sha256",
+        "runtimes",
+        "schema"
+      ],
+      "name": "inventory exact top-level field set",
+      "verified": true
+    },
+    {
+      "actual": "UDM_NATIVE_FRONTIER_RUNTIME_INVENTORY_V3",
+      "expected": "UDM_NATIVE_FRONTIER_RUNTIME_INVENTORY_V3",
+      "name": "inventory schema",
+      "verified": true
+    },
+    {
+      "actual": "SOURCE_INDEPENDENT_RUNTIME_IDENTITY_ONLY_NO_TASK_ADMISSION",
+      "expected": "SOURCE_INDEPENDENT_RUNTIME_IDENTITY_ONLY_NO_TASK_ADMISSION",
+      "name": "inventory authority",
+      "verified": true
+    },
+    {
+      "actual": "UDM_NATIVE_ENVIRONMENT_CATALOG_V3",
+      "expected": "UDM_NATIVE_ENVIRONMENT_CATALOG_V3",
+      "name": "catalog schema",
+      "verified": true
+    },
+    {
+      "actual": "c71b043cd4da5d87ed7295095081c7aa9059ab2ab177a1798b8b362acf9f381d",
+      "expected": "c71b043cd4da5d87ed7295095081c7aa9059ab2ab177a1798b8b362acf9f381d",
+      "name": "catalog canonical fingerprint binding",
+      "verified": true
+    },
+    {
+      "actual": "416e74dd761f1e14ba9b553a8e52f446d2b3522b5bd4814ce4c65326c03a1aeb",
+      "expected": "416e74dd761f1e14ba9b553a8e52f446d2b3522b5bd4814ce4c65326c03a1aeb",
+      "name": "runtime-path canonical fingerprint binding",
+      "verified": true
+    },
+    {
+      "actual": 2,
+      "expected": 2,
+      "name": "unique catalog profile IDs",
+      "verified": true
+    },
+    {
+      "actual": [
+        "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+        "cpython-3.6.5-pytest-5.4.3-linux-x86_64"
+      ],
+      "expected": [
+        "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+        "cpython-3.6.5-pytest-5.4.3-linux-x86_64"
+      ],
+      "name": "inventory profile set",
+      "verified": true
+    },
+    {
+      "actual": [
+        "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+        "cpython-3.6.5-pytest-5.4.3-linux-x86_64"
+      ],
+      "expected": [
+        "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+        "cpython-3.6.5-pytest-5.4.3-linux-x86_64"
+      ],
+      "name": "external runtime-path profile set",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "catalog package-metadata retained file available",
+      "verified": true
+    },
+    {
+      "actual": "79b82db4d56056cb268b99e9cc9da2f54768c6ee2696f13fd4264864b20bff89",
+      "expected": "79b82db4d56056cb268b99e9cc9da2f54768c6ee2696f13fd4264864b20bff89",
+      "name": "catalog package-metadata raw SHA256 binding",
+      "verified": true
+    },
+    {
+      "actual": [],
+      "expected": [],
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: exact unconditional literal package pins",
+      "verified": true
+    },
+    {
+      "actual": 45,
+      "expected": 45,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: package names unique after canonicalization",
+      "verified": true
+    },
+    {
+      "actual": "8.4.1",
+      "expected": "8.4.1",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: pytest package pin vs profile",
+      "verified": true
+    },
+    {
+      "actual": [
+        "ast-serialize",
+        "attrs",
+        "cbor2",
+        "cloudpickle",
+        "coverage",
+        "dnspython",
+        "execnet",
+        "flit-core",
+        "hatch-fancy-pypi-readme",
+        "hatch-vcs",
+        "hatchling",
+        "hypothesis",
+        "immutables",
+        "iniconfig",
+        "librt",
+        "msgpack",
+        "msgspec",
+        "mypy",
+        "mypy-extensions",
+        "orjson",
+        "packaging",
+        "pathspec",
+        "pip",
+        "pluggy",
+        "psutil",
+        "py-cpuinfo",
+        "pygments",
+        "pymongo",
+        "pympler",
+        "pytest",
+        "pytest-benchmark",
+        "pytest-cov",
+        "pytest-xdist",
+        "pyyaml",
+        "ruff",
+        "setuptools",
+        "setuptools-git-versioning",
+        "setuptools-scm",
+        "sortedcontainers",
+        "tomli-w",
+        "tomlkit",
+        "trove-classifiers",
+        "typing-extensions",
+        "ujson",
+        "vcs-versioning"
+      ],
+      "expected": [
+        "ast-serialize",
+        "attrs",
+        "cbor2",
+        "cloudpickle",
+        "coverage",
+        "dnspython",
+        "execnet",
+        "flit-core",
+        "hatch-fancy-pypi-readme",
+        "hatch-vcs",
+        "hatchling",
+        "hypothesis",
+        "immutables",
+        "iniconfig",
+        "librt",
+        "msgpack",
+        "msgspec",
+        "mypy",
+        "mypy-extensions",
+        "orjson",
+        "packaging",
+        "pathspec",
+        "pip",
+        "pluggy",
+        "psutil",
+        "py-cpuinfo",
+        "pygments",
+        "pymongo",
+        "pympler",
+        "pytest",
+        "pytest-benchmark",
+        "pytest-cov",
+        "pytest-xdist",
+        "pyyaml",
+        "ruff",
+        "setuptools",
+        "setuptools-git-versioning",
+        "setuptools-scm",
+        "sortedcontainers",
+        "tomli-w",
+        "tomlkit",
+        "trove-classifiers",
+        "typing-extensions",
+        "ujson",
+        "vcs-versioning"
+      ],
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: complete package-artifact name set",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin definitions have exact schema and exact package/version binding",
+      "verified": true
+    },
+    {
+      "actual": 6,
+      "expected": 6,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin modules unique",
+      "verified": true
+    },
+    {
+      "actual": [
+        "identity",
+        "import_roots",
+        "interpreter",
+        "stdlib_files"
+      ],
+      "expected": [
+        "identity",
+        "import_roots",
+        "interpreter",
+        "stdlib_files"
+      ],
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: exact record fields",
+      "verified": true
+    },
+    {
+      "actual": [
+        "base_prefix",
+        "executable_sha256",
+        "implementation",
+        "stdlib_manifest_sha256",
+        "version_info"
+      ],
+      "expected": [
+        "base_prefix",
+        "executable_sha256",
+        "implementation",
+        "stdlib_manifest_sha256",
+        "version_info"
+      ],
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: exact identity fields",
+      "verified": true
+    },
+    {
+      "actual": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/bin/python",
+      "expected": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/bin/python",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: interpreter path binding",
+      "verified": true
+    },
+    {
+      "actual": "3.12.14",
+      "expected": "3.12.14",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: runtime version claim vs catalog",
+      "verified": true
+    },
+    {
+      "actual": "cpython",
+      "expected": "cpython",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: implementation claim vs catalog",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: import roots sorted/deduplicated/absolute",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: manifest row shape",
+      "verified": true
+    },
+    {
+      "actual": "fa67443527ed9647f760d807e2a38f26340757123e643c4639cf273ed15d5ea7",
+      "expected": "fa67443527ed9647f760d807e2a38f26340757123e643c4639cf273ed15d5ea7",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: current executable host SHA256",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: complete source-equivalent stdlib rows",
+      "verified": true
+    },
+    {
+      "actual": "d04062dbde3ce97c5227abfd3a5763e4250fb752d07423bd695d90fcb4fb8291",
+      "expected": "d04062dbde3ce97c5227abfd3a5763e4250fb752d07423bd695d90fcb4fb8291",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: current stdlib canonical fingerprint",
+      "verified": true
+    },
+    {
+      "actual": "d04062dbde3ce97c5227abfd3a5763e4250fb752d07423bd695d90fcb4fb8291",
+      "expected": "d04062dbde3ce97c5227abfd3a5763e4250fb752d07423bd695d90fcb4fb8291",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: recorded stdlib canonical fingerprint",
+      "verified": true
+    },
+    {
+      "actual": [],
+      "expected": [],
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: existing root walk without read errors",
+      "verified": true
+    },
+    {
+      "actual": {
+        "ast-serialize": "0.13.0",
+        "attrs": "25.4.0",
+        "cbor2": "5.6.5",
+        "cloudpickle": "3.1.2",
+        "coverage": "7.10.0",
+        "dnspython": "2.9.0",
+        "execnet": "2.1.2",
+        "flit-core": "4.0.1",
+        "hatch-fancy-pypi-readme": "25.1.0",
+        "hatch-vcs": "0.5.0",
+        "hatchling": "1.27.0",
+        "hypothesis": "6.151.9",
+        "immutables": "0.21",
+        "iniconfig": "2.3.1",
+        "librt": "0.16.0",
+        "msgpack": "1.1.1",
+        "msgspec": "0.19.0",
+        "mypy": "2.4.0",
+        "mypy-extensions": "1.1.0",
+        "orjson": "3.11.3",
+        "packaging": "26.3",
+        "pathspec": "1.1.1",
+        "pip": "25.0.1",
+        "pluggy": "1.7.0",
+        "psutil": "7.2.2",
+        "py-cpuinfo": "9.0.0",
+        "pygments": "2.21.0",
+        "pymongo": "4.13.2",
+        "pympler": "1.1",
+        "pytest": "8.4.1",
+        "pytest-benchmark": "5.1.0",
+        "pytest-cov": "6.3.0",
+        "pytest-xdist": "3.8.0",
+        "pyyaml": "6.0.2",
+        "ruff": "0.11.0",
+        "setuptools": "84.0.0",
+        "setuptools-git-versioning": "3.2.0",
+        "setuptools-scm": "10.3.4",
+        "sortedcontainers": "2.4.0",
+        "tomli-w": "1.2.0",
+        "tomlkit": "0.13.3",
+        "trove-classifiers": "2026.9.21.13",
+        "typing-extensions": "4.14.1",
+        "ujson": "5.10.0",
+        "vcs-versioning": "2.6.0"
+      },
+      "expected": {
+        "ast-serialize": "0.13.0",
+        "attrs": "25.4.0",
+        "cbor2": "5.6.5",
+        "cloudpickle": "3.1.2",
+        "coverage": "7.10.0",
+        "dnspython": "2.9.0",
+        "execnet": "2.1.2",
+        "flit-core": "4.0.1",
+        "hatch-fancy-pypi-readme": "25.1.0",
+        "hatch-vcs": "0.5.0",
+        "hatchling": "1.27.0",
+        "hypothesis": "6.151.9",
+        "immutables": "0.21",
+        "iniconfig": "2.3.1",
+        "librt": "0.16.0",
+        "msgpack": "1.1.1",
+        "msgspec": "0.19.0",
+        "mypy": "2.4.0",
+        "mypy-extensions": "1.1.0",
+        "orjson": "3.11.3",
+        "packaging": "26.3",
+        "pathspec": "1.1.1",
+        "pip": "25.0.1",
+        "pluggy": "1.7.0",
+        "psutil": "7.2.2",
+        "py-cpuinfo": "9.0.0",
+        "pygments": "2.21.0",
+        "pymongo": "4.13.2",
+        "pympler": "1.1",
+        "pytest": "8.4.1",
+        "pytest-benchmark": "5.1.0",
+        "pytest-cov": "6.3.0",
+        "pytest-xdist": "3.8.0",
+        "pyyaml": "6.0.2",
+        "ruff": "0.11.0",
+        "setuptools": "84.0.0",
+        "setuptools-git-versioning": "3.2.0",
+        "setuptools-scm": "10.3.4",
+        "sortedcontainers": "2.4.0",
+        "tomli-w": "1.2.0",
+        "tomlkit": "0.13.3",
+        "trove-classifiers": "2026.9.21.13",
+        "typing-extensions": "4.14.1",
+        "ujson": "5.10.0",
+        "vcs-versioning": "2.6.0"
+      },
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: pinned package versions and uniqueness",
+      "verified": true
+    },
+    {
+      "actual": [],
+      "expected": [],
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: pinned package file authority",
+      "verified": true
+    },
+    {
+      "actual": [
+        [
+          "ast-serialize",
+          "0.13.0"
+        ],
+        [
+          "attrs",
+          "25.4.0"
+        ],
+        [
+          "cbor2",
+          "5.6.5"
+        ],
+        [
+          "cloudpickle",
+          "3.1.2"
+        ],
+        [
+          "coverage",
+          "7.10.0"
+        ],
+        [
+          "dnspython",
+          "2.9.0"
+        ],
+        [
+          "execnet",
+          "2.1.2"
+        ],
+        [
+          "flit-core",
+          "4.0.1"
+        ],
+        [
+          "hatch-fancy-pypi-readme",
+          "25.1.0"
+        ],
+        [
+          "hatch-vcs",
+          "0.5.0"
+        ],
+        [
+          "hatchling",
+          "1.27.0"
+        ],
+        [
+          "hypothesis",
+          "6.151.9"
+        ],
+        [
+          "immutables",
+          "0.21"
+        ],
+        [
+          "iniconfig",
+          "2.3.1"
+        ],
+        [
+          "librt",
+          "0.16.0"
+        ],
+        [
+          "msgpack",
+          "1.1.1"
+        ],
+        [
+          "msgspec",
+          "0.19.0"
+        ],
+        [
+          "mypy",
+          "2.4.0"
+        ],
+        [
+          "mypy-extensions",
+          "1.1.0"
+        ],
+        [
+          "orjson",
+          "3.11.3"
+        ],
+        [
+          "packaging",
+          "26.3"
+        ],
+        [
+          "pathspec",
+          "1.1.1"
+        ],
+        [
+          "pip",
+          "25.0.1"
+        ],
+        [
+          "pluggy",
+          "1.7.0"
+        ],
+        [
+          "psutil",
+          "7.2.2"
+        ],
+        [
+          "py-cpuinfo",
+          "9.0.0"
+        ],
+        [
+          "pygments",
+          "2.21.0"
+        ],
+        [
+          "pymongo",
+          "4.13.2"
+        ],
+        [
+          "pympler",
+          "1.1"
+        ],
+        [
+          "pytest",
+          "8.4.1"
+        ],
+        [
+          "pytest-benchmark",
+          "5.1.0"
+        ],
+        [
+          "pytest-cov",
+          "6.3.0"
+        ],
+        [
+          "pytest-xdist",
+          "3.8.0"
+        ],
+        [
+          "pyyaml",
+          "6.0.2"
+        ],
+        [
+          "ruff",
+          "0.11.0"
+        ],
+        [
+          "setuptools",
+          "84.0.0"
+        ],
+        [
+          "setuptools-git-versioning",
+          "3.2.0"
+        ],
+        [
+          "setuptools-scm",
+          "10.3.4"
+        ],
+        [
+          "sortedcontainers",
+          "2.4.0"
+        ],
+        [
+          "tomli-w",
+          "1.2.0"
+        ],
+        [
+          "tomlkit",
+          "0.13.3"
+        ],
+        [
+          "trove-classifiers",
+          "2026.9.21.13"
+        ],
+        [
+          "typing-extensions",
+          "4.14.1"
+        ],
+        [
+          "ujson",
+          "5.10.0"
+        ],
+        [
+          "vcs-versioning",
+          "2.6.0"
+        ]
+      ],
+      "expected": [
+        [
+          "ast-serialize",
+          "0.13.0"
+        ],
+        [
+          "attrs",
+          "25.4.0"
+        ],
+        [
+          "cbor2",
+          "5.6.5"
+        ],
+        [
+          "cloudpickle",
+          "3.1.2"
+        ],
+        [
+          "coverage",
+          "7.10.0"
+        ],
+        [
+          "dnspython",
+          "2.9.0"
+        ],
+        [
+          "execnet",
+          "2.1.2"
+        ],
+        [
+          "flit-core",
+          "4.0.1"
+        ],
+        [
+          "hatch-fancy-pypi-readme",
+          "25.1.0"
+        ],
+        [
+          "hatch-vcs",
+          "0.5.0"
+        ],
+        [
+          "hatchling",
+          "1.27.0"
+        ],
+        [
+          "hypothesis",
+          "6.151.9"
+        ],
+        [
+          "immutables",
+          "0.21"
+        ],
+        [
+          "iniconfig",
+          "2.3.1"
+        ],
+        [
+          "librt",
+          "0.16.0"
+        ],
+        [
+          "msgpack",
+          "1.1.1"
+        ],
+        [
+          "msgspec",
+          "0.19.0"
+        ],
+        [
+          "mypy",
+          "2.4.0"
+        ],
+        [
+          "mypy-extensions",
+          "1.1.0"
+        ],
+        [
+          "orjson",
+          "3.11.3"
+        ],
+        [
+          "packaging",
+          "26.3"
+        ],
+        [
+          "pathspec",
+          "1.1.1"
+        ],
+        [
+          "pip",
+          "25.0.1"
+        ],
+        [
+          "pluggy",
+          "1.7.0"
+        ],
+        [
+          "psutil",
+          "7.2.2"
+        ],
+        [
+          "py-cpuinfo",
+          "9.0.0"
+        ],
+        [
+          "pygments",
+          "2.21.0"
+        ],
+        [
+          "pymongo",
+          "4.13.2"
+        ],
+        [
+          "pympler",
+          "1.1"
+        ],
+        [
+          "pytest",
+          "8.4.1"
+        ],
+        [
+          "pytest-benchmark",
+          "5.1.0"
+        ],
+        [
+          "pytest-cov",
+          "6.3.0"
+        ],
+        [
+          "pytest-xdist",
+          "3.8.0"
+        ],
+        [
+          "pyyaml",
+          "6.0.2"
+        ],
+        [
+          "ruff",
+          "0.11.0"
+        ],
+        [
+          "setuptools",
+          "84.0.0"
+        ],
+        [
+          "setuptools-git-versioning",
+          "3.2.0"
+        ],
+        [
+          "setuptools-scm",
+          "10.3.4"
+        ],
+        [
+          "sortedcontainers",
+          "2.4.0"
+        ],
+        [
+          "tomli-w",
+          "1.2.0"
+        ],
+        [
+          "tomlkit",
+          "0.13.3"
+        ],
+        [
+          "trove-classifiers",
+          "2026.9.21.13"
+        ],
+        [
+          "typing-extensions",
+          "4.14.1"
+        ],
+        [
+          "ujson",
+          "5.10.0"
+        ],
+        [
+          "vcs-versioning",
+          "2.6.0"
+        ]
+      ],
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: all installed distribution name/version pairs equal pins",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: runtime record equals retained preparation",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: current pinned package rows equal retained preparation",
+      "verified": true
+    },
+    {
+      "actual": [
+        [
+          "ast-serialize",
+          "0.13.0"
+        ],
+        [
+          "attrs",
+          "25.4.0"
+        ],
+        [
+          "cbor2",
+          "5.6.5"
+        ],
+        [
+          "cloudpickle",
+          "3.1.2"
+        ],
+        [
+          "coverage",
+          "7.10.0"
+        ],
+        [
+          "dnspython",
+          "2.9.0"
+        ],
+        [
+          "execnet",
+          "2.1.2"
+        ],
+        [
+          "flit-core",
+          "4.0.1"
+        ],
+        [
+          "hatch-fancy-pypi-readme",
+          "25.1.0"
+        ],
+        [
+          "hatch-vcs",
+          "0.5.0"
+        ],
+        [
+          "hatchling",
+          "1.27.0"
+        ],
+        [
+          "hypothesis",
+          "6.151.9"
+        ],
+        [
+          "immutables",
+          "0.21"
+        ],
+        [
+          "iniconfig",
+          "2.3.1"
+        ],
+        [
+          "librt",
+          "0.16.0"
+        ],
+        [
+          "msgpack",
+          "1.1.1"
+        ],
+        [
+          "msgspec",
+          "0.19.0"
+        ],
+        [
+          "mypy",
+          "2.4.0"
+        ],
+        [
+          "mypy-extensions",
+          "1.1.0"
+        ],
+        [
+          "orjson",
+          "3.11.3"
+        ],
+        [
+          "packaging",
+          "26.3"
+        ],
+        [
+          "pathspec",
+          "1.1.1"
+        ],
+        [
+          "pip",
+          "25.0.1"
+        ],
+        [
+          "pluggy",
+          "1.7.0"
+        ],
+        [
+          "psutil",
+          "7.2.2"
+        ],
+        [
+          "py-cpuinfo",
+          "9.0.0"
+        ],
+        [
+          "pygments",
+          "2.21.0"
+        ],
+        [
+          "pymongo",
+          "4.13.2"
+        ],
+        [
+          "pympler",
+          "1.1"
+        ],
+        [
+          "pytest",
+          "8.4.1"
+        ],
+        [
+          "pytest-benchmark",
+          "5.1.0"
+        ],
+        [
+          "pytest-cov",
+          "6.3.0"
+        ],
+        [
+          "pytest-xdist",
+          "3.8.0"
+        ],
+        [
+          "pyyaml",
+          "6.0.2"
+        ],
+        [
+          "ruff",
+          "0.11.0"
+        ],
+        [
+          "setuptools",
+          "84.0.0"
+        ],
+        [
+          "setuptools-git-versioning",
+          "3.2.0"
+        ],
+        [
+          "setuptools-scm",
+          "10.3.4"
+        ],
+        [
+          "sortedcontainers",
+          "2.4.0"
+        ],
+        [
+          "tomli-w",
+          "1.2.0"
+        ],
+        [
+          "tomlkit",
+          "0.13.3"
+        ],
+        [
+          "trove-classifiers",
+          "2026.9.21.13"
+        ],
+        [
+          "typing-extensions",
+          "4.14.1"
+        ],
+        [
+          "ujson",
+          "5.10.0"
+        ],
+        [
+          "vcs-versioning",
+          "2.6.0"
+        ]
+      ],
+      "expected": [
+        [
+          "ast-serialize",
+          "0.13.0"
+        ],
+        [
+          "attrs",
+          "25.4.0"
+        ],
+        [
+          "cbor2",
+          "5.6.5"
+        ],
+        [
+          "cloudpickle",
+          "3.1.2"
+        ],
+        [
+          "coverage",
+          "7.10.0"
+        ],
+        [
+          "dnspython",
+          "2.9.0"
+        ],
+        [
+          "execnet",
+          "2.1.2"
+        ],
+        [
+          "flit-core",
+          "4.0.1"
+        ],
+        [
+          "hatch-fancy-pypi-readme",
+          "25.1.0"
+        ],
+        [
+          "hatch-vcs",
+          "0.5.0"
+        ],
+        [
+          "hatchling",
+          "1.27.0"
+        ],
+        [
+          "hypothesis",
+          "6.151.9"
+        ],
+        [
+          "immutables",
+          "0.21"
+        ],
+        [
+          "iniconfig",
+          "2.3.1"
+        ],
+        [
+          "librt",
+          "0.16.0"
+        ],
+        [
+          "msgpack",
+          "1.1.1"
+        ],
+        [
+          "msgspec",
+          "0.19.0"
+        ],
+        [
+          "mypy",
+          "2.4.0"
+        ],
+        [
+          "mypy-extensions",
+          "1.1.0"
+        ],
+        [
+          "orjson",
+          "3.11.3"
+        ],
+        [
+          "packaging",
+          "26.3"
+        ],
+        [
+          "pathspec",
+          "1.1.1"
+        ],
+        [
+          "pip",
+          "25.0.1"
+        ],
+        [
+          "pluggy",
+          "1.7.0"
+        ],
+        [
+          "psutil",
+          "7.2.2"
+        ],
+        [
+          "py-cpuinfo",
+          "9.0.0"
+        ],
+        [
+          "pygments",
+          "2.21.0"
+        ],
+        [
+          "pymongo",
+          "4.13.2"
+        ],
+        [
+          "pympler",
+          "1.1"
+        ],
+        [
+          "pytest",
+          "8.4.1"
+        ],
+        [
+          "pytest-benchmark",
+          "5.1.0"
+        ],
+        [
+          "pytest-cov",
+          "6.3.0"
+        ],
+        [
+          "pytest-xdist",
+          "3.8.0"
+        ],
+        [
+          "pyyaml",
+          "6.0.2"
+        ],
+        [
+          "ruff",
+          "0.11.0"
+        ],
+        [
+          "setuptools",
+          "84.0.0"
+        ],
+        [
+          "setuptools-git-versioning",
+          "3.2.0"
+        ],
+        [
+          "setuptools-scm",
+          "10.3.4"
+        ],
+        [
+          "sortedcontainers",
+          "2.4.0"
+        ],
+        [
+          "tomli-w",
+          "1.2.0"
+        ],
+        [
+          "tomlkit",
+          "0.13.3"
+        ],
+        [
+          "trove-classifiers",
+          "2026.9.21.13"
+        ],
+        [
+          "typing-extensions",
+          "4.14.1"
+        ],
+        [
+          "ujson",
+          "5.10.0"
+        ],
+        [
+          "vcs-versioning",
+          "2.6.0"
+        ]
+      ],
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: current installed package pairs equal retained preparation",
+      "verified": true
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin unique static source: hypothesis.extra.pytestplugin",
+      "verified": true
+    },
+    {
+      "actual": "6.151.9",
+      "expected": "6.151.9",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin package version: hypothesis.extra.pytestplugin",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin file owned by licensed distribution: hypothesis.extra.pytestplugin",
+      "verified": true
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin unique static source: pytest_benchmark.session",
+      "verified": true
+    },
+    {
+      "actual": "5.1.0",
+      "expected": "5.1.0",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin package version: pytest_benchmark.session",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin file owned by licensed distribution: pytest_benchmark.session",
+      "verified": true
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin unique static source: pytest_benchmark.plugin",
+      "verified": true
+    },
+    {
+      "actual": "5.1.0",
+      "expected": "5.1.0",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin package version: pytest_benchmark.plugin",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin file owned by licensed distribution: pytest_benchmark.plugin",
+      "verified": true
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin unique static source: pytester",
+      "verified": true
+    },
+    {
+      "actual": "8.4.1",
+      "expected": "8.4.1",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin package version: pytester",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin file owned by licensed distribution: pytester",
+      "verified": true
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin unique static source: pytester_assertions",
+      "verified": true
+    },
+    {
+      "actual": "8.4.1",
+      "expected": "8.4.1",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin package version: pytester_assertions",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin file owned by licensed distribution: pytester_assertions",
+      "verified": true
+    },
+    {
+      "actual": 1,
+      "expected": 1,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin unique static source: pytest_cov.plugin",
+      "verified": true
+    },
+    {
+      "actual": "6.3.0",
+      "expected": "6.3.0",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin package version: pytest_cov.plugin",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: plugin file owned by licensed distribution: pytest_cov.plugin",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: static plugin identities equal retained preparation",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: ast-serialize",
+      "verified": true
+    },
+    {
+      "actual": "4f55668338bcb871e83ee21ba865fb08b7b4b13af9312742f9878c39f9d84ee3",
+      "expected": "4f55668338bcb871e83ee21ba865fb08b7b4b13af9312742f9878c39f9d84ee3",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: ast-serialize",
+      "verified": true
+    },
+    {
+      "actual": 1312759,
+      "expected": 1312759,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: ast-serialize",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: attrs",
+      "verified": true
+    },
+    {
+      "actual": "adcf7e2a1fb3b36ac48d97835bb6d8ade15b8dcce26aba8bf1d14847b57a3373",
+      "expected": "adcf7e2a1fb3b36ac48d97835bb6d8ade15b8dcce26aba8bf1d14847b57a3373",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: attrs",
+      "verified": true
+    },
+    {
+      "actual": 67615,
+      "expected": 67615,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: attrs",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: cbor2",
+      "verified": true
+    },
+    {
+      "actual": "38886c41bebcd7dca57739439455bce759f1e4c551b511f618b8e9c1295b431b",
+      "expected": "38886c41bebcd7dca57739439455bce759f1e4c551b511f618b8e9c1295b431b",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: cbor2",
+      "verified": true
+    },
+    {
+      "actual": 270004,
+      "expected": 270004,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: cbor2",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: cloudpickle",
+      "verified": true
+    },
+    {
+      "actual": "9acb47f6afd73f60dc1df93bb801b472f05ff42fa6c84167d25cb206be1fbf4a",
+      "expected": "9acb47f6afd73f60dc1df93bb801b472f05ff42fa6c84167d25cb206be1fbf4a",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: cloudpickle",
+      "verified": true
+    },
+    {
+      "actual": 22228,
+      "expected": 22228,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: cloudpickle",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: coverage",
+      "verified": true
+    },
+    {
+      "actual": "7171c139ab6571d70460ecf788b1dcaf376bfc75a42e1946b8c031d062bbbad4",
+      "expected": "7171c139ab6571d70460ecf788b1dcaf376bfc75a42e1946b8c031d062bbbad4",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: coverage",
+      "verified": true
+    },
+    {
+      "actual": 248798,
+      "expected": 248798,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: coverage",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: dnspython",
+      "verified": true
+    },
+    {
+      "actual": "9a4aedb833c3c1b49214d04d44d3032ab7a9135f7c1d29a549b4ff78fd82fda9",
+      "expected": "9a4aedb833c3c1b49214d04d44d3032ab7a9135f7c1d29a549b4ff78fd82fda9",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: dnspython",
+      "verified": true
+    },
+    {
+      "actual": 354822,
+      "expected": 354822,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: dnspython",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: execnet",
+      "verified": true
+    },
+    {
+      "actual": "67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec",
+      "expected": "67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: execnet",
+      "verified": true
+    },
+    {
+      "actual": 40708,
+      "expected": 40708,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: execnet",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: flit-core",
+      "verified": true
+    },
+    {
+      "actual": "e594830f0c4d3fe8b17557e2d27d90f14932d7d088b1f0560ab1a630db2085e5",
+      "expected": "e594830f0c4d3fe8b17557e2d27d90f14932d7d088b1f0560ab1a630db2085e5",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: flit-core",
+      "verified": true
+    },
+    {
+      "actual": 44554,
+      "expected": 44554,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: flit-core",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: hatch-fancy-pypi-readme",
+      "verified": true
+    },
+    {
+      "actual": "ce0134c40d63d874ac48f48ccc678b8f3b62b8e50e9318520d2bffc752eedaf3",
+      "expected": "ce0134c40d63d874ac48f48ccc678b8f3b62b8e50e9318520d2bffc752eedaf3",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: hatch-fancy-pypi-readme",
+      "verified": true
+    },
+    {
+      "actual": 10046,
+      "expected": 10046,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: hatch-fancy-pypi-readme",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: hatch-vcs",
+      "verified": true
+    },
+    {
+      "actual": "b49677dbdc597460cc22d01b27ab3696f5e16a21ecf2700fb01bc28e1f2a04a7",
+      "expected": "b49677dbdc597460cc22d01b27ab3696f5e16a21ecf2700fb01bc28e1f2a04a7",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: hatch-vcs",
+      "verified": true
+    },
+    {
+      "actual": 8507,
+      "expected": 8507,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: hatch-vcs",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: hatchling",
+      "verified": true
+    },
+    {
+      "actual": "d3a2f3567c4f926ea39849cdf924c7e99e6686c9c8e288ae1037c8fa2a5d937b",
+      "expected": "d3a2f3567c4f926ea39849cdf924c7e99e6686c9c8e288ae1037c8fa2a5d937b",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: hatchling",
+      "verified": true
+    },
+    {
+      "actual": 75794,
+      "expected": 75794,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: hatchling",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: hypothesis",
+      "verified": true
+    },
+    {
+      "actual": "7b7220585c67759b1b1ef839b1e6e9e3d82ed468cfc1ece43c67184848d7edd9",
+      "expected": "7b7220585c67759b1b1ef839b1e6e9e3d82ed468cfc1ece43c67184848d7edd9",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: hypothesis",
+      "verified": true
+    },
+    {
+      "actual": 529307,
+      "expected": 529307,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: hypothesis",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: immutables",
+      "verified": true
+    },
+    {
+      "actual": "dad7c0c74b285cc0e555ec0e97acbdc6f1862fcd16b99abd612df3243732e741",
+      "expected": "dad7c0c74b285cc0e555ec0e97acbdc6f1862fcd16b99abd612df3243732e741",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: immutables",
+      "verified": true
+    },
+    {
+      "actual": 104864,
+      "expected": 104864,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: immutables",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: iniconfig",
+      "verified": true
+    },
+    {
+      "actual": "9121e2c1fdb355232495be3194c8dfe87ccc2d5dee45947b78e68f499790d7a7",
+      "expected": "9121e2c1fdb355232495be3194c8dfe87ccc2d5dee45947b78e68f499790d7a7",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: iniconfig",
+      "verified": true
+    },
+    {
+      "actual": 7552,
+      "expected": 7552,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: iniconfig",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: librt",
+      "verified": true
+    },
+    {
+      "actual": "36e53948e99bbe3ffea257124cfcae1cfb01831555c9a9c903c9f9a72db7fd07",
+      "expected": "36e53948e99bbe3ffea257124cfcae1cfb01831555c9a9c903c9f9a72db7fd07",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: librt",
+      "verified": true
+    },
+    {
+      "actual": 531952,
+      "expected": 531952,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: librt",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: msgpack",
+      "verified": true
+    },
+    {
+      "actual": "a494554874691720ba5891c9b0b39474ba43ffb1aaf32a5dac874effb1619e1a",
+      "expected": "a494554874691720ba5891c9b0b39474ba43ffb1aaf32a5dac874effb1619e1a",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: msgpack",
+      "verified": true
+    },
+    {
+      "actual": 426905,
+      "expected": 426905,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: msgpack",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: msgspec",
+      "verified": true
+    },
+    {
+      "actual": "d911c442571605e17658ca2b416fd8579c5050ac9adc5e00c2cb3126c97f73bc",
+      "expected": "d911c442571605e17658ca2b416fd8579c5050ac9adc5e00c2cb3126c97f73bc",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: msgspec",
+      "verified": true
+    },
+    {
+      "actual": 213594,
+      "expected": 213594,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: msgspec",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: mypy",
+      "verified": true
+    },
+    {
+      "actual": "29eb0b9427a6b11b992e452f6cceb8af724f4dceb47e779d0b35e405e996ea5e",
+      "expected": "29eb0b9427a6b11b992e452f6cceb8af724f4dceb47e779d0b35e405e996ea5e",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: mypy",
+      "verified": true
+    },
+    {
+      "actual": 15552257,
+      "expected": 15552257,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: mypy",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: mypy-extensions",
+      "verified": true
+    },
+    {
+      "actual": "1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505",
+      "expected": "1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: mypy-extensions",
+      "verified": true
+    },
+    {
+      "actual": 4963,
+      "expected": 4963,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: mypy-extensions",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: orjson",
+      "verified": true
+    },
+    {
+      "actual": "524b765ad888dc5518bbce12c77c2e83dee1ed6b0992c1790cc5fb49bb4b6667",
+      "expected": "524b765ad888dc5518bbce12c77c2e83dee1ed6b0992c1790cc5fb49bb4b6667",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: orjson",
+      "verified": true
+    },
+    {
+      "actual": 132875,
+      "expected": 132875,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: orjson",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: packaging",
+      "verified": true
+    },
+    {
+      "actual": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+      "expected": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: packaging",
+      "verified": true
+    },
+    {
+      "actual": 129956,
+      "expected": 129956,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: packaging",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pathspec",
+      "verified": true
+    },
+    {
+      "actual": "a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189",
+      "expected": "a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pathspec",
+      "verified": true
+    },
+    {
+      "actual": 57328,
+      "expected": 57328,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pathspec",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pip",
+      "verified": true
+    },
+    {
+      "actual": "c46efd13b6aa8279f33f2864459c8ce587ea6a1a59ee20de055868d8f7688f7f",
+      "expected": "c46efd13b6aa8279f33f2864459c8ce587ea6a1a59ee20de055868d8f7688f7f",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pip",
+      "verified": true
+    },
+    {
+      "actual": 1841526,
+      "expected": 1841526,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pip",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pluggy",
+      "verified": true
+    },
+    {
+      "actual": "7dd7b0d8832ba3cb632c306926ded123429211b83641b35dc5c41ad2d34f9bec",
+      "expected": "7dd7b0d8832ba3cb632c306926ded123429211b83641b35dc5c41ad2d34f9bec",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pluggy",
+      "verified": true
+    },
+    {
+      "actual": 27082,
+      "expected": 27082,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pluggy",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: psutil",
+      "verified": true
+    },
+    {
+      "actual": "076a2d2f923fd4821644f5ba89f059523da90dc9014e85f8e45a5774ca5bc6f9",
+      "expected": "076a2d2f923fd4821644f5ba89f059523da90dc9014e85f8e45a5774ca5bc6f9",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: psutil",
+      "verified": true
+    },
+    {
+      "actual": 155560,
+      "expected": 155560,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: psutil",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: py-cpuinfo",
+      "verified": true
+    },
+    {
+      "actual": "859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5",
+      "expected": "859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: py-cpuinfo",
+      "verified": true
+    },
+    {
+      "actual": 22335,
+      "expected": 22335,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: py-cpuinfo",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pygments",
+      "verified": true
+    },
+    {
+      "actual": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+      "expected": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pygments",
+      "verified": true
+    },
+    {
+      "actual": 1250147,
+      "expected": 1250147,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pygments",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pymongo",
+      "verified": true
+    },
+    {
+      "actual": "f57a664aa74610eb7a52fa93f2cf794a1491f4f76098343485dd7da5b3bcff06",
+      "expected": "f57a664aa74610eb7a52fa93f2cf794a1491f4f76098343485dd7da5b3bcff06",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pymongo",
+      "verified": true
+    },
+    {
+      "actual": 1693613,
+      "expected": 1693613,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pymongo",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pympler",
+      "verified": true
+    },
+    {
+      "actual": "5b223d6027d0619584116a0cbc28e8d2e378f7a79c1e5e024f9ff3b673c58506",
+      "expected": "5b223d6027d0619584116a0cbc28e8d2e378f7a79c1e5e024f9ff3b673c58506",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pympler",
+      "verified": true
+    },
+    {
+      "actual": 165766,
+      "expected": 165766,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pympler",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pytest",
+      "verified": true
+    },
+    {
+      "actual": "539c70ba6fcead8e78eebbf1115e8b589e7565830d7d006a8723f19ac8a0afb7",
+      "expected": "539c70ba6fcead8e78eebbf1115e8b589e7565830d7d006a8723f19ac8a0afb7",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pytest",
+      "verified": true
+    },
+    {
+      "actual": 365474,
+      "expected": 365474,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pytest",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pytest-benchmark",
+      "verified": true
+    },
+    {
+      "actual": "922de2dfa3033c227c96da942d1878191afa135a29485fb942e85dff1c592c89",
+      "expected": "922de2dfa3033c227c96da942d1878191afa135a29485fb942e85dff1c592c89",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pytest-benchmark",
+      "verified": true
+    },
+    {
+      "actual": 44259,
+      "expected": 44259,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pytest-benchmark",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pytest-cov",
+      "verified": true
+    },
+    {
+      "actual": "440db28156d2468cafc0415b4f8e50856a0d11faefa38f30906048fe490f1749",
+      "expected": "440db28156d2468cafc0415b4f8e50856a0d11faefa38f30906048fe490f1749",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pytest-cov",
+      "verified": true
+    },
+    {
+      "actual": 25115,
+      "expected": 25115,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pytest-cov",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pytest-xdist",
+      "verified": true
+    },
+    {
+      "actual": "202ca578cfeb7370784a8c33d6d05bc6e13b4f25b5053c30a152269fd10f0b88",
+      "expected": "202ca578cfeb7370784a8c33d6d05bc6e13b4f25b5053c30a152269fd10f0b88",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pytest-xdist",
+      "verified": true
+    },
+    {
+      "actual": 46396,
+      "expected": 46396,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pytest-xdist",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: pyyaml",
+      "verified": true
+    },
+    {
+      "actual": "80bab7bfc629882493af4aa31a4cfa43a4c57c83813253626916b8c7ada83476",
+      "expected": "80bab7bfc629882493af4aa31a4cfa43a4c57c83813253626916b8c7ada83476",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: pyyaml",
+      "verified": true
+    },
+    {
+      "actual": 767542,
+      "expected": 767542,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: pyyaml",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: ruff",
+      "verified": true
+    },
+    {
+      "actual": "92c0c1ff014351c0b0cdfdb1e35fa83b780f1e065667167bb9502d47ca41e6db",
+      "expected": "92c0c1ff014351c0b0cdfdb1e35fa83b780f1e065667167bb9502d47ca41e6db",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: ruff",
+      "verified": true
+    },
+    {
+      "actual": 11348311,
+      "expected": 11348311,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: ruff",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: setuptools",
+      "verified": true
+    },
+    {
+      "actual": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
+      "expected": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: setuptools",
+      "verified": true
+    },
+    {
+      "actual": 818216,
+      "expected": 818216,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: setuptools",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: setuptools-git-versioning",
+      "verified": true
+    },
+    {
+      "actual": "99ba418d3e5b790ffd6347c89c8c9da92d917b73f5a918e4eb10622358ae9c48",
+      "expected": "99ba418d3e5b790ffd6347c89c8c9da92d917b73f5a918e4eb10622358ae9c48",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: setuptools-git-versioning",
+      "verified": true
+    },
+    {
+      "actual": 20389,
+      "expected": 20389,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: setuptools-git-versioning",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: setuptools-scm",
+      "verified": true
+    },
+    {
+      "actual": "82f34c3e3084fc2b57d397200637cc13f2338004052d2fee47baa5f0e902464e",
+      "expected": "82f34c3e3084fc2b57d397200637cc13f2338004052d2fee47baa5f0e902464e",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: setuptools-scm",
+      "verified": true
+    },
+    {
+      "actual": 33366,
+      "expected": 33366,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: setuptools-scm",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: sortedcontainers",
+      "verified": true
+    },
+    {
+      "actual": "a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0",
+      "expected": "a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: sortedcontainers",
+      "verified": true
+    },
+    {
+      "actual": 29575,
+      "expected": 29575,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: sortedcontainers",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: tomli-w",
+      "verified": true
+    },
+    {
+      "actual": "188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90",
+      "expected": "188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: tomli-w",
+      "verified": true
+    },
+    {
+      "actual": 6675,
+      "expected": 6675,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: tomli-w",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: tomlkit",
+      "verified": true
+    },
+    {
+      "actual": "c89c649d79ee40629a9fda55f8ace8c6a1b42deb912b2a8fd8d942ddadb606b0",
+      "expected": "c89c649d79ee40629a9fda55f8ace8c6a1b42deb912b2a8fd8d942ddadb606b0",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: tomlkit",
+      "verified": true
+    },
+    {
+      "actual": 38901,
+      "expected": 38901,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: tomlkit",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: trove-classifiers",
+      "verified": true
+    },
+    {
+      "actual": "8b1ff4f9c191b1040b71c37f1e445ab99732911e3cd91de52838453a854d7a17",
+      "expected": "8b1ff4f9c191b1040b71c37f1e445ab99732911e3cd91de52838453a854d7a17",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: trove-classifiers",
+      "verified": true
+    },
+    {
+      "actual": 14232,
+      "expected": 14232,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: trove-classifiers",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: typing-extensions",
+      "verified": true
+    },
+    {
+      "actual": "d1e1e3b58374dc93031d6eda2420a48ea44a36c2b4766a4fdeb3710755731d76",
+      "expected": "d1e1e3b58374dc93031d6eda2420a48ea44a36c2b4766a4fdeb3710755731d76",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: typing-extensions",
+      "verified": true
+    },
+    {
+      "actual": 43906,
+      "expected": 43906,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: typing-extensions",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: ujson",
+      "verified": true
+    },
+    {
+      "actual": "f8ccb77b3e40b151e20519c6ae6d89bfe3f4c14e8e210d910287f778368bb3d1",
+      "expected": "f8ccb77b3e40b151e20519c6ae6d89bfe3f4c14e8e210d910287f778368bb3d1",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: ujson",
+      "verified": true
+    },
+    {
+      "actual": 53686,
+      "expected": 53686,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: ujson",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel available: vcs-versioning",
+      "verified": true
+    },
+    {
+      "actual": "f8bebd1302ebc12e67ceb30fc7dd698ec969414b6fa43b30c3f14ac9b1e72c41",
+      "expected": "f8bebd1302ebc12e67ceb30fc7dd698ec969414b6fa43b30c3f14ac9b1e72c41",
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel SHA256: vcs-versioning",
+      "verified": true
+    },
+    {
+      "actual": 123154,
+      "expected": 123154,
+      "name": "cpython-3.12.14-pytest-8.4.1-linux-x86_64: retained wheel size: vcs-versioning",
+      "verified": true
+    },
+    {
+      "actual": [],
+      "expected": [],
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: exact unconditional literal package pins",
+      "verified": true
+    },
+    {
+      "actual": 22,
+      "expected": 22,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: package names unique after canonicalization",
+      "verified": true
+    },
+    {
+      "actual": "5.4.3",
+      "expected": "5.4.3",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: pytest package pin vs profile",
+      "verified": true
+    },
+    {
+      "actual": [
+        "attrs",
+        "distlib",
+        "filelock",
+        "importlib-metadata",
+        "importlib-resources",
+        "more-itertools",
+        "packaging",
+        "pip",
+        "platformdirs",
+        "pluggy",
+        "py",
+        "pyparsing",
+        "pytest",
+        "setuptools",
+        "six",
+        "toml",
+        "tox",
+        "typing-extensions",
+        "virtualenv",
+        "wcwidth",
+        "wheel",
+        "zipp"
+      ],
+      "expected": [
+        "attrs",
+        "distlib",
+        "filelock",
+        "importlib-metadata",
+        "importlib-resources",
+        "more-itertools",
+        "packaging",
+        "pip",
+        "platformdirs",
+        "pluggy",
+        "py",
+        "pyparsing",
+        "pytest",
+        "setuptools",
+        "six",
+        "toml",
+        "tox",
+        "typing-extensions",
+        "virtualenv",
+        "wcwidth",
+        "wheel",
+        "zipp"
+      ],
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: complete package-artifact name set",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: plugin definitions have exact schema and exact package/version binding",
+      "verified": true
+    },
+    {
+      "actual": 0,
+      "expected": 0,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: plugin modules unique",
+      "verified": true
+    },
+    {
+      "actual": [
+        "identity",
+        "import_roots",
+        "interpreter",
+        "stdlib_files"
+      ],
+      "expected": [
+        "identity",
+        "import_roots",
+        "interpreter",
+        "stdlib_files"
+      ],
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: exact record fields",
+      "verified": true
+    },
+    {
+      "actual": [
+        "base_prefix",
+        "executable_sha256",
+        "implementation",
+        "stdlib_manifest_sha256",
+        "version_info"
+      ],
+      "expected": [
+        "base_prefix",
+        "executable_sha256",
+        "implementation",
+        "stdlib_manifest_sha256",
+        "version_info"
+      ],
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: exact identity fields",
+      "verified": true
+    },
+    {
+      "actual": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python",
+      "expected": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: interpreter path binding",
+      "verified": true
+    },
+    {
+      "actual": "3.6.5",
+      "expected": "3.6.5",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: runtime version claim vs catalog",
+      "verified": true
+    },
+    {
+      "actual": "cpython",
+      "expected": "cpython",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: implementation claim vs catalog",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: import roots sorted/deduplicated/absolute",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: manifest row shape",
+      "verified": true
+    },
+    {
+      "actual": "6fcb792e3b1bfd406cdee260de033f99f34da688586b73d47104e6feb181a483",
+      "expected": "6fcb792e3b1bfd406cdee260de033f99f34da688586b73d47104e6feb181a483",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: current executable host SHA256",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: complete source-equivalent stdlib rows",
+      "verified": true
+    },
+    {
+      "actual": "d89b339e92059d4c59edda129a294a9b08a7b3278c8a014c668a9cd707258e7f",
+      "expected": "d89b339e92059d4c59edda129a294a9b08a7b3278c8a014c668a9cd707258e7f",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: current stdlib canonical fingerprint",
+      "verified": true
+    },
+    {
+      "actual": "d89b339e92059d4c59edda129a294a9b08a7b3278c8a014c668a9cd707258e7f",
+      "expected": "d89b339e92059d4c59edda129a294a9b08a7b3278c8a014c668a9cd707258e7f",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: recorded stdlib canonical fingerprint",
+      "verified": true
+    },
+    {
+      "actual": [],
+      "expected": [],
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: existing root walk without read errors",
+      "verified": true
+    },
+    {
+      "actual": {
+        "attrs": "22.2.0",
+        "distlib": "0.3.9",
+        "filelock": "3.4.1",
+        "importlib-metadata": "4.8.3",
+        "importlib-resources": "5.4.0",
+        "more-itertools": "8.14.0",
+        "packaging": "21.3",
+        "pip": "21.3.1",
+        "platformdirs": "2.4.0",
+        "pluggy": "0.13.1",
+        "py": "1.11.0",
+        "pyparsing": "2.4.7",
+        "pytest": "5.4.3",
+        "setuptools": "59.6.0",
+        "six": "1.16.0",
+        "toml": "0.10.2",
+        "tox": "3.28.0",
+        "typing-extensions": "4.1.1",
+        "virtualenv": "20.17.1",
+        "wcwidth": "0.2.13",
+        "wheel": "0.37.1",
+        "zipp": "3.6.0"
+      },
+      "expected": {
+        "attrs": "22.2.0",
+        "distlib": "0.3.9",
+        "filelock": "3.4.1",
+        "importlib-metadata": "4.8.3",
+        "importlib-resources": "5.4.0",
+        "more-itertools": "8.14.0",
+        "packaging": "21.3",
+        "pip": "21.3.1",
+        "platformdirs": "2.4.0",
+        "pluggy": "0.13.1",
+        "py": "1.11.0",
+        "pyparsing": "2.4.7",
+        "pytest": "5.4.3",
+        "setuptools": "59.6.0",
+        "six": "1.16.0",
+        "toml": "0.10.2",
+        "tox": "3.28.0",
+        "typing-extensions": "4.1.1",
+        "virtualenv": "20.17.1",
+        "wcwidth": "0.2.13",
+        "wheel": "0.37.1",
+        "zipp": "3.6.0"
+      },
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: pinned package versions and uniqueness",
+      "verified": true
+    },
+    {
+      "actual": [],
+      "expected": [],
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: pinned package file authority",
+      "verified": true
+    },
+    {
+      "actual": [
+        [
+          "attrs",
+          "22.2.0"
+        ],
+        [
+          "distlib",
+          "0.3.9"
+        ],
+        [
+          "filelock",
+          "3.4.1"
+        ],
+        [
+          "importlib-metadata",
+          "4.8.3"
+        ],
+        [
+          "importlib-resources",
+          "5.4.0"
+        ],
+        [
+          "more-itertools",
+          "8.14.0"
+        ],
+        [
+          "packaging",
+          "21.3"
+        ],
+        [
+          "pip",
+          "21.3.1"
+        ],
+        [
+          "platformdirs",
+          "2.4.0"
+        ],
+        [
+          "pluggy",
+          "0.13.1"
+        ],
+        [
+          "py",
+          "1.11.0"
+        ],
+        [
+          "pyparsing",
+          "2.4.7"
+        ],
+        [
+          "pytest",
+          "5.4.3"
+        ],
+        [
+          "setuptools",
+          "59.6.0"
+        ],
+        [
+          "six",
+          "1.16.0"
+        ],
+        [
+          "toml",
+          "0.10.2"
+        ],
+        [
+          "tox",
+          "3.28.0"
+        ],
+        [
+          "typing-extensions",
+          "4.1.1"
+        ],
+        [
+          "virtualenv",
+          "20.17.1"
+        ],
+        [
+          "wcwidth",
+          "0.2.13"
+        ],
+        [
+          "wheel",
+          "0.37.1"
+        ],
+        [
+          "zipp",
+          "3.6.0"
+        ]
+      ],
+      "expected": [
+        [
+          "attrs",
+          "22.2.0"
+        ],
+        [
+          "distlib",
+          "0.3.9"
+        ],
+        [
+          "filelock",
+          "3.4.1"
+        ],
+        [
+          "importlib-metadata",
+          "4.8.3"
+        ],
+        [
+          "importlib-resources",
+          "5.4.0"
+        ],
+        [
+          "more-itertools",
+          "8.14.0"
+        ],
+        [
+          "packaging",
+          "21.3"
+        ],
+        [
+          "pip",
+          "21.3.1"
+        ],
+        [
+          "platformdirs",
+          "2.4.0"
+        ],
+        [
+          "pluggy",
+          "0.13.1"
+        ],
+        [
+          "py",
+          "1.11.0"
+        ],
+        [
+          "pyparsing",
+          "2.4.7"
+        ],
+        [
+          "pytest",
+          "5.4.3"
+        ],
+        [
+          "setuptools",
+          "59.6.0"
+        ],
+        [
+          "six",
+          "1.16.0"
+        ],
+        [
+          "toml",
+          "0.10.2"
+        ],
+        [
+          "tox",
+          "3.28.0"
+        ],
+        [
+          "typing-extensions",
+          "4.1.1"
+        ],
+        [
+          "virtualenv",
+          "20.17.1"
+        ],
+        [
+          "wcwidth",
+          "0.2.13"
+        ],
+        [
+          "wheel",
+          "0.37.1"
+        ],
+        [
+          "zipp",
+          "3.6.0"
+        ]
+      ],
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: all installed distribution name/version pairs equal pins",
+      "verified": true
+    },
+    {
+      "actual": [
+        [
+          "attrs",
+          "22.2.0"
+        ],
+        [
+          "distlib",
+          "0.3.9"
+        ],
+        [
+          "filelock",
+          "3.4.1"
+        ],
+        [
+          "importlib-metadata",
+          "4.8.3"
+        ],
+        [
+          "importlib-resources",
+          "5.4.0"
+        ],
+        [
+          "more-itertools",
+          "8.14.0"
+        ],
+        [
+          "packaging",
+          "21.3"
+        ],
+        [
+          "pip",
+          "21.3.1"
+        ],
+        [
+          "platformdirs",
+          "2.4.0"
+        ],
+        [
+          "pluggy",
+          "0.13.1"
+        ],
+        [
+          "py",
+          "1.11.0"
+        ],
+        [
+          "pyparsing",
+          "2.4.7"
+        ],
+        [
+          "pytest",
+          "5.4.3"
+        ],
+        [
+          "setuptools",
+          "59.6.0"
+        ],
+        [
+          "six",
+          "1.16.0"
+        ],
+        [
+          "toml",
+          "0.10.2"
+        ],
+        [
+          "tox",
+          "3.28.0"
+        ],
+        [
+          "typing-extensions",
+          "4.1.1"
+        ],
+        [
+          "virtualenv",
+          "20.17.1"
+        ],
+        [
+          "wcwidth",
+          "0.2.13"
+        ],
+        [
+          "wheel",
+          "0.37.1"
+        ],
+        [
+          "zipp",
+          "3.6.0"
+        ]
+      ],
+      "expected": [
+        [
+          "attrs",
+          "22.2.0"
+        ],
+        [
+          "distlib",
+          "0.3.9"
+        ],
+        [
+          "filelock",
+          "3.4.1"
+        ],
+        [
+          "importlib-metadata",
+          "4.8.3"
+        ],
+        [
+          "importlib-resources",
+          "5.4.0"
+        ],
+        [
+          "more-itertools",
+          "8.14.0"
+        ],
+        [
+          "packaging",
+          "21.3"
+        ],
+        [
+          "pip",
+          "21.3.1"
+        ],
+        [
+          "platformdirs",
+          "2.4.0"
+        ],
+        [
+          "pluggy",
+          "0.13.1"
+        ],
+        [
+          "py",
+          "1.11.0"
+        ],
+        [
+          "pyparsing",
+          "2.4.7"
+        ],
+        [
+          "pytest",
+          "5.4.3"
+        ],
+        [
+          "setuptools",
+          "59.6.0"
+        ],
+        [
+          "six",
+          "1.16.0"
+        ],
+        [
+          "toml",
+          "0.10.2"
+        ],
+        [
+          "tox",
+          "3.28.0"
+        ],
+        [
+          "typing-extensions",
+          "4.1.1"
+        ],
+        [
+          "virtualenv",
+          "20.17.1"
+        ],
+        [
+          "wcwidth",
+          "0.2.13"
+        ],
+        [
+          "wheel",
+          "0.37.1"
+        ],
+        [
+          "zipp",
+          "3.6.0"
+        ]
+      ],
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: current installed package pairs equal retained preparation",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: attrs",
+      "verified": true
+    },
+    {
+      "actual": "29e95c7f6778868dbd49170f98f8818f78f3dc5e0e37c0b1f474e3561b240836",
+      "expected": "29e95c7f6778868dbd49170f98f8818f78f3dc5e0e37c0b1f474e3561b240836",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: attrs",
+      "verified": true
+    },
+    {
+      "actual": 60018,
+      "expected": 60018,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: attrs",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: distlib",
+      "verified": true
+    },
+    {
+      "actual": "47f8c22fd27c27e25a65601af709b38e4f0a45ea4fc2e710f65755fa8caaaf87",
+      "expected": "47f8c22fd27c27e25a65601af709b38e4f0a45ea4fc2e710f65755fa8caaaf87",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: distlib",
+      "verified": true
+    },
+    {
+      "actual": 468973,
+      "expected": 468973,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: distlib",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: filelock",
+      "verified": true
+    },
+    {
+      "actual": "a4bc51381e01502a30e9f06dd4fa19a1712eab852b6fb0f84fd7cce0793d8ca3",
+      "expected": "a4bc51381e01502a30e9f06dd4fa19a1712eab852b6fb0f84fd7cce0793d8ca3",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: filelock",
+      "verified": true
+    },
+    {
+      "actual": 9852,
+      "expected": 9852,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: filelock",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: importlib-metadata",
+      "verified": true
+    },
+    {
+      "actual": "65a9576a5b2d58ca44d133c42a241905cc45e34d2c06fd5ba2bafa221e5d7b5e",
+      "expected": "65a9576a5b2d58ca44d133c42a241905cc45e34d2c06fd5ba2bafa221e5d7b5e",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: importlib-metadata",
+      "verified": true
+    },
+    {
+      "actual": 17978,
+      "expected": 17978,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: importlib-metadata",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: importlib-resources",
+      "verified": true
+    },
+    {
+      "actual": "33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45",
+      "expected": "33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: importlib-resources",
+      "verified": true
+    },
+    {
+      "actual": 28066,
+      "expected": 28066,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: importlib-resources",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: more-itertools",
+      "verified": true
+    },
+    {
+      "actual": "1bc4f91ee5b1b31ac7ceacc17c09befe6a40a503907baf9c839c229b5095cfd2",
+      "expected": "1bc4f91ee5b1b31ac7ceacc17c09befe6a40a503907baf9c839c229b5095cfd2",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: more-itertools",
+      "verified": true
+    },
+    {
+      "actual": 52193,
+      "expected": 52193,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: more-itertools",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: packaging",
+      "verified": true
+    },
+    {
+      "actual": "ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522",
+      "expected": "ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: packaging",
+      "verified": true
+    },
+    {
+      "actual": 40750,
+      "expected": 40750,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: packaging",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: pip",
+      "verified": true
+    },
+    {
+      "actual": "deaf32dcd9ab821e359cd8330786bcd077604b5c5730c0b096eda46f95c24a2d",
+      "expected": "deaf32dcd9ab821e359cd8330786bcd077604b5c5730c0b096eda46f95c24a2d",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: pip",
+      "verified": true
+    },
+    {
+      "actual": 1723581,
+      "expected": 1723581,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: pip",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: platformdirs",
+      "verified": true
+    },
+    {
+      "actual": "8868bbe3c3c80d42f20156f22e7131d2fb321f5bc86a2a345375c6481a67021d",
+      "expected": "8868bbe3c3c80d42f20156f22e7131d2fb321f5bc86a2a345375c6481a67021d",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: platformdirs",
+      "verified": true
+    },
+    {
+      "actual": 14400,
+      "expected": 14400,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: platformdirs",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: pluggy",
+      "verified": true
+    },
+    {
+      "actual": "966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d",
+      "expected": "966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: pluggy",
+      "verified": true
+    },
+    {
+      "actual": 18077,
+      "expected": 18077,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: pluggy",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: py",
+      "verified": true
+    },
+    {
+      "actual": "607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378",
+      "expected": "607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: py",
+      "verified": true
+    },
+    {
+      "actual": 98708,
+      "expected": 98708,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: py",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: pyparsing",
+      "verified": true
+    },
+    {
+      "actual": "ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b",
+      "expected": "ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: pyparsing",
+      "verified": true
+    },
+    {
+      "actual": 67842,
+      "expected": 67842,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: pyparsing",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: pytest",
+      "verified": true
+    },
+    {
+      "actual": "5c0db86b698e8f170ba4582a492248919255fcd4c79b1ee64ace34301fb589a1",
+      "expected": "5c0db86b698e8f170ba4582a492248919255fcd4c79b1ee64ace34301fb589a1",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: pytest",
+      "verified": true
+    },
+    {
+      "actual": 248101,
+      "expected": 248101,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: pytest",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: setuptools",
+      "verified": true
+    },
+    {
+      "actual": "4ce92f1e1f8f01233ee9952c04f6b81d1e02939d6e1b488428154974a4d0783e",
+      "expected": "4ce92f1e1f8f01233ee9952c04f6b81d1e02939d6e1b488428154974a4d0783e",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: setuptools",
+      "verified": true
+    },
+    {
+      "actual": 952597,
+      "expected": 952597,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: setuptools",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: six",
+      "verified": true
+    },
+    {
+      "actual": "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
+      "expected": "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: six",
+      "verified": true
+    },
+    {
+      "actual": 11053,
+      "expected": 11053,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: six",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: toml",
+      "verified": true
+    },
+    {
+      "actual": "806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b",
+      "expected": "806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: toml",
+      "verified": true
+    },
+    {
+      "actual": 16588,
+      "expected": 16588,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: toml",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: tox",
+      "verified": true
+    },
+    {
+      "actual": "57b5ab7e8bb3074edc3c0c0b4b192a4f3799d3723b2c5b76f1fa9f2d40316eea",
+      "expected": "57b5ab7e8bb3074edc3c0c0b4b192a4f3799d3723b2c5b76f1fa9f2d40316eea",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: tox",
+      "verified": true
+    },
+    {
+      "actual": 86766,
+      "expected": 86766,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: tox",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: typing-extensions",
+      "verified": true
+    },
+    {
+      "actual": "21c85e0fe4b9a155d0799430b0ad741cdce7e359660ccbd8b530613e8df88ce2",
+      "expected": "21c85e0fe4b9a155d0799430b0ad741cdce7e359660ccbd8b530613e8df88ce2",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: typing-extensions",
+      "verified": true
+    },
+    {
+      "actual": 26844,
+      "expected": 26844,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: typing-extensions",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: virtualenv",
+      "verified": true
+    },
+    {
+      "actual": "ce3b1684d6e1a20a3e5ed36795a97dfc6af29bc3970ca8dab93e11ac6094b3c4",
+      "expected": "ce3b1684d6e1a20a3e5ed36795a97dfc6af29bc3970ca8dab93e11ac6094b3c4",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: virtualenv",
+      "verified": true
+    },
+    {
+      "actual": 8849334,
+      "expected": 8849334,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: virtualenv",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: wcwidth",
+      "verified": true
+    },
+    {
+      "actual": "3da69048e4540d84af32131829ff948f1e022c1c6bdb8d6102117aac784f6859",
+      "expected": "3da69048e4540d84af32131829ff948f1e022c1c6bdb8d6102117aac784f6859",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: wcwidth",
+      "verified": true
+    },
+    {
+      "actual": 34166,
+      "expected": 34166,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: wcwidth",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: wheel",
+      "verified": true
+    },
+    {
+      "actual": "4bdcd7d840138086126cd09254dc6195fb4fc6f01c050a1d7236f2630db1d22a",
+      "expected": "4bdcd7d840138086126cd09254dc6195fb4fc6f01c050a1d7236f2630db1d22a",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: wheel",
+      "verified": true
+    },
+    {
+      "actual": 35301,
+      "expected": 35301,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: wheel",
+      "verified": true
+    },
+    {
+      "actual": true,
+      "expected": true,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel available: zipp",
+      "verified": true
+    },
+    {
+      "actual": "9fe5ea21568a0a70e50f273397638d39b03353731e6cbbb3fd8502a33fec40bc",
+      "expected": "9fe5ea21568a0a70e50f273397638d39b03353731e6cbbb3fd8502a33fec40bc",
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel SHA256: zipp",
+      "verified": true
+    },
+    {
+      "actual": 5313,
+      "expected": 5313,
+      "name": "cpython-3.6.5-pytest-5.4.3-linux-x86_64: retained wheel size: zipp",
+      "verified": true
+    }
+  ],
+  "checks_count": 279,
+  "checks_verified": 279,
+  "current_full_pinned_package_file_inventory": {
+    "canonical_sha256": "9ad495487448e7d6f1b82315e2ddb8050ff37abc0190a7b8037046c56d35fba8",
+    "path": "/workspace/qualification/native-authority-v41-screening-audit/raw-audit/RUNTIME_HOST_PINNED_PACKAGE_FILES.json",
+    "sha256": "fc66a87a9a119cdb079433c299fa7be6c4c0a6f32bb831651479adf0deba587a",
+    "size": 1281462
+  },
+  "current_full_stdlib_file_inventory": {
+    "canonical_sha256": "b19e001c15567642dbd0b26e33504e10a4d98c2fbd49284dffaa505420f92021",
+    "path": "/workspace/qualification/native-authority-v41-screening-audit/raw-audit/RUNTIME_HOST_STDLIB_FILES.json",
+    "sha256": "feccb420d98b2a18d57d8d6829bcfe00948bcd3ea400e485e9c395cfbc908c28",
+    "size": 1448616
+  },
+  "external_runtime_paths": {
+    "canonical_sha256": "416e74dd761f1e14ba9b553a8e52f446d2b3522b5bd4814ce4c65326c03a1aeb",
+    "path": "/workspace/qualification/native-authority-v41-profile-preparation/RUNTIMES.json",
+    "sha256": "adeebff624d3a234028d59029fb4b239e2e476bdaaa27f9a57bc7cbd6ed37b0f",
+    "size": 341
+  },
+  "failed_checks": [],
+  "inventories": [
+    {
+      "canonical_sha256": "02b01af573c54e1a0c0dc5171f58b00aa843efd4b041fe9bab5d7fecd0e2f828",
+      "path": "/workspace/qualification/native-authority-v41-screening-sealed/case-000.RUNTIME_INVENTORY.json",
+      "sha256": "a3d0141d4004d633237f3868ce6c27d5f70637848afc64f43742bc3223880c7f",
+      "size": 1305021
+    },
+    {
+      "canonical_sha256": "02b01af573c54e1a0c0dc5171f58b00aa843efd4b041fe9bab5d7fecd0e2f828",
+      "path": "/workspace/qualification/native-authority-v41-screening-sealed/case-001.RUNTIME_INVENTORY.json",
+      "sha256": "a3d0141d4004d633237f3868ce6c27d5f70637848afc64f43742bc3223880c7f",
+      "size": 1305021
+    },
+    {
+      "canonical_sha256": "02b01af573c54e1a0c0dc5171f58b00aa843efd4b041fe9bab5d7fecd0e2f828",
+      "path": "/workspace/qualification/native-authority-v41-screening-sealed/case-002.RUNTIME_INVENTORY.json",
+      "sha256": "a3d0141d4004d633237f3868ce6c27d5f70637848afc64f43742bc3223880c7f",
+      "size": 1305021
+    },
+    {
+      "canonical_sha256": "02b01af573c54e1a0c0dc5171f58b00aa843efd4b041fe9bab5d7fecd0e2f828",
+      "path": "/workspace/qualification/native-authority-v41-screening-sealed/case-003.RUNTIME_INVENTORY.json",
+      "sha256": "a3d0141d4004d633237f3868ce6c27d5f70637848afc64f43742bc3223880c7f",
+      "size": 1305021
+    },
+    {
+      "canonical_sha256": "02b01af573c54e1a0c0dc5171f58b00aa843efd4b041fe9bab5d7fecd0e2f828",
+      "path": "/workspace/qualification/native-authority-v41-screening-sealed/case-004.RUNTIME_INVENTORY.json",
+      "sha256": "a3d0141d4004d633237f3868ce6c27d5f70637848afc64f43742bc3223880c7f",
+      "size": 1305021
+    },
+    {
+      "canonical_sha256": "02b01af573c54e1a0c0dc5171f58b00aa843efd4b041fe9bab5d7fecd0e2f828",
+      "path": "/workspace/qualification/native-authority-v41-screening-sealed/case-005.RUNTIME_INVENTORY.json",
+      "sha256": "a3d0141d4004d633237f3868ce6c27d5f70637848afc64f43742bc3223880c7f",
+      "size": 1305021
+    },
+    {
+      "canonical_sha256": "02b01af573c54e1a0c0dc5171f58b00aa843efd4b041fe9bab5d7fecd0e2f828",
+      "path": "/workspace/qualification/native-authority-v41-screening-sealed/case-006.RUNTIME_INVENTORY.json",
+      "sha256": "a3d0141d4004d633237f3868ce6c27d5f70637848afc64f43742bc3223880c7f",
+      "size": 1305021
+    }
+  ],
+  "limitations": [
+    "Filesystem-only audit: no candidate interpreters, native controller, tests, target imports, Git, or network were executed.",
+    "Implementation, version_info, base_prefix, and sysconfig-derived root provenance are retained claims. Their internal catalog consistency is checked; they were not independently queried from an executable.",
+    "The qualified stdlib walk excludes site-packages/dist-packages and includes only .py/.pyc/.pyo/.so/.pyd/.dll/.dylib filenames. It resolves matching file symlinks and deduplicates resolved paths; absent roots can contribute zero files.",
+    "Installed package file rows follow distribution metadata/RECORD, matching the source. They do not assert that every unlisted site-packages file belongs to the pinned package set.",
+    "Static plugin path/version/ownership/byte checks do not execute import resolution or establish runtime plugin behavior.",
+    "cpython-3.12.14-pytest-8.4.1-linux-x86_64: these retained roots are absent/non-directory and contribute zero files under the qualified walk: /install/lib/python3.12/lib-dynload"
+  ],
+  "package_metadata": {
+    "path": "/workspace/qualification/native-authority-v41-screening-audit/committed-source/research/unified_consequence_runtime/archaeology/native-authority-v41/PACKAGE_METADATA.json",
+    "sha256": "79b82db4d56056cb268b99e9cc9da2f54768c6ee2696f13fd4264864b20bff89",
+    "size": 242853
+  },
+  "runtimes": {
+    "cpython-3.12.14-pytest-8.4.1-linux-x86_64": {
+      "additional_retained_preparation_metadata": [
+        {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/environment.json",
+          "sha256": "529d149674c1101a5346a3af55b9c1e3c38a30d84e61327b66ada33ee769eb12",
+          "size": 1620
+        },
+        {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/metadata-receipt.json",
+          "sha256": "ec4fb2cdfc8d41c843b38c30e1e203a9ad2f01354c9ff2240cdde4817cf4410f",
+          "size": 1602
+        },
+        {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/download-receipts.json",
+          "sha256": "f5be3dc2fdeffd0b7dd1a189338308c36df1627f6892965a06b808036dd69df1",
+          "size": 14366
+        },
+        {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/pins.txt",
+          "sha256": "3727ca90200c2cc7b6280ab9361118ed3a3ce98a674daa7afe9e9397c0475889",
+          "size": 4368
+        },
+        {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/pip-check.log",
+          "sha256": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09",
+          "size": 30
+        },
+        {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/commands.json",
+          "sha256": "c82928be8fa095e6f5912606f02505962fc48efe587c02636371d10f5743f0d7",
+          "size": 1562
+        },
+        {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/pyvenv.cfg",
+          "sha256": "7e186eeb4d85d712de461f2dec7f294e03630d3747b2e1b0856a1363b390e55d",
+          "size": 447
+        }
+      ],
+      "executable_host_sha256": "fa67443527ed9647f760d807e2a38f26340757123e643c4639cf273ed15d5ea7",
+      "installed_name_version_pairs": [
+        [
+          "ast-serialize",
+          "0.13.0"
+        ],
+        [
+          "attrs",
+          "25.4.0"
+        ],
+        [
+          "cbor2",
+          "5.6.5"
+        ],
+        [
+          "cloudpickle",
+          "3.1.2"
+        ],
+        [
+          "coverage",
+          "7.10.0"
+        ],
+        [
+          "dnspython",
+          "2.9.0"
+        ],
+        [
+          "execnet",
+          "2.1.2"
+        ],
+        [
+          "flit-core",
+          "4.0.1"
+        ],
+        [
+          "hatch-fancy-pypi-readme",
+          "25.1.0"
+        ],
+        [
+          "hatch-vcs",
+          "0.5.0"
+        ],
+        [
+          "hatchling",
+          "1.27.0"
+        ],
+        [
+          "hypothesis",
+          "6.151.9"
+        ],
+        [
+          "immutables",
+          "0.21"
+        ],
+        [
+          "iniconfig",
+          "2.3.1"
+        ],
+        [
+          "librt",
+          "0.16.0"
+        ],
+        [
+          "msgpack",
+          "1.1.1"
+        ],
+        [
+          "msgspec",
+          "0.19.0"
+        ],
+        [
+          "mypy",
+          "2.4.0"
+        ],
+        [
+          "mypy-extensions",
+          "1.1.0"
+        ],
+        [
+          "orjson",
+          "3.11.3"
+        ],
+        [
+          "packaging",
+          "26.3"
+        ],
+        [
+          "pathspec",
+          "1.1.1"
+        ],
+        [
+          "pip",
+          "25.0.1"
+        ],
+        [
+          "pluggy",
+          "1.7.0"
+        ],
+        [
+          "psutil",
+          "7.2.2"
+        ],
+        [
+          "py-cpuinfo",
+          "9.0.0"
+        ],
+        [
+          "pygments",
+          "2.21.0"
+        ],
+        [
+          "pymongo",
+          "4.13.2"
+        ],
+        [
+          "pympler",
+          "1.1"
+        ],
+        [
+          "pytest",
+          "8.4.1"
+        ],
+        [
+          "pytest-benchmark",
+          "5.1.0"
+        ],
+        [
+          "pytest-cov",
+          "6.3.0"
+        ],
+        [
+          "pytest-xdist",
+          "3.8.0"
+        ],
+        [
+          "pyyaml",
+          "6.0.2"
+        ],
+        [
+          "ruff",
+          "0.11.0"
+        ],
+        [
+          "setuptools",
+          "84.0.0"
+        ],
+        [
+          "setuptools-git-versioning",
+          "3.2.0"
+        ],
+        [
+          "setuptools-scm",
+          "10.3.4"
+        ],
+        [
+          "sortedcontainers",
+          "2.4.0"
+        ],
+        [
+          "tomli-w",
+          "1.2.0"
+        ],
+        [
+          "tomlkit",
+          "0.13.3"
+        ],
+        [
+          "trove-classifiers",
+          "2026.9.21.13"
+        ],
+        [
+          "typing-extensions",
+          "4.14.1"
+        ],
+        [
+          "ujson",
+          "5.10.0"
+        ],
+        [
+          "vcs-versioning",
+          "2.6.0"
+        ]
+      ],
+      "interpreter": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/bin/python",
+      "interpreter_is_symlink": true,
+      "interpreter_resolved": "/workspace/qualification/native-frontier-v3-runtime-preparation/modern-base/bin/python3.12",
+      "package_count": 45,
+      "package_file_count": 6294,
+      "package_manifest_canonical_sha256": "679ea6940dd8f706754a13819abbe47e99484d773039ce5a7692318d611e2d71",
+      "plugin_definitions": [
+        {
+          "distribution": "hypothesis",
+          "module": "hypothesis.extra.pytestplugin",
+          "version": "6.151.9"
+        },
+        {
+          "distribution": "pytest-benchmark",
+          "module": "pytest_benchmark.session",
+          "version": "5.1.0"
+        },
+        {
+          "distribution": "pytest-benchmark",
+          "module": "pytest_benchmark.plugin",
+          "version": "5.1.0"
+        },
+        {
+          "distribution": "pytest",
+          "module": "pytester",
+          "version": "8.4.1"
+        },
+        {
+          "distribution": "pytest",
+          "module": "pytester_assertions",
+          "version": "8.4.1"
+        },
+        {
+          "distribution": "pytest-cov",
+          "module": "pytest_cov.plugin",
+          "version": "6.3.0"
+        }
+      ],
+      "retained_identity": {
+        "base_prefix": "/workspace/qualification/native-frontier-v3-runtime-preparation/modern-base",
+        "executable_sha256": "fa67443527ed9647f760d807e2a38f26340757123e643c4639cf273ed15d5ea7",
+        "implementation": "cpython",
+        "stdlib_manifest_sha256": "d04062dbde3ce97c5227abfd3a5763e4250fb752d07423bd695d90fcb4fb8291",
+        "version_info": [
+          3,
+          12,
+          14,
+          "final",
+          0
+        ]
+      },
+      "retained_preparation_files": {
+        "installed-packages.json": {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/installed-packages.json",
+          "sha256": "02dd38070fcf4184b8f24672468a7660b3ce5807a6a09c1c9f102b2b64eb1985",
+          "size": 2616
+        },
+        "pinned-package-files.json": {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/pinned-package-files.json",
+          "sha256": "da8d04ecd0db94fc4fa1a12a16f03e04691e013185ab9c5ccf563d0f16deb8aa",
+          "size": 907669
+        },
+        "plugin-identity.json": {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/plugin-identity.json",
+          "sha256": "98280c0c28b56858781ffa6425777000b707c33801817e551ec3d35bfa277055",
+          "size": 2101
+        },
+        "runtime-identity.json": {
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/runtime-identity.json",
+          "sha256": "cc46a87b3654e9601772469b179ee12eab9b06f0ce8ccc1e5910f7f65e851f2b",
+          "size": 625765
+        }
+      },
+      "retained_wheel_artifacts": [
+        {
+          "artifact_name": "ast-serialize",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/ast_serialize-0.13.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "4f55668338bcb871e83ee21ba865fb08b7b4b13af9312742f9878c39f9d84ee3",
+          "size": 1312759
+        },
+        {
+          "artifact_name": "attrs",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/attrs-25.4.0-py3-none-any.whl",
+          "sha256": "adcf7e2a1fb3b36ac48d97835bb6d8ade15b8dcce26aba8bf1d14847b57a3373",
+          "size": 67615
+        },
+        {
+          "artifact_name": "cbor2",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/cbor2-5.6.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "38886c41bebcd7dca57739439455bce759f1e4c551b511f618b8e9c1295b431b",
+          "size": 270004
+        },
+        {
+          "artifact_name": "cloudpickle",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/cloudpickle-3.1.2-py3-none-any.whl",
+          "sha256": "9acb47f6afd73f60dc1df93bb801b472f05ff42fa6c84167d25cb206be1fbf4a",
+          "size": 22228
+        },
+        {
+          "artifact_name": "coverage",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/coverage-7.10.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
+          "sha256": "7171c139ab6571d70460ecf788b1dcaf376bfc75a42e1946b8c031d062bbbad4",
+          "size": 248798
+        },
+        {
+          "artifact_name": "dnspython",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/dnspython-2.9.0-py3-none-any.whl",
+          "sha256": "9a4aedb833c3c1b49214d04d44d3032ab7a9135f7c1d29a549b4ff78fd82fda9",
+          "size": 354822
+        },
+        {
+          "artifact_name": "execnet",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/execnet-2.1.2-py3-none-any.whl",
+          "sha256": "67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec",
+          "size": 40708
+        },
+        {
+          "artifact_name": "flit-core",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/flit_core-4.0.1-py3-none-any.whl",
+          "sha256": "e594830f0c4d3fe8b17557e2d27d90f14932d7d088b1f0560ab1a630db2085e5",
+          "size": 44554
+        },
+        {
+          "artifact_name": "hatch-fancy-pypi-readme",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/hatch_fancy_pypi_readme-25.1.0-py3-none-any.whl",
+          "sha256": "ce0134c40d63d874ac48f48ccc678b8f3b62b8e50e9318520d2bffc752eedaf3",
+          "size": 10046
+        },
+        {
+          "artifact_name": "hatch-vcs",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/hatch_vcs-0.5.0-py3-none-any.whl",
+          "sha256": "b49677dbdc597460cc22d01b27ab3696f5e16a21ecf2700fb01bc28e1f2a04a7",
+          "size": 8507
+        },
+        {
+          "artifact_name": "hatchling",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/hatchling-1.27.0-py3-none-any.whl",
+          "sha256": "d3a2f3567c4f926ea39849cdf924c7e99e6686c9c8e288ae1037c8fa2a5d937b",
+          "size": 75794
+        },
+        {
+          "artifact_name": "hypothesis",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/hypothesis-6.151.9-py3-none-any.whl",
+          "sha256": "7b7220585c67759b1b1ef839b1e6e9e3d82ed468cfc1ece43c67184848d7edd9",
+          "size": 529307
+        },
+        {
+          "artifact_name": "immutables",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/immutables-0.21-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "dad7c0c74b285cc0e555ec0e97acbdc6f1862fcd16b99abd612df3243732e741",
+          "size": 104864
+        },
+        {
+          "artifact_name": "iniconfig",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/iniconfig-2.3.1-py3-none-any.whl",
+          "sha256": "9121e2c1fdb355232495be3194c8dfe87ccc2d5dee45947b78e68f499790d7a7",
+          "size": 7552
+        },
+        {
+          "artifact_name": "librt",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/librt-0.16.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+          "sha256": "36e53948e99bbe3ffea257124cfcae1cfb01831555c9a9c903c9f9a72db7fd07",
+          "size": 531952
+        },
+        {
+          "artifact_name": "msgpack",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/msgpack-1.1.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "a494554874691720ba5891c9b0b39474ba43ffb1aaf32a5dac874effb1619e1a",
+          "size": 426905
+        },
+        {
+          "artifact_name": "msgspec",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/msgspec-0.19.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "d911c442571605e17658ca2b416fd8579c5050ac9adc5e00c2cb3126c97f73bc",
+          "size": 213594
+        },
+        {
+          "artifact_name": "mypy",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/mypy-2.4.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+          "sha256": "29eb0b9427a6b11b992e452f6cceb8af724f4dceb47e779d0b35e405e996ea5e",
+          "size": 15552257
+        },
+        {
+          "artifact_name": "mypy-extensions",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/mypy_extensions-1.1.0-py3-none-any.whl",
+          "sha256": "1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505",
+          "size": 4963
+        },
+        {
+          "artifact_name": "orjson",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/orjson-3.11.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "524b765ad888dc5518bbce12c77c2e83dee1ed6b0992c1790cc5fb49bb4b6667",
+          "size": 132875
+        },
+        {
+          "artifact_name": "packaging",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/packaging-26.3-py3-none-any.whl",
+          "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+          "size": 129956
+        },
+        {
+          "artifact_name": "pathspec",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/pathspec-1.1.1-py3-none-any.whl",
+          "sha256": "a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189",
+          "size": 57328
+        },
+        {
+          "artifact_name": "pip",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/pip-25.0.1-py3-none-any.whl",
+          "sha256": "c46efd13b6aa8279f33f2864459c8ce587ea6a1a59ee20de055868d8f7688f7f",
+          "size": 1841526
+        },
+        {
+          "artifact_name": "pluggy",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/pluggy-1.7.0-py3-none-any.whl",
+          "sha256": "7dd7b0d8832ba3cb632c306926ded123429211b83641b35dc5c41ad2d34f9bec",
+          "size": 27082
+        },
+        {
+          "artifact_name": "psutil",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl",
+          "sha256": "076a2d2f923fd4821644f5ba89f059523da90dc9014e85f8e45a5774ca5bc6f9",
+          "size": 155560
+        },
+        {
+          "artifact_name": "py-cpuinfo",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/py_cpuinfo-9.0.0-py3-none-any.whl",
+          "sha256": "859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5",
+          "size": 22335
+        },
+        {
+          "artifact_name": "pygments",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/pygments-2.21.0-py3-none-any.whl",
+          "sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+          "size": 1250147
+        },
+        {
+          "artifact_name": "pymongo",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/pymongo-4.13.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "f57a664aa74610eb7a52fa93f2cf794a1491f4f76098343485dd7da5b3bcff06",
+          "size": 1693613
+        },
+        {
+          "artifact_name": "pympler",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/Pympler-1.1-py3-none-any.whl",
+          "sha256": "5b223d6027d0619584116a0cbc28e8d2e378f7a79c1e5e024f9ff3b673c58506",
+          "size": 165766
+        },
+        {
+          "artifact_name": "pytest",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/pytest-8.4.1-py3-none-any.whl",
+          "sha256": "539c70ba6fcead8e78eebbf1115e8b589e7565830d7d006a8723f19ac8a0afb7",
+          "size": 365474
+        },
+        {
+          "artifact_name": "pytest-benchmark",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/pytest_benchmark-5.1.0-py3-none-any.whl",
+          "sha256": "922de2dfa3033c227c96da942d1878191afa135a29485fb942e85dff1c592c89",
+          "size": 44259
+        },
+        {
+          "artifact_name": "pytest-cov",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/pytest_cov-6.3.0-py3-none-any.whl",
+          "sha256": "440db28156d2468cafc0415b4f8e50856a0d11faefa38f30906048fe490f1749",
+          "size": 25115
+        },
+        {
+          "artifact_name": "pytest-xdist",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/pytest_xdist-3.8.0-py3-none-any.whl",
+          "sha256": "202ca578cfeb7370784a8c33d6d05bc6e13b4f25b5053c30a152269fd10f0b88",
+          "size": 46396
+        },
+        {
+          "artifact_name": "pyyaml",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/PyYAML-6.0.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "80bab7bfc629882493af4aa31a4cfa43a4c57c83813253626916b8c7ada83476",
+          "size": 767542
+        },
+        {
+          "artifact_name": "ruff",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/ruff-0.11.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "92c0c1ff014351c0b0cdfdb1e35fa83b780f1e065667167bb9502d47ca41e6db",
+          "size": 11348311
+        },
+        {
+          "artifact_name": "setuptools",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/setuptools-84.0.0-py3-none-any.whl",
+          "sha256": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
+          "size": 818216
+        },
+        {
+          "artifact_name": "setuptools-git-versioning",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/setuptools_git_versioning-3.2.0-py3-none-any.whl",
+          "sha256": "99ba418d3e5b790ffd6347c89c8c9da92d917b73f5a918e4eb10622358ae9c48",
+          "size": 20389
+        },
+        {
+          "artifact_name": "setuptools-scm",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/setuptools_scm-10.3.4-py3-none-any.whl",
+          "sha256": "82f34c3e3084fc2b57d397200637cc13f2338004052d2fee47baa5f0e902464e",
+          "size": 33366
+        },
+        {
+          "artifact_name": "sortedcontainers",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/sortedcontainers-2.4.0-py2.py3-none-any.whl",
+          "sha256": "a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0",
+          "size": 29575
+        },
+        {
+          "artifact_name": "tomli-w",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/tomli_w-1.2.0-py3-none-any.whl",
+          "sha256": "188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90",
+          "size": 6675
+        },
+        {
+          "artifact_name": "tomlkit",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/tomlkit-0.13.3-py3-none-any.whl",
+          "sha256": "c89c649d79ee40629a9fda55f8ace8c6a1b42deb912b2a8fd8d942ddadb606b0",
+          "size": 38901
+        },
+        {
+          "artifact_name": "trove-classifiers",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/trove_classifiers-2026.9.21.13-py3-none-any.whl",
+          "sha256": "8b1ff4f9c191b1040b71c37f1e445ab99732911e3cd91de52838453a854d7a17",
+          "size": 14232
+        },
+        {
+          "artifact_name": "typing-extensions",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/typing_extensions-4.14.1-py3-none-any.whl",
+          "sha256": "d1e1e3b58374dc93031d6eda2420a48ea44a36c2b4766a4fdeb3710755731d76",
+          "size": 43906
+        },
+        {
+          "artifact_name": "ujson",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/ujson-5.10.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "f8ccb77b3e40b151e20519c6ae6d89bfe3f4c14e8e210d910287f778368bb3d1",
+          "size": 53686
+        },
+        {
+          "artifact_name": "vcs-versioning",
+          "exists": true,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/wheels/vcs_versioning-2.6.0-py3-none-any.whl",
+          "sha256": "f8bebd1302ebc12e67ceb30fc7dd698ec969414b6fa43b30c3f14ac9b1e72c41",
+          "size": 123154
+        }
+      ],
+      "root_diagnostics": [
+        {
+          "excluded_directories": [],
+          "exists": false,
+          "is_directory": false,
+          "matched_paths_before_deduplication": 0,
+          "path": "/install/lib/python3.12/lib-dynload",
+          "resolved": "/install/lib/python3.12/lib-dynload",
+          "resolved_file_symlinks": [],
+          "walk_errors": [
+            "[Errno 2] No such file or directory: '/install/lib/python3.12/lib-dynload'"
+          ]
+        },
+        {
+          "excluded_directories": [
+            "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12/site-packages"
+          ],
+          "exists": true,
+          "is_directory": true,
+          "matched_paths_before_deduplication": 0,
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12",
+          "resolved": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12",
+          "resolved_file_symlinks": [],
+          "walk_errors": []
+        },
+        {
+          "excluded_directories": [],
+          "exists": true,
+          "is_directory": true,
+          "matched_paths_before_deduplication": 2747,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/modern-base/lib/python3.12",
+          "resolved": "/workspace/qualification/native-frontier-v3-runtime-preparation/modern-base/lib/python3.12",
+          "resolved_file_symlinks": [],
+          "walk_errors": []
+        }
+      ],
+      "site_packages": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12/site-packages",
+      "static_builtin_plugin_definition_source": {
+        "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12/site-packages/_pytest/config/__init__.py",
+        "sha256": "9a0857d7dec27c5389986a98aecf61f5ab869e46e72dabb8e54695a4b9641eda",
+        "size": 72712
+      },
+      "static_plugin_files": [
+        {
+          "distribution": "hypothesis",
+          "module": "hypothesis.extra.pytestplugin",
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12/site-packages/hypothesis/extra/pytestplugin.py",
+          "sha256": "3a66cbf0daea9ba529cf15cf9dfcd9e32140a957c51981b364ce2ac5d3a0260e",
+          "version": "6.151.9"
+        },
+        {
+          "distribution": "pytest-benchmark",
+          "module": "pytest_benchmark.session",
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12/site-packages/pytest_benchmark/session.py",
+          "sha256": "174b21c40ff4368a1fd442c559c24529cb4caf36ba7f584ef91fefd3472e4c38",
+          "version": "5.1.0"
+        },
+        {
+          "distribution": "pytest-benchmark",
+          "module": "pytest_benchmark.plugin",
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12/site-packages/pytest_benchmark/plugin.py",
+          "sha256": "873cfcc0e947a4a805d56e67d88b880c4509fc17932d79c22f4e3ec8dad475b6",
+          "version": "5.1.0"
+        },
+        {
+          "distribution": "pytest",
+          "module": "pytester",
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12/site-packages/_pytest/pytester.py",
+          "sha256": "cd662381ffb9e9a3e6ada74ef54838c2784b6ba4912f9681dcaff43bfbb2a217",
+          "version": "8.4.1"
+        },
+        {
+          "distribution": "pytest",
+          "module": "pytester_assertions",
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12/site-packages/_pytest/pytester_assertions.py",
+          "sha256": "c57fc76c53c1f91cff34d0edb53637f5fb7bff064bbcf81040155ebd209e5660",
+          "version": "8.4.1"
+        },
+        {
+          "distribution": "pytest-cov",
+          "module": "pytest_cov.plugin",
+          "path": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/lib/python3.12/site-packages/pytest_cov/plugin.py",
+          "sha256": "ac0f725996b492e8e996d22eae6f138227b98f42589999b9835e6e52a8a260aa",
+          "version": "6.3.0"
+        }
+      ],
+      "stdlib_host_canonical_sha256": "d04062dbde3ce97c5227abfd3a5763e4250fb752d07423bd695d90fcb4fb8291",
+      "stdlib_missing_or_extra_paths": {
+        "extra": [],
+        "missing": []
+      },
+      "stdlib_row_count": 2747,
+      "stdlib_rows_match_inventory": true
+    },
+    "cpython-3.6.5-pytest-5.4.3-linux-x86_64": {
+      "additional_retained_preparation_metadata": [
+        {
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/download-receipts.json",
+          "sha256": "36a165ed119aef8642afcad8c633da645bde9e0f212a87f7d1bda2f79b0047e2",
+          "size": 7682
+        },
+        {
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/pins.txt",
+          "sha256": "79d846b9d580d1c5faec4a0ebad9204eb267dafff10a6c36395dbbe7e1b23168",
+          "size": 369
+        },
+        {
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/pyvenv.cfg",
+          "sha256": "2e26492576c4c0148a17c87671b70f565e654ad4aed7d3eaef142bb4cabe6bae",
+          "size": 160
+        }
+      ],
+      "executable_host_sha256": "6fcb792e3b1bfd406cdee260de033f99f34da688586b73d47104e6feb181a483",
+      "installed_name_version_pairs": [
+        [
+          "attrs",
+          "22.2.0"
+        ],
+        [
+          "distlib",
+          "0.3.9"
+        ],
+        [
+          "filelock",
+          "3.4.1"
+        ],
+        [
+          "importlib-metadata",
+          "4.8.3"
+        ],
+        [
+          "importlib-resources",
+          "5.4.0"
+        ],
+        [
+          "more-itertools",
+          "8.14.0"
+        ],
+        [
+          "packaging",
+          "21.3"
+        ],
+        [
+          "pip",
+          "21.3.1"
+        ],
+        [
+          "platformdirs",
+          "2.4.0"
+        ],
+        [
+          "pluggy",
+          "0.13.1"
+        ],
+        [
+          "py",
+          "1.11.0"
+        ],
+        [
+          "pyparsing",
+          "2.4.7"
+        ],
+        [
+          "pytest",
+          "5.4.3"
+        ],
+        [
+          "setuptools",
+          "59.6.0"
+        ],
+        [
+          "six",
+          "1.16.0"
+        ],
+        [
+          "toml",
+          "0.10.2"
+        ],
+        [
+          "tox",
+          "3.28.0"
+        ],
+        [
+          "typing-extensions",
+          "4.1.1"
+        ],
+        [
+          "virtualenv",
+          "20.17.1"
+        ],
+        [
+          "wcwidth",
+          "0.2.13"
+        ],
+        [
+          "wheel",
+          "0.37.1"
+        ],
+        [
+          "zipp",
+          "3.6.0"
+        ]
+      ],
+      "interpreter": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python",
+      "interpreter_is_symlink": true,
+      "interpreter_resolved": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/miniconda-base/bin/python3.6",
+      "package_count": 22,
+      "package_file_count": 2088,
+      "package_manifest_canonical_sha256": "a36e12bb288f927dc9aa04709d8f247c32d8f2953de80c3d37710a90beb282cc",
+      "plugin_definitions": [],
+      "retained_identity": {
+        "base_prefix": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/miniconda-base",
+        "executable_sha256": "6fcb792e3b1bfd406cdee260de033f99f34da688586b73d47104e6feb181a483",
+        "implementation": "cpython",
+        "stdlib_manifest_sha256": "d89b339e92059d4c59edda129a294a9b08a7b3278c8a014c668a9cd707258e7f",
+        "version_info": [
+          3,
+          6,
+          5,
+          "final",
+          0
+        ]
+      },
+      "retained_preparation_files": {
+        "installed-packages.json": {
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/installed-packages.json",
+          "sha256": "7e543d93b975b8c68485e71b44a5707859bab9ceab80bf6ad4e3428bcf120a14",
+          "size": 1252
+        }
+      },
+      "retained_wheel_artifacts": [
+        {
+          "artifact_name": "attrs",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/attrs-22.2.0-py3-none-any.whl",
+          "sha256": "29e95c7f6778868dbd49170f98f8818f78f3dc5e0e37c0b1f474e3561b240836",
+          "size": 60018
+        },
+        {
+          "artifact_name": "distlib",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/distlib-0.3.9-py2.py3-none-any.whl",
+          "sha256": "47f8c22fd27c27e25a65601af709b38e4f0a45ea4fc2e710f65755fa8caaaf87",
+          "size": 468973
+        },
+        {
+          "artifact_name": "filelock",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/filelock-3.4.1-py3-none-any.whl",
+          "sha256": "a4bc51381e01502a30e9f06dd4fa19a1712eab852b6fb0f84fd7cce0793d8ca3",
+          "size": 9852
+        },
+        {
+          "artifact_name": "importlib-metadata",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/importlib_metadata-4.8.3-py3-none-any.whl",
+          "sha256": "65a9576a5b2d58ca44d133c42a241905cc45e34d2c06fd5ba2bafa221e5d7b5e",
+          "size": 17978
+        },
+        {
+          "artifact_name": "importlib-resources",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/importlib_resources-5.4.0-py3-none-any.whl",
+          "sha256": "33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45",
+          "size": 28066
+        },
+        {
+          "artifact_name": "more-itertools",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/more_itertools-8.14.0-py3-none-any.whl",
+          "sha256": "1bc4f91ee5b1b31ac7ceacc17c09befe6a40a503907baf9c839c229b5095cfd2",
+          "size": 52193
+        },
+        {
+          "artifact_name": "packaging",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/packaging-21.3-py3-none-any.whl",
+          "sha256": "ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522",
+          "size": 40750
+        },
+        {
+          "artifact_name": "pip",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/pip-21.3.1-py3-none-any.whl",
+          "sha256": "deaf32dcd9ab821e359cd8330786bcd077604b5c5730c0b096eda46f95c24a2d",
+          "size": 1723581
+        },
+        {
+          "artifact_name": "platformdirs",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/platformdirs-2.4.0-py3-none-any.whl",
+          "sha256": "8868bbe3c3c80d42f20156f22e7131d2fb321f5bc86a2a345375c6481a67021d",
+          "size": 14400
+        },
+        {
+          "artifact_name": "pluggy",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/pluggy-0.13.1-py2.py3-none-any.whl",
+          "sha256": "966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d",
+          "size": 18077
+        },
+        {
+          "artifact_name": "py",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/py-1.11.0-py2.py3-none-any.whl",
+          "sha256": "607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378",
+          "size": 98708
+        },
+        {
+          "artifact_name": "pyparsing",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/pyparsing-2.4.7-py2.py3-none-any.whl",
+          "sha256": "ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b",
+          "size": 67842
+        },
+        {
+          "artifact_name": "pytest",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/pytest-5.4.3-py3-none-any.whl",
+          "sha256": "5c0db86b698e8f170ba4582a492248919255fcd4c79b1ee64ace34301fb589a1",
+          "size": 248101
+        },
+        {
+          "artifact_name": "setuptools",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/setuptools-59.6.0-py3-none-any.whl",
+          "sha256": "4ce92f1e1f8f01233ee9952c04f6b81d1e02939d6e1b488428154974a4d0783e",
+          "size": 952597
+        },
+        {
+          "artifact_name": "six",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/six-1.16.0-py2.py3-none-any.whl",
+          "sha256": "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
+          "size": 11053
+        },
+        {
+          "artifact_name": "toml",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/toml-0.10.2-py2.py3-none-any.whl",
+          "sha256": "806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b",
+          "size": 16588
+        },
+        {
+          "artifact_name": "tox",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/tox-3.28.0-py2.py3-none-any.whl",
+          "sha256": "57b5ab7e8bb3074edc3c0c0b4b192a4f3799d3723b2c5b76f1fa9f2d40316eea",
+          "size": 86766
+        },
+        {
+          "artifact_name": "typing-extensions",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/typing_extensions-4.1.1-py3-none-any.whl",
+          "sha256": "21c85e0fe4b9a155d0799430b0ad741cdce7e359660ccbd8b530613e8df88ce2",
+          "size": 26844
+        },
+        {
+          "artifact_name": "virtualenv",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/virtualenv-20.17.1-py3-none-any.whl",
+          "sha256": "ce3b1684d6e1a20a3e5ed36795a97dfc6af29bc3970ca8dab93e11ac6094b3c4",
+          "size": 8849334
+        },
+        {
+          "artifact_name": "wcwidth",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/wcwidth-0.2.13-py2.py3-none-any.whl",
+          "sha256": "3da69048e4540d84af32131829ff948f1e022c1c6bdb8d6102117aac784f6859",
+          "size": 34166
+        },
+        {
+          "artifact_name": "wheel",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/wheel-0.37.1-py2.py3-none-any.whl",
+          "sha256": "4bdcd7d840138086126cd09254dc6195fb4fc6f01c050a1d7236f2630db1d22a",
+          "size": 35301
+        },
+        {
+          "artifact_name": "zipp",
+          "exists": true,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/wheels/zipp-3.6.0-py3-none-any.whl",
+          "sha256": "9fe5ea21568a0a70e50f273397638d39b03353731e6cbbb3fd8502a33fec40bc",
+          "size": 5313
+        }
+      ],
+      "root_diagnostics": [
+        {
+          "excluded_directories": [
+            "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/lib/python3.6/site-packages"
+          ],
+          "exists": true,
+          "is_directory": true,
+          "matched_paths_before_deduplication": 0,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/lib/python3.6",
+          "resolved": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/lib/python3.6",
+          "resolved_file_symlinks": [],
+          "walk_errors": []
+        },
+        {
+          "excluded_directories": [
+            "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/miniconda-base/lib/python3.6/site-packages"
+          ],
+          "exists": true,
+          "is_directory": true,
+          "matched_paths_before_deduplication": 3318,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/miniconda-base/lib/python3.6",
+          "resolved": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/miniconda-base/lib/python3.6",
+          "resolved_file_symlinks": [],
+          "walk_errors": []
+        },
+        {
+          "excluded_directories": [],
+          "exists": true,
+          "is_directory": true,
+          "matched_paths_before_deduplication": 65,
+          "path": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/miniconda-base/lib/python3.6/lib-dynload",
+          "resolved": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/miniconda-base/lib/python3.6/lib-dynload",
+          "resolved_file_symlinks": [],
+          "walk_errors": []
+        }
+      ],
+      "site_packages": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/lib/python3.6/site-packages",
+      "static_builtin_plugin_definition_source": null,
+      "static_plugin_files": [],
+      "stdlib_host_canonical_sha256": "d89b339e92059d4c59edda129a294a9b08a7b3278c8a014c668a9cd707258e7f",
+      "stdlib_missing_or_extra_paths": {
+        "extra": [],
+        "missing": []
+      },
+      "stdlib_row_count": 3318,
+      "stdlib_rows_match_inventory": true
+    }
+  },
+  "schema": "V41_OFFLINE_RUNTIME_FILESYSTEM_AUDIT_V1",
+  "source_method_files": [
+    {
+      "path": "/workspace/qualification/native-authority-v41-screening-audit/committed-source/research/unified_consequence_runtime/qualify_native_frontier_v3.py",
+      "sha256": "d40d188be3565ed5127e06b033dd9cbf8fa32d60977d27ec47b5ae6698189418",
+      "size": 80461
+    },
+    {
+      "path": "/workspace/qualification/native-authority-v41-screening-audit/committed-source/research/unified_consequence_runtime/native_environment_v3.py",
+      "sha256": "7d18bc80ab96fdfc2128e5f8211aef5a2d88750a85bad4d5c96bb4b9bbad4501",
+      "size": 12688
+    },
+    {
+      "path": "/workspace/qualification/native-authority-v41-screening-audit/committed-source/research/unified_consequence_runtime/native_environment_selection_v3.py",
+      "sha256": "5a8cbc4a8f3dfa7969516f4bf0a39d3f7720789b764d83764112234834f3af3b",
+      "size": 45953
+    },
+    {
+      "path": "/workspace/qualification/native-authority-v41-screening-audit/committed-source/research/unified_consequence_runtime/native_execution_v3.py",
+      "sha256": "fead622b61319dc21af1ef302a98b42203090bcc997838fc078c71ddc4ea6cd9",
+      "size": 11143
+    },
+    {
+      "path": "/workspace/qualification/native-authority-v41-screening-audit/committed-source/research/unified_consequence_runtime/native_execution_v2.py",
+      "sha256": "57e2fb40c6ff39f0959764e8f48f05ee99170b97995f9a584aaa8409af8871f1",
+      "size": 29311
+    },
+    {
+      "path": "/workspace/qualification/native-authority-v41-screening-audit/committed-source/research/unified_consequence_runtime/decisive_native_verify.py",
+      "sha256": "12269c8ca2dd586ccec4b162736375bcaac5717aaf07f441b67e5511b0ed4670",
+      "size": 27835
+    }
+  ],
+  "status": "FILESYSTEM_CHECKS_VERIFIED"
+}

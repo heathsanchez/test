@@ -1,0 +1,185 @@
+{
+  "schema": "UDM_V41_INDEPENDENT_SCREENING_AUDIT_SUMMARY",
+  "audit_boundary": "Exact local metadata selection, source/environment refusal, source/runtime bytes, controller-local accounting and archive integrity; no admitted task or native outcome claim.",
+  "source_commit": "bd46699ea9933794a1c3fee161039c24a630bf4b",
+  "public_refusals": [
+    {
+      "index": 0,
+      "repository": "jquast/wcwidth",
+      "status": "UNKNOWN_SOURCE_ENVIRONMENT",
+      "reason": "ValueError: only regular tracked files supported; no symlinks or submodules",
+      "native_calls": 0,
+      "collection_calls": 0,
+      "eligible": false,
+      "setup_wall_seconds": 2.1153506379996543,
+      "case_wall_seconds": 2.115618010999242
+    },
+    {
+      "index": 1,
+      "repository": "networkx/networkx",
+      "status": "UNKNOWN_SOURCE_ENVIRONMENT",
+      "reason": "ValueError: only regular tracked files supported; no symlinks or submodules",
+      "native_calls": 0,
+      "collection_calls": 0,
+      "eligible": false,
+      "setup_wall_seconds": 2.166259641000579,
+      "case_wall_seconds": 2.166530980000971
+    },
+    {
+      "index": 2,
+      "repository": "pyparsing/pyparsing",
+      "status": "UNKNOWN_SOURCE_ENVIRONMENT",
+      "reason": "ValueError: only regular tracked files supported; no symlinks or submodules",
+      "native_calls": 0,
+      "collection_calls": 0,
+      "eligible": false,
+      "setup_wall_seconds": 2.7331896769992454,
+      "case_wall_seconds": 2.733443619999889
+    },
+    {
+      "index": 3,
+      "repository": "pytest-dev/pluggy",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "native_calls": 0,
+      "collection_calls": 0,
+      "eligible": false,
+      "setup_wall_seconds": 1.8951434119990154,
+      "case_wall_seconds": 1.8953303239995876
+    },
+    {
+      "index": 4,
+      "repository": "python-babel/babel",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "native_calls": 0,
+      "collection_calls": 0,
+      "eligible": false,
+      "setup_wall_seconds": 2.309806880999531,
+      "case_wall_seconds": 2.310004569000739
+    },
+    {
+      "index": 5,
+      "repository": "python-semver/python-semver",
+      "status": "UNKNOWN_SOURCE_ENVIRONMENT",
+      "reason": "ValueError: only regular tracked files supported; no symlinks or submodules",
+      "native_calls": 0,
+      "collection_calls": 0,
+      "eligible": false,
+      "setup_wall_seconds": 2.084168700999726,
+      "case_wall_seconds": 2.0844177759991
+    },
+    {
+      "index": 6,
+      "repository": "yaml/pyyaml",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "reason": "UNKNOWN_DYNAMIC_METADATA",
+      "native_calls": 0,
+      "collection_calls": 0,
+      "eligible": false,
+      "setup_wall_seconds": 2.6335577459994965,
+      "case_wall_seconds": 2.6338307770001848
+    }
+  ],
+  "terminal_shortfall": {
+    "requested_roles": 2,
+    "admitted": 0,
+    "refused": 7,
+    "selected_roles": [],
+    "retargeting_or_expanded_universe": false,
+    "unchanged_selection_obstruction": "screening shortfall; no outcome-selected replacement permitted"
+  },
+  "costs": {
+    "native_calls": 0,
+    "collection_calls": 0,
+    "metadata_api_calls": 137,
+    "metadata_total_curation_wall_seconds": 39.32762100800028,
+    "sum_setup_phase_seconds": 14.368250622996129,
+    "sum_setup_wall_seconds": 15.937476695997248,
+    "sum_case_wall_seconds": 15.939176056999713,
+    "sum_controller_wall_seconds": 51.76277536399721,
+    "controller_child_user_seconds": 35.619312,
+    "controller_child_system_seconds": 12.075171,
+    "whole_screening_controller_session_interval_seconds": 51.76726460456848,
+    "ordered_meter_interval_seconds_to_summary_finish": 46.388338804244995,
+    "child_maxrss_kib_lifetime_nonadditive": 191448
+  },
+  "verified_counts": {
+    "metadata_predicate_consistency_checks": 7493,
+    "metadata_lineage_consistency_checks": 277,
+    "history_exclusion_checks": 82,
+    "history_inputs": 39,
+    "bounded_historical_exclusions": 71,
+    "source_identity_mechanical_checks": 74255,
+    "runtime_filesystem_checks": 279,
+    "retained_binding_checks": 173,
+    "qualification_source_gate_files": 70,
+    "prospective_environment_gate_files": 83,
+    "full_owned_source_files": 1694,
+    "qualified_source_files_preserved": 1666,
+    "base_source_tracked_entries": 2370,
+    "base_git_objects": 2478,
+    "archive_regular_files": 3069,
+    "archive_symlinks": 5,
+    "archive_directories": 325
+  },
+  "first_supported_obstruction": {
+    "case": 0,
+    "repository": "jquast/wcwidth",
+    "stage": "decisive_native_verify._snapshot",
+    "first_path": "README.rst",
+    "mode": "120000",
+    "reason": "ValueError: only regular tracked files supported; no symlinks or submodules",
+    "scope": "Preserved V3 source snapshot grammar refusal; native incompatibility was not established."
+  },
+  "foreign_source_boundary": "Every retained base Git object, commit/tree/blob, index, working file mode/bytes and link target checked. All7 protected head commit objects absent; native overlays not materialized. Wcwidth gitlink160000 retained as pointer and empty directory.",
+  "archive": {
+    "schema": "UDM_V41_SCREENING_COMPLETE_EVIDENCE_ARCHIVE",
+    "path": "/workspace/qualification/native-authority-v41-screening-audit/archive/native-authority-v41-screening-complete-evidence.tar.gz",
+    "sha256": "bafe5811446ba485fee1b8c6b0ccbb04d2fc645cde841a2a936cad2dc1e100e9",
+    "size_bytes": 33641525,
+    "manifest": {
+      "path": "/workspace/qualification/native-authority-v41-screening-audit/archive/native-authority-v41-screening-complete-evidence.manifest.json",
+      "sha256": "dbae02b416ecd3664e33c582cc205cb1bd92335f29e799d0d08e452e86213202"
+    },
+    "verification": {
+      "path": "/workspace/qualification/native-authority-v41-screening-audit/archive/native-authority-v41-screening-complete-evidence.verification.json",
+      "sha256": "4f0c7a9dbe897cfee49cd211cf791a9303fe5109d7ad78ee21bed358ea5918a0"
+    },
+    "exclusions": {
+      "path": "/workspace/qualification/native-authority-v41-screening-audit/archive/native-authority-v41-screening-complete-evidence.exclusions.json",
+      "sha256": "8272e945efe103dd0cbae7c452966df09124c0058e992d5fbcc8ee6bc10997e4"
+    },
+    "reopened_and_all_members_verified": true,
+    "all_foreign_symlinks_retained": true,
+    "owned_source_delivery": "CI_SOURCE matching included full committed-source inventory required for standalone full source reproduction."
+  },
+  "limitations": [
+    "Git object and retained-receipt checks establish exact local ancestry and bytes, not an independently timestamped proof of first network access.",
+    "No global filesystem/network/process access log was available; no claim of global absence of other access.",
+    "Original code inspected statically; no curator/native CLI was executed by this audit.",
+    "No live API call was made. Retained candidate rows are the only retained closed-list payload; their external API authenticity and whether additional unretained calls occurred cannot be independently proven by these local artifacts.",
+    "Receipts omit raw response stdout, response hashes, HTTP headers and successful HTTP status codes; OK means retained exit zero plus projected JSON parsing. Full recursive tree responses were discarded, so their reported entry totals, nonchanged schema and duplicate path absence cannot be reconstructed from only retained changed-path bindings.",
+    "Only the latest at most 100 closed PRs per repository were declared; NO_QUALIFYING_CANDIDATE does not cover older pages or all repository history.",
+    "One retained updated_at ordering inversion is documented without repairing, re-sorting, or retargeting the frozen pool.",
+    "All 100 observed file scans close on their first page; multi-page, ceiling, timeout, error and refusal branches were inspected statically but not exercised.",
+    "Metadata predicates do not demonstrate semantic bug relevance, native viability, test contents, native outcomes, independent admission, learning or G2/G3/G4.",
+    "Native and collection call counts of zero are retained cost declarations supported by the inspected metadata query path, not a global observation of all external activity.",
+    "This reconstructs the original bounded accessible metadata scan, not all prior human/model exposure or unlogged external access.",
+    "Missing input records remain explicit; source pinning and local ancestry do not independently timestamp network access.",
+    "Runner ledger plus once-only controller logic and all seven completed retained cases support one ordered pass in this supplied run; there is no authenticated global process launch ledger to exclude unrelated or omitted attempts.",
+    "Native/collection counters are controller-local worker counters, not all operating-system subprocesses. Git transport and runtime identity work are retained separately.",
+    "All-five-index closed interval covers this auditor reads; original runner retains only its active index before/after screening, so the audit does not upgrade that to an all-index pre-screening proof.",
+    "Exposure booleans are bounded role attestations; no global filesystem access log or hostile-process isolation proof was supplied.",
+    "Static reproduction implements the complete observed early-refusal paths, not unobserved successful admission/native behavior.",
+    "The four mode refusals first encounter symlinks (120000). Wcwidth additionally has a later unmaterialized gitlink (160000); its tree reconstruction uses the validated base-tree/index gitlink object ID and separately verifies an empty filesystem directory, rather than claiming submodule source-byte materialization.",
+    "SHA-1 object identity, pack/index checksums, base-only object materialization and worktree equality verify retained consistency; they do not establish authenticity of a remote repository independently of the retained transport/authority evidence.",
+    "Generic packaging 26.0 Requirement parsing is executed only to independently reproduce the retained grammar-error text; original project, controller and selector code is never imported or executed.",
+    "Filesystem-only audit: no candidate interpreters, native controller, tests, target imports, Git, or network were executed.",
+    "Implementation, version_info, base_prefix, and sysconfig-derived root provenance are retained claims. Their internal catalog consistency is checked; they were not independently queried from an executable.",
+    "The qualified stdlib walk excludes site-packages/dist-packages and includes only .py/.pyc/.pyo/.so/.pyd/.dll/.dylib filenames. It resolves matching file symlinks and deduplicates resolved paths; absent roots can contribute zero files.",
+    "Installed package file rows follow distribution metadata/RECORD, matching the source. They do not assert that every unlisted site-packages file belongs to the pinned package set.",
+    "Static plugin path/version/ownership/byte checks do not execute import resolution or establish runtime plugin behavior.",
+    "cpython-3.12.14-pytest-8.4.1-linux-x86_64: these retained roots are absent/non-directory and contribute zero files under the qualified walk: /install/lib/python3.12/lib-dynload"
+  ]
+}

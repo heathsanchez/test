@@ -1,0 +1,233 @@
+{
+  "authoritative_python_metadata_scope": [
+    "setup.py"
+  ],
+  "base_commit": "95029db0d0b2122836bee7268299461bfbdb5a66",
+  "baseline_red": {
+    "alias": "UDM_AUTHORITY_V4_BASELINE=v3",
+    "assertion_failures": 10,
+    "cause": "V3 nonmetadata Python parser veto. Behavioral RED; not a missing V4 import.",
+    "command": "UDM_AUTHORITY_V4_BASELINE=v3 /tmp/udm-v4-acceptance-venv/bin/python -B -m unittest research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4 -v",
+    "errors": 0,
+    "failed_test_ids": [
+      "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_dynamic_and_unsupported_metadata_have_precise_unknown_reasons (reason='UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY', files=['README.md', 'fixture.py'])",
+      "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_every_tracked_byte_affects_inventory_even_unparsed_and_binary_files",
+      "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_malformed_nonmetadata_python_does_not_veto_generic_environment_choice (path='tests/data/python2_payload.py')",
+      "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_malformed_nonmetadata_python_does_not_veto_generic_environment_choice (path='src/broken_module.py')",
+      "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_malformed_nonmetadata_python_does_not_veto_generic_environment_choice (path='examples/invalid_syntax.py')",
+      "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_malformed_nonmetadata_python_does_not_veto_generic_environment_choice (path='fixtures/encoding.py')",
+      "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_nonutf8_nonmetadata_python_is_byte_inventory_without_parser_veto",
+      "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_parseable_nonmetadata_api_mentions_are_deferred_to_native_authority",
+      "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_selection_cannot_replay_after_ignored_fixture_byte_change",
+      "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_static_authoritative_dependencies_and_python_still_constrain_catalog"
+    ],
+    "tests_run": 9
+  },
+  "existing_tracked_files_policy": "every existing tracked file byte-identical to base commit",
+  "existing_tracked_inventory_sha256": "ad29cb8de092adf22cd41d39a45b859bae883d67e823550b83708db30a24e631",
+  "fixtures": {
+    "exact_fixture_source": "test_native_authority_v4.py plus pinned existing helper fixture sources",
+    "malformed_python_utf8": "def invalid(:\n    print \"python two corpus\"\n",
+    "native_metadata_utf8": "[project]\nrequires-python = \">=3.6,<4\"\n",
+    "unit_metadata_utf8": "[project]\nrequires-python = \">=3.11\"\n"
+  },
+  "freeze_amendment_policy": "Do not alter acceptance source/judgments after implementation to fit observed behavior. Any necessary correction requires separately documented rationale and re-freeze.",
+  "freeze_state": "BEFORE_V4_IMPLEMENTATION",
+  "frontier_source_access": "No fresh frontier source accessed; disposable synthetic fixtures only.",
+  "frozen_at_utc": "2026-10-16T17:31:36.088383+00:00",
+  "native_authority": {
+    "admission": "native_admission_v2",
+    "oracle": "real disposable local Git repositories and isolated subprocess pytest; no mocked authority",
+    "worker": "native_execution_v3"
+  },
+  "native_raw_evidence": {
+    "environment_variable": "UDM_V4_NATIVE_EVIDENCE_ROOT",
+    "expected_exceptions": "raw files produced before expected refusal retained by same cleanup",
+    "method": "new test classes register LIFO cleanup before original TemporaryDirectory cleanup",
+    "retained": "raw fixture tree, native JSON/XML/logs, baseline/head source tar archives, exact new/helper fixture sources, policy/environment/contract/authority context; excludes .git and venv bulk",
+    "retention_smoke_test": "collection-time malformed import refusal retained successfully before freeze"
+  },
+  "non_python_metadata_authority": "Existing V3 supported static pyproject.toml/setup.cfg/tox.ini/test-requirements metadata grammar remains authoritative.",
+  "nonmetadata_python_policy": "No AST/API compatibility inference; all Python bytes retained in source inventory. Native collection/execution owns importability and actual behavior.",
+  "prefreeze_native_checks": {
+    "errors": 0,
+    "failures": 0,
+    "tests": [
+      "static runtime import of malformed fixture",
+      "dynamic runtime import of malformed fixture",
+      "collection-time import of malformed fixture",
+      "licensed same-name plugin replacement"
+    ],
+    "tests_run": 4
+  },
+  "required_interface": {
+    "functions": [
+      "derive_constraints(files)",
+      "select_profile(files, catalog)",
+      "validate_selection(files, catalog, selection)"
+    ],
+    "module": "research.unified_consequence_runtime.native_environment_selection_v4"
+  },
+  "schema": "UDM_NATIVE_AUTHORITY_V4_ACCEPTANCE_PROTOCOL_V1",
+  "scope": "metadata-only environment choice, exact all-byte source inventory, unchanged real native authority",
+  "source_sha256": {
+    "decisive_native_verify.py": "12269c8ca2dd586ccec4b162736375bcaac5717aaf07f441b67e5511b0ed4670",
+    "native_admission_v2.py": "4056cb0fd40af3badbe41225919e660d560cac7bb2fda25580399e865778977e",
+    "native_environment_selection_v3.py": "5a8cbc4a8f3dfa7969516f4bf0a39d3f7720789b764d83764112234834f3af3b",
+    "native_environment_v3.py": "7d18bc80ab96fdfc2128e5f8211aef5a2d88750a85bad4d5c96bb4b9bbad4501",
+    "native_execution_v2.py": "57e2fb40c6ff39f0959764e8f48f05ee99170b97995f9a584aaa8409af8871f1",
+    "native_execution_v3.py": "fead622b61319dc21af1ef302a98b42203090bcc997838fc078c71ddc4ea6cd9",
+    "test_native_admission_v2_adversarial.py": "ea5cc3d76dec18a4dfed8e94a3b1865c4a6bfed26642633132d45488186a686b",
+    "test_native_authority_v4.py": "dd23f7325bac1c4e0dd895a1f93f84ce122e3f58443bd8986f3cc1115070b564",
+    "test_native_environment_selection_v3.py": "973eb5cbbf4792ec019c8337a090db00018f1639a9cf6a29a1077b460133a51e",
+    "test_native_execution_v3.py": "a3e8d92e7a29f89033dac11f399df63e99e845f17655e1cdcf090cadf51457d0"
+  },
+  "tests": [
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "UNKNOWN_* when candidate replaces licensed doctest plugin implementation under same name",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "ValueError containing COLLECTION_ERROR",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_collection_time_import_of_same_malformed_fixture_is_refused"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "FAIL_NATIVE, 1 failure",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "ValueError containing MISSING_PROTECTED_ASSERTION",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_missing_protected_assertion_is_refused"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "FAIL_NATIVE, 1 failure, retained JUnit SyntaxError",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "selection bound to complete actual source map and actual native interpreter/pytest profile; PASS_NATIVE with 2 protected assertions; validate_receipt independent=True reexecutes and retains raw checked receipt/costs",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "UNKNOWN_DYNAMIC_METADATA / UNKNOWN_REQUIREMENT_GRAMMAR / UNKNOWN_DEPENDENCY_GROUP / UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY / UNKNOWN_METADATA_GRAMMAR by exact case",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_dynamic_and_unsupported_metadata_have_precise_unknown_reasons"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "DERIVED_SOURCE_CONSTRAINTS; independent canonical path-to-SHA256 inventory; mutation of each tracked file changes source identity",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_every_tracked_byte_affects_inventory_even_unparsed_and_binary_files"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "UNKNOWN_CATALOG_AUTHORITY for unlicensed plugin; ValueError UNKNOWN_SELECTION_IDENTITY for forged selection",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_external_catalog_license_and_selection_are_not_self_asserted"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "UNKNOWN_SOURCE_PARSER",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_malformed_authoritative_setup_remains_precise_unknown"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "CANDIDATE_SOURCE_ENVIRONMENT for each unparsed Python file; exact all-byte inventory; no evidence from malformed file",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_malformed_nonmetadata_python_does_not_veto_generic_environment_choice"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "CANDIDATE_SOURCE_ENVIRONMENT; non-UTF8 Python bytes included exactly",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_nonutf8_nonmetadata_python_is_byte_inventory_without_parser_veto"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "CANDIDATE_SOURCE_ENVIRONMENT modern profile; no source API inference from arbitrary Python",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_parseable_nonmetadata_api_mentions_are_deferred_to_native_authority"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "CANDIDATE_SOURCE_ENVIRONMENT then ValueError UNKNOWN_SELECTION_IDENTITY after malformed fixture byte change",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_selection_cannot_replay_after_ignored_fixture_byte_change"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "CANDIDATE_SOURCE_ENVIRONMENT valid profile; candidate statuses REJECTED, UNKNOWN, COMPATIBLE; setup.py containing unconditional raise is never executed",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.MetadataAuthorityV4.test_static_authoritative_dependencies_and_python_still_constrain_catalog"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "FAIL_NATIVE with 2 failed protected assertions",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "UNKNOWN_EXACT_COLLECTION",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "UNKNOWN_*; never PASS_NATIVE or FAIL_NATIVE",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "UNKNOWN_*; never PASS_NATIVE or FAIL_NATIVE",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "UNKNOWN_*; never PASS_NATIVE or FAIL_NATIVE",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "ValueError for changed horizons or plugin license",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_changed_execution_or_plugin_policy"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "ValueError for changed protocol, environment, source commit/tree, horizon, repository",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "independent original collection and PASS_NATIVE with all 3 protected parameter cases",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "admission refusal or UNKNOWN_*; never native pass from installed wrong-source module",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_preloaded_installed_project_name_cannot_replace_frozen_source"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "ValueError from independent recollection/packet comparison despite resealed missing parameter instance",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "ValueError on independent execution/import comparison after resealed wrong import bytes",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "valid exclusions: ValueError containing DESELECTION; invalid expressions: ValueError containing COLLECTION_ERROR",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "ValueError for injected authority and every omitted certificate field",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_self_declared_extra_authority_and_missing_certificate_fields_are_rejected"
+    },
+    {
+      "exact_assertions": "source_sha256 test_native_authority_v4.py and pinned helper methods",
+      "expected_judgment": "ValueError for weakened protected-test authority",
+      "id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_weaker_required_assertions_are_not_certificate_authority"
+    }
+  ],
+  "v4_selector_absent_at_freeze": true
+}

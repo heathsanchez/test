@@ -1,0 +1,535 @@
+{
+  "cases": [
+    {
+      "index": 0,
+      "repository": "jquast/wcwidth",
+      "phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.3086878999984037,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-000/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-000/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007710804000453209,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-000/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/jquast/wcwidth.git",
+            "784d08c6cf6b67e19f34ae5ddb9bb8b4aa4f17fe"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-000/source-environment/metadata-fetch.log",
+          "log_sha256": "05e91da97152d545039467922db2df24d634cdd81d179661439d9a2078a29780",
+          "phase": "metadata-fetch",
+          "seconds": 0.7657428290003736,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-000/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "784d08c6cf6b67e19f34ae5ddb9bb8b4aa4f17fe"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-000/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.015810865001185448,
+          "status": "PASS"
+        }
+      ],
+      "sum_setup_phase_seconds": 2.097952398000416,
+      "setup_wall_seconds": 2.1153506379996543,
+      "case_wall_seconds": 2.115618010999242,
+      "controller_wall_seconds": 7.514590772998417,
+      "controller_child_user_seconds": 5.019985,
+      "controller_child_system_seconds": 1.868379,
+      "child_maxrss_kib_lifetime_nonadditive": 191248,
+      "native_calls": 0,
+      "collection_calls": 0,
+      "worker_subprocess_attempts": 0
+    },
+    {
+      "index": 1,
+      "repository": "networkx/networkx",
+      "phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2175223650010594,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-001/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-001/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007695581000007223,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-001/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/networkx/networkx.git",
+            "9f6079c0120416599ea5d4018bbaba229ea2e456"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-001/source-environment/metadata-fetch.log",
+          "log_sha256": "148a21fcef78b06fd8661e7d55b805cdd5358d01372526a39f8e2e5fc13e7ec7",
+          "phase": "metadata-fetch",
+          "seconds": 0.8161921629998687,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-001/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "9f6079c0120416599ea5d4018bbaba229ea2e456"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-001/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.0639807789993938,
+          "status": "PASS"
+        }
+      ],
+      "sum_setup_phase_seconds": 2.105390888000329,
+      "setup_wall_seconds": 2.166259641000579,
+      "case_wall_seconds": 2.166530980000971,
+      "controller_wall_seconds": 7.320204360999924,
+      "controller_child_user_seconds": 5.033982,
+      "controller_child_system_seconds": 1.691993,
+      "child_maxrss_kib_lifetime_nonadditive": 191392,
+      "native_calls": 0,
+      "collection_calls": 0,
+      "worker_subprocess_attempts": 0
+    },
+    {
+      "index": 2,
+      "repository": "pyparsing/pyparsing",
+      "phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2138865090000763,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-002/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-002/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007721990999925765,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-002/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/pyparsing/pyparsing.git",
+            "73a8b553fb5fc50b3cb2e4b5b2b8652f8d997a29"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-002/source-environment/metadata-fetch.log",
+          "log_sha256": "50cc722310798e4de8703f38704d3d8c2dbae21163d0c8f8353266ebb1ef1a3d",
+          "phase": "metadata-fetch",
+          "seconds": 1.4180807649991038,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-002/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "73a8b553fb5fc50b3cb2e4b5b2b8652f8d997a29"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-002/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.06397303899939288,
+          "status": "PASS"
+        }
+      ],
+      "sum_setup_phase_seconds": 2.703662303998499,
+      "setup_wall_seconds": 2.7331896769992454,
+      "case_wall_seconds": 2.733443619999889,
+      "controller_wall_seconds": 7.766730159999497,
+      "controller_child_user_seconds": 4.990639,
+      "controller_child_system_seconds": 1.6215289999999998,
+      "child_maxrss_kib_lifetime_nonadditive": 191448,
+      "native_calls": 0,
+      "collection_calls": 0,
+      "worker_subprocess_attempts": 0
+    },
+    {
+      "index": 3,
+      "repository": "pytest-dev/pluggy",
+      "phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.259604908998881,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-003/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-003/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.01616668499991647,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-003/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/pytest-dev/pluggy.git",
+            "60b15251ee18560f781c557b6b9ef3de4d786bee"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-003/source-environment/metadata-fetch.log",
+          "log_sha256": "9545d00a541fb44ba2e3986359f1b1ccb40beadcf51c4c37c8411f566a6c42ad",
+          "phase": "metadata-fetch",
+          "seconds": 0.4150911439992342,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-003/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "60b15251ee18560f781c557b6b9ef3de4d786bee"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-003/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.007821201999831828,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.03678906799905235,
+          "status": "UNKNOWN"
+        }
+      ],
+      "sum_setup_phase_seconds": 1.7354730079969158,
+      "setup_wall_seconds": 1.8951434119990154,
+      "case_wall_seconds": 1.8953303239995876,
+      "controller_wall_seconds": 6.910503446999428,
+      "controller_child_user_seconds": 4.923559000000001,
+      "controller_child_system_seconds": 1.698595,
+      "child_maxrss_kib_lifetime_nonadditive": 191448,
+      "native_calls": 0,
+      "collection_calls": 0,
+      "worker_subprocess_attempts": 0
+    },
+    {
+      "index": 4,
+      "repository": "python-babel/babel",
+      "phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.248971230999814,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-004/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-004/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.0077015610004309565,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-004/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/python-babel/babel.git",
+            "2f87363410f3c904e107e85ca10b9f84902db93f"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-004/source-environment/metadata-fetch.log",
+          "log_sha256": "8273eadac09ed10781d57fea58dd374bf995567698ec13a24122c0b4db14aa55",
+          "phase": "metadata-fetch",
+          "seconds": 0.715614379998442,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-004/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "2f87363410f3c904e107e85ca10b9f84902db93f"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-004/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.015798227999766823,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.03992753600141441,
+          "status": "UNKNOWN"
+        }
+      ],
+      "sum_setup_phase_seconds": 2.028012935999868,
+      "setup_wall_seconds": 2.309806880999531,
+      "case_wall_seconds": 2.310004569000739,
+      "controller_wall_seconds": 7.432572906000132,
+      "controller_child_user_seconds": 5.120467999999999,
+      "controller_child_system_seconds": 1.7420970000000002,
+      "child_maxrss_kib_lifetime_nonadditive": 191448,
+      "native_calls": 0,
+      "collection_calls": 0,
+      "worker_subprocess_attempts": 0
+    },
+    {
+      "index": 5,
+      "repository": "python-semver/python-semver",
+      "phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2333951629989315,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-005/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-005/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007686638999075512,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-005/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/python-semver/python-semver.git",
+            "9c191564b58bfa7140a7c01f0ed7141506b5ce3b"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-005/source-environment/metadata-fetch.log",
+          "log_sha256": "f2e5838c3fd160ae905bf895830553ace34300baabc8207a02eb77115c3b20b4",
+          "phase": "metadata-fetch",
+          "seconds": 0.7153841690014815,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-005/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "9c191564b58bfa7140a7c01f0ed7141506b5ce3b"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-005/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.007681499999307562,
+          "status": "PASS"
+        }
+      ],
+      "sum_setup_phase_seconds": 1.964147470998796,
+      "setup_wall_seconds": 2.084168700999726,
+      "case_wall_seconds": 2.0844177759991,
+      "controller_wall_seconds": 7.125814883000203,
+      "controller_child_user_seconds": 4.85426,
+      "controller_child_system_seconds": 1.6945139999999999,
+      "child_maxrss_kib_lifetime_nonadditive": 191448,
+      "native_calls": 0,
+      "collection_calls": 0,
+      "worker_subprocess_attempts": 0
+    },
+    {
+      "index": 6,
+      "repository": "yaml/pyyaml",
+      "phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2326904220008146,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-006/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-006/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.00782279200029734,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-006/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/yaml/pyyaml.git",
+            "56644b3a9f80f72ed5ae3b474cef594bbb105fa5"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-006/source-environment/metadata-fetch.log",
+          "log_sha256": "320398676522aae223810c61bb395a1c45c137aeb1dc49d757c994bd077c6339",
+          "phase": "metadata-fetch",
+          "seconds": 0.4147389999998268,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v41-screening-sealed/case-006/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "56644b3a9f80f72ed5ae3b474cef594bbb105fa5"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v41-screening-sealed/case-006/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.03193610299967986,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.04642330100068648,
+          "status": "UNKNOWN"
+        }
+      ],
+      "sum_setup_phase_seconds": 1.733611618001305,
+      "setup_wall_seconds": 2.6335577459994965,
+      "case_wall_seconds": 2.6338307770001848,
+      "controller_wall_seconds": 7.692358833999606,
+      "controller_child_user_seconds": 5.676419000000003,
+      "controller_child_system_seconds": 1.7580639999999992,
+      "child_maxrss_kib_lifetime_nonadditive": 191448,
+      "native_calls": 0,
+      "collection_calls": 0,
+      "worker_subprocess_attempts": 0
+    }
+  ],
+  "totals": {
+    "native_calls": 0,
+    "collection_calls": 0,
+    "metadata_api_calls": 137,
+    "metadata_total_curation_wall_seconds": 39.32762100800028,
+    "sum_setup_phase_seconds": 14.368250622996129,
+    "sum_setup_wall_seconds": 15.937476695997248,
+    "sum_case_wall_seconds": 15.939176056999713,
+    "sum_controller_wall_seconds": 51.76277536399721,
+    "controller_child_user_seconds": 35.619312,
+    "controller_child_system_seconds": 12.075171,
+    "whole_screening_controller_session_interval_seconds": 51.76726460456848,
+    "ordered_meter_interval_seconds_to_summary_finish": 46.388338804244995,
+    "child_maxrss_kib_lifetime_nonadditive": 191448
+  },
+  "scope": "Worker native/collection counters and controller/setup metadata transport/preflight costs are separate; nested wall times are nonadditive. Full model/tool/engineering lifecycle costs UNKNOWN."
+}

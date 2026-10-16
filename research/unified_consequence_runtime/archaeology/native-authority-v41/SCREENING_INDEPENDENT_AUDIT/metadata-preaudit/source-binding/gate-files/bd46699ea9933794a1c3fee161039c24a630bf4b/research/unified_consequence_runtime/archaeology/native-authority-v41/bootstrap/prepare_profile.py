@@ -1,0 +1,210 @@
+"""Validate the fixed V41 extension and prepare its isolated modern profile.
+
+Run preserved V3 runtime bootstrap with its original catalog first. This wrapper
+adds no dependency resolver or native-test authority; all installed artifacts
+come from the new pre-frozen finite catalog and its original wheel hashes.
+"""
+from __future__ import annotations
+
+import argparse
+import configparser
+import copy
+import email
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+import sys
+import time
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[4]
+sys.path.insert(0, str(ROOT))
+from research.unified_consequence_runtime import native_environment_v3 as environment
+from research.unified_consequence_runtime import native_environment_selection_v3 as selection
+from research.unified_consequence_runtime import native_execution_v3 as execution
+
+OLD = ROOT/'research/unified_consequence_runtime/archaeology/native-environment-v3'
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+canonical = lambda value: json.dumps(value, sort_keys=True, separators=(',', ':'))
+
+
+def require(condition, reason):
+    if not condition:
+        raise ValueError(reason)
+
+
+def write(path, value):
+    path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, sort_keys=True, indent=2)+'\n')
+
+
+def validate(catalog_path):
+    catalog_path = Path(catalog_path).absolute()
+    protocol_raw = (HERE/'PROFILE_EXTENSION_PROTOCOL.json').read_bytes()
+    protocol = json.loads(protocol_raw)
+    old_raw = (OLD/'ENVIRONMENT_CATALOG.json').read_bytes()
+    old_metadata_raw = (OLD/'PACKAGE_METADATA.json').read_bytes()
+    require(sha(old_raw) == protocol['old_catalog']['sha256'], 'UNKNOWN_OLD_CATALOG_CHANGED')
+    require(sha(old_metadata_raw) == protocol['old_package_metadata']['sha256'], 'UNKNOWN_OLD_PACKAGE_METADATA_CHANGED')
+    old = json.loads(old_raw); old_metadata = json.loads(old_metadata_raw)
+    raw = catalog_path.read_bytes(); catalog = json.loads(raw)
+    metadata_raw = (catalog_path.parent/catalog['package_metadata_file']).read_bytes()
+    require(sha(metadata_raw) == catalog['package_metadata_sha256'], 'UNKNOWN_PACKAGE_METADATA_DIGEST')
+    metadata = json.loads(metadata_raw)
+    require(metadata['v41_extension']['protocol_sha256'] == sha(protocol_raw), 'UNKNOWN_EXTENSION_PROTOCOL_CHANGED')
+    require(protocol['seeds'] == ['mypy', 'pytest-cov', 'setuptools-git-versioning'], 'UNKNOWN_EXTENSION_SEEDS')
+    selection._catalog(catalog)
+    require(len(catalog['profiles']) == 2 and catalog['profiles'][0] == old['profiles'][0], 'UNKNOWN_LEGACY_PROFILE_CHANGED')
+    modern = catalog['profiles'][1]; baseline = old['profiles'][1]
+    require(set(baseline['packages']) <= set(modern['packages']), 'UNKNOWN_IMMUTABLE_PIN_CHANGED')
+    for key in ('id', 'python_version', 'python_implementation', 'pytest_version', 'marker_environment', 'requested_extras_for_closure_validation'):
+        require(modern[key] == baseline[key], 'UNKNOWN_FIXED_PROFILE_CHANGED: '+key)
+    require(modern['packages'] == sorted(modern['packages'], key=lambda p: selection.canonicalize_name(selection.Requirement(p).name)), 'UNKNOWN_PIN_ORDER')
+    for key in ('package_artifacts', 'package_requirements', 'package_requires_python'):
+        require(all(modern[key].get(k) == v for k, v in baseline[key].items()), 'UNKNOWN_OLD_PACKAGE_AUTHORITY_CHANGED: '+key)
+    require(all(metadata['packages'].get(k) == v for k, v in old_metadata['packages'].items()), 'UNKNOWN_OLD_PACKAGE_RECORD_CHANGED')
+    cov = next(row for row in metadata['packages'].values() if row['name'] == 'pytest-cov')
+    entry = cov['entry_points']['groups']['pytest11']
+    require(len(entry) == 1, 'UNKNOWN_COV_ENTRYPOINT')
+    plugin = {'distribution': 'pytest-cov', 'module': next(iter(entry.values())), 'version': cov['version']}
+    require(modern['plugins'] == baseline['plugins']+[plugin], 'UNKNOWN_PLUGIN_LICENSE_CHANGED')
+    added = set(modern['packages'])-set(baseline['packages'])
+    require(added == set(metadata['v41_extension']['added_pins']), 'UNKNOWN_EXTENSION_PIN_SET')
+    require(set(metadata['packages']) == set(old_metadata['packages']) | added, 'UNKNOWN_PACKAGE_RECORD_SET')
+    for pin in added:
+        record = metadata['packages'][pin]
+        evidence = {}
+        for key, digest in [('json', record['metadata_json_sha256']), ('wheel_metadata', record['wheel']['metadata_sha256']), ('entry_points', record['entry_points']['sha256'])]:
+            path = catalog_path.parent/record['versioned_metadata_evidence'][key]
+            require(path.is_file() and sha(path.read_bytes()) == digest, 'UNKNOWN_EXTENSION_RAW_EVIDENCE: '+pin+' '+key)
+            evidence[key] = path.read_bytes()
+        original_json = json.loads(evidence['json'])
+        original_metadata = email.message_from_bytes(evidence['wheel_metadata'])
+        entry_parser = configparser.ConfigParser(); entry_parser.read_string(evidence['entry_points'].decode())
+        original_groups = {group: dict(entry_parser.items(group)) for group in entry_parser.sections()}
+        require(original_groups == record['entry_points']['groups'], 'UNKNOWN_RAW_ENTRYPOINT_BINDING: '+pin)
+        name = selection.canonicalize_name(selection.Requirement(pin).name)
+        version = str(next(iter(selection.Requirement(pin).specifier)).version)
+        require(selection.canonicalize_name(original_metadata['Name']) == name == record['name'] and original_metadata['Version'] == version == record['version'] == original_json['info']['version'], 'UNKNOWN_RAW_DISTRIBUTION_BINDING: '+pin)
+        require(original_metadata.get_all('Requires-Dist', []) == record['requires_dist'] == (original_json['info'].get('requires_dist') or []), 'UNKNOWN_RAW_REQUIRES_DIST_BINDING: '+pin)
+        require(selection.SpecifierSet(original_metadata.get('Requires-Python') or '') == selection.SpecifierSet(record['requires_python'] or '') == selection.SpecifierSet(original_json['info'].get('requires_python') or ''), 'UNKNOWN_RAW_REQUIRES_PYTHON_BINDING: '+pin)
+        require(original_metadata.get_all('Provides-Extra', []) == record['provides_extra'], 'UNKNOWN_RAW_EXTRAS_BINDING: '+pin)
+        artifacts = [row for row in original_json['urls'] if row['filename'] == record['wheel']['filename']]
+        require(len(artifacts) == 1 and not artifacts[0].get('yanked') and artifacts[0]['url'] == record['wheel']['url'] and artifacts[0]['digests']['sha256'] == record['wheel']['sha256'] and artifacts[0]['size'] == record['wheel']['size'], 'UNKNOWN_RAW_ARTIFACT_BINDING: '+pin)
+    checks = []
+    for profile in catalog['profiles']:
+        for pin in profile['packages']:
+            req = selection.Requirement(pin); name = selection.canonicalize_name(req.name)
+            record = metadata['packages'][pin]; wheel = record['wheel']
+            require(all(profile['package_artifacts'][name][k] == wheel[k] for k in ('filename', 'url', 'sha256', 'size', 'metadata_sha256')), 'UNKNOWN_ARTIFACT_METADATA_BINDING: '+pin)
+            require(record['requires_dist'] == profile['package_requirements'][name], 'UNKNOWN_REQUIRES_DIST_BINDING: '+pin)
+            require(not wheel['yanked'], 'UNKNOWN_YANKED_WHEEL: '+pin)
+            for spec in (record.get('requires_python'), wheel.get('requires_python'), wheel.get('metadata_requires_python')):
+                require(selection.Version(profile['python_version']) in selection.SpecifierSet(spec or ''), 'UNKNOWN_REQUIRES_PYTHON: '+pin)
+        requirements = [{'requirement': name+'['+','.join(extras)+']', 'extra': ''} for name, extras in profile.get('requested_extras_for_closure_validation', {}).items()]
+        constraints = {'declared_python': [], 'python_specifiers': [], 'python_implementations': [], 'requirements': requirements}
+        checked = selection._evaluate(profile, constraints)
+        require(checked['status'] == 'COMPATIBLE', 'UNKNOWN_EXACT_METADATA_CLOSURE: '+canonical(checked))
+        checks.append(checked)
+    # The historical assembler's worklist checks that new pins are justified,
+    # including extras activated by coverage[toml] and the preserved xdist extra.
+    versions = {selection.canonicalize_name(selection.Requirement(pin).name): next(iter(selection.Requirement(pin).specifier)).version for pin in modern['packages']}
+    queue = [(name, '') for name in protocol['seeds']]
+    queue += [(name, extra) for name, extras in modern['requested_extras_for_closure_validation'].items() for extra in extras]
+    reached = set(); activated = set()
+    while queue:
+        name, extra = queue.pop(0)
+        if (name, extra) in activated: continue
+        activated.add((name, extra)); reached.add(name)
+        for text in modern['package_requirements'][name]:
+            req = selection.Requirement(text)
+            if req.marker and not req.marker.evaluate(dict(modern['marker_environment'], extra=extra)): continue
+            child = selection.canonicalize_name(req.name)
+            queue += [(child, ''), *[(child, selection.canonicalize_name(e)) for e in sorted(req.extras)]]
+    require({selection.canonicalize_name(selection.Requirement(p).name) for p in added} <= reached, 'UNKNOWN_UNJUSTIFIED_EXTENSION_PIN')
+    receipt = {'schema': 'UDM_NATIVE_PROFILE_METADATA_RECEIPT_V41', 'status': 'PASS_EXACT_METADATA_AND_EXTRA_CLOSURE', 'protocol_sha256': sha(protocol_raw), 'catalog_sha256': sha(raw), 'catalog_fingerprint': sha(canonical(catalog).encode()), 'package_metadata_sha256': sha(metadata_raw), 'old_package_records_preserved': len(old_metadata['packages']), 'legacy_row_unchanged': True, 'immutable_modern_pins': len(baseline['packages']), 'modern_pin_count': len(modern['packages']), 'added_pins': sorted(added), 'new_plugin_license': plugin, 'profiles': checks, 'activated_extension_extras': [{'distribution': n, 'extra': e} for n,e in sorted(activated) if e], 'target_source_accessed': False, 'native_tests_executed': False}
+    return catalog, receipt
+
+
+def prepare(catalog_path, runtimes_path, destination, runtime_out, output, wheel_cache=None):
+    started = time.monotonic()
+    require(platform.python_version() == '3.12.14' and platform.system() == 'Linux' and platform.machine() == 'x86_64', 'UNKNOWN_PREPARATION_RUNTIME')
+    catalog, metadata_receipt = validate(catalog_path)
+    modern = catalog['profiles'][1]
+    runtimes = json.loads(Path(runtimes_path).read_text())
+    require(set(runtimes) == {p['id'] for p in catalog['profiles']} and all(isinstance(v, str) for v in runtimes.values()), 'UNKNOWN_INPUT_RUNTIME_MAP')
+    destination = Path(destination).absolute()
+    require(not destination.exists() and destination.resolve() == destination, 'UNKNOWN_NEW_CANONICAL_DESTINATION_REQUIRED')
+    destination.mkdir(parents=True)
+    write(destination/'metadata-receipt.json', metadata_receipt)
+    wheelhouse = destination/'wheels'; wheelhouse.mkdir()
+    # Reuse original artifact transport/hash/METADATA checks unchanged.
+    sys.path.insert(0, str(OLD/'bootstrap'))
+    spec = importlib.util.spec_from_file_location('v41_original_bootstrap', OLD/'bootstrap/prepare_runtimes.py')
+    bootstrap = importlib.util.module_from_spec(spec); spec.loader.exec_module(bootstrap)
+    downloads = []
+    for name, artifact in sorted(modern['package_artifacts'].items()):
+        cached = Path(wheel_cache)/artifact['filename'] if wheel_cache else None
+        if cached and cached.is_file():
+            raw = cached.read_bytes()
+            require(sha(raw) == artifact['sha256'] and len(raw) == artifact['size'], 'UNKNOWN_WHEEL_CACHE_BYTES: '+name)
+            shutil.copyfile(cached, wheelhouse/artifact['filename'])
+            downloads.append({'filename': artifact['filename'], 'sha256': sha(raw), 'bytes': len(raw), 'source': str(cached)})
+        else:
+            downloads.append(bootstrap.download(artifact, wheelhouse))
+    write(destination/'download-receipts.json', downloads)
+    requirements = destination/'pins.txt'; requirements.write_text(environment.package_requirements(modern))
+    commands = []; child_env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', PYTEST_DISABLE_PLUGIN_AUTOLOAD='1')
+    def run(argv, label):
+        before = time.monotonic()
+        with (destination/(label+'.log')).open('wb') as log:
+            result = subprocess.run([str(a) for a in argv], stdout=log, stderr=subprocess.STDOUT, timeout=600, env=child_env)
+        commands.append({'argv': [str(a) for a in argv], 'returncode': result.returncode, 'seconds': time.monotonic()-before, 'log': str(destination/(label+'.log'))})
+        write(destination/'commands.json', commands)
+        require(result.returncode == 0, 'UNKNOWN_PROFILE_PREPARATION: '+label)
+    venv = destination/'venv'; run([runtimes[modern['id']], '-B', '-m', 'venv', venv], 'venv')
+    python = venv/'bin/python'
+    run([python, '-B', '-m', 'pip', 'install', '--disable-pip-version-check', '--no-input', '--no-index', '--find-links', wheelhouse, '--no-deps', '--require-hashes', '--only-binary=:all:', '-r', requirements], 'fixed-packages')
+    run([python, '-B', '-m', 'pip', 'check'], 'pip-check')
+    installed = json.loads(subprocess.check_output([str(python), '-B', '-m', 'pip', 'list', '--format=json', '--disable-pip-version-check'], env=child_env))
+    actual = {selection.canonicalize_name(row['name']): row['version'] for row in installed}
+    expected = {selection.canonicalize_name(selection.Requirement(p).name): str(next(iter(selection.Requirement(p).specifier)).version) for p in modern['packages']}
+    require(actual == expected, 'UNKNOWN_INSTALLED_PACKAGE_SET')
+    identity = environment.installed_package_identity(python, modern)
+    native_environment = execution.environment_identity(python)
+    require(native_environment['pytest_version'] == modern['pytest_version'], 'UNKNOWN_PYTEST_VERSION')
+    plugins = json.loads(subprocess.check_output([str(python), '-I', '-B', '-c', execution._PLUGINS, canonical(modern['plugins'])], env=child_env))
+    runtime = environment.freeze_runtime(python); environment.validate_runtime(modern, runtime)
+    updated = copy.deepcopy(runtimes); updated[modern['id']] = str(python)
+    write(runtime_out, updated)
+    write(destination/'installed-packages.json', installed)
+    write(destination/'pinned-package-files.json', identity)
+    write(destination/'environment.json', native_environment)
+    write(destination/'plugin-identity.json', plugins)
+    write(destination/'runtime-identity.json', runtime)
+    receipt = {'schema': 'UDM_NATIVE_PROFILE_PREPARATION_V41', 'status': 'PREPARED_EXACT_MODERN_PROFILE_NOT_NATIVE_ADMISSION', 'metadata': metadata_receipt, 'source': str(Path(__file__).resolve()), 'source_sha256': sha(Path(__file__).read_bytes()), 'profile_id': modern['id'], 'commands': commands, 'runtimes': updated, 'runtime_map_path': str(Path(runtime_out).absolute()), 'environment_sha256': execution.fingerprint(native_environment), 'pinned_package_files_sha256': execution.fingerprint(identity), 'plugin_identity_sha256': execution.fingerprint(plugins), 'distribution_count': len(installed), 'legacy_runtime_map_unchanged': updated[catalog['profiles'][0]['id']] == runtimes[catalog['profiles'][0]['id']], 'seconds': time.monotonic()-started, 'target_source_accessed': False, 'native_tests_executed': False, 'collection_calls': 0, 'native_calls': 0, 'scientific_verdict': 'G2_G6_UNKNOWN'}
+    write(output, receipt)
+    return receipt
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--catalog', type=Path, default=HERE.parent/'ENVIRONMENT_CATALOG.json')
+    parser.add_argument('--runtimes', type=Path)
+    parser.add_argument('--dest-root', type=Path)
+    parser.add_argument('--runtime-out', type=Path)
+    parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--wheel-cache', type=Path)
+    parser.add_argument('--metadata-only', action='store_true')
+    args = parser.parse_args()
+    if args.metadata_only:
+        _, result = validate(args.catalog); write(args.out, result)
+    else:
+        require(all((args.runtimes, args.dest_root, args.runtime_out)), 'explicit runtime map and new destinations required')
+        result = prepare(args.catalog, args.runtimes, args.dest_root, args.runtime_out, args.out, args.wheel_cache)
+    print(canonical({key: value for key, value in result.items() if key not in ('commands', 'profiles')}))

@@ -1,0 +1,37 @@
+{
+  "accounting_complete": true,
+  "child_maxrss_kib_lifetime_nonadditive": 191448,
+  "collection_calls": 0,
+  "completed_once_fixed_order": true,
+  "eligible": 0,
+  "envelopes_path": "/workspace/qualification/native-authority-v41-screening-runner/PUBLIC_ENVELOPES.json",
+  "learner_future_source_accessed": false,
+  "meter": {
+    "accounting_complete": true,
+    "cases": 7,
+    "collection_calls": 0,
+    "native_calls": 0,
+    "path": "/workspace/qualification/native-authority-v41-screening-sealed/SCREENING_METER.json",
+    "pending": null,
+    "sha256": "8056aca5954b5cd2db8a97b349b19c2cd09640a0a8b718de7f3537902ae9bb94",
+    "source_commit": "bd46699ea9933794a1c3fee161039c24a630bf4b"
+  },
+  "native_calls": 0,
+  "no_retries_or_substitutions": true,
+  "pool_size": 7,
+  "public_status_counts": {
+    "UNKNOWN_ADMISSION_SCREENING": 7
+  },
+  "raw_index_byte_identical": true,
+  "raw_index_sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2",
+  "schema": "UDM_V41_COMPLETE_POOL_PUBLIC_STATUS_COSTS",
+  "sealed_raw_root": "/workspace/qualification/native-authority-v41-screening-sealed",
+  "search_or_policy_outcomes_accessed": false,
+  "source_commit": "bd46699ea9933794a1c3fee161039c24a630bf4b",
+  "sum_case_wall_seconds": 15.939176056999713,
+  "sum_child_system_cpu_seconds": 12.075171,
+  "sum_child_user_cpu_seconds": 35.619312,
+  "sum_controller_wall_seconds": 51.76277536399721,
+  "summary_path": "/workspace/qualification/native-authority-v41-screening-runner/PUBLIC_SCREENING_SUMMARY.json",
+  "verification": "All public envelope and sealed report descriptor digests match; all raw index snapshots are byte-identical."
+}

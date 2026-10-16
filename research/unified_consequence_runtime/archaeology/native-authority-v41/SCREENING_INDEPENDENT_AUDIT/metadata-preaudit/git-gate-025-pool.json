@@ -1,0 +1,94 @@
+{
+  "schema": "UDM_GIT_INDEX_READ_AUDIT_V4",
+  "argv": [
+    "git",
+    "--no-pager",
+    "--no-replace-objects",
+    "-c",
+    "core.fsmonitor=false",
+    "-C",
+    "/workspace/udm-v54",
+    "show",
+    "--no-ext-diff",
+    "--no-textconv",
+    "bd46699ea9933794a1c3fee161039c24a630bf4b:research/unified_consequence_runtime/native_environment_v41.py"
+  ],
+  "git_optional_locks": "0",
+  "before": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "returncode": 0,
+  "stdout_base64": "IiIiVjQuMSBtZXRhZGF0YSBiaW5kaW5nOyBvcmlnaW5hbCBzb3VyY2UvbmF0aXZlIHByb3Zpc2lvbmluZyBzdGF5cyB1bmNoYW5nZWQuIiIiCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aApmcm9tIHR5cGVzIGltcG9ydCBGdW5jdGlvblR5cGUKZnJvbSAuIGltcG9ydCBuYXRpdmVfZW52aXJvbm1lbnRfdjMgYXMgcHJldmlvdXMKZnJvbSAuIGltcG9ydCBuYXRpdmVfZW52aXJvbm1lbnRfc2VsZWN0aW9uX3Y0MSBhcyBzZWxlY3Rpb24KClBSRVZJT1VTX1NIQTI1NiA9ICc3ZDE4YmM4MGFiOTZmZGZjMjEyOGU1ZjgyMTFhZWY1YTJkODg3NTBhODViYWQ0ZDVjOTZiYjRiOWJiYWQ0NTAxJwppZiBwcmV2aW91cy5zaGEyNTYoUGF0aChwcmV2aW91cy5fX2ZpbGVfXykucmVhZF9ieXRlcygpKSAhPSBQUkVWSU9VU19TSEEyNTY6CiAgICByYWlzZSBWYWx1ZUVycm9yKCdVTktOT1dOX0ZST1pFTl9FTlZJUk9OTUVOVF9TT1VSQ0VfQ0hBTkdFRCcpCl9uYW1lc3BhY2UgPSBkaWN0KHZhcnMocHJldmlvdXMpLCBzZWxlY3Rpb249c2VsZWN0aW9uKQpmb3IgX25hbWUsIF92YWx1ZSBpbiB2YXJzKHByZXZpb3VzKS5pdGVtcygpOgogICAgaWYgaXNpbnN0YW5jZShfdmFsdWUsIEZ1bmN0aW9uVHlwZSkgYW5kIF92YWx1ZS5fX21vZHVsZV9fID09IHByZXZpb3VzLl9fbmFtZV9fOgogICAgICAgIF9ib3VuZCA9IEZ1bmN0aW9uVHlwZShfdmFsdWUuX19jb2RlX18sIF9uYW1lc3BhY2UsIF9uYW1lLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICBfdmFsdWUuX19kZWZhdWx0c19fLCBfdmFsdWUuX19jbG9zdXJlX18pCiAgICAgICAgX2JvdW5kLl9fa3dkZWZhdWx0c19fID0gX3ZhbHVlLl9fa3dkZWZhdWx0c19fCiAgICAgICAgX25hbWVzcGFjZVtfbmFtZV0gPSBfYm91bmQKICAgICAgICBnbG9iYWxzKClbX25hbWVdID0gX2JvdW5kCmV4ZWN1dGlvbiA9IHByZXZpb3VzLmV4ZWN1dGlvbgpkZWwgX25hbWUsIF92YWx1ZSwgX2JvdW5kCg==",
+  "stderr_base64": "",
+  "after": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "index_changes": [],
+  "indexes_unchanged": true
+}

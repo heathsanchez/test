@@ -1,0 +1,302 @@
+{
+  "API_receipt_audit": {
+    "all_exact_prequery_projections": true,
+    "all_expected_endpoints_present_once": true,
+    "all_status_OK_and_returncode_zero": true,
+    "estimated_peak_concurrent_calls": 3,
+    "estimated_receipt_span_seconds": 38.863316,
+    "independent_second_reader": "A delegated pure-filesystem receipt audit independently obtained the same 137-count split, coverage, projection, timing and retention limitations.",
+    "maximum_call_seconds": 1.866160942001443,
+    "minimum_call_seconds": 0.2786389869997947,
+    "prequery_metadata_budget_seconds": 900,
+    "receipt_count": 137,
+    "receipt_kind_counts": {
+      "changed_file_pages": 100,
+      "closed_pr_list": 9,
+      "git_commit_metadata": 14,
+      "git_tree_metadata": 14
+    },
+    "reported_metadata_wall_seconds": 39.03713003700068,
+    "reported_total_curation_wall_seconds": 39.32762100800028,
+    "reported_tree_entry_total": 5123,
+    "retained_changed_tree_entries": 37,
+    "retained_null_changed_tree_entries": 1,
+    "static_guard_inspected": "V3 metadata_api fullmatches four endpoint patterns, requires exact projection and frozen-universe membership, records attempt before subprocess, uses timeout min(60,remaining), and marks OK after exit zero and projected JSON parsing. V41 and V4 retain that function.",
+    "summed_call_seconds": 77.07293227999253,
+    "unique_endpoints": 137
+  },
+  "authority": "Precommitted PREQUERY predicates, retained actual candidate sequence, exact retained curator source hashes, METADATA_CURATION, FROZEN_POOL.",
+  "boundaries": {
+    "git_commands": 0,
+    "native_executions": 0,
+    "network_calls": 0,
+    "original_curator_executions": 0,
+    "outcome_reads": 0,
+    "patch_reads": 0,
+    "target_source_reads": 0
+  },
+  "check_count": 7493,
+  "failed_checks": [],
+  "independent_totals": {
+    "candidates": 900,
+    "file_metadata_rows": 299,
+    "file_scans": 100,
+    "frozen_pool_members": 7,
+    "no_qualifying_repositories": 2,
+    "qualifying_candidates": 18,
+    "rejected_candidates": 882,
+    "repositories": 9
+  },
+  "input_sha256": {
+    "FROZEN_POOL.json": "c1e7cbcdd77d2a15edd9652cdc5b62662c8f359b33c4424661ae40f3bf5e4d76",
+    "METADATA_CURATION.json": "74c5a6ac858d733ab03986de3136b9fc476d871788878c6bd55663233e2787ba",
+    "PREQUERY.json": "86ec0464b589736e0e43bcdc49d14841d3006bda37f9a4b759eb19291715d547"
+  },
+  "limitations": [
+    "No live API call was made. Retained candidate rows are the only retained closed-list payload; their external API authenticity and whether additional unretained calls occurred cannot be independently proven by these local artifacts.",
+    "Receipts omit raw response stdout, response hashes, HTTP headers and successful HTTP status codes; OK means retained exit zero plus projected JSON parsing. Full recursive tree responses were discarded, so their reported entry totals, nonchanged schema and duplicate path absence cannot be reconstructed from only retained changed-path bindings.",
+    "Only the latest at most 100 closed PRs per repository were declared; NO_QUALIFYING_CANDIDATE does not cover older pages or all repository history.",
+    "One retained updated_at ordering inversion is documented without repairing, re-sorting, or retargeting the frozen pool.",
+    "All 100 observed file scans close on their first page; multi-page, ceiling, timeout, error and refusal branches were inspected statically but not exercised.",
+    "Metadata predicates do not demonstrate semantic bug relevance, native viability, test contents, native outcomes, independent admission, learning or G2/G3/G4.",
+    "Native and collection call counts of zero are retained cost declarations supported by the inspected metadata query path, not a global observation of all external activity."
+  ],
+  "method": "Independent pure filesystem Python audit; parsed JSON and AST only; original curator was never imported or executed.",
+  "passed_check_count": 7493,
+  "reason_counts": {
+    "NOT_MERGED": 267,
+    "NO_CHANGED_PRODUCTION_PY": 20,
+    "NO_CHANGED_TEST_PY": 37,
+    "PRODUCTION_ADDITIONS_ABOVE_6": 43,
+    "PRODUCTION_DELETIONS_OUTSIDE_1_TO_4": 61,
+    "RENAMED_OR_REMOVED_CHANGED_FILE": 2,
+    "TITLE_NOT_FIX_AND_NO_BUG_LABEL": 736
+  },
+  "repositories": [
+    {
+      "candidate_count": 100,
+      "checks": 743,
+      "failed_checks": 0,
+      "file_scans_expected": 9,
+      "first_qualifier_unchanged_by_timestamp_sort_diagnostic": true,
+      "first_qualifying_pr": null,
+      "first_qualifying_rank": null,
+      "no_qualifying_case_independently_supported": true,
+      "recomputed_qualifying_prs_in_retained_returned_order": [],
+      "rejection_reason_counts": {
+        "NOT_MERGED": 31,
+        "NO_CHANGED_PRODUCTION_PY": 1,
+        "NO_CHANGED_TEST_PY": 5,
+        "PRODUCTION_ADDITIONS_ABOVE_6": 4,
+        "PRODUCTION_DELETIONS_OUTSIDE_1_TO_4": 6,
+        "TITLE_NOT_FIX_AND_NO_BUG_LABEL": 79
+      },
+      "repo": "arrow-py/arrow"
+    },
+    {
+      "candidate_count": 100,
+      "checks": 673,
+      "failed_checks": 0,
+      "file_scans_expected": 4,
+      "first_qualifier_unchanged_by_timestamp_sort_diagnostic": true,
+      "first_qualifying_pr": 244,
+      "first_qualifying_rank": 55,
+      "no_qualifying_case_independently_supported": false,
+      "recomputed_qualifying_prs_in_retained_returned_order": [
+        244
+      ],
+      "rejection_reason_counts": {
+        "NOT_MERGED": 24,
+        "NO_CHANGED_PRODUCTION_PY": 2,
+        "NO_CHANGED_TEST_PY": 1,
+        "PRODUCTION_ADDITIONS_ABOVE_6": 1,
+        "PRODUCTION_DELETIONS_OUTSIDE_1_TO_4": 3,
+        "TITLE_NOT_FIX_AND_NO_BUG_LABEL": 91
+      },
+      "repo": "jquast/wcwidth"
+    },
+    {
+      "candidate_count": 100,
+      "checks": 818,
+      "failed_checks": 0,
+      "file_scans_expected": 18,
+      "first_qualifier_unchanged_by_timestamp_sort_diagnostic": true,
+      "first_qualifying_pr": 8931,
+      "first_qualifying_rank": 13,
+      "no_qualifying_case_independently_supported": false,
+      "recomputed_qualifying_prs_in_retained_returned_order": [
+        8931,
+        8906,
+        8925,
+        8890,
+        8879
+      ],
+      "rejection_reason_counts": {
+        "NOT_MERGED": 34,
+        "NO_CHANGED_PRODUCTION_PY": 2,
+        "NO_CHANGED_TEST_PY": 1,
+        "PRODUCTION_ADDITIONS_ABOVE_6": 9,
+        "PRODUCTION_DELETIONS_OUTSIDE_1_TO_4": 12,
+        "TITLE_NOT_FIX_AND_NO_BUG_LABEL": 76
+      },
+      "repo": "networkx/networkx"
+    },
+    {
+      "candidate_count": 100,
+      "checks": 608,
+      "failed_checks": 0,
+      "file_scans_expected": 0,
+      "first_qualifier_unchanged_by_timestamp_sort_diagnostic": true,
+      "first_qualifying_pr": null,
+      "first_qualifying_rank": null,
+      "no_qualifying_case_independently_supported": true,
+      "recomputed_qualifying_prs_in_retained_returned_order": [],
+      "rejection_reason_counts": {
+        "NOT_MERGED": 4,
+        "TITLE_NOT_FIX_AND_NO_BUG_LABEL": 100
+      },
+      "repo": "pyca/cryptography"
+    },
+    {
+      "candidate_count": 100,
+      "checks": 835,
+      "failed_checks": 0,
+      "file_scans_expected": 19,
+      "first_qualifier_unchanged_by_timestamp_sort_diagnostic": true,
+      "first_qualifying_pr": 641,
+      "first_qualifying_rank": 21,
+      "no_qualifying_case_independently_supported": false,
+      "recomputed_qualifying_prs_in_retained_returned_order": [
+        641,
+        642,
+        638,
+        402
+      ],
+      "rejection_reason_counts": {
+        "NOT_MERGED": 26,
+        "NO_CHANGED_PRODUCTION_PY": 4,
+        "NO_CHANGED_TEST_PY": 10,
+        "PRODUCTION_ADDITIONS_ABOVE_6": 8,
+        "PRODUCTION_DELETIONS_OUTSIDE_1_TO_4": 10,
+        "TITLE_NOT_FIX_AND_NO_BUG_LABEL": 76
+      },
+      "repo": "pyparsing/pyparsing"
+    },
+    {
+      "candidate_count": 100,
+      "checks": 647,
+      "failed_checks": 0,
+      "file_scans_expected": 3,
+      "first_qualifier_unchanged_by_timestamp_sort_diagnostic": true,
+      "first_qualifying_pr": 755,
+      "first_qualifying_rank": 14,
+      "no_qualifying_case_independently_supported": false,
+      "recomputed_qualifying_prs_in_retained_returned_order": [
+        755
+      ],
+      "rejection_reason_counts": {
+        "NOT_MERGED": 34,
+        "NO_CHANGED_PRODUCTION_PY": 1,
+        "NO_CHANGED_TEST_PY": 1,
+        "PRODUCTION_DELETIONS_OUTSIDE_1_TO_4": 2,
+        "TITLE_NOT_FIX_AND_NO_BUG_LABEL": 87
+      },
+      "repo": "pytest-dev/pluggy"
+    },
+    {
+      "candidate_count": 100,
+      "checks": 826,
+      "failed_checks": 0,
+      "file_scans_expected": 16,
+      "first_qualifier_unchanged_by_timestamp_sort_diagnostic": true,
+      "first_qualifying_pr": 1104,
+      "first_qualifying_rank": 52,
+      "no_qualifying_case_independently_supported": false,
+      "recomputed_qualifying_prs_in_retained_returned_order": [
+        1104,
+        1101,
+        1184
+      ],
+      "rejection_reason_counts": {
+        "NOT_MERGED": 28,
+        "NO_CHANGED_PRODUCTION_PY": 1,
+        "PRODUCTION_ADDITIONS_ABOVE_6": 11,
+        "PRODUCTION_DELETIONS_OUTSIDE_1_TO_4": 10,
+        "TITLE_NOT_FIX_AND_NO_BUG_LABEL": 74
+      },
+      "repo": "python-babel/babel"
+    },
+    {
+      "candidate_count": 100,
+      "checks": 1078,
+      "failed_checks": 0,
+      "file_scans_expected": 28,
+      "first_qualifier_unchanged_by_timestamp_sort_diagnostic": true,
+      "first_qualifying_pr": 469,
+      "first_qualifying_rank": 17,
+      "no_qualifying_case_independently_supported": false,
+      "recomputed_qualifying_prs_in_retained_returned_order": [
+        469,
+        453,
+        427
+      ],
+      "rejection_reason_counts": {
+        "NOT_MERGED": 11,
+        "NO_CHANGED_PRODUCTION_PY": 9,
+        "NO_CHANGED_TEST_PY": 17,
+        "PRODUCTION_ADDITIONS_ABOVE_6": 8,
+        "PRODUCTION_DELETIONS_OUTSIDE_1_TO_4": 17,
+        "RENAMED_OR_REMOVED_CHANGED_FILE": 2,
+        "TITLE_NOT_FIX_AND_NO_BUG_LABEL": 71
+      },
+      "repo": "python-semver/python-semver"
+    },
+    {
+      "candidate_count": 100,
+      "checks": 641,
+      "failed_checks": 0,
+      "file_scans_expected": 3,
+      "first_qualifier_unchanged_by_timestamp_sort_diagnostic": true,
+      "first_qualifying_pr": 556,
+      "first_qualifying_rank": 39,
+      "no_qualifying_case_independently_supported": false,
+      "recomputed_qualifying_prs_in_retained_returned_order": [
+        556
+      ],
+      "rejection_reason_counts": {
+        "NOT_MERGED": 75,
+        "NO_CHANGED_TEST_PY": 2,
+        "PRODUCTION_ADDITIONS_ABOVE_6": 2,
+        "PRODUCTION_DELETIONS_OUTSIDE_1_TO_4": 1,
+        "TITLE_NOT_FIX_AND_NO_BUG_LABEL": 82
+      },
+      "repo": "yaml/pyyaml"
+    }
+  ],
+  "returned_order_observations": {
+    "adjacent_updated_at_inversions": [
+      {
+        "left_pr": 473,
+        "left_rank": 15,
+        "left_updated_at": "2026-08-05T06:04:07Z",
+        "repo": "python-semver/python-semver",
+        "right_pr": 472,
+        "right_rank": 16,
+        "right_updated_at": "2026-09-06T20:59:34Z"
+      }
+    ],
+    "first_qualifiers_unchanged_by_timestamp_sort_diagnostic": true,
+    "interpretation": "The endpoint requests updated descending, but one retained semver adjacent timestamp pair is inverted. The committed algorithm uses API returned order, so the audit preserves the retained sequence. This alone does not establish its cause or authenticity.",
+    "selection_uses_retained_sequence_without_resorting": true,
+    "static_original_scan_enumerates_API_items_without_sorting": true,
+    "updated_at_nonincreasing_for_all_repositories": false
+  },
+  "schema": "UDM_V41_METADATA_PREDICATE_SUBAUDIT_V1",
+  "static_source_sha256": {
+    "v2_scan_and_classifier": "b2885099eb904395cb297ba17a0c3f1270975061b24d46ac5742a07804b8e251",
+    "v3_curator": "44455d61c8144261e2db2ce2a6de8b6b2671d9ca504353e03bb9dcd487fa3c14",
+    "v41_wrapper": "6f61fb5f9faec1f1e282627fa9ffc428b89ecc9cc4aecebd97b53d5f6790aa5c",
+    "v4_wrapper": "bfd0f38de30b12021090eb9592aebc79c60317c1bccdbcac3487da15f0e1b413"
+  },
+  "status": "PASS_WITH_RETAINED_EVIDENCE_LIMITATIONS"
+}

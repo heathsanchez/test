@@ -1,0 +1,197 @@
+{
+  "schema": "UDM_NATIVE_AUTHORITY_V41_INDEPENDENT_COMPLETE_SCREENING_AUDIT_V1",
+  "status": "PASS_ADMISSION_ONLY_SCREENING_AUDIT",
+  "pool_sha256": "c1e7cbcdd77d2a15edd9652cdc5b62662c8f359b33c4424661ae40f3bf5e4d76",
+  "reports_sha256": "2743c38157ccff52471e2afb6eacd3a3b0557b6586ef5fb0c300b3b3a32dc805",
+  "eligibility_rule": "PASS_NATIVE_OR_FAIL_NATIVE_IDENTICAL",
+  "all_screened_cases_and_costs_retained": true,
+  "independent_screener": true,
+  "search_or_policy_outcomes_accessed": false,
+  "learner_future_source_accessed": false,
+  "audited_commit": "bd46699ea9933794a1c3fee161039c24a630bf4b",
+  "auditor_role": "/root/v41_screening_audit",
+  "auditor_independent_of_screener": "/root/v41_independent_screening",
+  "utc": "2026-10-16T19:48:40.088900+00:00",
+  "audit_verdict_boundary": "Exact local metadata selection, source/environment refusal, source/runtime bytes, controller-local accounting and archive integrity; no admitted task or native outcome claim.",
+  "source_byte_boundary": "Every retained base Git object, commit/tree/blob, index, working file mode/bytes and link target checked. All7 protected head commit objects absent; native overlays not materialized. Wcwidth gitlink160000 retained as pointer and empty directory.",
+  "costs": {
+    "native_calls": 0,
+    "collection_calls": 0,
+    "metadata_api_calls": 137,
+    "metadata_total_curation_wall_seconds": 39.32762100800028,
+    "sum_setup_phase_seconds": 14.368250622996129,
+    "sum_setup_wall_seconds": 15.937476695997248,
+    "sum_case_wall_seconds": 15.939176056999713,
+    "sum_controller_wall_seconds": 51.76277536399721,
+    "controller_child_user_seconds": 35.619312,
+    "controller_child_system_seconds": 12.075171,
+    "whole_screening_controller_session_interval_seconds": 51.76726460456848,
+    "ordered_meter_interval_seconds_to_summary_finish": 46.388338804244995,
+    "child_maxrss_kib_lifetime_nonadditive": 191448
+  },
+  "cost_scope": "Native/collection worker counters are zero with pre-native static refusal support. Controller/init/fetch/checkout/runtimepreflight/selection costs retained separately. Nested walls nonadditive; global model/tool/engineering lifecycle costs UNKNOWN.",
+  "native_obligations": {
+    "baseline": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+    "collection_calls": 0,
+    "native_calls": 0,
+    "ledger_execution": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+    "matched_agent_execution": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+    "comparative_win": "UNKNOWN_NOT_ESTABLISHED"
+  },
+  "terminal_shortfall": {
+    "requested_roles": 2,
+    "admitted": 0,
+    "refused": 7,
+    "selected_roles": [],
+    "retargeting_or_expanded_universe": false,
+    "unchanged_selection_obstruction": "screening shortfall; no outcome-selected replacement permitted"
+  },
+  "first_supported_obstruction": {
+    "case": 0,
+    "repository": "jquast/wcwidth",
+    "stage": "decisive_native_verify._snapshot",
+    "first_path": "README.rst",
+    "mode": "120000",
+    "reason": "ValueError: only regular tracked files supported; no symlinks or submodules",
+    "scope": "Preserved V3 source snapshot grammar refusal; native incompatibility was not established."
+  },
+  "all_index_bytes_and_absences_unchanged_in_closed_auditor_interval": true,
+  "index_interval_closed_at_utc": "2026-10-16T19:44:34.397177+00:00",
+  "screening_index_scope": "Original runner retains only active index before/after; independent auditor all5index bytes/absences retained before its firstGit and unchanged across204reads. No global all-index pre-screening proof inferred.",
+  "git_writes_index_restorations_native_reruns_or_artifact_code_execution_by_auditor": 0,
+  "exposure_attestation_scope": "Role-scoped attestation: auditor/screener may inspect sealed base material. Root/learner received public admission envelopes/costs and explicitly requested bounded refusal facts. No universal filesystem/process/network access log supplied.",
+  "verified_counts": {
+    "metadata_predicate_consistency_checks": 7493,
+    "metadata_lineage_consistency_checks": 277,
+    "history_exclusion_checks": 82,
+    "history_inputs": 39,
+    "bounded_historical_exclusions": 71,
+    "source_identity_mechanical_checks": 74255,
+    "runtime_filesystem_checks": 279,
+    "retained_binding_checks": 173,
+    "qualification_source_gate_files": 70,
+    "prospective_environment_gate_files": 83,
+    "full_owned_source_files": 1694,
+    "qualified_source_files_preserved": 1666,
+    "base_source_tracked_entries": 2370,
+    "base_git_objects": 2478,
+    "archive_regular_files": 3069,
+    "archive_symlinks": 5,
+    "archive_directories": 325
+  },
+  "portable_summary": {
+    "path": "AUDIT_SUMMARY.json",
+    "sha256": "ab01b67b74bc6adf2b9f6c5b4d350e29f0d941f7cfa88216e35817afa47ba59e",
+    "size_bytes": 11334
+  },
+  "subreports": {
+    "metadata-preaudit/LINEAGE_PREAUDIT.json": {
+      "path": "metadata-preaudit/LINEAGE_PREAUDIT.json",
+      "sha256": "198a6fbdacac9204f4c7da95c1000093e4ebe69d149f949a596a4da8f5eff37e",
+      "size_bytes": 95146
+    },
+    "metadata-preaudit/PREDICATE_SUBAUDIT.json": {
+      "path": "metadata-preaudit/PREDICATE_SUBAUDIT.json",
+      "sha256": "4a89b63d6867125028c4d509cd0f51a82d700dac86b4918702ab11de866e2b2e",
+      "size_bytes": 12008
+    },
+    "metadata-preaudit/HISTORY_EXCLUSION_AUDIT.json": {
+      "path": "metadata-preaudit/HISTORY_EXCLUSION_AUDIT.json",
+      "sha256": "c0abc8f77cd28e27fc5111d837e52a401890c1b0918261049a74bf79ac08d8fd",
+      "size_bytes": 12028
+    },
+    "metadata-preaudit/FULL_SOURCE_IDENTITY.json": {
+      "path": "metadata-preaudit/FULL_SOURCE_IDENTITY.json",
+      "sha256": "0029e502bd5d5fe87629db3ae42e0461c5e340789f90d93ed801f631155df3d2",
+      "size_bytes": 876748
+    },
+    "metadata-preaudit/INDEX_INTERVAL_START.json": {
+      "path": "metadata-preaudit/INDEX_INTERVAL_START.json",
+      "sha256": "46ab647aaa6378a05578a07176de28280b557bda99b8589c1b4a5f79a072cc0e",
+      "size_bytes": 2594
+    },
+    "metadata-preaudit/INDEX_INTERVAL_END.json": {
+      "path": "metadata-preaudit/INDEX_INTERVAL_END.json",
+      "sha256": "bcbff5f06e239eabe41f891f6dd7404374e56d8ff27b837f761bac837c1c0f71",
+      "size_bytes": 4246
+    },
+    "raw-audit/RAW_CHECKS.json": {
+      "path": "raw-audit/RAW_CHECKS.json",
+      "sha256": "4c03ac0e6b27c850dae22979eece3ddc8be62c1ffc855458dbd463cda5f36bde",
+      "size_bytes": 20272
+    },
+    "raw-audit/SOURCE_IDENTITY_AUDIT.json": {
+      "path": "raw-audit/SOURCE_IDENTITY_AUDIT.json",
+      "sha256": "7d5cb75445478ac91e47ee3311620907d5a9c71b8b34e82e69244e9c7b02c396",
+      "size_bytes": 4806885
+    },
+    "raw-audit/RUNTIME_AUDIT.json": {
+      "path": "raw-audit/RUNTIME_AUDIT.json",
+      "sha256": "79da413f0e3c84d86f42fadc7536413fd719ea614c0db53a1b35147f70e906c2",
+      "size_bytes": 135872
+    },
+    "raw-audit/RUNTIME_HOST_STDLIB_FILES.json": {
+      "path": "raw-audit/RUNTIME_HOST_STDLIB_FILES.json",
+      "sha256": "feccb420d98b2a18d57d8d6829bcfe00948bcd3ea400e485e9c395cfbc908c28",
+      "size_bytes": 1448616
+    },
+    "raw-audit/RUNTIME_HOST_PINNED_PACKAGE_FILES.json": {
+      "path": "raw-audit/RUNTIME_HOST_PINNED_PACKAGE_FILES.json",
+      "sha256": "fc66a87a9a119cdb079433c299fa7be6c4c0a6f32bb831651479adf0deba587a",
+      "size_bytes": 1281462
+    },
+    "raw-audit/COSTS_BY_CASE.json": {
+      "path": "raw-audit/COSTS_BY_CASE.json",
+      "sha256": "dfc43e2568b17bb686db1e109859a6ad8f9908dadb3f3cac02a435692d6705c8",
+      "size_bytes": 20687
+    },
+    "raw-audit/REFUSALS_EXACT.json": {
+      "path": "raw-audit/REFUSALS_EXACT.json",
+      "sha256": "fc529a14f05d7e54f1d980de9ca0b3309166861718e86ff6c8e46ad6652fde7c",
+      "size_bytes": 2407
+    },
+    "raw-audit/SCREENING_ENVELOPES_EXACT.json": {
+      "path": "raw-audit/SCREENING_ENVELOPES_EXACT.json",
+      "sha256": "b4ecb5a6d60867fb267acf0e61884be636e9cb170d1f30507d668cc1d0ed60d3",
+      "size_bytes": 4662
+    },
+    "raw-audit/SEALED_RAW_MANIFEST.json": {
+      "path": "raw-audit/SEALED_RAW_MANIFEST.json",
+      "sha256": "f39a4e22e4d56f674f511fc3fe1220f4c1d1045dacd8777323fca2c63a79fda2",
+      "size_bytes": 545271
+    },
+    "archive/native-authority-v41-screening-complete-evidence.descriptor.json": {
+      "path": "archive/native-authority-v41-screening-complete-evidence.descriptor.json",
+      "sha256": "ba9a08a808058986f8a44b55b820a7f9496fbb382e01a4a64ce2c3715bd7c0d0",
+      "size_bytes": 1295
+    }
+  },
+  "limitations": [
+    "Git object and retained-receipt checks establish exact local ancestry and bytes, not an independently timestamped proof of first network access.",
+    "No global filesystem/network/process access log was available; no claim of global absence of other access.",
+    "Original code inspected statically; no curator/native CLI was executed by this audit.",
+    "No live API call was made. Retained candidate rows are the only retained closed-list payload; their external API authenticity and whether additional unretained calls occurred cannot be independently proven by these local artifacts.",
+    "Receipts omit raw response stdout, response hashes, HTTP headers and successful HTTP status codes; OK means retained exit zero plus projected JSON parsing. Full recursive tree responses were discarded, so their reported entry totals, nonchanged schema and duplicate path absence cannot be reconstructed from only retained changed-path bindings.",
+    "Only the latest at most 100 closed PRs per repository were declared; NO_QUALIFYING_CANDIDATE does not cover older pages or all repository history.",
+    "One retained updated_at ordering inversion is documented without repairing, re-sorting, or retargeting the frozen pool.",
+    "All 100 observed file scans close on their first page; multi-page, ceiling, timeout, error and refusal branches were inspected statically but not exercised.",
+    "Metadata predicates do not demonstrate semantic bug relevance, native viability, test contents, native outcomes, independent admission, learning or G2/G3/G4.",
+    "Native and collection call counts of zero are retained cost declarations supported by the inspected metadata query path, not a global observation of all external activity.",
+    "This reconstructs the original bounded accessible metadata scan, not all prior human/model exposure or unlogged external access.",
+    "Missing input records remain explicit; source pinning and local ancestry do not independently timestamp network access.",
+    "Runner ledger plus once-only controller logic and all seven completed retained cases support one ordered pass in this supplied run; there is no authenticated global process launch ledger to exclude unrelated or omitted attempts.",
+    "Native/collection counters are controller-local worker counters, not all operating-system subprocesses. Git transport and runtime identity work are retained separately.",
+    "All-five-index closed interval covers this auditor reads; original runner retains only its active index before/after screening, so the audit does not upgrade that to an all-index pre-screening proof.",
+    "Exposure booleans are bounded role attestations; no global filesystem access log or hostile-process isolation proof was supplied.",
+    "Static reproduction implements the complete observed early-refusal paths, not unobserved successful admission/native behavior.",
+    "The four mode refusals first encounter symlinks (120000). Wcwidth additionally has a later unmaterialized gitlink (160000); its tree reconstruction uses the validated base-tree/index gitlink object ID and separately verifies an empty filesystem directory, rather than claiming submodule source-byte materialization.",
+    "SHA-1 object identity, pack/index checksums, base-only object materialization and worktree equality verify retained consistency; they do not establish authenticity of a remote repository independently of the retained transport/authority evidence.",
+    "Generic packaging 26.0 Requirement parsing is executed only to independently reproduce the retained grammar-error text; original project, controller and selector code is never imported or executed.",
+    "Filesystem-only audit: no candidate interpreters, native controller, tests, target imports, Git, or network were executed.",
+    "Implementation, version_info, base_prefix, and sysconfig-derived root provenance are retained claims. Their internal catalog consistency is checked; they were not independently queried from an executable.",
+    "The qualified stdlib walk excludes site-packages/dist-packages and includes only .py/.pyc/.pyo/.so/.pyd/.dll/.dylib filenames. It resolves matching file symlinks and deduplicates resolved paths; absent roots can contribute zero files.",
+    "Installed package file rows follow distribution metadata/RECORD, matching the source. They do not assert that every unlisted site-packages file belongs to the pinned package set.",
+    "Static plugin path/version/ownership/byte checks do not execute import resolution or establish runtime plugin behavior.",
+    "cpython-3.12.14-pytest-8.4.1-linux-x86_64: these retained roots are absent/non-directory and contribute zero files under the qualified walk: /install/lib/python3.12/lib-dynload"
+  ]
+}

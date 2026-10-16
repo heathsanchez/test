@@ -1,0 +1,137 @@
+{
+  "artifact_storage": {
+    "environment_destination": "NEW isolated venv paths only, never old qualified envs",
+    "raw_working_root": "/workspace/qualification/native-authority-v41-profile-preparation",
+    "versioned_records": "research/unified_consequence_runtime/archaeology/native-authority-v41"
+  },
+  "audit_limitation": "Initial read-only audit status/rev-parse used GIT_OPTIONAL_LOCKS=0 without a retained prior direct index snapshot. Subsequent closing read retained snapshots with no index changes; no index reset/restoration performed.",
+  "frozen_at_utc": "2026-10-16T19:15:02.890587+00:00",
+  "immutable_modern_pins": [
+    "attrs==25.4.0",
+    "cbor2==5.6.5",
+    "cloudpickle==3.1.2",
+    "coverage==7.10.0",
+    "dnspython==2.9.0",
+    "execnet==2.1.2",
+    "flit_core==4.0.1",
+    "hatch-fancy-pypi-readme==25.1.0",
+    "hatch-vcs==0.5.0",
+    "hatchling==1.27.0",
+    "hypothesis==6.151.9",
+    "immutables==0.21",
+    "iniconfig==2.3.1",
+    "msgpack==1.1.1",
+    "msgspec==0.19.0",
+    "orjson==3.11.3",
+    "packaging==26.3",
+    "pathspec==1.1.1",
+    "pip==25.0.1",
+    "pluggy==1.7.0",
+    "psutil==7.2.2",
+    "py-cpuinfo==9.0.0",
+    "Pygments==2.21.0",
+    "pymongo==4.13.2",
+    "Pympler==1.1",
+    "pytest==8.4.1",
+    "pytest-benchmark==5.1.0",
+    "pytest-xdist==3.8.0",
+    "PyYAML==6.0.2",
+    "ruff==0.11.0",
+    "setuptools==84.0.0",
+    "setuptools-scm==10.3.4",
+    "sortedcontainers==2.4.0",
+    "tomli_w==1.2.0",
+    "tomlkit==0.13.3",
+    "trove-classifiers==2026.9.21.13",
+    "typing_extensions==4.14.1",
+    "ujson==5.10.0",
+    "vcs-versioning==2.6.0"
+  ],
+  "immutable_modern_plugins": [
+    {
+      "distribution": "hypothesis",
+      "module": "hypothesis.extra.pytestplugin",
+      "version": "6.151.9"
+    },
+    {
+      "distribution": "pytest-benchmark",
+      "module": "pytest_benchmark.session",
+      "version": "5.1.0"
+    },
+    {
+      "distribution": "pytest-benchmark",
+      "module": "pytest_benchmark.plugin",
+      "version": "5.1.0"
+    },
+    {
+      "distribution": "pytest",
+      "module": "pytester",
+      "version": "8.4.1"
+    },
+    {
+      "distribution": "pytest",
+      "module": "pytester_assertions",
+      "version": "8.4.1"
+    }
+  ],
+  "install_rule": {
+    "full_profile": true,
+    "local_verified_wheels_only": true,
+    "no_deps": true,
+    "only_binary": true,
+    "require_hashes": true,
+    "verify": "pip check; exact distribution inventory/files; pytest version; licensed plugin identities; runtime identity before any actual native use"
+  },
+  "legacy_profile_sha256": "73cbe0be793ffc876031032b83ea52777f82aac68d3a5634ae66080a989ff1ee",
+  "old_catalog": {
+    "path": "research/unified_consequence_runtime/archaeology/native-environment-v3/ENVIRONMENT_CATALOG.json",
+    "sha256": "ba793416ffcc19426d2990aea6799d4e450d09b4e900253d76e517e19701f9e5"
+  },
+  "old_package_metadata": {
+    "package_records": 61,
+    "path": "research/unified_consequence_runtime/archaeology/native-environment-v3/PACKAGE_METADATA.json",
+    "sha256": "e5d3e9928983dda66747b3bbca5e49aea9ef26371a387ccd81b0cf5f7f3c69ab"
+  },
+  "plugin_rule": {
+    "native_worker": "UNCHANGED native_execution_v3 and its original plugin identity/manifest checks; disable plugin autoload.",
+    "new_pytest_license": "Only pytest-cov pytest11 module derived from the exact verified original wheel entry_points.txt; exact distribution/version and entrypoint SHA retained. Other entrypoint groups are evidence only.",
+    "preserve_old_rows": true
+  },
+  "profile_shape": {
+    "count": 2,
+    "implementation": "CPython",
+    "legacy_row": "UNCHANGED",
+    "modern_row": "ONE_WIDENED_ROW",
+    "platform": "Linux x86_64",
+    "pytest": "8.4.1",
+    "python": "3.12.14"
+  },
+  "schema": "UDM_NATIVE_PROFILE_EXTENSION_PROTOCOL_V41",
+  "scientific_scope": "Generic infrastructure preparation only. Neither old diagnostic nor new catalog/green preparation establishes G2-G6 or comparative win. Root reviews complete closure and qualification/freeze proposal before actual native use.",
+  "seeds": [
+    "mypy",
+    "pytest-cov",
+    "setuptools-git-versioning"
+  ],
+  "selection_rule": {
+    "backtracking": "Metadata-only newest-first candidate rejection is permitted before target queries. No installed/native/test/task outcome may select versions. Unresolved conflicts/cycles/budget exhaustion remain precise UNKNOWN.",
+    "budgets": {
+      "max_downloaded_wheels": 40,
+      "max_project_json_requests": 16,
+      "max_release_candidates_per_package": 20,
+      "max_version_json_requests": 80,
+      "request_timeout_seconds": 90,
+      "total_preparation_budget_seconds": 1200
+    },
+    "closure": "Only three seeds plus recursively justified active Requires-Dist under exact frozen marker environment, extra empty and only explicitly requested external extras. Missing old pin/new closure conflicts remain UNKNOWN; no source-derived self extras.",
+    "compatibility": "Preserve every old modern pin, artifact and metadata entry. Reject and retain candidate release metadata that conflicts with immutable pins or accumulated dependency constraints; choose highest remaining metadata-compatible stable wheel release. Never upgrade/remove old pins.",
+    "metadata": "Fetch exact version JSON and selected original wheel; require Name/Version identity and semantic Requires-Dist/Requires-Python agreement.",
+    "release_order": "Descending PEP440 stable releases from public PyPI project JSON; exclude prerelease/dev/local versions.",
+    "wheel_order": "Supported CPython3.12/Linux x86_64 wheel tag rank, then filename; require nonyanked, compatible file Requires-Python, exact SHA256 and size."
+  },
+  "source_independent": true,
+  "status": "FROZEN_BEFORE_FIRST_PYPI_REQUEST",
+  "target_outcomes_observed": 0,
+  "target_repository_queries": 0,
+  "target_source_reads": 0
+}
