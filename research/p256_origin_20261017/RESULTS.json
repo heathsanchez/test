@@ -1,0 +1,246 @@
+{
+  "args": {
+    "prefix_draws": 192,
+    "seed_limit": 65536,
+    "stream_bytes": 150000
+  },
+  "asof_utc": "2026-10-16T22:34:12.281074+00:00",
+  "calibration": {
+    "freeLIP_basepoints": [
+      {
+        "expected_tries": 2,
+        "match_x": true,
+        "name": "prime192v1",
+        "seed": 20000,
+        "tries": 2
+      },
+      {
+        "expected_tries": 3,
+        "match_x": true,
+        "name": "prime239v1",
+        "seed": 20420,
+        "tries": 3
+      },
+      {
+        "expected_tries": 2,
+        "match_x": true,
+        "name": "prime239v2",
+        "seed": 20507,
+        "tries": 2
+      },
+      {
+        "expected_tries": 1,
+        "match_x": true,
+        "name": "prime239v3",
+        "seed": 20509,
+        "tries": 1
+      },
+      {
+        "expected_tries": 5,
+        "match_x": true,
+        "name": "prime192v2",
+        "seed": 20512,
+        "tries": 5
+      },
+      {
+        "expected_tries": 1,
+        "match_x": true,
+        "name": "prime192v3",
+        "seed": 20517,
+        "tries": 1
+      }
+    ],
+    "freeLIP_matches": 6,
+    "lrand48_matches": 14,
+    "lrand48_seeds": [
+      {
+        "candidate": 2185,
+        "match_seed": true,
+        "name": "prime239v1"
+      },
+      {
+        "candidate": 2320,
+        "match_seed": true,
+        "name": "prime239v2"
+      },
+      {
+        "candidate": 3048,
+        "match_seed": true,
+        "name": "prime239v3"
+      },
+      {
+        "candidate": 139,
+        "match_seed": true,
+        "name": "P-192"
+      },
+      {
+        "candidate": 5228,
+        "match_seed": true,
+        "name": "prime192v3"
+      },
+      {
+        "candidate": 6013,
+        "match_seed": true,
+        "name": "prime192v2"
+      },
+      {
+        "candidate": 1136,
+        "match_seed": true,
+        "name": "P-521"
+      },
+      {
+        "candidate": 1842,
+        "match_seed": true,
+        "name": "P-256"
+      },
+      {
+        "candidate": 2688,
+        "match_seed": true,
+        "name": "P-384"
+      },
+      {
+        "candidate": 7026,
+        "match_seed": true,
+        "name": "P-224"
+      },
+      {
+        "candidate": 155,
+        "match_seed": true,
+        "name": "B-233"
+      },
+      {
+        "candidate": 32,
+        "match_seed": true,
+        "name": "B-283"
+      },
+      {
+        "candidate": 60,
+        "match_seed": true,
+        "name": "B-409"
+      },
+      {
+        "candidate": 73,
+        "match_seed": true,
+        "name": "B-571"
+      }
+    ]
+  },
+  "code_sha256": "aa48e5c6f7c5cb514475d99cae43a1b2effcf583f2b7269e783fa00163b1f34c",
+  "cpp_binary_sha256": "9dde08b6278dfc94a9cbd79a66fb1ac1c79de0e29968dcc73308346311abe919",
+  "cpp_checker_sha256": "fb33c04ac6eb885520eb6d8eb183f09364481040300450b694a8828c73e243ba",
+  "epistemics": {
+    "general_cryptanalytic_success": "UNKNOWN",
+    "historical_generator": "UNKNOWN",
+    "negative": "ONLY_WITHIN_EXACT_RECORDED_SEARCH_BOUNDS",
+    "private_keys": "NOT_ATTEMPTED",
+    "strong_competitor": "NOT_RUN; this is an independent bounded negative/control probe, not an autonomous-development superiority test",
+    "uniqueness": "NOT_CLAIMED"
+  },
+  "scanner_historical_positive_control": {
+    "actual_hits": [
+      "20420 low26 11 msf 29"
+    ],
+    "expected": "20420 low26 11 msf 29",
+    "historical_curve": "prime239v1",
+    "historical_seed": 20420,
+    "pass": true,
+    "published_target_x": "0xffa963cdca8816ccc33b8642bedf905c3d358573d3f27fbbd3b3cb9aaaf"
+  },
+  "scanner_positive_control": {
+    "actual_hits": [
+      "20000 low26 11 msf 7"
+    ],
+    "expected": "20000 low26 11 msf 7",
+    "pass": true,
+    "synthetic_target_x": "0x9bd6203ca3416e3d06122a8f3cf11e1eaeea805dbb1a59b3847f97976f982fb7"
+  },
+  "searches": {
+    "freeLIP_small_seeds": {
+      "checked_windows": 95682560,
+      "elapsed_seconds": 6.157689,
+      "first_prng_outputs": 192,
+      "hits": [],
+      "seed_count": 65536,
+      "seed_end_inclusive": 65535,
+      "seed_start": 0,
+      "shape_counts": [
+        11993088,
+        11993088,
+        11927552,
+        11927552,
+        11993088,
+        11993088,
+        11927552,
+        11927552
+      ]
+    },
+    "freeLIP_timestamp_window": {
+      "checked_windows": 252289460,
+      "elapsed_seconds": 16.4863,
+      "first_prng_outputs": 192,
+      "hits": [],
+      "seed_count": 172801,
+      "seed_end_inclusive": 871782754,
+      "seed_start": 871609954,
+      "shape_counts": [
+        31622583,
+        31622583,
+        31449782,
+        31449782,
+        31622583,
+        31622583,
+        31449782,
+        31449782
+      ]
+    },
+    "historical_lrand48_raw_substring": {
+      "boundary": "Only literal raw contiguous coordinate byte substrings of top8, top31_big/little streams, on given five historical seed timestamps; excludes hashing, scalar multiplication, rejection sampling and other clocks.",
+      "runs": [
+        {
+          "byte_length_tested_per_representation": 150000,
+          "hits": [],
+          "seed_key": "P-192",
+          "timestamp": "1997-05-18 14:45:34"
+        },
+        {
+          "byte_length_tested_per_representation": 150000,
+          "hits": [],
+          "seed_key": "P-521",
+          "timestamp": "1997-08-08 01:12:04"
+        },
+        {
+          "byte_length_tested_per_representation": 150000,
+          "hits": [],
+          "seed_key": "P-256",
+          "timestamp": "1997-08-16 01:52:34"
+        },
+        {
+          "byte_length_tested_per_representation": 150000,
+          "hits": [],
+          "seed_key": "P-384",
+          "timestamp": "1997-08-30 14:50:08"
+        },
+        {
+          "byte_length_tested_per_representation": 150000,
+          "hits": [],
+          "seed_key": "P-224",
+          "timestamp": "1998-04-03 12:52:07"
+        }
+      ]
+    }
+  },
+  "source": "https://www.anthropic.com/research/ecdsa-curve-origins",
+  "source_openssl": "OpenSSL 3.5.5 27 Jan 2026 (Library: OpenSSL 3.5.5 27 Jan 2026)",
+  "status": "NO_EXACT_MATCH_IN_DECLARED_GRAMMARS; GENERAL_ORIGIN_UNKNOWN",
+  "target": {
+    "curve_parameter_source": "openssl ecparam -name prime256v1 -param_enc explicit",
+    "curve_parameters_openssl_sha256": "4f266c2addbbf24097a4c507f41bb39da33f5494bc756fa3d2f810bfc1655486",
+    "gx": "0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296",
+    "gy": "0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
+    "name": "NIST P-256 / prime256v1",
+    "on_curve": true,
+    "order_n_check": true
+  },
+  "title": "MathGraph P-256 base-point origin: post-source bounded forensics probe (not pre-registered, not blind)",
+  "total_wall_seconds": 1.078
+}
