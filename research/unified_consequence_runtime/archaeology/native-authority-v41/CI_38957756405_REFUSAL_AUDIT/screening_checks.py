@@ -1,0 +1,580 @@
+"""Independent stdlib-only checks of retained V41 scientific refusal evidence.
+
+Source and payload values are bytes, never imported or executed. Archive/link
+safety and the full combined source inventory belong to the enclosing auditor.
+"""
+from __future__ import annotations
+
+from collections import Counter
+import datetime
+import hashlib
+import json
+import math
+from pathlib import Path, PurePosixPath
+import re
+import struct
+
+_ROOT = 'research/unified_consequence_runtime/'
+_REC = _ROOT + 'archaeology/native-authority-v41/'
+_AUDIT = _REC + 'SCREENING_INDEPENDENT_AUDIT/'
+_SCREENING_COMMIT = 'bd46699ea9933794a1c3fee161039c24a630bf4b'
+_QUALIFIED_COMMIT = '4c3f7e276567b4ea8df96c7a8797a889040dc0ac'
+_EXPECTATIONS_SHA256 = '164aef8c67a7059bcf7606d1cf502ca5cd8b11310e9b1eb8f938d8ee7dd13ae2'
+_REFUSALS = [
+    ('jquast/wcwidth', 'UNKNOWN_SOURCE_ENVIRONMENT', 'ValueError: only regular tracked files supported; no symlinks or submodules'),
+    ('networkx/networkx', 'UNKNOWN_SOURCE_ENVIRONMENT', 'ValueError: only regular tracked files supported; no symlinks or submodules'),
+    ('pyparsing/pyparsing', 'UNKNOWN_SOURCE_ENVIRONMENT', 'ValueError: only regular tracked files supported; no symlinks or submodules'),
+    ('pytest-dev/pluggy', 'UNKNOWN_ENVIRONMENT_SELECTION', 'UNKNOWN_REQUIREMENT_GRAMMAR'),
+    ('python-babel/babel', 'UNKNOWN_ENVIRONMENT_SELECTION', 'UNKNOWN_REQUIREMENT_GRAMMAR'),
+    ('python-semver/python-semver', 'UNKNOWN_SOURCE_ENVIRONMENT', 'ValueError: only regular tracked files supported; no symlinks or submodules'),
+    ('yaml/pyyaml', 'UNKNOWN_ENVIRONMENT_SELECTION', 'UNKNOWN_DYNAMIC_METADATA'),
+]
+
+
+def _sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _fp(value):
+    return _sha(json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode())
+
+
+def _json(raw, label):
+    def pairs(rows):
+        out = {}
+        for key, value in rows:
+            if key in out:
+                raise ValueError('duplicate JSON key in ' + label + ': ' + key)
+            out[key] = value
+        return out
+    def invalid(value):
+        raise ValueError('nonfinite JSON number in ' + label + ': ' + value)
+    try:
+        return json.loads(raw, object_pairs_hook=pairs, parse_constant=invalid)
+    except (UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError('malformed JSON: ' + label) from error
+
+
+def _raw(mapping, name):
+    path = PurePosixPath(name)
+    if (path.is_absolute() or '..' in path.parts or str(path) != name or '\\' in name
+            or name not in mapping or not isinstance(mapping[name], bytes)):
+        raise ValueError('missing/invalid retained byte member: ' + name)
+    return mapping[name]
+
+
+def _read(mapping, name):
+    return _json(_raw(mapping, name), name)
+
+
+def _finite(value):
+    return type(value) in (int, float) and math.isfinite(value) and value >= 0
+
+
+class _Checks:
+    def __init__(self, callback):
+        self.callback = callback; self.count = 0; self.failures = 0
+
+    def __call__(self, condition, label, **details):
+        condition = bool(condition); self.count += 1; self.failures += not condition
+        self.callback(condition, 'screening.' + label, **details)
+
+    def report(self, **details):
+        return dict(status='PASS' if self.count and not self.failures else 'FAIL',
+                    checks=self.count, failed_checks=self.failures, **details)
+
+
+def _absolute(source, payload, path):
+    for prefix, destination in (
+        ('/workspace/qualification/native-authority-v41-screening-sealed/', 'sealed/'),
+        ('/workspace/qualification/native-authority-v41-screening-runner/', 'runner/'),
+        ('/workspace/qualification/native-authority-v41-screening-requests/', 'requests/'),
+        ('/workspace/qualification/native-authority-v41-screening-audit/', 'audit/'),
+    ):
+        if path.startswith(prefix):
+            return _raw(payload, destination + path[len(prefix):])
+    if path == '/workspace/qualification/native-authority-v41-profile-preparation/RUNTIMES.json':
+        return _raw(payload, 'runtime-inputs/RUNTIMES.json')
+    if path.startswith('/workspace/udm-v54/'):
+        return _raw(source, path[len('/workspace/udm-v54/'):])
+    raise ValueError('unrecognized retained descriptor path: ' + path)
+
+
+def _bound(source, payload, descriptor, check, label):
+    raw = _absolute(source, payload, descriptor['path'])
+    check(_sha(raw) == descriptor['sha256'], label + '.descriptor_hash', path=descriptor['path'])
+    return _json(raw, descriptor['path'])
+
+
+def _git_index(raw):
+    """Read retained v2/v3 Git index entries without invoking Git."""
+    if len(raw) < 32 or raw[:4] != b'DIRC' or hashlib.sha1(raw[:-20]).digest() != raw[-20:]:
+        raise ValueError('invalid retained Git index header/checksum')
+    version, count = struct.unpack_from('>II', raw, 4)
+    if version not in (2, 3):
+        raise ValueError('unsupported retained Git index version: ' + str(version))
+    rows = []; offset = 12
+    for _ in range(count):
+        start = offset
+        if offset + 62 > len(raw) - 20:
+            raise ValueError('truncated retained index entry')
+        fields = struct.unpack_from('>10I20sH', raw, offset)
+        mode, blob, flags = fields[6], fields[10].hex(), fields[11]
+        offset += 62
+        if flags & 0x4000:
+            offset += 2
+        end = raw.find(b'\0', offset, len(raw) - 20)
+        if end == -1:
+            raise ValueError('unterminated retained index path')
+        path = raw[offset:end].decode()
+        pure = PurePosixPath(path)
+        if pure.is_absolute() or '..' in pure.parts or str(pure) != path or '\\' in path:
+            raise ValueError('noncanonical index path')
+        rows.append({'path': path, 'mode': format(mode, 'o'), 'blob': blob})
+        offset = start + ((end + 1 - start + 7) // 8) * 8
+    names = [row['path'] for row in rows]
+    if names != sorted(set(names)):
+        raise ValueError('duplicate or unordered index paths')
+    return rows
+
+
+def _test_file(name):
+    path = PurePosixPath(name)
+    return name.endswith('.py') and (
+        any(part in ('test', 'tests', 'testing') for part in path.parts)
+        or path.name.startswith('test_') or path.name.endswith('_test.py')
+        or path.name == 'conftest.py')
+
+
+def _metadata(source, payload, c):
+    plan = _read(source, _REC + 'PREQUERY.json')
+    execution = _read(source, _REC + 'PREQUERY_EXECUTION.json')
+    metadata = _read(source, _REC + 'METADATA_CURATION.json')
+    frozen = _read(source, _REC + 'FROZEN_POOL.json')
+    universe = plan['repository_universe_fixed_before_github_queries']
+    c(len(universe) == 9 and universe == sorted(set(universe))
+      and [row['repo'] for row in metadata['repositories']] == universe, 'metadata.nine_ordered_repositories')
+    c(metadata['prequery_plan_sha256'] == _sha(_raw(source, _REC + 'PREQUERY.json'))
+      and metadata['prequery_execution_sha256'] == frozen['prequery_execution_sha256']
+      == _sha(_raw(source, _REC + 'PREQUERY_EXECUTION.json'))
+      and frozen['metadata_curation_sha256'] == _sha(_raw(source, _REC + 'METADATA_CURATION.json')),
+      'metadata.source_receipt_bindings')
+    c(frozen['pool'] == metadata['pool'] and len(frozen['pool']) == 7
+      and plan['requested_roles'] == frozen['requested_roles'] == execution['requested_roles'] == 2,
+      'metadata.seven_frozen_candidates_two_requested_roles')
+    c(execution['repository_universe_fixed_before_github_queries'] == universe
+      and execution['source_commit'] == 'a7d03cf43227fcdd40779e8a8aef8a2bb163f95d'
+      and execution['state'] == 'PREQUERY_COMMITTED_BEFORE_QUERIES'
+      and execution['target_query_count_before_receipt'] == 0, 'metadata.prequery_lineage')
+    for key in ('plan', 'code', 'gate_descriptor'):
+        desc = execution[key]
+        c(_sha(_raw(source, desc['path'])) == desc['sha256'], 'metadata.prequery_descriptor', kind=key)
+    c(metadata['costs']['native_calls'] == metadata['costs']['collection_calls'] == 0
+      and metadata['costs']['metadata_api_calls'] == 137
+      and metadata['costs']['metadata_budget_seconds'] == plan['metadata_seconds'] == 900,
+      'metadata.cost_scope')
+    c(plan['screening_budget'] == frozen['screening_budget'] == execution['screening_budget']
+      and frozen['screening_budget']['maximum_cases'] == 9
+      and frozen['screening_budget']['maximum_native_executions_per_case'] == 2
+      and frozen['screening_budget']['total_screening_wall_seconds'] == 7200,
+      'metadata.unchanged_screening_budget')
+    receipts = []; expected_receipts = {}; selected = []; candidate_count = scans = file_count = 0
+    inversions = []
+    for repository in metadata['repositories']:
+        repo = repository['repo']; candidates = repository['candidates']; candidate_count += len(candidates)
+        c(len(candidates) == repository['closed_pr_count'] == 100
+          and [row['rank_within_repository'] for row in candidates] == list(range(1, 101))
+          and len({row['number'] for row in candidates}) == 100, 'metadata.repository100_rows', repository=repo)
+        c({k: repository['closed_pr_window'][k] for k in ('page', 'per_page', 'sort', 'direction')}
+          == {'page': 1, 'per_page': 100, 'sort': 'updated', 'direction': 'desc'},
+          'metadata.closed_pr_window', repository=repo)
+        receipts.extend(repository['query_coverage'])
+        expected_receipts['repos/' + repo + '/pulls?state=closed&sort=updated&direction=desc&per_page=100&page=1'] = ('closed_pr_list', 100)
+        qualifying = []
+        for left, right in zip(candidates, candidates[1:]):
+            if left['updated_at'] < right['updated_at']:
+                inversions.append((repo, left['number'], right['number']))
+        for row in candidates:
+            c(set(row['base']) == set(row['head']) == {'sha'}, 'metadata.base_head_are_metadata_only', repository=repo, pr=row['number'])
+            reasons = []
+            if not row['merged_at']:
+                reasons.append('NOT_MERGED')
+            if not (re.match(r'^fix', row['title'], re.I) or any('bug' in label.lower() for label in row['labels'])):
+                reasons.append('TITLE_NOT_FIX_AND_NO_BUG_LABEL')
+            if not reasons:
+                scans += 1; files = row['files']; file_count += len(files)
+                c(len({item['filename'] for item in files}) == len(files)
+                  and all(set(item) == {'filename', 'status', 'additions', 'deletions', 'changes', 'sha'}
+                          and all(type(item[k]) is int and item[k] >= 0 for k in ('additions', 'deletions', 'changes'))
+                          and item['changes'] == item['additions'] + item['deletions'] for item in files),
+                  'metadata.changed_file_projection_stats', repository=repo, pr=row['number'])
+                pagination = row['file_pagination']
+                c(pagination['closed'] is True and pagination['pages_requested'] == 1
+                  and pagination['entries_returned'] == len(files) < 100,
+                  'metadata.one_closed_file_page', repository=repo, pr=row['number'])
+                expected_receipts[f'repos/{repo}/pulls/{row["number"]}/files?per_page=100&page=1'] = ('changed_file_pages', len(files))
+                if any(item['status'] in ('renamed', 'removed') for item in files):
+                    reasons.append('RENAMED_OR_REMOVED_CHANGED_FILE')
+                tests = [item for item in files if _test_file(item['filename'])]
+                production = [item for item in files if item['filename'].endswith('.py') and not _test_file(item['filename'])]
+                additions = sum(item['additions'] for item in production)
+                deletions = sum(item['deletions'] for item in production)
+                stats = {'test_py_files': len(tests), 'production_py_files': len(production),
+                         'production_additions': additions, 'production_deletions': deletions}
+                c(row['metadata_stats'] == stats, 'metadata.recomputed_file_classifier', repository=repo, pr=row['number'])
+                if not tests: reasons.append('NO_CHANGED_TEST_PY')
+                if not production: reasons.append('NO_CHANGED_PRODUCTION_PY')
+                if not 1 <= deletions <= 4: reasons.append('PRODUCTION_DELETIONS_OUTSIDE_1_TO_4')
+                if additions > 6: reasons.append('PRODUCTION_ADDITIONS_ABOVE_6')
+                if not reasons and any(item['status'] != 'modified' for item in production):
+                    reasons.append('PRODUCTION_PY_NOT_ALL_PREEXISTING_MODIFIED')
+            else:
+                c(not any(k in row for k in ('files', 'metadata_stats', 'file_pagination')),
+                  'metadata.no_scan_after_cheap_refusal', repository=repo, pr=row['number'])
+            c(row['reasons'] == reasons and row['status'] == (
+                'REJECTED_METADATA_PREDICATES' if reasons else 'QUALIFIES_METADATA_ONLY'),
+                'metadata.recomputed_predicate_status_reasons', repository=repo, pr=row['number'])
+            if not reasons:
+                qualifying.append(row)
+                c(row['selection_disposition'] == (
+                    'FIRST_METADATA_ELIGIBLE_IN_FROZEN_REPOSITORY_ORDER' if len(qualifying) == 1
+                    else 'NOT_FIRST_ELIGIBLE_PR_IN_FIXED_ORDER'), 'metadata.ordered_qualifier_disposition', repository=repo, pr=row['number'])
+        c(repository['qualifying_prs'] == [row['number'] for row in qualifying]
+          and repository['status'] == ('QUALIFYING_METADATA_CANDIDATE' if qualifying else 'NO_QUALIFYING_CANDIDATE'),
+          'metadata.repository_selection', repository=repo)
+        if qualifying:
+            c(repository['first_qualifying_pr'] == qualifying[0]['number'], 'metadata.first_qualifier', repository=repo)
+            selected.append((repo, qualifying[0]))
+    c(candidate_count == 900 and scans == 100 and len(selected) == 7 and len(inversions) == 1,
+      'metadata.recomputed900_rows100_scans7_selected_one_recorded_order_inversion')
+    c([spec['repo'] for spec in frozen['pool']] == [repo for repo, _ in selected], 'metadata.frozen_pool_repository_order')
+    for spec, (repo, first) in zip(frozen['pool'], selected):
+        expected = {'repo': repo, 'pr': first['number'], 'metadata_url': first['url'],
+                    'base_commit': first['base']['sha'], 'head_commit': first['head']['sha'],
+                    'merge_commit_sha': first['merge_commit_sha'], 'files': first['files'],
+                    'metadata_stats': first['metadata_stats'],
+                    'selection_status': 'FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK'}
+        c({key: spec[key] for key in expected} == expected, 'metadata.exact_frozen_first_qualifier', repository=repo)
+        receipts.extend(spec['tree_query_coverage'])
+        for side in ('base', 'head'):
+            binding = spec['git_metadata_binding'][side]
+            c(binding['commit_sha'] == spec[side + '_commit'] and binding['tree_truncated'] is False
+              and set(binding['changed_paths']) == {row['filename'] for row in spec['files']},
+              'metadata.commit_tree_changed_path_bindings', repository=repo, side=side)
+            expected_receipts[f'repos/{repo}/git/commits/{spec[side + "_commit"]}'] = ('git_commit_metadata', None)
+            expected_receipts[f'repos/{repo}/git/trees/{binding["tree_sha"]}?recursive=1'] = ('git_tree_metadata', None)
+            if side == 'head':
+                c(all(binding['changed_paths'][row['filename']] is not None
+                      and binding['changed_paths'][row['filename']]['path'] == row['filename']
+                      and binding['changed_paths'][row['filename']]['sha'] == row['sha'] for row in spec['files']),
+                  'metadata.changed_blob_ids_match_file_rows', repository=repo)
+    c(len(receipts) == len(expected_receipts) == 137
+      and {row['endpoint'] for row in receipts} == set(expected_receipts), 'metadata.exact137_receipt_endpoints')
+    timeline = []
+    for receipt in receipts:
+        kind, entries = expected_receipts[receipt['endpoint']]
+        c(receipt['projection'] == plan['api_allowlist'][kind] and receipt['status'] == 'OK'
+          and receipt['returncode'] == 0 and _finite(receipt['wall_seconds']) and receipt['wall_seconds'] <= 60,
+          'metadata.allowlisted_successful_receipt', endpoint=receipt['endpoint'])
+        if entries is not None:
+            c(receipt['entries_returned'] == entries, 'metadata.receipt_row_count', endpoint=receipt['endpoint'])
+        start = datetime.datetime.fromisoformat(receipt['requested_at_utc'])
+        timeline.extend([(start, 1), (start + datetime.timedelta(seconds=receipt['wall_seconds']), -1)])
+    concurrent = peak = 0
+    for _, delta in sorted(timeline):
+        concurrent += delta; peak = max(peak, concurrent)
+    span = (max(t for t, _ in timeline) - min(t for t, _ in timeline)).total_seconds()
+    c(peak <= 3 and span <= metadata['costs']['metadata_wall_seconds']
+      <= metadata['costs']['total_curation_wall_seconds'] <= plan['metadata_seconds'], 'metadata.receipt_timing_budget')
+    raw_cost = _read(source, _REC + 'metadata-query-evidence/COSTS.json')
+    c(raw_cost['returncode'] == 0 and _finite(raw_cost['seconds'])
+      and raw_cost['seconds'] >= metadata['costs']['total_curation_wall_seconds'], 'metadata.controller_cost_receipt')
+    return plan, metadata, frozen, dict(repositories=9, candidate_rows=candidate_count,
+                                      file_scans=scans, changed_file_rows=file_count, receipts=len(receipts))
+
+
+def _screening(source, payload, c, metadata, pool):
+    authority_raw = _raw(source, _REC + 'SCREENING_AUTHORITY.json')
+    authority = _json(authority_raw, 'screening authority')
+    ledger = _read(payload, 'runner/RUN_LEDGER.json')
+    public = _read(payload, 'runner/PUBLIC_SCREENING_SUMMARY.json')
+    public_cost = _read(payload, 'runner/PUBLIC_COST_SUMMARY.json')
+    meter = _read(payload, 'sealed/SCREENING_METER.json')
+    runtime_paths = _bound(source, payload, ledger['runtimes'], c, 'runner.runtime_paths')
+    c(ledger['schema'] == 'UDM_V41_INDEPENDENT_ONCE_ONLY_RUNNER_LEDGER'
+      and ledger['committed_head'] == meter['source_commit'] == public_cost['source_commit'] == _SCREENING_COMMIT
+      and ledger['count'] == public['pool_size'] == 7 and ledger['no_retries_or_rescreens'] is True,
+      'runner.identity_once_only')
+    c(_sha(_raw(payload, 'runner/run_ordered_screening.py'))
+      == _read(payload, 'runner/START_PREPARATION.json')['runner_sha256'], 'runner.prelaunch_code_hash')
+    c(ledger['authority'] == public['authority'] and ledger['authority']['sha256']
+      == meter['authority_sha256'] == _sha(authority_raw), 'runner.authority_hash')
+    c(authority['pool']['sha256'] == _sha(_raw(source, _REC + 'FROZEN_POOL.json'))
+      and authority['prequery']['sha256'] == _sha(_raw(source, _REC + 'PREQUERY_EXECUTION.json')),
+      'runner.authority_pool_prequery_bindings')
+    c(_read(source, _REC + 'SCREENING_METER.json') == meter, 'runner.source_meter_copy')
+    c(meter['schema'] == 'UDM_ORDERED_SCREENING_METER_V3' and meter['pending'] is None
+      and meter['accounting_complete'] is True and len(meter['cases']) == 7
+      and 'sealed/SCREENING_METER.lock' not in payload, 'runner.complete_ordered_meter')
+    c(public['all_pool_members_attempted_once'] is True
+      and public['search_or_policy_outcomes_accessed'] is False and public['learner_future_source_accessed'] is False,
+      'runner.bounded_exposure_attestations')
+    c({name for name in payload if re.fullmatch(r'requests/request-\d+\.json', name)}
+      == {f'requests/request-{index:03}.json' for index in range(7)}, 'runner.exact_seven_request_files')
+    rows = []; refusals = []; envelopes = []; first_obstruction = None
+    for index, spec in enumerate(pool['pool']):
+        label = f'case-{index:03}'; root = 'sealed/' + label + '/'
+        report_raw = _raw(payload, root + 'SCREENING_CASE.json'); report = _json(report_raw, label)
+        envelope_raw = _raw(payload, root + 'SCREENING_ENVELOPE.json'); envelope = _json(envelope_raw, label + ' envelope')
+        setup = _read(payload, root + 'source-environment/admission-v3.json')
+        case = meter['cases'][index]; retained = public['cases'][index]
+        request = _bound(source, payload, ledger['requests'][index], c, label + '.request')
+        c(request == {'pool_index': index, 'spec': spec, 'protocol_binding': _sha(authority_raw)}, label + '.exact_request')
+        c(spec['repo'] == _REFUSALS[index][0] == report['repository'] == envelope['repository']
+          and report['spec_sha256'] == envelope['spec_sha256'] == case['spec_sha256'] == _fp(spec)
+          and retained['index'] == case['index'] == index, label + '.spec_identity')
+        c(report['setup'] == setup and setup['status'] == report['status'] == _REFUSALS[index][1]
+          and setup['reason'] == _REFUSALS[index][2], label + '.exact_expected_refusal')
+        c(report['schema'] == 'UDM_ADMISSION_ONLY_CASE_V3' and report['eligible'] is False
+          and report['accounting_complete'] is True and case['accounting_complete'] is True
+          and report['costs'] == report['partial_native_reports'] == []
+          and report['controller_attempts'] == case['costs']
+          == {'collection_calls': 0, 'native_calls': 0, 'subprocess_attempts': 0}
+          and setup['runtime'] is None and setup['setup'] is None, label + '.zero_worker_attempts_no_admission')
+        c(case['report'] == envelope['sealed_report'] and case['report']['sha256'] == _sha(report_raw)
+          and _bound(source, payload, case['report'], c, label + '.report') == report
+          and retained['envelope'] == envelope and retained['envelope_sha256'] == _sha(envelope_raw),
+          label + '.case_envelope_public_bindings')
+        expected_envelope = {
+            'schema': 'UDM_SEALED_ADMISSION_ENVELOPE_V3', 'repository': spec['repo'],
+            'spec_sha256': _fp(spec), 'status': 'UNKNOWN_ADMISSION_SCREENING', 'eligible': False,
+            'screening_mode': 'ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH',
+            'sealed_report': case['report'], 'costs': {'native_calls': 0, 'collection_calls': 0},
+            'total_wall_seconds': report['total_wall_seconds']}
+        c(envelope == expected_envelope and retained['controller_returncode'] == 0
+          and _json(_absolute(source, payload, retained['controller_log']), label + ' controller log')
+          == {'status': 'UNKNOWN_ADMISSION_SCREENING', 'verdicts': {}}, label + '.public_envelope_exact')
+        forbidden = ('collection/', 'independent-collection/', 'baseline/', 'independent-baseline/')
+        c(not any(name.startswith(root + prefix) for name in payload for prefix in forbidden)
+          and not any(name.startswith(root) and name.endswith('/checked-report.json') for name in payload),
+          label + '.no_retained_native_or_collection_packets')
+        inventory = _read(payload, 'sealed/' + label + '.RUNTIME_INVENTORY.json')
+        c(_fp(inventory) == meter['runtime_inventory_sha256'] and inventory['runtime_paths_sha256'] == _fp(runtime_paths)
+          and {name: row['interpreter'] for name, row in inventory['runtimes'].items()} == runtime_paths,
+          label + '.runtime_inventory_binding')
+        phases = setup['costs']
+        c([row['phase'] for row in phases] == ['external-runtime-preflight', 'metadata-init', 'metadata-fetch', 'metadata-checkout']
+          + (['independent-metadata-selection'] if index in (3, 4, 6) else []), label + '.setup_phase_order')
+        for phase in phases:
+            c(_finite(phase['seconds']), label + '.finite_phase_cost', phase=phase['phase'])
+            if 'log' in phase:
+                c(_sha(_absolute(source, payload, phase['log'])) == phase['log_sha256']
+                  and phase['exit_code'] == 0 and phase['status'] == 'PASS', label + '.transport_log', phase=phase['phase'])
+            else:
+                c(phase['native_calls'] == 0, label + '.nonnative_phase', phase=phase['phase'])
+        source_path = report['retained_raw_directory'] + '/source-environment/metadata-source'
+        for phase, argv in (
+            ('metadata-init', ['git', 'init', '-q', source_path]),
+            ('metadata-fetch', ['git', '-C', source_path, 'fetch', '--depth=1', '--no-tags',
+                                'https://github.com/' + spec['repo'] + '.git', spec['base_commit']]),
+            ('metadata-checkout', ['git', '-C', source_path, 'checkout', '-q', '--detach', spec['base_commit']])):
+            c(next(row['argv'] for row in phases if row['phase'] == phase) == argv,
+              label + '.base_only_source_transport', phase=phase)
+        c(sum(row['seconds'] for row in phases) <= setup['total_wall_seconds'] <= report['total_wall_seconds']
+          <= retained['controller_wall_seconds'] and all(_finite(retained[key]) for key in
+              ('controller_wall_seconds', 'child_user_cpu_seconds', 'child_system_cpu_seconds', 'child_maxrss_kib_lifetime_nonadditive')),
+          label + '.finite_nested_costs')
+        source_prefix = root + 'source-environment/metadata-source/'
+        entries = _git_index(_raw(payload, source_prefix + '.git/index'))
+        unsupported = [entry for entry in entries if entry['mode'] not in ('100644', '100755')]
+        if index in (0, 1, 2, 5):
+            c(unsupported and setup['selection'] is None and setup['source_metadata_identity'] is None,
+              label + '.tracked_mode_refusal_precedes_metadata')
+            if index == 0:
+                c(unsupported[0]['path'] == 'README.rst' and unsupported[0]['mode'] == '120000',
+                  'first_obstruction.wcwidth_readme_symlink_from_raw_git_index')
+                first_obstruction = {'case': 0, 'repository': spec['repo'], 'stage': 'decisive_native_verify._snapshot',
+                                     'first_path': 'README.rst', 'mode': '120000', 'reason': setup['reason'],
+                                     'scope': 'Preserved V3 source snapshot grammar refusal; native incompatibility was not established.'}
+        else:
+            c(not unsupported, label + '.metadata_refusal_source_is_regular')
+            manifest = []; files = {}
+            for entry in entries:
+                raw = _raw(payload, source_prefix + entry['path'])
+                blob = hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+                c(blob == entry['blob'], label + '.base_file_matches_index_blob', path=entry['path'])
+                files[entry['path']] = _sha(raw)
+                manifest.append(dict(entry, sha256=_sha(raw)))
+            selection = setup['selection']; constraints = selection['constraints']
+            c(selection['status'] == constraints['status'] == 'UNKNOWN'
+              and selection['selected_profile'] is None and selection['reason'] == setup['reason']
+              and selection['catalog_sha256'] == _fp(_read(source, _REC + 'ENVIRONMENT_CATALOG.json'))
+              and selection['selector_sha256'] == _sha(_raw(source, _ROOT + 'native_environment_selection_v41.py')),
+              label + '.selection_refusal_catalog_selector_binding')
+            c(constraints['source_sha256'] == _fp(dict(sorted(files.items())))
+              and all(files.get(name) == digest for name, digest in constraints['metadata_sha256'].items())
+              and setup['source_metadata_identity']['tracked_tree_sha256'] == _fp(manifest)
+              and setup['source_metadata_identity']['file_count'] == len(files), label + '.all_base_bytes_inventory_binding')
+        envelopes.append(envelope)
+        rows.append({'index': index, 'repository': spec['repo'], 'phase_costs': phases,
+                     'sum_setup_phase_seconds': sum(row['seconds'] for row in phases),
+                     'setup_wall_seconds': setup['total_wall_seconds'], 'case_wall_seconds': report['total_wall_seconds'],
+                     'controller_wall_seconds': retained['controller_wall_seconds'],
+                     'controller_child_user_seconds': retained['child_user_cpu_seconds'],
+                     'controller_child_system_seconds': retained['child_system_cpu_seconds'],
+                     'child_maxrss_kib_lifetime_nonadditive': retained['child_maxrss_kib_lifetime_nonadditive'],
+                     'native_calls': 0, 'collection_calls': 0, 'worker_subprocess_attempts': 0})
+        refusals.append({'index': index, 'repository': spec['repo'], 'status': report['status'],
+                         'reason': setup['reason'], 'native_calls': 0, 'collection_calls': 0, 'eligible': False,
+                         'setup_wall_seconds': setup['total_wall_seconds'], 'case_wall_seconds': report['total_wall_seconds']})
+    c(envelopes == _read(source, _REC + 'SCREENING_ENVELOPES.json')
+      == _read(payload, 'runner/PUBLIC_ENVELOPES.json')
+      == _read(payload, 'audit/raw-audit/SCREENING_ENVELOPES_EXACT.json'), 'runner.all_public_envelope_copies')
+    c(refusals == _read(payload, 'audit/raw-audit/REFUSALS_EXACT.json'), 'runner.recomputed_seven_refusals')
+    costs = {'native_calls': 0, 'collection_calls': 0, 'metadata_api_calls': 137,
+             'metadata_total_curation_wall_seconds': metadata['costs']['total_curation_wall_seconds'],
+             'sum_setup_phase_seconds': sum(row['sum_setup_phase_seconds'] for row in rows),
+             'sum_setup_wall_seconds': sum(row['setup_wall_seconds'] for row in rows),
+             'sum_case_wall_seconds': sum(row['case_wall_seconds'] for row in rows),
+             'sum_controller_wall_seconds': sum(row['controller_wall_seconds'] for row in rows),
+             'controller_child_user_seconds': sum(row['controller_child_user_seconds'] for row in rows),
+             'controller_child_system_seconds': sum(row['controller_child_system_seconds'] for row in rows),
+             'whole_screening_controller_session_interval_seconds': public['finished_at_unix'] - ledger['started_at_unix'],
+             'ordered_meter_interval_seconds_to_summary_finish': public['finished_at_unix'] - meter['started_at_unix'],
+             'child_maxrss_kib_lifetime_nonadditive': max(row['child_maxrss_kib_lifetime_nonadditive'] for row in rows)}
+    retained_costs = _read(payload, 'audit/raw-audit/COSTS_BY_CASE.json')
+    c(rows == retained_costs['cases'] and costs == retained_costs['totals'], 'runner.recomputed_all_seven_cost_records')
+    c(meter['native_calls'] == meter['collection_calls'] == public_cost['native_calls'] == public_cost['collection_calls'] == 0
+      and public_cost['eligible'] == 0 and public_cost['public_status_counts'] == {'UNKNOWN_ADMISSION_SCREENING': 7}
+      and public_cost['no_retries_or_substitutions'] is True and public_cost['completed_once_fixed_order'] is True,
+      'runner.zero_native_collection_no_admit_terminal_summary')
+    c(public_cost['sum_case_wall_seconds'] == public['sum_case_wall_seconds'] == costs['sum_case_wall_seconds']
+      and public_cost['sum_controller_wall_seconds'] == costs['sum_controller_wall_seconds']
+      and public_cost['sum_child_user_cpu_seconds'] == costs['controller_child_user_seconds']
+      and public_cost['sum_child_system_cpu_seconds'] == costs['controller_child_system_seconds']
+      and 0 < costs['whole_screening_controller_session_interval_seconds'] < 7200,
+      'runner.public_totals_and_screening_budget')
+    return costs, refusals, envelopes, first_obstruction
+
+
+def _audit_screening(source, payload, check):
+    c = _Checks(check)
+    expectation_raw = Path(__file__).with_name('SCREENING_EXPECTATIONS.json').read_bytes()
+    if _sha(expectation_raw) != _EXPECTATIONS_SHA256:
+        raise ValueError('independently frozen screening expectations changed')
+    expectation = _json(expectation_raw, 'frozen expectations')
+    c(set(payload) == set(expectation['payload_regular_files']) and len(payload) == 3069,
+      'frozen_payload_regular_member_set')
+    bad = [name for name, row in expectation['payload_regular_files'].items()
+           if name not in payload or len(_raw(payload, name)) != row['bytes'] or _sha(payload[name]) != row['sha256']]
+    c(not bad, 'frozen_payload_regular_bytes', mismatches=bad[:10])
+    for name, digest in expectation['source_document_sha256'].items():
+        c(_sha(_raw(source, name)) == digest, 'frozen_source_document', path=name)
+    full = _read(payload, 'audit/metadata-preaudit/FULL_SOURCE_IDENTITY.json')
+    c(full['schema'] == 'UDM_V41_FULL_COMMITTED_SOURCE_IDENTITY_AUDIT'
+      and full['source_commit'] == _SCREENING_COMMIT and full['file_count'] == len(full['files']) == 1694
+      and full['qualified_source_files_preserved'] == 1666, 'full1694_source_inventory_scope')
+    inventory = {row['path']: {'sha256': row['sha256'], 'bytes': row['size'], 'git_blob_sha1': row['git_blob_sha1']}
+                 for row in full['files']}
+    c(inventory == expectation['audited_source_files'] and len(inventory) == 1694,
+      'full1694_source_inventory_matches_preartifact_expectations')
+    mismatches = []
+    for name, row in inventory.items():
+        raw = _raw(source, name)
+        blob = hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+        if len(raw) != row['bytes'] or _sha(raw) != row['sha256'] or blob != row['git_blob_sha1']:
+            mismatches.append(name)
+    c(not mismatches, 'full1694_source_bytes_equal_combined_current_closure', mismatches=mismatches[:10])
+    lineage = _read(payload, 'audit/metadata-preaudit/LINEAGE_PREAUDIT.json')
+    gate_rows = lineage['source_gate_files']
+    c(len(gate_rows) == 83 and [row['path'] for row in gate_rows] == expectation['environment_gate_files']
+      and [row['path'] for row in gate_rows[:70]] == expectation['qualification_gate_files'], 'gate70_environment83_inventory')
+    qualification = _read(source, _REC + 'CI_38954969411_RESULT.json')
+    c(qualification['source_commit'] == qualification['freeze']['source_commit'] == _QUALIFIED_COMMIT
+      and qualification['status'] == 'ADMISSION_ONLY_QUALIFIED', 'separate_qualified_source_authority')
+    for row in gate_rows:
+        digest = _sha(_raw(source, row['path']))
+        c(row['qualified_sha256'] == row['pool_committed_sha256'] == row['working_sha256']
+          == row['freeze_sha256'] == qualification['freeze']['files'][row['path']] == digest,
+          'gate_source_bytes_unchanged', path=row['path'])
+    for name in ('PREQUERY.json', 'PREQUERY_EXECUTION.json', 'FROZEN_POOL.json', 'METADATA_CURATION.json',
+                 'SCREENING_AUTHORITY.json', 'FRONTIER_PROTOCOL.json', 'ENVIRONMENT_GATE.json'):
+        c(_raw(source, _REC + name) == _raw(payload, 'audit/metadata-preaudit/committed/' + name),
+          'source_committed_metadata_copy', file=name)
+    plan, metadata, pool, metadata_counts = _metadata(source, payload, c)
+    costs, refusals, envelopes, first = _screening(source, payload, c, metadata, pool)
+    audit = _read(source, _REC + 'SCREENING_AUDIT.json')
+    c(audit == _read(source, _AUDIT + 'SCREENING_AUDIT.json'), 'independent_audit_source_copies')
+    summary = _read(source, _AUDIT + 'AUDIT_SUMMARY.json')
+    c(audit['schema'] == 'UDM_NATIVE_AUTHORITY_V41_INDEPENDENT_COMPLETE_SCREENING_AUDIT_V1'
+      and audit['status'] == 'PASS_ADMISSION_ONLY_SCREENING_AUDIT'
+      and audit['audited_commit'] == summary['source_commit'] == _SCREENING_COMMIT
+      and summary['schema'] == 'UDM_V41_INDEPENDENT_SCREENING_AUDIT_SUMMARY', 'audit_report_identity')
+    c(audit['pool_sha256'] == _sha(_raw(source, _REC + 'FROZEN_POOL.json'))
+      and audit['reports_sha256'] == _fp(envelopes)
+      and audit['eligibility_rule'] == 'PASS_NATIVE_OR_FAIL_NATIVE_IDENTICAL', 'audit_report_pool_envelope_hashes')
+    c(audit['costs'] == summary['costs'] == costs and summary['public_refusals'] == refusals
+      and audit['first_supported_obstruction'] == summary['first_supported_obstruction'] == first,
+      'audit_report_recomputed_costs_refusals_first_obstruction')
+    shortfall = _read(source, _REC + 'SCREENING_SHORTFALL.json')
+    terminal = {'requested_roles': 2, 'admitted': 0, 'refused': 7, 'selected_roles': [],
+                'retargeting_or_expanded_universe': False,
+                'unchanged_selection_obstruction': 'screening shortfall; no outcome-selected replacement permitted'}
+    c(audit['terminal_shortfall'] == summary['terminal_shortfall'] == terminal, 'audit_terminal_shortfall')
+    c(shortfall['schema'] == 'UDM_NATIVE_FRONTIER_SCREENING_SHORTFALL_V41'
+      and shortfall['status'] == 'UNKNOWN_NATIVE_OBLIGATION_NOT_ADMITTED'
+      and shortfall['pool_size'] == 7 and shortfall['admitted'] == 0 and shortfall['requested_roles'] == 2
+      and shortfall['native_calls'] == shortfall['collection_calls'] == 0
+      and shortfall['costs'] == costs and shortfall['first_supported_obstruction'] == first
+      and shortfall['verdicts'] == {f'G{i}': 'UNKNOWN' for i in range(2, 7)}
+      and set(shortfall['comparators'].values()) == {'NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED'}
+      and shortfall['source_code_changed_after_exposure'] is False, 'truthful_scientific_shortfall')
+    c(_read(source, _REC + 'FRONTIER_PROTOCOL.json')['state'] == 'PREPARED_NOT_FROZEN'
+      and shortfall['frozen_protocol_state_preserved'] is True and shortfall['role_selection_returncode'] == 1
+      and shortfall['original_error'] == 'ValueError: screening shortfall; no outcome-selected replacement permitted'
+      and _raw(source, _REC + 'FINALIZATION_REFUSAL.log').rstrip().endswith(shortfall['original_error'].encode()),
+      'frozen_protocol_and_finalization_refusal_preserved')
+    for field, expected in (('qualification_source_gate_files', 70), ('prospective_environment_gate_files', 83),
+                            ('full_owned_source_files', 1694), ('qualified_source_files_preserved', 1666),
+                            ('archive_regular_files', 3069), ('archive_symlinks', 5), ('archive_directories', 325)):
+        c(audit['verified_counts'][field] == summary['verified_counts'][field] == expected,
+          'audit_verified_count_statement', field=field)
+    c(audit['search_or_policy_outcomes_accessed'] is False and audit['learner_future_source_accessed'] is False
+      and audit['independent_screener'] is True and audit['all_screened_cases_and_costs_retained'] is True,
+      'audit_bounded_role_attestations')
+    c(audit['native_obligations'] == {'baseline': 'NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED',
+        'collection_calls': 0, 'native_calls': 0, 'ledger_execution': 'NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED',
+        'matched_agent_execution': 'NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED',
+        'comparative_win': 'UNKNOWN_NOT_ESTABLISHED'}, 'audit_no_native_or_comparative_promotion')
+    for name, desc in audit['subreports'].items():
+        raw = _raw(source, _AUDIT + desc['path'])
+        c(_sha(raw) == desc['sha256'] and len(raw) == desc['size_bytes'], 'audit_subreport_descriptor', file=name)
+        if 'audit/' + name in payload:
+            c(_raw(payload, 'audit/' + name) == raw, 'audit_subreport_payload_copy', file=name)
+    portable = audit['portable_summary']
+    c(portable['sha256'] == _sha(_raw(source, _AUDIT + portable['path']))
+      and portable['size_bytes'] == len(_raw(source, _AUDIT + portable['path'])), 'audit_portable_summary_descriptor')
+    c(audit['limitations'] == summary['limitations'] and len(audit['limitations']) >= 20
+      and 'worker counters' in audit['cost_scope'] and 'UNKNOWN' in audit['cost_scope'], 'truthful_report_limitations_retained')
+    return c.report(metadata=metadata_counts, screened=7, admitted=0, refused=7, native_calls=0,
+                    collection_calls=0, audited_source_files=1694, qualification_gate_files=70,
+                    environment_gate_files=83, first_obstruction=first, costs=costs,
+                    expectations_sha256=_EXPECTATIONS_SHA256, limits=[
+                        'Raw retained rows/receipts establish local consistency, not remote API authenticity, '
+                        'a global access log, first network access timing, or global absence of omitted attempts.',
+                        'Zero native/collection counts are controller-local and supported by the observed early refusals; '
+                        'they do not count Git transport, interpreter identity checks, or all operating-system subprocesses.',
+                        'This audit hashes raw base files and parses retained indexes but does not rerun a selector, '
+                        'target interpreter, native collection, learner, comparator, resolver, or original auditor code.',
+                        'All-index pre-screening immutability, runtime import behavior, untouchedness, comparative win, '
+                        'and G2-G6 remain unestablished. The enclosing auditor separately verifies archive links and source delivery.',
+                    ])
+
+
+def audit_screening(source: dict[str, bytes], payload: dict[str, bytes], check) -> dict:
+    """Check exact retained metadata, seven refusals/costs, source, and scope."""
+    try:
+        return _audit_screening(source, payload, check)
+    except (OSError, KeyError, TypeError, IndexError, AttributeError, UnicodeError,
+            struct.error, StopIteration) as error:
+        raise ValueError('screening evidence missing or malformed: ' + str(error)) from error

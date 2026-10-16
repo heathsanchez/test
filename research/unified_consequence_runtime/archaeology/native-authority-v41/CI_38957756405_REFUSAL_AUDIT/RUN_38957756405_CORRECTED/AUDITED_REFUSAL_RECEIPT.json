@@ -1,0 +1,136 @@
+{
+  "admitted": 0,
+  "artifact_code_or_original_project_executed": false,
+  "audit_git_network_native_collection_calls": 0,
+  "audit_sha256": "1823d9b3a48019e60efb43fec0777b020f18ff20e0c1f43d093071ce9c2ef4c6",
+  "auditor_correction": {
+    "artifact_or_expected_records_changed": false,
+    "classification": "AUDITOR_TEXT_PREDICATE_BUG",
+    "path": "/workspace/qualification/native-authority-v41-scientific-refusal-audit/AUDITOR_CORRECTION.json",
+    "sha256": "b9d8cec3f6b8ee45d74b8278c4cc835160356d7b4c499335fefd46050c41bf04"
+  },
+  "checks": 7949,
+  "closed_PR_rows": 900,
+  "collection_calls": 0,
+  "costs": {
+    "audit_collection_calls": 0,
+    "audit_git_calls": 0,
+    "audit_native_calls": 0,
+    "audit_network_calls": 0,
+    "corrected_auditor_seconds": 3.516238305001025,
+    "full_model_tool_engineering_lifecycle_cost": "UNKNOWN",
+    "initial_auditor_seconds": 3.4988639629991667,
+    "metadata_api_calls": 137,
+    "nested_wall_times": "Nonadditive; keep original distinct cost scopes.",
+    "retained_screening_costs": {
+      "child_maxrss_kib_lifetime_nonadditive": 191448,
+      "collection_calls": 0,
+      "controller_child_system_seconds": 12.075171,
+      "controller_child_user_seconds": 35.619312,
+      "metadata_api_calls": 137,
+      "metadata_total_curation_wall_seconds": 39.32762100800028,
+      "native_calls": 0,
+      "ordered_meter_interval_seconds_to_summary_finish": 46.388338804244995,
+      "sum_case_wall_seconds": 15.939176056999713,
+      "sum_controller_wall_seconds": 51.76277536399721,
+      "sum_setup_phase_seconds": 14.368250622996129,
+      "sum_setup_wall_seconds": 15.937476695997248,
+      "whole_screening_controller_session_interval_seconds": 51.76726460456848
+    },
+    "schema": "UDM_V41_SCIENTIFIC_REFUSAL_AUDIT_COSTS_V1",
+    "scientific_CI_collection_calls": 0,
+    "scientific_CI_native_calls": 0,
+    "screening_collection_calls": 0,
+    "screening_native_calls": 0
+  },
+  "failed_checks": [],
+  "first_supported_screening_obstruction": {
+    "meaning": "Preserved source snapshot grammar refusal; native incompatibility not established.",
+    "mode": "120000",
+    "path": "README.rst",
+    "repository": "jquast/wcwidth"
+  },
+  "initial_failed_audit": {
+    "failures": [
+      {
+        "check": "screening.truthful_report_limitations_retained"
+      }
+    ],
+    "path": "/workspace/qualification/native-authority-v41-scientific-refusal-audit/RUN_38957756405_INITIAL/AUDIT.json",
+    "sha256": "d09c42ac694298052cdfece6bf7c59f971547592feb86b5ee424c43fd4783643"
+  },
+  "limits": [
+    "The scientific artifact alone carries a filtered source pack. Complete c553 source closure is established only by combining both independently hashed artifact packs; no standalone-full-source claim is made.",
+    "Readiness stopped before runtime bootstrap, external method-source checkouts, native search, baseline, ledger, coding-agent or comparator execution. Three missing original method object errors are expected and remain visible; this is a partial original-method artifact.",
+    "Native/collection zeros describe retained controller-local refusal records and skipped CI stages, not a global operating-system/network access audit.",
+    "The retained screening packet audit checks metadata/refusal/source/runtime consistency and raw member integrity; it does not establish admitted native task behavior, learning, comparative benefit or G2-G6.",
+    "No original project/controller/selector or artifact code was imported or executed by this audit. No Git, network, native or collection experiment was run.",
+    "Raw retained rows/receipts establish local consistency, not remote API authenticity, a global access log, first network access timing, or global absence of omitted attempts.",
+    "Zero native/collection counts are controller-local and supported by the observed early refusals; they do not count Git transport, interpreter identity checks, or all operating-system subprocesses.",
+    "This audit hashes raw base files and parses retained indexes but does not rerun a selector, target interpreter, native collection, learner, comparator, resolver, or original auditor code.",
+    "All-index pre-screening immutability, runtime import behavior, untouchedness, comparative win, and G2-G6 remain unestablished. The enclosing auditor separately verifies archive links and source delivery."
+  ],
+  "metadata_api_calls": 137,
+  "native_baseline_ledger_agent_comparators": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+  "native_calls": 0,
+  "original_method_artifact": "PARTIAL_ZERO_OBJECTS_THREE_EXPLICIT_SOURCE_OBJECT_ERRORS",
+  "readiness_status": "UNKNOWN_PROTOCOL_NOT_READY",
+  "refused": 7,
+  "repositories": 9,
+  "schema": "UDM_V41_AUDITED_SCIENTIFIC_REFUSAL_RECEIPT_V1",
+  "scientific_CI_run_id": 38957756405,
+  "scientific_artifact_id": 12070859125,
+  "scientific_artifact_sha256": "6091bc11fc3e8f64121bba69d3052a7028689d5d53b604d10dcf90470a2c7b12",
+  "scientific_artifact_size_bytes": 161119112,
+  "scientific_outcome": "RED_NO_ADMITTED_NATIVE_TASK",
+  "screened": 7,
+  "screening_cost_records": 7,
+  "screening_packet": {
+    "archive_bytes": 33641525,
+    "archive_sha256": "bafe5811446ba485fee1b8c6b0ccbb04d2fc645cde841a2a936cad2dc1e100e9",
+    "member_types": {
+      "directory": 325,
+      "file": 3069,
+      "symlink": 5
+    },
+    "members": 3399,
+    "symlinks_traversed_or_extracted": false
+  },
+  "smallest_obstruction": "ValueError: committed FRONTIER_PROTOCOL.json is not ready for native execution",
+  "source_closure": {
+    "combined_full_closure": true,
+    "combined_full_files": 2156,
+    "earlier_admission_full_files": 1666,
+    "prior_source_preservation": {
+      "admission": {
+        "changed_or_missing": [],
+        "commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac",
+        "files": 1666,
+        "inventory_sha256": "8c511af3048e6948dadc14d6bae3a3158c0deeab589b20a555a423e00da0bab0"
+      },
+      "base": {
+        "changed_or_missing": [],
+        "commit": "7edf1018342b50f73ca226de3e0d0b7acdb31647",
+        "files": 1594,
+        "inventory_sha256": "1b9fa4f54337be4856c404b72b1974a905e1ab318094220c78c74f5fb4c83199"
+      },
+      "v3": {
+        "changed_or_missing": [],
+        "commit": "95029db0d0b2122836bee7268299461bfbdb5a66",
+        "files": 1406,
+        "inventory_sha256": "e74338882d6f2b1887eb9f6974adfa0661e0cd14bd91a3ecd47ffb9a8b34ddb9"
+      }
+    },
+    "scientific_filtered_files": 1647,
+    "scientific_standalone_omitted_prior_files": 509
+  },
+  "source_commit": "c55350361a443875a23751a3ffec312497819484",
+  "status": "PASS_EXPECTED_SCIENTIFIC_REFUSAL_EVIDENCE_AUDIT",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}
