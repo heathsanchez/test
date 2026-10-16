@@ -1,0 +1,77 @@
+{
+  "admission_run": 38944901241,
+  "admission_source": "a6521e27dcabdf69cf8e6ecd283432730d6aa846",
+  "canonical_before_body_chars": 2197640,
+  "checkpoint": {
+    "id": "3fb3e523d7ab81ba9da6c33f598239a2",
+    "parent_id": "3e43e523d7ab81a5bbc9e405e81aba6c",
+    "url": "https://app.notion.com/p/3fb3e523d7ab81ba9da6c33f598239a2"
+  },
+  "checkpoints_before_prepend_body_chars": 923958,
+  "final_report_commit": "c2bb0889bbe7de474664c37cb2c507fc4664480c",
+  "old_v3_checkpoint_modified": false,
+  "prior_page_bodies_preserved": true,
+  "publication_boundary": "Only related V4 result and readback receipt retained in Git. Full unrelated canonical/index page bodies were not exported.",
+  "readback": [
+    {
+      "bodyChars": 2199910,
+      "containsCheckpoint": true,
+      "containsFinalReport": true,
+      "containsGate": true,
+      "containsScientificRed": true,
+      "isError": false,
+      "page": 0,
+      "previousBodyPreserved": true
+    },
+    {
+      "bodyChars": 926318,
+      "containsCheckpoint": true,
+      "containsFinalReport": true,
+      "containsGate": true,
+      "containsScientificRed": true,
+      "isError": false,
+      "page": 1,
+      "previousBodyPreserved": true
+    },
+    {
+      "bodyChars": 6277,
+      "containsCheckpoint": false,
+      "containsFinalReport": true,
+      "containsGate": true,
+      "containsScientificRed": true,
+      "isError": false,
+      "page": 2,
+      "self_mention_not_required": true
+    }
+  ],
+  "schema": "UDM_NATIVE_AUTHORITY_V4_ROS_SYNC_V1",
+  "scientific_run": 38947736959,
+  "scientific_source": "6f1ae2001a89380c622efdd2883ae0971e305d87",
+  "verdicts": {
+    "G0_G1": "PRESERVED",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "native_admission": "WARRANTED_BOUNDED"
+  },
+  "verification_boundary": "Connector readbacks confirm both prior full content bodies remain contiguous substrings after insertion. No claim of global concurrency containment or independent Notion storage proof.",
+  "writes": [
+    {
+      "created_pages": 1,
+      "operation": "create_pages",
+      "parent": "Research Checkpoints"
+    },
+    {
+      "operation": "insert_content",
+      "page": "Canonical Research State",
+      "position": "start"
+    },
+    {
+      "operation": "insert_content",
+      "page": "Research Checkpoints",
+      "position": "start"
+    }
+  ]
+}

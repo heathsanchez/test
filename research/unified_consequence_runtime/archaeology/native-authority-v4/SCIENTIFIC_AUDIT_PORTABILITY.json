@@ -1,0 +1,46 @@
+{
+  "audit_status": "PASS_BOUNDED_RED_ARTIFACT_INTEGRITY",
+  "boundary": "Original audit bytes are unmodified; this index maps original external audit-relative references to exact committed record copies.",
+  "schema": "UDM_V4_EXACT_AUDITOR_RECEIPT_PATH_MAPPING_V1",
+  "strict_admission_reference": {
+    "committed_record": "CI_38944901241_AUDIT.json",
+    "original": "../CI3_38944901241/AUDIT.json"
+  },
+  "subreports": [
+    {
+      "committed_record": "CI_38947736959_AUDITOR_INDEX_AUDIT.json",
+      "original_auditor_relative_path": "AUDITOR_INDEX_AUDIT.json",
+      "sha256": "f1dfcc43fbc0723025b636630824e60f7c5668537ce12c808ea95fccdf32e227"
+    },
+    {
+      "committed_record": "CI_38947736959_INTEGRITY_AUDIT.json",
+      "original_auditor_relative_path": "INTEGRITY_AUDIT.json",
+      "sha256": "c81248cbcfef0459e103a1f8a2fdcf8d31b4b37eca46ae0cee4a4fb72a779d0a"
+    },
+    {
+      "committed_record": "CI_38947736959_NESTED_MANIFEST_AUDIT.json",
+      "original_auditor_relative_path": "NESTED_MANIFEST_AUDIT.json",
+      "sha256": "13353e0a69592312f5ee49011cb386ef341d071fee19fe17b6e7f255977fa0b9"
+    },
+    {
+      "committed_record": "CI_38947736959_OUTER_MANIFEST_AUDIT.json",
+      "original_auditor_relative_path": "OUTER_MANIFEST_AUDIT.json",
+      "sha256": "1d66bbb0f0783af8d47a43bc9825b13a50f3b1ae5bd38f40b48369271a40b69f"
+    },
+    {
+      "committed_record": "CI_38947736959_READINESS_REVIEW.json",
+      "original_auditor_relative_path": "READINESS_REVIEW/READINESS_REVIEW.json",
+      "sha256": "4e91f8adca1457e9373273f49f9a487281ed2ba0b77ae95bb478a848df80e0f0"
+    },
+    {
+      "committed_record": "CI_38947736959_SOURCE_ARCHIVE_AUDIT.json",
+      "original_auditor_relative_path": "SOURCE_ARCHIVE_AUDIT.json",
+      "sha256": "71f11c32cc600582761d605bacaa0da20e018415d398d0cd3a9b5bc7b3fb372c"
+    },
+    {
+      "committed_record": "CI_38947736959_SOURCE_PREAUDIT.json",
+      "original_auditor_relative_path": "SOURCE_PREAUDIT.json",
+      "sha256": "479e62bbf477d659b47e87e5c681052942be8dbbee7f994fc9ebaa0a7d0e5db7"
+    }
+  ]
+}
