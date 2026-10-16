@@ -1,0 +1,220 @@
+name: Nucleus upstream reachability and recursion qualification (2026-10-17)
+on:
+  push:
+    branches: [research/nucleus-arena-reachability-20261017]
+    paths:
+      - ".github/workflows/nucleus-arena-reachability-20261017.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reachability:
+    name: Arena PR 273 six-proof pinned reachability
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      ARENA_SHA: 58de35b1b322c3cab584b88ae2786be3bdcfe856
+      REACH_SHA: d822b1c70b4a6ec858b54ee51f12b0cb30628982
+      EXPORTER_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Pin source and verify independent Nucleus baseline
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD > /tmp/evidence/candidate-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json")
+          j=json.loads(p.read_text())
+          assert j["modes"]["origin"]["counts"] == {"accept":119,"reject":71,"unknown":6,"errors":0,"wrong":0}
+          print(j["modes"]["origin"]["counts"])
+          PY
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/evidence/nucleus-binary.sha256
+      - name: Install pinned Lean 4.34.1 and exporter
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --githash | tee /tmp/evidence/lean-githash.txt
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter34
+          git -C /tmp/exporter34 checkout -q "$EXPORTER_SHA"
+          echo leanprover/lean4:v4.34.1 > /tmp/exporter34/lean-toolchain
+          (cd /tmp/exporter34 && lake build)
+          grep -F '# Lean 4 export format: version 3.1.0' /tmp/exporter34/format_ndjson.md
+          echo "$EXPORTER_SHA" > /tmp/evidence/exporter-source.txt
+      - name: Build exact upstream Arena reachability fixture with official Lean
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          git clone -q https://github.com/Arrow7000/reachability /tmp/reachability
+          git -C /tmp/reachability checkout -q "$REACH_SHA"
+          test "$(cat /tmp/reachability/lean-toolchain)" = "leanprover/lean4:v4.34.1"
+          mkdir -p /tmp/reachability/bench/Bench
+          cat > /tmp/reachability/bench/Bench/Arena.lean <<'EOF'
+          import Bench.Graphs
+
+          namespace Bench.Arena
+
+          open Relation
+
+          set_option Elab.async false
+
+          theorem path_reachable : TransGen (path 100).Adj 0 99 := by decide +kernel
+          theorem path_unreachable : ¬TransGen (path 100).Adj 1 0 := by decide +kernel
+          theorem grid_reachable : TransGen (grid 10).Adj 0 99 := by decide +kernel
+          theorem random_reachable : TransGen (random 100 3 0).Adj 0 99 := by decide +kernel
+          theorem dag_reachable : TransGen (dag 300).Adj 0 299 := by decide +kernel
+          theorem grid_shortest :
+              (grid 5).shortest 0 24 = some [1, 2, 3, 4, 9, 14, 19] := by decide +kernel
+
+          end Bench.Arena
+          EOF
+          (cd /tmp/reachability && lake update && lake exe cache get && lake build Bench.Arena)
+          sha256sum /tmp/reachability/bench/Bench/Arena.lean > /tmp/evidence/arena-source.sha256
+          printf '%s\n' "$ARENA_SHA" "$REACH_SHA" > /tmp/evidence/upstream-shas.txt
+      - name: Export all six declarations exactly as Arena PR 273 specifies
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd /tmp/reachability
+          lake env /tmp/exporter34/.lake/build/bin/lean4export Bench.Arena --             Bench.Arena.path_reachable Bench.Arena.path_unreachable             Bench.Arena.grid_reachable Bench.Arena.random_reachable             Bench.Arena.dag_reachable Bench.Arena.grid_shortest > /tmp/reachability.ndjson
+          python3 - <<'PY'
+          import json,hashlib,pathlib
+          p=pathlib.Path("/tmp/reachability.ndjson")
+          assert p.stat().st_size>0
+          h=hashlib.sha256()
+          with p.open("rb") as f:
+              first=json.loads(f.readline()); f.seek(0)
+              n=0
+              for line in f: h.update(line);n+=1
+          assert first["meta"]["format"]["version"]=="3.1.0",first
+          o={"records":n,"size":p.stat().st_size,"sha256":h.hexdigest(),"format":first["meta"]["format"]["version"],"meta":first["meta"]}
+          pathlib.Path("/tmp/evidence/reachability-export.json").write_text(json.dumps(o,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(o,sort_keys=True))
+          PY
+      - name: Independently check the exact Arena NDJSON with Nucleus (910s)
+        run: |
+          set -euo pipefail
+          mapfile -t FLAGS < <(python3 - <<'PY'
+          import json
+          j=json.load(open("metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json"))
+          for flag in j["origin_flags"]: print("NUCLEUS_EXPERIMENTAL_"+flag+"=1")
+          PY
+          )
+          set +e
+          env "${FLAGS[@]}" METATRON_KERNEL_DIAGNOSTICS=1             /usr/bin/time -v -o /tmp/evidence/reachability-time.txt             timeout --signal=TERM --kill-after=10s 910s             metatron-kernel/target/release/metatron-kernel < /tmp/reachability.ndjson             > /tmp/evidence/reachability-stdout.txt 2> /tmp/evidence/reachability-stderr.txt
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > /tmp/evidence/reachability-exit-code.txt
+          echo "reachability Nucleus exit code: $rc (0=ACCEPT;1=REJECT;2=UNKNOWN;124=TIMEOUT)"
+          tail -c 2000 /tmp/evidence/reachability-stderr.txt || true
+          test "$rc" -eq 0
+      - name: Archive reachability evidence even on failure
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-reachability-20261017
+          path: /tmp/evidence/
+          if-no-files-found: warn
+
+  structural-recursion:
+    name: Lean PR 15738 issue15727 plus Nucleus export
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      LEAN_MERGE: 136fe94cf04a62e91141a840a5ed7d3cd18936bf
+      LEAN_PR_HEAD: 154f744b2596e28b4fb75ef9fc6d0ba13557e047
+      EXPORTER_SHA: df81913eee5519d5a88ae5b0fd701b5298cc29ab
+      PR_TOOLCHAIN: leanprover/lean4-pr-releases:pr-release-15738
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile independently qualified Nucleus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Install exact upstream PR toolchain and verify source
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.36.0-rc1
+          export PATH="$HOME/.elan/bin:$PATH"
+          elan toolchain install "$PR_TOOLCHAIN"
+          actual=$(elan run "$PR_TOOLCHAIN" lean --githash)
+          printf 'Lean PR head: %s; merge: %s\n' "$actual" "$LEAN_MERGE" | tee /tmp/evidence/lean-source.txt
+          test "$actual" = "$LEAN_PR_HEAD"
+          mkdir -p /tmp/issue15727
+          curl -sSfL "https://raw.githubusercontent.com/leanprover/lean4/$LEAN_MERGE/tests/elab/issue15727.lean" > /tmp/issue15727/upstream-original.lean
+          sha256sum /tmp/issue15727/upstream-original.lean > /tmp/evidence/upstream-fixture.sha256
+          elan run "$PR_TOOLCHAIN" lean /tmp/issue15727/upstream-original.lean
+      - name: Build named definitional-equality witnesses using fixed elaborator
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cp /tmp/issue15727/upstream-original.lean /tmp/issue15727/Issue15727.lean
+          cat >> /tmp/issue15727/Issue15727.lean <<'EOF'
+
+          theorem issue15727_f : f [1, 2, 3] = 6 := by decide
+          theorem issue15727_g : g [1, 2, 3] = f [1, 2, 3] := by rfl
+          theorem issue15727_step (x y : Nat) (ys : List Nat) :
+              f (x :: y :: ys) = f (y :: ys) + f ys := by simp [f]
+          EOF
+          echo "$PR_TOOLCHAIN" > /tmp/issue15727/lean-toolchain
+          cat > /tmp/issue15727/lakefile.toml <<'EOF'
+          name = "issue15727_qualification"
+          [[lean_lib]]
+          name = "Issue15727"
+          EOF
+          (cd /tmp/issue15727 && lake build Issue15727)
+          sha256sum /tmp/issue15727/Issue15727.lean > /tmp/evidence/named-fixture.sha256
+      - name: Export PR fixture as pinned NDJSON 3.1.0
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter36
+          git -C /tmp/exporter36 checkout -q "$EXPORTER_SHA"
+          echo "$PR_TOOLCHAIN" > /tmp/exporter36/lean-toolchain
+          (cd /tmp/exporter36 && lake build)
+          (cd /tmp/issue15727 && lake env /tmp/exporter36/.lake/build/bin/lean4export Issue15727 -- f g issue15727_f issue15727_g issue15727_step > /tmp/issue15727.ndjson)
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          p=pathlib.Path('/tmp/issue15727.ndjson')
+          assert p.stat().st_size
+          with p.open('rb') as f: meta=json.loads(f.readline())['meta']
+          assert meta['format']['version']=='3.1.0',meta
+          result={"size":p.stat().st_size,"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"metadata":meta}
+          pathlib.Path('/tmp/evidence/issue15727-export.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - name: Check source-derived structural-recursion proof with Nucleus
+        run: |
+          set -euo pipefail
+          mapfile -t FLAGS < <(python3 - <<'PY'
+          import json
+          j=json.load(open('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json'))
+          for flag in j['origin_flags']: print('NUCLEUS_EXPERIMENTAL_'+flag+'=1')
+          PY
+          )
+          set +e
+          env "${FLAGS[@]}" METATRON_KERNEL_DIAGNOSTICS=1             /usr/bin/time -v -o /tmp/evidence/issue15727-time.txt             timeout --signal=TERM --kill-after=10s 180s             metatron-kernel/target/release/metatron-kernel < /tmp/issue15727.ndjson             > /tmp/evidence/issue15727-stdout.txt 2> /tmp/evidence/issue15727-stderr.txt
+          rc=$?
+          set -e
+          echo "$rc" > /tmp/evidence/issue15727-exit-code.txt
+          echo "issue15727 Nucleus exit code: $rc (0=ACCEPT;1=REJECT;2=UNKNOWN;124=TIMEOUT)"
+          tail -c 2000 /tmp/evidence/issue15727-stderr.txt || true
+          test "$rc" -eq 0
+      - name: Archive issue15727 evidence even on failure
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-issue15727-20261017
+          path: /tmp/evidence/
+          if-no-files-found: warn
