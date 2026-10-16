@@ -1,0 +1,304 @@
+--- experiments/source-eta-argument/source/src/typecheck.rs	2026-10-15 15:46:01
++++ experiments/init-le-trans-review/active-bound-type-sort-source/src/typecheck.rs	2026-10-15 17:07:19
+@@ -665,8 +665,17 @@
+                     TypeValue::Sort(level)=>Some(level),
+                     TypeValue::Term(sort)=>{
+                         if !self.source_used_capture_authority_available(&sort,remaining)||!take_step(remaining){return None;}
+-                        let Expr::Sort(level)=self.expressions.get(sort.expr)? else{return None;};
+-                        crate::level::instantiate_level_with_remaining(self.levels,*level,&sort.levels,remaining).ok()
++                        if let Some(Expr::Sort(level))=self.expressions.get(sort.expr){
++                            return crate::level::instantiate_level_with_remaining(self.levels,*level,&sort.levels,remaining).ok();
++                        }
++                        // The checked binding records this ORIGINAL formed
++                        // TYPE. During active formation it may transparently
++                        // expose a Sort; never infer the type of that TYPE.
++                        if !GENERAL_DOMAIN_FORMATION_ACTIVE.with(|flag|flag.get()){return None;}
++                        let allowance=(*remaining).min(32);if allowance==0{return None;}*remaining-=allowance;
++                        match probe.machine().expose_for_conversion(sort,Transparency::Reducible,allowance).proven_value(){
++                            Some(Value::Sort(level))=>Some(level.clone()),_=>None,
++                        }
+                     },TypeValue::Pi{..}=>None,
+                 };
+             }
+@@ -797,10 +806,10 @@
+                     let Some(support) = self.complete_source_support(term.expr, remaining)
+                         else { return false; };
+                     for index in support {
+-                        let Some(cost) = usize::try_from(index).ok().and_then(|i| i.checked_add(1))
++                        // The immutable frame has binary ancestor links. Pay
++                        // the existing exact owner lookup and its physical hops.
++                        let Some(frame) = self.source_capture_owner(&term.env,index,remaining)
+                             else { return false; };
+-                        if *remaining < cost { return false; } *remaining -= cost;
+-                        let Some(frame) = term.env.binding_frame(index) else { return false; };
+                         let witness = self.checked_binding_lineage.borrow().get(&frame.id()).cloned();
+                         match witness {
+                             Some(None) => return false,
+@@ -1520,6 +1529,11 @@
+                         )
+                     }
+                     PiBody::Closure(body) => {
++                        // A literal Sort contains no term variable. Preserve
++                        // its original closure/Theta after checking the argument.
++                        if matches!(self.expressions.get(body.expr),Some(Expr::Sort(_))) {
++                            return Some(TypeValue::Term(body));
++                        }
+                         // Reuse only the complete captured codomain, actual
+                         // argument, checked domain and actual Gamma tuple.
+                         // Both argument premises were established above;
+@@ -2321,6 +2335,36 @@
+                 // declared domains retain the existing complete USED check.
+                 if !matches!(self.expressions.get(domain.expr),Some(Expr::Sort(_)|Expr::Const{..}))&&!self.source_used_capture_authority_available(domain,remaining){return false;}
+             },TypeValue::Pi{..}=>return false,
++        }
++        true
++    }
++
++    /// Validate declaration parameter annotations in the one actual typed
++    /// telescope. Each introduction follows complete domain formation and
++    /// comparison of every original annotation under its own universes.
++    pub(crate) fn checked_parameter_telescope_equivalence(
++        &self, expected:&[ExprId], alternatives:&[&[ExprId]], remaining:&mut usize,
++    )->bool {
++        if alternatives.iter().any(|a|a.len()!=expected.len()){return false;}
++        let checker=self.strict_certificate_probe();
++        let mut frame=EnvFrame::empty();let mut context=Vec::new();
++        for (index,expression) in expected.iter().enumerate() {
++            let source=checker.closure(*expression,frame.clone());
++            if !checker.source_used_capture_authority_available(&source,remaining)
++                ||checker.shared_strict_source_sort(&source,&context,remaining).is_none(){return false;}
++            let domain=TypeValue::Term(source);
++            let mut completed=std::collections::HashSet::new();completed.insert(*expression);
++            for annotations in alternatives {
++                let actual=annotations[index];if !completed.insert(actual){continue;}
++                let actual=checker.closure(actual,frame.clone());
++                if !checker.source_used_capture_authority_available(&actual,remaining)
++                    ||checker.shared_strict_source_sort(&actual,&context,remaining).is_none(){return false;}
++                if !crate::convert::convert_with_policy_in_context_remaining(&checker,&domain,&TypeValue::Term(actual),checker.delta_policy,context.len(),&context,remaining).is_proven(){return false;}
++            }
++            let Some(free)=fresh_local(context.len())else{return false;};
++            let Some(next)=frame.extend_free_paid(free,remaining)else{return false;};
++            if !take_step(remaining){return false;}context.push(domain.clone());
++            checker.retain_checked_binding(&next,domain,&context);frame=next;
+         }
+         true
+     }
+@@ -9485,6 +9529,88 @@
+    assert!(crate::convert::source_qualified_free_eta(&c,&lambda,&function,&left,&right,&[],0,&mut 16384).is_none());
+    let wrapper=f.extend_neutral(Neutral{head:NeutralHead::Free(FreeId(3),Some(g.clone())),spine:vec![]});c.retain_checked_binding(&wrapper,gt,&gamma);let wrapped=lambda.sibling(lambda.expr,wrapper.clone());c.checked_binding_lineage.borrow_mut().insert(wrapper.id(),None);assert!(crate::convert::source_qualified_free_eta(&c,&wrapped,&function,&left,&right,&gamma,4,&mut 16384).is_none());
+    c.checked_binding_lineage.borrow_mut().insert(g.id(),None);assert!(compare().is_none());
++  }
++ }
++}
++
++#[cfg(test)]
++mod bvar_proof_schedule_controls {
++ use super::*;
++ use crate::id::{IdTable,LevelId,NameId};
++ use crate::syntax::Level;
++ use crate::environment::ConstantDecl;
++ #[test]
++ fn deferred_bvars_keep_nominal_scope_and_original_proof_retry(){
++  let mut e=IdTable::default();e.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();e.insert(ExprId(1),Expr::Sort(LevelId(1))).unwrap();e.insert(ExprId(2),Expr::Const{name:NameId(1),levels:vec![]}).unwrap();e.insert(ExprId(3),Expr::BVar(0)).unwrap();e.insert(ExprId(4),Expr::BVar(1)).unwrap();e.insert(ExprId(5),Expr::Const{name:NameId(2),levels:vec![]}).unwrap();
++  let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  let env=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(1))).unwrap();let c=TypeChecker::new(&e,&l,&env).strict_certificate_probe();let empty=EnvFrame::empty();let prop=TypeValue::Term(c.closure(ExprId(2),empty.clone()));let first=empty.extend_free(FreeId(0));let mut gamma=vec![prop.clone()];c.retain_checked_binding(&first,prop.clone(),&gamma);let second=first.extend_free(FreeId(1));gamma.push(prop.clone());c.retain_checked_binding(&second,prop,&gamma);
++  let term=|id,frame|TypeValue::Term(c.closure(ExprId(id),frame));let compare=|a:&TypeValue,b:&TypeValue,g:&[TypeValue],budget|crate::convert::convert_with_policy_in_context(&c,a,b,budget,crate::convert::DeltaPolicy::GuardedSemanticFallback,g.len(),g);
++  assert!(compare(&term(4,second.clone()),&term(3,first.clone()),&gamma,64).is_proven(),"ordinary exposure retains exact original owner");
++  assert!(compare(&term(3,second.clone()),&term(3,first.clone()),&gamma,4096).is_proven(),"different proof locals still retry strict proof irrelevance on both originals");
++  assert!(!compare(&term(3,second.clone()),&term(3,first.clone()),&[],4096).is_proven());
++  let nat=TypeValue::Term(c.closure(ExprId(5),empty.clone()));let a=empty.extend_free(FreeId(0));let b=empty.extend_free(FreeId(0));let ng=vec![nat.clone()];c.retain_checked_binding(&a,nat.clone(),&ng);c.retain_checked_binding(&b,nat,&ng);assert!(!compare(&term(3,a),&term(3,b),&ng,4096).is_proven(),"same numeric Free in independent introductions cannot close");
++  c.checked_binding_lineage.borrow_mut().insert(first.id(),None);assert!(!compare(&term(3,second),&term(3,first),&gamma,4096).is_proven(),"revoked originals cannot supply fallback proof typing");
++ }
++}
++
++#[cfg(test)]
++mod used_capture_binary_owner_cost_controls {
++ use super::*;
++ use crate::id::{IdTable,LevelId,NameId};
++ use crate::syntax::Level;
++ use crate::environment::ConstantDecl;
++ #[test]
++ fn actual_binary_hops_preserve_owned_used_capture_revocation(){
++  let mut e=IdTable::default();e.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();e.insert(ExprId(1),Expr::Const{name:NameId(1),levels:vec![]}).unwrap();e.insert(ExprId(2),Expr::BVar(8)).unwrap();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();let env=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap();let c=TypeChecker::new(&e,&l,&env).strict_certificate_probe();let empty=EnvFrame::empty();let domain=TypeValue::Term(c.closure(ExprId(1),empty.clone()));let owner=empty.extend_free(FreeId(0));c.retain_checked_binding(&owner,domain.clone(),&[domain]);let mut frame=owner.clone();for n in 1..=8{frame=frame.extend_free(FreeId(n));}
++  let mut work=2;assert_eq!(c.source_capture_owner(&frame,8,&mut work),Some(owner.clone()));assert_eq!(work,0,"one lookup plus the single physical eight-ancestor hop");let mut warm=1;assert_eq!(c.source_capture_owner(&frame,8,&mut warm),Some(owner.clone()));assert_eq!(warm,0,"an exact completed owner lookup costs one");
++  let source=c.closure(ExprId(2),frame.clone());let mut work=12;assert!(c.source_used_capture_authority_available(&source,&mut work),"paid owner lookup must preserve allowance for actual declared-domain validation");
++  assert!(!c.source_used_capture_authority_available(&source,&mut 0));c.checked_binding_lineage.borrow_mut().insert(frame.id(),None);assert!(!c.source_used_capture_authority_available(&source,&mut 128));c.checked_binding_lineage.borrow_mut().remove(&frame.id());c.checked_binding_lineage.borrow_mut().insert(owner.id(),None);assert!(!c.source_used_capture_authority_available(&source,&mut 128),"cached lookup cannot retain a revoked original witness");
++  let dangling=c.closure(ExprId(2),empty);assert!(!c.source_used_capture_authority_available(&dangling,&mut 128));
++ }
++}
++
++#[cfg(test)]
++mod checked_parameter_telescope_controls {
++ use super::*;
++ use crate::id::{IdTable,LevelId,NameId};
++ use crate::syntax::Level;
++ use crate::environment::ConstantDecl;
++ #[test]
++ fn complete_telescope_forms_original_domains_before_shared_introduction(){
++  let mut e=IdTable::default();for(id,node)in[(0,Expr::Sort(LevelId(1))),(1,Expr::BVar(0)),(2,Expr::Pi{domain:ExprId(1),body:ExprId(3)}),(3,Expr::BVar(1)),(4,Expr::Lam{domain:ExprId(0),body:ExprId(1)}),(5,Expr::App{fun:ExprId(4),arg:ExprId(2)}),(6,Expr::Const{name:NameId(1),levels:vec![]}),(7,Expr::Lam{domain:ExprId(6),body:ExprId(0)}),(8,Expr::App{fun:ExprId(7),arg:ExprId(0)}),(9,Expr::BVar(99)),(10,Expr::Sort(LevelId(2)))]{e.insert(ExprId(id),node).unwrap();}
++  let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();l.insert(LevelId(2),Level::Param(NameId(2))).unwrap();let env=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap();let c=TypeChecker::new(&e,&l,&env);
++  let expected=[ExprId(0),ExprId(2)];let actual=[ExprId(0),ExprId(5)];assert!(c.checked_parameter_telescope_equivalence(&expected,&[&actual],&mut 65536),"dependent type domains retain the ONE actual preceding alpha owner");
++  for actual in [ExprId(1),ExprId(8),ExprId(9),ExprId(10)] {assert!(!c.checked_parameter_telescope_equivalence(&[ExprId(0)],&[&[actual]],&mut 65536),"unbound/wrong-context, malformed beta-erased argument and missing own universe cannot form a parameter: {actual:?}");}
++  assert!(!c.checked_parameter_telescope_equivalence(&expected,&[&actual[..1]],&mut 65536));assert!(!c.checked_parameter_telescope_equivalence(&expected,&[&actual],&mut 0));
++  c.checked_binding_lineage.borrow_mut().insert(EnvFrame::empty().id(),None);assert!(!c.checked_parameter_telescope_equivalence(&expected,&[&actual],&mut 65536),"revoked original source/declared-domain scope cannot be retained as a new checked introduction");
++ }
++}
++
++#[cfg(test)]
++mod literal_sort_codomains {
++ use super::*;
++ #[test] fn checked_application_preserves_original_sort_codomain_own_universe_and_rejects_bad_argument(){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();l.insert(LevelId(2),Level::Param(NameId(13))).unwrap();l.insert(LevelId(3),Level::Succ(LevelId(2))).unwrap();
++  for(i,n)in[(0,Expr::Sort(LevelId(1))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::Sort(LevelId(3))),(3,Expr::Pi{domain:ExprId(2),body:ExprId(2)}),(4,Expr::Const{name:NameId(2),levels:vec![LevelId(0)]}),(5,Expr::App{fun:ExprId(4),arg:ExprId(1)}),(6,Expr::App{fun:ExprId(4),arg:ExprId(0)}),(7,Expr::Const{name:NameId(2),levels:vec![LevelId(1)]}),(8,Expr::App{fun:ExprId(7),arg:ExprId(0)}),(9,Expr::BVar(0)),(10,Expr::App{fun:ExprId(4),arg:ExprId(9)})]{e.insert(ExprId(i),n).unwrap();}
++  let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![NameId(13)],ExprId(3))).unwrap();let c=TypeChecker::new(&e,&l,&env).strict_certificate_probe();
++  for(id,level)in[(5,LevelTerm::Zero),(8,succ(LevelTerm::Zero))]{let ty=c.infer_exact_closure_in_context(&c.closure(ExprId(id),EnvFrame::empty()),&[],&mut 4096,0).unwrap();let TypeValue::Term(body)=ty else{panic!()};assert_eq!(body.expr,ExprId(2));assert_eq!(body.env,EnvFrame::empty(),"a literal Sort has no term-binder occurrence to substitute");assert_eq!(body.levels,LevelSubstitution::new(vec![(NameId(13),level)]));}
++  for id in[6,10]{assert!(c.infer_exact_closure_in_context(&c.closure(ExprId(id),EnvFrame::empty()),&[],&mut 4096,0).is_none(),"argument must be independently checked before preserving a constant codomain");}
++ }
++}
++
++#[cfg(test)]
++mod active_bound_type_sort_controls {
++ use super::*;
++ use crate::environment::ConstantDecl;
++ #[test]
++ fn recorded_type_alias_exposes_sort_without_confusing_proofs_or_data(){
++  let mut e=IdTable::default();for(i,n)in[(0,Expr::Sort(LevelId(0))),(1,Expr::Sort(LevelId(1))),(2,Expr::Sort(LevelId(2))),(3,Expr::Sort(LevelId(3))),(4,Expr::BVar(0)),(5,Expr::Pi{domain:ExprId(3),body:ExprId(3)}),(6,Expr::Lam{domain:ExprId(3),body:ExprId(4)}),(7,Expr::Const{name:NameId(1),levels:vec![LevelId(2)]}),(8,Expr::App{fun:ExprId(7),arg:ExprId(2)}),(9,Expr::Const{name:NameId(2),levels:vec![]}),(10,Expr::Lam{domain:ExprId(9),body:ExprId(1)}),(11,Expr::App{fun:ExprId(10),arg:ExprId(1)})]{e.insert(ExprId(i),n).unwrap();}
++  let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();l.insert(LevelId(2),Level::Param(NameId(9))).unwrap();l.insert(LevelId(3),Level::Succ(LevelId(2))).unwrap();let env=Environment::empty().extend(NameId(1),ConstantDecl::definition(vec![NameId(9)],ExprId(5),ExprId(6),true)).unwrap().extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(1))).unwrap();
++  let c=TypeChecker::with_level_substitution(&e,&l,&env,HashMap::from([(NameId(9),succ(LevelTerm::Zero))])).strict_certificate_probe();let empty=EnvFrame::empty();
++  for level in [LevelTerm::Zero,succ(LevelTerm::Zero)] {
++   let domain=Closure::with_levels(ExprId(8),empty.clone(),LevelSubstitution::new(vec![(NameId(9),level.clone())]));assert!(c.shared_strict_source_sort(&domain,&[],&mut 4096).is_some());let ty=TypeValue::Term(domain);let gamma=vec![ty.clone()];let owner=empty.extend_free(FreeId(0));c.retain_checked_binding(&owner,ty.clone(),&gamma);let source=c.closure(ExprId(4),owner.clone());assert!(c.checked_bound_literal_sort(&source,&gamma,&mut 512).is_none(),"outside active formation retain the literal-only candidate policy");
++   {let _active=GeneralDomainFormationOwner::enter();assert_eq!(c.checked_bound_literal_sort(&source,&gamma,&mut 512),Some(level));assert!(c.checked_bound_literal_sort(&source,&[],&mut 512).is_none());assert!(c.checked_bound_literal_sort(&source,&gamma,&mut 0).is_none());let wrapper=owner.extend_neutral(Neutral{head:NeutralHead::Free(FreeId(0),Some(owner.clone())),spine:vec![]});c.retain_checked_binding(&wrapper,ty,&gamma);let wrapped=c.closure(ExprId(4),wrapper.clone());c.checked_binding_lineage.borrow_mut().insert(wrapper.id(),None);assert!(c.checked_bound_literal_sort(&wrapped,&gamma,&mut 512).is_none());c.checked_binding_lineage.borrow_mut().insert(owner.id(),None);assert!(c.checked_bound_literal_sort(&source,&gamma,&mut 512).is_none());}
+   }
++  let p=empty.extend_free(FreeId(0));let prop=TypeValue::Term(c.closure(ExprId(0),empty.clone()));let mut gamma=vec![prop.clone()];c.retain_checked_binding(&p,prop,&gamma);let hty=TypeValue::Term(c.closure(ExprId(4),p.clone()));let h=p.extend_free(FreeId(1));gamma.push(hty.clone());c.retain_checked_binding(&h,hty,&gamma);let nat=TypeValue::Term(c.closure(ExprId(9),empty.clone()));let n=empty.extend_free(FreeId(0));c.retain_checked_binding(&n,nat.clone(),&[nat.clone()]);let _active=GeneralDomainFormationOwner::enter();assert!(c.checked_bound_literal_sort(&c.closure(ExprId(4),h),&gamma,&mut 512).is_none(),"h:p is a proof, although p:Prop; its actual TYPE p is not Sort");assert!(c.checked_bound_literal_sort(&c.closure(ExprId(4),n),&[nat],&mut 512).is_none());assert!(!c.checked_parameter_telescope_equivalence(&[ExprId(1)],&[&[ExprId(11)]],&mut 4096),"original malformed beta-erased domain cannot earn a binder witness");
+  }
+ }
+--- experiments/source-eta-argument/source/src/convert.rs	2026-10-15 15:39:27
++++ experiments/init-le-trans-review/active-bound-type-sort-source/src/convert.rs	2026-10-15 16:56:15
+@@ -180,12 +180,31 @@
+     congruence_depth: usize,
+     congruence_attempts: &mut usize,
+ ) -> Judgment<()> {
++    let mut remaining=budget;
++    convert_in_context_with_congruence_remaining(checker,left,right,delta_policy,initial_depth,context,congruence_depth,congruence_attempts,&mut remaining)
++}
++
++pub(crate) fn convert_with_policy_in_context_remaining(
++    checker:&TypeChecker<'_>,left:&TypeValue,right:&TypeValue,
++    delta_policy:DeltaPolicy,initial_depth:usize,context:&[TypeValue],remaining:&mut usize,
++)->Judgment<()> {
++    let mut attempts=32;
++    convert_in_context_with_congruence_remaining(checker,left,right,delta_policy,initial_depth,context,0,&mut attempts,remaining)
++}
++
++fn convert_in_context_with_congruence_remaining(
++    checker:&TypeChecker<'_>,left:&TypeValue,right:&TypeValue,
++    delta_policy:DeltaPolicy,initial_depth:usize,context:&[TypeValue],
++    congruence_depth:usize,congruence_attempts:&mut usize,caller_remaining:&mut usize,
++)->Judgment<()> {
++    let budget=*caller_remaining;
++    let mut remaining=budget;
++    let result=(|| {
+     #[cfg(test)]
+     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
+     #[cfg(feature = "diagnostics")]
+     crate::diagnostics::conversion();
+ 
+-    let mut remaining = budget;
+     let mut work=ConversionWorkList::new((left.clone(),right.clone(),initial_depth,context.to_vec()));
+     let mut visited = ConversionVisitSet::new();
+     let mut unit_like_frees = HashMap::new();
+@@ -249,7 +268,9 @@
+                     if remaining<cost{return false;}remaining-=cost;
+                     matches!(source.env.lookup_binding_ref(*index),Some(EnvBinding::Closure(_)))
+                 };
+-                both_apps||captured_substitution(lhs)||captured_substitution(rhs)
++                let both_bvars=matches!(checker.expression(lhs.expr),Some(Expr::BVar(_)))
++                    &&matches!(checker.expression(rhs.expr),Some(Expr::BVar(_)));
++                both_apps||both_bvars||captured_substitution(lhs)||captured_substitution(rhs)
+             },
+             _=>false,
+         };
+@@ -267,6 +288,12 @@
+             // transitive syntax/capture-identity trial before that exposure.
+             && !matches!(checker.expression(lhs.expr),Some(crate::syntax::Expr::BVar(_)))
+             && !matches!(checker.expression(rhs.expr),Some(crate::syntax::Expr::BVar(_)))
++            // Distinct Pi/App syntax retains ordinary typed binder or
++            // source-spine comparison without a whole-capture scan.
++            && !(depth==context.len()&&!context.is_empty()&&lhs.expr!=rhs.expr && (
++                matches!((checker.expression(lhs.expr),checker.expression(rhs.expr)),(Some(Expr::Pi{..}),Some(Expr::Pi{..})))
++                ||matches!((checker.expression(lhs.expr),checker.expression(rhs.expr)),(Some(Expr::App{..}),Some(Expr::App{..})))
++            ))
+             && remaining > 8 && *congruence_attempts > 0
+         {
+             *congruence_attempts -= 1;
+@@ -671,6 +698,9 @@
+     }
+ 
+     Judgment::proven((), "guarded-relational-conversion")
++    })();
++    *caller_remaining=remaining;
++    result
+ }
+ 
+ #[cfg(test)]
+@@ -2554,5 +2584,24 @@
+    let changed_owner=Closure::new(left.expr,left.env.extend_free(FreeId(9)));assert!(!proof.is_for(&changed_owner,&right,&gamma));
+    let pin=proof.completed_body_context().clone();assert!(Rc::ptr_eq(&pin,proof.completed_body_context()));assert_eq!(pin.len(),gamma.len()+1);assert_eq!(pin.last(),Some(&TypeValue::Term(left.clone())));
+   });
++ }
++}
++
++#[cfg(test)]
++mod caller_conversion_ledger_tests {
++ use super::*;
++ #[test]
++ fn successful_failed_and_empty_conversions_return_actual_remaining(){
++  let expressions=crate::id::IdTable::default();let levels=crate::id::IdTable::default();let environment=crate::environment::Environment::empty();
++  let checker=TypeChecker::new(&expressions,&levels,&environment);
++  let zero=TypeValue::Sort(crate::level::LevelTerm::Zero);
++  let one=TypeValue::Sort(crate::level::succ(crate::level::LevelTerm::Zero));
++  for (right,budget) in [(&zero,64usize),(&one,64),(&one,0)] {
++   let expected=convert_with_policy_in_context(&checker,&zero,right,budget,DeltaPolicy::PreferredOnly,0,&[]);
++   let mut remaining=budget;
++   let result=convert_with_policy_in_context_remaining(&checker,&zero,right,DeltaPolicy::PreferredOnly,0,&[],&mut remaining);
++   assert_eq!(result,expected); assert!(remaining<=budget);
++   if budget>0 && right!=&zero {assert!(remaining<budget);}else if budget==0 {assert_eq!(remaining,0);assert!(!result.is_proven());}
++  }
+  }
+ }
+--- experiments/source-eta-argument/source/src/checker.rs	2026-10-15 14:55:00
++++ experiments/init-le-trans-review/active-bound-type-sort-source/src/checker.rs	2026-10-15 16:41:49
+@@ -5489,31 +5489,8 @@
+         parameter_substitution(&recursor.level_params),
+     )
+     .with_delta_policy(delta_policy);
+-    let mut frame = EnvFrame::empty();
+-    for index in 0..p {
+-        let expected = TypeValue::Term(checker.closure(inductive_params[index], frame.clone()));
+-        for actual in [
+-            constructor_params[index],
+-            recursor_params[index],
+-            rule_params[index],
+-        ] {
+-            if !matches!(
+-                checker.convert(
+-                    &expected,
+-                    &TypeValue::Term(checker.closure(actual, frame.clone())),
+-                    limits.judgment_steps,
+-                ),
+-                Judgment::Proven { .. }
+-            ) {
+-                return false;
+-            }
+-        }
+-        let Ok(index) = u64::try_from(index) else {
+-            return false;
+-        };
+-        frame = frame.extend_free(FreeId(50_000 + index));
+-    }
+-    true
++    let mut remaining=limits.judgment_steps;
++    checker.checked_parameter_telescope_equivalence(&inductive_params,&[constructor_params,recursor_params,rule_params],&mut remaining)
+ }
+ 
+ fn check_single_derived_field_structure(

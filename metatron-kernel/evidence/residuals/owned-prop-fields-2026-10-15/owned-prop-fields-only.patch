@@ -1,0 +1,134 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -3498,34 +3498,11 @@
+     )
+     .with_delta_policy(delta_policy);
+ 
+-    let mut context = Vec::with_capacity(parameter_count);
+-    let mut frame = EnvFrame::empty();
+-    for (index, parameter) in inductive_parameters.iter().enumerate() {
+-        context.push(TypeValue::Term(checker.closure(*parameter, frame.clone())));
+-        let Ok(index) = u64::try_from(index) else {
+-            return false;
+-        };
+-        frame = frame.extend_free(FreeId(75_000 + index));
+-    }
+-
+-    for (field_index, field) in constructor_domains[parameter_count..].iter().enumerate() {
+-        if !matches!(
+-            checker.is_proposition_in_context(
+-                *field,
+-                &context,
+-                &frame,
+-                limits.judgment_steps,
+-            ),
+-            Judgment::Proven { .. }
+-        ) {
+-            return false;
+-        }
+-        context.push(TypeValue::Term(checker.closure(*field, frame.clone())));
+-        frame = frame.extend_free(FreeId(
+-            75_000 + (parameter_count + field_index) as u64,
+-        ));
+-    }
+-    true
++    let mut remaining=limits.judgment_steps;
++    checker.checked_prop_field_telescope(
++        &inductive_parameters, &constructor_domains[..parameter_count],
++        &constructor_domains[parameter_count..], &mut remaining,
++    )
+ }
+ 
+ fn check_generic_prop_singleton_large_elim(
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -2328,28 +2328,57 @@
+     /// Validate declaration parameter annotations in the one actual typed
+     /// telescope. Each introduction follows complete domain formation and
+     /// comparison of every original annotation under its own universes.
+-    pub(crate) fn checked_parameter_telescope_equivalence(
++    fn checked_parameter_telescope(
+         &self, expected:&[ExprId], alternatives:&[&[ExprId]], remaining:&mut usize,
+-    )->bool {
+-        if alternatives.iter().any(|a|a.len()!=expected.len()){return false;}
++    )->Option<(EnvFrame,Vec<TypeValue>)> {
++        if alternatives.iter().any(|a|a.len()!=expected.len()){return None;}
+         let checker=self.strict_certificate_probe();
+         let mut frame=EnvFrame::empty();let mut context=Vec::new();
+         for (index,expression) in expected.iter().enumerate() {
+             let source=checker.closure(*expression,frame.clone());
+             if !checker.source_used_capture_authority_available(&source,remaining)
+-                ||checker.shared_strict_source_sort(&source,&context,remaining).is_none(){return false;}
++                ||checker.shared_strict_source_sort(&source,&context,remaining).is_none(){return None;}
+             let domain=TypeValue::Term(source);
+             let mut completed=std::collections::HashSet::new();completed.insert(*expression);
+             for annotations in alternatives {
+                 let actual=annotations[index];if !completed.insert(actual){continue;}
+                 let actual=checker.closure(actual,frame.clone());
+                 if !checker.source_used_capture_authority_available(&actual,remaining)
+-                    ||checker.shared_strict_source_sort(&actual,&context,remaining).is_none(){return false;}
+-                if !crate::convert::convert_with_policy_in_context_remaining(&checker,&domain,&TypeValue::Term(actual),checker.delta_policy,context.len(),&context,remaining).is_proven(){return false;}
+-            }
++                    ||checker.shared_strict_source_sort(&actual,&context,remaining).is_none(){return None;}
++                if !crate::convert::convert_with_policy_in_context_remaining(&checker,&domain,&TypeValue::Term(actual),checker.delta_policy,context.len(),&context,remaining).is_proven(){return None;}
++            }
++            let Some(free)=fresh_local(context.len())else{return None;};
++            let Some(next)=frame.extend_free_paid(free,remaining)else{return None;};
++            if !take_step(remaining){return None;}context.push(domain.clone());
++            checker.retain_checked_binding(&next,domain,&context);frame=next;
++        }
++        Some((frame,context))
++    }
++
++    pub(crate) fn checked_parameter_telescope_equivalence(
++        &self, expected:&[ExprId], alternatives:&[&[ExprId]], remaining:&mut usize,
++    )->bool {
++        self.checked_parameter_telescope(expected,alternatives,remaining).is_some()
++    }
++
++    /// Form each original field as a proposition in the actual checked
++    /// constructor telescope. The private context is carried from parameter
++    /// formation, and proof fields introduce their own checked local once.
++    pub(crate) fn checked_prop_field_telescope(
++        &self, expected:&[ExprId], actual:&[ExprId], fields:&[ExprId],
++        remaining:&mut usize,
++    )->bool {
++        let Some((mut frame,mut context))=self.checked_parameter_telescope(expected,&[actual],remaining)else{return false;};
++        let checker=self.strict_certificate_probe();
++        for expression in fields {
++            let source=checker.closure(*expression,frame.clone());
++            if !checker.source_used_capture_authority_available(&source,remaining){return false;}
++            let Some(level)=checker.shared_strict_source_sort(&source,&context,remaining)else{return false;};
++            if !crate::level::level_equal_with_remaining(level,LevelTerm::Zero,remaining).is_proven(){return false;}
+             let Some(free)=fresh_local(context.len())else{return false;};
+             let Some(next)=frame.extend_free_paid(free,remaining)else{return false;};
+-            if !take_step(remaining){return false;}context.push(domain.clone());
++            if !take_step(remaining){return false;}
++            let domain=TypeValue::Term(source);context.push(domain.clone());
+             checker.retain_checked_binding(&next,domain,&context);frame=next;
+         }
+         true
+@@ -9571,3 +9600,23 @@
+   c.checked_binding_lineage.borrow_mut().insert(EnvFrame::empty().id(),None);assert!(!c.checked_parameter_telescope_equivalence(&expected,&[&actual],&mut 65536),"revoked original source/declared-domain scope cannot be retained as a new checked introduction");
+  }
+ }
++
++#[cfg(test)]
++mod owned_prop_field_telescope_controls {
++ use super::*;
++ use crate::environment::ConstantDecl;
++ #[test]
++ fn only_independently_typed_proof_fields_receive_owned_introductions(){
++  let mut e=IdTable::default();let mut l=IdTable::default();
++  l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(i,node)in[(0,Expr::Sort(LevelId(0))),(1,Expr::Sort(LevelId(1))),(2,Expr::BVar(0)),(3,Expr::BVar(1)),(4,Expr::Const{name:NameId(1),levels:vec![]}),(5,Expr::Lam{domain:ExprId(4),body:ExprId(3)}),(6,Expr::App{fun:ExprId(5),arg:ExprId(0)}),(7,Expr::BVar(99))]{e.insert(ExprId(i),node).unwrap();}
++  let env=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(1))).unwrap();let c=TypeChecker::new(&e,&l,&env);
++  let p=[ExprId(0)];
++  assert!(c.checked_prop_field_telescope(&p,&p,&[ExprId(2),ExprId(3)],&mut 65536),"both proof fields refer to the actual preceding P:Prop under its original owned context");
++  for field in [ExprId(0),ExprId(1),ExprId(4),ExprId(6),ExprId(7)] {assert!(!c.checked_prop_field_telescope(&p,&p,&[field],&mut 65536),"data, type, dangling, or beta-erased ill-typed field cannot qualify as a proof: {field:?}");}
++  assert!(!c.checked_prop_field_telescope(&p,&[ExprId(1)],&[ExprId(2)],&mut 65536),"the actual constructor parameter must independently form and match the expected parameter");
++  assert!(!c.checked_prop_field_telescope(&p,&p,&[ExprId(2)],&mut 0));
++  c.checked_binding_lineage.borrow_mut().insert(EnvFrame::empty().id(),None);
++  assert!(!c.checked_prop_field_telescope(&p,&p,&[ExprId(2)],&mut 65536),"revoked original source scopes cannot form a new checked telescope");
++ }
++}

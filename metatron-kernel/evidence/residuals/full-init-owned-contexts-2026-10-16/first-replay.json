@@ -1,0 +1,48 @@
+{
+  "binary_sha256": "9748c32eff99ab772807e56ee4e0432c9769edc1cb1104fc6a82ef8537fc9e8a",
+  "scope": "six original residuals plus complete Init",
+  "rows": [
+    {
+      "case": "good/init-prelude.ndjson",
+      "rc": 0,
+      "sha256": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5",
+      "terminal": ""
+    },
+    {
+      "case": "good/perf/fueled-chain.ndjson",
+      "rc": 2,
+      "sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/grind-ring-5.ndjson",
+      "rc": 2,
+      "sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Lean.Grind.CommRing.mul_comm:stage=theorem.value:verdict=UNKNOWN:reason=source-binder-capture-or-support-unavailable\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n21.ndjson",
+      "rc": 2,
+      "sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.bitwise._unary:stage=definition.value:verdict=UNKNOWN:reason=domain-owned-opening-unavailable\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n36.ndjson",
+      "rc": 2,
+      "sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.bitwise._unary:stage=definition.value:verdict=UNKNOWN:reason=domain-owned-opening-unavailable\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n21.ndjson",
+      "rc": 2,
+      "sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n7.ndjson",
+      "rc": 2,
+      "sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    }
+  ]
+}

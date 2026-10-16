@@ -1,0 +1,9 @@
+NUCLEUS_PROP_SINGLETON:name=Iff:arity=true:all=true:constructors=true:levels_unique=true:ctor_contracts=true:rec_metadata=true:rec_shape=true:field_prop=true
+NUCLEUS_PROP_SINGLETON:name=WellFounded:arity=true:all=true:constructors=true:levels_unique=true:ctor_contracts=true:rec_metadata=true:rec_shape=true:field_prop=false
+NUCLEUS_DOWNSTREAM:name=WellFounded:stage=inductive:verdict=Unknown
+
+Traceback (most recent call last):
+  File "/Users/heath/Documents/ChatGPT/Nucleus Lean Kernel/experiments/well-founded-owned-fields/replay_prefix.py", line 9, in <module>
+    assert p.returncode==0, f'Valid complete WellFounded declaration prefix must ACCEPT, got {p.returncode}'
+           ^^^^^^^^^^^^^^^
+AssertionError: Valid complete WellFounded declaration prefix must ACCEPT, got 2

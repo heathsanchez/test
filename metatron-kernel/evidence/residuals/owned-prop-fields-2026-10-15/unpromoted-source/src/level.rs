@@ -1,0 +1,422 @@
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::error::Error;
+use std::fmt;
+
+use crate::id::{IdTable, LevelId, NameId};
+use crate::judgment::Judgment;
+use crate::syntax::Level;
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub enum LevelTerm {
+    Zero,
+    Succ(Box<LevelTerm>),
+    Max(Box<LevelTerm>, Box<LevelTerm>),
+    IMax(Box<LevelTerm>, Box<LevelTerm>),
+    Param(String),
+}
+
+impl LevelTerm {
+    pub fn param(name: impl Into<String>) -> Self {
+        Self::Param(name.into())
+    }
+}
+
+pub fn succ(level: LevelTerm) -> LevelTerm {
+    LevelTerm::Succ(Box::new(level))
+}
+
+pub fn max(left: LevelTerm, right: LevelTerm) -> LevelTerm {
+    match (left, right) {
+        (LevelTerm::Zero, right) => right,
+        (left, LevelTerm::Zero) => left,
+        (left, right) if left == right => left,
+        (left, right) => LevelTerm::Max(Box::new(left), Box::new(right)),
+    }
+}
+
+fn level_is_zero_or_one(level: &LevelTerm) -> bool {
+    matches!(level, LevelTerm::Zero)
+        || matches!(
+            level,
+            LevelTerm::Succ(inner) if matches!(inner.as_ref(), LevelTerm::Zero)
+        )
+}
+
+fn level_is_definitely_nonzero(level: &LevelTerm) -> bool {
+    match level {
+        LevelTerm::Succ(_) => true,
+        LevelTerm::Max(left, right) => {
+            level_is_definitely_nonzero(left) || level_is_definitely_nonzero(right)
+        }
+        LevelTerm::Zero | LevelTerm::IMax(_, _) | LevelTerm::Param(_) => false,
+    }
+}
+
+pub fn level_imax(left: LevelTerm, right: LevelTerm) -> LevelTerm {
+    if level_is_zero_or_one(&left) {
+        return right;
+    }
+    if left == right {
+        return left;
+    }
+    match right {
+        LevelTerm::Zero => LevelTerm::Zero,
+        right if level_is_definitely_nonzero(&right) => max(left, right),
+        right => LevelTerm::IMax(Box::new(left), Box::new(right)),
+    }
+}
+
+pub fn imax(left: LevelTerm, right: LevelTerm) -> LevelTerm {
+    level_imax(left, right)
+}
+
+pub fn level_equal(left: LevelTerm, right: LevelTerm, budget: usize) -> Judgment<()> {
+    let mut remaining=budget;
+    level_equal_with_remaining(left,right,&mut remaining)
+}
+
+pub(crate) fn level_equal_with_remaining(left:LevelTerm,right:LevelTerm,remaining:&mut usize)->Judgment<()> {
+    let mut budget=Budget::new(*remaining);
+    let result=level_equal_bounded(left,right,&mut budget);
+    *remaining=budget.remaining;
+    result
+}
+
+fn level_equal_bounded(left:LevelTerm,right:LevelTerm,budget:&mut Budget)->Judgment<()> {
+    let Ok(left) = simplify(left, budget) else {
+        return Judgment::unknown("universe-equality-budget");
+    };
+    let Ok(right) = simplify(right, budget) else {
+        return Judgment::unknown("universe-equality-budget");
+    };
+
+    if left == right {
+        return Judgment::proven((), "universe-reflexivity");
+    }
+
+    let Some(left_canonical) = canonical(&left, budget) else {
+        if opaque_max_equal(&left, &right, budget) == Some(true) {
+            return Judgment::proven((), "max-successor-algebra-with-opaque-imax-atoms");
+        }
+        if std::env::var_os("NUCLEUS_TRACE_IMAX").is_some() {
+            eprintln!("NUCLEUS_IMAX side=left left={left:?} right={right:?}");
+        }
+        return Judgment::unknown("unresolved-imax-case");
+    };
+    let Some(right_canonical) = canonical(&right, budget) else {
+        if opaque_max_equal(&left, &right, budget) == Some(true) {
+            return Judgment::proven((), "max-successor-algebra-with-opaque-imax-atoms");
+        }
+        if std::env::var_os("NUCLEUS_TRACE_IMAX").is_some() {
+            eprintln!("NUCLEUS_IMAX side=right left={left:?} right={right:?}");
+        }
+        return Judgment::unknown("unresolved-imax-case");
+    };
+    let left = left_canonical;
+    let right = right_canonical;
+    if budget.exhausted {
+        return Judgment::unknown("universe-equality-budget");
+    }
+
+    if left == right {
+        Judgment::proven((), "canonical-max-successor-algebra")
+    } else {
+        Judgment::refuted("distinct-canonical-universes")
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum LevelError {
+    MissingLevel(LevelId),
+    MissingSubstitution(NameId),
+    Cycle(LevelId),
+    BudgetExhausted,
+}
+
+impl fmt::Display for LevelError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingLevel(id) => write!(formatter, "missing level id {}", id.0),
+            Self::MissingSubstitution(id) => {
+                write!(formatter, "missing substitution for name id {}", id.0)
+            }
+            Self::Cycle(id) => write!(formatter, "cyclic level graph at id {}", id.0),
+            Self::BudgetExhausted => write!(formatter, "level instantiation budget exhausted"),
+        }
+    }
+}
+
+impl Error for LevelError {}
+
+pub trait LevelSubstitutionLookup {
+    fn lookup_level(&self, name: NameId) -> Option<LevelTerm>;
+}
+
+impl LevelSubstitutionLookup for HashMap<NameId, LevelTerm> {
+    #[inline]
+    fn lookup_level(&self, name: NameId) -> Option<LevelTerm> {
+        self.get(&name).cloned()
+    }
+}
+
+const INLINE_LEVEL_VISIT_CAPACITY: usize = 8;
+
+struct LevelVisitSet {
+    inline: [Option<LevelId>; INLINE_LEVEL_VISIT_CAPACITY],
+    len: usize,
+    overflow: Option<HashSet<LevelId>>,
+}
+
+impl LevelVisitSet {
+    #[inline]
+    fn new() -> Self {
+        Self {
+            inline: [None; INLINE_LEVEL_VISIT_CAPACITY],
+            len: 0,
+            overflow: None,
+        }
+    }
+
+    #[inline]
+    fn insert(&mut self, id: LevelId) -> bool {
+        if let Some(overflow) = self.overflow.as_mut() {
+            return overflow.insert(id);
+        }
+        if self.inline[..self.len].contains(&Some(id)) {
+            return false;
+        }
+        if self.len < INLINE_LEVEL_VISIT_CAPACITY {
+            self.inline[self.len] = Some(id);
+            self.len += 1;
+            return true;
+        }
+        let mut overflow = HashSet::with_capacity(INLINE_LEVEL_VISIT_CAPACITY * 2);
+        for slot in &self.inline[..self.len] {
+            overflow.insert(slot.expect("initialized inline level visit slot"));
+        }
+        let inserted = overflow.insert(id);
+        self.overflow = Some(overflow);
+        inserted
+    }
+
+    #[inline]
+    fn remove(&mut self, id: &LevelId) {
+        if let Some(overflow) = self.overflow.as_mut() {
+            overflow.remove(id);
+            return;
+        }
+        if let Some(index) = self.inline[..self.len]
+            .iter()
+            .position(|slot| *slot == Some(*id))
+        {
+            self.len -= 1;
+            self.inline[index] = self.inline[self.len];
+            self.inline[self.len] = None;
+        }
+    }
+}
+
+pub fn instantiate_level<S: LevelSubstitutionLookup + ?Sized>(
+    levels: &IdTable<LevelId, Level>,
+    root: LevelId,
+    substitution: &S,
+    budget: usize,
+) -> Result<LevelTerm, LevelError> {
+    let mut remaining = budget;
+    instantiate_level_with_remaining(levels,root,substitution,&mut remaining)
+}
+
+pub(crate) fn instantiate_level_with_remaining<S: LevelSubstitutionLookup + ?Sized>(
+    levels:&IdTable<LevelId,Level>,root:LevelId,substitution:&S,remaining:&mut usize,
+)->Result<LevelTerm,LevelError> {
+    let mut visiting=LevelVisitSet::new();
+    instantiate(levels,root,substitution,remaining,&mut visiting)
+}
+
+fn instantiate<S: LevelSubstitutionLookup + ?Sized>(
+    levels: &IdTable<LevelId, Level>,
+    id: LevelId,
+    substitution: &S,
+    remaining: &mut usize,
+    visiting: &mut LevelVisitSet,
+) -> Result<LevelTerm, LevelError> {
+    if *remaining == 0 {
+        return Err(LevelError::BudgetExhausted);
+    }
+    *remaining -= 1;
+    if !visiting.insert(id) {
+        return Err(LevelError::Cycle(id));
+    }
+    let level = levels.get(id).ok_or(LevelError::MissingLevel(id))?;
+    let result = match level {
+        Level::Zero => Ok(LevelTerm::Zero),
+        Level::Succ(inner) => {
+            instantiate(levels, *inner, substitution, remaining, visiting).map(succ)
+        }
+        Level::Max(left, right) => {
+            let left = instantiate(levels, *left, substitution, remaining, visiting)?;
+            let right = instantiate(levels, *right, substitution, remaining, visiting)?;
+            Ok(max(left, right))
+        }
+        Level::IMax(left, right) => {
+            let left = instantiate(levels, *left, substitution, remaining, visiting)?;
+            let right = instantiate(levels, *right, substitution, remaining, visiting)?;
+            Ok(level_imax(left, right))
+        }
+        Level::Param(name) => substitution
+            .lookup_level(*name)
+            .ok_or(LevelError::MissingSubstitution(*name)),
+    };
+    visiting.remove(&id);
+    result
+}
+
+fn simplify(level: LevelTerm, budget: &mut Budget) -> Result<LevelTerm, ()> {
+    budget.tick()?;
+    match level {
+        LevelTerm::Zero | LevelTerm::Param(_) => Ok(level),
+        LevelTerm::Succ(inner) => Ok(succ(simplify(*inner, budget)?)),
+        LevelTerm::Max(left, right) => {
+            let left = simplify(*left, budget)?;
+            let right = simplify(*right, budget)?;
+            Ok(max(left, right))
+        }
+        LevelTerm::IMax(left, right) => {
+            let left = simplify(*left, budget)?;
+            let right = simplify(*right, budget)?;
+            Ok(level_imax(left, right))
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct CanonicalLevel {
+    constant: usize,
+    parameters: BTreeMap<String, usize>,
+}
+
+fn canonical(level: &LevelTerm, budget: &mut Budget) -> Option<CanonicalLevel> {
+    let mut result = CanonicalLevel {
+        constant: 0,
+        parameters: BTreeMap::new(),
+    };
+    if !collect(level, 0, &mut result, budget) {
+        return None;
+    }
+    if result
+        .parameters
+        .values()
+        .any(|offset| *offset >= result.constant)
+    {
+        result.constant = 0;
+    }
+    Some(result)
+}
+
+fn collect(
+    level: &LevelTerm,
+    offset: usize,
+    result: &mut CanonicalLevel,
+    budget: &mut Budget,
+) -> bool {
+    if budget.tick().is_err() {
+        return false;
+    }
+    match level {
+        LevelTerm::Zero => result.constant = result.constant.max(offset),
+        LevelTerm::Succ(inner) => {
+            let Some(offset) = offset.checked_add(1) else {
+                budget.exhausted = true;
+                return false;
+            };
+            return collect(inner, offset, result, budget);
+        }
+        LevelTerm::Max(left, right) => {
+            return collect(left, offset, result, budget) && collect(right, offset, result, budget);
+        }
+        LevelTerm::IMax(_, _) => return false,
+        LevelTerm::Param(name) => {
+            let entry = result.parameters.entry(name.clone()).or_default();
+            *entry = (*entry).max(offset);
+        }
+    }
+    true
+}
+
+struct Budget {
+    remaining: usize,
+    exhausted: bool,
+}
+
+/// An unresolved imax is a nonnegative natural-valued atom. Max and
+/// successor laws remain valid around identical atoms, without deciding
+/// their zero cases. Unequal atom maps prove nothing: distinct atoms can
+/// denote the same universe, so this fallback never refutes equality.
+fn opaque_max_equal(left: &LevelTerm, right: &LevelTerm, budget: &mut Budget) -> Option<bool> {
+    fn collect_atoms(
+        term: &LevelTerm, offset: usize, constant: &mut usize,
+        atoms: &mut HashMap<LevelTerm, usize>, budget: &mut Budget,
+    ) -> Option<()> {
+        budget.tick().ok()?;
+        match term {
+            LevelTerm::Zero => *constant = (*constant).max(offset),
+            LevelTerm::Succ(inner) => collect_atoms(inner, offset.checked_add(1)?, constant, atoms, budget)?,
+            LevelTerm::Max(a,b) => {
+                collect_atoms(a,offset,constant,atoms,budget)?;
+                collect_atoms(b,offset,constant,atoms,budget)?;
+            }
+            LevelTerm::Param(_) | LevelTerm::IMax(_,_) => {
+                let entry=atoms.entry(term.clone()).or_default();
+                *entry=(*entry).max(offset);
+            }
+        }
+        Some(())
+    }
+    let normalize=|term: &LevelTerm, budget: &mut Budget| {
+        let mut constant=0;let mut atoms=HashMap::new();
+        collect_atoms(term,0,&mut constant,&mut atoms,budget)?;
+        if atoms.values().any(|offset| *offset>=constant) {constant=0;}
+        Some((constant,atoms))
+    };
+    let (left_constant,left_atoms)=normalize(left,budget)?;
+    let (right_constant,right_atoms)=normalize(right,budget)?;
+    if left_constant!=right_constant || left_atoms.len()!=right_atoms.len() {return Some(false);}
+    let mut unmatched=right_atoms.into_iter().collect::<Vec<_>>();
+    for (left_atom,left_offset) in left_atoms {
+        let mut matched=None;
+        for (index,(right_atom,right_offset)) in unmatched.iter().enumerate() {
+            budget.tick().ok()?;
+            if left_offset!=*right_offset {continue;}
+            let same=if left_atom==*right_atom {true} else {
+                match (&left_atom,right_atom) {
+                    (LevelTerm::IMax(a,b),LevelTerm::IMax(c,d)) =>
+                        opaque_max_equal(a,c,budget)? && opaque_max_equal(b,d,budget)?,
+                    _=>false,
+                }
+            };
+            if same {matched=Some(index);break;}
+        }
+        let Some(index)=matched else{return Some(false);};
+        unmatched.swap_remove(index);
+    }
+    Some(true)
+}
+
+impl Budget {
+    fn new(remaining: usize) -> Self {
+        Self {
+            remaining,
+            exhausted: false,
+        }
+    }
+
+    fn tick(&mut self) -> Result<(), ()> {
+        if self.remaining == 0 {
+            self.exhausted = true;
+            Err(())
+        } else {
+            self.remaining -= 1;
+            Ok(())
+        }
+    }
+}
