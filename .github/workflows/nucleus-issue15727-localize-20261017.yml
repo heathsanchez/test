@@ -1,0 +1,114 @@
+name: Nucleus issue15727 minimal unknown localization
+on:
+  push:
+    branches: [research/nucleus-arena-reachability-20261017]
+    paths: [".github/workflows/nucleus-issue15727-localize-20261017.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  localize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PR_TOOLCHAIN: leanprover/lean4-pr-releases:pr-release-15738
+      PR_SHA: 154f744b2596e28b4fb75ef9fc6d0ba13557e047
+      MERGE_SHA: 136fe94cf04a62e91141a840a5ed7d3cd18936bf
+      EXPORTER_SHA: df81913eee5519d5a88ae5b0fd701b5298cc29ab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build frozen Nucleus checker without source changes
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Reproduce official Lean proof and pinned export
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.36.0-rc1
+          export PATH="$HOME/.elan/bin:$PATH"
+          elan toolchain install "$PR_TOOLCHAIN"
+          test "$(elan run "$PR_TOOLCHAIN" lean --githash)" = "$PR_SHA"
+          mkdir -p /tmp/issue15727
+          curl -sSfL "https://raw.githubusercontent.com/leanprover/lean4/$MERGE_SHA/tests/elab/issue15727.lean" > /tmp/issue15727/original.lean
+          elan run "$PR_TOOLCHAIN" lean /tmp/issue15727/original.lean
+          cp /tmp/issue15727/original.lean /tmp/issue15727/Issue15727.lean
+          cat >> /tmp/issue15727/Issue15727.lean <<'EOF'
+
+          theorem issue15727_f : f [1, 2, 3] = 6 := by decide
+          theorem issue15727_g : g [1, 2, 3] = f [1, 2, 3] := by rfl
+          theorem issue15727_step (x y : Nat) (ys : List Nat) :
+              f (x :: y :: ys) = f (y :: ys) + f ys := by simp [f]
+          EOF
+          echo "$PR_TOOLCHAIN" > /tmp/issue15727/lean-toolchain
+          cat > /tmp/issue15727/lakefile.toml <<'EOF'
+          name = "issue15727_qualification"
+          [[lean_lib]]
+          name = "Issue15727"
+          EOF
+          (cd /tmp/issue15727 && lake build Issue15727)
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter36
+          git -C /tmp/exporter36 checkout -q "$EXPORTER_SHA"
+          echo "$PR_TOOLCHAIN" > /tmp/exporter36/lean-toolchain
+          (cd /tmp/exporter36 && lake build)
+      - name: Export and independently test five singleton closures versus joint closure
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess,time,hashlib,tarfile
+          proj=pathlib.Path('/tmp/issue15727')
+          out=pathlib.Path('/tmp/evidence')
+          root=pathlib.Path('metatron-kernel')
+          nuc=root/'target/release/metatron-kernel'
+          pin=json.loads((root/'evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pin['origin_flags']})
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          env['METATRON_KERNEL_DIAGNOSTICS']='1'
+          groups={
+            'f':['f'],
+            'g':['g'],
+            'f-proof':['issue15727_f'],
+            'g-proof':['issue15727_g'],
+            'step-proof':['issue15727_step'],
+            'joint':['f','g','issue15727_f','issue15727_g','issue15727_step'],
+          }
+          records=[]
+          export=pathlib.Path('/tmp/exporter36/.lake/build/bin/lean4export')
+          for name,decls in groups.items():
+              p=out/(name+'.ndjson')
+              with p.open('wb') as f:
+                  subprocess.run(['lake','env',str(export),'Issue15727','--',*decls],cwd=proj,stdout=f,check=True,timeout=150)
+              with p.open('rb') as f:meta=json.loads(f.readline())['meta']
+              assert meta['format']['version']=='3.1.0'
+              t=time.perf_counter()
+              with p.open('rb') as f:
+                  try:
+                      v=subprocess.run([str(nuc)],stdin=f,capture_output=True,env=env,timeout=90)
+                      rc=v.returncode
+                      tail=(v.stderr+v.stdout).decode(errors='replace')[-12000:]
+                  except subprocess.TimeoutExpired:
+                      rc=124
+                      tail='TIMEOUT 90s'
+              row={'name':name,'declarations':decls,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size,'rc':rc,'seconds':round(time.perf_counter()-t,4),'tail':tail}
+              print(json.dumps({k:v for k,v in row.items() if k!='tail'}),flush=True)
+              records.append(row)
+          for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']:
+              p=root/'tests/fixtures'/name
+              with p.open('rb') as f: v=subprocess.run([str(nuc)],stdin=f,capture_output=True,env=env,timeout=60)
+              records.append({'name':name,'rc':v.returncode,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'tail':(v.stderr+v.stdout).decode(errors='replace')[-3000:]})
+          (out/'localization.json').write_text(json.dumps({'source':'de95855135d5c5fe8916b7ea005e736146bc5064','lean_pr':'154f744b2596e28b4fb75ef9fc6d0ba13557e047','records':records},indent=2)+'\n')
+          with tarfile.open(out/'exported-inputs.tar.gz','w:gz') as tar:
+              for name in groups: tar.add(out/(name+'.ndjson'),arcname=name+'.ndjson')
+          for name in groups: (out/(name+'.ndjson')).unlink()
+          PY
+      - name: Archive exact inputs, controls, traces, and verdicts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-issue15727-localization
+          path: /tmp/evidence
+          if-no-files-found: warn
