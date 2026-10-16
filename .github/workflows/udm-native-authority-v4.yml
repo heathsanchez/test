@@ -76,7 +76,7 @@ jobs:
       - name: Verify private integration and measured Git audit contracts
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/v4-controller/bin/python" -B -m unittest research.unified_consequence_runtime.test_native_environment_v4 research.unified_consequence_runtime.test_audit_index_v4 research.unified_consequence_runtime.test_qualify_native_frontier_v4 research.unified_consequence_runtime.test_native_frontier_v4_entrypoint research.unified_consequence_runtime.test_frontier_v4_preparation_tools research.unified_consequence_runtime.test_frontier_v4_curation_lineage research.unified_consequence_runtime.test_frontier_v4_historical_portability -v 2>&1 | tee qualification/binding-contracts.log
+          "$RUNNER_TEMP/v4-controller/bin/python" -B -m unittest research.unified_consequence_runtime.test_native_environment_v4 research.unified_consequence_runtime.test_audit_index_v4 research.unified_consequence_runtime.test_qualify_native_frontier_v4 research.unified_consequence_runtime.test_native_frontier_v4_entrypoint research.unified_consequence_runtime.test_frontier_v4_preparation_tools research.unified_consequence_runtime.test_frontier_v4_curation_lineage research.unified_consequence_runtime.test_frontier_v4_historical_portability research.unified_consequence_runtime.test_qualify_environment_v4_retention -v 2>&1 | tee qualification/binding-contracts.log
       - name: Verify new native controls under independently pinned legacy interpreter
         run: |
           set -euo pipefail

@@ -6,6 +6,7 @@ The original native verifier and its independent replay remain unchanged.
 """
 from __future__ import annotations
 import argparse
+from contextlib import contextmanager
 import hashlib
 import io
 import json
@@ -13,6 +14,7 @@ import os
 from pathlib import Path, PurePosixPath
 import subprocess
 import tarfile
+import tempfile
 import time
 import unittest
 
@@ -33,6 +35,7 @@ TEST_SHA256 = 'dd23f7325bac1c4e0dd895a1f93f84ce122e3f58443bd8986f3cc1115070b564'
 SOURCE_GATE_FILES = tuple('research/unified_consequence_runtime/'+name for name in (
     'native_environment_selection_v4.py', 'native_environment_v4.py',
     'qualify_environment_selection_v4.py', 'test_native_authority_v4.py',
+    'test_qualify_environment_v4_retention.py',
     'test_native_environment_v4.py', 'native_execution_v3.py', 'native_environment_v3.py',
     'native_admission_v2.py', 'native_execution_v2.py', 'decisive_native_verify.py',
     'native_runtime_v3.py', 'audit_index_v4.py',
@@ -130,6 +133,18 @@ class RecordedResult(unittest.TextTestResult):
         super().startTest(test); self.ids.append(test.id())
 
 
+@contextmanager
+def retained_temporary_outputs(path):
+    """Retain default evidence paths without changing any verifier or test."""
+    path=Path(path).absolute();path.mkdir(parents=True,exist_ok=False)
+    previous=tempfile.tempdir
+    tempfile.tempdir=str(path)
+    try:
+        yield path
+    finally:
+        tempfile.tempdir=previous
+
+
 def _qualify(repo, freeze, out):
     started=time.monotonic(); frozen=check_freeze(repo,freeze)
     out=Path(out).absolute();out.mkdir(parents=True,exist_ok=False)
@@ -147,7 +162,7 @@ def _qualify(repo, freeze, out):
         modern=max(frozen['runtimes'].values(),key=lambda r:r['identity']['version_info'][:3])
         os.environ['UDM_NATIVE_V3_INTERPRETER']=modern['interpreter']
         suite=unittest.defaultTestLoader.loadTestsFromModule(tests)
-        with (out/'contracts.log').open('w') as stream:
+        with (out/'contracts.log').open('w') as stream, retained_temporary_outputs(out/'default-collection-evidence'):
             runner=unittest.TextTestRunner(stream=stream,verbosity=2,resultclass=RecordedResult)
             RecordedResult.ids=[]
             verdict=runner.run(suite)
