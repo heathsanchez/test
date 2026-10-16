@@ -1,0 +1,139 @@
+{
+  "schema": "metalogic.decisive-v104-constructor-integration.v1",
+  "status": "LOCAL_NATIVE_CONTRACT_FIXTURES_PASS_PROSPECTIVE_GROWTH_UNKNOWN",
+  "source_pin": {
+    "repository": "heathsanchez/triskelion",
+    "commit": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "path": "experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+    "sha256": "d00301852efd278be8ac22b848e0c9e56ced7c574980753b2ebc2ef0a3b7cce9"
+  },
+  "original_executable_reuse": {
+    "definitions": [
+      {
+        "name": "h",
+        "line": 29,
+        "end_line": 29
+      },
+      {
+        "name": "nodes_for_selector",
+        "line": 41,
+        "end_line": 49
+      },
+      {
+        "name": "build_expr",
+        "line": 51,
+        "end_line": 64
+      },
+      {
+        "name": "program_candidates",
+        "line": 66,
+        "end_line": 91
+      }
+    ],
+    "assignments": [
+      "SEED",
+      "SELECTORS",
+      "BUILDERS",
+      "PROGRAM_CAP",
+      "MIN_SUPPORT"
+    ],
+    "retention_and_null_statements": [
+      {
+        "line": 115,
+        "end_line": 115,
+        "ast_sha256": "22bd9539d149ef99da65d7ee72e8bbc146be01ea1ad087d1bc12afab6007b513"
+      },
+      {
+        "line": 117,
+        "end_line": 122,
+        "ast_sha256": "d7c2fb9e533533159fc608035bdcd910bc38e8703dcb3e58412f547042c9ec1f"
+      },
+      {
+        "line": 123,
+        "end_line": 123,
+        "ast_sha256": "71413345387170a6fc5d43a4b201f8fd42dad7840adf2acf499eeecd79add1f2"
+      },
+      {
+        "line": 124,
+        "end_line": 124,
+        "ast_sha256": "7d31df868cf4fc0c1a0616329305d3c650b79f7e903b651a4d009465a75a992d"
+      },
+      {
+        "line": 125,
+        "end_line": 125,
+        "ast_sha256": "a941af7f9754b74066fd98d3d1b548b4cc6ea4b66451d1f3efccddd4133eab1c"
+      }
+    ],
+    "retention_semantics": "Exact original support minimum2distinct source tasks, shortest repr, strongest support, frozen hash top2; nullcontrol exactoriginal all_programs/non/null assignments. Original Python tuple/set equality semantics preserved.",
+    "invocation": "Original program_candidates(source,allowed=set(normalized_signatures),cap=frozen_cap). allowed filtering occurs before source-slot enumeration and candidate cap; never postfilters an already capped catalogue."
+  },
+  "new_files": [
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/decisive_constructor.py",
+      "sha256": "5579c9973678b6dcf7bb78558fc40fc17fa767e5a0fd9535dda2c4e568829555",
+      "bytes": 18570
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/test_decisive_constructor.py",
+      "sha256": "76df1a7172bcd4b64887e457a0f4653916ed2d41b84023617756c829b2b51a72",
+      "bytes": 11593
+    }
+  ],
+  "api": {
+    "retain": "retain_constructor(machine,supports,*,protocol_binding,source_repo,independent_check,dependencies=(),supersedes=None)",
+    "support": "{context:CASid,record:nativeProbeCASid,signature:[selector,builder],evidence:live decisive_native_probe eventID}",
+    "independent_check": "Top-level inspectable function(machine,context_id) returns exact independently reconstructed frozen context, not Boolean; context includes contract,catalog,catalog_spec,baseline_record,optionalnative_suite_authority.",
+    "invoke": "invoke_constructor(machine,constructor_id,*,protocol_binding,source_repo,independent_check) -> status,constructor_id,signatures,null_signatures,generation",
+    "generate": "generate_candidates(source_repo,source,*,allowed=None,cap=64) -> exact original (selector,builder,executable_candidate_source) triples"
+  },
+  "one_state_authority": {
+    "descriptor": "Existing Capability;operation=v104.ast_constructor;transition=CONSTRUCTOR_ACQUISITION;SourceText->ExecutableCandidateSource",
+    "persistence": "Existing Machine CAS/log/source_support/verification events; no new ledger or capability registry.",
+    "dependencies": "Source/checker/code pins plus actual native support-event IDs and caller external dependencies; existing Metatron/FLASH determines liveness.",
+    "withdrawal": "Dead support/ancestor blocks invocation and dependent native capabilities; physically missing constructor program CAS blocks invocation.",
+    "restoration": "Requires withdrawn exact constructor and fresh native receipt/event IDs for the supporting sources; generation increments; old evidence lineage cannot simply resurrect."
+  },
+  "independent_native_evidence_boundary": [
+    "Existing checked_native_receipt independently reopens CAS packets of exact rawnative receipt,source manifest,stdout/stderr andJUnit.",
+    "Baseline must be FAIL_NATIVE; candidate must be PASS_NATIVE or FAIL_NATIVE with fewer failure cases, equal declared testcounts, same exactsource/protocol/environment/contract and identical native-suite authority.",
+    "Source Git identity rechecked; exact candidate path/original SHA guards remain; context catalogue signature and generated original candidate bytes must agree.",
+    "Source support counts distinct frozen repository task identities in this native binding. This does not independently prove scientific independence of arbitrary forks.",
+    "Constructor warrant covers source-pinned executable candidate generation and retained selection. Each emitted future method still requires independent native verification."
+  ],
+  "fixture_qualification": {
+    "count": 9,
+    "status": "PASS",
+    "seconds": 7.062,
+    "interpreter": "/workspace/generic-verifier-test-venv/bin/python",
+    "log": "/workspace/qualification/decisive-constructor-tests-stable.log",
+    "sha256": "0c4820265f070fa844672dc8754b2c578a283a4d7b79d6ec99039a9d7689dd31",
+    "covers": [
+      "Actual native pytest failures then generated candidate passes on2local Git fixture sources",
+      "Exact originalretention and null controls",
+      "Executable original generator invoked on different local source",
+      "Duplicate/single source UNKNOWN",
+      "Wrongsignature/protocol/context/event/receipt/scope/checker/authority refusal",
+      "PhysicalCASremoval, ancestor revocation, unrelated support preservation",
+      "ExistingCAS/log reload",
+      "Fresh actual native2source restoration with new generation"
+    ]
+  },
+  "scientific_verdicts": {
+    "G2": "THIS_ADAPTER_ALONE_NOT_A_NEW_PROSPECTIVE_SELECTION_RESULT",
+    "G3": "UNKNOWN_UNTIL_FROZEN_FUTURE_NATIVE_CAUSAL_TEST",
+    "G4": "UNKNOWN_NO_SUPERIORITY_FROM_CONSTRUCTOR_IMPORT_OR_FIXTURES",
+    "G5": "UNKNOWN_NO_PYTHON_REFINEMENT_PROOF",
+    "G6": "UNKNOWN_NO_NONBYPASSABLE_EXTERNAL_MONITOR"
+  },
+  "limitations": [
+    "Low-level selector/builder grammar and retention rule remain supplied; no primitive-language or unrestricted constructor invention.",
+    "Finite caps and policy horizons do not establish complete old-language impossibility.",
+    "MemoryMachine bookkeeping fixtures do not replace production Metatron/FLASH or separate-process native qualification; root workflow must supply these.",
+    "Independent frozen-task/source authority belongs to root context checker; source hash or a returned numerical claim does not create authority.",
+    "All constructor receipt rechecks and failed invocation CPU costs charged to existing machine.costs; native acquisition costs are original separately retained probe costs.",
+    "No target repository source/test/outcome was inspected by this implementation worker; no real prospective experiment executed by this worker.",
+    "No commits, pushes, upstream changes, deployment or external effects granted."
+  ],
+  "git_diff_check": "PASS",
+  "independent_source_review": "ROOT_AND_HARNESS_REVIEW_FINDINGS_FIXED; FINAL_REVIEW_PENDING"
+}

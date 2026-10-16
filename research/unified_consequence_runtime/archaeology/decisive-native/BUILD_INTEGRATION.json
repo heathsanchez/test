@@ -1,0 +1,104 @@
+{
+  "schema": "metalogic.decisive-build-source-integration.v1",
+  "status": "LOCAL_CONTRACT_TESTS_PASS_NOT_YET_ACTIONS_QUALIFIED",
+  "owned_files": [
+    {
+      "path": "research/unified_consequence_runtime/generic_build_materialization.py",
+      "sha256": "cd6f90a57504b4bc257afca28501fa7798a381fba0f320373acd477a83d27ee1",
+      "bytes": 7665,
+      "recovered_from_commit": "35d79943376409941bb8f34c2020ca865de23c7b",
+      "recovered_original_sha256": "3d51e22c4a0876d5e574984aa206fef5ea88674c637bcfb50bc7b530acdd6580"
+    },
+    {
+      "path": "research/unified_consequence_runtime/generated_overlay_gate.py",
+      "sha256": "55635e1b0af1a9f159922f7378acf8a7ee8d82fdfce6f0bdbf4c9ae3ed9e1548",
+      "bytes": 3986,
+      "recovered_from_commit": "35d79943376409941bb8f34c2020ca865de23c7b",
+      "recovered_original_sha256": "0911267abb5fcc23e39e5a97f98e5fd7a53fc299a1dadc35a9d6138ce076aa6e"
+    },
+    {
+      "path": "research/unified_consequence_runtime/generated_wheel_evidence.py",
+      "sha256": "50fea468da119fe2be14656ad7660db21f9b463e0f817c7cba0f3f5d60ff2b85",
+      "bytes": 3343,
+      "recovered_from_commit": "35d79943376409941bb8f34c2020ca865de23c7b",
+      "recovered_original_sha256": "730f5ac3b914d49506ef2d5681e736deeaf07dde90648eced21d8711b633d25e"
+    },
+    {
+      "path": "research/unified_consequence_runtime/generic_native_verify.py",
+      "sha256": "7e6d6c90e25db9b354cd7926c620ea8ae5630e9be2cd173116f78afee1a2db4e",
+      "bytes": 19083,
+      "recovered_from_commit": "35d79943376409941bb8f34c2020ca865de23c7b",
+      "recovered_original_sha256": "0a03e7f5653e3acedba4f863dceec59a05278d64f8d757a0c263084062cd7895"
+    },
+    {
+      "path": "research/unified_consequence_runtime/native_frontier.py",
+      "sha256": "b2e2ad803cd5b99c7d2175ca0a8658bee3a38c8d3f70460a459896a7c79574a0",
+      "bytes": 22233,
+      "recovered_from_commit": "35d79943376409941bb8f34c2020ca865de23c7b",
+      "recovered_original_sha256": "1dae175632cd90d6dfe5751ee5d86cb1b8f03c356db3e142335ffe0c57638f62"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_generated_build_materialization.py",
+      "sha256": "6d5db09508644c38f4018f12587c58c6f333cbc50be9879138a8edeb2b0d8ea0",
+      "bytes": 10925
+    }
+  ],
+  "no_target_repository_read": true,
+  "target_scientific_experiments_run": false,
+  "commits_created": false,
+  "original_source": "heathsanchez/test@35d79943376409941bb8f34c2020ca865de23c7b",
+  "current_integration_base": "d63f416b728079e1e6056521e66721933224c983",
+  "actual_changes": [
+    "Retain real PEP517-built wheel bytes and receipt after temporary source cleanup.",
+    "Materialize exact Git files/modes, never untracked source. Use frozen no-index/no-build-isolation/no-deps PEP517 recipe against externally prepared exact interpreter.",
+    "Replace syntax-only supplied digests with source-bound V2 evidence and fresh full wheel member content rebuild comparison per native invocation. ZIP metadata timestamps excluded; member bytes exact.",
+    "Map installed wheel package paths to an unambiguous tracked flat/src package; supplemental generated .py modules only. Never overwrite Git files, tests, conftest, pytest, configuration or admit unknown new top-level packages/bytecode/native extensions.",
+    "Native verifier receives generated_wheel_evidence only; arbitrary generated_modules bytes are not an authority input. Every native admission verification, execution, restoration and reload verifies fresh native results.",
+    "Optional source descriptor pins builder/evidence/gate source. Retain wheel bytes through existing Machine CAS and recover after original wheel file vanishes.",
+    "Preserve rejected rebuilds as UNKNOWN_BUILD_AUTHENTICATION receipts, actual build-attempt costs and runtime charged maintenance; no capability admitted.",
+    "Old no-wheel verifier contract schema/receipt behavior remain unchanged; no E/D/V54/Metatron/FLASH implementation changed."
+  ],
+  "api": {
+    "materialize": "materialize(source,destination,python=sys.executable,timeout=300,source_commit=None) -> report with generated_wheel_evidence; python requires original pytest8.3.5 environment identity support and preinstalled backend dependencies.",
+    "runtime": "NativeFrontierRuntime(machine,contract,output,generated_wheel_evidence=report[generated_wheel_evidence]); optional only.",
+    "verifier": "verify(contract,candidate,output_dir,generated_wheel_evidence=evidence); source-bound independent build precedes unmodified7second native pytest horizon.",
+    "build_evidence_schema": "UDM_AUTHENTICATED_GENERATED_WHEEL_V2"
+  },
+  "contract_tests": [
+    {
+      "command": "/workspace/generic-verifier-test-venv/bin/python -m unittest research.unified_consequence_runtime.test_generated_build_materialization -v",
+      "result": "10 PASS",
+      "seconds": 19.565,
+      "log": "/workspace/qualification/decisive-build-tests-final.log",
+      "log_sha256": "c88caa074e9edb90f0ecfba3554177b36b91bf67ba1c4e6f5f1a5b70e45ec26f"
+    },
+    {
+      "command": "/workspace/generic-verifier-test-venv/bin/python -m unittest research.unified_consequence_runtime.test_generic_native_verify -v",
+      "result": "29 PASS",
+      "seconds": 24.364,
+      "log": "/workspace/qualification/decisive-old-native-verifier-contracts.log",
+      "log_sha256": "05f6efe2b08b9a0ba61368f6b842236e58373705d72dccb9fd7e64d389df39ac"
+    },
+    {
+      "command": "/workspace/generic-verifier-test-venv/bin/python -m unittest research.unified_consequence_runtime.test_native_frontier -v",
+      "result": "14 PASS",
+      "seconds": 30.489,
+      "log": "/workspace/qualification/decisive-old-native-frontier-contracts.log",
+      "log_sha256": "03d9815c69f72be0b2f2af9a0c77e6d851bcb4552069cedd413e873ebf14a3a4"
+    }
+  ],
+  "limitations": [
+    "Tests are self-contained build and native-verifier boundary fixtures, not prospective source tasks.",
+    "MemoryMachine causal bookkeeping in generated lifecycle fixture does not replace production Metatron/FLASH separate-process qualification.",
+    "PEP517 backend executes supplied source code, no non-bypassable sandbox proved.",
+    "The bridge supplies source/build evidence; it is not autonomously acquired observation/constructor/policy.",
+    "Build backends requiring unavailable Git metadata, dependency installation, non-src non-flat layouts, wheel data installation schemes, compiled extensions or nondeterministic member bytes remain unsupported/UNKNOWN.",
+    "No Python-to-Lean refinement proof or arbitrary upstream build semantics proof provided."
+  ],
+  "git_diff_check": "PASS",
+  "independent_source_review": {
+    "path": "/workspace/qualification/decisive-build-independent-review.json",
+    "sha256": "ba0aa6f462d8bd3888fa1c4645681947bc30f4b44a1175925d7ac5c49e84706b",
+    "result": "10 final-stable build fixtures PASS19.097s;43old verifier/runtime contractsPASS; no blocking bug found within bounded nonhostile-source interface; production Machine+FLASH/separateprocess qualification remains separate"
+  }
+}

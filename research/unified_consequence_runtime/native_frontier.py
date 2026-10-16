@@ -8,6 +8,7 @@ execution invokes the independent source-native worker afresh.
 from __future__ import annotations
 
 from dataclasses import asdict
+import base64
 from pathlib import Path
 import re
 import secrets
@@ -39,7 +40,7 @@ def _sha(path):
 
 class NativeFrontierRuntime:
     """One exact externally frozen native frontier; Machine owns all causal state."""
-    def __init__(self, machine, contract, output):
+    def __init__(self, machine, contract, output, *, generated_wheel_evidence=None, native_suite_authority=None):
         self.machine, self.contract = machine, _copy(contract)
         self.contract_sha256 = digest(canonical(self.contract).encode())
         self.output = Path(output).absolute()
@@ -52,6 +53,37 @@ class NativeFrontierRuntime:
             'tracked_tree_sha256': self.contract['tracked_tree_sha256'],
             'protocol_binding': self.contract['protocol_binding'],
             'adapter_sha256': _sha(__file__), 'verifier_sha256': _sha(verifier.__file__)}
+        self.native_suite_authority = _copy(native_suite_authority) if native_suite_authority is not None else None
+        self.native_suite_digest = None
+        if self.native_suite_authority is not None:
+            self.native_suite_digest = verifier.validate_native_suite_authority(self.contract,self.native_suite_authority)
+            self.source_descriptor.update(native_suite_authority_sha256=self.native_suite_digest,
+                native_suite_authority=self.machine.put(self.native_suite_authority))
+        self.generated_wheel_evidence = _copy(generated_wheel_evidence) if generated_wheel_evidence is not None else None
+        self.generated_wheel_digest = None
+        if self.generated_wheel_evidence is not None:
+            from .generated_wheel_evidence import evidence_digest
+            from . import generic_build_materialization as build
+            from . import generated_overlay_gate as overlay
+            from . import generated_wheel_evidence as provenance
+            self.generated_wheel_digest = evidence_digest(self.generated_wheel_evidence)
+            artifact_path = Path(self.generated_wheel_evidence['wheel_path'])
+            if artifact_path.is_file() and not artifact_path.is_symlink():
+                raw = artifact_path.read_bytes()
+                if digest(raw) != self.generated_wheel_evidence['wheel_sha256']:
+                    raise ValueError('retained wheel artifact digest mismatch')
+                artifact = machine.put({'schema':'UDM_RETAINED_BUILD_WHEEL_V1',
+                    'filename':artifact_path.name, 'base64':base64.b64encode(raw).decode('ascii')})
+            else:
+                matches = [node.payload['source'].get('generated_wheel_artifact') for node in machine.log
+                    if node.kind == 'generic_native_source' and
+                    node.payload.get('source',{}).get('generated_wheel_evidence_sha256') == self.generated_wheel_digest]
+                if not matches or len(set(matches)) != 1:
+                    raise ValueError('missing retained wheel artifact')
+                artifact = matches[0]
+            self.source_descriptor.update(generated_wheel_evidence_sha256=self.generated_wheel_digest,
+                generated_wheel_artifact=artifact, builder_sha256=_sha(build.__file__),
+                overlay_gate_sha256=_sha(overlay.__file__), build_evidence_sha256=_sha(provenance.__file__))
         self.authority = self._record_once('execution_authority_ceiling', AUTHORITY)
         self.source = self._record_once('generic_native_source', {
             'source': self.source_descriptor, 'contract': self.machine.put(self.contract),
@@ -100,6 +132,20 @@ class NativeFrontierRuntime:
                 self.source_descriptor['verifier_sha256'] != _sha(verifier.__file__) or
                 self.authority_ceiling != AUTHORITY):
             raise ValueError('native adapter, verifier or authority ceiling changed')
+        if self.native_suite_authority is not None and (
+                self.native_suite_digest != verifier.validate_native_suite_authority(self.contract,self.native_suite_authority)
+                or self.machine.get(self.source_descriptor['native_suite_authority']) != self.native_suite_authority):
+            raise ValueError('native suite authority changed')
+        if self.generated_wheel_evidence is not None:
+            from .generated_wheel_evidence import evidence_digest
+            from . import generic_build_materialization as build
+            from . import generated_overlay_gate as overlay
+            from . import generated_wheel_evidence as provenance
+            if (self.generated_wheel_digest != evidence_digest(self.generated_wheel_evidence)
+                    or self.source_descriptor['builder_sha256'] != _sha(build.__file__)
+                    or self.source_descriptor['overlay_gate_sha256'] != _sha(overlay.__file__)
+                    or self.source_descriptor['build_evidence_sha256'] != _sha(provenance.__file__)):
+                raise ValueError('generated build evidence or source changed')
         nodes = {node.id: node for node in self.machine.log}
         source = nodes[self.source]
         if (source.kind != 'generic_native_source' or source.payload != {
@@ -119,7 +165,35 @@ class NativeFrontierRuntime:
         self._scope()
         run = self.output/'native-runs'/secrets.token_hex(16)
         started = time.perf_counter()
-        receipt = verifier.verify(self.contract, candidate, run)
+        suite_options = {} if self.native_suite_authority is None else {'native_suite_authority':self.native_suite_authority}
+        if self.generated_wheel_evidence is None:
+            receipt = verifier.verify(self.contract, candidate, run, **suite_options)
+        else:
+            wheel = self.machine.get(self.source_descriptor['generated_wheel_artifact'])
+            name = wheel.get('filename')
+            if (wheel.get('schema') != 'UDM_RETAINED_BUILD_WHEEL_V1' or not isinstance(name,str)
+                    or Path(name).name != name or not name.endswith('.whl')):
+                raise ValueError('retained build artifact schema changed')
+            raw = base64.b64decode(wheel['base64'], validate=True)
+            if digest(raw) != self.generated_wheel_evidence['wheel_sha256']:
+                raise ValueError('retained build artifact bytes changed')
+            retained = self.output/'retained-wheel'; retained.mkdir(exist_ok=True)
+            path = retained/name
+            if path.is_symlink() or retained.resolve() != retained or (path.exists() and not path.is_file()):
+                raise ValueError('retained wheel output redirected')
+            path.write_bytes(raw)
+            evidence = dict(self.generated_wheel_evidence, wheel_path=str(path))
+            try:
+                receipt = verifier.verify(self.contract, candidate, run, generated_wheel_evidence=evidence, **suite_options)
+            except (ValueError,RuntimeError):
+                failed = run/'receipt.json'
+                if failed.is_file():
+                    import json
+                    retained_failure=json.loads(failed.read_text())
+                    self.machine.costs.append({'phase':'generic_native_independent_verification',
+                        'seconds':time.perf_counter()-started,'costs':retained_failure['costs'],
+                        'status':retained_failure['status'],'output':str(run)})
+                raise
         self._scope()
         self.machine.costs.append({'phase': 'generic_native_independent_verification',
             'seconds': time.perf_counter()-started, 'costs': receipt['costs'],
@@ -135,10 +209,24 @@ class NativeFrontierRuntime:
             'runner_sha256': self.source_descriptor['verifier_sha256'],
             'authority': 'EXTERNALLY_SUPPLIED_LOCAL_RESEARCH_ONLY',
             'external_enforcement': 'UNKNOWN_NONBYPASSABILITY'}
+        if self.native_suite_authority is not None:
+            expected.update(native_suite_authority_sha256=self.native_suite_digest,
+                required_test_nodes=self.native_suite_authority['required_test_nodes'])
         if not isinstance(receipt, dict) or any(receipt.get(k) != v for k, v in expected.items()):
             raise ValueError('native receipt source, program, authority or protocol binding mismatch')
         if not require_pass:
             return
+        if self.native_suite_authority is not None and not verifier.required_assertions_satisfied(
+                self.native_suite_authority,receipt.get('executed_test_nodes'),receipt.get('deselected_test_nodes'),
+                receipt.get('executed_test_reports'),receipt.get('junit',{})):
+            raise ValueError('native receipt lacks required independent assertion execution')
+        if self.generated_wheel_evidence is not None and (
+                receipt.get('generated_wheel_evidence_sha256') != self.generated_wheel_digest or
+                receipt.get('generated_wheel_content_sha256') != self.generated_wheel_evidence['wheel_content_sha256'] or
+                receipt.get('generated_module_count',0) < 1 or receipt.get('costs',{}).get('build_calls') != 1 or
+                not all(re.fullmatch('[0-9a-f]{64}',receipt.get(key,''))
+                        for key in ('generated_modules_sha256','build_verification_sha256'))):
+            raise ValueError('native receipt lacks independent source build binding')
         counts, costs = receipt.get('junit', {}), receipt.get('costs', {})
         if (receipt.get('status') != 'PASS_NATIVE' or receipt.get('exit_code') != 0 or
                 receipt.get('environment_sha256') != self.contract['environment_sha256'] or

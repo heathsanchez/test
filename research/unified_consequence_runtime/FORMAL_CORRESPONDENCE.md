@@ -266,3 +266,25 @@ discoverability, O3 policy improvement and fully charged future cost reduction
 require independent new native evidence. No such result follows from import,
 source recovery or generic admission. Non-bypassable external authority and
 concrete runtime refinement remain UNKNOWN.
+
+## Frozen decisive native meta-decision continuation
+
+The isolated continuation reuses original MSI V10 policy programs
+`56cfd7b523e3592cae4eafa5468f437ccb94dbe9`, the MSI consequential core,
+original JPL minimal basis/Pareto choice and MDA Developer through
+`native_meta_decision.py`. Original V104
+`426c54f7c774560e0fabe7213c5ef333b1327c71` supplies unchanged candidate
+construction, two-source support retention, MDL/hash selection and null
+constructor programs through `decisive_constructor.py`. New native score and
+source-contract bindings require actual independent pytest evidence.
+
+These are executable instances of bounded development contracts, not new
+Lean refinements. MSI categorical/refinement statements still require lawful
+concrete action and observation interpretations. VDN phase change still
+requires complete enumeration under its declared boundary; an eight-candidate
+native search is only a bounded prefix, never universal old-language
+impossibility. Metatron and FLASH recompute recorded causal support, without
+proving Python execution or mediating every external action. No new concrete
+Lean certificate or non-bypassable reference monitor is supplied: G5 and G6
+remain UNKNOWN. The immutable native author-test authority establishes only
+its declared static assertion grammar and actual execution coverage.
