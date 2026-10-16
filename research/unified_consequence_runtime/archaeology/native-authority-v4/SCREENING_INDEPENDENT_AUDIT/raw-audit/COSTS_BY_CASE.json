@@ -1,0 +1,420 @@
+{
+  "cases": [
+    {
+      "collection_calls": 0,
+      "controller_child_system_seconds": 1.6341489999999999,
+      "controller_child_user_seconds": 4.699803,
+      "controller_finished_at_unix": 1792174739.2631667,
+      "controller_started_at_unix": 1792174732.578152,
+      "controller_wall_seconds": 6.684949885000151,
+      "native_calls": 0,
+      "native_worker_subprocess_attempts": 0,
+      "pool_index": 0,
+      "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stdout_sha256": "d7bcb3082db15a0960bc09397544a47d4037b63de4e904e97be60248bcbfc786",
+      "repository": "dbader/schedule",
+      "screening_case_wall_seconds": 1.8065156679999745,
+      "setup_phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2521750420000899,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-000/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-000/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007706950000283541,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-000/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/dbader/schedule.git",
+            "170b63afc58af0456f40b139199272caa3a99d99"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-000/source-environment/metadata-fetch.log",
+          "log_sha256": "50c9ed7811fe2078cbd9b35ddcafc3d2281a79a1d9160af275ad0a9c3bd0fa2f",
+          "phase": "metadata-fetch",
+          "seconds": 0.4649057620003987,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-000/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "170b63afc58af0456f40b139199272caa3a99d99"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-000/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.007739749999927881,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.025897515999986354,
+          "status": "UNKNOWN"
+        }
+      ],
+      "setup_total_wall_seconds": 1.8062964580003609,
+      "sum_setup_phase_seconds": 1.7584250200006863
+    },
+    {
+      "collection_calls": 0,
+      "controller_child_system_seconds": 1.9113310000000001,
+      "controller_child_user_seconds": 5.639755,
+      "controller_finished_at_unix": 1792174777.6325836,
+      "controller_started_at_unix": 1792174769.5067806,
+      "controller_wall_seconds": 8.125591277999774,
+      "native_calls": 0,
+      "native_worker_subprocess_attempts": 0,
+      "pool_index": 1,
+      "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stdout_sha256": "d7bcb3082db15a0960bc09397544a47d4037b63de4e904e97be60248bcbfc786",
+      "repository": "fsspec/filesystem_spec",
+      "screening_case_wall_seconds": 2.8509728929998346,
+      "setup_phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.444868652000423,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-001/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-001/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007741922999684903,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-001/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/fsspec/filesystem_spec.git",
+            "06966f9c6c3604ec0d2ea043039423bd5ebc9a03"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-001/source-environment/metadata-fetch.log",
+          "log_sha256": "6eb6b2b3c7a620e9046738a2d2d206dd41adf3d9b9e1a9f1987250c1b6b5052e",
+          "phase": "metadata-fetch",
+          "seconds": 0.7661105600000155,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-001/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "06966f9c6c3604ec0d2ea043039423bd5ebc9a03"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-001/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.03206998499990732,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.07858239500001218,
+          "status": "UNKNOWN"
+        }
+      ],
+      "setup_total_wall_seconds": 2.850684248000107,
+      "sum_setup_phase_seconds": 2.329373515000043
+    },
+    {
+      "collection_calls": 0,
+      "controller_child_system_seconds": 1.8238309999999998,
+      "controller_child_user_seconds": 5.082811,
+      "controller_finished_at_unix": 1792174784.9629753,
+      "controller_started_at_unix": 1792174777.6335385,
+      "controller_wall_seconds": 7.3293447119999655,
+      "native_calls": 0,
+      "native_worker_subprocess_attempts": 0,
+      "pool_index": 2,
+      "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stdout_sha256": "d7bcb3082db15a0960bc09397544a47d4037b63de4e904e97be60248bcbfc786",
+      "repository": "lepture/mistune",
+      "screening_case_wall_seconds": 2.171039400999689,
+      "setup_phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2254424049997397,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-002/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-002/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007773331999942457,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-002/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/lepture/mistune.git",
+            "a1b50bc12e066e5707ff797f821829bfcdab03b5"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-002/source-environment/metadata-fetch.log",
+          "log_sha256": "fcda2f43b08172177052f3b570205026b7c78a6e2ee4d7edd5b5b46024c2e998",
+          "phase": "metadata-fetch",
+          "seconds": 0.565139987999828,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-002/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "a1b50bc12e066e5707ff797f821829bfcdab03b5"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-002/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.015909663999991608,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.07886383000004571,
+          "status": "UNKNOWN"
+        }
+      ],
+      "setup_total_wall_seconds": 2.170773469999858,
+      "sum_setup_phase_seconds": 1.8931292189995474
+    },
+    {
+      "collection_calls": 0,
+      "controller_child_system_seconds": 1.686465,
+      "controller_child_user_seconds": 4.815802999999999,
+      "controller_finished_at_unix": 1792174792.0873666,
+      "controller_started_at_unix": 1792174784.9680812,
+      "controller_wall_seconds": 7.119204681000156,
+      "native_calls": 0,
+      "native_worker_subprocess_attempts": 0,
+      "pool_index": 3,
+      "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stdout_sha256": "d7bcb3082db15a0960bc09397544a47d4037b63de4e904e97be60248bcbfc786",
+      "repository": "micheles/decorator",
+      "screening_case_wall_seconds": 2.1415626879997944,
+      "setup_phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2730789669999467,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-003/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-003/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007821093000075052,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-003/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/micheles/decorator.git",
+            "9ff37744f33a5aaf9459c7a9b3c9062f6952c349"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-003/source-environment/metadata-fetch.log",
+          "log_sha256": "b1c3a4cf0fbf41415c85ad9277a51c398080ef188ac25f3ba2a8668bd1da3468",
+          "phase": "metadata-fetch",
+          "seconds": 0.7659137000000555,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-003/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "9ff37744f33a5aaf9459c7a9b3c9062f6952c349"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-003/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.007842325000183337,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.03184338600021874,
+          "status": "UNKNOWN"
+        }
+      ],
+      "setup_total_wall_seconds": 2.1413530330000867,
+      "sum_setup_phase_seconds": 2.0864994710004794
+    },
+    {
+      "collection_calls": 0,
+      "controller_child_system_seconds": 1.6906740000000005,
+      "controller_child_user_seconds": 4.830738,
+      "controller_finished_at_unix": 1792174799.0937333,
+      "controller_started_at_unix": 1792174792.0878515,
+      "controller_wall_seconds": 7.005807247000121,
+      "native_calls": 0,
+      "native_worker_subprocess_attempts": 0,
+      "pool_index": 4,
+      "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stdout_sha256": "d7bcb3082db15a0960bc09397544a47d4037b63de4e904e97be60248bcbfc786",
+      "repository": "pytoolz/toolz",
+      "screening_case_wall_seconds": 2.1247535460001927,
+      "setup_phase_costs": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2887190100000225,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-004/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-004/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007736596000086138,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-004/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/pytoolz/toolz.git",
+            "a1e25cbd2c398b534f0736f5838e416202b0cb28"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-004/source-environment/metadata-fetch.log",
+          "log_sha256": "091762212e42ebb43b22914177174243a5bcc6c06cfaa302f9c41415593f71f9",
+          "phase": "metadata-fetch",
+          "seconds": 0.6152100430003884,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-authority-v4-prospective-screening/case-004/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "a1e25cbd2c398b534f0736f5838e416202b0cb28"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-authority-v4-prospective-screening/case-004/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.0076312169999255275,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.05747580600018409,
+          "status": "UNKNOWN"
+        }
+      ],
+      "setup_total_wall_seconds": 2.1245686380002553,
+      "sum_setup_phase_seconds": 1.9767726720006067
+    }
+  ],
+  "schema": "UDM_V4_COMPLETE_SCREENING_RETAINED_COST_AUDIT_V1",
+  "scope": "Native and collection attempt counters cover the native worker only. Git init/fetch/checkout, static selection, runtime preflight and q4 controller subprocess costs are retained separately. Nested wall times are nonadditive. Model/tool/engineering/full lifecycle costs remain UNKNOWN.",
+  "totals": {
+    "collection_calls": 0,
+    "controller_child_system_seconds": 8.74645,
+    "controller_child_user_seconds": 25.06891,
+    "metadata_api_calls": 132,
+    "metadata_total_curation_wall_seconds": 31.959356598999875,
+    "native_calls": 0,
+    "ordered_q4_meter_interval_seconds": 61.641629457473755,
+    "sum_case_wall_seconds": 11.094844195999485,
+    "sum_controller_wall_seconds": 36.26489780300017,
+    "sum_setup_phase_seconds": 10.044199897001363,
+    "sum_setup_wall_seconds": 11.093675847000668,
+    "whole_screening_controller_session_interval_seconds": 103.23838448524475
+  }
+}

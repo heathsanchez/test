@@ -1,0 +1,63 @@
+{
+  "captured_at_utc": "2026-10-16T18:19:04.045851+00:00",
+  "repository": "/workspace/udm-v54",
+  "gitdir": "/workspace/repos/test/.git/worktrees/udm-v54",
+  "common_gitdir": "/workspace/repos/test/.git",
+  "before_any_git_read_in_this_interval": true,
+  "prior_manifest": "/tmp/v4-screening-audit-index-prep-20261016/manifest.json",
+  "prior_interval_auditor_git_writes_or_index_restoration": false,
+  "prior_interval_external_change_context": "Root reports authorized freeze/pool commits since prior snapshot; exact changes are not attributed by this filesystem observation.",
+  "generated_task_repo_indices_scope": "Not inspected while screening is active. Snapshot will precede task repository Git reads after finished-pool notification.",
+  "indices": [
+    {
+      "scope": "linked",
+      "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+      "exists": true,
+      "size_bytes": 203317,
+      "sha256": "a83bbbb9d0d47e25fcea63e46b810ba4a764003c8435103237be4fb8761a1eae",
+      "copy_path": "/workspace/qualification/native-authority-v4-independent-screening-audit/metadata-preaudit/linked-index",
+      "prior_interval_observation": {
+        "scope": "linked",
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 202525,
+        "sha256": "fcbae2db8e273992d6e0a465bb7d194e365bedb37f201cee5cf87a4db2c8f881",
+        "copy_path": "/tmp/v4-screening-audit-index-prep-20261016/linked-index"
+      },
+      "same_existence_and_hash_as_prior": false
+    },
+    {
+      "scope": "linked",
+      "path": "/workspace/repos/test/.git/worktrees/udm-v54/index.lock",
+      "exists": false,
+      "prior_interval_observation": {
+        "scope": "linked",
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index.lock",
+        "exists": false
+      },
+      "same_existence_and_hash_as_prior": true
+    },
+    {
+      "scope": "common",
+      "path": "/workspace/repos/test/.git/index",
+      "exists": false,
+      "prior_interval_observation": {
+        "scope": "common",
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false
+      },
+      "same_existence_and_hash_as_prior": true
+    },
+    {
+      "scope": "common",
+      "path": "/workspace/repos/test/.git/index.lock",
+      "exists": false,
+      "prior_interval_observation": {
+        "scope": "common",
+        "path": "/workspace/repos/test/.git/index.lock",
+        "exists": false
+      },
+      "same_existence_and_hash_as_prior": true
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "audit_reference": "/workspace/qualification/native-authority-v4-artifact-audit/CI3_38944901241/AUDIT.json",
+  "audit_sha256": "5567694e95f536c4f2c620d7e884dabfb58451f4898bc6b94ba95990866ecdbe",
+  "confirmed_against_CI3": [
+    "31bindingchecks+5legacycontrols+29frozenmoderncontrols all pass. These are exact new workflow suites, not a claim that every historical repository test passes.",
+    "53modern attempts=39collection+14native; all have rawreports.13legacy rawreports=9collection+4native, separate from modern attemptledger.",
+    "Both formerly missing default recollections are retained in CI3; earlier green run remains bounded by its holes and RED run remains failed.",
+    "152.436826149seconds is the modern qualification phase wall, not complete lifecycle/model/tool/engineering cost.",
+    "Original1406baseline files remain byte-for-byte preserved; this source integrity claim is not a native baseline-comparison result.",
+    "Frozen forged objects/exceptions need not all be serialized; original packets, exact frozen source, success logs and recovered recollections support bounded control judgments.",
+    "No comparative baseline or developmental win is claimed; prospectiveG2 andG3-G6 stayUNKNOWN; universal malicious-plugin/sandbox/external enforcement is not established.",
+    "Selector53lines and binder27lines are correct."
+  ],
+  "findings": [
+    {
+      "evidence": "/workspace/qualification/native-authority-v4-artifact-audit/CI3_38944901241/SEMANTIC_AUDIT.json",
+      "finding": "The table labels UNKNOWN_INTERFACE as the V4 diagnostic disposition, but the independently audited CI3 V4 metadata replay returns CANDIDATE_SOURCE_ENVIRONMENT selecting the legacy profile. UNKNOWN_INTERFACE is the previously retained original native-contract refusal, not a new V4 metadata or native run.",
+      "id": "REPORT-001",
+      "line": 45,
+      "required_correction": "Use CANDIDATE_SOURCE_ENVIRONMENT (metadata only) in the V4 disposition cell; retain original --doctest-modules UNKNOWN_INTERFACE in the boundary cell. Explicitly retain zero native calls/no native admission.",
+      "severity": "material_status_precision"
+    },
+    {
+      "evidence": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v4/FRONTIER_PRIOR_REGRESSION_FAILURE.log",
+      "finding": "The cited FRONTIER_PRIOR_REGRESSION_FAILURE.log contains a combined56-test run including q4 controls. It shows the original q3 test raising FileNotFoundError for /unused in unchanged q3 source, but does not itself establish a separate reproduction without q4.",
+      "id": "REPORT-002",
+      "line": 54,
+      "required_correction": "Add the separately retained q3-only reproduction citation if available; otherwise state that the retained combined run exposes the original q3 expectation error and omit the unsupported separate-reproduction clause.",
+      "severity": "citation_clarification"
+    }
+  ],
+  "optional_precision": [
+    {
+      "line": 20,
+      "suggestion": "If the final runtime table does not already say so, distinguish15controller-native cases on CPython3.12.14/pytest8.3.5, five selected-modern cases on3.12.14/8.4.1, and nine metadata-only tests within the29modern suite. Five legacy cases run3.6.5/5.4.3."
+    },
+    {
+      "line": 32,
+      "suggestion": "For tighter scope, use No protected native obligation was admitted from this frozen pool. This states the observation without suggesting no such obligation exists behind the refusal."
+    }
+  ],
+  "prior_q3_log_sha256": "d6d32122bb142a4edae2786caf6b8b76c7391fe7a375d009e8f84437a7276c49",
+  "reviewed_draft": "/workspace/qualification/native-authority-v4-local/REPORT_DRAFT.md",
+  "reviewed_draft_sha256": "46a4431206e44d1895d38467fe39b5e04dfd112f844f171445ee68d5b107cb89",
+  "reviewer_actions": {
+    "Git_commands": 0,
+    "Git_or_source_mutations": 0,
+    "draft_edits": false,
+    "fresh_task_raw_source_or_outcome_reads": 0,
+    "native_or_collection_calls": 0,
+    "network_queries": 0
+  },
+  "schema": "UDM_NATIVE_AUTHORITY_V4_REPORT_DRAFT_OVERCLAIM_REVIEW_V1",
+  "scope": "Only report prose, strictCI3audit, retained prior diagnostic rows and prior regression log. No fresh task source/raw outcomes read. Prospective screening facts/costs await the separate screening audit.",
+  "status": "CORRECTIONS_REQUESTED",
+  "utc": "2026-10-16T18:28:33.473018+00:00"
+}

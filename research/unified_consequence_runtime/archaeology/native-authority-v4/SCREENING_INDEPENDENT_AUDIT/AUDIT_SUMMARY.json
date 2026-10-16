@@ -1,0 +1,540 @@
+{
+  "admitted": 0,
+  "archive": {
+    "audit_directory_is_separate": true,
+    "excluded_git_object_directories": 153,
+    "excluded_git_object_files": 160,
+    "exclusions_declared_and_reverified": true,
+    "included_directories": 110,
+    "included_files": 617,
+    "path": "archive/native-authority-v4-screening-complete-evidence.tar.gz",
+    "sha256": "33257164d46fc777fcd9fc971ce4d335d2d76f3ad15c856adf1c0aeea143bff7",
+    "size_bytes": 2986413,
+    "source_archive_count": 5,
+    "source_archive_exact_names": "case-NNN/source-environment/metadata-source.tar.gz"
+  },
+  "audited_commit": "565b210dd882cb2663c094a6f1c418dcf6687d87",
+  "case_refusals": [
+    {
+      "admission_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "metadata_constraint_reasons": [
+        {
+          "detail": "Expected package name at the start of dependency specifier\n    -rrequirements-dev.txt\n    ^",
+          "reason": "UNKNOWN_REQUIREMENT_GRAMMAR"
+        }
+      ],
+      "pool_index": 0,
+      "profiles": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+          "reasons": [
+            {
+              "detail": "Expected package name at the start of dependency specifier\n    -rrequirements-dev.txt\n    ^",
+              "reason": "UNKNOWN_REQUIREMENT_GRAMMAR"
+            }
+          ],
+          "status": "UNKNOWN"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+          "reasons": [
+            {
+              "detail": "Expected package name at the start of dependency specifier\n    -rrequirements-dev.txt\n    ^",
+              "reason": "UNKNOWN_REQUIREMENT_GRAMMAR"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "raw_report": {
+        "path": "/workspace/qualification/native-authority-v4-prospective-screening/case-000/SCREENING_CASE.json",
+        "sha256": "64e57ea5bdb4cb88de8f08a1aa6229ef1a1cbcd32a0f9ec210bab5e54c431150"
+      },
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "repository": "dbader/schedule"
+    },
+    {
+      "admission_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "metadata_constraint_reasons": [],
+      "pool_index": 1,
+      "profiles": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "pytest_version": "5.4.3",
+          "python_version": "3.6.5",
+          "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+          "reasons": [
+            {
+              "detail": "3.6",
+              "reason": "INCOMPATIBLE_DECLARED_PYTHON"
+            },
+            {
+              "detail": "3.6.5",
+              "reason": "INCOMPATIBLE_PYTHON_RANGE"
+            },
+            {
+              "detail": "hatch-vcs",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "hatchling>=1.27.0",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "fsspec[http]",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "fsspec[http]",
+              "reason": "UNKNOWN_EXTRA_DEPENDENCY_METADATA"
+            },
+            {
+              "detail": "numpy",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-asyncio!=0.22.0",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-benchmark",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-cov",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-mock",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-recording",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-rerunfailures",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "requests",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "REJECTED"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "pytest_version": "8.4.1",
+          "python_version": "3.12.14",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "reasons": [
+            {
+              "detail": "fsspec[http]",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "fsspec[http]",
+              "reason": "UNKNOWN_EXTRA_DEPENDENCY_METADATA"
+            },
+            {
+              "detail": "numpy",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-asyncio!=0.22.0",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-cov",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-mock",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-recording",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-rerunfailures",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "requests",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "raw_report": {
+        "path": "/workspace/qualification/native-authority-v4-prospective-screening/case-001/SCREENING_CASE.json",
+        "sha256": "05100e71f9a25bf756d27b90077d0a92c19fe3852a35637c67d4bcf8b7cf916a"
+      },
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "repository": "fsspec/filesystem_spec"
+    },
+    {
+      "admission_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "metadata_constraint_reasons": [],
+      "pool_index": 2,
+      "profiles": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "pytest_version": "5.4.3",
+          "python_version": "3.6.5",
+          "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+          "reasons": [
+            {
+              "detail": "3.6",
+              "reason": "INCOMPATIBLE_DECLARED_PYTHON"
+            },
+            {
+              "detail": "3.6.5",
+              "reason": "INCOMPATIBLE_PYTHON_RANGE"
+            },
+            {
+              "detail": "mypy",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-cov",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "ruff",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "REJECTED"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "pytest_version": "8.4.1",
+          "python_version": "3.12.14",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "reasons": [
+            {
+              "detail": "mypy",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest-cov",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "raw_report": {
+        "path": "/workspace/qualification/native-authority-v4-prospective-screening/case-002/SCREENING_CASE.json",
+        "sha256": "7ce1395457dcebe2e8723b17e1ae517878216f09148d68b67b0ad292ce54d8f1"
+      },
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "repository": "lepture/mistune"
+    },
+    {
+      "admission_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "metadata_constraint_reasons": [
+        {
+          "detail": "dynamic execution or namespace reflection in setup metadata scope",
+          "reason": "UNKNOWN_DYNAMIC_METADATA"
+        }
+      ],
+      "pool_index": 3,
+      "profiles": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "dynamic execution or namespace reflection in setup metadata scope",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "dynamic execution or namespace reflection in setup metadata scope",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "raw_report": {
+        "path": "/workspace/qualification/native-authority-v4-prospective-screening/case-003/SCREENING_CASE.json",
+        "sha256": "53f048c58fdf7b0f724dcaf2a06b4291c2f651e16442ffecd63eb7cefa0b48dc"
+      },
+      "reason": "UNKNOWN_DYNAMIC_METADATA",
+      "repository": "micheles/decorator"
+    },
+    {
+      "admission_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "metadata_constraint_reasons": [],
+      "pool_index": 4,
+      "profiles": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "pytest_version": "5.4.3",
+          "python_version": "3.6.5",
+          "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+          "reasons": [
+            {
+              "detail": "3.6",
+              "reason": "INCOMPATIBLE_DECLARED_PYTHON"
+            },
+            {
+              "detail": "3.6.5",
+              "reason": "INCOMPATIBLE_PYTHON_RANGE"
+            },
+            {
+              "detail": "setuptools-git-versioning>=2.0",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "setuptools>=77",
+              "installed_pin": "59.6.0",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "REJECTED"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "pytest_version": "8.4.1",
+          "python_version": "3.12.14",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "reasons": [
+            {
+              "detail": "setuptools-git-versioning>=2.0",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "raw_report": {
+        "path": "/workspace/qualification/native-authority-v4-prospective-screening/case-004/SCREENING_CASE.json",
+        "sha256": "59ab82ca75f5e59a6152c0711a8a44237d84f7bc0dc0f7ef358090d2fcaf366d"
+      },
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "repository": "pytoolz/toolz"
+    }
+  ],
+  "comparative_win": "UNKNOWN_NOT_ESTABLISHED",
+  "cost_scope": "Native and collection attempt counters cover the native worker only. Git init/fetch/checkout, static selection, runtime preflight and q4 controller subprocess costs are retained separately. Nested wall times are nonadditive. Model/tool/engineering/full lifecycle costs remain UNKNOWN.",
+  "costs": {
+    "collection_calls": 0,
+    "controller_child_system_seconds": 8.74645,
+    "controller_child_user_seconds": 25.06891,
+    "metadata_api_calls": 132,
+    "metadata_total_curation_wall_seconds": 31.959356598999875,
+    "native_calls": 0,
+    "ordered_q4_meter_interval_seconds": 61.641629457473755,
+    "sum_case_wall_seconds": 11.094844195999485,
+    "sum_controller_wall_seconds": 36.26489780300017,
+    "sum_setup_phase_seconds": 10.044199897001363,
+    "sum_setup_wall_seconds": 11.093675847000668,
+    "whole_screening_controller_session_interval_seconds": 103.23838448524475
+  },
+  "eligibility_rule": "PASS_NATIVE_OR_FAIL_NATIVE_IDENTICAL",
+  "first_precise_obstruction": {
+    "admission_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+    "bounded_metadata_cause": "tox testenv.deps supplies compact requirements include -rrequirements-dev.txt; frozen finite dependency grammar refuses it.",
+    "pool_index": 0,
+    "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+    "repository": "dbader/schedule"
+  },
+  "index_scope": {
+    "all_end_hashes_and_absences_unchanged": true,
+    "cross_phase_change": "Own linked index changed between initial preparation and metadata phase during root-authorized freeze/pool commits. Both prior bytes and new bytes retained; each later audit interval separately closes unchanged.",
+    "entries_checked": 21,
+    "existing_index_files": 9,
+    "preserved_before_git_reads": true,
+    "restores_or_resets": 0
+  },
+  "limits": [
+    "The metadata ledger contains 132 request rows and exact allowed projections; no independent proxy/network log was supplied, so unlogged/out-of-band calls are not globally excluded.",
+    "The frozen first eligible choice is reproduced from retained returned order. Three returned timestamp inversions are retained; globally latest-100 membership and GitHub response chronology are not independently authenticated.",
+    "Cases001/002/004 retain finite-catalog UNKNOWN; metadata profile refusals do not establish actual native incompatibility or impossibility of another environment.",
+    "Only complete base source was fetched and hash-verified. No head source overlay, admitted task contract, collection certificate, native receipt, assertion trace, learning ledger, candidate search, policy outcome or matched agent comparison exists.",
+    "Audit coverage is the supplied committed records, five completed cases and retained controller roots. It does not prove hostile-process nonbypassability or absence of unrelated external processes.",
+    "Root reports learner/root exposure was limited to public envelopes and costs before these bounded refusal disclosures; no global access log was supplied."
+  ],
+  "matched_agent_execution": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+  "metadata_coverage": {
+    "changed_file_page_calls": 103,
+    "closed_pr_list_calls": 9,
+    "commit_metadata_calls": 10,
+    "first_recorded_query": "2026-10-16T18:16:29.504233+00:00",
+    "last_recorded_query": "2026-10-16T18:17:00.738306+00:00",
+    "metadata_costs": {
+      "collection_calls": 0,
+      "metadata_api_calls": 132,
+      "metadata_budget_seconds": 900,
+      "metadata_wall_seconds": 31.70335103699972,
+      "native_calls": 0,
+      "total_curation_wall_seconds": 31.959356598999875
+    },
+    "retained_api_calls": 132,
+    "sum_recorded_call_wall_seconds": 72.43252179500041,
+    "tree_metadata_calls": 10
+  },
+  "native_baseline": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+  "native_ledger_execution": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+  "pool_cases": 5,
+  "pool_sha256": "0c7c215e6a773e4987e896e72b3508df62628ab80dfd4c384811b981813a220f",
+  "refused": 5,
+  "reports_sha256": "dcf82b228ee0f2e32bcd33a8a636cb29b924d6388ff2f511438b1c815015ea89",
+  "requested_roles": 2,
+  "schema": "UDM_NATIVE_AUTHORITY_V4_PORTABLE_TERMINAL_SCREENING_SUMMARY_V1",
+  "selected_roles": [],
+  "source_byte_scope": {
+    "all_base_blobs_worktrees_archives_and_modes_match": true,
+    "head_source": "NOT_FETCHED_HEAD_COMMIT_OBJECTS_ABSENT",
+    "native_import_or_assertion_evidence": "NONE_NO_COLLECTION_OR_NATIVE_EXECUTION",
+    "native_materialization": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+    "retained_base_source_bytes": 10583011,
+    "retained_base_source_files": 433,
+    "source_cases": [
+      {
+        "all_tracked_blobs_match_worktree_and_archive": true,
+        "archive": {
+          "path": "/workspace/qualification/native-authority-v4-prospective-screening/case-000/source-environment/metadata-source.tar.gz",
+          "sha256": "6d46ebd5dd89fa7673592370ef735b4bd59e99227e5a57ca8c0c089d00e1d80f",
+          "size_bytes": 28300
+        },
+        "base_commit": "170b63afc58af0456f40b139199272caa3a99d99",
+        "head_overlay_materialized": false,
+        "native_materialization": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+        "pool_index": 0,
+        "repository": "dbader/schedule",
+        "source_identity": {
+          "file_count": 27,
+          "git_tree": "be581c3cd653affd31468cc7a6394c2f99116c59",
+          "tracked_tree_sha256": "40cfa388b6b28fdddb95e79707a5b23271e6a91f365133077c2d262b207163aa"
+        },
+        "total_source_bytes": 105222
+      },
+      {
+        "all_tracked_blobs_match_worktree_and_archive": true,
+        "archive": {
+          "path": "/workspace/qualification/native-authority-v4-prospective-screening/case-001/source-environment/metadata-source.tar.gz",
+          "sha256": "61cf270d9b355f7444b65cdd9e4c9616dc884e1833efaab7f25cc16e87db6fef",
+          "size_bytes": 545683
+        },
+        "base_commit": "06966f9c6c3604ec0d2ea043039423bd5ebc9a03",
+        "head_overlay_materialized": false,
+        "native_materialization": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+        "pool_index": 1,
+        "repository": "fsspec/filesystem_spec",
+        "source_identity": {
+          "file_count": 164,
+          "git_tree": "91c1c8f51bc3f4ce3868d7a4b61c5cec1c83172c",
+          "tracked_tree_sha256": "abf9aa83b40c19e1a8b4e099668a6e564987ba9bfb3f29098a4a6c9f009395a2"
+        },
+        "total_source_bytes": 9268286
+      },
+      {
+        "all_tracked_blobs_match_worktree_and_archive": true,
+        "archive": {
+          "path": "/workspace/qualification/native-authority-v4-prospective-screening/case-002/source-environment/metadata-source.tar.gz",
+          "sha256": "e9d998df37fbc2edddd76bada75bb02c4c7544acff390ba921a9e311e6542f27",
+          "size_bytes": 175716
+        },
+        "base_commit": "a1b50bc12e066e5707ff797f821829bfcdab03b5",
+        "head_overlay_materialized": false,
+        "native_materialization": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+        "pool_index": 2,
+        "repository": "lepture/mistune",
+        "source_identity": {
+          "file_count": 142,
+          "git_tree": "46b825df9a978ed7123b036fad5d712b362f0fbb",
+          "tracked_tree_sha256": "141786642ac432b5baef3321a0c460e9b20c0e20d7dc3f39b2c0c6df401eb8ea"
+        },
+        "total_source_bytes": 750001
+      },
+      {
+        "all_tracked_blobs_match_worktree_and_archive": true,
+        "archive": {
+          "path": "/workspace/qualification/native-authority-v4-prospective-screening/case-003/source-environment/metadata-source.tar.gz",
+          "sha256": "6f2be422cb09fe1e37eb1b7d5ae01a1a7bdd0995b49ab1c7fd64d3ae2e677bad",
+          "size_bytes": 53082
+        },
+        "base_commit": "9ff37744f33a5aaf9459c7a9b3c9062f6952c349",
+        "head_overlay_materialized": false,
+        "native_materialization": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+        "pool_index": 3,
+        "repository": "micheles/decorator",
+        "source_identity": {
+          "file_count": 19,
+          "git_tree": "302bb3eb7f0b92736ab06702379c382ec2947ffe",
+          "tracked_tree_sha256": "164effa4d127a217b72db4af2887dbb0c0141b41fa4ca2c2c1aca99a0f24bdab"
+        },
+        "total_source_bytes": 169932
+      },
+      {
+        "all_tracked_blobs_match_worktree_and_archive": true,
+        "archive": {
+          "path": "/workspace/qualification/native-authority-v4-prospective-screening/case-004/source-environment/metadata-source.tar.gz",
+          "sha256": "6f5d75a023084bedbd875dde5db77299f9e364e8a310e049ac62df6f7c521c54",
+          "size_bytes": 77801
+        },
+        "base_commit": "a1e25cbd2c398b534f0736f5838e416202b0cb28",
+        "head_overlay_materialized": false,
+        "native_materialization": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+        "pool_index": 4,
+        "repository": "pytoolz/toolz",
+        "source_identity": {
+          "file_count": 81,
+          "git_tree": "8c31869825ffbcda67efd57ed06f77f1e8e6e983",
+          "tracked_tree_sha256": "7c1190dce05568356e4dc361fac3efa6926cdf2fe64b60851a230fe908c20e98"
+        },
+        "total_source_bytes": 289570
+      }
+    ]
+  },
+  "status": "TERMINAL_ADMISSION_SHORTFALL_NATIVE_G2_G6_UNKNOWN",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "base_source_only": true,
+  "checks": {
+    "all_head_commit_objects_absent": true,
+    "case_0_same_frozen_catalog": true,
+    "case_1_same_frozen_catalog": true,
+    "case_2_same_frozen_catalog": true,
+    "case_3_same_frozen_catalog": true,
+    "case_4_same_frozen_catalog": true,
+    "catalog_exact_gate_bytes": true,
+    "inventory_catalog_fingerprint": true,
+    "runtime_paths_fingerprint": true
+  },
+  "failures": [],
+  "head_source_boundary": [
+    {
+      "head_commit_object_present": false,
+      "pool_index": 0
+    },
+    {
+      "head_commit_object_present": false,
+      "pool_index": 1
+    },
+    {
+      "head_commit_object_present": false,
+      "pool_index": 2
+    },
+    {
+      "head_commit_object_present": false,
+      "pool_index": 3
+    },
+    {
+      "head_commit_object_present": false,
+      "pool_index": 4
+    }
+  ],
+  "native_source_materialization": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+  "schema": "UDM_V4_NATIVE_SCREENING_CATALOG_AND_SOURCE_BOUNDARY_SUPPLEMENT_V1"
+}
