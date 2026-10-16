@@ -1,0 +1,48 @@
+{
+  "binary_sha256": "586f95366b022cb4e4ab3f2d39a0de9745e1e352fa3c6a33377b3734f42fceec",
+  "qualification_scope": "six targeted full exports only",
+  "rows": [
+    {
+      "case": "good/perf/fueled-chain.ndjson",
+      "rc": 2,
+      "sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "seconds": 0.26022887499993885,
+      "terminal": "ody=2383/5377 depth=16 remaining=8953\nSOURCE_PI_LIFT_CONSUME domain=2377/5374 body=2383/5377 depth=16 remaining=8953\nSOURCE_PI_LIFT_AUTH domain=2377/5374 left=true right=true before=8951 remaining=8880\nSOURCE_PI_LIFT_SELECTED domain=2377/5374 body=2383/5377 depth=16 remaining=8355\nSOURCE_PI_LIFT_CONSUME domain=2377/5374 body=2383/5377 depth=16 remaining=8355\nSOURCE_PI_LIFT_AUTH domain=2377/5374 left=true right=true before=8353 remaining=8282\nSOURCE_PI_LIFT_SELECTED domain=2377/4634 body=2383/4637 depth=14 remaining=5669\nSOURCE_PI_LIFT_CONSUME domain=2377/4634 body=2383/4637 depth=14 remaining=5669\nSOURCE_PI_LIFT_AUTH domain=2377/4634 left=true right=true before=5667 remaining=5598\nSOURCE_PI_LIFT_SELECTED domain=2377/5374 body=2383/5377 depth=14 remaining=5360\nSOURCE_PI_LIFT_CONSUME domain=2377/5374 body=2383/5377 depth=14 remaining=5360\nSOURCE_PI_LIFT_AUTH domain=2377/5374 left=true right=true before=5358 remaining=5287\nSOURCE_PI_LIFT_SELECTED domain=2377/5374 body=2383/5377 depth=14 remaining=4760\nSOURCE_PI_LIFT_CONSUME domain=2377/5374 body=2383/5377 depth=14 remaining=4760\nSOURCE_PI_LIFT_AUTH domain=2377/5374 left=true right=true before=4758 remaining=4687\nSOURCE_PI_LIFT_SELECTED domain=2377/4634 body=2383/4637 depth=12 remaining=926\nSOURCE_PI_LIFT_CONSUME domain=2377/4634 body=2383/4637 depth=12 remaining=926\nSOURCE_PI_LIFT_AUTH domain=2377/4634 left=true right=true before=924 remaining=855\nSOURCE_PI_LIFT_SELECTED domain=2377/5374 body=2383/5377 depth=12 remaining=618\nSOURCE_PI_LIFT_CONSUME domain=2377/5374 body=2383/5377 depth=12 remaining=618\nSOURCE_PI_LIFT_AUTH domain=2377/5374 left=true right=true before=616 remaining=545\nSOURCE_PI_LIFT_SELECTED domain=2377/5374 body=2383/5377 depth=12 remaining=20\nSOURCE_PI_LIFT_CONSUME domain=2377/5374 body=2383/5377 depth=12 remaining=20\nSOURCE_PI_LIFT_AUTH domain=2377/5374 left=false right=false before=18 remaining=0\nNUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/grind-ring-5.ndjson",
+      "rc": 2,
+      "sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "seconds": 0.47286533300029987,
+      "terminal": "SOURCE_PI_LIFT_PUBLISHED domain=1745 body=1712 remaining=474\nSOURCE_PI_LIFT_PUBLISHED domain=1522 body=1774 remaining=473\nSOURCE_PI_LIFT_PUBLISHED domain=1499 body=1522 remaining=483\nSOURCE_PI_LIFT_PUBLISHED domain=1774 body=1794 remaining=479\nSOURCE_PI_LIFT_PUBLISHED domain=1493 body=1745 remaining=230\nSOURCE_PI_LIFT_PUBLISHED domain=1712 body=1716 remaining=477\nSOURCE_PI_LIFT_PUBLISHED domain=1745 body=1712 remaining=1001\nSOURCE_PI_LIFT_SELECTED domain=1745/1712 body=1712/1716 depth=5 remaining=21747\nSOURCE_PI_LIFT_CONSUME domain=1745/1712 body=1712/1716 depth=5 remaining=21747\nSOURCE_PI_LIFT_AUTH domain=1745/1712 left=true right=true before=21745 remaining=21724\nSOURCE_PI_LIFT_SELECTED domain=1745/1712 body=1712/1716 depth=5 remaining=65278\nSOURCE_PI_LIFT_CONSUME domain=1745/1712 body=1712/1716 depth=5 remaining=65278\nSOURCE_PI_LIFT_AUTH domain=1745/1712 left=true right=true before=65276 remaining=65255\nNUCLEUS_DOWNSTREAM:name=Lean.Grind.CommRing.mul_comm:stage=theorem.value:verdict=UNKNOWN:reason=source-binder-capture-or-support-unavailable\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n21.ndjson",
+      "rc": 2,
+      "sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "seconds": 0.5319087909997506,
+      "terminal": "SOURCE_PI_LIFT_PUBLISHED domain=5275 body=5277 remaining=474\nSOURCE_PI_LIFT_PUBLISHED domain=5489 body=12108 remaining=473\nSOURCE_PI_LIFT_PUBLISHED domain=5256 body=5489 remaining=483\nSOURCE_PI_LIFT_PUBLISHED domain=12108 body=12928 remaining=479\nSOURCE_PI_LIFT_PUBLISHED domain=5232 body=5275 remaining=230\nSOURCE_PI_LIFT_PUBLISHED domain=5277 body=5237 remaining=477\nSOURCE_PI_LIFT_PUBLISHED domain=5275 body=5277 remaining=1001\nSOURCE_PI_LIFT_SELECTED domain=5275/5277 body=5277/5237 depth=5 remaining=21747\nSOURCE_PI_LIFT_CONSUME domain=5275/5277 body=5277/5237 depth=5 remaining=21747\nSOURCE_PI_LIFT_AUTH domain=5275/5277 left=true right=true before=21745 remaining=21724\nSOURCE_PI_LIFT_SELECTED domain=5275/5277 body=5277/5237 depth=5 remaining=65278\nSOURCE_PI_LIFT_CONSUME domain=5275/5277 body=5277/5237 depth=5 remaining=65278\nSOURCE_PI_LIFT_AUTH domain=5275/5277 left=true right=true before=65276 remaining=65255\nSOURCE_PI_LIFT_PUBLISHED domain=14189 body=14189 remaining=232\nSOURCE_PI_LIFT_PUBLISHED domain=14189 body=14189 remaining=238\nNUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n36.ndjson",
+      "rc": 2,
+      "sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "seconds": 0.5158097080002335,
+      "terminal": "SOURCE_PI_LIFT_PUBLISHED domain=5274 body=5276 remaining=474\nSOURCE_PI_LIFT_PUBLISHED domain=5488 body=12107 remaining=473\nSOURCE_PI_LIFT_PUBLISHED domain=5255 body=5488 remaining=483\nSOURCE_PI_LIFT_PUBLISHED domain=12107 body=12927 remaining=479\nSOURCE_PI_LIFT_PUBLISHED domain=5231 body=5274 remaining=230\nSOURCE_PI_LIFT_PUBLISHED domain=5276 body=5236 remaining=477\nSOURCE_PI_LIFT_PUBLISHED domain=5274 body=5276 remaining=1001\nSOURCE_PI_LIFT_SELECTED domain=5274/5276 body=5276/5236 depth=5 remaining=21747\nSOURCE_PI_LIFT_CONSUME domain=5274/5276 body=5276/5236 depth=5 remaining=21747\nSOURCE_PI_LIFT_AUTH domain=5274/5276 left=true right=true before=21745 remaining=21724\nSOURCE_PI_LIFT_SELECTED domain=5274/5276 body=5276/5236 depth=5 remaining=65278\nSOURCE_PI_LIFT_CONSUME domain=5274/5276 body=5276/5236 depth=5 remaining=65278\nSOURCE_PI_LIFT_AUTH domain=5274/5276 left=true right=true before=65276 remaining=65255\nSOURCE_PI_LIFT_PUBLISHED domain=14188 body=14188 remaining=232\nSOURCE_PI_LIFT_PUBLISHED domain=14188 body=14188 remaining=238\nNUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n21.ndjson",
+      "rc": 2,
+      "sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "seconds": 0.29758470800015857,
+      "terminal": "SOURCE_PI_LIFT_PUBLISHED domain=6081 body=6081 remaining=219\nSOURCE_PI_LIFT_PUBLISHED domain=6081 body=6081 remaining=988\nNUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n7.ndjson",
+      "rc": 2,
+      "sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "seconds": 0.2924003329999323,
+      "terminal": "SOURCE_PI_LIFT_PUBLISHED domain=6084 body=6084 remaining=219\nSOURCE_PI_LIFT_PUBLISHED domain=6084 body=6084 remaining=988\nNUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    }
+  ]
+}
