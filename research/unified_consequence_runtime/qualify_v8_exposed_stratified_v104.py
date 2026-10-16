@@ -13,6 +13,7 @@ import ast
 import copy
 import hashlib
 import subprocess
+import traceback
 from pathlib import Path
 import sys
 import time
@@ -263,7 +264,8 @@ def run(out):
         return report
     except Exception as error:
         report.update(status="UNKNOWN_MSI_EXPOSED_DIAGNOSTIC_INTERFACE",
-                      reason=type(error).__name__+": "+str(error))
+                      reason=type(error).__name__+": "+str(error),
+                      traceback=traceback.format_exc(limit=15))
         return report
     finally:
         report["wall_seconds"]=time.monotonic()-started
