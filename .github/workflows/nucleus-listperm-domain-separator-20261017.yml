@@ -1,0 +1,59 @@
+name: Nucleus exact List.Perm Pi-domain separator
+on:
+  push:
+    branches: [research/nucleus-listperm-source-20261017]
+    paths:
+      - ".github/workflows/nucleus-listperm-domain-separator-20261017.yml"
+      - "metatron-kernel/src/typecheck.rs"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  type-premises:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile exact diagnostic source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Recover prior exact 56 KiB Lean Prelude proof export (no regenerated tests)
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/inputs
+          gh api repos/heathsanchez/test/actions/artifacts/12077748490/zip > /tmp/source.zip
+          unzip -q /tmp/source.zip -d /tmp/inputs
+          printf '%s  %s\n' 6feb6fdc9ec8190efeee6bc37bbda217d9a1ef60cbb5664c9642bb4a6885a107 /tmp/inputs/list-perm-reconswap.ndjson | sha256sum -c -
+      - name: Localize actual closed-source argument and expected Pi domain
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,pathlib,subprocess,time
+          p=pathlib.Path('/tmp/inputs/list-perm-reconswap.ndjson')
+          frozen=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in frozen['origin_flags']})
+          env.update({'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1','NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION':'1','METATRON_KERNEL_DIAGNOSTICS':'1'})
+          t=time.perf_counter()
+          proc=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=p.read_bytes(),capture_output=True,env=env,timeout=45)
+          stderr=proc.stderr.decode(errors='replace')
+          report={'source':os.environ['GITHUB_SHA'],'input_sha':'6feb6fdc9ec8190efeee6bc37bbda217d9a1ef60cbb5664c9642bb4a6885a107',
+             'rc':proc.returncode,'seconds':round(time.perf_counter()-t,5),'diagnostics':stderr[-48000:]}
+          pathlib.Path('/tmp/evidence/result.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps({'rc':report['rc'],'trace':stderr[-9000:]},sort_keys=True),flush=True)
+          assert proc.returncode == 2, 'This is a diagnostic of the unresolved source, not an admission'
+          assert 'NUCLEUS_APP_DOMAIN_OBLIGATION' in stderr, 'No exact binder-domain diagnostic was captured'
+          PY
+      - name: Upload diagnostic lineage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-listperm-domain-separator-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
