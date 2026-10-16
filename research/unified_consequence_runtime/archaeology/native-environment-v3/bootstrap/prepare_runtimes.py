@@ -45,7 +45,8 @@ def download(record, directory):
         raise ValueError('downloaded artifact digest or size differs')
     if path.suffix == '.whl':
         with zipfile.ZipFile(path) as bundle:
-            names = [n for n in bundle.namelist() if n.endswith('.dist-info/METADATA')]
+            names = [n for n in bundle.namelist()
+                     if n.count('/') == 1 and n.endswith('.dist-info/METADATA')]
             if len(names) != 1:
                 raise ValueError('one wheel METADATA required')
             raw = bundle.read(names[0])

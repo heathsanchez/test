@@ -120,6 +120,7 @@ jobs:
             research.unified_consequence_runtime.test_native_execution_v3 \
             research.unified_consequence_runtime.test_native_runtime_v3 \
             research.unified_consequence_runtime.test_native_environment_v3 \
+            research.unified_consequence_runtime.test_native_environment_bootstrap_v3 \
             research.unified_consequence_runtime.test_qualify_environment_selection_v3 \
             -v 2>&1 | tee qualification/contracts.log
       - name: Verify the portable worker against the frozen legacy runtime
