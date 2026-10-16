@@ -1,0 +1,120 @@
+name: Nucleus derived finite enum / Ordering source qualification
+on:
+  push:
+    branches: [research/nucleus-three-constructor-enum-20261017]
+    paths:
+      - "metatron-kernel/**"
+      - ".github/workflows/nucleus-ordering-finite-enum-20261017.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ordering:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      LEAN_PIN: 5045d0056413266e57c625dcd7c365b10e377c52
+      EXPORTER_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Nucleus source and check native fixtures
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/evidence/tests.log 2>&1
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Compile six official-Lean finite enum obligations
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          export PATH="$HOME/.elan/bin:$PATH"
+          test "$(lean --githash)" = "$LEAN_PIN"
+          mkdir -p /tmp/enum
+          cat >/tmp/enum/lean-toolchain <<'EOF'
+          leanprover/lean4:v4.34.1
+          EOF
+          cat >/tmp/enum/lakefile.toml <<'EOF'
+          name = "nucleus_ordering_source"
+          [[lean_lib]]
+          name = "OrderingWitness"
+          EOF
+          cat >/tmp/enum/OrderingWitness.lean <<'EOF'
+          import Init.Data.Ord.Basic
+          theorem ordering_lt : Ordering.lt = Ordering.lt := by rfl
+          theorem ordering_eq : Ordering.eq = Ordering.eq := by rfl
+          theorem ordering_gt : Ordering.gt = Ordering.gt := by rfl
+          theorem ordering_decide : Ordering.lt = Ordering.lt := by decide
+          theorem ordering_not_eq : Ordering.lt ≠ Ordering.eq := by decide
+          def ordering_to_nat : Ordering → Nat
+            | .lt => 1
+            | .eq => 2
+            | .gt => 3
+          theorem ordering_rec_iota : ordering_to_nat .gt = 3 := by rfl
+          EOF
+          (cd /tmp/enum && lake build OrderingWitness)
+          sha256sum /tmp/enum/OrderingWitness.lean > /tmp/evidence/lean-proof-source.sha256
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter
+          git -C /tmp/exporter checkout -q "$EXPORTER_SHA"
+          echo leanprover/lean4:v4.34.1 > /tmp/exporter/lean-toolchain
+          (cd /tmp/exporter && lake build)
+      - name: Test each verified source closure plus corrupt recursor metadata
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess,os
+          root=pathlib.Path('/tmp/enum');output=pathlib.Path('/tmp/evidence')
+          binary='metatron-kernel/target/release/metatron-kernel'
+          frozen=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in frozen['origin_flags']})
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1';env['NUCLEUS_TRACE_GENERIC_NONREC']='1';env['METATRON_KERNEL_DIAGNOSTICS']='1'
+          names=['ordering_lt','ordering_eq','ordering_gt','ordering_decide','ordering_not_eq','ordering_rec_iota']
+          results=[];mutations=[]
+          for name in names:
+              p=output/(name+'.ndjson')
+              with p.open('wb') as f:subprocess.run(['lake','env','/tmp/exporter/.lake/build/bin/lean4export','OrderingWitness','--',name],cwd=root,stdout=f,check=True)
+              data=p.read_bytes();rows=[json.loads(l) for l in data.splitlines()]
+              ids={0:''}
+              for r in rows:
+                  if 'in' in r:
+                      d=r.get('str') or r.get('num')
+                      ids[r['in']]=ids[d['pre']]+('.' if ids[d['pre']] else '')+str(d.get('str',d.get('i')))
+              inds=[r for r in rows if 'inductive' in r and ids[r['inductive']['types'][0]['name']]=='Ordering']
+              assert len(inds)==1,(name,len(inds))
+              ind=inds[0]['inductive']
+              assert len(ind['ctors'])==3 and [ids[c['name']] for c in ind['ctors']]==['Ordering.lt','Ordering.eq','Ordering.gt']
+              a=subprocess.run([binary],input=data,capture_output=True,env=env,timeout=90)
+              results.append({'name':name,'rc':a.returncode,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'trace':(a.stderr+a.stdout).decode(errors='replace')[-2200:]})
+              print(name,a.returncode,flush=True)
+              if name=='ordering_lt':
+                  def mutate(kind,action):
+                      target=json.loads(json.dumps(rows))
+                      block=next(r['inductive'] for r in target if 'inductive'in r and ids[r['inductive']['types'][0]['name']]=='Ordering')
+                      action(block)
+                      payload=('\n'.join(json.dumps(r,separators=(',',':')) for r in target)+'\n').encode()
+                      b=subprocess.run([binary],input=payload,capture_output=True,env=env,timeout=90)
+                      mutations.append({'kind':kind,'rc':b.returncode,'sha256':hashlib.sha256(payload).hexdigest(),'trace':(b.stderr+b.stdout).decode(errors='replace')[-1500:]})
+                      print('negative',kind,b.returncode,flush=True)
+                  mutate('constructor-index',lambda b:b['ctors'][1].update(cidx=0))
+                  mutate('recursor-minors',lambda b:b['recs'][0].update(numMinors=2))
+                  mutate('recursor-rule',lambda b:b['recs'][0]['rules'][0].update(rhs=0))
+              p.unlink()
+          for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']:
+              p=pathlib.Path('metatron-kernel/tests/fixtures')/name
+              b=subprocess.run([binary],input=p.read_bytes(),capture_output=True,env=env,timeout=90)
+              mutations.append({'kind':name,'rc':b.returncode,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()})
+          report={'source':os.environ['GITHUB_SHA'],'lean':os.environ['LEAN_PIN'],'results':results,'controls':mutations,
+              'qualified':all(r['rc']==0 for r in results) and all(r['rc']!=0 for r in mutations)}
+          (output/'ordering-results.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('qualified=',report['qualified'],flush=True)
+          assert report['qualified'],'Nucleus does not yet qualify exact Ordering data or its negative controls'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-ordering-derived-enum-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
