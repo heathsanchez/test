@@ -73,8 +73,8 @@ class StaticSourceRoleContracts(unittest.TestCase):
     def test_parseable_legacy_pytest_api_remains_a_constraint(self):
         from .test_native_environment_selection_v3 import LEGACY
         files = {"setup.py": LEGACY,
-                 "tox.ini": b"[tox]\\nenvlist = py{35,36}-{without,with}-extensions\\n[testenv]\\ndeps = pytest\\n",
-                 "tests/conftest.py": b"import pytest\\nC = pytest.collect.File\\n"}
+                 "tox.ini": b"[tox]\nenvlist = py{35,36}-{without,with}-extensions\n[testenv]\ndeps = pytest\n",
+                 "tests/conftest.py": b"import pytest\nC = pytest.collect.File\n"}
         options = catalog(profile("legacy", "3.6.12", "5.4.3"), profile())
         result = new.select_profile(files, options)
         self.assertEqual(result["status"], "CANDIDATE_SOURCE_ENVIRONMENT")
