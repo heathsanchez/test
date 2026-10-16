@@ -1,0 +1,26 @@
+{
+  "schema": "UDM_V8_EXPOSED_STRATIFIED_ORIGINAL_V104",
+  "status": "FROZEN_BEFORE_NEXT_NATIVE_OUTCOME",
+  "exposed_source": "pallets/click PR3884 exact V7 original base plus head-authored tests",
+  "old_complete_cap64_run": 38978813909,
+  "original_v104_commit": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+  "method": "For each original pinned SELECTORS times BUILDERS tuple, use the original SHA-authenticated program_candidates with allowed singleton, cap=1. Sort signatures by original V104 h(program), deduplicate by produced source text, retain first 64 source-derived candidates.",
+  "candidate_cap": 64,
+  "native_replays_per_candidate": 2,
+  "native_call_ceiling": 130,
+  "old_msi_policies": 36,
+  "old_msi_cold_order": true,
+  "frozen_budget_horizon": 8,
+  "previously_exposed": true,
+  "no_fresh_G2_promotion": true,
+  "preserved_unopened_futures": [
+    "jd/tenacity",
+    "pypa/packaging"
+  ],
+  "no_GH_TOKEN_in_native_execution": true,
+  "all_executions_charged": true,
+  "no_new_operators": true,
+  "no_retroactive_choice": true,
+  "negative_scope": "Only a declared finite sample, not the full original V104 search space or universal expressivity",
+  "bounded_scope": "EXPOSED_DIAGNOSTIC_ONLY"
+}
