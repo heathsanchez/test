@@ -39,7 +39,7 @@ jobs:
           frozen=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
           env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
           env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in frozen['origin_flags']})
-          env.update({'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1','NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION':'1','METATRON_KERNEL_DIAGNOSTICS':'1'})
+          env.update({'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1','NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION':'1','NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_LOCAL_PROOF_IRREL':'1','NUCLEUS_TRACE_CHECKED_RELEVANCE':'1','METATRON_KERNEL_DIAGNOSTICS':'1'})
           t=time.perf_counter()
           proc=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=p.read_bytes(),capture_output=True,env=env,timeout=45)
           stderr=proc.stderr.decode(errors='replace')
