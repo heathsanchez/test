@@ -1,0 +1,58 @@
+name: Archive native admission and actual comparator evidence
+on:
+  push:
+    branches: [research/udm-native-admission-v2-20261016]
+    paths: [.github/workflows/udm-native-admission-evidence.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit-and-archive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check archived receipts and exact qualified source without replaying tasks
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,tarfile
+          root=pathlib.Path('research/unified_consequence_runtime')
+          evidence=root/'archaeology/native-frontier-v2/22e6dfef-result'
+          summary=json.loads((evidence/'FINAL_RESULT.json').read_text())
+          frozen=json.loads((evidence/'FREEZE.json').read_text())
+          assert frozen['source_commit']=='22e6dfef6601e8f6c6a804ec05baab9f06b028b3'
+          assert hashlib.sha256((evidence/'FREEZE.json').read_bytes()).hexdigest()=='a74d3c0811dd919dcdf59427aa49b710c46a7ab2af58ed441a3a25bd22f3ebac'
+          for name,expected in frozen['files'].items():
+              assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest()==expected,name
+          manifest=json.loads((evidence/'COMPARATOR_MANIFEST.json').read_text())
+          archive=evidence/'COMPARATOR_EVIDENCE.tar.gz'
+          assert hashlib.sha256(archive.read_bytes()).hexdigest()==manifest['archive_sha256']
+          with tarfile.open(archive) as packet:
+              members={item.name:item for item in packet.getmembers()}
+              assert set(members)==set(manifest['files'])
+              for name,item in members.items():
+                  path=pathlib.PurePosixPath(name)
+                  assert item.isfile() and not path.is_absolute() and '..' not in path.parts
+                  raw=packet.extractfile(item).read();row=manifest['files'][name]
+                  assert len(raw)==row['bytes'] and hashlib.sha256(raw).hexdigest()==row['sha256']
+          assert all(summary['verdicts'][key]=='UNKNOWN' for key in ('G2','G3','G4','G5','G6'))
+          assert all(row['native_calls']==0 for row in summary['comparisons'].values())
+          assert summary['controls']['new_acquisition_withdrawal_restoration_restart']=='NOT_RUN_NO_NATIVE_ACQUISITION'
+          assert json.loads((evidence/'AUDIT.json').read_text())['status']=='PASS_ARCHIVE_INTEGRITY_AUDIT'
+          print(json.dumps({'status':'ARCHIVED_WITHOUT_NATIVE_REPLAY','verdicts':summary['verdicts']},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-admission-comparison-evidence-${{ github.sha }}
+          path: |
+            research/unified_consequence_runtime/NATIVE_ADMISSION_V2_REPORT.md
+            research/unified_consequence_runtime/archaeology/native-admission-v2/f8c0b06d-qualified/
+            research/unified_consequence_runtime/archaeology/native-frontier-v2/22e6dfef-result/
+            .github/workflows/udm-native-admission-evidence.yml
+          retention-days: 90
