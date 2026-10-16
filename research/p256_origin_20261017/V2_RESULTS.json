@@ -1,0 +1,288 @@
+{
+  "code_sha256": "ee53cdf97491aca572d801ff0ca91eb69189614e0b2ac49cf2d79a6067c64c45",
+  "control_results": {
+    "elapsed_seconds": 4.7812e-05,
+    "exact_candidate_windows": 102,
+    "hits": [
+      "FreeLIP_1997_prime239v1 seed=20420 bits=26 limbs=11 order=msf offset=29",
+      "synthetic_FreeLIP_30 seed=20000 bits=30 limbs=10 order=msf offset=7",
+      "synthetic_lrand48_31 seed=871696354 bits=31 limbs=9 order=msf offset=15"
+    ],
+    "mode": "controls",
+    "prng_outputs": 129,
+    "rejected_raw_steps": 0,
+    "seeds": 3,
+    "status": "SUCCESS"
+  },
+  "independent_python_spot_checks": {
+    "lcg_first8": [
+      1480484107,
+      1061441945,
+      1273214319,
+      1416665490,
+      1861502269,
+      2081070683,
+      1889071134,
+      1632005311
+    ],
+    "libc_lrand48": "eight_outputs_equal",
+    "python_freeLIP_spot_checks": [
+      {
+        "bits": 26,
+        "draws": 25,
+        "first3": [
+          28989048,
+          38210655,
+          35035436
+        ],
+        "rejections": 0,
+        "seed": 20420
+      },
+      {
+        "bits": 26,
+        "draws": 25,
+        "first3": [
+          30101742,
+          40776892,
+          28202068
+        ],
+        "rejections": 0,
+        "seed": 20000
+      },
+      {
+        "bits": 26,
+        "draws": 25,
+        "first3": [
+          31802970,
+          61163089,
+          6942429
+        ],
+        "rejections": 0,
+        "seed": 871696354
+      },
+      {
+        "bits": 26,
+        "draws": 25,
+        "first3": [
+          0,
+          0,
+          0
+        ],
+        "rejections": 0,
+        "seed": 0
+      },
+      {
+        "bits": 26,
+        "draws": 25,
+        "first3": [
+          1451555,
+          14356598,
+          63285877
+        ],
+        "rejections": 0,
+        "seed": 7157891
+      },
+      {
+        "bits": 30,
+        "draws": 25,
+        "first3": [
+          297424504,
+          172428383,
+          437688620
+        ],
+        "rejections": 0,
+        "seed": 20420
+      },
+      {
+        "bits": 30,
+        "draws": 25,
+        "first3": [
+          969625838,
+          107885756,
+          95310932
+        ],
+        "rejections": 0,
+        "seed": 20000
+      },
+      {
+        "bits": 30,
+        "draws": 25,
+        "first3": [
+          434456154,
+          195380817,
+          610922205
+        ],
+        "rejections": 0,
+        "seed": 871696354
+      },
+      {
+        "bits": 30,
+        "draws": 25,
+        "first3": [
+          0,
+          0,
+          0
+        ],
+        "rejections": 0,
+        "seed": 0
+      },
+      {
+        "bits": 30,
+        "draws": 25,
+        "first3": [
+          806757923,
+          349900918,
+          465939061
+        ],
+        "rejections": 0,
+        "seed": 7157891
+      },
+      {
+        "bits": 62,
+        "draws": 25,
+        "first3": [
+          4290912430558172792,
+          4540283499416325215,
+          1717449383279499564
+        ],
+        "rejections": 0,
+        "seed": 20420
+      },
+      {
+        "bits": 62,
+        "draws": 25,
+        "first3": [
+          132990526890397934,
+          1483856485140018364,
+          3208814160144913492
+        ],
+        "rejections": 0,
+        "seed": 20000
+      },
+      {
+        "bits": 62,
+        "draws": 25,
+        "first3": [
+          279595043116107354,
+          4251266683637155409,
+          1264423232793603805
+        ],
+        "rejections": 0,
+        "seed": 871696354
+      },
+      {
+        "bits": 62,
+        "draws": 25,
+        "first3": [
+          0,
+          0,
+          0
+        ],
+        "rejections": 0,
+        "seed": 0
+      },
+      {
+        "bits": 62,
+        "draws": 25,
+        "first3": [
+          3640530075362141731,
+          2328812977846423670,
+          3289805811588901493
+        ],
+        "rejections": 0,
+        "seed": 7157891
+      }
+    ]
+  },
+  "matches": [],
+  "next": "Locate a historically authenticated alternative PRNG or point-derivation procedure, or independently recovered generator source/link; don't widen negative grammar without decisive evidence",
+  "other_curves": "P-224/P-384/P-521 held untouched pending a source-derived P-256 method",
+  "runner_sha256": "da79a6e34de5d47f04858e9843b2750bc26d78753b0a0e5df4130708cac43526",
+  "scope": "FreeLIP v1.1 (1997) NBITS=30/62 native/exploratory windows, direct lrand48 top31, and companion lrand48->FreeLIP seed chaining, frozen before V2 code",
+  "searches": [
+    {
+      "elapsed_seconds": 5.373355,
+      "exact_candidate_windows": 71958528,
+      "hits": [],
+      "mode": "f30_small",
+      "prng_outputs": 12582912,
+      "rejected_raw_steps": 0,
+      "seeds": 65536,
+      "status": "SUCCESS"
+    },
+    {
+      "elapsed_seconds": 13.35941,
+      "exact_candidate_windows": 189735498,
+      "hits": [],
+      "mode": "f30_time",
+      "prng_outputs": 33177792,
+      "rejected_raw_steps": 0,
+      "seeds": 172801,
+      "status": "SUCCESS"
+    },
+    {
+      "elapsed_seconds": 0.000109454,
+      "exact_candidate_windows": 1098,
+      "hits": [],
+      "mode": "f30_default",
+      "prng_outputs": 192,
+      "rejected_raw_steps": 0,
+      "seeds": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "elapsed_seconds": 6.884804,
+      "exact_candidate_windows": 73531392,
+      "hits": [],
+      "mode": "f62_small",
+      "prng_outputs": 12582912,
+      "rejected_raw_steps": 0,
+      "seeds": 65536,
+      "status": "SUCCESS"
+    },
+    {
+      "elapsed_seconds": 0.000124207,
+      "exact_candidate_windows": 1122,
+      "hits": [],
+      "mode": "f62_default",
+      "prng_outputs": 192,
+      "rejected_raw_steps": 0,
+      "seeds": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "elapsed_seconds": 0.01026503,
+      "exact_candidate_windows": 239952,
+      "hits": [],
+      "mode": "l31",
+      "prng_outputs": 40000,
+      "rejected_raw_steps": 0,
+      "seeds": 1,
+      "status": "SUCCESS"
+    },
+    {
+      "elapsed_seconds": 0.36933,
+      "exact_candidate_windows": 2200000,
+      "hits": [],
+      "mode": "chain30",
+      "prng_outputs": 2560000,
+      "rejected_raw_steps": 0,
+      "seeds": 40000,
+      "status": "SUCCESS"
+    }
+  ],
+  "security": "No private-key attack, ECDSA break, or vulnerability claim",
+  "source_refs": {
+    "FreeLIP_1997_mirror_commit": "00898a4814d2cc1244bf348682be6ed10dda35f0",
+    "FreeLIP_lip_c_git_blob": "a86ce8ae5be49e0f35999a2c87f52e1718ebdb81",
+    "FreeLIP_lip_h_git_blob": "080cda8aec8c0939348452ea3beb9f1afad845ef",
+    "anthropic": "https://www.anthropic.com/research/ecdsa-curve-origins",
+    "frozen_protocol": "V2_SOURCE_FROZEN_PROTOCOL.md"
+  },
+  "status": "WARRANTED_BOUNDED_NEGATIVE_LOCAL; GENERAL_HISTORICAL_ORIGIN_UNKNOWN",
+  "strong_comparator": "NOT_RUN (equal-information exhaustive enumerator is the only search arm)",
+  "target": "NIST P-256 standardized base-point x-coordinate",
+  "target_x_hex": "0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296",
+  "total_exact_candidate_windows": 337667590,
+  "warrant_scope": "Exact candidate search in frozen finite grammars, not complete 1997 software or provenance; no target point G was found if matches=[]"
+}
