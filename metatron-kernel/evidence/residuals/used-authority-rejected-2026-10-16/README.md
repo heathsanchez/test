@@ -1,0 +1,11 @@
+# Rejected exact USED-authority certificate experiment
+
+Base: commit 57eb38c897a650d3c24961658c6796d5bffbef71, metatron-kernel/evidence/residuals/exact-payload-controls-2026-10-16/unpromoted-source. Apply candidate.patch with patch -p1 inside a copy of that standalone crate. source-hashes.json pins every resulting source file. No production checker changes.
+
+167 library tests pass, zero fail, 10 ignored, under the same relevance/expected-lambda flags as the research qualification. The new cold/warm authority-reuse control fails against the previous implementation (red.log), then passes; absence-to-witness introduction and changed-witness/domain quarantine controls pass. Fresh bounded source review found no soundness defect; no exhaustive soundness proof is claimed.
+
+Exact full196 origin-mode replay: 118 ACCEPT / 71 REJECT / 7 UNKNOWN / zero incorrect / zero errors. **Rejected: retained good/init-prelude.ndjson ACCEPT regresses to UNKNOWN.** All six original full residuals remain UNKNOWN. No full-export closure, promotion, Mathlib or competitive performance claim. Source and binary remained immutable during replay; per-case input hashes and verdicts are in full196-origin.json.
+
+The experiment records only completed authority-predicate judgments keyed by exact Closure. Every inspected original frame is retained with its full absent/witness/quarantined ledger observation. Reuse checks all states again, including exact domain and original protected-prefix allocation. It supplies no typing or Gamma certificate. Strict probes share the same actual lineage; copied-lineage probes have separate stores. Postorder completion retains all earlier dependency observations conservatively; active cycles suppress affected publication. Bounds remain unchanged. Certificate construction and revalidation consume the existing allowance. Added work regresses a complete accepted export, so this mechanism is not retained.
+
+The actual Fueled witness is documented in fueled-causal-summary.md. Closure2377@31377 had never previously completed that exact authority predicate; syntactic sameness under other captured environments does not license reuse. This experiment provides no justification for increasing fuel, quotienting environments, skipping guards, or forcing an operand equality.

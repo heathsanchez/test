@@ -1,0 +1,219 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -155,6 +155,7 @@
+     closed_spine_eligibility: RefCell<HashMap<ExprId, bool>>,
+     completed_pi_lifts: Rc<RefCell<std::collections::HashSet<(ExprId,ExprId)>>>,
+     source_support: Rc<RefCell<HashMap<ExprId, Vec<u64>>>>,
++    used_authority_certificates: Rc<RefCell<HashMap<Closure,Vec<(EnvFrame,Option<Option<CheckedBinderWitness>>)>>>>,
+     source_capture_bindings: RefCell<HashMap<(u64,u64),(EnvFrame,EnvFrame)>>,
+     owned_lambda_goals: RefCell<HashMap<ExprId,Vec<OwnedLambdaGoal>>>,
+     lambda_shape_ids: RefCell<HashMap<ExprId,u64>>,
+@@ -236,6 +237,7 @@
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             completed_pi_lifts: Rc::new(RefCell::new(std::collections::HashSet::new())),
+             source_support: Rc::new(RefCell::new(HashMap::new())),
++            used_authority_certificates: Rc::new(RefCell::new(HashMap::new())),
+             source_capture_bindings: RefCell::new(HashMap::new()),
+             owned_lambda_goals: RefCell::new(HashMap::new()),
+             lambda_shape_ids: RefCell::new(HashMap::new()),
+@@ -280,6 +282,7 @@
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             completed_pi_lifts: Rc::new(RefCell::new(std::collections::HashSet::new())),
+             source_support: Rc::new(RefCell::new(HashMap::new())),
++            used_authority_certificates: Rc::new(RefCell::new(HashMap::new())),
+             source_capture_bindings: RefCell::new(HashMap::new()),
+             owned_lambda_goals: RefCell::new(HashMap::new()),
+             lambda_shape_ids: RefCell::new(HashMap::new()),
+@@ -539,6 +542,7 @@
+         // same immutable expression table, so retain its paid syntax facts.
+         probe.completed_pi_lifts=self.completed_pi_lifts.clone();
+         probe.source_support=self.source_support.clone();
++        probe.used_authority_certificates=self.used_authority_certificates.clone();
+         probe.source_capture_free_support=self.source_capture_free_support.clone();
+         probe.checked_binding_lineage=self.checked_binding_lineage.clone();
+         probe.shared_expected_openings=self.shared_expected_openings.clone();
+@@ -822,63 +826,99 @@
+     pub(crate) fn source_used_capture_authority_available(
+         &self, source: &Closure, remaining: &mut usize,
+     ) -> bool {
+-        let mut pending = vec![TypeValue::Term(source.clone())];
++        // These certificates prove this authority predicate only. They provide
++        // no typing, conversion or Gamma witness. All ledger reads retain their
++        // full absent/witness/quarantined state, including original payloads.
++        enum Work { Visit(TypeValue), Complete(Closure) }
++        let mut pending = vec![Work::Visit(TypeValue::Term(source.clone()))];
+         let mut seen = std::collections::HashSet::new();
+-        while let Some(ty) = pending.pop() {
++        let mut active = std::collections::HashSet::new();
++        let mut cyclic=false;
++        let mut dependencies = HashMap::<u64,(EnvFrame,Option<Option<CheckedBinderWitness>>)>::new();
++        while let Some(work) = pending.pop() {
+             if !take_step(remaining) { return false; }
++            let ty = match work {
++                Work::Visit(ty) => ty,
++                Work::Complete(term) => {
++                    // An overapproximation includes all earlier visited roots.
++                    // This avoids omitting dependencies of shared DAG nodes.
++                    let cost=dependencies.len();
++                    active.remove(&(term.expr,term.env.id(),term.levels.identity()));
++                    if !cyclic && cost<=128 && *remaining>=cost && self.used_authority_certificates.borrow().len()<1024 {
++                        *remaining-=cost;
++                        self.used_authority_certificates.borrow_mut().insert(term,dependencies.values().cloned().collect());
++                    }
++                    continue;
++                }
++            };
+             match ty {
+                 TypeValue::Sort(_) => {},
+                 TypeValue::Pi { domain, body, .. } => {
+-                    pending.push(*domain); pending.push(*body);
++                    pending.push(Work::Visit(*domain)); pending.push(Work::Visit(*body));
+                 },
+                 TypeValue::Term(term) => {
+-                    if self.checked_binding_lineage.borrow().get(&term.env.id())
+-                        .is_some_and(Option::is_none) { return false; }
+-                    if !seen.insert((term.expr, term.env.id(), term.levels.identity())) {
+-                        continue;
++                    let state=self.checked_binding_lineage.borrow().get(&term.env.id()).cloned();
++                    dependencies.insert(term.env.id(),(term.env.clone(),state.clone()));
++                    if state.is_some_and(|v|v.is_none()) { return false; }
++                    let certificate=self.used_authority_certificates.borrow().get(&term).cloned();
++                    if let Some(certificate)=certificate {
++                        let mut valid=true;
++                        for (frame,state) in &certificate {
++                            if !take_step(remaining){return false;}
++                            let actual=self.checked_binding_lineage.borrow().get(&frame.id()).cloned();
++                            // Prefix identity pins the original immutable witness;
++                            // absent -> witness invalidates even without revocation.
++                            let same=match (state,&actual) {
++                                (None,None)|(Some(None),Some(None))=>true,
++                                (Some(Some(a)),Some(Some(b)))=>Rc::ptr_eq(&a.protected_prefix,&b.protected_prefix)&&a.domain==b.domain,
++                                _=>false,
++                            };
++                            if !same {valid=false;break;}
++                        }
++                        if valid {
++                            for (frame,state) in certificate {dependencies.insert(frame.id(),(frame,state));}
++                            continue;
++                        }
+                     }
+-                    let Some(support) = self.complete_source_support(term.expr, remaining)
+-                        else { return false; };
++                    let identity=(term.expr,term.env.id(),term.levels.identity());
++                    if !seen.insert(identity) {if active.contains(&identity){cyclic=true;}continue;}
++                    active.insert(identity);
++                    let Some(support)=self.complete_source_support(term.expr,remaining) else{return false;};
++                    pending.push(Work::Complete(term.clone()));
+                     for index in support {
+-                        // The immutable frame has binary ancestor links. Pay
+-                        // the existing exact owner lookup and its physical hops.
+-                        let Some(frame) = self.source_capture_owner(&term.env,index,remaining)
+-                            else { return false; };
+-                        let witness = self.checked_binding_lineage.borrow().get(&frame.id()).cloned();
++                        let Some(frame)=self.source_capture_owner(&term.env,index,remaining) else{return false;};
++                        let witness=self.checked_binding_lineage.borrow().get(&frame.id()).cloned();
++                        dependencies.insert(frame.id(),(frame.clone(),witness.clone()));
+                         match witness {
+-                            Some(None) => return false,
+-                            Some(Some(w)) => pending.push(w.domain),
+-                            None => {},
++                            Some(None)=>return false,
++                            Some(Some(w))=>pending.push(Work::Visit(w.domain)),
++                            None=>{},
+                         }
+-                        let Some(binding) = frame.lookup(0) else { return false; };
++                        let Some(binding)=frame.lookup(0) else{return false;};
+                         match binding {
+-                            EnvBinding::Closure(value) => pending.push(TypeValue::Term(value)),
+-                            EnvBinding::Free(_) | EnvBinding::NatLit(_) => {},
+-                            EnvBinding::Neutral(neutral) => {
+-                                let mut neutrals = vec![neutral];
+-                                while let Some(neutral) = neutrals.pop() {
+-                                    if !take_step(remaining) { return false; }
+-                                    pending.extend(neutral.spine.into_iter().map(TypeValue::Term));
++                            EnvBinding::Closure(value)=>pending.push(Work::Visit(TypeValue::Term(value))),
++                            EnvBinding::Free(_)|EnvBinding::NatLit(_)=>{},
++                            EnvBinding::Neutral(neutral)=>{
++                                let mut neutrals=vec![neutral];
++                                while let Some(neutral)=neutrals.pop(){
++                                    if !take_step(remaining){return false;}
++                                    pending.extend(neutral.spine.into_iter().map(|c|Work::Visit(TypeValue::Term(c))));
+                                     match neutral.head {
+-                                        NeutralHead::Free(_, None) => return false,
+-                                        NeutralHead::Free(free, Some(owner)) => {
+-                                            if !matches!(owner.lookup_binding_ref(0), Some(EnvBinding::Free(actual)) if *actual == free) {
+-                                                return false;
+-                                            }
+-                                            match self.checked_binding_lineage.borrow().get(&owner.id()).cloned() {
+-                                                Some(None) => return false,
+-                                                Some(Some(w)) => pending.push(w.domain),
+-                                                None => {},
+-                                            }
++                                        NeutralHead::Free(_,None)=>return false,
++                                        NeutralHead::Free(free,Some(owner))=>{
++                                            if !matches!(owner.lookup_binding_ref(0),Some(EnvBinding::Free(actual)) if *actual==free){return false;}
++                                            let witness=self.checked_binding_lineage.borrow().get(&owner.id()).cloned();
++                                            dependencies.insert(owner.id(),(owner.clone(),witness.clone()));
++                                            match witness {Some(None)=>return false,Some(Some(w))=>pending.push(Work::Visit(w.domain)),None=>{}}
+                                         },
+-                                        NeutralHead::Projection { structure, .. } => neutrals.push(*structure),
+-                                        NeutralHead::Const { .. } => {},
++                                        NeutralHead::Projection{structure,..}=>neutrals.push(*structure),
++                                        NeutralHead::Const{..}=>{},
+                                     }
+                                 }
+-                            },
++                            }
+                         }
+                     }
+-                },
++                }
+             }
+         }
+         true
+@@ -6084,6 +6124,7 @@
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             completed_pi_lifts: Rc::new(RefCell::new(std::collections::HashSet::new())),
+             source_support: Rc::new(RefCell::new(HashMap::new())),
++            used_authority_certificates: Rc::new(RefCell::new(HashMap::new())),
+             source_capture_bindings: RefCell::new(HashMap::new()),
+             owned_lambda_goals: RefCell::new(HashMap::new()),
+             lambda_shape_ids: RefCell::new(HashMap::new()),
+@@ -6267,6 +6308,7 @@
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             completed_pi_lifts: Rc::new(RefCell::new(std::collections::HashSet::new())),
+             source_support: Rc::new(RefCell::new(HashMap::new())),
++            used_authority_certificates: Rc::new(RefCell::new(HashMap::new())),
+             source_capture_bindings: RefCell::new(HashMap::new()),
+             owned_lambda_goals: RefCell::new(HashMap::new()),
+             lambda_shape_ids: RefCell::new(HashMap::new()),
+@@ -6335,6 +6377,7 @@
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             completed_pi_lifts: Rc::new(RefCell::new(std::collections::HashSet::new())),
+             source_support: Rc::new(RefCell::new(HashMap::new())),
++            used_authority_certificates: Rc::new(RefCell::new(HashMap::new())),
+             source_capture_bindings: RefCell::new(HashMap::new()),
+             owned_lambda_goals: RefCell::new(HashMap::new()),
+             lambda_shape_ids: RefCell::new(HashMap::new()),
+@@ -9957,3 +10000,21 @@
+   }
+  }
+ }
++
++#[cfg(test)]
++mod used_authority_certificate_controls {
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
++  let mut e=IdTable::default();e.insert(ExprId(0),Expr::BVar(0)).unwrap();e.insert(ExprId(1),Expr::Sort(LevelId(0))).unwrap();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();(e,l,Environment::empty())
++ }
++ #[test] fn complete_authority_reuses_only_validated_actual_dependencies(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let owner=EnvFrame::empty().extend_free(FreeId(0));let mut domain=TypeValue::Sort(LevelTerm::Zero);for _ in 0..24 {domain=TypeValue::Pi{domain:Box::new(TypeValue::Sort(LevelTerm::Zero)),body:Box::new(domain),binder:FreeId(0),binder_owner:None};}
++  c.checked_binding_lineage.borrow_mut().insert(owner.id(),Some(CheckedBinderWitness{domain,protected_prefix:Rc::new(vec![])}));let source=c.closure(ExprId(0),owner.clone());assert!(c.source_used_capture_authority_available(&source,&mut 4096));assert!(c.source_used_capture_authority_available(&source,&mut 8),"completed exact authority predicate can be replayed from fully revalidated immutable ledger reads");
++  c.checked_binding_lineage.borrow_mut().insert(owner.id(),None);assert!(!c.source_used_capture_authority_available(&source,&mut 4096));assert!(!c.source_used_capture_authority_available(&source,&mut 0));
++ }
++ #[test] fn absent_to_witness_and_replaced_witness_introduce_new_obligations(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let owner=EnvFrame::empty().extend_free(FreeId(0));let q=EnvFrame::empty().extend_free(FreeId(9));let source=c.closure(ExprId(0),owner.clone());assert!(c.source_used_capture_authority_available(&source,&mut 4096));
++  let witness=CheckedBinderWitness{domain:TypeValue::Term(c.closure(ExprId(1),q.clone())),protected_prefix:Rc::new(vec![])};c.checked_binding_lineage.borrow_mut().insert(owner.id(),Some(witness));c.checked_binding_lineage.borrow_mut().insert(q.id(),None);assert!(!c.source_used_capture_authority_available(&source,&mut 4096),"absent lineage cannot be treated as permanently dependency free");
++  c.checked_binding_lineage.borrow_mut().remove(&q.id());assert!(c.source_used_capture_authority_available(&source,&mut 4096));let other=EnvFrame::empty().extend_free(FreeId(10));let witness=CheckedBinderWitness{domain:TypeValue::Term(c.closure(ExprId(1),other.clone())),protected_prefix:Rc::new(vec![])};c.checked_binding_lineage.borrow_mut().insert(owner.id(),Some(witness));c.checked_binding_lineage.borrow_mut().insert(other.id(),None);assert!(!c.source_used_capture_authority_available(&source,&mut 4096),"changed original witness must invalidate prior completion");
++ }
++}
