@@ -1,0 +1,73 @@
+name: Nucleus bounded proof-neutral generic typing pilot
+on:
+  push:
+    branches: [research/nucleus-proof-irrel-reconswap-20261017]
+    paths:
+      - ".github/workflows/nucleus-proof-neutral-bounded-20261017.yml"
+      - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/convert.rs"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check Rust and build candidate
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Recover byte-pinned independent Lean v4.34.1 witness
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/inputs
+          gh api repos/heathsanchez/test/actions/artifacts/12077748490/zip > /tmp/source.zip
+          unzip -q /tmp/source.zip -d /tmp/inputs
+          echo '6feb6fdc9ec8190efeee6bc37bbda217d9a1ef60cbb5664c9642bb4a6885a107  /tmp/inputs/list-perm-reconswap.ndjson' | sha256sum -c -
+      - name: Compare original decline, checked proof-neutral candidate and negative controls
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,time
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          old={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          old.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pin['origin_flags']})
+          binary='metatron-kernel/target/release/metatron-kernel'
+          p=pathlib.Path('/tmp/inputs/list-perm-reconswap.ndjson')
+          def check(name,payload,candidate):
+              env=dict(old);env['METATRON_KERNEL_DIAGNOSTICS']='1';env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+              if candidate:
+                  env['NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS']='1'
+                  env['NUCLEUS_TRACE_EXACT_PROOF_NEUTRALS']='1'
+                  env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+                  env['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE']='1'
+              t=time.perf_counter()
+              v=subprocess.run([binary],input=payload,capture_output=True,env=env,timeout=75)
+              return {'name':name,'mode':'candidate' if candidate else 'original','rc':v.returncode,'bytes':len(payload),'sha256':hashlib.sha256(payload).hexdigest(),'seconds':round(time.perf_counter()-t,5),
+                  'trace':(v.stderr+v.stdout).decode(errors='replace')[-80000:]}
+          raw=p.read_bytes()
+          positive=[check('List.Perm.recOnSwap\'',raw,flag) for flag in (False,True)]
+          negatives=[]
+          for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']:
+              f=pathlib.Path('metatron-kernel/tests/fixtures')/name
+              negatives.append(check(name,f.read_bytes(),True))
+          result={'candidate_source':os.environ['GITHUB_SHA'],'positives':positive,'negatives':negatives,'qualified':positive[0]['rc']==2 and positive[1]['rc'] in (0,2) and 'proposition_conversion=Proven' in positive[1]['trace'] and all(x['rc']!=0 for x in negatives)}
+          pathlib.Path('/tmp/evidence/pilot.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps({'positives':[(x['mode'],x['rc']) for x in positive],'negatives':[(x['name'],x['rc']) for x in negatives],'qualified':result['qualified'],'target_accepted':positive[1]['rc']==0}),flush=True)
+          for x in positive: print(x['mode'],x['trace'][-16000:],flush=True)
+          assert result['qualified'],'Candidate regressed proof-checking or soundness controls'
+          PY
+      - name: Preserve candidate and negative evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-source-proof-neutral-bounded-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
