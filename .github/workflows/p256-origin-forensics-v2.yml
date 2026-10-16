@@ -57,6 +57,13 @@ jobs:
           # historical source.  The 26-bit path is independently calibrated by
           # the previous V1 native-free Python/C++ positive witness; no unqualified
           # 26-bit upstream binary comparison is asserted in this V2 job.
+      - name: Install Boost multiprecision header dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libboost-dev
+          test -f /usr/include/boost/multiprecision/cpp_int.hpp
       - name: Replay seven prospective finite search families and all controls
         shell: bash
         run: |
