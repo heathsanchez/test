@@ -1,0 +1,13 @@
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/prepare_records.py", line 147, in <module>
+    main()
+  File "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/prepare_records.py", line 143, in main
+    args = parser.parse_args(); args.function(args)
+                                ^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/prepare_records.py", line 85, in finalize
+    roles = q.select_screened_roles(pool['pool'], reports, requested=2)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v3.py", line 201, in select_screened_roles
+    raise ValueError('screening shortfall; no outcome-selected replacement permitted')
+ValueError: screening shortfall; no outcome-selected replacement permitted
