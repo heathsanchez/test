@@ -83,7 +83,7 @@ jobs:
         run: |
           set +e
           # No GitHub token is injected into execution of original upstream tests.
-          python -B -m research.unified_consequence_runtime.qualify_v7_exposed_msi_policy_census \
+          python -B -m research.unified_consequence_runtime.qualify_v7_exposed_v104_cap64 \
             > qualification/v7-cap64/SCIENCE.log 2>&1
           exitcode=$?
           echo "$exitcode" > qualification/v7-cap64/SCIENCE_EXIT.txt
