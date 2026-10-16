@@ -1,7 +1,9 @@
 name: Committed native developmental selection v3 reproduction
 
-# Manual only. A prepared protocol is not an executable prospective frontier.
+# Explicit dispatch or marked research commit only. Prepared protocols remain ineligible.
 on:
+  push:
+    branches: [research/udm-prospective-native-selection-v3-20261016]
   workflow_dispatch:
     inputs:
       expected_source_commit:
@@ -18,6 +20,7 @@ concurrency:
 
 jobs:
   native-developmental-selection-v3:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[qualify-native-v3]')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -39,7 +42,7 @@ jobs:
           python-version: '3.12.14'
       - name: Create a real canonical checkout of the exact dispatched source
         env:
-          EXPECTED_SOURCE_COMMIT: ${{ inputs.expected_source_commit }}
+          EXPECTED_SOURCE_COMMIT: ${{ inputs.expected_source_commit || github.sha }}
         run: |
           set -euo pipefail
           test "$EXPECTED_SOURCE_COMMIT" = "$GITHUB_SHA"
