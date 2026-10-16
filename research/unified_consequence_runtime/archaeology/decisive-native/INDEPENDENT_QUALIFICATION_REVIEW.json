@@ -1,0 +1,210 @@
+{
+  "schema": "UDM_DECISIVE_NATIVE_INDEPENDENT_QUALIFICATION_REVIEW_V1",
+  "reviewed_at_utc": "2026-10-16T02:56:02Z",
+  "status": "PASS_BOUNDED_IDENTITY_MAINTENANCE_AND_FAIL_CLOSED_ADMISSION; DEVELOPMENTAL_GOAL_UNACHIEVED",
+  "source_commit": "15e71683a19394fb00b5833c18a3e876c2645d54",
+  "run_id": 38842341838,
+  "run_url": "https://github.com/heathsanchez/test/actions/runs/38842341838",
+  "job_id": 116785055050,
+  "provider_conclusion": "success",
+  "artifact": {
+    "id": 12021509439,
+    "bytes": 33703880,
+    "digest": "sha256:648bc7d22915690825003a48ad4b33bc29a4c76613a86d02344273deac09c869",
+    "url": "https://github.com/heathsanchez/test/actions/runs/38842341838/artifacts/12021509439",
+    "provider_digest_size_authenticated": true,
+    "zip_members": 326
+  },
+  "all_offline_checks": {
+    "all_frozen_source_files_exact": true,
+    "all_frozen_source_files_exact_git_commit": true,
+    "every_manifest_file_exact": true,
+    "run_commit_binding": true,
+    "ledger_all_246_original_bytes_preserved": true,
+    "all_76_original_CAS_exact": true,
+    "all_CAS_addresses_valid": true,
+    "only_derived_cost_state_changed": true,
+    "original70capabilities_exact": true,
+    "zero_target_native_receipts": true,
+    "zero_target_test_or_native_runners": true,
+    "no_error_packet": true,
+    "honest_unknowns": true,
+    "no_acquisition_policy_or_constructor": true,
+    "source_identity_maintenance_exposure_declared": true,
+    "all_three_frozen_native_admissions_refused": true
+  },
+  "contracts": {
+    "count": 112,
+    "seconds": 113.447,
+    "status": "PASS",
+    "skips": 0,
+    "kind": "Isolated local fixture and original-interface regression contracts, not prospective target outcomes"
+  },
+  "retention": {
+    "records": 246,
+    "CAS_objects": 76,
+    "live_ids_prior_immutable_ledger": 187,
+    "ledger_sha256": "b3696b388d2f3d1df95d819d1026eb9f87f042e93e4300f0cd987073949de9ac",
+    "persistent_bytes": 2389834,
+    "original_state_changed_files": [
+      "native-frontiers.json"
+    ]
+  },
+  "freeze_and_manifest": {
+    "frozen_source_files": 66,
+    "manifest_entries": 617,
+    "all_source_bytes_git_bound": true,
+    "mode": "SOURCE_IDENTITY_MAINTENANCE",
+    "exposure": "Three coding-agent admission refusals known before source-identity maintenance; no renewed prospective blindness"
+  },
+  "target_admissions": [
+    {
+      "repo": "more-itertools/more-itertools",
+      "base": "1ea82a711c69f590054987b5cb194157f8ce8ac4",
+      "head": "67fcf640477c78605580f5ee703a54c73c1e7a8a",
+      "augmented": "699b8c2a91f4f52c9b6acadefdfe7b008f839ef3",
+      "test_blobs": {
+        "tests/test_more.py": "b3a9351595a6fd7f1aa9c1e35978f08106e43df0"
+      },
+      "source_archive_file_sets_complete": true,
+      "production_git_manifests_preserved": true,
+      "same_agent_git_tree_and_manifest": true,
+      "status": "UNKNOWN_CONTRACT",
+      "reason": "UNKNOWN_SUITE_CONTRACT: dynamic test alias unsupported",
+      "setup_wall_seconds": 1.7967893360000176,
+      "setup_phase_seconds": 1.4905934269999648
+    },
+    {
+      "repo": "python-attrs/attrs",
+      "base": "ab7f8b2f4c0f747d5b1575247ce35e5adaad182e",
+      "head": "91f3695fe70a6d58c95660addd5ef8d46bfebd61",
+      "augmented": "f4cadc219a6de638c1c29521f265381a455bcf48",
+      "test_blobs": {
+        "tests/test_validators.py": "5ad2308eb89e6dfa8b0f6362969775b69c692fd6"
+      },
+      "source_archive_file_sets_complete": true,
+      "production_git_manifests_preserved": true,
+      "same_agent_git_tree_and_manifest": true,
+      "status": "UNKNOWN_CONTRACT",
+      "reason": "UNKNOWN_INTERFACE: unsupported native test configuration",
+      "setup_wall_seconds": 2.6026888840000026,
+      "setup_phase_seconds": 1.685522781000003
+    },
+    {
+      "repo": "python-attrs/cattrs",
+      "base": "573915b6b450c23eaf818370ac2e339dd9aee262",
+      "head": "5fd1c7f89f6c5f19b91cc5f2758a0fbf7740730b",
+      "augmented": "c51a28479aed6549ed1bb7399927b679bce1952c",
+      "test_blobs": {
+        "tests/test_tuples.py": "c1a9562c3c25ae8e1002aeca00a1ffe34cd2bd24"
+      },
+      "source_archive_file_sets_complete": true,
+      "production_git_manifests_preserved": true,
+      "same_agent_git_tree_and_manifest": true,
+      "status": "UNKNOWN_CONTRACT",
+      "reason": "UNKNOWN_INTERFACE: unsupported native test configuration",
+      "setup_wall_seconds": 2.5553441290000194,
+      "setup_phase_seconds": 1.4861559510000006
+    }
+  ],
+  "scientific_counts": {
+    "subjects_transported": 3,
+    "contracts_admitted": 0,
+    "native_target_calls": 0,
+    "target_tests_collected": 0,
+    "candidate_search_attempts": 0,
+    "developmental_policies_admitted": 0,
+    "constructors_admitted": 0,
+    "new_native_methods_admitted": 0,
+    "new_native_restoration_restart_calls": 0
+  },
+  "actual_comparisons": {
+    "original_system": "3 UNKNOWN_SETUP; no native operator execution",
+    "informed_executable_ledger": "3 UNKNOWN_SETUP; no executable native comparison established",
+    "tool_using_coding_agent": {
+      "actual_admission_arm_executed": true,
+      "admissions": 3,
+      "refusals": 3,
+      "native_calls": 0,
+      "python": "3.12.14 vs CI 3.12.15; no project environments created",
+      "setup_wall_seconds": 9.41590069499216,
+      "entrypoint_wall_seconds": 171.95430994033813,
+      "conservative_full_wall_seconds": 351.34853172302246,
+      "model_tokens": "UNKNOWN",
+      "model_dollars": "UNKNOWN"
+    },
+    "verdict": "UNKNOWN_NO_NATIVE_COMPARISON; parity of admission refusals is not protected-outcome tie or superiority"
+  },
+  "costs": {
+    "controller_wall_seconds": 10.487775115999995,
+    "source_admission_total_wall_seconds": 6.95482234900004,
+    "recorded_setup_subphase_seconds": 4.6622721589999685,
+    "persistence_and_reclosure_seconds": 2.5852823609999973,
+    "nested_FLASH_seconds": 0.35803239099999473,
+    "existing_frontiers_reclosed": 9,
+    "native_seconds": 0,
+    "native_calls": 0,
+    "build_calls": 0,
+    "test_contract_fixture_seconds": 113.447,
+    "provider_job_started_at": "2026-10-16T02:48:52Z",
+    "provider_job_completed_at": "2026-10-16T02:51:21Z",
+    "boundary": "Controller wall includes setup and persistence/reclosure. FLASH is nested, not additive. Fixture suite/provider job/engineering/agent orchestration are separate costs, not an equalized protected-outcome benchmark."
+  },
+  "verdicts": {
+    "G0_G1": "PRESERVED_WARRANTED_BOUNDED; immutable original246/76/70authority preserved, no old acquisitions rerun",
+    "G2": "UNKNOWN_NO_INDEPENDENTLY_EXECUTABLE_FAILING_NATIVE_OBLIGATION",
+    "G3": "UNKNOWN_NO_ACQUISITION; no further prospective claim after known admission exposure",
+    "G4": "UNKNOWN_NO_NATIVE_COMPARISON_OR_FULLY_CHARGED_ADVANTAGE",
+    "G5": "UNKNOWN_NO_NEW_CONCRETE_FORMAL_REFINEMENT",
+    "G6": "UNKNOWN_NO_NONBYPASSABLE_REFERENCE_MONITOR"
+  },
+  "smallest_obstruction": {
+    "type": "GENERIC_NATIVE_SUITE_ADMISSION_EXPRESSIVENESS",
+    "minimum_unclosed_obligation": "Independently qualify a generic native-suite contract that preserves protected assertion coverage while distinguishing test data names from dynamically introduced tests and supporting declared immutable pytest options. This must precede another prospective developmental experiment.",
+    "exact_refusals": [
+      {
+        "repo": "more-itertools/more-itertools",
+        "cause": "Static authority conservatively rejects class data assignment test_inputs at tests/test_more.py:7416 as a dynamic test alias; AST is a List inside class TestRandomOrderedRange, not independently established dynamic executable test registration"
+      },
+      {
+        "repo": "python-attrs/attrs",
+        "cause": "Frozen addopts allowlist refuses --import-mode=importlib"
+      },
+      {
+        "repo": "python-attrs/cattrs",
+        "cause": "Frozen addopts allowlist refuses -l"
+      }
+    ],
+    "boundary": "These are frozen generic-interface refusals, not native scientific failures, universal old-language inadequacy or evidence the repositories lack a repair. No target-specific adapter, flag relaxation or source replacement was introduced after exposure."
+  },
+  "source_archival_boundary": {
+    "file_sets_complete": true,
+    "archive_export_subst_exceptions": [
+      {
+        "task": 1,
+        "archive": "base-source.tar.gz",
+        "path": ".git_archival.txt",
+        "expected_sha256": "dbff7491d4b53ce49032e65f042530eaa36339bbbb223a7c0e6a6d1009a51a45",
+        "archive_sha256": "ec197007b394bebc55b0803352b956bcadb0bcd94018e496095eb76871dc814f"
+      },
+      {
+        "task": 1,
+        "archive": "contract-source.tar.gz",
+        "path": ".git_archival.txt",
+        "expected_sha256": "dbff7491d4b53ce49032e65f042530eaa36339bbbb223a7c0e6a6d1009a51a45",
+        "archive_sha256": "4c92a0a1d45758b911eb83e03623aa062c1d5d603b407322a8b8e97122774053"
+      }
+    ],
+    "source_supplement": "../EXACT_GIT_ARCHIVE_SUPPLEMENT.json",
+    "source_supplement_sha256": "a4c0796325f024e851fb4ee6b847f7bdab4f3f42c8c9e6f8bc6a7eefafb0acff",
+    "exact_raw_Git_reconstruction": "All archive members match retained immutable manifests except attrs .git_archival.txt in two TARs. Exact raw Git blob for both commits is independently supplied and hash-authenticated. Original archives unchanged. No export-ignore omissions in any of six source archives."
+  },
+  "review_methods": [
+    "Authenticated provider run/job/artifact/source identities and exactZIP SHA+byte size",
+    "Safe read-only ZIP/TAR extraction; all66frozen sources checked bytewise against exactGit commit and all617manifest entries checked",
+    "All246immutable ledger records and76CAS objects exact; allCAS content addresses; original70inventoryrows unchanged",
+    "Three independently transported base/head/augmented trees and original author-test Git blobs match frozen identities and separate agent packet; production Git manifests unchanged",
+    "Offline AST/config/refusal inspection and source-archive completeness check; metadata export-subst exception supplemented from existing localGit objects only",
+    "No native science, build, candidate search, old acquisition, coding-agent or target rerun; no code/protocol edits"
+  ]
+}

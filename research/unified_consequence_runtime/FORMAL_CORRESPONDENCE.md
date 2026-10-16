@@ -288,3 +288,5 @@ proving Python execution or mediating every external action. No new concrete
 Lean certificate or non-bypassable reference monitor is supplied: G5 and G6
 remain UNKNOWN. The immutable native author-test authority establishes only
 its declared static assertion grammar and actual execution coverage.
+
+The decisive continuation qualification at `15e71683a19394fb00b5833c18a3e876c2645d54` preserves the original verifier and runtime adapter bytes and uses explicit versioned extension modules. Actions `38842341838` verifies source/state preservation and contract refusals; zero target native tests executed. No concrete phase-change instance follows. The newly implemented constructor path and new typed route-publication portability remain native UNKNOWN.

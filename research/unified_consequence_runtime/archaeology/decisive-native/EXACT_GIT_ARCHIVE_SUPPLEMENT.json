@@ -1,0 +1,50 @@
+{
+  "schema": "UDM_EXACT_GIT_SOURCE_ARCHIVE_SUPPLEMENT_V1",
+  "created_at_utc": "2026-10-16T02:52:21Z",
+  "cause": "git archive export-subst expands .git_archival.txt; preserve original TAR bytes, supplement immutable tracked Git blob",
+  "source": "Existing local agent task Git objects only; no fetch, build, import, test or native verifier execution",
+  "original_archives_unchanged": true,
+  "scope": "Metadata-file archive completeness supplement; no scientific outcome or policy promotion",
+  "source_refs": [
+    {
+      "repository": "python-attrs/attrs",
+      "commit": "ab7f8b2f4c0f747d5b1575247ce35e5adaad182e",
+      "path": ".git_archival.txt",
+      "mode": "100644",
+      "git_blob": "7c5100942aae489ca04d07d2c69a4d8f6f8470fe",
+      "sha256": "dbff7491d4b53ce49032e65f042530eaa36339bbbb223a7c0e6a6d1009a51a45",
+      "bytes": 102,
+      "base64": "bm9kZTogJEZvcm1hdDolSCQKbm9kZS1kYXRlOiAkRm9ybWF0OiVjSSQKZGVzY3JpYmUtbmFtZTogJEZvcm1hdDolKGRlc2NyaWJlOnRhZ3M9dHJ1ZSxtYXRjaD0qWzAtOV0qKSQK",
+      "authenticated_against_retained_manifest": "base_manifest"
+    },
+    {
+      "repository": "python-attrs/attrs",
+      "commit": "f4cadc219a6de638c1c29521f265381a455bcf48",
+      "path": ".git_archival.txt",
+      "mode": "100644",
+      "git_blob": "7c5100942aae489ca04d07d2c69a4d8f6f8470fe",
+      "sha256": "dbff7491d4b53ce49032e65f042530eaa36339bbbb223a7c0e6a6d1009a51a45",
+      "bytes": 102,
+      "base64": "bm9kZTogJEZvcm1hdDolSCQKbm9kZS1kYXRlOiAkRm9ybWF0OiVjSSQKZGVzY3JpYmUtbmFtZTogJEZvcm1hdDolKGRlc2NyaWJlOnRhZ3M9dHJ1ZSxtYXRjaD0qWzAtOV0qKSQK",
+      "authenticated_against_retained_manifest": "augmented_manifest"
+    }
+  ],
+  "archive_exceptions": [
+    {
+      "task": 1,
+      "archive": "base-source.tar.gz",
+      "path": ".git_archival.txt",
+      "cause": "Git archive export-subst",
+      "expected_sha256": "dbff7491d4b53ce49032e65f042530eaa36339bbbb223a7c0e6a6d1009a51a45",
+      "archive_sha256": "ec197007b394bebc55b0803352b956bcadb0bcd94018e496095eb76871dc814f"
+    },
+    {
+      "task": 1,
+      "archive": "contract-source.tar.gz",
+      "path": ".git_archival.txt",
+      "cause": "Git archive export-subst",
+      "expected_sha256": "dbff7491d4b53ce49032e65f042530eaa36339bbbb223a7c0e6a6d1009a51a45",
+      "archive_sha256": "4c92a0a1d45758b911eb83e03623aa062c1d5d603b407322a8b8e97122774053"
+    }
+  ]
+}
