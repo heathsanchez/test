@@ -1,0 +1,48 @@
+name: P-256 origin V3 source-derived exact replay
+on:
+  push:
+    branches:
+      - research/p256-origin-forensics-v3-20261017
+    paths:
+      - research/p256_origin_20261017/**
+      - .github/workflows/p256-origin-forensics-v3-20261017.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-frozen-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Run independent scanner
+        run: python3 research/p256_origin_20261017/v3_independent_replay.py
+      - name: Verify exact controls and guarded status
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('research/p256_origin_20261017/V3_CI_RESULT.json').read_text())
+          assert d['frozen_protocol_commit']=='9905639d6e834e126a6b778fbcc2a16ef8d443a8'
+          assert (d['sha_count'],d['lrand_byte_count'],d['freelip_seed_count'])==(24570,1279340,15120)
+          assert d['total_checked']==1319030
+          assert not any(d['matches'].values())
+          assert d['NIST_P256_curve_c_exact'] and d['known_historical_prime239v1']
+          assert d['lrand48_seed1842_exact'] and d['system_libc20']
+          assert all(d['actual_positive_controls'].values())
+          assert 'HISTORICAL_ORIGIN_UNKNOWN' in d['classification']
+          print('PASS: scoped exact V3 negative; historical source and P-256 origin UNKNOWN')
+          PY
+      - name: Preserve run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v3-frozen-exact-replay
+          path: |
+            research/p256_origin_20261017/V3_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/v3_independent_replay.py
+            research/p256_origin_20261017/V3_CI_RESULT.json
+          retention-days: 60
