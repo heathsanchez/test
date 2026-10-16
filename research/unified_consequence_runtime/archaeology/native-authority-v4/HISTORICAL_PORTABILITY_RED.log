@@ -1,0 +1,25 @@
+test_changed_versioned_copy_cannot_silently_replace_frozen_history (research.unified_consequence_runtime.test_frontier_v4_historical_portability.FrontierV4HistoricalPortability.test_changed_versioned_copy_cannot_silently_replace_frozen_history) ... FAIL
+test_missing_untracked_original_keeps_complete_frozen_history (research.unified_consequence_runtime.test_frontier_v4_historical_portability.FrontierV4HistoricalPortability.test_missing_untracked_original_keeps_complete_frozen_history) ... FAIL
+test_other_missing_history_inputs_remain_explicit (research.unified_consequence_runtime.test_frontier_v4_historical_portability.FrontierV4HistoricalPortability.test_other_missing_history_inputs_remain_explicit) ... ok
+
+======================================================================
+FAIL: test_changed_versioned_copy_cannot_silently_replace_frozen_history (research.unified_consequence_runtime.test_frontier_v4_historical_portability.FrontierV4HistoricalPortability.test_changed_versioned_copy_cannot_silently_replace_frozen_history)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_historical_portability.py", line 44, in test_changed_versioned_copy_cannot_silently_replace_frozen_history
+    with self.assertRaisesRegex(ValueError, 'historical.*(authority|bytes|hash)|frozen.*histor'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_missing_untracked_original_keeps_complete_frozen_history (research.unified_consequence_runtime.test_frontier_v4_historical_portability.FrontierV4HistoricalPortability.test_missing_untracked_original_keeps_complete_frozen_history)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_historical_portability.py", line 31, in test_missing_untracked_original_keeps_complete_frozen_history
+    self.assertTrue(all(row.get('status') != 'MISSING' for row in inputs),
+AssertionError: False is not true : CI must retain historical authority when the old untracked file is absent
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.224s
+
+FAILED (failures=2)

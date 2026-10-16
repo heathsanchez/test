@@ -419,3 +419,28 @@ then attempts to read `/unused`. The same error was reproduced in a fresh Python
 process running that q3 test alone without importing q4. Historical test/source
 bytes were not edited. These prepared-state checks establish no native frontier
 result and do not replace independent v4 admission qualification.
+
+## 9. Historical metadata portability correction after first CI RED
+
+CI run `38941859931` preserved a failure in the unchanged preparation control:
+`archaeology/programme-closure/REPOSITORIES.json` existed locally but was untracked,
+so the historical input was missing in CI. The v4 record
+`HISTORICAL_REPOSITORIES.json` now retains its exact 202634 bytes, SHA256
+`0d48c74467e8c493c1579104588d3745a4126cc4eff36464b84ce15a29bb3fb6`, matching
+the original frozen v3 prequery's historical-input hash. The original file and
+all v3 source/records remain unchanged.
+
+The new v4 `exclusions` binding authenticates that frozen hash and versioned copy,
+requires exactly one old-path site, replaces only that path in a private original
+`HISTORICAL_METADATA` tuple, and runs the unchanged scanner. Every other original
+path and hash semantic remains in force; unrelated missing inputs still appear
+as explicit `MISSING` records. The q4 gate pins this copy and its separate test.
+
+The separately added `test_frontier_v4_historical_portability.py` simulated the
+old file's absence without touching it: two expected RED failures and zero errors
+were retained before implementation (`HISTORICAL_PORTABILITY_RED.log`). Its three
+controls then passed, together with all earlier binding/preparation/meta controls
+(35 total, `HISTORICAL_PORTABILITY_GREEN.log`). Independent static review verified
+the copy byte for byte and found no remaining material issue. The initial CI RED
+and all original acceptance judgments are preserved; no target query or native
+execution was performed for this correction.

@@ -6,7 +6,7 @@ Importing this file performs no metadata request or source/native operation.
 """
 import importlib.util
 from pathlib import Path
-from types import FunctionType
+from types import FunctionType, SimpleNamespace
 
 from research.unified_consequence_runtime import qualify_native_frontier_v4 as q
 
@@ -51,6 +51,28 @@ for _name, _value in vars(_original).items():
 
 _base_plan = plan
 _base_query = query
+_base_exclusions = exclusions
+_OLD_REPOSITORIES = 'archaeology/programme-closure/REPOSITORIES.json'
+_VERSIONED_REPOSITORIES = 'archaeology/native-authority-v4/HISTORICAL_REPOSITORIES.json'
+_HISTORICAL_REPOSITORIES_SHA256 = '0d48c74467e8c493c1579104588d3745a4126cc4eff36464b84ce15a29bb3fb6'
+
+
+def exclusions(research, old):
+    """Retain one historical input from exact tracked bytes absent in old CI."""
+    frozen = json.loads((research/'archaeology/native-environment-v3/PREQUERY.json').read_text())
+    authority = [row for row in frozen['historical_metadata_inputs'] if row['path'] == _OLD_REPOSITORIES]
+    if len(authority) != 1 or authority[0].get('sha256') != _HISTORICAL_REPOSITORIES_SHA256:
+        raise ValueError('frozen historical repositories authority hash differs')
+    target = research/_VERSIONED_REPOSITORIES
+    if (target.is_symlink() or not target.is_file()
+            or sha256(target.read_bytes()) != authority[0]['sha256']):
+        raise ValueError('versioned historical repositories authority bytes differ')
+    if old.HISTORICAL_METADATA.count(_OLD_REPOSITORIES) != 1:
+        raise ValueError('original historical repositories authority binding site differs')
+    paths = tuple(_VERSIONED_REPOSITORIES if name == _OLD_REPOSITORIES else name
+                  for name in old.HISTORICAL_METADATA)
+    private = SimpleNamespace(**dict(vars(old), HISTORICAL_METADATA=paths))
+    return _base_exclusions(research, private)
 
 
 def configure_universe(universe_path, gate_path, artifact_path):

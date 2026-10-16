@@ -39,6 +39,8 @@ ENVIRONMENT_GATE_FILES = tuple(dict.fromkeys((*_metadata_gate_files, *_prior.ENV
         'qualify_native_frontier_v4.py', 'test_qualify_native_frontier_v4.py',
         'test_native_frontier_v4_entrypoint.py', 'test_frontier_v4_preparation_tools.py',
         'test_frontier_v4_curation_lineage.py',
+        'test_frontier_v4_historical_portability.py',
+        'archaeology/native-authority-v4/HISTORICAL_REPOSITORIES.json',
         'archaeology/native-authority-v4/curate_frontier.py',
         'archaeology/native-authority-v4/prepare_records.py')),
     '.github/workflows/udm-prospective-native-selection-v4.yml')))
