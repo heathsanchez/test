@@ -62,11 +62,11 @@ jobs:
           set -euo pipefail
           mkdir -p components
           git fetch --no-tags --depth=1 origin 6031466188046f56b4660d772d13ad731ed4c0f2
-          git clone -q --no-checkout https://github.com/heathsanchez/triskelion.git components/triskelion
-          git -C components/triskelion fetch -q --depth=1 origin 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q components/triskelion
+          git -C components/triskelion fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
           git -C components/triskelion checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
-          git clone -q --no-checkout https://github.com/heathsanchez/Minimal-Sufficient-Interface.git components/msi
-          git -C components/msi fetch -q --depth=1 origin 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git init -q components/msi
+          git -C components/msi fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
           git -C components/msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
           git rev-parse 6031466188046f56b4660d772d13ad731ed4c0f2^{commit}
           git -C components/triskelion rev-parse HEAD
