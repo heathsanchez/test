@@ -58,8 +58,9 @@ jobs:
           import json
           from research.unified_consequence_runtime.test_native_environment_selection_v4 import FrozenV4Contracts,profile
           t=FrozenV4Contracts()
-          files={"setup.py":b'from setuptools import setup\\nsetup(python_requires=">=3.6")\\n',
-                 "tests/conftest.py":b"import pytest\\nclass Dummy(pytest.collect.File): pass\\n"}
+          nl=bytes([10])
+          files={"setup.py":b'from setuptools import setup'+nl+b'setup(python_requires=">=3.6")'+nl,
+                 "tests/conftest.py":b'import pytest'+nl+b'class Dummy(pytest.collect.File): pass'+nl}
           result=t.choose(files,profile("old","3.6.12","5.4.3"),profile())
           print("FROZEN_A08_DIAGNOSTIC="+json.dumps(result,sort_keys=True))
           PY
