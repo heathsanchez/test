@@ -380,6 +380,11 @@ def run_protected(repo, commit, dest, *, required, interpreter=sys.executable,
                ("passed","failed","skipped") for row in calls):
             receipt["status"]="UNKNOWN_NATIVE_COLLECTION"
             return receipt
+        # Collection/import errors are not a mere absent protected test. They
+        # prevent establishing any native collection authority in this world.
+        if counts["errors"] or process.returncode not in (0, 1):
+            receipt["status"]="UNKNOWN_NATIVE_COLLECTION"
+            return receipt
         if (any(not any(_prefix_match(node,prefix) for node in nodes) for prefix in required)
                 or any(any(_prefix_match(node,prefix) for node in deselected)
                        for prefix in required)
