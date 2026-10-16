@@ -1,0 +1,94 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -309,7 +309,9 @@
+         // exactly when the bound variable does not occur in f.  No unfolding,
+         // structure eta authority is introduced here; proof irrelevance, when
+         // available, is a separately guarded typed-binder consequence below.
+-        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right) {
++        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
++            && !(matches!(checker.expression(left_term.expr),Some(Expr::Lam{..}))
++                && matches!(checker.expression(right_term.expr),Some(Expr::Lam{..}))) {
+             if let Some(contracted) = eta_contract(checker, left_term, depth) {
+                 work.push((
+                     TypeValue::Term(contracted),
+@@ -1948,6 +1950,22 @@
+                 Judgment::unknown("natrec-zero-iota-unresolved")
+             }
+         };
++    }
++    // A certified K reduction applies to a recursor independently of
++    // whether its comparison partner is a numeral or another neutral.
++    // An unavailable compatibility proof leaves the original path intact.
++    match checker.rule_k_reduce_neutral(neutral, context, budget) {
++        RuleKAttempt::Reduced(closure) => {
++            let exposed = checker.machine().expose(
++                closure, Transparency::Reducible, budget.saturating_sub(1));
++            let Some(reduced) = exposed.proven_value() else {
++                return Judgment::unknown("rule-k-literal-reduction-exposure");
++            };
++            return compare_values(checker, &Value::NatLit(literal.clone()), reduced,
++                budget.saturating_sub(1), depth, context, work, proof_function_frees);
++        }
++        RuleKAttempt::DefiniteMismatch => return Judgment::refuted("rule-k-target-mismatch"),
++        RuleKAttempt::NotApplicable => {}
+     }
+     if !levels.is_empty() {
+         // A polymorphic recursor is not the constructor for zero. A
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -6721,6 +6721,7 @@
+                     obstruction.0,
+                     "distinct-canonical-universes"
+                         | "distinct-Nat-literals"
++                        | "distinct-qualified-Nat-locals"
+                         | "rigid-value-constructor-mismatch"
+                 ) =>
+             {
+@@ -6817,7 +6818,7 @@
+                 let NeutralHead::Free(_,Some(owner))=&n.head else{return false;};
+                 let ledger=self.checked_binding_lineage.borrow();let Some(Some(w))=ledger.get(&owner.id()) else{return false;};
+                 let TypeValue::Term(domain)=&w.domain else{return false;};let mut id=domain.expr;
+-                for _ in 0..16 {match self.expressions.get(id){Some(Expr::App{fun,..})=>id=*fun,Some(Expr::Const{name,..})=>return self.environment.shared_projection_specs().contains_key(name),Some(Expr::BVar(_))=>return true,_=>return false,}}
++                for _ in 0..16 {match self.expressions.get(id){Some(Expr::App{fun,..})=>id=*fun,Some(Expr::Const{name,..})=>return self.environment.shared_projection_specs().contains_key(name)||self.nat_primitives().is_some_and(|nat|nat.type_name==*name),Some(Expr::BVar(_))=>return true,_=>return false,}}
+                 false
+             };
+             if !possible(a)||!possible(b){return None;}
+@@ -6876,6 +6877,14 @@
+         if nominal(a)&&nominal(b) {
+             let (x,y)=(certified_nominal(a)?,certified_nominal(b)?);
+             if x!=y&&self.is_non_eta_structure_type(*type_name){return Some(Judgment::refuted("non-eta-structure-mismatch"));}
++            // Both ORIGINAL terms and their common actual data TYPE were
++            // independently checked above. The certified monomorphic Nat
++            // interface has no record eta rule or proof irrelevance.
++            if x!=y&&type_head.spine.is_empty()
++                &&matches!(&type_head.head,NeutralHead::Const{levels,..} if levels.is_empty())
++                &&self.nat_primitives().is_some_and(|nat|nat.type_name==*type_name){
++                return Some(Judgment::refuted("distinct-qualified-Nat-locals"));
++            }
+             return None;
+         }
+         let (target,constructed)=if nominal(a){(a,b)}else{(b,a)};
+@@ -9663,3 +9672,23 @@
+   assert!(!c.checked_prop_field_telescope(&p,&p,&[ExprId(2)],&mut 65536),"revoked original source scopes cannot form a new checked telescope");
+  }
+ }
++
++#[cfg(test)]
++mod certified_nat_local_controls {
++ use super::*;use crate::environment::{ConstantDecl,NatPrimitives};
++ #[test] fn certified_nat_locals_keep_original_owners_and_context(){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(i,v)in[(0,Expr::Sort(LevelId(1))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::BVar(1)),(3,Expr::BVar(0)),(4,Expr::Pi{domain:ExprId(1),body:ExprId(1)})]{e.insert(ExprId(i),v).unwrap();}
++  let base=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(1))).unwrap().extend(NameId(3),ConstantDecl::axiom(vec![],ExprId(4))).unwrap().extend(NameId(4),ConstantDecl::axiom(vec![],ExprId(0))).unwrap();
++  let env=base.install_nat_primitives(NatPrimitives{type_name:NameId(1),type_expr:ExprId(1),zero:NameId(2),succ:NameId(3),recursor:NameId(4),add:None,mul:None,pow:None,land:None,shift_right:None,div:None,modulo:None,sub:None,pred:None,virtual_bvar_zero:Some(ExprId(3)),ble:None,beq:None}).unwrap();
++  for(qualified,env)in[(true,env),(false,base)]{
++   let c=TypeChecker::new(&e,&l,&env).strict_certificate_probe();let nat=TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));let x=EnvFrame::empty().extend_free(FreeId(0));let y=x.extend_free(FreeId(1));let gamma=vec![nat.clone(),nat.clone()];c.retain_checked_binding(&x,nat.clone(),&gamma[..1]);c.retain_checked_binding(&y,nat,&gamma);
++   let a=c.closure(ExprId(2),y.clone());let b=c.closure(ExprId(3),y.clone());let av=Value::Neutral(Neutral{head:NeutralHead::Free(FreeId(0),Some(x.clone())),spine:vec![]});let bv=Value::Neutral(Neutral{head:NeutralHead::Free(FreeId(1),Some(y.clone())),spine:vec![]});
++   let relation=c.checked_source_structure_relation(&a,&b,&av,&bv,&gamma,&mut 4096);
++   if qualified{assert!(relation.is_some_and(|r|r.is_refuted()),"distinct independently typed qualified Nat locals are rigid data");}else{assert!(relation.is_none(),"a matching name without the qualified Nat interface is insufficient");}
++   assert!(c.checked_source_structure_relation(&a,&a,&av,&av,&gamma,&mut 4096).is_none());assert!(c.checked_source_structure_relation(&a,&b,&av,&bv,&[],&mut 4096).is_none());assert!(c.checked_source_structure_relation(&a,&b,&av,&bv,&gamma,&mut 0).is_none());
++   let forged=Value::Neutral(Neutral{head:NeutralHead::Free(FreeId(1),Some(EnvFrame::empty().extend_free(FreeId(1)))),spine:vec![]});assert!(c.checked_source_structure_relation(&a,&b,&av,&forged,&gamma,&mut 4096).is_none());
++   c.checked_binding_lineage.borrow_mut().insert(x.id(),None);assert!(c.checked_source_structure_relation(&a,&b,&av,&bv,&gamma,&mut 4096).is_none());
++  }
++ }
++}

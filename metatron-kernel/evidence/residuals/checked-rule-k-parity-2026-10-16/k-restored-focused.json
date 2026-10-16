@@ -1,0 +1,47 @@
+{
+  "binary_sha256": "3d9ee45e47f41267196fa295e5f6a01353d2cc871cd35fa93a75937a40bca20e",
+  "rows": [
+    {
+      "case": "evidence/frozen196/bad/bugs/k-rec-conv.ndjson",
+      "rc": 1,
+      "sha256": "04a692635fe2c6755bc973c4520a29ef3707b5dad6ba23eadcd5dd6e71c0f06e",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=bad:stage=theorem.value:verdict=REJECT:reason=rule-k-target-mismatch\n"
+    },
+    {
+      "case": "evidence/frozen196/good/init-prelude.ndjson",
+      "rc": 0,
+      "sha256": "eac8baf0fd48f5e7ccada755b36823d402a1e980882818995ade19cffe15a2c5",
+      "terminal": ""
+    },
+    {
+      "case": "nucleus/metatron-kernel/tests/fixtures/good-rule-k.ndjson",
+      "rc": 0,
+      "sha256": "39dab799309ad05a2f30670776d74b4e6b177175271291dd078a3d3737eef338",
+      "terminal": ""
+    },
+    {
+      "case": "nucleus/metatron-kernel/tests/fixtures/bad-rule-k-target.ndjson",
+      "rc": 1,
+      "sha256": "2147c3416825e1c7f78382501f4c3e2f8165d23d464c998a077e69a12e51697a",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=ruleKbad:stage=theorem.value:verdict=REJECT:reason=rule-k-target-mismatch\n"
+    },
+    {
+      "case": "nucleus/metatron-kernel/tests/fixtures/bad-rule-k-acc.ndjson",
+      "rc": 1,
+      "sha256": "59a4dc34b1175f59d9efd17c4c5b9d9f07bdb54c882dc66a65737d29be6d4356",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=ruleKAcc:stage=theorem.value:verdict=REJECT:reason=certified-stuck-recursor-mismatch\n"
+    },
+    {
+      "case": "nucleus/metatron-kernel/tests/fixtures/protected-false-index.ndjson",
+      "rc": 2,
+      "sha256": "2a090edfcfa2a16191f17a433617aaf045fc9b11cd0e2a93405b705d8a899688",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.succ_le_succ:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "case": "nucleus/metatron-kernel/tests/fixtures/protected-eta-ctor-alias.ndjson",
+      "rc": 2,
+      "sha256": "fd1a643c6c52efe34ec0cc0c22e53cdae32561ff80fb533b3bee7064dbd85ea3",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=etaCtorAlias:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    }
+  ]
+}
