@@ -1,0 +1,143 @@
+name: V7 frozen prospective source-native original MSI/V104 G2
+on:
+  push:
+    branches: [research/udm-typed-v104-prospective-v7-20261017]
+    paths:
+      - .github/workflows/udm-typed-v104-prospective-v7.yml
+      - research/unified_consequence_runtime/qualify_typed_v104_prospective_v7.py
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: udm-v7-prospective-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  prospective-native-g2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+      GIT_CONFIG_NOSYSTEM: '1'
+      UDM_V7_ALLOW_PROSPECTIVE: 'YES_EXACT_FROZEN_SOURCE'
+      UDM_V7_TRISKELION: ${{ github.workspace }}/components/triskelion
+      UDM_V7_MSI: ${{ github.workspace }}/components/msi
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Freeze entire controller and source protocol before any task source is fetched
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/v7-prospective
+          git rev-parse HEAD > qualification/v7-prospective/SOURCE_COMMIT.txt
+          for path in \
+            research/unified_consequence_runtime/typed_native_authority_v6.py \
+            research/unified_consequence_runtime/typed_source_inventory_v5.py \
+            research/unified_consequence_runtime/native_meta_decision.py \
+            research/unified_consequence_runtime/decisive_native.py \
+            research/unified_consequence_runtime/typed_v104_msi_bridge_v7.py \
+            research/unified_consequence_runtime/test_typed_v104_msi_bridge_v7.py \
+            research/unified_consequence_runtime/capability_index.json; do
+            expected="$(git rev-parse c9af2afa1b6c96d732be87d9b90a4bb728b1cf11:"$path")"
+            actual="$(git rev-parse HEAD:"$path")"
+            test "$actual" = "$expected"
+            printf '%s\t%s\n' "$path" "$expected" >> qualification/v7-prospective/RETAINED_SOURCE_GIT_OIDS.tsv
+          done
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/archaeology/typed-v104-v7/PROTOCOL.json)" = \
+               "$(git rev-parse 1722b14a5d06d129015007a86096727d7d4c765e:research/unified_consequence_runtime/archaeology/typed-v104-v7/PROTOCOL.json)"
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/archaeology/typed-v104-v7/FROZEN_AUTHOR_TEST_REFS.json)" = \
+               "$(git rev-parse ba040fe24c845ffd9434b4dd70a5122722cd3fab:research/unified_consequence_runtime/archaeology/typed-v104-v7/FROZEN_AUTHOR_TEST_REFS.json)"
+          python - <<'PY' | tee qualification/v7-prospective/FREEZE.json
+          from pathlib import Path
+          import hashlib,json,subprocess
+          prefix=Path('research/unified_consequence_runtime')
+          inputs=['typed_v104_msi_bridge_v7.py','qualify_typed_v104_prospective_v7.py',
+                  'archaeology/typed-v104-v7/PROTOCOL.json',
+                  'archaeology/typed-v104-v7/FROZEN_AUTHOR_TEST_REFS.json',
+                  'test_typed_v104_msi_bridge_v7.py']
+          record={'schema':'V7_PROSPECTIVE_PRE_SOURCE_FREEZE',
+                  'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                  'file_sha256':{name:hashlib.sha256((prefix/name).read_bytes()).hexdigest() for name in inputs},
+                  'training_repo':'pallets/click','training_head_production_fetched':False,
+                  'future_A':'UNOPENED_jd/tenacity',
+                  'future_B':'UNOPENED_pypa/packaging',
+                  'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN'}
+          print(json.dumps(record,sort_keys=True,indent=2))
+          PY
+      - name: Obtain original pinned research methods only
+        run: |
+          set -euo pipefail
+          mkdir -p components
+          git fetch --no-tags --depth=1 origin 6031466188046f56b4660d772d13ad731ed4c0f2
+          git init -q components/triskelion
+          git -C components/triskelion fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C components/triskelion checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q components/msi
+          git -C components/msi fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C components/msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+      - name: Install predeclared bounded Python native environment (no outcome-specific repairs)
+        run: |
+          set -euo pipefail
+          python -B -m pip install --disable-pip-version-check --no-input \
+            pytest==8.3.5 pytest-cov==6.2.1 pluggy==1.6.0 coverage==7.10.6 \
+            packaging==26.3 attrs==24.3.0 hypothesis==6.122.3 \
+            typing_extensions==4.12.2 colorama==0.4.6 rich==13.9.4 \
+            click==8.2.0 tenacity==9.1.2 markupsafe==3.0.2
+          python -B -m pip freeze --all > qualification/v7-prospective/ENVIRONMENT.txt
+      - name: Run frozen prospective original MSI/V104 native decision
+        id: science
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          python -B -m research.unified_consequence_runtime.qualify_typed_v104_prospective_v7 \
+            --out "$GITHUB_WORKSPACE/qualification/v7-prospective/native" \
+            > qualification/v7-prospective/SCIENCE.log 2>&1
+          code=$?
+          echo "$code" > qualification/v7-prospective/SCIENCE_EXIT.txt
+          cat qualification/v7-prospective/SCIENCE.log
+          exit "$code"
+      - name: Independently assess prospective status without promoting infrastructure success
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          root=Path('qualification/v7-prospective')
+          evidence=root/'native/RESULT.json'
+          if evidence.exists():
+              v=json.loads(evidence.read_text())
+              assert v['G3']==v['G4']==v['G5']==v['G6']=='UNKNOWN'
+              assert v['source_commit']==Path(root/'SOURCE_COMMIT.txt').read_text().strip()
+              assert v['unopened_futures'] in (['jd/tenacity','pypa/packaging'],['pypa/packaging'])
+              assert v['no_outcome_based_reselection'] is True
+              assert v['no_head_production_input'] is True
+              assert v['G2'] in ('UNKNOWN','WARRANTED_BOUNDED')
+              (root/'SCIENTIFIC_VERDICT.json').write_text(json.dumps({
+                   'G2':v['G2'],'G3':v['G3'],'G4':v['G4'],
+                   'source_commit':v['source_commit'],'observed_status':v['status'],
+                   'task_count':len(v['tasks']),'unopened_futures':v['unopened_futures'],
+                   'not_a_comparative_advantage':True},sort_keys=True,indent=2)+'\n')
+              print('ACTUAL_SCIENTIFIC_VERDICT',v['status'],v['G2'])
+          else:
+              (root/'SCIENTIFIC_VERDICT.json').write_text(json.dumps({
+                   'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN',
+                   'status':'UNKNOWN_NO_RECEIPT','head_production_fetched':False})+'\n')
+              print('UNKNOWN_NO_PROSPECTIVE_NATIVE_RECEIPT')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-v7-prospective-native-${{ github.sha }}-${{ github.run_attempt }}
+          path: qualification/v7-prospective/
+          retention-days: 90
+          if-no-files-found: warn
