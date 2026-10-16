@@ -1,5 +1,10 @@
 # V4 Minimum Sufficient Native Authority — executed qualification
 
+## Canonical ROS reconciliation (17 October 2026)
+
+While reconciling source authority after these tests, canonical ROS exposed already-verified **stronger and earlier** qualifications: [V4.1 native admission #38954969411](https://github.com/heathsanchez/test/actions/runs/38954969411), [a 162-contract independent source-meaning differential #38965485638](https://github.com/heathsanchez/test/actions/runs/38965485638), and [V5 typed Git inventory #38967093241](https://github.com/heathsanchez/test/actions/runs/38967093241). This assistant's 17-contract selector plus three generated native controls is **a non-leading independent corroboration only**. The strongest new exact native frontier residual is **versioned typed symlink/gitlink transport/execution and independent authority on actual repositories**, with other tox/dynamic-metadata UNKNOWNs retained. No claim of invention, competitive improvement over V4.1, prospective native acquisition or G2. The source and CI results here are still valid within their narrower scope.
+
+
 **Verdict: WARRANTED_BOUNDED source-role inference and generated-source native pytest smoke; generic external native admission and developmental G2–G6 UNKNOWN.**
 
 ## Evidence and frozen lineage
@@ -38,8 +43,8 @@ G0/G1 previous authority is preserved; [compare parent to qualified source](http
 
 The seven exposed V3 source tasks were not re-screened or changed into retrospective successes. Other V3 refusal classes (dynamic metadata 2, metadata grammar 2, interface 1 and compatible catalog profile 1) have no general native qualifications from this continuation. G2 prospective autonomous selection, G3 causal future-discoverability expansion, G4 charged economic advantage, G5 concrete refinement and G6 non-bypassable containment all remain **UNKNOWN**. Coding agent and ledger comparators were **NOT_RUN** because no independently admitted new prospective native obligation was available. Complete lifecycle and engineering costs remain UNKNOWN.
 
-## Highest-leverage next independent gate
+## Highest-leverage next independent gate (reconciled)
 
-Integrate the V4 source-role candidate selection into an **explicitly versioned, independently authenticated native admission adapter**, without changing any original v1–v3 worker/verifier bytes. Preserve all original authority checks (source/import/environment/collection/selected order/assertions and falsification controls). Qualify against untouched external source with predeclared independent screening and budget. Only after that pass should a new pool be frozen and G2 pursued through the existing MSI/V104 policy machinery. Do not substitute this generated fixture for genuinely unknown source-native evidence.
+**Do not reimplement V4.1 or V5.** Existing V4.1 has a versioned source/native admission bridge and V5 has separately qualified typed symlink/gitlink *inventory*. The next real residual is a separately qualified typed Git **native transport/execution authority** on the V5 branch that preserves original 100644/100755/120000/160000 modes, safe in-tree link target/byte identities, import/collection/protected assertion integrity, and explicit failure for unresolved external/dangling/cyclic links. Opaque gitlinks remain non-executable unless independently qualified. Original verifiers remain untouched. Other V4.1 conditional tox/dynamic metadata refusals remain separate UNKNOWNs. Only after a valid independent gate should a fresh unseen source-distinct pool and prospective G2 tests run. No prospective G2 executed here.
 
 **Machine-readable checkpoint:** [V4_MINIMUM_SUFFICIENT_AUTHORITY_RESULT.json](https://github.com/heathsanchez/test/blob/research/udm-minimum-sufficient-authority-v4-20261017/research/unified_consequence_runtime/V4_MINIMUM_SUFFICIENT_AUTHORITY_RESULT.json).
