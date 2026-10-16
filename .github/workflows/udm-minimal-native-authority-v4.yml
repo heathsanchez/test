@@ -1,0 +1,68 @@
+name: UDM V4 source-role native qualification
+
+on:
+  push:
+    branches:
+      - research/udm-minimal-native-authority-v4-20261017
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-role-v4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned fixture-test dependencies
+        run: |
+          python -m pip install "packaging==24.2" "pytest==8.4.1"
+      - name: Verify immutable baseline and changed-file allowlist
+        run: |
+          mkdir -p qualification/native-role-v4
+          python - <<'PY'
+          import subprocess
+          from pathlib import Path
+          base="95029db0d0b2122836bee7268299461bfbdb5a66"
+          prefix="research/unified_consequence_runtime/"
+          permitted={prefix+"native_environment_selection_v4.py",
+                     prefix+"native_environment_v4.py",
+                     prefix+"test_native_environment_selection_v4.py",
+                     prefix+"NATIVE_SOURCE_ROLE_V4.md",
+                     ".github/workflows/udm-minimal-native-authority-v4.yml"}
+          changed=set(subprocess.check_output(["git","diff","--name-only",base,"HEAD"],text=True).splitlines())
+          assert changed and changed<=permitted,sorted(changed-permitted)
+          for f in [prefix+"native_environment_selection_v3.py",
+                    prefix+"native_environment_v3.py",
+                    prefix+"native_execution_v3.py",
+                    prefix+"decisive_native_verify.py",
+                    prefix+"generic_native_verify.py"]:
+              assert Path(f).read_bytes()==subprocess.check_output(["git","show",base+":"+f]),f
+          Path("qualification/native-role-v4/preserved.txt").write_text(
+              "\n".join(sorted(changed))+"\nOriginal verifiers preserved\n")
+          PY
+      - name: Exercise V4 and original V3 selector contracts
+        run: |
+          set -o pipefail
+          python -m unittest -v \
+            research.unified_consequence_runtime.test_native_environment_selection_v4 \
+            research.unified_consequence_runtime.test_native_environment_selection_v3 \
+            2>&1 | tee qualification/native-role-v4/contracts.log
+      - name: Verify no tracked mutation during tests
+        if: always()
+        run: |
+          GIT_OPTIONAL_LOCKS=0 git --no-optional-locks status --porcelain --untracked-files=no > qualification/native-role-v4/git-status.txt
+          test ! -s qualification/native-role-v4/git-status.txt
+      - name: Archive qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-native-source-role-v4
+          path: qualification/native-role-v4/
+          retention-days: 90
