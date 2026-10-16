@@ -1852,6 +1852,27 @@ impl<'a> TypeChecker<'a> {
                             self.expressions.get(*arg),context.len(),frame.id(),
                             *remaining,self.expressions.get(*fun),
                         );
+                        if expression.0 == 851 && context.len() == 10 {
+                            let (source_credential, lexical_context_type) =
+                                match self.expressions.get(*arg) {
+                                    Some(Expr::BVar(index)) => {
+                                        let credential = self.checked_type_of_bound_source(
+                                            frame, *index, context,
+                                        );
+                                        let context_ty = match frame.lookup(*index) {
+                                            Some(EnvBinding::Free(free)) =>
+                                                usize::try_from(free.0).ok()
+                                                    .and_then(|i| context.get(i)).cloned(),
+                                            _ => None,
+                                        };
+                                        (credential, context_ty)
+                                    },
+                                    _ => (None, None),
+                                };
+                            eprintln!(
+                                "NUCLEUS_LISTPERM_TYPED_ARGUMENT:app={expression:?}:source_credential={source_credential:?}:lexical_context_type={lexical_context_type:?}:expected_domain={domain:?}:context={context:?}"
+                            );
+                        }
                     }
                 }
                 match argument_judgment {
