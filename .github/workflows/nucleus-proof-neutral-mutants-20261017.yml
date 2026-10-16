@@ -1,0 +1,90 @@
+name: Nucleus bounded proof-neutral adversarial exact-source gate
+on:
+  push:
+    branches: [research/nucleus-proof-irrel-reconswap-20261017]
+    paths: [".github/workflows/nucleus-proof-neutral-mutants-20261017.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  negatives:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build separately identified Nucleus checker
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/evidence/binary.sha256
+      - name: Retrieve SHA-checked upstream 1095-record proof closure
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/inputs
+          gh api repos/heathsanchez/test/actions/artifacts/12077748490/zip > /tmp/source.zip
+          unzip -q /tmp/source.zip -d /tmp/inputs
+          echo '6feb6fdc9ec8190efeee6bc37bbda217d9a1ef60cbb5664c9642bb4a6885a107  /tmp/inputs/list-perm-reconswap.ndjson' | sha256sum -c -
+      - name: Replay original and guard against six forged theorem and inductive declarations
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,subprocess,pathlib,hashlib,time
+          root=pathlib.Path('/tmp/evidence')
+          original=pathlib.Path('/tmp/inputs/list-perm-reconswap.ndjson').read_bytes()
+          rows=[json.loads(line) for line in original.splitlines()]
+          assert len(rows)==1095
+          pinned=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          environment={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          environment.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pinned['origin_flags']})
+          checker='metatron-kernel/target/release/metatron-kernel'
+          def check(label,payload,enabled=True):
+              env=dict(environment)
+              if enabled: env['NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS']='1'
+              env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+              t=time.perf_counter()
+              run=subprocess.run([checker],input=payload,capture_output=True,env=env,timeout=90)
+              result={'label':label,'candidate_flag':enabled,'verdict':run.returncode,'seconds':round(time.perf_counter()-t,5),
+                      'sha256':hashlib.sha256(payload).hexdigest(),'bytes':len(payload),
+                      'trace':(run.stderr+run.stdout).decode(errors='replace')[-1200:]}
+              print(label,result['verdict'],flush=True)
+              return result
+          positives=[check('original-without-new-rule',original,False),
+                     check('exact-official-source-with-checked-proof-irrelevance',original,True)]
+          mutations=[]
+          def mutate(name,match,apply):
+              candidate=json.loads(json.dumps(rows))
+              hits=[item for item in candidate if match(item)]
+              assert len(hits)==1,(name,len(hits))
+              apply(hits[0])
+              blob=('\n'.join(json.dumps(v,separators=(',',':')) for v in candidate)+'\n').encode()
+              mutations.append(check(name,blob))
+          owner=lambda rec:'inductive' in rec and rec['inductive']['types'][0]['name']==15
+          mutate('forged-recursor-rule',owner,lambda r:r['inductive']['recs'][0]['rules'][2].update(rhs=0))
+          mutate('forged-constructor-index',owner,lambda r:r['inductive']['ctors'][1].update(cidx=0))
+          mutate('forged-inductive-arity',owner,lambda r:r['inductive']['types'][0].update(numIndices=0))
+          mutate('forged-constructor-owner',owner,lambda r:r['inductive']['ctors'][1].update(induct=1))
+          mutate('forged-refl-proof',lambda r:'thm'in r and r['thm']['name']==109,lambda r:r['thm'].update(value=3))
+          mutate('forged-reconswap-proof',lambda r:'thm'in r and r['thm']['name']==116,lambda r:r['thm'].update(value=3))
+          for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']:
+              data=(pathlib.Path('metatron-kernel/tests/fixtures')/name).read_bytes()
+              mutations.append(check(name,data))
+          passed=positives[0]['verdict']==2 and positives[1]['verdict']==0 and all(x['verdict']!=0 for x in mutations)
+          report={'source_commit':os.environ['GITHUB_SHA'],'source_tree':pathlib.Path('/tmp/evidence/source-tree.txt').read_text().strip(),
+                  'boundary':'scoped source-checked proof irrelevance on exact Lean 4.34.1 export',
+                  'positives':positives,'negatives':mutations,'qualified':passed}
+          (root/'verdicts.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps({'qualified':passed,'positive_rcs':[x['verdict'] for x in positives],
+              'mutants':[(x['label'],x['verdict']) for x in mutations]},sort_keys=True),flush=True)
+          assert passed,'False proof acceptance or lost valid Lean proof'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-checked-proof-neutral-mutants-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
