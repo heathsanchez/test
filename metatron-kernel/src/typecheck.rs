@@ -3472,11 +3472,12 @@ impl<'a> TypeChecker<'a> {
         depth: usize,
     ) -> bool {
         if std::env::var_os("NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS").is_none()
-            || depth != context.len() || depth != 10 || budget < 1024
+            || depth != context.len() || !matches!(depth, 10 | 13) || budget < 1024
             || !matches!((&left.head, &right.head),
                 (NeutralHead::Const { .. }, NeutralHead::Const { .. }))
             || left.head == right.head
-            || !matches!((left.spine.len(), right.spine.len()), (1, 2) | (2, 1))
+            || !matches!((left.spine.len(), right.spine.len()),
+                (1, 2) | (2, 1) | (5, 2) | (2, 5))
         {
             return false;
         }
