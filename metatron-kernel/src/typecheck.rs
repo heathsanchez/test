@@ -3476,8 +3476,8 @@ impl<'a> TypeChecker<'a> {
             || !matches!((&left.head, &right.head),
                 (NeutralHead::Const { .. }, NeutralHead::Const { .. }))
             || left.head == right.head
-            || !matches!((left.spine.len(), right.spine.len()),
-                (1, 2) | (2, 1) | (5, 2) | (2, 5))
+            || left.spine.is_empty() || right.spine.is_empty()
+            || left.spine.len() > 6 || right.spine.len() > 6
         {
             return false;
         }
