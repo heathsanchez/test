@@ -34,7 +34,7 @@ jobs:
       - name: Install independently fixed native test dependencies
         run: |
           python -B -m pip install --disable-pip-version-check --no-input \
-            packaging==26.3 pytest==8.4.1 pytest-cov==6.2.1 coverage==7.10.6 pluggy==1.6.0
+            packaging==26.3 pytest==8.3.5 pytest-cov==6.2.1 coverage==7.10.6 pluggy==1.6.0
       - name: Bind exact frozen tests and preserve V5 plus previous verifiers
         run: |
           set -euo pipefail
