@@ -1838,7 +1838,7 @@ impl<'a> TypeChecker<'a> {
                 #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION").is_some()
                     && matches!(argument_judgment,Judgment::Unknown {..})
-                    && (context.len()==4 || context.len()==11)
+                    && (context.len()==4 || context.len()==11 || (context.len()==10 && matches!(expression.0,849|850|851)))
                 {
                     use std::sync::atomic::{AtomicUsize,Ordering};
                     static TRACED:AtomicUsize=AtomicUsize::new(0);
