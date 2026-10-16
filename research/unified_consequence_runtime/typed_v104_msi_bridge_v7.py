@@ -366,7 +366,12 @@ def original_msi_decision(carrier,source_repo,*,scope):
         "original_msi_policy":"V10",
         "original_v104_generator":"V104",
     })
-    choice=choose_verified_profiles(Path(source_repo),candidates,futures,profiles,
+    # The caller's source_repo is the independently pinned *task* source. The
+    # Pareto algorithm itself must always be authenticated from the separate
+    # Metalogic research checkout (SOURCE_PIN.repository=heathsanchez/test).
+    # Never infer that a target/source repository contains that old Git commit.
+    qualified_method_checkout=Path(__file__).resolve().parents[2]
+    choice=choose_verified_profiles(qualified_method_checkout,candidates,futures,profiles,
                                     evidence_binding=binding)
     return {"schema":"UDM_V7_NATIVE_TO_ORIGINAL_PARETO_DECISION",
             "choice":choice,"profiles":profiles,
