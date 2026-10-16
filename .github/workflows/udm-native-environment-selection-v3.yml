@@ -1,0 +1,214 @@
+name: Frozen native environment selection v3 qualification
+on:
+  push:
+    branches: [research/udm-native-environment-selection-20261016]
+    paths:
+      - .github/workflows/udm-native-environment-selection-v3.yml
+      - research/unified_consequence_runtime/**
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: udm-native-environment-selection-v3-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native-environment-selection-v3:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+      UDM_COMPONENTS: ${{ github.workspace }}/components
+      UDM_SOURCE_REPOS: ${{ github.workspace }}/components/selection-sources
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Prepare isolated controller and catalog runtimes before target access
+        run: |
+          set -euo pipefail
+          python -B -m venv "$RUNNER_TEMP/environment-v3-controller"
+          "$RUNNER_TEMP/environment-v3-controller/bin/python" -B -m pip install \
+            --disable-pip-version-check --no-input pytest==8.3.5 packaging==26.3
+          "$RUNNER_TEMP/environment-v3-controller/bin/python" -B \
+            research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py \
+            --dest-root "$RUNNER_TEMP/environment-v3-runtimes" \
+            --out "$RUNNER_TEMP/runtime-paths.json"
+      - name: Freeze all source, catalog and exact runtime identities before target access
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/environment-v3-controller/bin/python" -B \
+            -m research.unified_consequence_runtime.qualify_environment_selection_v3 \
+            --write-freeze --repo "$GITHUB_WORKSPACE" \
+            --runtimes "$RUNNER_TEMP/runtime-paths.json" --out qualification/FREEZE.json
+          cp "$RUNNER_TEMP/runtime-paths.json" qualification/RUNTIMES.json
+          git rev-parse HEAD > qualification/source-commit.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+          path: components/development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: components/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: components/flash
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ServiceNow/webarena-verified
+          ref: 6473f72db5dcefc97b5725b59e734504edc28a21
+          fetch-depth: 0
+          path: components/evaluator
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/triskelion
+          ref: 426c54f7c774560e0fabe7213c5ef333b1327c71
+          path: components/selection-sources/triskelion
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          path: components/selection-sources/msi
+          persist-credentials: false
+      - name: Fetch exact original method objects without executing historical experiments
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin \
+            13325089c471996b8b68f46540fd4ad449df752c \
+            52eb1e7995bd877a2b698efe1883ae2b80a03737 \
+            6031466188046f56b4660d772d13ad731ed4c0f2
+          git -C "$UDM_SOURCE_REPOS/msi" fetch --no-tags --depth=1 origin \
+            5d448c0ecc82ff3945d009963064ebbb67d2f308
+          ln -s "$GITHUB_WORKSPACE" "$UDM_SOURCE_REPOS/test"
+      - name: Run original regressions and v3 fixture contracts
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/environment-v3-controller/bin/python" -B -m unittest \
+            research.unified_consequence_runtime.test_generated_build_materialization \
+            research.unified_consequence_runtime.test_native_suite_authority \
+            research.unified_consequence_runtime.test_generic_native_verify \
+            research.unified_consequence_runtime.test_native_frontier \
+            research.unified_consequence_runtime.test_native_meta_decision \
+            research.unified_consequence_runtime.test_decisive_constructor \
+            research.unified_consequence_runtime.test_decisive_native \
+            research.unified_consequence_runtime.test_qualify_decisive_native \
+            research.unified_consequence_runtime.test_decisive_task_admission \
+            research.unified_consequence_runtime.test_recursive_restart_retention \
+            research.unified_consequence_runtime.test_native_admission_v2 \
+            research.unified_consequence_runtime.test_native_execution_v2 \
+            research.unified_consequence_runtime.test_native_admission_v2_adversarial \
+            research.unified_consequence_runtime.test_native_environment_v2 \
+            research.unified_consequence_runtime.test_native_runtime_v2 \
+            research.unified_consequence_runtime.test_qualify_native_admission_v2 \
+            research.unified_consequence_runtime.test_native_environment_selection_v3 \
+            research.unified_consequence_runtime.test_native_execution_v3 \
+            research.unified_consequence_runtime.test_native_runtime_v3 \
+            research.unified_consequence_runtime.test_native_environment_v3 \
+            research.unified_consequence_runtime.test_qualify_environment_selection_v3 \
+            -v 2>&1 | tee qualification/contracts.log
+      - name: Verify the portable worker against the frozen legacy runtime
+        run: |
+          set -euo pipefail
+          export UDM_NATIVE_V3_INTERPRETER="$(python -B -c 'import json; print(json.load(open("qualification/FREEZE.json"))["runtimes"]["cpython-3.6.5-pytest-5.4.3-linux-x86_64"]["interpreter"])')"
+          "$RUNNER_TEMP/environment-v3-controller/bin/python" -B -m unittest \
+            research.unified_consequence_runtime.test_native_execution_v3.SelectedInterpreterNativeContracts \
+            research.unified_consequence_runtime.test_native_execution_v3.PortableNativeWorkerContracts \
+            -v 2>&1 | tee qualification/legacy-contracts.log
+      - name: Qualify frozen source-derived native environments with raw evidence and costs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/environment-v3-controller/bin/python" -B \
+            -m research.unified_consequence_runtime.qualify_environment_selection_v3 \
+            --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json \
+            --components "$UDM_COMPONENTS" --source-repos "$UDM_SOURCE_REPOS" \
+            --out "$GITHUB_WORKSPACE/qualification/environment-v3" 2>&1 | tee qualification/native.log
+      - name: Check admission-only gate and exact preserved authority
+        run: |
+          python -B - <<'PY'
+          import json
+          from pathlib import Path
+          folder = Path('qualification/environment-v3')
+          result = json.loads((folder / 'RESULT.json').read_text())
+          assert result['status'] == 'ADMISSION_ONLY_QUALIFIED'
+          assert result['first_task_gate']['status'] == 'PASS'
+          assert result['verdicts']['G0_G1'] == 'PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY'
+          assert all(result['verdicts'][gate] == 'UNKNOWN' for gate in ('G2', 'G3', 'G4', 'G5', 'G6'))
+          retention = result['retention']
+          assert retention['records'] == 246
+          assert retention['CAS_objects'] == 76
+          assert retention['inventory_rows'] == 70
+          assert all(retention[key] is True for key in (
+              'ledger_exact', 'CAS_exact', 'inventory_exact', 'source_pins_exact', 'original_FLASH_agrees'))
+          assert not (folder / 'ERROR.json').exists()
+          print(json.dumps({'status': result['status'], 'first_task_gate': result['first_task_gate'],
+              'verdicts': result['verdicts'], 'retention': retention}, indent=2))
+          PY
+      - name: Archive exact source and all qualification evidence
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          git archive --format=tar.gz --output=qualification/SOURCE.tar.gz HEAD \
+            research/unified_consequence_runtime .github/workflows/udm-native-environment-selection-v3.yml \
+            .github/workflows/udm-native-admission-v2.yml .github/workflows/udm-decisive-native.yml
+          python -B - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          import tarfile
+          folder = Path('qualification')
+          bootstrap = Path(os.environ['RUNNER_TEMP']) / 'environment-v3-runtimes'
+          entries = {}
+          excluded = {'venv', '.git', 'source', 'metadata-source', 'base-build', 'miniconda-base', 'wheels'}
+          for origin, prefix in ((folder, ''), (bootstrap, 'runtime-bootstrap/')):
+              if not origin.exists():
+                  continue
+              for root, directories, names in os.walk(origin, followlinks=False):
+                  directories[:] = sorted(name for name in directories
+                      if name not in excluded and not name.startswith('.venv')
+                      and not (Path(root) / name).is_symlink())
+                  for name in sorted(names):
+                      path = Path(root) / name
+                      if path.is_file() and not path.is_symlink() and name not in {
+                          'MANIFEST.json', 'ENVIRONMENT_V3_EVIDENCE.tar.gz'}:
+                          entries[prefix + path.relative_to(origin).as_posix()] = path
+          files = {name: hashlib.sha256(path.read_bytes()).hexdigest()
+                   for name, path in sorted(entries.items())}
+          archive = folder / 'ENVIRONMENT_V3_EVIDENCE.tar.gz'
+          with tarfile.open(archive, 'w:gz') as packet:
+              for name, path in sorted(entries.items()):
+                  packet.add(path, arcname=name, recursive=False)
+          files[archive.name] = hashlib.sha256(archive.read_bytes()).hexdigest()
+          (folder / 'MANIFEST.json').write_text(json.dumps({
+              'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'run_id': os.environ['GITHUB_RUN_ID'], 'files': files}, sort_keys=True) + '\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-environment-selection-v3-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            qualification/*.json
+            qualification/*.txt
+            qualification/*.log
+            qualification/SOURCE.tar.gz
+            qualification/ENVIRONMENT_V3_EVIDENCE.tar.gz
+          include-hidden-files: true
+          retention-days: 30
