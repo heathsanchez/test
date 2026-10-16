@@ -98,6 +98,7 @@ jobs:
         timeout-minutes: 12
         run: |
           set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE"
           python -B research/unified_consequence_runtime/archaeology/native-authority-v4/diagnose_exposed_v3_pool.py \
             2> qualification/minimum-native-authority-v4/EXPOSED_DIAGNOSTIC_PROGRESS.log \
             | tee qualification/minimum-native-authority-v4/EXPOSED_DIAGNOSTICS.json
