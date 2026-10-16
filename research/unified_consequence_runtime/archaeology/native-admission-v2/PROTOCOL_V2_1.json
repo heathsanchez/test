@@ -3,6 +3,7 @@
   "authority_ceiling": "Local research admission only; no native capability, autonomous acquisition, recursive growth, comparative advantage, new Python/formal refinement or external nonbypassability claim.",
   "base_commit": "64ce25cdaffcbee281ec24c2c2f8b2363aaff218",
   "branch": "research/udm-native-admission-v2-20261016",
+  "code_identity": "Typed value encoding of non-derived Python3.12 code fields; excludes nonsemantic marshal reference/intern flags while preserving bytecode, typed constants and metadata. Pure intern-only false-positive RED and changed-value negative preserved.",
   "costs": "Retain all setup/build/source/collection/native/revalidation/reclosure wall times and output bytes; controller wall includes nested phases. Model-token/dollar/engineering costs remain UNKNOWN.",
   "dependencies": {
     "count": 38,
@@ -251,6 +252,16 @@
   "schema": "UDM_NATIVE_ADMISSION_QUALIFICATION_PROTOCOL_V2",
   "source_order_authority": "Bind complete unique itemcollected order and complete unique final session.items order independently from original source; full node sets must coincide. Execution must match both exact original sequences and execute all phases in original final order. Candidate reorder, duplication or loss remains UNKNOWN.",
   "source_transport": "Raw Git tracked bytes and author-test blob authentication; source-preserving base-only native wheel, base ancestor SCM tags only; all external dependencies pinned and --no-deps.",
+  "unqualified_attempts": [
+    {
+      "artifact": 12026729365,
+      "artifact_sha256": "ff2ceff1004475a7d07209526731cbf5165aa98fb4f260bb6cf62d69db4d1874",
+      "commit": "1e0bf1d1d6ff951033da7fd7503e76fefccac666",
+      "reason": "Reasonless non-strict XPASS misclassified as native PASS; strict XPASS misclassified as native FAIL. No fresh task opened.",
+      "run": 38855850906,
+      "status": "CANCELLED_AFTER_NEW_LOCAL_AUTHORITY_NEGATIVE"
+    }
+  ],
   "verdicts": {
     "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
     "G2": "UNKNOWN",
@@ -258,5 +269,6 @@
     "G4": "UNKNOWN",
     "G5": "UNKNOWN",
     "G6": "UNKNOWN"
-  }
+  },
+  "xfail_authority": "Presence of original pytest wasxfail is retained even with empty reason; strict XPASS is identified from pinned pytest report semantics. Neither licenses native success or acquisition failure."
 }

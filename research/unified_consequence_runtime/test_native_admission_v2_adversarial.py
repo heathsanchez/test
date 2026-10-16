@@ -192,6 +192,16 @@ class NativeAdmissionV2AdversarialTests(unittest.TestCase):
             with self.subTest(source=source):
                 self.assert_unknown(self.verify(self.collect()))
 
+    def test_reasonless_xpass_is_not_a_native_warrant(self):
+        for strict, marker in [(False, '@pytest.mark.xfail'),
+                               (True, '@pytest.mark.xfail(strict=True)')]:
+            (self.repo / 'tests/test_native.py').write_text(TESTS.replace(
+                'def test_old():', marker + '\ndef test_old():'))
+            self.refresh()
+            with self.subTest(strict=strict):
+                receipt = self.verify(self.collect())
+                self.assertEqual(receipt['status'], 'UNKNOWN_SKIPPED_OR_XFAIL')
+
     def test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons(self):
         cases = [('-k "test_new and 1"', 'DESELECTION'),
                  ('-m included', 'DESELECTION'),

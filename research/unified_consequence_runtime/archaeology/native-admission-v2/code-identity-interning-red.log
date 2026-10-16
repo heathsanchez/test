@@ -1,0 +1,17 @@
+test_code_identity_ignores_interning_but_preserves_executable_values (research.unified_consequence_runtime.test_native_execution_v2.NativeExecutionCertificateContracts.test_code_identity_ignores_interning_but_preserves_executable_values) ... FAIL
+
+======================================================================
+FAIL: test_code_identity_ignores_interning_but_preserves_executable_values (research.unified_consequence_runtime.test_native_execution_v2.NativeExecutionCertificateContracts.test_code_identity_ignores_interning_but_preserves_executable_values)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v2.py", line 75, in test_code_identity_ignores_interning_but_preserves_executable_values
+    self.assertEqual(namespace['code_hash'](sample),before)
+AssertionError: 'a03eecd654fc13ba8cdebd168a91e5e24580fe0ab81c25b9d50a4b1a63354428' != '2eee8be51c6d05e9a1621f79449c7d08a3033069e8c9cd0a3dfd4122c4a2cd4e'
+- a03eecd654fc13ba8cdebd168a91e5e24580fe0ab81c25b9d50a4b1a63354428
++ 2eee8be51c6d05e9a1621f79449c7d08a3033069e8c9cd0a3dfd4122c4a2cd4e
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.257s
+
+FAILED (failures=1)

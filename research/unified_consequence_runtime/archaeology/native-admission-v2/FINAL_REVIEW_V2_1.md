@@ -1,0 +1,5 @@
+Admission revision 2.1 independent review now includes the reasonless XPASS follow-up. The single new fixture reproduced both false classifications before the fix: non-strict XPASS became PASS_NATIVE; strict XPASS became FAIL_NATIVE. Both now remain UNKNOWN_SKIPPED_OR_XFAIL. Actual RED and full 27-test GREEN logs are retained; the latest full run passed in 61.225 seconds.
+
+Read-only review found all 18 non-derived public Python3.12 code fields encoded by the deterministic typed serializer, including recursive constants, line and exception metadata, bytecode and float bits. The interning-invariance/changed-constant control independently passed. No formal Python semantics or hostile-introspection proof is claimed.
+
+The original lawful reorder controls remain green: both original ordered traces are bound, their full duplicate-free sets must agree, and actual phases follow certified final selection order. Candidate reordering and node removal remain UNKNOWN. Historical logs/review and prior frozen qualification evidence are preserved; cancelled attempt 38855850906 remains unqualified. No fresh source or native cattrs rerun was performed by the reviewer.

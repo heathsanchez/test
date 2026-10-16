@@ -52,7 +52,7 @@ print(json.dumps(out,sort_keys=True))
 '''
 
 _BOOTSTRAP=r'''
-import hashlib,json,pathlib,sys,marshal,types,inspect
+import hashlib,json,pathlib,sys,struct,types,inspect
 world=pathlib.Path(sys.argv[1]).resolve();mode=sys.argv[2]
 output=pathlib.Path(sys.argv[3]);junit=sys.argv[4]
 expected=json.loads(sys.argv[5]);roots=set(json.loads(sys.argv[6]));plugins=json.loads(sys.argv[7])
@@ -78,13 +78,24 @@ def code_hash(obj):
     obj=getattr(obj,'__func__',obj)
     while hasattr(obj,'__wrapped__'):obj=obj.__wrapped__
     code=getattr(obj,'__code__',None)
+    def value(v):
+        if isinstance(v,types.CodeType):return ['code',clean(v)]
+        if isinstance(v,tuple):return ['tuple',[value(x) for x in v]]
+        if isinstance(v,frozenset):return ['frozenset',sorted([value(x) for x in v],key=lambda x:json.dumps(x,sort_keys=True))]
+        if isinstance(v,bytes):return ['bytes',v.hex()]
+        if isinstance(v,float):return ['float',struct.pack('!d',v).hex()]
+        if isinstance(v,complex):return ['complex',value(v.real),value(v.imag)]
+        if v is Ellipsis:return ['ellipsis']
+        if v is None or type(v) in (str,int,bool):return [type(v).__name__,v]
+        raise TypeError('unsupported native code constant')
     def clean(c):
-        consts=tuple(clean(v) if isinstance(v,types.CodeType) else v for v in c.co_consts)
         name=c.co_filename
         try:name=str(pathlib.Path(name).resolve().relative_to(world))
         except ValueError:pass
-        return c.replace(co_filename=name,co_consts=consts)
-    return hashlib.sha256(marshal.dumps(clean(code))).hexdigest() if code else None
+        return [c.co_argcount,c.co_posonlyargcount,c.co_kwonlyargcount,c.co_nlocals,c.co_stacksize,c.co_flags,
+            c.co_code.hex(),value(c.co_consts),c.co_names,c.co_varnames,c.co_freevars,c.co_cellvars,
+            name,c.co_name,c.co_qualname,c.co_firstlineno,c.co_linetable.hex(),c.co_exceptiontable.hex()]
+    return hashlib.sha256(json.dumps(clean(code),sort_keys=True,separators=(',',':')).encode()).hexdigest() if code else None
 class Monitor:
     def __init__(self):
         self.items=[];self.deselected=[];self.reports=[];self.selected=[];self.collection_errors=[];self.changed=[]
@@ -110,8 +121,11 @@ class Monitor:
         previous=next((r for r in self.items if r['nodeid']==item.nodeid),None)
         if previous is None or previous['code_sha256']!=code_hash(getattr(item,'obj',None)):self.changed.append(item.nodeid)
     def pytest_runtest_logreport(self,report):
+        strict_xpass=(report.failed and isinstance(report.longrepr,str)
+            and report.longrepr.startswith('[XPASS(strict)]'))
         self.reports.append({'nodeid':report.nodeid,'when':report.when,'outcome':report.outcome,
-            'wasxfail':str(getattr(report,'wasxfail',''))})
+            'wasxfail':repr(report.wasxfail) if hasattr(report,'wasxfail') else
+                ('[XPASS(strict)]' if strict_xpass else '')})
 monitor=Monitor();args=['-q','-p','no:cacheprovider','--junitxml='+junit]
 for row in plugins:args+=['-p',row['module']]
 if mode=='collect':args+=['--collect-only']

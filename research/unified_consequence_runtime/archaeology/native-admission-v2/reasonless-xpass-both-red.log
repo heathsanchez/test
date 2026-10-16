@@ -1,0 +1,30 @@
+test_reasonless_xpass_is_not_a_native_warrant (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_reasonless_xpass_is_not_a_native_warrant) ... 
+  test_reasonless_xpass_is_not_a_native_warrant (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_reasonless_xpass_is_not_a_native_warrant) (strict=False) ... FAIL
+  test_reasonless_xpass_is_not_a_native_warrant (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_reasonless_xpass_is_not_a_native_warrant) (strict=True) ... FAIL
+
+======================================================================
+FAIL: test_reasonless_xpass_is_not_a_native_warrant (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_reasonless_xpass_is_not_a_native_warrant) (strict=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2_adversarial.py", line 203, in test_reasonless_xpass_is_not_a_native_warrant
+    self.assertEqual(receipt['status'], 'UNKNOWN_SKIPPED_OR_XFAIL')
+AssertionError: 'PASS_NATIVE' != 'UNKNOWN_SKIPPED_OR_XFAIL'
+- PASS_NATIVE
++ UNKNOWN_SKIPPED_OR_XFAIL
+
+
+======================================================================
+FAIL: test_reasonless_xpass_is_not_a_native_warrant (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_reasonless_xpass_is_not_a_native_warrant) (strict=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2_adversarial.py", line 203, in test_reasonless_xpass_is_not_a_native_warrant
+    self.assertEqual(receipt['status'], 'UNKNOWN_SKIPPED_OR_XFAIL')
+AssertionError: 'FAIL_NATIVE' != 'UNKNOWN_SKIPPED_OR_XFAIL'
+- FAIL_NATIVE
++ UNKNOWN_SKIPPED_OR_XFAIL
+
+
+----------------------------------------------------------------------
+Ran 1 test in 3.970s
+
+FAILED (failures=2)

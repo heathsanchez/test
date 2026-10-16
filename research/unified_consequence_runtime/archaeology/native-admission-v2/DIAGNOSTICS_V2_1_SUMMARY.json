@@ -1,0 +1,430 @@
+{
+  "cattrs_identity_mismatch_cause": "UNRESOLVED_IN_THIS_NATIVE_RUN. Pure control demonstrates generic marshal susceptibility but does not prove this actual case cause.",
+  "costs": {
+    "collection_calls": 4,
+    "independent_native_repeats": 0,
+    "native_calls": 2,
+    "native_seconds": 229.90012346499861,
+    "sum_collection_certificate_total_seconds": 6.6036496390006505,
+    "sum_verification_total_seconds": 240.11021553300088
+  },
+  "diagnostic_only": true,
+  "driver_exit_code": 1,
+  "driver_failure_reason": "Expected cattrs UNKNOWN_SKIPPED_OR_XFAIL assertion failed after genuine UNKNOWN_SOURCE_OR_IMPORT_IDENTITY receipt was preserved.",
+  "followup_worker_changes": "Root separately fixed XPASS metadata and typed structural code serialization after these runs; no native rerun was authorized here; new GHA qualification remains required.",
+  "generic_serializer_proof": "codehash-serializer-exact-proof.json",
+  "original_committed_bundle_modified": false,
+  "policy_sha256": "0edd0f3f8d7266de5fada0f20a37caca296b5a76db858930cb028dfdebe8e6c3",
+  "schema": "UDM_NATIVE_ADMISSION_V2_1_ADDITIONAL_DEVELOPMENT_DIAGNOSTICS",
+  "scope": "Existing exposed attrs/cattrs sources only; no new future tasks, no fresh prospective warrant.",
+  "tasks": [
+    {
+      "admission_revision": "2.1",
+      "benchmark_cases": 0,
+      "case_outcomes": {
+        "native_skip_or_xfail": [
+          {
+            "nodeid": "tests/test_functional.py::TestReplace::test_replaces",
+            "wasxfail": "",
+            "when": "setup"
+          },
+          {
+            "nodeid": "tests/test_functional.py::TestReplace::test_already_has_one",
+            "wasxfail": "",
+            "when": "setup"
+          },
+          {
+            "nodeid": "tests/test_functional.py::TestReplace::test_invalid_field_name",
+            "wasxfail": "",
+            "when": "setup"
+          },
+          {
+            "nodeid": "tests/test_make.py::TestAutoDetect::test_match_args_pre_310",
+            "wasxfail": "",
+            "when": "setup"
+          },
+          {
+            "nodeid": "tests/test_pyright.py::test_pyright_baseline",
+            "wasxfail": "",
+            "when": "setup"
+          },
+          {
+            "nodeid": "tests/test_pyright.py::test_pyright_attrsinstance_compat",
+            "wasxfail": "",
+            "when": "setup"
+          },
+          {
+            "nodeid": "tests/test_pyright.py::test_pyright_field_converters_tuple",
+            "wasxfail": "",
+            "when": "setup"
+          },
+          {
+            "nodeid": "tests/test_setattr.py::TestSetAttr::test_slotted_confused",
+            "wasxfail": "",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/test_slots.py::test_implicitly_weakrefable",
+            "wasxfail": "",
+            "when": "setup"
+          }
+        ]
+      },
+      "collected_count": 1383,
+      "collected_sequence_preserved": true,
+      "collection_costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 1.6324461159965722,
+        "total_seconds": 2.9895751389994984
+      },
+      "collection_status": "ADMITTED_NATIVE_COLLECTION",
+      "deselected_nodes": [],
+      "diagnostic_only": true,
+      "execution_costs": {
+        "collection_calls": 1,
+        "native_calls": 1,
+        "native_seconds": 11.719271670997841,
+        "total_seconds": 16.776985994001734
+      },
+      "execution_envelope_seconds": 18.217349191996618,
+      "expected_skip_gate_reached": true,
+      "failure_nodes": [
+        "tests/test_validators.py::TestDisableValidators::test_disabled_ctx_nested"
+      ],
+      "independent_native_repeat": false,
+      "junit": {
+        "errors": 0,
+        "failures": 1,
+        "passed": 1373,
+        "skipped": 9,
+        "tests": 1383
+      },
+      "junit_skip_type_cases": [
+        {
+          "classname": "tests.test_functional.TestReplace",
+          "message": "requires Python 3.13+",
+          "name": "test_replaces",
+          "type": "pytest.skip"
+        },
+        {
+          "classname": "tests.test_functional.TestReplace",
+          "message": "requires Python 3.13+",
+          "name": "test_already_has_one",
+          "type": "pytest.skip"
+        },
+        {
+          "classname": "tests.test_functional.TestReplace",
+          "message": "requires Python 3.13+",
+          "name": "test_invalid_field_name",
+          "type": "pytest.skip"
+        },
+        {
+          "classname": "tests.test_make.TestAutoDetect",
+          "message": "Pre-3.10 only.",
+          "name": "test_match_args_pre_310",
+          "type": "pytest.skip"
+        },
+        {
+          "classname": "tests.test_pyright",
+          "message": "Requires pyright.",
+          "name": "test_pyright_baseline",
+          "type": "pytest.skip"
+        },
+        {
+          "classname": "tests.test_pyright",
+          "message": "Requires pyright.",
+          "name": "test_pyright_attrsinstance_compat",
+          "type": "pytest.skip"
+        },
+        {
+          "classname": "tests.test_pyright",
+          "message": "Requires pyright.",
+          "name": "test_pyright_field_converters_tuple",
+          "type": "pytest.skip"
+        },
+        {
+          "classname": "tests.test_setattr.TestSetAttr",
+          "message": "",
+          "name": "test_slotted_confused",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.test_slots",
+          "message": "slots without weakref_slot should only work on PyPy",
+          "name": "test_implicitly_weakrefable",
+          "type": "pytest.skip"
+        }
+      ],
+      "junit_skip_type_counts": {
+        "pytest.skip": 8,
+        "pytest.xfail": 1
+      },
+      "native_outcome_source_correspondence": "SOLE_ORIGINAL_AUTHOR_ASSERTION_FAILURE_RECORDED",
+      "plugin_violations": [],
+      "policy_sha256": "0edd0f3f8d7266de5fada0f20a37caca296b5a76db858930cb028dfdebe8e6c3",
+      "prepare_wall_seconds": 4.33070223100367,
+      "raw_skipped_outcome_reports": 9,
+      "raw_truthy_wasxfail_reports": 0,
+      "receipt_validation": "STRUCTURAL_TRUSTED_RUNNER_PACKET_VALIDATED",
+      "reordered_positions": 20,
+      "repository": "python-attrs/attrs",
+      "same_node_set": true,
+      "same_sequence": false,
+      "selected_count": 1383,
+      "selected_sequence_preserved": true,
+      "sole_protected_failure": true,
+      "source_mutations": [],
+      "source_or_import_identity_signals": {
+        "changed_test_code": [],
+        "external_project_imports": [],
+        "plugin_violations": [],
+        "source_mutations": [],
+        "unexpected_imports": []
+      },
+      "status": "UNKNOWN_SKIPPED_OR_XFAIL",
+      "task": 1,
+      "worker_sha256": "8ef758e4e2b870da16e85679a7219a9fe14b2666ab2c4ac2df4e47dee12ab745"
+    },
+    {
+      "admission_revision": "2.1",
+      "benchmark_cases": 54,
+      "case_outcomes": {
+        "native_skip_or_xfail": [
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-child1-only]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-child2-only]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-grandchild-only]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-compose-parent]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-compose-child]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-compose-grandchild]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-container]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_circular_reference[wo-subclasses]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-child1-only]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-child2-only]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-grandchild-only]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-parent]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-child]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-grandchild]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-container]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          }
+        ]
+      },
+      "collected_count": 1027,
+      "collected_sequence_preserved": true,
+      "collection_costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 2.033888965001097,
+        "total_seconds": 3.614074500001152
+      },
+      "collection_status": "ADMITTED_NATIVE_COLLECTION",
+      "deselected_nodes": [],
+      "diagnostic_only": true,
+      "execution_costs": {
+        "collection_calls": 1,
+        "native_calls": 1,
+        "native_seconds": 218.18085179400077,
+        "total_seconds": 223.33322953899915
+      },
+      "execution_envelope_seconds": 224.7267085200001,
+      "expected_skip_gate_reached": false,
+      "failure_nodes": [
+        "tests/test_tuples.py::test_dict_namedtuples_detailed_validation"
+      ],
+      "independent_native_repeat": false,
+      "junit": {
+        "errors": 0,
+        "failures": 1,
+        "passed": 1011,
+        "skipped": 15,
+        "tests": 1027
+      },
+      "junit_skip_type_cases": [
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot structure subclasses if include_subclasses strategy is not used",
+          "name": "test_structuring_with_inheritance[wo-subclasses-child1-only]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot structure subclasses if include_subclasses strategy is not used",
+          "name": "test_structuring_with_inheritance[wo-subclasses-child2-only]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot structure subclasses if include_subclasses strategy is not used",
+          "name": "test_structuring_with_inheritance[wo-subclasses-grandchild-only]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot structure subclasses if include_subclasses strategy is not used",
+          "name": "test_structuring_with_inheritance[wo-subclasses-non-union-compose-parent]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot structure subclasses if include_subclasses strategy is not used",
+          "name": "test_structuring_with_inheritance[wo-subclasses-non-union-compose-child]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot structure subclasses if include_subclasses strategy is not used",
+          "name": "test_structuring_with_inheritance[wo-subclasses-non-union-compose-grandchild]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot structure subclasses if include_subclasses strategy is not used",
+          "name": "test_structuring_with_inheritance[wo-subclasses-non-union-container]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot succeed if include_subclasses strategy is not used",
+          "name": "test_circular_reference[wo-subclasses]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot succeed if include_subclasses strategy is not used",
+          "name": "test_unstructuring_with_inheritance[wo-subclasses-child1-only]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot succeed if include_subclasses strategy is not used",
+          "name": "test_unstructuring_with_inheritance[wo-subclasses-child2-only]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot succeed if include_subclasses strategy is not used",
+          "name": "test_unstructuring_with_inheritance[wo-subclasses-grandchild-only]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot succeed if include_subclasses strategy is not used",
+          "name": "test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-parent]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot succeed if include_subclasses strategy is not used",
+          "name": "test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-child]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot succeed if include_subclasses strategy is not used",
+          "name": "test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-grandchild]",
+          "type": "pytest.xfail"
+        },
+        {
+          "classname": "tests.strategies.test_include_subclasses",
+          "message": "Cannot succeed if include_subclasses strategy is not used",
+          "name": "test_unstructuring_with_inheritance[wo-subclasses-non-union-container]",
+          "type": "pytest.xfail"
+        }
+      ],
+      "junit_skip_type_counts": {
+        "pytest.xfail": 15
+      },
+      "native_outcome_source_correspondence": "SOLE_ORIGINAL_AUTHOR_ASSERTION_FAILURE_RECORDED",
+      "plugin_violations": [],
+      "policy_sha256": "0edd0f3f8d7266de5fada0f20a37caca296b5a76db858930cb028dfdebe8e6c3",
+      "prepare_wall_seconds": 5.164344670003629,
+      "raw_skipped_outcome_reports": 15,
+      "raw_truthy_wasxfail_reports": 15,
+      "receipt_validation": "STRUCTURAL_TRUSTED_RUNNER_PACKET_VALIDATED",
+      "reordered_positions": 898,
+      "repository": "python-attrs/cattrs",
+      "same_node_set": true,
+      "same_sequence": false,
+      "selected_count": 1027,
+      "selected_sequence_preserved": true,
+      "sole_protected_failure": true,
+      "source_mutations": [],
+      "source_or_import_identity_signals": {
+        "changed_test_code": [
+          "tests/test_validation.py::test_deque_validation"
+        ],
+        "external_project_imports": [],
+        "plugin_violations": [],
+        "source_mutations": [],
+        "unexpected_imports": []
+      },
+      "status": "UNKNOWN_SOURCE_OR_IMPORT_IDENTITY",
+      "task": 2,
+      "worker_sha256": "8ef758e4e2b870da16e85679a7219a9fe14b2666ab2c4ac2df4e47dee12ab745"
+    }
+  ],
+  "worker_admission_revision": "2.1",
+  "worker_sha256": "8ef758e4e2b870da16e85679a7219a9fe14b2666ab2c4ac2df4e47dee12ab745",
+  "worker_snapshot": "source-snapshot-native_execution_v2.py"
+}

@@ -1,8 +1,13 @@
 """Native admission certificates: isolated fixtures, never prospective wins."""
+import ast
+import hashlib
 import json
+import marshal
 from pathlib import Path
 import subprocess
 import sys
+import struct
+import types
 import tempfile
 import unittest
 
@@ -54,6 +59,22 @@ class NativeExecutionCertificateContracts(unittest.TestCase):
         self.assertEqual(checked['status'],'ADMITTED_NATIVE_COLLECTION')
         weaker=json.loads(json.dumps(certificate));weaker['collection']['collected_test_nodes']=[]
         with self.assertRaises(ValueError):worker.validate_certificate(self.contract,self.authority,weaker,policy=self.policy)
+
+    def test_code_identity_ignores_interning_but_preserves_executable_values(self):
+        # Isolate the exact trusted runner function; no pytest/task execution.
+        tree=ast.parse(worker._BOOTSTRAP)
+        function=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='code_hash')
+        namespace=dict(hashlib=hashlib,json=json,marshal=marshal,struct=struct,types=types,
+                       pathlib=__import__('pathlib'),world=self.root)
+        exec(compile(ast.Module(body=[function],type_ignores=[]),'<runner-code-identity>','exec'),namespace)
+        local={};text='literal with spaces '+str(id(namespace))
+        exec(compile('def sample(): return '+repr(text),str(self.root/'native.py'),'exec'),local)
+        sample=local['sample'];code=sample.__code__;literal=code.co_consts[1]
+        before=namespace['code_hash'](sample);sys.intern(literal)
+        self.assertIs(sample.__code__,code);self.assertIs(code.co_consts[1],literal)
+        self.assertEqual(namespace['code_hash'](sample),before)
+        changed=types.FunctionType(code.replace(co_consts=(None,text+' changed')), {})
+        self.assertNotEqual(namespace['code_hash'](changed),before)
 
 
 if __name__=='__main__':unittest.main()

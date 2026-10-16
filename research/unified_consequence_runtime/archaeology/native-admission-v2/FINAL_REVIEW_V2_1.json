@@ -1,0 +1,114 @@
+{
+  "change": "Bind original item-collected order and original final selected order independently; require duplicate-free identical full node sets, no deselection, and actual phases in certified selected order.",
+  "code_identity_follow_up": {
+    "constant_types": "Nested code, tuple, frozenset, bytes, float bit patterns, complex component bits, Ellipsis, None, string, integer and boolean; unsupported types refuse.",
+    "derived_public_field": "Deprecated co_lnotab derives from encoded line metadata; code lines/positions are likewise derived.",
+    "encoded_fields": [
+      "co_argcount",
+      "co_posonlyargcount",
+      "co_kwonlyargcount",
+      "co_nlocals",
+      "co_stacksize",
+      "co_flags",
+      "co_code",
+      "co_consts",
+      "co_names",
+      "co_varnames",
+      "co_freevars",
+      "co_cellvars",
+      "co_filename",
+      "co_name",
+      "co_qualname",
+      "co_firstlineno",
+      "co_linetable",
+      "co_exceptiontable"
+    ],
+    "encoding": "Deterministic values with explicit recursive type tags; memory interning/reference-table state omitted.",
+    "independent_control_green": {
+      "duration_seconds": 0.257,
+      "exit_code": 0,
+      "log": "code-identity-green.log",
+      "sha256": "d96b18cea862de99dbf7efe2700ec212efa66f09403264ae6f8fe9b463f2d182",
+      "test": "test_code_identity_ignores_interning_but_preserves_executable_values",
+      "tests": 1
+    },
+    "review_scope": "Read-only field coverage for the pinned Python3.12 code identity serializer; no formal Python refinement claim."
+  },
+  "created_utc": "2026-10-16T05:26:52.064504+00:00",
+  "follow_up_completed_utc": "2026-10-16T05:35:34.978698+00:00",
+  "green": {
+    "duration_seconds": 58.22,
+    "exit_code": 0,
+    "log": "reorder-v21-green-adversarial.log",
+    "result": "OK",
+    "sha256": "c862111db8e83678ce2fcb692a57a5349582dd507874a2bda702c4f069ee06e2",
+    "tests": 26
+  },
+  "known_limits": [
+    "Original tests/hooks and explicitly licensed plugins trusted",
+    "Hostile Python introspection / G6 UNKNOWN",
+    "Legitimate attrs/cattrs skips/xfails/exclusions remain UNKNOWN under strict policy",
+    "V2 frontier projection unsupported",
+    "Scientific frontier admission gate remains unset until independent archived qualification audit"
+  ],
+  "latest_source_sha256": {
+    "research/unified_consequence_runtime/native_execution_v2.py": "57e2fb40c6ff39f0959764e8f48f05ee99170b97995f9a584aaa8409af8871f1",
+    "research/unified_consequence_runtime/test_native_admission_v2_adversarial.py": "ea5cc3d76dec18a4dfed8e94a3b1865c4a6bfed26642633132d45488186a686b",
+    "research/unified_consequence_runtime/test_native_execution_v2.py": "1eb906fc02b2813719c44f0eb87311197607e4fbe2b52f62e0aba4b90e72c9cc"
+  },
+  "negative_controls": "Candidate-dependent reordering or silent node removal remains UNKNOWN_EXACT_COLLECTION; prior replay, parameter, skip/xfail, plugin, source and receipt forgery negatives remain green.",
+  "preservation": {
+    "old_four_verifier_adapter_files": "git diff --exit-code 64ce25cd -- four protected files exited 0",
+    "prior_d925_result": "Parent reports frozen first-gate PASS evidence retained; reviewer did not rewrite or rerun historical evidence.",
+    "prior_protocol": "Old PROTOCOL.json retained; qualifier uses distinct PROTOCOL_V2_1.json"
+  },
+  "red": {
+    "duration_seconds": 1.578,
+    "exit_code": 1,
+    "log": "reorder-v21-red.log",
+    "result": "ERROR: UNKNOWN_EXACT_COLLECTION_OR_DESELECTION",
+    "sha256": "aa5e036a3e26fdc3b2cd10a33af00cde1c5aba0a6df2f33e33b74c8b4a4d3421",
+    "tests": 2
+  },
+  "revision": "2.1",
+  "schema": "UDM_NATIVE_ADMISSION_V2_1_INDEPENDENT_REVIEW",
+  "scope": "Disposable local fixtures and source review only. No fresh task source access, native benchmark rerun, or scientific promotion by reviewer.",
+  "source_sha256": {
+    "research/unified_consequence_runtime/archaeology/native-admission-v2/PROTOCOL_V2_1.json": "c8e433c2379ee1b660ba182ef1eed39c4d5b022d07f62be95ca2f6cc9832995d",
+    "research/unified_consequence_runtime/native_execution_v2.py": "8ef758e4e2b870da16e85679a7219a9fe14b2666ab2c4ac2df4e47dee12ab745",
+    "research/unified_consequence_runtime/qualify_native_admission_v2.py": "5fe47d26da3f2f63f12b928f6abbc21225fa320d093b9e3ee6ed74577a0d36be",
+    "research/unified_consequence_runtime/test_native_admission_v2_adversarial.py": "89329ffd76eb256564d68db9c11c4d15c0c28c4e7a2b26677611117c4f1c795e"
+  },
+  "status": "NO_KNOWN_BLOCKER_WITHIN_FINITE_TRUSTED_ORIGINAL_TEST_AND_LICENSED_PLUGIN_SCOPE",
+  "version_binding": "admission_revision=2.1 participates in both certificate and receipt exact bindings; prior evidence is not reinterpreted.",
+  "xpass_follow_up": {
+    "cancelled_attempt": {
+      "provenance": "Parent instruction; not independently queried by reviewer",
+      "run_id": 38855850906,
+      "status": "CANCELLED_UNQUALIFIED_ATTEMPT",
+      "treatment": "Preserve; do not promote or reinterpret as successful qualification."
+    },
+    "fix": "Preserve wasxfail attribute presence through repr; recognize pinned pytest strict-XPASS failed longrepr sentinel in the existing wasxfail string field.",
+    "latest_full_adversarial_green": {
+      "duration_seconds": 61.225,
+      "exit_code": 0,
+      "log": "reasonless-xpass-green-adversarial.log",
+      "sha256": "2ba937e98c4ab27e3a26034509e5a4e2d0972a4ae3770aea67f627c78ee483f1",
+      "tests": 27
+    },
+    "red": {
+      "duration_seconds": 3.97,
+      "exit_code": 1,
+      "expected": "UNKNOWN_SKIPPED_OR_XFAIL",
+      "failed_subcases": 2,
+      "log": "reasonless-xpass-both-red.log",
+      "observed": [
+        "PASS_NATIVE for non-strict XPASS",
+        "FAIL_NATIVE for strict XPASS"
+      ],
+      "sha256": "d527cb4b4845b595fedf97a97465e896c7c0dec9100eb4588e473f70772da418",
+      "tests": 1
+    },
+    "same_fixture": "test_reasonless_xpass_is_not_a_native_warrant; strict=False and strict=True subcases"
+  }
+}
