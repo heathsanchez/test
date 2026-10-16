@@ -7,6 +7,7 @@ on:
       - .github/workflows/udm-native-authority-v4.yml
       - research/unified_consequence_runtime/native_environment_selection_v4.py
       - research/unified_consequence_runtime/test_native_environment_selection_v4.py
+      - research/unified_consequence_runtime/qualify_native_source_role_v4.py
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,7 +27,7 @@ jobs:
       - name: Install isolated interpreter-only dependencies
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check packaging==25.0
+          python -m pip install --disable-pip-version-check packaging==25.0 pytest==8.4.1
       - name: Freeze source and historical v3 authority before test execution
         run: |
           set -euo pipefail
@@ -51,6 +52,10 @@ jobs:
         run: |
           set -euo pipefail
           python -B -m unittest research.unified_consequence_runtime.test_native_environment_selection_v4 -v 2>&1 | tee qualification-v4/contracts.log
+      - name: Check actual original-style pytest collection, imported data, and protected failures
+        run: |
+          set -euo pipefail
+          python -B -m research.unified_consequence_runtime.qualify_native_source_role_v4 2>&1 | tee qualification-v4/native-smoke.log
       - name: Diagnose the one strict legacy compatibility expectation without modifying frozen tests
         if: failure()
         run: |
