@@ -1,0 +1,105 @@
+name: Nucleus Decidable upstream representation ABI separator
+on:
+  push:
+    branches: [research/nucleus-arena-reachability-20261017]
+    paths: [".github/workflows/nucleus-decidable-version-separator-20261017.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        source:
+          - name: old
+            toolchain: leanprover/lean4:v4.34.1
+            githash: 5045d0056413266e57c625dcd7c365b10e377c52
+            exporter: 076e8e57707e813375e8f9da8bf989799ace9680
+          - name: new
+            toolchain: leanprover/lean4-pr-releases:pr-release-15738
+            githash: 154f744b2596e28b4fb75ef9fc6d0ba13557e047
+            exporter: df81913eee5519d5a88ae5b0fd701b5298cc29ab
+    env:
+      PIN_TOOLCHAIN: ${{ matrix.source.toolchain }}
+      PIN_GITHASH: ${{ matrix.source.githash }}
+      PIN_EXPORTER: ${{ matrix.source.exporter }}
+      CASE_NAME: ${{ matrix.source.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build immutable Nucleus checker and record tree
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Build identical Lean proof with selected upstream version
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          export PATH="$HOME/.elan/bin:$PATH"
+          elan toolchain install "$PIN_TOOLCHAIN"
+          test "$(elan run "$PIN_TOOLCHAIN" lean --githash)" = "$PIN_GITHASH"
+          mkdir -p /tmp/case
+          echo "$PIN_TOOLCHAIN" > /tmp/case/lean-toolchain
+          cat > /tmp/case/lakefile.toml <<'EOF'
+          name = "decidable_abi_separator"
+          [[lean_lib]]
+          name = "Decide"
+          EOF
+          cat > /tmp/case/Decide.lean <<'EOF'
+          import Init
+          theorem oldnew_decide : (1 + 2 : Nat) = 3 := by decide
+          theorem oldnew_rfl : (1 + 2 : Nat) = 3 := by rfl
+          EOF
+          (cd /tmp/case && lake build Decide)
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter
+          git -C /tmp/exporter checkout -q "$PIN_EXPORTER"
+          echo "$PIN_TOOLCHAIN" > /tmp/exporter/lean-toolchain
+          (cd /tmp/exporter && lake build)
+      - name: Parse actual Decidable ABI and compare singleton checker verdicts
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          python3 - <<'PY'
+          import os,subprocess,json,pathlib,hashlib,time
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+x:'1' for x in pin['origin_flags']})
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1';env['METATRON_KERNEL_DIAGNOSTICS']='1'
+          bin=pathlib.Path('metatron-kernel/target/release/metatron-kernel')
+          evidence=pathlib.Path('/tmp/evidence')
+          rows=[]
+          for theorem in ['oldnew_decide','oldnew_rfl']:
+              p=evidence/(theorem+'.ndjson')
+              with p.open('wb') as f:subprocess.run(['lake','env','/tmp/exporter/.lake/build/bin/lean4export','Decide','--',theorem],stdout=f,cwd='/tmp/case',check=True)
+              obj=[json.loads(l) for l in p.read_bytes().splitlines()]
+              names={0:''}; dec=[]
+              for row in obj:
+                  if 'in' in row:
+                      x=row.get('str') or row.get('num')
+                      if x:
+                          part=x.get('str',str(x.get('i','')))
+                          pre=names.get(x['pre'],'')
+                          names[row['in']]=(pre+'.' if pre else '')+part
+              for row in obj:
+                  if 'inductive' in row:
+                      for d in row['inductive']['types']:
+                          if names.get(d['name'])=='Decidable':
+                              dec.append({'type':'Decidable','num_params':d['numParams'],'constructors':[names.get(x['name']) for x in row['inductive']['ctors']],'constructor_fields':[x['numFields'] for x in row['inductive']['ctors']]})
+              t=time.perf_counter()
+              with p.open('rb') as f: r=subprocess.run([str(bin)],stdin=f,capture_output=True,env=env,timeout=90)
+              record={'theorem':theorem,'verdict_rc':r.returncode,'elapsed':round(time.perf_counter()-t,4),'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'decidable_abi':dec,'trace':(r.stderr+r.stdout).decode(errors='replace')[-8000:]}
+              rows.append(record);print(theorem,r.returncode,dec,flush=True)
+          (evidence/'comparison.json').write_text(json.dumps({'case':os.environ['CASE_NAME'],'lean_sha':os.environ['PIN_GITHASH'],'toolchain':os.environ['PIN_TOOLCHAIN'],'exporter':os.environ['PIN_EXPORTER'],'rows':rows},indent=2)+'\n')
+          for theorem in ['oldnew_decide','oldnew_rfl']:(evidence/(theorem+'.ndjson')).unlink()
+          PY
+      - name: Preserve source, original qualification, ABI, diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-decidable-abi-${{ matrix.source.name }}
+          path: /tmp/evidence
