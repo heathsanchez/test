@@ -42,7 +42,7 @@ def wheel_content_digest(wheel_path):
 def generated_overlay(wheel_path, tracked_source, *, expected_wheel_sha256, allow_declared_addopts=False):
     """Return generated-only source bytes, after independent build authentication."""
     import fnmatch
-    from .generic_native_verify import _test_patterns
+    from .decisive_native_verify import _test_patterns
     raw=Path(wheel_path).read_bytes()
     if hashlib.sha256(raw).hexdigest()!=expected_wheel_sha256:
         raise UnknownBuildOverlay('wheel digest mismatch')

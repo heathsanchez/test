@@ -100,6 +100,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -o pipefail
           .venv-decisive/bin/python -B -m research.unified_consequence_runtime.qualify_decisive_native \
             --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json \
             --components "$UDM_COMPONENTS" --source-repos "$UDM_SOURCE_REPOS" \

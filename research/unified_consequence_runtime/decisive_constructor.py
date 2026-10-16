@@ -20,9 +20,9 @@ import subprocess
 import time
 
 from .developmental_machine import Capability, canonical, digest
-from .native_frontier import AUTHORITY
+from .decisive_native_frontier import AUTHORITY
 from .decisive_native import checked_native_receipt
-from . import generic_native_verify as verifier
+from . import decisive_native_verify as verifier
 
 SOURCE_PIN={'repository':'heathsanchez/triskelion',
     'commit':'426c54f7c774560e0fabe7213c5ef333b1327c71',

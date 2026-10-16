@@ -16,7 +16,7 @@ import sys
 import time
 from urllib.parse import quote
 
-from .generic_native_verify import SCHEMA, HORIZON_SECONDS, _path, _snapshot, canonical, environment_identity, fingerprint, sha256
+from .decisive_native_verify import SCHEMA, HORIZON_SECONDS, _path, _snapshot, canonical, environment_identity, fingerprint, sha256
 from .qualify_recursive_frontier import _command
 
 
@@ -125,7 +125,7 @@ def prepare_task(spec,root,protocol_binding,packages):
         (root/'contract-source.tar.gz').write_bytes(archive)
         boundaries['contract_source_archive']={'path':str(root/'contract-source.tar.gz'),'sha256':sha256(archive),'bytes':len(archive)}
         (root/'source-boundaries.json').write_text(canonical(boundaries)+'\n')
-        from .generic_native_verify import derive_native_suite_authority
+        from .decisive_native_verify import derive_native_suite_authority
         authority_started=time.monotonic()
         try:
             authority=derive_native_suite_authority(repo,base,commit,protocol_binding,repository=repository)

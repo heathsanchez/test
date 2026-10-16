@@ -1,10 +1,14 @@
 """Causal promotion rejects incomplete or epistemically unresolved controls."""
 import unittest
+import os
+from pathlib import Path
+import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from .qualify_decisive_native import verified_failed_prefix
-from .generic_native_verify import fingerprint
+from .qualify_decisive_native import verified_failed_prefix,copy_state
+from .decisive_native_verify import fingerprint
+from .developmental_machine import Machine
 
 
 class CausalPrefixContracts(unittest.TestCase):
@@ -27,6 +31,18 @@ class CausalPrefixContracts(unittest.TestCase):
                    side_effect=ValueError('forged raw native packet')):
             with self.assertRaises(ValueError):
                 verified_failed_prefix(machine,{'winner':None,'attempts':['forged']},[fingerprint({})],1)
+
+
+class QualifiedStateBootstrapContracts(unittest.TestCase):
+    def test_original_246_record_publications_reload_without_retargeting_validator(self):
+        with tempfile.TemporaryDirectory(prefix='udm-qualified-bootstrap-') as folder:
+            root=Path(folder);copy_state(root)
+            original=(root/'state/metatron-ledger.jsonl').read_bytes()
+            components=Path(os.environ.get('UDM_COMPONENTS','/workspace/components'))
+            machine=Machine(components,root/'state',components/'evaluator',root/'unused-config.json')
+            self.assertEqual(len(machine.log),246)
+            self.assertEqual((root/'state/metatron-ledger.jsonl').read_bytes(),original)
+            self.assertEqual(set(machine.mt.live_ids(machine.log)),machine.flash_live_ids())
 
 
 if __name__=='__main__':unittest.main()

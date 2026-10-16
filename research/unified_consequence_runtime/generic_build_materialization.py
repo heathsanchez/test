@@ -49,7 +49,7 @@ def materialize_files(source_files, destination, *, source_commit, source_tree_s
                       python=sys.executable, timeout=300, environment_sha256=None,
                       source_manifest=()):
     """Perform a fresh build; callers must supply independently snapshotted Git bytes."""
-    from .generic_native_verify import _path, environment_identity, fingerprint
+    from .decisive_native_verify import _path, environment_identity, fingerprint
     from .generated_overlay_gate import wheel_content_digest
     started=time.monotonic()
     destination=Path(destination).absolute()
@@ -116,7 +116,7 @@ def materialize_files(source_files, destination, *, source_commit, source_tree_s
 
 def materialize(source, destination, *, python=sys.executable, timeout=300, source_commit=None):
     """Build exact Git source and retain the actual wheel beside its receipt."""
-    from .generic_native_verify import _snapshot
+    from .decisive_native_verify import _snapshot
     source=Path(source).absolute();destination=Path(destination).absolute()
     if destination==source or source in destination.parents or destination in source.parents:
         raise ValueError('source/output overlap')

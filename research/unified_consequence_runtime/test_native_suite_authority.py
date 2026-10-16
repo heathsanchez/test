@@ -7,8 +7,8 @@ import sys
 import tempfile
 import unittest
 
-from research.unified_consequence_runtime import generic_native_verify as verifier
-from research.unified_consequence_runtime.native_frontier import NativeFrontierRuntime
+from research.unified_consequence_runtime import decisive_native_verify as verifier
+from research.unified_consequence_runtime.decisive_native_frontier import NativeFrontierRuntime
 from research.unified_consequence_runtime.test_native_frontier import MemoryMachine
 
 

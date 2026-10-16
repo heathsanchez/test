@@ -9,7 +9,7 @@ import tempfile
 import unittest
 import zipfile
 
-from research.unified_consequence_runtime import generic_native_verify as verifier
+from research.unified_consequence_runtime import decisive_native_verify as verifier
 from research.unified_consequence_runtime.test_native_frontier import MemoryMachine
 
 
@@ -101,7 +101,7 @@ class GeneratedBuildContracts(unittest.TestCase):
         self.assertEqual(failure['status'],'UNKNOWN_BUILD_AUTHENTICATION')
         self.assertEqual(failure['costs']['build_calls'],1)
         self.assertEqual(failure['costs']['native_calls'],0)
-        from research.unified_consequence_runtime.native_frontier import NativeFrontierRuntime
+        from research.unified_consequence_runtime.decisive_native_frontier import NativeFrontierRuntime
         machine=MemoryMachine()
         runtime=NativeFrontierRuntime(machine,self.contract,self.out/'forged-runtime',generated_wheel_evidence=evidence)
         with self.assertRaisesRegex(ValueError,'independent build'):
@@ -120,7 +120,7 @@ class GeneratedBuildContracts(unittest.TestCase):
             verifier.verify(self.contract,{'replacements':[]},self.out/'raw',generated_modules={'src/sample/_version.py':b'GENERATED_VALUE=42\n'})
 
     def test_runtime_native_lifecycle_retains_wheel_in_existing_cas(self):
-        from research.unified_consequence_runtime.native_frontier import NativeFrontierRuntime
+        from research.unified_consequence_runtime.decisive_native_frontier import NativeFrontierRuntime
         machine=MemoryMachine()
         runtime=NativeFrontierRuntime(machine,self.contract,self.out/'runtime',generated_wheel_evidence=self.evidence)
         key=runtime.admit({'replacements':[]})

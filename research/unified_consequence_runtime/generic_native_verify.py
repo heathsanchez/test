@@ -8,7 +8,6 @@ collection hooks and hostile in-process behavior require separate authority.
 """
 from __future__ import annotations
 import argparse
-import ast
 import configparser
 import fnmatch
 import hashlib
@@ -133,13 +132,7 @@ location=pathlib.Path(pytest.__file__).resolve()
 verified_pytest={'path':str(location),'sha256':hashlib.sha256(location.read_bytes()).hexdigest()}
 if verified_pytest != json.loads(sys.argv[4]): raise RuntimeError('independent pytest source mismatch')
 sys.path[:0]=[str(world/'src'),str(world)]
-class NativeExecutionMonitor:
-    def __init__(self): self.reports=[]; self.deselected=[]
-    def pytest_runtest_logreport(self,report):
-        if report.when=='call': self.reports.append({'nodeid':report.nodeid,'outcome':report.outcome})
-    def pytest_deselected(self,items): self.deselected.extend(item.nodeid for item in items)
-monitor=NativeExecutionMonitor()
-code=pytest.main(['-q','-p','no:cacheprovider','--junitxml='+sys.argv[2]],plugins=[monitor])
+code=pytest.main(['-q','-p','no:cacheprovider','--junitxml='+sys.argv[2]])
 manifest=[]
 for module in tuple(sys.modules.values()):
     location=getattr(module,'__file__',None)
@@ -149,36 +142,12 @@ for module in tuple(sys.modules.values()):
             manifest.append({'path':str(path.relative_to(world)),
               'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
 pathlib.Path(sys.argv[3]).write_text(json.dumps({'project':sorted(manifest,key=lambda x:x['path']),
- 'pytest_import':verified_pytest,'executed_test_reports':monitor.reports,
- 'deselected_test_nodes':sorted(monitor.deselected)},sort_keys=True))
+ 'pytest_import':verified_pytest},sort_keys=True))
 raise SystemExit(code)
 '''
 
 
-NATIVE_CONFIG_FILES = ('pytest.ini','.pytest.ini','tox.ini','setup.cfg','pyproject.toml')
-NATIVE_SUITE_SCHEMA = 'UDM_NATIVE_SUITE_AUTHORITY_V1'
-
-
-def _declared_addopts(value):
-    """Support immutable reporting/selection flags, never new test authority."""
-    args=shlex.split(value) if isinstance(value,str) else value
-    if not isinstance(args,list) or any(not isinstance(arg,str) for arg in args):
-        raise ValueError('unsupported declared addopts')
-    index=0
-    while index<len(args):
-        arg=args[index]
-        if arg in ('-k','-m'):
-            index+=2
-            if index>len(args):raise ValueError('missing native selection expression')
-            continue
-        if (re.fullmatch(r'-(?:q+|v+|r[A-Za-z]+)',arg) or arg in ('--strict-config','--strict-markers',
-                '--strict','--disable-warnings','--showlocals','--full-trace','--no-header','--no-summary')
-                or re.fullmatch(r'--(?:tb=(?:auto|long|short|line|native|no)|color=(?:yes|no|auto)|durations=[0-9]+)',arg)):
-            index+=1;continue
-        raise ValueError('unsupported addopts collection/authority option: '+arg)
-
-
-def _test_patterns(files, *, allow_declared_addopts=False):
+def _test_patterns(files):
     patterns=['test_*.py','*_test.py']
     for name,section in (('pytest.ini','pytest'),('.pytest.ini','pytest'),
                          ('tox.ini','pytest'),('setup.cfg','tool:pytest'),('pyproject.toml',None)):
@@ -189,10 +158,8 @@ def _test_patterns(files, *, allow_declared_addopts=False):
             else:
                 config=configparser.ConfigParser(interpolation=None);config.read_string(files[name].decode())
                 options=dict(config.items(section)) if config.has_section(section) else {}
-            if options.get('addopts') and not allow_declared_addopts:
+            if options.get('addopts'):
                 raise ValueError('nonempty addopts can change independent collection authority')
-            if options.get('addopts') and allow_declared_addopts:
-                _declared_addopts(options['addopts'])
             for key in ('python_files','testpaths'):
                 value=options.get(key,[])
                 values=shlex.split(value) if isinstance(value,str) else value
@@ -208,93 +175,10 @@ def _test_patterns(files, *, allow_declared_addopts=False):
     return patterns
 
 
-def _test_nodes(path, source):
-    """Static prefixes; dynamic/uncollectable obligations remain UNKNOWN."""
-    try:tree=ast.parse(source,filename=path)
-    except (SyntaxError,UnicodeError) as error:raise ValueError('UNKNOWN_NATIVE_SUITE_AST') from error
-    result=[]; declared=set()
-    def visit(nodes,prefix):
-        for node in nodes:
-            if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef)) and node.name.startswith('test_'):
-                result.append(prefix+'::'+node.name)
-                declared.add(id(node))
-            elif isinstance(node,ast.ClassDef):visit(node.body,prefix+'::'+node.name)
-            elif not isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef)):
-                for child in ast.walk(node):
-                    if (isinstance(child,ast.Call) and isinstance(child.func,ast.Name)
-                            and child.func.id in ('globals','locals','setattr','exec','eval')):
-                        raise ValueError('UNKNOWN_SUITE_CONTRACT: dynamic test registration unsupported')
-                    if isinstance(child,(ast.Assign,ast.AnnAssign,ast.NamedExpr)):
-                        targets=child.targets if isinstance(child,ast.Assign) else [child.target]
-                        if any(isinstance(target,ast.Name) and target.id.startswith('test_') for target in targets):
-                            raise ValueError('UNKNOWN_SUITE_CONTRACT: dynamic test alias unsupported')
-    visit(tree.body,path)
-    if any(isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef)) and node.name.startswith('test_')
-            and id(node) not in declared for node in ast.walk(tree)):
-        raise ValueError('UNKNOWN_SUITE_CONTRACT: conditional or nested test definition unsupported')
-    return tree,result
-
-
-def derive_native_suite_authority(repo, base_commit, augmented_commit, protocol_binding, *, repository):
-    """Bind externally supplied native assertions from immutable Git AST deltas.
-
-    Meaningful changes conservatively require all static test functions in the
-    affected module, including class/parameter cases. This checks transport and
-    actual execution, not semantic assertion strength or universal correctness.
-    """
-    if (not isinstance(repository,str) or not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+',repository)
-            or not isinstance(protocol_binding,str) or not re.fullmatch('[0-9a-f]{64}',protocol_binding)):
-        raise ValueError('wrong native suite repository or protocol')
-    _,old,_=_snapshot(repo,base_commit);_,files,_=_snapshot(repo,augmented_commit)
-    patterns=_test_patterns(files,allow_declared_addopts=True)
-    changed={};required=[]
-    for name,raw in sorted(files.items()):
-        if not name.endswith('.py') or not any(fnmatch.fnmatch(PurePosixPath(name).name,p)
-                or fnmatch.fnmatch(name,p) for p in patterns):continue
-        if old.get(name)==raw:continue
-        tree,nodes=_test_nodes(name,raw)
-        if name in old:
-            previous,_=_test_nodes(name,old[name])
-            if ast.dump(tree,include_attributes=False)==ast.dump(previous,include_attributes=False):continue
-        if not nodes:raise ValueError('UNKNOWN_NATIVE_SUITE_DELTA: changed test module has no static test nodes')
-        changed[name]=sha256(raw);required.extend(nodes)
-    if not required:raise ValueError('UNKNOWN_NATIVE_SUITE_DELTA: no changed native test assertions')
-    return {'schema':NATIVE_SUITE_SCHEMA,'derivation':'NATIVE_TEST_AST_DELTA_V1',
-        'repository':repository,'baseline_commit':base_commit,'source_commit':augmented_commit,
-        'protocol_binding':protocol_binding,'config_sha256':{name:sha256(files[name])
-            for name in NATIVE_CONFIG_FILES if name in files},
-        'test_source_sha256':changed,'required_test_nodes':sorted(set(required))}
-
-
-def validate_native_suite_authority(contract, authority):
-    if not isinstance(authority,dict) or authority.get('schema')!=NATIVE_SUITE_SCHEMA:
-        raise ValueError('wrong native suite authority schema')
-    expected=derive_native_suite_authority(contract['repo_path'],authority.get('baseline_commit'),
-        contract['commit'],contract['protocol_binding'],repository=contract['repository'])
-    if authority!=expected:raise ValueError('native suite authority source, config, assertions or protocol mismatch')
-    return fingerprint(expected)
-
-
-def required_assertions_satisfied(authority, executed, deselected, reports, counts, *, require_pass=True):
-    """Only successful actual call reports discharge all protected prefixes."""
-    if (not isinstance(executed,list) or not isinstance(deselected,list) or not isinstance(reports,list)
-            or any(not isinstance(x,str) for x in executed+deselected)
-            or any(not isinstance(row,dict) or set(row)!={'nodeid','outcome'} or
-                not isinstance(row['nodeid'],str) or row['outcome'] not in ('passed','failed') for row in reports)
-            or executed!=[row['nodeid'] for row in reports]
-            or len(reports)!=counts.get('passed',0)+counts.get('failures',0)):return False
-    if require_pass and (any(row['outcome']!='passed' for row in reports) or counts.get('errors')
-            or counts.get('failures') or counts.get('skipped')):return False
-    def match(node,prefix):return node==prefix or node.startswith(prefix+'[') or node.startswith(prefix+'::')
-    if any(node.split('::',1)[0] in authority['test_source_sha256'] for node in deselected):return False
-    return all(any(match(node,prefix) for node in executed) and not any(match(node,prefix) for node in deselected)
-        for prefix in authority['required_test_nodes'])
-
-
-def _candidate(candidate, files, *, allow_declared_addopts=False):
+def _candidate(candidate, files):
     if not isinstance(candidate, dict) or set(candidate) != {'replacements'} or not isinstance(candidate['replacements'], list):
         raise ValueError('invalid candidate schema')
-    seen = set(); patterns=_test_patterns(files,allow_declared_addopts=allow_declared_addopts)
+    seen = set(); patterns=_test_patterns(files)
     for row in candidate['replacements']:
         if not isinstance(row, dict) or set(row) != {'path','original_sha256','replacement'}:
             raise ValueError('invalid replacement schema')
@@ -328,7 +212,7 @@ def _junit(path):
     return summary
 
 
-def verify(contract, candidate, output_dir, *, generated_wheel_evidence=None, native_suite_authority=None):
+def verify(contract, candidate, output_dir):
     start = time.monotonic()
     required = {'schema','repository','repo_path','commit','git_tree','tracked_tree_sha256',
                 'file_count','interpreter','environment_sha256','protocol_binding','horizon_seconds'}
@@ -342,8 +226,7 @@ def verify(contract, candidate, output_dir, *, generated_wheel_evidence=None, na
     source, files, manifest = _snapshot(contract['repo_path'], contract['commit'])
     if any(contract[key] != value for key, value in source.items()):
         raise ValueError('immutable source identity mismatch')
-    suite_digest=validate_native_suite_authority(contract,native_suite_authority) if native_suite_authority is not None else None
-    _candidate(candidate, files,allow_declared_addopts=suite_digest is not None)
+    _candidate(candidate, files)
     out = Path(output_dir).absolute()
     repository_path=Path(contract['repo_path']).absolute()
     if out.resolve() != out or out == repository_path or out.is_relative_to(repository_path):
@@ -359,10 +242,6 @@ def verify(contract, candidate, output_dir, *, generated_wheel_evidence=None, na
         'authority':'EXTERNALLY_SUPPLIED_LOCAL_RESEARCH_ONLY', 'external_enforcement':'UNKNOWN_NONBYPASSABILITY',
         'junit':dict(tests=0,passed=0,failures=0,errors=0,skipped=0), 'import_manifest':[],
         'costs':{'native_calls':0,'horizon_seconds':7,'native_seconds':0}}
-    if suite_digest is not None:
-        receipt.update(native_suite_authority_sha256=suite_digest,
-            required_test_nodes=list(native_suite_authority['required_test_nodes']),
-            executed_test_nodes=[],deselected_test_nodes=[],executed_test_reports=[])
     try:
         environment = environment_identity(contract['interpreter'])
     except (OSError, RuntimeError, subprocess.TimeoutExpired, ValueError) as error:
@@ -373,35 +252,6 @@ def verify(contract, candidate, output_dir, *, generated_wheel_evidence=None, na
         if environment['pytest_version'] != PYTEST_VERSION:
             raise ValueError('native pytest version mismatch')
         receipt.update(environment=environment, environment_sha256=fingerprint(environment))
-        generated_modules = {}
-        if generated_wheel_evidence is not None:
-            from .generated_wheel_evidence import authenticated_generated_modules, evidence_digest
-            build_started = time.monotonic()
-            try:
-                generated_modules, built = authenticated_generated_modules(files, generated_wheel_evidence,
-                    source_commit=contract['commit'], source_tree_sha256=source['tracked_tree_sha256'],
-                    interpreter=contract['interpreter'], environment_sha256=contract['environment_sha256'],
-                    output_dir=out/'build-verification', source_manifest=manifest,
-                    allow_declared_addopts=suite_digest is not None)
-            except (RuntimeError, subprocess.TimeoutExpired, ValueError) as error:
-                invalid = isinstance(error,ValueError)
-                receipt.update(status='UNKNOWN_BUILD_AUTHENTICATION' if invalid else 'UNKNOWN_BUILD_MATERIALIZATION', error=str(error))
-                attempt = out/'build-verification/build-attempt.json'
-                receipt['costs'].update(build_calls=1 if attempt.is_file() else 0,
-                    build_seconds=time.monotonic()-build_started,
-                    total_seconds=time.monotonic()-start)
-                (out/'receipt.json').write_text(canonical(receipt)+'\n')
-                (out/'tracked-source-manifest.json').write_text(canonical(manifest)+'\n')
-                if invalid:
-                    raise  # Invalid evidence remains a fail-closed API error, with retained charged evidence.
-                return receipt
-            receipt.update(generated_wheel_evidence_sha256=evidence_digest(generated_wheel_evidence),
-                generated_modules_sha256=fingerprint({k:sha256(v) for k,v in sorted(generated_modules.items())}),
-                generated_module_count=len(generated_modules),
-                generated_wheel_content_sha256=generated_wheel_evidence['wheel_content_sha256'],
-                build_verification_sha256=sha256((out/'build-verification/build-receipt.json').read_bytes()))
-            receipt['costs'].update(build_calls=1, build_seconds=time.monotonic()-build_started,
-                build_artifact_bytes=built['costs']['wheel_bytes'])
         with tempfile.TemporaryDirectory(prefix='udm-native-') as folder:
             temporary = Path(folder); world=temporary/'world'; world.mkdir()
             expected=dict(files)
@@ -413,9 +263,6 @@ def verify(contract, candidate, output_dir, *, generated_wheel_evidence=None, na
             for row in manifest:
                 if row['path'] in expected:
                     (world/row['path']).chmod(int(row['mode'],8) & 0o777)
-            for name, raw in generated_modules.items():
-                path=world/name; path.parent.mkdir(parents=True,exist_ok=True); path.write_bytes(raw)
-                expected[name]=raw
             for row in candidate['replacements']:
                 (world/row['path']).write_text(row['replacement'], encoding='utf-8')
                 expected[row['path']]=row['replacement'].encode('utf-8')
@@ -444,10 +291,6 @@ def verify(contract, candidate, output_dir, *, generated_wheel_evidence=None, na
             if imports.exists():
                 imported=json.loads(imports.read_text())
                 receipt['import_manifest']=imported['project'];receipt['pytest_import']=imported['pytest_import']
-                if suite_digest is not None:
-                    receipt['executed_test_reports']=imported['executed_test_reports']
-                    receipt['executed_test_nodes']=[row['nodeid'] for row in imported['executed_test_reports']]
-                    receipt['deselected_test_nodes']=imported['deselected_test_nodes']
             mutations=[name for name,raw in expected.items() if not (world/name).is_file()
                        or (world/name).resolve() != world/name or (world/name).read_bytes() != raw]
             mutations += [row['path'] for row in receipt['import_manifest']
@@ -455,10 +298,6 @@ def verify(contract, candidate, output_dir, *, generated_wheel_evidence=None, na
             if mutations:
                 receipt.update(status='UNKNOWN_SOURCE_MUTATION',source_mutations=sorted(set(mutations)))
             count=receipt['junit']
-            if suite_digest is not None and 'status' not in receipt and not required_assertions_satisfied(
-                    native_suite_authority,receipt['executed_test_nodes'],receipt['deselected_test_nodes'],
-                    receipt['executed_test_reports'],count,require_pass=False):
-                receipt['status']='UNKNOWN_REQUIRED_ASSERTION'
             if 'status' not in receipt:
                 receipt['status']=('UNKNOWN_NATIVE_ERROR' if count['errors'] or process.returncode not in (0,1,5) else
                     'UNKNOWN_NO_TEST_EXECUTION' if not count['passed']+count['failures'] else

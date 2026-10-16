@@ -18,8 +18,8 @@ import tarfile
 import time
 
 from .developmental_machine import Machine,canonical,digest
-from . import generic_native_verify as verifier
-from .native_frontier import NativeFrontierRuntime
+from . import decisive_native_verify as verifier
+from .decisive_native_frontier import NativeFrontierRuntime
 from .native_meta_decision import choose_meta_decision,invoke_meta_policy
 from .decisive_native import catalog,orders,passed,reconstruct_profiles,task_roles,is_test,checked_constructor_context,checked_native_receipt
 
@@ -42,8 +42,13 @@ def write_freeze(repo,out):
     result={'schema':'UDM_DECISIVE_NATIVE_FREEZE_V1','source_commit':head,
         'frozen_at_utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),
         'files':files,'protocol_sha256':digest(PROTOCOL.read_bytes()),
-        'target_source_or_outcome_access_before_protocol_authorship':'DECLARED_NONE_BY_IMPLEMENTATION_TEAM; METADATA_ONLY_CURATOR',
+        'target_source_or_outcome_access_before_protocol_authorship':(
+            'ORIGINAL_A02_PROTOCOL_ONLY; THREE_ADMISSION_REFUSALS_KNOWN_BEFORE_SOURCE_IDENTITY_MAINTENANCE'
+            if protocol.get('qualification_mode')=='SOURCE_IDENTITY_MAINTENANCE'
+            else 'DECLARED_NONE_BY_IMPLEMENTATION_TEAM; METADATA_ONLY_CURATOR'),
         'replay_boundary':'Only the original pre-outcome protocol authorship is prospective; later executions never reestablish untouchedness.',
+        'original_protocol_source':protocol.get('original_protocol_source'),
+        'qualification_mode':protocol.get('qualification_mode','ORIGINAL_PRE_OUTCOME_PROTOCOL'),
         'authority':'EXTERNALLY_SUPPLIED_LOCAL_RESEARCH; NONBYPASSABILITY_UNKNOWN'}
     Path(out).parent.mkdir(parents=True,exist_ok=True)
     Path(out).write_text(canonical(result)+'\n')
@@ -581,7 +586,9 @@ def qualify(args):
             result['recursive_constructor_trial']=recursive
             if recursive['status']=='WARRANTED_BOUNDED_RECURSIVE_DISCOVERABILITY':
                 result.update(status=recursive['status'],smallest_obstruction='No fully charged advantage over the informed executable ledger established')
-                result['verdicts']['G3']='WARRANTED_BOUNDED_PROSPECTIVE_RECURSIVE_DISCOVERABILITY'
+                result['verdicts']['G3']=('UNKNOWN_PREVIOUS_ADMISSION_EXPOSED' if
+                    protocol.get('qualification_mode')=='SOURCE_IDENTITY_MAINTENANCE'
+                    else 'WARRANTED_BOUNDED_PROSPECTIVE_RECURSIVE_DISCOVERABILITY')
                 result['verdicts']['G4']='UNKNOWN_NO_FULL_LIFECYCLE_ADVANTAGE'
                 save();return result
         # Shared policy dependence alone cannot establish O1→O2. Constructor

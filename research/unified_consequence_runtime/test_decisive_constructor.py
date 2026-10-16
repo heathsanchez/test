@@ -8,8 +8,8 @@ import sys
 import tempfile
 import unittest
 
-from . import generic_native_verify as verifier
-from .native_frontier import NativeFrontierRuntime
+from . import decisive_native_verify as verifier
+from .decisive_native_frontier import NativeFrontierRuntime
 from .test_native_frontier import MemoryMachine
 
 _CONTEXTS={}

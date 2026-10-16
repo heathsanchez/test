@@ -18,7 +18,7 @@ import time
 import xml.etree.ElementTree as ET
 
 from .developmental_machine import canonical, digest
-from . import generic_native_verify as verifier
+from . import decisive_native_verify as verifier
 from .qualify_recursive_frontier import original_candidates
 
 POLICY_PIN = {'repository':'heathsanchez/Minimal-Sufficient-Interface',

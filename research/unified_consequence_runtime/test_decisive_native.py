@@ -10,7 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from . import decisive_native as native
-from . import generic_native_verify as verifier
+from . import decisive_native_verify as verifier
 
 
 def native_fixture():

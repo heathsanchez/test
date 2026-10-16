@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 from .decisive_task_admission import is_test, overlay_author_tests, _commit_overlay, _validate_spec
-from .generic_native_verify import _snapshot
+from .decisive_native_verify import _snapshot
 
 
 class AdmissionSourceTests(unittest.TestCase):
@@ -58,7 +58,7 @@ class AdmissionSourceTests(unittest.TestCase):
             self.assertEqual(a[1]['pkg.py'],original[1]['pkg.py'])
             self.assertEqual(git(repo,'rev-parse',first+'^'),base)
             self.assertEqual(a[1]['tests/test_added.py'],overlay['tests/test_added.py'])
-            from .generic_native_verify import derive_native_suite_authority,sha256
+            from .decisive_native_verify import derive_native_suite_authority,sha256
             authority=derive_native_suite_authority(repo,base,first,'c'*64,repository='fixture/source')
             self.assertEqual(authority['source_commit'],first)
             self.assertEqual(authority['baseline_commit'],base)
