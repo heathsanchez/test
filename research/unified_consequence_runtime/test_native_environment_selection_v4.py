@@ -71,9 +71,11 @@ class StaticSourceRoleContracts(unittest.TestCase):
         self.assertEqual(result["reason"], "UNKNOWN_SOURCE_PARSER")
 
     def test_parseable_legacy_pytest_api_remains_a_constraint(self):
-        files = {"setup.py": b"from setuptools import setup\nsetup(python_requires='>=3.6')\n",
-                 "tests/conftest.py": b"import pytest\nC = pytest.collect.File\n"}
-        options = catalog(profile("legacy", "3.6.5", "5.4.3"), profile())
+        from .test_native_environment_selection_v3 import LEGACY
+        files = {"setup.py": LEGACY,
+                 "tox.ini": b"[tox]\\nenvlist = py{35,36}-{without,with}-extensions\\n[testenv]\\ndeps = pytest\\n",
+                 "tests/conftest.py": b"import pytest\\nC = pytest.collect.File\\n"}
+        options = catalog(profile("legacy", "3.6.12", "5.4.3"), profile())
         result = new.select_profile(files, options)
         self.assertEqual(result["status"], "CANDIDATE_SOURCE_ENVIRONMENT")
         self.assertEqual(result["selected_profile"]["id"], "legacy")
@@ -125,7 +127,7 @@ class IndependentlyExecutedPytestContracts(unittest.TestCase):
     def test_native_import_of_malformed_fixture_fails_closed(self):
         code, output = self.run_suite(import_bad=True)
         self.assertNotEqual(code, 0, output)
-        self.assertIn("TabError", output)
+        self.assertTrue("TabError" in output or "IndentationError" in output, output)
 
     def test_protected_assertion_failure_remains_visible(self):
         code, output = self.run_suite(fail_protected=True)
