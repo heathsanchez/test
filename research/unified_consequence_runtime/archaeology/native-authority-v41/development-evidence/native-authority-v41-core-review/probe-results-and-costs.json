@@ -1,0 +1,378 @@
+{
+  "scope": "Synthetic metadata-only v4.1 core review; no Git calls or index-audit claim",
+  "before_sha256": {
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py": "5a8cbc4a8f3dfa7969516f4bf0a39d3f7720789b764d83764112234834f3af3b",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v4.py": "bfb3c57d61bb8bcbb44e8a10c95dbe3162bc3adef58174c9c75eb27e728f0efb",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py": "056b3edc90cf1c6a568360cf9ba08f054ed5a50d6ad8cd3d90c8d38bd3dd182d",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v3.py": "7d18bc80ab96fdfc2128e5f8211aef5a2d88750a85bad4d5c96bb4b9bbad4501",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v41.py": "bca51c05104ab11e1aba3b822911f170be82b691f8afd8b1d3a24b2cbfe5d88e",
+    "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py": "8087a1c58749e4c04fe895eaa361661bab36ae938354fff999409a0b622d24d7"
+  },
+  "after_sha256": {
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py": "5a8cbc4a8f3dfa7969516f4bf0a39d3f7720789b764d83764112234834f3af3b",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v4.py": "bfb3c57d61bb8bcbb44e8a10c95dbe3162bc3adef58174c9c75eb27e728f0efb",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py": "056b3edc90cf1c6a568360cf9ba08f054ed5a50d6ad8cd3d90c8d38bd3dd182d",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v3.py": "7d18bc80ab96fdfc2128e5f8211aef5a2d88750a85bad4d5c96bb4b9bbad4501",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v41.py": "bca51c05104ab11e1aba3b822911f170be82b691f8afd8b1d3a24b2cbfe5d88e",
+    "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py": "8087a1c58749e4c04fe895eaa361661bab36ae938354fff999409a0b622d24d7"
+  },
+  "source_unchanged": true,
+  "native_calls": 0,
+  "network_calls": 0,
+  "git_calls": 0,
+  "probes": [
+    {
+      "name": "pyproject_not_activated",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 2,
+      "status": "UNKNOWN",
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "constraints_status": "UNKNOWN",
+      "reasons": [
+        {
+          "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+          "detail": "Expected package name at the start of dependency specifier\n    -r deps/root.in\n    ^"
+        }
+      ],
+      "evidence_count": 1,
+      "requirement_rows": [],
+      "seconds": 0.0005696289999832516
+    },
+    {
+      "name": "setup_cfg_not_activated",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 3,
+      "status": "UNKNOWN",
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "constraints_status": "UNKNOWN",
+      "reasons": [
+        {
+          "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+          "detail": "Expected package name at the start of dependency specifier\n    -r deps/root.in\n    ^"
+        }
+      ],
+      "evidence_count": 1,
+      "requirement_rows": [],
+      "seconds": 0.00044567199984157924
+    },
+    {
+      "name": "setup_py_not_activated",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 3,
+      "status": "UNKNOWN",
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "constraints_status": "UNKNOWN",
+      "reasons": [
+        {
+          "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+          "detail": "Expected package name at the start of dependency specifier\n    -r deps/root.in\n    ^"
+        }
+      ],
+      "evidence_count": 1,
+      "requirement_rows": [],
+      "seconds": 0.000548106000678672
+    },
+    {
+      "name": "scoped_shared_marker",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 5,
+      "status": "CANDIDATE_SOURCE_ENVIRONMENT",
+      "reason": null,
+      "constraints_status": "DERIVED_SOURCE_CONSTRAINTS",
+      "reasons": [],
+      "evidence_count": 7,
+      "requirement_rows": [
+        {
+          "requirement": "attrs>=25; python_version == \"3.12\"",
+          "path": "deps/shared.in",
+          "field": "test-requirements",
+          "extra": "",
+          "python_versions": [
+            "3.11"
+          ]
+        },
+        {
+          "requirement": "attrs>=25; python_version == \"3.12\"",
+          "path": "deps/shared.in",
+          "field": "test-requirements",
+          "extra": "",
+          "python_versions": [
+            "3.12"
+          ]
+        }
+      ],
+      "seconds": 0.001684699999714212
+    },
+    {
+      "name": "literal_path_deps/file:foo.in",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 3,
+      "status": "CANDIDATE_SOURCE_ENVIRONMENT",
+      "reason": null,
+      "constraints_status": "DERIVED_SOURCE_CONSTRAINTS",
+      "reasons": [],
+      "evidence_count": 3,
+      "requirement_rows": [
+        {
+          "requirement": "attrs>=25",
+          "path": "deps/file:foo.in",
+          "field": "test-requirements",
+          "extra": ""
+        }
+      ],
+      "seconds": 0.0010195280001426
+    },
+    {
+      "name": "literal_path_file:deps.in",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 3,
+      "status": "CANDIDATE_SOURCE_ENVIRONMENT",
+      "reason": null,
+      "constraints_status": "DERIVED_SOURCE_CONSTRAINTS",
+      "reasons": [],
+      "evidence_count": 3,
+      "requirement_rows": [
+        {
+          "requirement": "attrs>=25",
+          "path": "file:deps.in",
+          "field": "test-requirements",
+          "extra": ""
+        }
+      ],
+      "seconds": 0.0008152599993991316
+    },
+    {
+      "name": "literal_path_deps/has#hash.in",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 3,
+      "status": "CANDIDATE_SOURCE_ENVIRONMENT",
+      "reason": null,
+      "constraints_status": "DERIVED_SOURCE_CONSTRAINTS",
+      "reasons": [],
+      "evidence_count": 3,
+      "requirement_rows": [
+        {
+          "requirement": "attrs>=25",
+          "path": "deps/has#hash.in",
+          "field": "test-requirements",
+          "extra": ""
+        }
+      ],
+      "seconds": 0.0008318540003529051
+    },
+    {
+      "name": "tox_chain_100_cycle_False",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 102,
+      "status": "CANDIDATE_SOURCE_ENVIRONMENT",
+      "reason": null,
+      "constraints_status": "DERIVED_SOURCE_CONSTRAINTS",
+      "reasons": [],
+      "evidence_count": 102,
+      "requirement_rows": [
+        {
+          "requirement": "attrs>=25",
+          "path": "deps/99.in",
+          "field": "test-requirements",
+          "extra": ""
+        }
+      ],
+      "seconds": 0.0044834110003648675
+    },
+    {
+      "name": "known_root_chain_100_cycle_False_v41",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 102,
+      "status": "CANDIDATE_SOURCE_ENVIRONMENT",
+      "reason": null,
+      "constraints_status": "DERIVED_SOURCE_CONSTRAINTS",
+      "reasons": [],
+      "evidence_count": 102,
+      "requirement_rows": [
+        {
+          "requirement": "attrs>=25",
+          "path": "deps/99.in",
+          "field": "test-requirements",
+          "extra": ""
+        }
+      ],
+      "seconds": 0.004325583000536426
+    },
+    {
+      "name": "known_root_chain_100_cycle_False_v4",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 102,
+      "status": "CANDIDATE_SOURCE_ENVIRONMENT",
+      "reason": null,
+      "constraints_status": "DERIVED_SOURCE_CONSTRAINTS",
+      "reasons": [],
+      "evidence_count": 102,
+      "requirement_rows": [
+        {
+          "requirement": "attrs>=25",
+          "path": "deps/99.in",
+          "field": "test-requirements",
+          "extra": ""
+        }
+      ],
+      "seconds": 0.0033807879999585566
+    },
+    {
+      "name": "tox_chain_100_cycle_True",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 102,
+      "status": "UNKNOWN",
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "constraints_status": "UNKNOWN",
+      "reasons": [
+        {
+          "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+          "detail": "missing or cyclic requirements include"
+        }
+      ],
+      "evidence_count": 102,
+      "requirement_rows": [],
+      "seconds": 0.004010356999970099
+    },
+    {
+      "name": "known_root_chain_100_cycle_True_v41",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 102,
+      "status": "UNKNOWN",
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "constraints_status": "UNKNOWN",
+      "reasons": [
+        {
+          "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+          "detail": "missing or cyclic requirements include"
+        }
+      ],
+      "evidence_count": 102,
+      "requirement_rows": [],
+      "seconds": 0.003454990000136604
+    },
+    {
+      "name": "known_root_chain_100_cycle_True_v4",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 102,
+      "status": "UNKNOWN",
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "constraints_status": "UNKNOWN",
+      "reasons": [
+        {
+          "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+          "detail": "missing or cyclic requirements include"
+        }
+      ],
+      "evidence_count": 102,
+      "requirement_rows": [],
+      "seconds": 0.00270941600047081
+    },
+    {
+      "name": "tox_chain_1100_cycle_False",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 1102,
+      "escaped_exception": "RecursionError",
+      "detail": "maximum recursion depth exceeded",
+      "seconds": 0.04167526800029009
+    },
+    {
+      "name": "known_root_chain_1100_cycle_False_v41",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 1102,
+      "escaped_exception": "RecursionError",
+      "detail": "maximum recursion depth exceeded",
+      "seconds": 0.03909345400006714
+    },
+    {
+      "name": "known_root_chain_1100_cycle_False_v4",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 1102,
+      "escaped_exception": "RecursionError",
+      "detail": "maximum recursion depth exceeded",
+      "seconds": 0.032835507000527286
+    },
+    {
+      "name": "tox_chain_1100_cycle_True",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 1102,
+      "escaped_exception": "RecursionError",
+      "detail": "maximum recursion depth exceeded",
+      "seconds": 0.040068453999992926
+    },
+    {
+      "name": "known_root_chain_1100_cycle_True_v41",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 1102,
+      "escaped_exception": "RecursionError",
+      "detail": "maximum recursion depth exceeded",
+      "seconds": 0.040051058000244666
+    },
+    {
+      "name": "known_root_chain_1100_cycle_True_v4",
+      "metadata_only": true,
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "source_files": 1102,
+      "escaped_exception": "RecursionError",
+      "detail": "maximum recursion depth exceeded",
+      "seconds": 0.03488180200019997
+    }
+  ],
+  "total_seconds": 0.2568848370028718
+}

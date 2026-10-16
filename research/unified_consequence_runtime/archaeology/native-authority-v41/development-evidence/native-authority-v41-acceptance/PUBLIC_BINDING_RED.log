@@ -1,0 +1,24 @@
+test_original_hashlock_renderer_executes_through_versioned_binding (research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_original_hashlock_renderer_executes_through_versioned_binding) ... FAIL
+test_private_bindings_preserve_original_source_and_native_code (research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_private_bindings_preserve_original_source_and_native_code) ... ok
+test_public_requirement_types_used_by_original_provisioner_remain_exported (research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_public_requirement_types_used_by_original_provisioner_remain_exported) ... FAIL
+
+======================================================================
+FAIL: test_original_hashlock_renderer_executes_through_versioned_binding (research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_original_hashlock_renderer_executes_through_versioned_binding)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_environment_v41.py", line 18, in test_original_hashlock_renderer_executes_through_versioned_binding
+    self.assertTrue(hasattr(selection, 'canonicalize_name'))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_public_requirement_types_used_by_original_provisioner_remain_exported (research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_public_requirement_types_used_by_original_provisioner_remain_exported)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_environment_v41.py", line 14, in test_public_requirement_types_used_by_original_provisioner_remain_exported
+    self.assertTrue(hasattr(selection, name), name)
+AssertionError: False is not true : canonicalize_name
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+FAILED (failures=2)

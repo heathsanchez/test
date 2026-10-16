@@ -1,0 +1,39 @@
+{
+  "cause": "Derived pytest entrypoint groups could override retained raw entry_points.txt before raw reconstruction. Current validator reparses and binds raw JSON, METADATA and entrypoints.",
+  "collection_calls": 0,
+  "final_source_sha256": "f2a5f88a1c15ae22cc8d7741111a121b77fcbacb6a8a28678523a43a1e880896",
+  "historical_source_sha256": "2a7173ebd6cce815eb90dc8eec9ec9564347bf7e203262ce62a347dcc1535a8c",
+  "native_calls": 0,
+  "new_network_requests": 0,
+  "provenance": "Initial pre-fix inline fixture observation is retained in working raw-entrypoint-forgery/RED.log. The tracked test was added afterward and replays exactly the historical source bytes whose hash is bound in PREPARATION_INITIAL.json, followed by current source. No claim that this tracked test predated the fix.",
+  "runs": [
+    {
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-B",
+        "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/test_profile_raw_evidence.py",
+        "--source",
+        "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/prepare_profile_before_raw_binding.txt"
+      ],
+      "log": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/RAW_EVIDENCE_RED_REPLAY.log",
+      "log_sha256": "ce805de801ea4c9968bc71e4fe790d737806fa7138a44dbc1aff505711eb1aec",
+      "returncode": 1,
+      "stage": "RED_REPLAY"
+    },
+    {
+      "argv": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-B",
+        "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/test_profile_raw_evidence.py"
+      ],
+      "log": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/RAW_EVIDENCE_GREEN.log",
+      "log_sha256": "0a79f47c6854fd162405c978e61455883d39831f9ecb8f3872acc5166765e2ef",
+      "returncode": 0,
+      "stage": "GREEN"
+    }
+  ],
+  "schema": "UDM_NATIVE_PROFILE_RAW_EVIDENCE_REGRESSION_V41",
+  "status": "PASS_RED_REPLAY_GREEN_CURRENT",
+  "target_source_accessed": false,
+  "test_source_sha256": "fe923c63eb0e9197e6e67366c3b37ce8a8b44a1aae687563f41d4290398db17b"
+}

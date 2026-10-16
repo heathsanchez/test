@@ -1,0 +1,15 @@
+test_derived_license_cannot_override_original_entrypoint_bytes (__main__.RawEntrypointAuthority.test_derived_license_cannot_override_original_entrypoint_bytes) ... FAIL
+
+======================================================================
+FAIL: test_derived_license_cannot_override_original_entrypoint_bytes (__main__.RawEntrypointAuthority.test_derived_license_cannot_override_original_entrypoint_bytes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/test_profile_raw_evidence.py", line 39, in test_derived_license_cannot_override_original_entrypoint_bytes
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN_RAW_ENTRYPOINT_BINDING: pytest-cov==6.3.0'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 1 test in 0.082s
+
+FAILED (failures=1)
