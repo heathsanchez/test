@@ -1,0 +1,44 @@
+[
+  {
+    "case": "good/perf/fueled-chain.ndjson",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "case": "good/perf/grind-ring-5.ndjson",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=Lean.Grind.CommRing.mul_comm:stage=theorem.value:verdict=UNKNOWN:reason=source-binder-capture-or-support-unavailable"
+    ]
+  },
+  {
+    "case": "good/perf/magma-list-deep-n21.ndjson",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    ]
+  },
+  {
+    "case": "good/perf/magma-list-deep-n36.ndjson",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "case": "good/perf/magma-list-pair-n21.ndjson",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  },
+  {
+    "case": "good/perf/magma-list-pair-n7.ndjson",
+    "rc": 2,
+    "terminal": [
+      "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+    ]
+  }
+]

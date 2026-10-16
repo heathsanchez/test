@@ -1,0 +1,48 @@
+{
+  "binary_sha256": "39f2a599ca21ec5e46c06fad6e0441cbe9bffe89d95403b4ec2c59759d460db6",
+  "qualification_scope": "six targeted full exports only",
+  "rows": [
+    {
+      "case": "good/perf/fueled-chain.ndjson",
+      "rc": 2,
+      "sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "seconds": 0.6747855409994372,
+      "terminal": "ginal=4860 caller=5 source=5 remaining=61812\nCHECKED_TYPE_SUBSTITUTION original=4930 caller=4 source=4 remaining=61895\nCHECKED_TYPE_SUBSTITUTION original=5481 caller=4 source=4 remaining=61628\nCHECKED_TYPE_SUBSTITUTION original=5489 caller=4 source=4 remaining=61361\nCHECKED_TYPE_SUBSTITUTION original=5505 caller=4 source=4 remaining=60042\nCHECKED_TYPE_SUBSTITUTION original=5696 caller=4 source=4 remaining=58834\nCHECKED_TYPE_SUBSTITUTION original=5711 caller=4 source=4 remaining=58566\nCHECKED_TYPE_SUBSTITUTION original=5719 caller=4 source=4 remaining=58299\nCHECKED_TYPE_SUBSTITUTION original=5735 caller=4 source=4 remaining=57856\nCHECKED_TYPE_SUBSTITUTION original=5901 caller=4 source=4 remaining=56353\nCHECKED_TYPE_SUBSTITUTION original=5917 caller=4 source=4 remaining=56073\nCHECKED_TYPE_SUBSTITUTION original=5925 caller=4 source=4 remaining=55783\nCHECKED_TYPE_SUBSTITUTION original=5943 caller=5 source=5 remaining=55133\nCHECKED_TYPE_SUBSTITUTION original=5958 caller=5 source=5 remaining=54847\nCHECKED_TYPE_SUBSTITUTION original=5966 caller=5 source=5 remaining=54558\nCHECKED_TYPE_SUBSTITUTION original=5983 caller=5 source=5 remaining=54100\nCHECKED_TYPE_SUBSTITUTION original=6116 caller=4 source=4 remaining=52829\nCHECKED_TYPE_SUBSTITUTION original=6131 caller=4 source=4 remaining=52567\nCHECKED_TYPE_SUBSTITUTION original=6139 caller=4 source=4 remaining=52311\nCHECKED_TYPE_SUBSTITUTION original=6153 caller=5 source=5 remaining=51668\nCHECKED_TYPE_SUBSTITUTION original=6168 caller=5 source=5 remaining=51391\nCHECKED_TYPE_SUBSTITUTION original=6176 caller=5 source=5 remaining=51113\nCHECKED_TYPE_SUBSTITUTION original=6191 caller=6 source=6 remaining=50639\nCHECKED_TYPE_SUBSTITUTION original=6317 caller=4 source=4 remaining=49331\nCHECKED_TYPE_SUBSTITUTION original=6332 caller=4 source=4 remaining=49068\nCHECKED_TYPE_SUBSTITUTION original=6340 caller=4 source=4 remaining=48804\nNUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/grind-ring-5.ndjson",
+      "rc": 2,
+      "sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "seconds": 0.8849992909963476,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Lean.Grind.CommRing.mul_comm:stage=theorem.value:verdict=UNKNOWN:reason=source-binder-capture-or-support-unavailable\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n21.ndjson",
+      "rc": 2,
+      "sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "seconds": 0.4755004580001696,
+      "terminal": "CHECKED_TYPE_SUBSTITUTION original=23906 caller=4 source=4 remaining=53942\nCHECKED_TYPE_SUBSTITUTION original=24000 caller=4 source=4 remaining=53398\nCHECKED_TYPE_SUBSTITUTION original=24013 caller=4 source=4 remaining=52886\nCHECKED_TYPE_SUBSTITUTION original=24025 caller=4 source=4 remaining=52388\nCHECKED_TYPE_SUBSTITUTION original=24036 caller=4 source=4 remaining=51911\nCHECKED_TYPE_SUBSTITUTION original=24046 caller=4 source=4 remaining=51409\nNUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n36.ndjson",
+      "rc": 2,
+      "sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "seconds": 0.48222050000185845,
+      "terminal": "CHECKED_TYPE_SUBSTITUTION original=23905 caller=4 source=4 remaining=53942\nCHECKED_TYPE_SUBSTITUTION original=23999 caller=4 source=4 remaining=53398\nCHECKED_TYPE_SUBSTITUTION original=24012 caller=4 source=4 remaining=52886\nCHECKED_TYPE_SUBSTITUTION original=24024 caller=4 source=4 remaining=52388\nCHECKED_TYPE_SUBSTITUTION original=24035 caller=4 source=4 remaining=51911\nCHECKED_TYPE_SUBSTITUTION original=24045 caller=4 source=4 remaining=51409\nNUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n21.ndjson",
+      "rc": 2,
+      "sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "seconds": 0.25594550000096206,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n7.ndjson",
+      "rc": 2,
+      "sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "seconds": 0.25130320800235495,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    }
+  ]
+}

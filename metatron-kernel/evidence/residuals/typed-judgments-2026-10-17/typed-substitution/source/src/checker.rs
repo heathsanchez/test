@@ -1,0 +1,12939 @@
+use std::collections::{HashMap, HashSet};
+
+use crate::convert::DeltaPolicy;
+use crate::environment::{
+    BoolPrimitives, ConstantDecl, Environment, NatOperation, NatPrimitives, QuotPrimitives,
+};
+use crate::id::NameId;
+use crate::id::{ExprId, LevelId};
+use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
+use crate::judgment::Judgment;
+use crate::level::LevelTerm;
+use crate::machine::{
+    ProjectionFieldType, ProjectionSpec, RecursorReduction, RecursorRule, Transparency,
+};
+use crate::parser::ResolvedExport;
+use crate::syntax::{
+    Constructor, Declaration, Expr, InductiveBlock, Level, Name, QuotKind, Recursor,
+};
+use crate::typecheck::{TypeChecker, TypeValue};
+use crate::value::{EnvFrame, FreeId, NeutralHead, Value};
+use crate::verdict::Verdict;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Limits {
+    pub judgment_steps: usize,
+}
+
+impl Default for Limits {
+    fn default() -> Self {
+        Self {
+            judgment_steps: 65_536,
+        }
+    }
+}
+
+pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
+    let has_unqualified_string_literal = export
+        .exprs
+        .values()
+        .any(|expression| matches!(expression, Expr::StrLit(_)));
+    let qualified_string_source=export.declarations.iter().any(|d|matches!(d,Declaration::Inductive(b) if qualified_string_literal_type(&export,b).is_some()));
+    let verdict = check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback);
+    if has_unqualified_string_literal && !qualified_string_source && matches!(verdict, Verdict::Accept | Verdict::Reject) {
+        if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+            eprintln!(
+                "NUCLEUS_DOWNSTREAM:name=<string-literal-guard>:stage=string-literal-guard:inner={verdict:?}:verdict=Unknown"
+            );
+        }
+        Verdict::Unknown
+    } else {
+        verdict
+    }
+}
+
+fn trace_direct_reject(stage: &str) -> Verdict {
+    if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+        eprintln!("NUCLEUS_DOWNSTREAM:name=<direct>:stage={stage}:verdict=Reject");
+    }
+    Verdict::Reject
+}
+
+/// Literal typing is the pinned kernel extension for the exact String
+/// carrier. This shape alone installs nothing: its complete inductive block
+/// must first pass the ordinary source-derived admission checks.
+fn qualified_string_literal_type(export:&ResolvedExport,block:&InductiveBlock)->Option<ExprId> {
+    let ([inductive],[constructor],[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return None;};
+    if !name_is_root_str(export,inductive.name,"String") || !name_is_child_str(export,constructor.name,inductive.name,"ofByteArray")
+        || !inductive.level_params.is_empty() || inductive.num_params!=0 || inductive.num_indices!=0 || inductive.num_nested!=0
+        || inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe
+        || !constructor.level_params.is_empty() || constructor.num_params!=0 || constructor.num_fields!=2 || constructor.is_unsafe {return None;}
+    let Some(Expr::Sort(level))=export.exprs.get(inductive.ty) else{return None;};
+    if !matches!(crate::level::instantiate_level(&export.levels,*level,&HashMap::new(),128),Ok(LevelTerm::Succ(inner)) if *inner==LevelTerm::Zero) {return None;}
+    let (fields,result)=pi_spine(export,constructor.ty,2)?;
+    let Some(Expr::Const{name:byte_array,levels})=export.exprs.get(fields[0]) else{return None;};
+    if !levels.is_empty() || !name_is_root_str(export,*byte_array,"ByteArray") || !is_empty_constant(export,result,inductive.name) {return None;}
+    let (head,args)=application_spine(export,fields[1]);
+    let Some(Expr::Const{name:valid,levels})=export.exprs.get(head) else{return None;};
+    if !levels.is_empty() || !name_is_child_str(export,*valid,*byte_array,"IsValidUTF8") || args.len()!=1 || !is_bvar(export,args[0],0) {return None;}
+    Some(result)
+}
+
+fn check_export_with_policy(
+    export: ResolvedExport,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Verdict {
+    if let Some(verdict) = crate::capability::execute(&export) {
+        return verdict;
+    }
+
+    // This obstruction depends only on declaration ownership, so it remains
+    // decisive even when an earlier unsupported declaration would make the
+    // sequential checker stop at UNKNOWN.
+    if let Some((owner, recursor, constructor)) = export.declarations.iter().find_map(|declaration| {
+        let Declaration::Inductive(block) = declaration else {
+            return None;
+        };
+        // Nested recursors generated for the exact Lean.Syntax declaration
+        // legitimately carry rules for the specialized List/Array carriers.
+        // Keep the global malformed-ownership reject for every other block.
+        if (generated_nested_family_candidate(&export, block)
+            || generated_mutual_nested_family_candidate(&export, block))
+            && nested_parameter_has_definite_projection_owner_mismatch(&export, block)
+        {
+            return Some((
+                block.types.first().map(|inductive| inductive.name),
+                block.recursors.first().map(|recursor| recursor.name).unwrap_or(NameId(0)),
+                block.recursors
+                    .iter()
+                    .flat_map(|recursor| &recursor.rules)
+                    .find(|rule| !block.constructors.iter().any(|ctor| ctor.name == rule.constructor))
+                    .map(|rule| rule.constructor)
+                    .unwrap_or(NameId(0)),
+            ));
+        }
+        if generated_nested_family_candidate(&export, block)
+            || generated_mutual_nested_family_candidate(&export, block)
+            || exact_lean_syntax_nested_candidate(&export, block)
+            || exact_persistent_hash_map_node_nested_candidate(&export, block)
+            || exact_persistent_array_node_nested_candidate(&export, block)
+        {
+            return None;
+        }
+        let constructors = block
+            .constructors
+            .iter()
+            .map(|constructor| constructor.name)
+            .collect::<HashSet<_>>();
+        block.recursors.iter().find_map(|recursor| {
+            recursor.rules.iter().find_map(|rule| {
+                (!constructors.contains(&rule.constructor)).then_some((
+                    block.types.first().map(|inductive| inductive.name),
+                    recursor.name,
+                    rule.constructor,
+                ))
+            })
+        })
+    }) {
+        if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+            let owner = owner
+                .map(|name| trace_name(&export, name))
+                .unwrap_or_else(|| "<empty-inductive-block>".to_string());
+            eprintln!(
+                "NUCLEUS_DOWNSTREAM_DETAIL:stage=preflight-external-recursor-constructor:owner={owner}:recursor={}:constructor={}",
+                trace_name(&export, recursor),
+                trace_name(&export, constructor),
+            );
+            if owner == "Lean.PersistentHashMap.Node"
+                || owner == "Lean.Elab.InfoTree"
+                || owner == "Lean.Compiler.LCNF.Alt"
+            {
+                if let Some(Declaration::Inductive(block)) = export.declarations.iter().find(|declaration| {
+                    matches!(declaration, Declaration::Inductive(block)
+                        if block.types.first().is_some_and(|inductive| trace_name(&export, inductive.name) == owner))
+                }) {
+                    for inductive in &block.types {
+                        eprintln!(
+                            "NUCLEUS_NESTED_SHAPE:type={}:params={}:indices={}:nested={}:recursive={}:reflexive={}:unsafe={}:levels={}:ctors={}",
+                            trace_name(&export, inductive.name),
+                            inductive.num_params,
+                            inductive.num_indices,
+                            inductive.num_nested,
+                            inductive.is_recursive,
+                            inductive.is_reflexive,
+                            inductive.is_unsafe,
+                            inductive.level_params.len(),
+                            inductive.constructors.len(),
+                        );
+                    }
+                    for ctor in &block.constructors {
+                        eprintln!(
+                            "NUCLEUS_NESTED_SHAPE:ctor={}:index={}:induct={}:params={}:fields={}:unsafe={}:levels={}",
+                            trace_name(&export, ctor.name),
+                            ctor.index,
+                            trace_name(&export, ctor.inductive),
+                            ctor.num_params,
+                            ctor.num_fields,
+                            ctor.is_unsafe,
+                            ctor.level_params.len(),
+                        );
+                    }
+                    for rec in &block.recursors {
+                        let rule_desc = rec.rules.iter().map(|rule| {
+                            format!("{}#{}", trace_name(&export, rule.constructor), rule.num_fields)
+                        }).collect::<Vec<_>>().join(",");
+                        eprintln!(
+                            "NUCLEUS_NESTED_SHAPE:rec={}:params={}:indices={}:motives={}:minors={}:k={}:unsafe={}:levels={}:all={}:rules=[{}]",
+                            trace_name(&export, rec.name),
+                            rec.num_params,
+                            rec.num_indices,
+                            rec.num_motives,
+                            rec.num_minors,
+                            rec.k,
+                            rec.is_unsafe,
+                            rec.level_params.len(),
+                            rec.all.len(),
+                            rule_desc,
+                        );
+                    }
+                }
+            }
+        }
+        return trace_direct_reject("preflight-external-recursor-constructor");
+    }
+
+    if export.declarations.iter().any(|declaration| {
+        matches!(declaration, Declaration::Inductive(block)
+            if recursor_rule_drops_required_minor_argument(&export, block))
+    }) {
+        return trace_direct_reject("preflight-recursor-drops-required-minor");
+    }
+
+    if export.declarations.iter().any(|declaration| {
+        matches!(declaration, Declaration::Inductive(block)
+            if proof_dependent_result_sort_is_definitely_malformed(&export, block))
+    }) {
+        return trace_direct_reject("preflight-proof-dependent-result-sort");
+    }
+
+    let mut environment = Environment::empty();
+
+    // Preserve the immutable source catalogue for structural contract
+    // derivation. Only the progressively checked environment supplies typing
+    // authority; retaining future source records does not admit them.
+    for declaration_index in 0..export.declarations.len() {
+        let declaration = export.declarations[declaration_index].clone();
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_DECLARATION_PROGRESS").is_some() {
+            let name=match &declaration {
+                Declaration::Axiom{name,..}|Declaration::Definition{name,..}|Declaration::Theorem{name,..}|Declaration::Opaque{name,..}|Declaration::Quot{name,..}=>Some(*name),
+                Declaration::Inductive(b)=>b.types.first().map(|t|t.name),
+                _=>None,
+            };
+            if let Some(name)=name {eprintln!("NUCLEUS_DECLARATION:index={declaration_index}:name={}",trace_name(&export,name));}
+        }
+        #[cfg(feature = "diagnostics")]
+        crate::diagnostics::declaration();
+        let level_parameters = match &declaration {
+            Declaration::Axiom { level_params, .. }
+            | Declaration::Definition { level_params, .. }
+            | Declaration::Theorem { level_params, .. }
+            | Declaration::Opaque { level_params, .. }
+            | Declaration::Quot { level_params, .. } => Some(level_params.as_slice()),
+            Declaration::Inductive(_) | Declaration::Unsupported { .. } => None,
+        };
+        if level_parameters.is_some_and(has_duplicate_parameter) {
+            return trace_direct_reject("duplicate-level-parameter");
+        }
+
+        let (name, established) = match declaration {
+            Declaration::Axiom {
+                name,
+                level_params,
+                ty,
+            } => {
+                let checker = TypeChecker::with_level_substitution(
+                    &export.exprs,
+                    &export.levels,
+                    &environment,
+                    parameter_substitution(&level_params),
+                )
+                .with_delta_policy(delta_policy);
+                if let Err(verdict) = trace_verdict_boundary(
+                    &export,
+                    name,
+                    "axiom.type",
+                    checker.is_type(ty, limits.judgment_steps),
+                ) {
+                    return verdict;
+                }
+                (name, ConstantDecl::axiom(level_params, ty))
+            }
+            Declaration::Definition {
+                name,
+                level_params,
+                ty,
+                value,
+                preferred_for_reduction,
+            } => {
+                let checker = TypeChecker::with_level_substitution(
+                    &export.exprs,
+                    &export.levels,
+                    &environment,
+                    parameter_substitution(&level_params),
+                )
+                .with_delta_policy(delta_policy);
+                if let Err(verdict) = trace_verdict_boundary(
+                    &export,
+                    name,
+                    "definition.type",
+                    checker.is_type(ty, limits.judgment_steps),
+                ) {
+                    return verdict;
+                }
+                let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
+                if let Err(verdict) = trace_verdict_boundary(
+                    &export,
+                    name,
+                    "definition.value",
+                    checker.check_formed(value, &expected, limits.judgment_steps),
+                ) {
+                    return verdict;
+                }
+                (
+                    name,
+                    ConstantDecl::definition(level_params, ty, value, preferred_for_reduction),
+                )
+            }
+            Declaration::Opaque { all, name, level_params, ty, value, is_unsafe } => {
+                // Group labels grant no forward or recursive authority.
+                // Admit this one opaque only when its type and body check
+                // against the preceding environment, without its own name.
+                if is_unsafe || !all.contains(&name) || has_duplicate_parameter(&all) { return Verdict::Unknown; }
+                let checker = TypeChecker::with_level_substitution(
+                    &export.exprs, &export.levels, &environment, parameter_substitution(&level_params),
+                ).with_delta_policy(delta_policy);
+                if let Err(verdict) = trace_verdict_boundary(&export, name, "opaque.type", checker.is_type(ty, limits.judgment_steps)) { return verdict; }
+                let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
+                if let Err(verdict) = trace_verdict_boundary(&export, name, "opaque.value", checker.check_formed(value, &expected, limits.judgment_steps)) { return verdict; }
+                (name, ConstantDecl::theorem(level_params, ty))
+            }
+            Declaration::Theorem {
+                all: _,
+                name,
+                level_params,
+                ty,
+                value,
+            } => {
+                let checker = TypeChecker::with_level_substitution(
+                    &export.exprs,
+                    &export.levels,
+                    &environment,
+                    parameter_substitution(&level_params),
+                )
+                .with_delta_policy(delta_policy);
+                if let Err(verdict) = trace_verdict_boundary(
+                    &export,
+                    name,
+                    "theorem.proposition",
+                    checker.is_proposition(ty, limits.judgment_steps),
+                ) {
+                    return verdict;
+                }
+                let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
+                if let Err(verdict) = trace_verdict_boundary(
+                    &export,
+                    name,
+                    "theorem.value",
+                    checker.check_formed(value, &expected, limits.judgment_steps),
+                ) {
+                    return verdict;
+                }
+                (name, ConstantDecl::theorem(level_params, ty))
+            }
+            Declaration::Quot {
+                name,
+                level_params,
+                ty,
+                kind,
+            } => {
+                match check_quot_declaration(
+                    &export,
+                    &environment,
+                    name,
+                    &level_params,
+                    ty,
+                    kind,
+                    limits,
+                    delta_policy,
+                ) {
+                    Ok(extended) => {
+                        environment = extended;
+                        continue;
+                    }
+                    Err(verdict) => {
+                        if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+                            eprintln!(
+                                "NUCLEUS_DOWNSTREAM:name={}:stage=quot:verdict={verdict:?}",
+                                trace_name(&export, name)
+                            );
+                        }
+                        return verdict;
+                    }
+                }
+            }
+            Declaration::Inductive(block) => {
+                match check_inductive(&export, &environment, &block, limits, delta_policy) {
+                    Ok(extended) => {
+                        environment = extended;
+                        if let Some(ty)=qualified_string_literal_type(&export,&block) {
+                            let Ok(extended)=environment.install_string_literal_type(ty) else{return Verdict::Reject;};
+                            environment=extended;
+                        }
+                        continue;
+                    }
+                    Err(verdict) => {
+                        if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+                            let name = block
+                                .types
+                                .first()
+                                .map(|inductive| trace_name(&export, inductive.name))
+                                .unwrap_or_else(|| "<empty-inductive-block>".to_string());
+                            eprintln!(
+                                "NUCLEUS_DOWNSTREAM:name={name}:stage=inductive:verdict={verdict:?}"
+                            );
+                        }
+                        return verdict;
+                    }
+                }
+            }
+            Declaration::Unsupported { tag } => {
+                if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+                    eprintln!(
+                        "NUCLEUS_DOWNSTREAM:name=<unsupported>:stage=unsupported:verdict=UNKNOWN:reason={tag}"
+                    );
+                }
+                return Verdict::Unknown;
+            }
+        };
+
+        let Ok(extended) = environment.extend_owned(name, established) else {
+            return trace_direct_reject("environment-extend");
+        };
+        environment = extended;
+
+        // Lean's Nat-literal kernel extension gives exact native meaning to
+        // these standard root definitions.  Authority is installed only after
+        // the definition itself has passed ordinary Nucleus type checking and
+        // exact Nat authority is already present.
+        if let Some(nat) = environment.nat_primitives().cloned() {
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_NATIVE_NAT_BITS").is_some()
+                && (name_is_child_str(&export,name,nat.type_name,"land") || name_is_child_str(&export,name,nat.type_name,"shiftRight"))
+            {
+                eprintln!("NUCLEUS_NATIVE_NAT_BITS_ADMISSION:name={}:signature={}:declaration={:?}",trace_name(&export,name),native_nat_binary_signature(&export,&environment,nat.type_name,name),environment.get(name));
+            }
+            let operation = if name_is_child_str(&export, name, nat.type_name, "add") {
+                Some(NatOperation::Add)
+            } else if name_is_root_str(&export,nat.type_name,"Nat") && name_is_child_str(&export, name, nat.type_name, "mul") {
+                Some(NatOperation::Mul)
+            } else if name_is_root_str(&export,nat.type_name,"Nat") && name_is_child_str(&export, name, nat.type_name, "pow") {
+                Some(NatOperation::Pow)
+            } else if name_is_root_str(&export,nat.type_name,"Nat")
+                && name_is_child_str(&export,name,nat.type_name,"land")
+                && native_nat_binary_signature(&export,&environment,nat.type_name,name)
+            {
+                Some(NatOperation::Land)
+            } else if name_is_root_str(&export,nat.type_name,"Nat")
+                && name_is_child_str(&export,name,nat.type_name,"shiftRight")
+                && native_nat_binary_signature(&export,&environment,nat.type_name,name)
+            {
+                Some(NatOperation::ShiftRight)
+            } else if name_is_root_str(&export,nat.type_name,"Nat")
+                && name_is_child_str(&export,name,nat.type_name,"div")
+                && native_nat_binary_signature(&export,&environment,nat.type_name,name)
+            {
+                Some(NatOperation::Div)
+            } else if name_is_root_str(&export,nat.type_name,"Nat")
+                && name_is_child_str(&export,name,nat.type_name,"mod")
+                && native_nat_binary_signature(&export,&environment,nat.type_name,name)
+            {
+                Some(NatOperation::Mod)
+            } else if name_is_child_str(&export, name, nat.type_name, "sub") {
+                Some(NatOperation::Sub)
+            } else if name_is_child_str(&export,name,nat.type_name,"pred")
+                && native_nat_unary_signature(&export,&environment,nat.type_name,name)
+                && environment.get(name).and_then(|decl|decl.value).is_some_and(|value|
+                    TypeChecker::new(&export.exprs,&export.levels,&environment)
+                        .derived_predecessor_equations(name,value,limits.judgment_steps.min(4096)))
+            {
+                Some(NatOperation::Pred)
+            } else if name_is_child_str(&export, name, nat.type_name, "ble") {
+                Some(NatOperation::Ble)
+            } else if name_is_child_str(&export, name, nat.type_name, "beq") {
+                Some(NatOperation::Beq)
+            } else {
+                None
+            };
+            if let Some(operation) = operation {
+                let Ok(extended) = environment.install_nat_operation(name, operation) else {
+                    return trace_direct_reject("nat-operation-install");
+                };
+                environment = extended;
+            }
+        }
+    }
+
+    Verdict::Accept
+}
+
+fn recursor_claims_external_constructor(block: &InductiveBlock) -> bool {
+    let constructors = block
+        .constructors
+        .iter()
+        .map(|constructor| constructor.name)
+        .collect::<HashSet<_>>();
+    block
+        .recursors
+        .iter()
+        .flat_map(|recursor| &recursor.rules)
+        .any(|rule| !constructors.contains(&rule.constructor))
+}
+
+fn expression_has_definite_projection_owner_mismatch(
+    export: &ResolvedExport,
+    expression: ExprId,
+    binder_domains: &[ExprId],
+    local_depth: u64,
+) -> bool {
+    match export.exprs.get(expression) {
+        Some(Expr::Proj {
+            type_name,
+            structure,
+            ..
+        }) => {
+            let direct_mismatch = match export.exprs.get(*structure) {
+                Some(Expr::BVar(index)) if *index >= local_depth => {
+                    let external = (*index - local_depth) as usize;
+                    binder_domains
+                        .len()
+                        .checked_sub(1 + external)
+                        .and_then(|position| binder_domains.get(position))
+                        .is_some_and(|domain| {
+                            let (head, _) = application_spine(export, *domain);
+                            matches!(
+                                export.exprs.get(head),
+                                Some(Expr::Const { name, .. }) if *name != *type_name
+                            )
+                        })
+                }
+                _ => false,
+            };
+            direct_mismatch
+                || expression_has_definite_projection_owner_mismatch(
+                    export,
+                    *structure,
+                    binder_domains,
+                    local_depth,
+                )
+        }
+        Some(Expr::App { fun, arg }) => {
+            expression_has_definite_projection_owner_mismatch(
+                export,
+                *fun,
+                binder_domains,
+                local_depth,
+            ) || expression_has_definite_projection_owner_mismatch(
+                export,
+                *arg,
+                binder_domains,
+                local_depth,
+            )
+        }
+        Some(Expr::Lam { domain, body } | Expr::Pi { domain, body }) => {
+            expression_has_definite_projection_owner_mismatch(
+                export,
+                *domain,
+                binder_domains,
+                local_depth,
+            ) || expression_has_definite_projection_owner_mismatch(
+                export,
+                *body,
+                binder_domains,
+                local_depth + 1,
+            )
+        }
+        Some(Expr::Let { ty, value, body }) => {
+            expression_has_definite_projection_owner_mismatch(
+                export,
+                *ty,
+                binder_domains,
+                local_depth,
+            ) || expression_has_definite_projection_owner_mismatch(
+                export,
+                *value,
+                binder_domains,
+                local_depth,
+            ) || expression_has_definite_projection_owner_mismatch(
+                export,
+                *body,
+                binder_domains,
+                local_depth + 1,
+            )
+        }
+        Some(Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. })
+        | None => false,
+    }
+}
+
+fn nested_parameter_has_definite_projection_owner_mismatch(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    if block.types.is_empty() || block.types.iter().all(|inductive| inductive.num_nested == 0) {
+        return false;
+    }
+
+    for constructor in &block.constructors {
+        let Some(binder_count) = constructor
+            .num_params
+            .checked_add(constructor.num_fields)
+            .and_then(|count| usize::try_from(count).ok())
+        else {
+            return true;
+        };
+        let mut current = constructor.ty;
+        let mut binder_domains = Vec::with_capacity(binder_count);
+        for _ in 0..binder_count {
+            let Some(Expr::Pi { domain, body }) = export.exprs.get(current) else {
+                return false;
+            };
+            if expression_has_definite_projection_owner_mismatch(
+                export,
+                *domain,
+                &binder_domains,
+                0,
+            ) {
+                return true;
+            }
+            binder_domains.push(*domain);
+            current = *body;
+        }
+    }
+    false
+}
+
+fn external_recursor_matches_declared_family(
+    export: &ResolvedExport,
+    owner: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let Some(owner_block) = export.declarations.iter().find_map(|declaration| {
+        let Declaration::Inductive(candidate) = declaration else {
+            return None;
+        };
+        candidate
+            .types
+            .iter()
+            .any(|inductive| inductive.name == owner)
+            .then_some(candidate)
+    }) else {
+        return false;
+    };
+
+    if owner_block.types.iter().any(|inductive| inductive.is_unsafe)
+        || owner_block.constructors.iter().any(|constructor| constructor.is_unsafe)
+        || recursor.rules.len() != owner_block.constructors.len()
+    {
+        return false;
+    }
+
+    recursor
+        .rules
+        .iter()
+        .zip(&owner_block.constructors)
+        .all(|(rule, constructor)| {
+            rule.constructor == constructor.name && rule.num_fields == constructor.num_fields
+        })
+}
+
+fn generated_mutual_nested_family_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    if block.types.len() < 2 || block.constructors.is_empty() {
+        return false;
+    }
+
+    let type_names = block.types.iter().map(|inductive| inductive.name).collect::<Vec<_>>();
+    let first = &block.types[0];
+    let Ok(nested_count) = usize::try_from(first.num_nested) else {
+        return false;
+    };
+    if nested_count == 0
+        || block.recursors.len() != type_names.len() + nested_count
+        || has_duplicate_parameter(&first.level_params)
+    {
+        return false;
+    }
+
+    for inductive in &block.types {
+        if inductive.all != type_names
+            || inductive.num_params != first.num_params
+            || inductive.num_indices != first.num_indices
+            || inductive.num_nested != first.num_nested
+            || !inductive.is_recursive
+            || inductive.is_reflexive
+            || inductive.is_unsafe
+            || inductive.level_params != first.level_params
+            || inductive.constructors.is_empty()
+        {
+            return false;
+        }
+
+        let owned = block
+            .constructors
+            .iter()
+            .filter(|constructor| constructor.inductive == inductive.name)
+            .collect::<Vec<_>>();
+        if owned.len() != inductive.constructors.len()
+            || !owned
+                .iter()
+                .zip(&inductive.constructors)
+                .enumerate()
+                .all(|(index, (constructor, name))| {
+                    constructor.name == *name
+                        && constructor.index == index as u64
+                        && constructor.num_params == inductive.num_params
+                        && !constructor.is_unsafe
+                        && constructor.level_params == inductive.level_params
+                })
+        {
+            return false;
+        }
+    }
+
+    let total_rules = block
+        .recursors
+        .iter()
+        .try_fold(0usize, |total, recursor| total.checked_add(recursor.rules.len()));
+    let Some(total_rules) = total_rules else {
+        return false;
+    };
+    let expected_total = block
+        .constructors
+        .len()
+        .checked_add(
+            block.recursors
+                .len()
+                .saturating_sub(block.types.len())
+                .checked_sub(0)
+                .unwrap_or(0),
+        );
+    if total_rules == 0 || expected_total.is_none() {
+        return false;
+    }
+
+    let family_owner = |constructor: NameId| match export.names.get(constructor) {
+        Some(Name::Str { prefix, .. }) => Some(*prefix),
+        _ => None,
+    };
+    let declared = type_names.iter().copied().collect::<HashSet<_>>();
+    let mut declared_recursor_counts = HashMap::<NameId, usize>::new();
+    let mut families = HashSet::new();
+
+    for recursor in &block.recursors {
+        if recursor.is_unsafe
+            || recursor.k
+            || recursor.num_params != first.num_params
+            || recursor.num_indices != first.num_indices
+            || recursor.num_motives != block.recursors.len() as u64
+            || recursor.num_minors != total_rules as u64
+            || recursor.level_params.len() != first.level_params.len() + 1
+            || has_duplicate_parameter(&recursor.level_params)
+            || !first
+                .level_params
+                .iter()
+                .all(|parameter| recursor.level_params.contains(parameter))
+            || recursor.all != type_names
+            || recursor.rules.is_empty()
+        {
+            return false;
+        }
+
+        let Some(Name::Str { prefix: recursor_prefix, value }) = export.names.get(recursor.name) else {
+            return false;
+        };
+        if !declared.contains(recursor_prefix) || !value.starts_with("rec") {
+            return false;
+        }
+
+        let Some(owner) = family_owner(recursor.rules[0].constructor) else {
+            return false;
+        };
+        if !recursor
+            .rules
+            .iter()
+            .all(|rule| family_owner(rule.constructor) == Some(owner))
+        {
+            return false;
+        }
+
+        if declared.contains(&owner) {
+            if *recursor_prefix != owner {
+                return false;
+            }
+            let Some(inductive) = block.types.iter().find(|inductive| inductive.name == owner) else {
+                return false;
+            };
+            let owned = block
+                .constructors
+                .iter()
+                .filter(|constructor| constructor.inductive == owner)
+                .collect::<Vec<_>>();
+            if recursor.rules.len() != owned.len()
+                || !recursor.rules.iter().zip(owned).all(|(rule, constructor)| {
+                    rule.constructor == constructor.name
+                        && rule.num_fields == constructor.num_fields
+                })
+            {
+                return false;
+            }
+            *declared_recursor_counts.entry(inductive.name).or_default() += 1;
+        } else if !external_recursor_matches_declared_family(export, owner, recursor) {
+            return false;
+        }
+
+        families.insert(owner);
+    }
+
+    block
+        .types
+        .iter()
+        .all(|inductive| declared_recursor_counts.get(&inductive.name) == Some(&1usize))
+        && families.is_superset(&declared)
+        && families.len() > declared.len()
+        && families.len() <= declared.len() + nested_count
+}
+
+fn check_generated_mutual_nested_family(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    if !generated_mutual_nested_family_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // Mutual nested families must stage all type signatures before any
+    // constructor signature, because constructors may refer across the mutual
+    // block. Recursors remain opaque; this grants no nested iota authority.
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    for inductive in &block.types {
+        derivation.promote(
+            export,
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for recursor in &block.recursors {
+        derivation.promote(
+            export,
+            derived_recursor(recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    Ok(derivation.finish())
+}
+
+fn generated_nested_family_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let [inductive] = block.types.as_slice() else {
+        return false;
+    };
+    let Ok(nested_count) = usize::try_from(inductive.num_nested) else {
+        return false;
+    };
+    if nested_count == 0
+        || block.recursors.len() != nested_count + 1
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || has_duplicate_parameter(&inductive.level_params)
+        || inductive.all != [inductive.name]
+        || inductive.constructors.len() != block.constructors.len()
+        || !inductive
+            .constructors
+            .iter()
+            .zip(&block.constructors)
+            .all(|(name, constructor)| *name == constructor.name)
+        || block.constructors.is_empty()
+    {
+        return false;
+    }
+
+    for (index, constructor) in block.constructors.iter().enumerate() {
+        let Ok(index) = u64::try_from(index) else {
+            return false;
+        };
+        if constructor.index != index
+            || constructor.inductive != inductive.name
+            || constructor.num_params != inductive.num_params
+            || constructor.is_unsafe
+            || constructor.level_params != inductive.level_params
+        {
+            return false;
+        }
+    }
+
+    let total_rules = block
+        .recursors
+        .iter()
+        .try_fold(0usize, |total, recursor| total.checked_add(recursor.rules.len()));
+    let Some(total_rules) = total_rules else {
+        return false;
+    };
+    if total_rules == 0 {
+        return false;
+    }
+
+    let family_owner = |constructor: NameId| match export.names.get(constructor) {
+        Some(Name::Str { prefix, .. }) => Some(*prefix),
+        _ => None,
+    };
+    let mut families = HashSet::new();
+    let mut current_family_recursors = 0usize;
+
+    for recursor in &block.recursors {
+        if recursor.is_unsafe
+            || recursor.k
+            || recursor.num_params != inductive.num_params
+            || recursor.num_indices != inductive.num_indices
+            || recursor.num_motives != block.recursors.len() as u64
+            || recursor.num_minors != total_rules as u64
+            || recursor.level_params.len() != inductive.level_params.len() + 1
+            || has_duplicate_parameter(&recursor.level_params)
+            || !inductive
+                .level_params
+                .iter()
+                .all(|parameter| recursor.level_params.contains(parameter))
+            || recursor.all != [inductive.name]
+            || !matches!(
+                export.names.get(recursor.name),
+                Some(Name::Str { prefix, value })
+                    if *prefix == inductive.name && value.starts_with("rec")
+            )
+            || recursor.rules.is_empty()
+        {
+            return false;
+        }
+
+        let Some(owner) = family_owner(recursor.rules[0].constructor) else {
+            return false;
+        };
+        if !recursor
+            .rules
+            .iter()
+            .all(|rule| family_owner(rule.constructor) == Some(owner))
+        {
+            return false;
+        }
+        if owner == inductive.name {
+            current_family_recursors += 1;
+            if recursor.rules.len() != block.constructors.len()
+                || !recursor
+                    .rules
+                    .iter()
+                    .zip(&block.constructors)
+                    .all(|(rule, constructor)| {
+                        rule.constructor == constructor.name
+                            && rule.num_fields == constructor.num_fields
+                    })
+            {
+                return false;
+            }
+        } else if !external_recursor_matches_declared_family(export, owner, recursor) {
+            return false;
+        }
+        families.insert(owner);
+    }
+
+    // num_nested counts nested occurrences, not distinct carrier owners.
+    // The same lawful carrier may occur multiple times. Require exactly one
+    // recursor for the declared family and exact constructor metadata for
+    // every independently declared external carrier.
+    current_family_recursors == 1
+        && families.contains(&inductive.name)
+        && families.len() >= 2
+        && families.len() <= nested_count + 1
+}
+
+fn check_generated_nested_family(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    if !generated_nested_family_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // Lean's nested-inductive compilation produces one motive/recursor family
+    // per carrier.  The original constructor signatures are still present in
+    // the export.  Rechecking them *after staging the inductive type* is the
+    // critical soundness separator: malformed erased nested parameters (the
+    // #14576 class) are rejected here, while legitimate nested carriers pass.
+    // Other nested equations remain opaque. Only independently derived
+    // closed nullary minor-selection equations gain computation below.
+    let inductive = &block.types[0];
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for recursor in &block.recursors {
+        derivation.promote(
+            export,
+            derived_recursor(recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    install_derived_nested_nullary(export,block,derivation.finish(),limits,delta_policy)
+}
+
+fn exact_lean_syntax_nested_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [missing, node, atom, ident], [rec_list, rec_syntax, rec_array]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if trace_name(export, inductive.name) != "Lean.Syntax"
+        || inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 2
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [missing.name, node.name, atom.name, ident.name]
+    {
+        return false;
+    }
+
+    let constructor_specs = [
+        (missing, "Lean.Syntax.missing", 0u64, 0u64),
+        (node, "Lean.Syntax.node", 1, 3),
+        (atom, "Lean.Syntax.atom", 2, 2),
+        (ident, "Lean.Syntax.ident", 3, 4),
+    ];
+    if constructor_specs.iter().any(|(constructor, name, index, fields)| {
+        trace_name(export, constructor.name) != *name
+            || constructor.index != *index
+            || constructor.inductive != inductive.name
+            || constructor.num_params != 0
+            || constructor.num_fields != *fields
+            || constructor.is_unsafe
+            || !constructor.level_params.is_empty()
+    }) {
+        return false;
+    }
+
+    let common_recursor_metadata = |recursor: &Recursor| {
+        !recursor.is_unsafe
+            && !recursor.k
+            && recursor.num_params == 0
+            && recursor.num_indices == 0
+            && recursor.num_motives == 3
+            && recursor.num_minors == 7
+            && recursor.level_params.len() == 1
+            && recursor.all == [inductive.name]
+    };
+    if !common_recursor_metadata(rec_list)
+        || !common_recursor_metadata(rec_syntax)
+        || !common_recursor_metadata(rec_array)
+        || rec_list.level_params != rec_syntax.level_params
+        || rec_list.level_params != rec_array.level_params
+        || trace_name(export, rec_list.name) != "Lean.Syntax.rec_2"
+        || trace_name(export, rec_syntax.name) != "Lean.Syntax.rec"
+        || trace_name(export, rec_array.name) != "Lean.Syntax.rec_1"
+    {
+        return false;
+    }
+
+    matches!(
+        rec_list.rules.as_slice(),
+        [nil, cons]
+            if trace_name(export, nil.constructor) == "List.nil"
+                && nil.num_fields == 0
+                && trace_name(export, cons.constructor) == "List.cons"
+                && cons.num_fields == 2
+    ) && matches!(
+        rec_syntax.rules.as_slice(),
+        [r_missing, r_node, r_atom, r_ident]
+            if r_missing.constructor == missing.name && r_missing.num_fields == 0
+                && r_node.constructor == node.name && r_node.num_fields == 3
+                && r_atom.constructor == atom.name && r_atom.num_fields == 2
+                && r_ident.constructor == ident.name && r_ident.num_fields == 4
+    ) && matches!(
+        rec_array.rules.as_slice(),
+        [mk]
+            if trace_name(export, mk.constructor) == "Array.mk"
+                && mk.num_fields == 1
+    )
+}
+
+fn exact_persistent_hash_map_node_nested_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [entries, collision], [rec_a, rec_b, rec_c, rec_d]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if trace_name(export, inductive.name) != "Lean.PersistentHashMap.Node"
+        || inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 3
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || inductive.level_params.len() != 2
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [entries.name, collision.name]
+        || entries.index != 0
+        || entries.inductive != inductive.name
+        || entries.num_params != 2
+        || entries.num_fields != 1
+        || entries.is_unsafe
+        || entries.level_params != inductive.level_params
+        || trace_name(export, entries.name) != "Lean.PersistentHashMap.Node.entries"
+        || collision.index != 1
+        || collision.inductive != inductive.name
+        || collision.num_params != 2
+        || collision.num_fields != 3
+        || collision.is_unsafe
+        || collision.level_params != inductive.level_params
+        || trace_name(export, collision.name) != "Lean.PersistentHashMap.Node.collision"
+    {
+        return false;
+    }
+
+    let expected_fields = |name: &str| match name {
+        "Lean.PersistentHashMap.Node.entries" => Some(1u64),
+        "Lean.PersistentHashMap.Node.collision" => Some(3u64),
+        "Lean.PersistentHashMap.Entry.entry" => Some(2u64),
+        "Lean.PersistentHashMap.Entry.ref" => Some(1u64),
+        "Lean.PersistentHashMap.Entry.null" => Some(0u64),
+        "Array.mk" => Some(1u64),
+        "List.nil" => Some(0u64),
+        "List.cons" => Some(2u64),
+        _ => None,
+    };
+    let owner = |name: NameId| match export.names.get(name) {
+        Some(Name::Str { prefix, .. }) => Some(trace_name(export, *prefix)),
+        _ => None,
+    };
+
+    let mut families = HashSet::new();
+    let mut rule_total = 0usize;
+    for recursor in [rec_a, rec_b, rec_c, rec_d] {
+        if recursor.is_unsafe
+            || recursor.k
+            || recursor.num_params != 2
+            || recursor.num_indices != 0
+            || recursor.num_motives != 4
+            || recursor.num_minors != 8
+            || recursor.level_params.len() != 3
+            || !inductive
+                .level_params
+                .iter()
+                .all(|parameter| recursor.level_params.contains(parameter))
+            || recursor.all != [inductive.name]
+            || !matches!(
+                export.names.get(recursor.name),
+                Some(Name::Str { prefix, value })
+                    if *prefix == inductive.name && value.starts_with("rec")
+            )
+            || recursor.rules.is_empty()
+        {
+            return false;
+        }
+
+        let first_owner = owner(recursor.rules[0].constructor);
+        let Some(first_owner) = first_owner else {
+            return false;
+        };
+        for rule in &recursor.rules {
+            let name = trace_name(export, rule.constructor);
+            if expected_fields(&name) != Some(rule.num_fields)
+                || owner(rule.constructor).as_deref() != Some(first_owner.as_str())
+            {
+                return false;
+            }
+        }
+        families.insert(first_owner);
+        rule_total += recursor.rules.len();
+    }
+
+    rule_total == 8
+        && families.len() == 4
+        && families.contains("Lean.PersistentHashMap.Node")
+        && families.contains("Lean.PersistentHashMap.Entry")
+        && families.contains("List")
+        && families.contains("Array")
+}
+
+fn exact_persistent_array_node_nested_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [node, leaf], [rec_a, rec_b, rec_c]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if trace_name(export, inductive.name) != "Lean.PersistentArrayNode"
+        || inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 2
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || inductive.level_params.len() != 1
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [node.name, leaf.name]
+        || node.index != 0
+        || node.inductive != inductive.name
+        || node.num_params != 1
+        || node.num_fields != 1
+        || node.is_unsafe
+        || node.level_params != inductive.level_params
+        || trace_name(export, node.name) != "Lean.PersistentArrayNode.node"
+        || leaf.index != 1
+        || leaf.inductive != inductive.name
+        || leaf.num_params != 1
+        || leaf.num_fields != 1
+        || leaf.is_unsafe
+        || leaf.level_params != inductive.level_params
+        || trace_name(export, leaf.name) != "Lean.PersistentArrayNode.leaf"
+    {
+        return false;
+    }
+
+    let expected_fields = |name: &str| match name {
+        "Lean.PersistentArrayNode.node" => Some(1u64),
+        "Lean.PersistentArrayNode.leaf" => Some(1u64),
+        "Array.mk" => Some(1u64),
+        "List.nil" => Some(0u64),
+        "List.cons" => Some(2u64),
+        _ => None,
+    };
+    let owner = |name: NameId| match export.names.get(name) {
+        Some(Name::Str { prefix, .. }) => Some(trace_name(export, *prefix)),
+        _ => None,
+    };
+
+    let mut families = HashSet::new();
+    let mut rule_total = 0usize;
+    for recursor in [rec_a, rec_b, rec_c] {
+        if recursor.is_unsafe
+            || recursor.k
+            || recursor.num_params != 1
+            || recursor.num_indices != 0
+            || recursor.num_motives != 3
+            || recursor.num_minors != 5
+            || recursor.level_params.len() != 2
+            || !inductive
+                .level_params
+                .iter()
+                .all(|parameter| recursor.level_params.contains(parameter))
+            || recursor.all != [inductive.name]
+            || !matches!(
+                export.names.get(recursor.name),
+                Some(Name::Str { prefix, value })
+                    if *prefix == inductive.name && value.starts_with("rec")
+            )
+            || recursor.rules.is_empty()
+        {
+            return false;
+        }
+
+        let first_owner = owner(recursor.rules[0].constructor);
+        let Some(first_owner) = first_owner else {
+            return false;
+        };
+        for rule in &recursor.rules {
+            let name = trace_name(export, rule.constructor);
+            if expected_fields(&name) != Some(rule.num_fields)
+                || owner(rule.constructor).as_deref() != Some(first_owner.as_str())
+            {
+                return false;
+            }
+        }
+        families.insert(first_owner);
+        rule_total += recursor.rules.len();
+    }
+
+    rule_total == 5
+        && families.len() == 3
+        && families.contains("Lean.PersistentArrayNode")
+        && families.contains("List")
+        && families.contains("Array")
+}
+
+fn check_exact_persistent_array_node_nested(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    if !exact_persistent_array_node_nested_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // Same generated nested-family law as Lean.Syntax and PersistentHashMap:
+    // check signatures in dependency order and retain all generated recursors
+    // as opaque declarations. No nested iota computation is installed.
+    let inductive = &block.types[0];
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for recursor in &block.recursors {
+        derivation.promote(
+            export,
+            derived_recursor(recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    Ok(derivation.finish())
+}
+
+fn check_exact_persistent_hash_map_node_nested(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    if !exact_persistent_hash_map_node_nested_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // The source-level nested carrier is exactly
+    // Array (Entry α β (Node α β)).  We retain the generated recursors as
+    // opaque checked declarations only; no nested iota authority is installed.
+    let inductive = &block.types[0];
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for recursor in &block.recursors {
+        derivation.promote(
+            export,
+            derived_recursor(recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    Ok(derivation.finish())
+}
+
+fn check_exact_lean_syntax_nested(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    if !exact_lean_syntax_nested_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // This is deliberately an opaque, name-sealed capability. The type and
+    // constructor signatures are rechecked in dependency order. The three
+    // recursor signatures are also rechecked, but no iota rule is installed:
+    // nested-recursor computation remains unavailable until separately earned.
+    let inductive = &block.types[0];
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    for recursor in &block.recursors {
+        derivation.promote(
+            export,
+            derived_recursor(recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    install_derived_nested_nullary(export,block,derivation.finish(),limits,delta_policy)
+}
+
+fn quotient_parent(export: &ResolvedExport, name: NameId, suffix: &str) -> Option<NameId> {
+    match export.names.get(name) {
+        Some(Name::Str { prefix, value })
+            if value == suffix && name_is_root_str(export, *prefix, "Quot") =>
+        {
+            Some(*prefix)
+        }
+        _ => None,
+    }
+}
+
+fn quotient_child(export: &ResolvedExport, parent: NameId, suffix: &str) -> Option<NameId> {
+    export.names.iter_raw().find_map(|(raw, name)| match name {
+        Name::Str { prefix, value } if *prefix == parent && value == suffix => Some(NameId(raw)),
+        _ => None,
+    })
+}
+
+fn is_quot_relation_type(export: &ResolvedExport, expression: ExprId, carrier: u64) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [left, right] = domains.as_slice() else {
+        return false;
+    };
+    is_bvar(export, *left, carrier)
+        && is_bvar(export, *right, carrier + 1)
+        && is_prop_sort(export, result)
+}
+
+fn is_quot_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    quotient: NameId,
+    level: NameId,
+    carrier: u64,
+    relation: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_unary_polymorphic_constant(export, head, quotient, level)
+        && are_bvars(export, &arguments, &[carrier, relation])
+}
+
+fn is_quot_mk_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    mk: NameId,
+    level: NameId,
+    carrier: u64,
+    relation: u64,
+    value: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_unary_polymorphic_constant(export, head, mk, level)
+        && are_bvars(export, &arguments, &[carrier, relation, value])
+}
+
+fn is_quot_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [carrier, relation] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_quot_relation_type(export, *relation, 0)
+        && is_sort_parameter(export, result, level)
+}
+
+fn is_quot_mk_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    quotient: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [carrier, relation, value] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_quot_relation_type(export, *relation, 0)
+        && is_bvar(export, *value, 1)
+        && is_quot_application(export, result, quotient, level, 2, 1)
+}
+
+fn is_quot_function_type(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [domain] if is_bvar(export, *domain, 2))
+        && is_bvar(export, result, 1)
+}
+
+fn is_quot_lift_proof_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    value_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [left, right, related] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, *left, 3)
+        || !is_bvar(export, *right, 4)
+        || !is_binary_bvar_application(export, *related, 4, 1, 0)
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    let [carrier, lhs, rhs] = arguments.as_slice() else {
+        return false;
+    };
+    let Some(Expr::Const { name, levels }) = export.exprs.get(head) else {
+        return false;
+    };
+    levels.len() == 1
+        && name_is_root_str(export, *name, "Eq")
+        && matches!(
+            export.levels.get(levels[0]),
+            Some(Level::Param(parameter)) if *parameter == value_level
+        )
+        && is_bvar(export, *carrier, 4)
+        && is_bvar_application(export, *lhs, 3, 2)
+        && is_bvar_application(export, *rhs, 3, 1)
+}
+
+fn is_quot_lift_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    quotient: NameId,
+    quotient_level: NameId,
+    value_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 6) else {
+        return false;
+    };
+    let [carrier, relation, value_type, function, proof, target] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, quotient_level)
+        && is_quot_relation_type(export, *relation, 0)
+        && is_sort_parameter(export, *value_type, value_level)
+        && is_quot_function_type(export, *function)
+        && is_quot_lift_proof_type(export, *proof, value_level)
+        && is_quot_application(export, *target, quotient, quotient_level, 4, 3)
+        && is_bvar(export, result, 3)
+}
+
+fn is_quot_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    quotient: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    matches!(
+        domains.as_slice(),
+        [target] if is_quot_application(export, *target, quotient, level, 1, 0)
+    ) && is_prop_sort(export, result)
+}
+
+fn is_quot_ind_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    mk: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [value] = domains.as_slice() else {
+        return false;
+    };
+    let Some(Expr::App { fun: motive, arg }) = export.exprs.get(result) else {
+        return false;
+    };
+    is_bvar(export, *value, 2)
+        && is_bvar(export, *motive, 1)
+        && is_quot_mk_application(export, *arg, mk, level, 3, 2, 0)
+}
+
+fn is_quot_ind_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    quotient: NameId,
+    mk: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 5) else {
+        return false;
+    };
+    let [carrier, relation, motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_quot_relation_type(export, *relation, 0)
+        && is_quot_motive_type(export, *motive, quotient, level)
+        && is_quot_ind_minor_type(export, *minor, mk, level)
+        && is_quot_application(export, *target, quotient, level, 3, 2)
+        && is_bvar_application(export, result, 2, 0)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_quot_declaration(
+    export: &ResolvedExport,
+    environment: &Environment,
+    name: NameId,
+    level_params: &[NameId],
+    ty: ExprId,
+    kind: QuotKind,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let exact = match kind {
+        QuotKind::Type => {
+            matches!(level_params, [level]
+                if name_is_root_str(export, name, "Quot")
+                    && is_quot_type(export, ty, *level))
+        }
+        QuotKind::Ctor => {
+            let Some(quotient) = quotient_parent(export, name, "mk") else {
+                return Err(Verdict::Reject);
+            };
+            matches!(level_params, [level]
+                if environment.get(quotient).is_some()
+                    && is_quot_mk_type(export, ty, quotient, *level))
+        }
+        QuotKind::Lift => {
+            let Some(quotient) = quotient_parent(export, name, "lift") else {
+                return Err(Verdict::Reject);
+            };
+            matches!(level_params, [quotient_level, value_level]
+            if quotient_level != value_level
+                && environment.get(quotient).is_some()
+                && is_quot_lift_type(
+                    export,
+                    ty,
+                    quotient,
+                    *quotient_level,
+                    *value_level,
+                ))
+        }
+        QuotKind::Ind => {
+            let Some(quotient) = quotient_parent(export, name, "ind") else {
+                return Err(Verdict::Reject);
+            };
+            let Some(mk) = quotient_child(export, quotient, "mk") else {
+                return Err(Verdict::Reject);
+            };
+            matches!(level_params, [level]
+                if environment.get(quotient).is_some()
+                    && environment.get(mk).is_some()
+                    && is_quot_ind_type(export, ty, quotient, mk, *level))
+        }
+    };
+    if !exact {
+        return Err(Verdict::Reject);
+    }
+
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(level_params),
+    )
+    .with_delta_policy(delta_policy);
+    verdict_boundary(checker.is_type(ty, limits.judgment_steps))?;
+    let extended = environment
+        .extend(name, ConstantDecl::theorem(level_params.to_vec(), ty))
+        .map_err(|_| Verdict::Reject)?;
+
+    if kind == QuotKind::Ind {
+        let quotient = quotient_parent(export, name, "ind").ok_or(Verdict::Reject)?;
+        let mk = quotient_child(export, quotient, "mk").ok_or(Verdict::Reject)?;
+        let lift = quotient_child(export, quotient, "lift").ok_or(Verdict::Reject)?;
+        extended
+            .install_quot_primitives(QuotPrimitives {
+                type_name: quotient,
+                mk,
+                lift,
+                ind: name,
+            })
+            .map_err(|_| Verdict::Reject)
+    } else {
+        Ok(extended)
+    }
+}
+
+fn inductive_arity_metadata_is_well_formed(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+) -> bool {
+    if has_duplicate_parameter(&inductive.level_params) {
+        return false;
+    }
+    let Some(binders) = inductive.num_params.checked_add(inductive.num_indices) else {
+        return false;
+    };
+    let mut expression = inductive.ty;
+    for _ in 0..binders {
+        let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
+            return false;
+        };
+        expression = *body;
+    }
+    matches!(export.exprs.get(expression), Some(Expr::Sort(_)))
+}
+
+fn owned_single_type_recursor_metadata_is_definitely_malformed(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    // G26-001's earned negative envelope is intentionally narrower than
+    // generic recursor validation. Broader indexed/parameterized/recursive
+    // families remain UNKNOWN until separately earned.
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || constructor.num_params != 0
+        || constructor.num_fields != 0
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.all != [inductive.name]
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+    {
+        return false;
+    }
+
+    !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        recursor.k,
+        true,
+    )
+}
+
+fn pi_arity(export: &ResolvedExport, mut expression: ExprId) -> usize {
+    let mut arity = 0usize;
+    while let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) {
+        arity = arity.saturating_add(1);
+        expression = *body;
+    }
+    arity
+}
+
+fn recursor_rule_drops_required_minor_argument(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    block.recursors.iter().any(|recursor| {
+        let Ok(parameter_count) = usize::try_from(recursor.num_params) else {
+            return false;
+        };
+        let Ok(motive_count) = usize::try_from(recursor.num_motives) else {
+            return false;
+        };
+        let Ok(minor_count) = usize::try_from(recursor.num_minors) else {
+            return false;
+        };
+        if minor_count != recursor.rules.len() {
+            return false;
+        }
+        let prefix_count = parameter_count
+            .checked_add(motive_count)
+            .and_then(|count| count.checked_add(minor_count));
+        let Some(prefix_count) = prefix_count else {
+            return false;
+        };
+        let Some((domains, _)) = pi_spine(export, recursor.ty, prefix_count) else {
+            return false;
+        };
+        let minor_types = &domains[parameter_count + motive_count..];
+
+        recursor.rules.iter().enumerate().any(|(minor_index, rule)| {
+            let Ok(field_count) = usize::try_from(rule.num_fields) else {
+                return false;
+            };
+            let lambda_count = prefix_count.checked_add(field_count);
+            let Some(lambda_count) = lambda_count else {
+                return false;
+            };
+            let Some((_, result)) = lam_spine(export, rule.rhs, lambda_count) else {
+                return false;
+            };
+            let (head, arguments) = application_spine(export, result);
+            let expected_minor = u64::try_from(
+                field_count + minor_count.saturating_sub(1).saturating_sub(minor_index),
+            )
+            .ok();
+            matches!(
+                (export.exprs.get(head), expected_minor),
+                (Some(Expr::BVar(actual)), Some(expected))
+                    if *actual == expected
+                        && arguments.len() < pi_arity(export, minor_types[minor_index])
+            )
+        })
+    })
+}
+
+fn expression_head_uses_indexed_k_recursor(
+    export: &ResolvedExport,
+    mut expression: ExprId,
+    mut budget: usize,
+) -> bool {
+    while budget > 0 {
+        budget -= 1;
+        while let Some(Expr::Lam { body, .. } | Expr::Let { body, .. }) =
+            export.exprs.get(expression)
+        {
+            expression = *body;
+        }
+        let (head, _) = application_spine(export, expression);
+        let Some(Expr::Const { name, .. }) = export.exprs.get(head) else {
+            return false;
+        };
+        if export.declarations.iter().any(|declaration| {
+            matches!(declaration, Declaration::Inductive(block)
+                if block.recursors.iter().any(|recursor|
+                    recursor.name == *name && recursor.k && recursor.num_indices > 0))
+        })
+        {
+            return true;
+        }
+        let Some(value) = export.declarations.iter().find_map(|declaration| match declaration {
+            Declaration::Definition { name: candidate, value, .. } if candidate == name => {
+                Some(*value)
+            }
+            _ => None,
+        }) else {
+            return false;
+        };
+        expression = value;
+    }
+    false
+}
+
+fn expression_is_definitely_data_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+) -> bool {
+    let (head, _) = application_spine(export, expression);
+    match export.exprs.get(head) {
+        Some(Expr::Sort(level)) => exported_level_is_definitely_nonzero(export, *level, 128),
+        Some(Expr::Const { name, .. }) => {
+            let declaration_type = export.declarations.iter().find_map(|declaration| {
+                match declaration {
+                    Declaration::Axiom {
+                        name: candidate,
+                        ty,
+                        ..
+                    }
+                    | Declaration::Definition {
+                        name: candidate,
+                        ty,
+                        ..
+                    }
+                    | Declaration::Opaque { name: candidate, ty, .. }
+                    | Declaration::Theorem {
+                        name: candidate,
+                        ty,
+                        ..
+                    } if candidate == name => Some(*ty),
+                    Declaration::Inductive(block) => block
+                        .types
+                        .iter()
+                        .find(|inductive| inductive.name == *name)
+                        .map(|inductive| inductive.ty),
+                    _ => None,
+                }
+            });
+            let Some(mut result) = declaration_type else {
+                return false;
+            };
+            while let Some(Expr::Pi { body, .. }) = export.exprs.get(result) {
+                result = *body;
+            }
+            matches!(
+                export.exprs.get(result),
+                Some(Expr::Sort(level))
+                    if exported_level_is_definitely_nonzero(export, *level, 128)
+            )
+        }
+        _ => false,
+    }
+}
+
+fn proof_dependent_result_sort_is_definitely_malformed(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params == 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || constructor.num_fields == 0
+        || recursor.is_unsafe
+        || !recursor.level_params.is_empty()
+    {
+        return false;
+    }
+    let Ok(binder_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((_, result_sort)) = pi_spine(export, inductive.ty, binder_count) else {
+        return false;
+    };
+    if matches!(export.exprs.get(result_sort), Some(Expr::Sort(_))) {
+        return false;
+    }
+    let (_, result_arguments) = application_spine(export, result_sort);
+    if !result_arguments
+        .last()
+        .is_some_and(|argument| matches!(export.exprs.get(*argument), Some(Expr::BVar(_))))
+        || !expression_head_uses_indexed_k_recursor(export, result_sort, 8)
+    {
+        return false;
+    }
+    let Ok(constructor_binders) = usize::try_from(
+        constructor
+            .num_params
+            .saturating_add(constructor.num_fields),
+    ) else {
+        return false;
+    };
+    let Some((domains, _)) = pi_spine(export, constructor.ty, constructor_binders) else {
+        return false;
+    };
+    let Ok(parameter_count) = usize::try_from(constructor.num_params) else {
+        return false;
+    };
+    domains[parameter_count..]
+        .iter()
+        .any(|field| expression_is_definitely_data_type(export, *field))
+}
+
+fn multi_constructor_small_elim_is_definitely_malformed(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [recursor]) = (block.types.as_slice(), block.recursors.as_slice()) else {
+        return false;
+    };
+    if block.constructors.len() < 2
+        || inductive.num_nested != 0
+        || inductive.is_unsafe
+        || block.constructors.iter().any(|constructor| constructor.is_unsafe)
+        || recursor.is_unsafe
+    {
+        return false;
+    }
+
+    let Some(binder_count) = inductive.num_params.checked_add(inductive.num_indices) else {
+        return false;
+    };
+    let Ok(binder_count) = usize::try_from(binder_count) else {
+        return false;
+    };
+    let Some((_, result)) = pi_spine(export, inductive.ty, binder_count) else {
+        return false;
+    };
+    let Some(Expr::Sort(level)) = export.exprs.get(result) else {
+        return false;
+    };
+
+    // Lean permits an independent elimination universe only when the
+    // inductive sort is provably nonzero, or for the separately handled
+    // singleton-like Prop cases. A multi-constructor family whose sort may
+    // collapse to Prop is therefore small-eliminating and its recursor must
+    // carry exactly the declaration's own universe parameters.
+    !exported_level_is_definitely_nonzero(export, *level, 128)
+        && recursor.level_params != inductive.level_params
+}
+
+fn fixed_bool_indexed_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+) -> Option<NameId> {
+    let (domains, result) = pi_spine(export, expression, 1)?;
+    let [index] = domains.as_slice() else {
+        return None;
+    };
+    let Some(Expr::Const { name: bool_name, levels }) = export.exprs.get(*index) else {
+        return None;
+    };
+    if !levels.is_empty() || !name_is_root_str(export, *bool_name, "Bool") {
+        return None;
+    }
+    let is_type = matches!(
+        export.exprs.get(result),
+        Some(Expr::Sort(level))
+            if matches!(
+                export.levels.get(*level),
+                Some(Level::Succ(inner))
+                    if matches!(export.levels.get(*inner), Some(Level::Zero))
+            )
+    );
+    is_type.then_some(*bool_name)
+}
+
+fn fixed_bool_true_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+    bool_name: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if levels.is_empty() && name_is_child_str(export, *name, bool_name, "true")
+    )
+}
+
+fn fixed_bool_indexed_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    index: impl FnOnce(ExprId) -> bool,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [argument]
+        if is_empty_constant(export, head, inductive) && index(*argument))
+}
+
+fn fixed_bool_indexed_motive(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [index, target] = domains.as_slice() else {
+        return false;
+    };
+    is_bool_constant(export, *index)
+        && fixed_bool_indexed_application(export, *target, inductive, |arg| {
+            is_bvar(export, arg, 0)
+        })
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn fixed_bool_indexed_minor(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    bool_name: NameId,
+    field_count: usize,
+) -> bool {
+    match field_count {
+        0 => {
+            let (head, arguments) = application_spine(export, expression);
+            matches!(arguments.as_slice(), [index, target]
+                if is_bvar(export, head, 0)
+                    && fixed_bool_true_constant(export, *index, bool_name)
+                    && is_empty_constant(export, *target, constructor))
+        }
+        1 => {
+            let Some((domains, result)) = pi_spine(export, expression, 1) else {
+                return false;
+            };
+            let [field] = domains.as_slice() else {
+                return false;
+            };
+            let Some(Expr::Const { name: true_name, levels }) = export.exprs.get(*field) else {
+                return false;
+            };
+            if !levels.is_empty() || !name_is_root_str(export, *true_name, "True") {
+                return false;
+            }
+            let (head, arguments) = application_spine(export, result);
+            let [index, target] = arguments.as_slice() else {
+                return false;
+            };
+            let (ctor_head, ctor_args) = application_spine(export, *target);
+            is_bvar(export, head, 1)
+                && fixed_bool_true_constant(export, *index, bool_name)
+                && is_empty_constant(export, ctor_head, constructor)
+                && matches!(ctor_args.as_slice(), [arg] if is_bvar(export, *arg, 0))
+        }
+        _ => false,
+    }
+}
+
+fn fixed_bool_indexed_recursor_type(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    bool_name: NameId,
+    field_count: usize,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 4) else {
+        return false;
+    };
+    let [motive, minor, index, target] = domains.as_slice() else {
+        return false;
+    };
+    if !fixed_bool_indexed_motive(export, *motive, inductive, motive_level)
+        || !fixed_bool_indexed_minor(
+            export,
+            *minor,
+            constructor,
+            bool_name,
+            field_count,
+        )
+        || !is_bool_constant(export, *index)
+        || !fixed_bool_indexed_application(export, *target, inductive, |arg| {
+            is_bvar(export, arg, 0)
+        })
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    matches!(arguments.as_slice(), [index_arg, target_arg]
+        if is_bvar(export, head, 3)
+            && is_bvar(export, *index_arg, 1)
+            && is_bvar(export, *target_arg, 0))
+}
+
+fn fixed_bool_indexed_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    field_count: usize,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.num_fields as usize != field_count {
+        return false;
+    }
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 2 + field_count) else {
+        return false;
+    };
+    match field_count {
+        0 => is_bvar(export, result, 0),
+        1 => {
+            let Some(field) = domains.get(2) else {
+                return false;
+            };
+            let Some(Expr::Const { name, levels }) = export.exprs.get(*field) else {
+                return false;
+            };
+            if !levels.is_empty() || !name_is_root_str(export, *name, "True") {
+                return false;
+            }
+            is_bvar_application(export, result, 1, 0)
+        }
+        _ => false,
+    }
+}
+
+fn check_exact_fixed_bool_indexed(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    let is_unit = name_is_root_str(export, inductive.name, "IndexedUnit");
+    let is_singleton = name_is_root_str(export, inductive.name, "IndexedSingleton");
+    if !is_unit && !is_singleton {
+        return Err(Verdict::Unknown);
+    }
+    let expected_fields = if is_unit { 0usize } else { 1usize };
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 1
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 0
+        || constructor.num_fields as usize != expected_fields
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.k
+        || recursor.num_params != 0
+        || recursor.num_indices != 1
+        || recursor.num_motives != 1
+        || recursor.num_minors != 1
+        || recursor.all != [inductive.name]
+        || recursor.rules.len() != 1
+        || recursor.rules[0].constructor != constructor.name
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let Some(bool_name) = fixed_bool_indexed_type(export, inductive.ty) else {
+        return Err(Verdict::Reject);
+    };
+    let Some((constructor_domains, constructor_result)) =
+        pi_spine(export, constructor.ty, expected_fields)
+    else {
+        return Err(Verdict::Reject);
+    };
+    if expected_fields == 1 {
+        let [field] = constructor_domains.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        let Some(Expr::Const { name, levels }) = export.exprs.get(*field) else {
+            return Err(Verdict::Reject);
+        };
+        if !levels.is_empty() || !name_is_root_str(export, *name, "True") {
+            return Err(Verdict::Reject);
+        }
+    }
+    if !fixed_bool_indexed_application(export, constructor_result, inductive.name, |arg| {
+        fixed_bool_true_constant(export, arg, bool_name)
+    }) {
+        return Err(Verdict::Reject);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        true,
+    ) || !fixed_bool_indexed_recursor_type(
+        export,
+        recursor,
+        inductive.name,
+        constructor.name,
+        bool_name,
+        expected_fields,
+        *motive_level,
+    ) || !fixed_bool_indexed_recursor_rule(export, recursor, expected_fields)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment = derivation
+        .finish()
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: 0,
+                field_types: constructor_domains
+                    .iter()
+                    .copied()
+                    .map(ProjectionFieldType::Derived)
+                    .collect(),
+                eta_expandable: false,
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
+fn check_inductive(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    if generated_mutual_nested_family_candidate(export, block) {
+        return check_generated_mutual_nested_family(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
+    if generated_nested_family_candidate(export, block) {
+        return check_generated_nested_family(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
+    if exact_lean_syntax_nested_candidate(export, block) {
+        return check_exact_lean_syntax_nested(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
+    if exact_persistent_hash_map_node_nested_candidate(export, block) {
+        return check_exact_persistent_hash_map_node_nested(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
+    if exact_persistent_array_node_nested_candidate(export, block) {
+        return check_exact_persistent_array_node_nested(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
+    if recursor_claims_external_constructor(block) {
+        return Err(Verdict::Reject);
+    }
+
+    if recursor_rule_drops_required_minor_argument(export, block)
+        || proof_dependent_result_sort_is_definitely_malformed(export, block)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    if let [inductive] = block.types.as_slice()
+        && (name_is_root_str(export, inductive.name, "IndexedUnit")
+            || name_is_root_str(export, inductive.name, "IndexedSingleton"))
+    {
+        return check_exact_fixed_bool_indexed(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    }
+
+    // Crystal negative reuse: reject only a declaration-level universe
+    // contradiction. This grants no new positive inductive authority.
+    if multi_constructor_small_elim_is_definitely_malformed(export, block) {
+        return Err(Verdict::Reject);
+    }
+
+    // G26-001: negative-only recursor coherence. A single safe inductive
+    // that explicitly owns a .rec declaration cannot advertise impossible
+    // motive/minor/rule cardinalities. This grants no positive family
+    // authority; well-formed but unsupported recursors remain UNKNOWN.
+    if owned_single_type_recursor_metadata_is_definitely_malformed(export, block) {
+        return Err(Verdict::Reject);
+    }
+
+    // G16-001 is deliberately routed by its earned name before constructor
+    // cardinality dispatch. This lets missing/extra constructors remain
+    // malformed claims inside the PUnit envelope (REJECT), while broader
+    // indexed/recursive/nested/unsafe neighbors remain unsupported (UNKNOWN).
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "PUnit")
+    {
+        if inductive.num_params != 0
+            || inductive.num_indices != 0
+            || inductive.num_nested != 0
+            || inductive.is_recursive
+            || inductive.is_reflexive
+            || inductive.is_unsafe
+        {
+            return Err(Verdict::Unknown);
+        }
+        let [constructor] = block.constructors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if constructor.is_unsafe {
+            return Err(Verdict::Unknown);
+        }
+        let [recursor] = block.recursors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if recursor.is_unsafe {
+            return Err(Verdict::Unknown);
+        }
+        let [level] = inductive.level_params.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        return ExactBinaryProductDerivation {
+            inductive,
+            constructor,
+            recursor,
+            constructor_suffix: "unit",
+            law: BinaryProductSortLaw::PUnit { level: *level },
+        }
+        .validate_and_promote(export, environment, limits, delta_policy);
+    }
+
+    // G17-001 is the first indexed law. Keep the external envelope name-sealed
+    // and distinguish malformed Eq claims (REJECT) from genuinely broader
+    // recursive/reflexive/unsafe/nested semantics (UNKNOWN).
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "Eq")
+    {
+        if inductive.num_nested != 0
+            || inductive.is_recursive
+            || inductive.is_reflexive
+            || inductive.is_unsafe
+        {
+            return Err(Verdict::Unknown);
+        }
+        if inductive.num_params != 2 || inductive.num_indices != 1 {
+            return Err(Verdict::Reject);
+        }
+        let [constructor] = block.constructors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if constructor.is_unsafe {
+            return Err(Verdict::Unknown);
+        }
+        let [recursor] = block.recursors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if recursor.is_unsafe {
+            return Err(Verdict::Unknown);
+        }
+        let [level] = inductive.level_params.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        return ExactBinaryProductDerivation {
+            inductive,
+            constructor,
+            recursor,
+            constructor_suffix: "refl",
+            law: BinaryProductSortLaw::Eq { level: *level },
+        }
+        .validate_and_promote(export, environment, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "HEq")
+    {
+        return check_exact_heq(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "Acc")
+    {
+        return check_exact_acc(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "Decidable")
+    {
+        return check_exact_decidable(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "List")
+    {
+        return check_exact_list(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
+        && environment
+            .nat_primitives()
+            .is_some_and(|nat| name_is_child_str(export, inductive.name, nat.type_name, "le"))
+    {
+        return check_exact_nat_le(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
+        && (name_is_root_str(export, inductive.name, "N")
+            || name_is_root_str(export, inductive.name, "Nat"))
+    {
+        return check_exact_nat(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "RBTree")
+    {
+        return check_exact_rbtree(export, environment, block, limits, delta_policy);
+    }
+
+    if closed_direct_recursive_contract(export, environment, block, limits, delta_policy) {
+        return check_closed_direct_recursive(export, environment, block, limits, delta_policy);
+    }
+    if parameter_direct_recursive_contract(export,environment,block,limits,delta_policy) {
+        let inductive=&block.types[0];let recursor=&block.recursors[0];
+        let mut signatures=vec![derived_polymorphic_type(inductive.name,&inductive.level_params,inductive.ty)];
+        signatures.extend(block.constructors.iter().map(derived_constructor));signatures.push(derived_recursor(recursor));
+        let mut derivation=ClosedNonrecursiveDerivation::begin(environment);
+        derivation.promote_all(export,signatures,limits.judgment_steps,delta_policy)?;
+        return install_certified_recursor_reduction(derivation.finish(),&block.constructors,recursor);
+    }
+
+    if exact_closed_binary_tree_candidate(export, block) {
+        return check_exact_closed_binary_tree(export, environment, block, limits, delta_policy);
+    }
+
+    if exact_closed_reflexive_tree_candidate(export, block) {
+        return check_exact_closed_reflexive_tree(export, environment, block, limits, delta_policy);
+    }
+
+    if crate::indexed_prop::contracts(export, block).is_some() {
+        let [inductive] = block.types.as_slice() else {
+            return Err(Verdict::Unknown);
+        };
+        let [recursor] = block.recursors.as_slice() else {
+            return Err(Verdict::Unknown);
+        };
+        if has_duplicate_parameter(&inductive.level_params)
+            || !recursor_metadata_admissible(
+                export, inductive, &block.constructors, recursor, false, true,
+            )
+        {
+            return Err(Verdict::Unknown);
+        }
+        let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+        derivation.promote(
+            export,
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+        for constructor in &block.constructors {
+            derivation.promote(
+                export, derived_constructor(constructor), limits.judgment_steps, delta_policy,
+            )?;
+        }
+        derivation.promote(
+            export, derived_recursor(recursor), limits.judgment_steps, delta_policy,
+        )?;
+        return install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor);
+    }
+
+    if closed_field_enum_candidate(export, block) || parametric_field_enum_candidate(export, block) {
+        return check_generic_nonrecursive_type(export, environment, block, limits, delta_policy);
+    }
+    match block.constructors.len() {
+        0 => check_empty_inductive(export, environment, block, limits, delta_policy),
+        1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
+        2 => check_binary_enum(export, environment, block, limits, delta_policy),
+        _ => Err(Verdict::Unknown),
+    }
+}
+
+fn exported_level_is_definitely_nonzero(
+    export: &ResolvedExport,
+    level: LevelId,
+    budget: usize,
+) -> bool {
+    if budget == 0 {
+        return false;
+    }
+    match export.levels.get(level) {
+        Some(Level::Succ(_)) => true,
+        Some(Level::Max(left, right)) => {
+            exported_level_is_definitely_nonzero(export, *left, budget - 1)
+                || exported_level_is_definitely_nonzero(export, *right, budget - 1)
+        }
+        Some(Level::Zero | Level::IMax(_, _) | Level::Param(_)) | None => false,
+    }
+}
+
+fn closed_field_enum_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], constructors, [recursor])=(
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {return false};
+    if constructors.len() < 2 || constructors.len() > 16
+        || constructors.iter().all(|c| c.num_fields == 0) || inductive.num_params!=0
+        || inductive.num_indices!=0
+        || inductive.num_nested!=0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.k
+        || recursor.num_params!=0
+        || recursor.num_indices!=0
+        || recursor.num_motives!=1
+        || recursor.num_minors!=constructors.len() as u64
+        || recursor.rules.len()!=constructors.len()
+        || recursor.level_params.len()!=1
+    {
+        return false;
+    }
+    let Some((_,inductive_sort))=pi_spine(export,inductive.ty,0) else {
+        return false;
+    };
+    if !matches!(
+        export.exprs.get(inductive_sort),
+        Some(Expr::Sort(level)) if exported_level_is_definitely_nonzero(export,*level,128)
+    ) {
+        return false;
+    }
+    for ctor in constructors {
+        if ctor.is_unsafe
+            || ctor.inductive!=inductive.name
+            || ctor.num_params!=0
+            || !ctor.level_params.is_empty()
+            || ctor.num_fields>64
+        {
+            return false;
+        }
+        let Ok(fields)=usize::try_from(ctor.num_fields) else {return false};
+        let Some((domains,_result))=pi_spine(export,ctor.ty,fields) else {
+            return false;
+        };
+        if domains.iter().any(|field| expression_contains_constant(
+            export,*field,inductive.name
+        )) {
+            return false;
+        }
+    }
+    true
+}
+
+fn same_universe_pair_candidate(export:&ResolvedExport,block:&InductiveBlock)->bool {
+    let ([inductive],[constructor],[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+    let [universe]=inductive.level_params.as_slice() else{return false;};
+    if inductive.num_params!=2 || constructor.num_params!=2 || constructor.num_fields!=2 {return false;}
+    let Some((parameters,result))=pi_spine(export,inductive.ty,2) else{return false;};
+    let Some((fields,_))=pi_spine(export,constructor.ty,4) else{return false;};
+    parameters.iter().all(|p|is_sort_succ_parameter(export,*p,*universe))
+        && is_sort_succ_parameter(export,result,*universe)
+        && parameters.iter().zip(&fields[..2]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+        && is_bvar(export,fields[2],1) && is_bvar(export,fields[3],1)
+}
+
+fn parameter_record_candidate(export:&ResolvedExport,block:&InductiveBlock)->bool {
+    let ([inductive],[constructor],[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+    let [universe]=inductive.level_params.as_slice() else{return false;};
+    if inductive.num_params!=1 || constructor.num_params!=1 || !(2..=64).contains(&constructor.num_fields) {return false;}
+    let Some((parameters,result))=pi_spine(export,inductive.ty,1) else{return false;};
+    let Some((fields,_))=pi_spine(export,constructor.ty,1+constructor.num_fields as usize) else{return false;};
+    is_sort_succ_parameter(export,parameters[0],*universe) && is_sort_succ_parameter(export,result,*universe)
+        && expr_eq_with_bvar_shift(export,parameters[0],fields[0],0,0)
+        && fields[1..].iter().all(|field|!expression_contains_constant(export,*field,inductive.name))
+}
+
+fn parameter_record_obligations(export:&ResolvedExport,environment:&Environment,block:&InductiveBlock,limits:Limits,policy:DeltaPolicy)->bool {
+    let ([inductive],[constructor],[recursor])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+    let count=constructor.num_fields as usize;
+    let Some((parameters,result))=pi_spine(export,inductive.ty,1) else{return false;};
+    let Some(Expr::Sort(level))=export.exprs.get(result) else{return false;};
+    let substitution=parameter_substitution(&inductive.level_params);
+    let Ok(carrier)=crate::level::instantiate_level(&export.levels,*level,&substitution,limits.judgment_steps) else{return false;};
+    let checker=TypeChecker::with_level_substitution(&export.exprs,&export.levels,environment,substitution).with_delta_policy(policy);
+    let Some((fields,_))=pi_spine(export,constructor.ty,count+1) else{return false;};
+    let mut frame=EnvFrame::empty().extend_free(FreeId(0));
+    let mut context=vec![TypeValue::Term(checker.closure(parameters[0],EnvFrame::empty()))];
+    for (k,field) in fields[1..].iter().enumerate() {
+        let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*field,&context,&frame,limits.judgment_steps) else{return false;};
+        // Field universes must fit the declared carrier, including proof
+        // fields. Merely checking the constructor telescope is insufficient.
+        if !crate::level::level_equal(crate::level::max(sort,carrier.clone()),carrier.clone(),limits.judgment_steps).is_proven() {return false;}
+        context.push(TypeValue::Term(checker.closure(*field,frame.clone())));
+        frame=frame.extend_free(FreeId((k+1) as u64));
+    }
+    let Some((rec_domains,_))=pi_spine(export,recursor.ty,4) else{return false;};
+    let [rule]=recursor.rules.as_slice() else{return false;};
+    let Some((annotations,_))=lam_spine(export,rule.rhs,count+3) else{return false;};
+    rec_domains[..3].iter().zip(&annotations[..3]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+        && fields[1..].iter().zip(&annotations[3..]).enumerate().all(|(k,(a,b))|
+            expr_eq_with_bvar_shift(export,*a,*b,k as u64,2)
+                || expr_eq_with_bvar_shift(export,checked_erased_closed_field(export,environment,*a),*b,k as u64,2))
+}
+
+fn same_universe_pair_obligations(export:&ResolvedExport,block:&InductiveBlock)->bool {
+    let ([inductive],[constructor],[recursor])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+    let Some((ctor_domains,_))=pi_spine(export,constructor.ty,4) else{return false;};
+    let Some((rec_domains,_))=pi_spine(export,recursor.ty,5) else{return false;};
+    let [rule]=recursor.rules.as_slice() else{return false;};
+    let Some((annotations,_))=lam_spine(export,rule.rhs,6) else{return false;};
+    inductive.num_params==2
+        && rec_domains[..4].iter().zip(&annotations[..4]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+        && ctor_domains[2..].iter().zip(&annotations[4..]).enumerate().all(|(i,(a,b))|expr_eq_with_bvar_shift(export,*a,*b,i as u64,2))
+}
+
+fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_nested != 0
+        || inductive.num_indices != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return false;
+    }
+
+    let dependent_pair = inductive.num_params == 2
+        && constructor.num_fields == 2
+        && constructor.num_params == 2
+        && pprod_has_dependent_field_neighbor(export, constructor.ty);
+
+    let scalar_structure = inductive.num_params == 0
+        && constructor.num_params == 0
+        && constructor.num_fields == 1;
+
+    // A closed nonrecursive two-field dependent record is only selected
+    // for the already checked generic inductive derivation below.
+    let closed_dependent_pair = inductive.num_params == 0
+        && constructor.num_params == 0
+        && constructor.num_fields == 2
+        && pi_spine(export, constructor.ty, 2).is_some_and(|(fields, _)| {
+            expression_contains_bvar(export, fields[1], 0)
+                && !expression_contains_constant(export, fields[0], inductive.name)
+                && !expression_contains_constant(export, fields[1], inductive.name)
+        });
+
+    // Extend the existing independently checked derived-signature procedure
+    // to closed nonrecursive four-parameter, three-field records. This only
+    // selects the proven metadata-validation path; no verdict is granted
+    // unless the constructor, recursor, and field types subsequently check.
+    let four_parameter_three_field_record = inductive.num_params == 4
+        && constructor.num_params == 4
+        && constructor.num_fields == 3
+        && recursor.num_params == 4
+        && recursor.num_indices == 0
+        && recursor.num_minors == 1
+        && recursor.num_motives == 1
+        && pi_spine(export, constructor.ty, 7).is_some_and(|(domains, _)| {
+            domains[4..].iter().all(|field| {
+                !expression_contains_constant(export, *field, inductive.name)
+            })
+        });
+
+    let relation_proof_structure = generic_relation_proof_record_candidate(export, block);
+    let closed_pair_structure = closed_pair_record_candidate(export, block);
+    let closed_record = inductive.num_params == 0 && constructor.num_params == 0
+        && (3..=64).contains(&constructor.num_fields)
+        && pi_spine(export, constructor.ty, constructor.num_fields as usize)
+            .is_some_and(|(fields, _)| fields.iter().all(|field|
+                !expression_contains_constant(export, *field, inductive.name)));
+    let unary_type_constructor_operations =
+        unary_type_constructor_operation_record_candidate(export, block);
+
+    if !dependent_pair
+        && !scalar_structure
+        && !closed_dependent_pair
+        && !four_parameter_three_field_record
+        && !relation_proof_structure
+        && !closed_pair_structure
+        && !closed_record
+        && !same_universe_pair_candidate(export,block)
+        && !parameter_record_candidate(export,block)
+        && !unary_type_constructor_operations
+    {
+        return false;
+    }
+
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((_, result)) = pi_spine(export, inductive.ty, parameter_count) else {
+        return false;
+    };
+    matches!(
+        export.exprs.get(result),
+        Some(Expr::Sort(level))
+            if exported_level_is_definitely_nonzero(export, *level, 128)
+    )
+}
+
+// A nonrecursive record over a unary type constructor may package operations
+// whose field types mention that parameter.  This boundary covers the two-field
+// operation telescope used by Functor while leaving the constructor, recursor,
+// and rule bodies to the generic derived-signature checks below.
+fn unary_type_constructor_operation_record_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [_recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params == 0
+        || constructor.num_params != inductive.num_params
+        || constructor.num_fields < 2
+    {
+        return false;
+    }
+
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((parameters, result)) = pi_spine(export, inductive.ty, parameter_count) else {
+        return false;
+    };
+    let has_unary_type_constructor = parameters.iter().any(|parameter| {
+        let Some((argument_sorts, application_sort)) = pi_spine(export, *parameter, 1) else {
+            return false;
+        };
+        matches!(export.exprs.get(argument_sorts[0]), Some(Expr::Sort(_)))
+            && matches!(export.exprs.get(application_sort), Some(Expr::Sort(_)))
+    });
+    if !has_unary_type_constructor
+        || !matches!(
+            export.exprs.get(result),
+            Some(Expr::Sort(level))
+                if exported_level_is_definitely_nonzero(export, *level, 128)
+        )
+    {
+        return false;
+    }
+
+    let Ok(field_count) = usize::try_from(constructor.num_fields) else {
+        return false;
+    };
+    let Some((domains, _)) = pi_spine(export, constructor.ty, parameter_count + field_count) else {
+        return false;
+    };
+    domains[parameter_count..]
+        .iter()
+        .all(|field| !expression_contains_constant(export, *field, inductive.name))
+}
+
+fn parametric_field_enum_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], constructors, [recursor]) = (block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else { return false; };
+    if !(1..=16).contains(&inductive.num_params) || !(2..=16).contains(&constructors.len())
+        || inductive.num_indices!=0 || inductive.num_nested!=0 || inductive.is_recursive
+        || inductive.is_reflexive || inductive.is_unsafe || recursor.is_unsafe { return false; }
+    let p=inductive.num_params as usize;
+    let Some((_,result))=pi_spine(export,inductive.ty,p) else { return false; };
+    if !matches!(export.exprs.get(result),Some(Expr::Sort(l)) if exported_level_is_definitely_nonzero(export,*l,128)) { return false; }
+    constructors.iter().all(|c| !c.is_unsafe && c.num_params==inductive.num_params && c.num_fields<=64
+        && pi_spine(export,c.ty,p+c.num_fields as usize).is_some_and(|(ds,_)|
+            ds[p..].iter().all(|d|!expression_contains_constant(export,*d,inductive.name))))
+}
+
+fn parametric_field_enum_obligations(
+    export:&ResolvedExport, environment:&Environment, block:&InductiveBlock, limits:Limits, delta_policy:DeltaPolicy,
+)->bool {
+    let inductive=&block.types[0];let recursor=&block.recursors[0];let p=inductive.num_params as usize;
+    let Some((parameters,result))=pi_spine(export,inductive.ty,p) else { return false; };
+    let Some(Expr::Sort(level))=export.exprs.get(result) else { return false; };
+    let substitution=parameter_substitution(&inductive.level_params);
+    let Ok(carrier)=crate::level::instantiate_level(&export.levels,*level,&substitution,limits.judgment_steps) else { return false; };
+    let checker=TypeChecker::with_level_substitution(&export.exprs,&export.levels,environment,substitution).with_delta_policy(delta_policy);
+    let prefix=p+1+block.constructors.len();
+    let Some((rec_domains,_))=pi_spine(export,recursor.ty,prefix+1) else { return false; };
+    for (c,ctor) in block.constructors.iter().enumerate() {
+        let f=ctor.num_fields as usize;
+        let Some((domains,_))=pi_spine(export,ctor.ty,p+f) else { return false; };
+        if !domains[..p].iter().zip(&parameters).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0)) { return false; }
+        let mut context=Vec::new();let mut frame=EnvFrame::empty();
+        for (i,domain) in domains.iter().enumerate() {
+            let Judgment::Proven {value:field_sort,..}=checker.infer_sort_in_context(*domain,&context,&frame,limits.judgment_steps) else { return false; };
+            if i>=p && !crate::level::level_equal(crate::level::max(carrier.clone(),field_sort),carrier.clone(),limits.judgment_steps).is_proven() { return false; }
+            context.push(TypeValue::Term(checker.closure(*domain,frame.clone())));
+            frame=frame.extend_free(FreeId(i as u64));
+        }
+        let Some(rule)=recursor.rules.get(c) else { return false; };
+        let Some((rule_domains,_))=lam_spine(export,rule.rhs,prefix+f) else { return false; };
+        if !rec_domains[..prefix].iter().zip(&rule_domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+            || !domains[p..].iter().zip(&rule_domains[prefix..]).enumerate().all(|(k,(a,b))|expr_eq_with_bvar_shift(export,*a,*b,k as u64,(1+block.constructors.len()) as u64)) { return false; }
+    }
+    true
+}
+
+fn generic_two_parameter_sum_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [first, second], [_recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || inductive.level_params.len() != 2
+        || first.num_params != 2
+        || second.num_params != 2
+        || first.num_fields != 1
+        || second.num_fields != 1
+        || first.is_unsafe
+        || second.is_unsafe
+    {
+        return false;
+    }
+
+    let Some((parameters, result)) = pi_spine(export, inductive.ty, 2) else {
+        return false;
+    };
+    if !parameters
+        .iter()
+        .all(|parameter| matches!(export.exprs.get(*parameter), Some(Expr::Sort(_))))
+        || !matches!(
+            export.exprs.get(result),
+            Some(Expr::Sort(level))
+                if exported_level_is_definitely_nonzero(export, *level, 128)
+        )
+    {
+        return false;
+    }
+
+    let Some((first_domains, _)) = pi_spine(export, first.ty, 3) else {
+        return false;
+    };
+    let Some((second_domains, _)) = pi_spine(export, second.ty, 3) else {
+        return false;
+    };
+    is_bvar(export, first_domains[2], 1) && is_bvar(export, second_domains[2], 0)
+}
+
+fn generic_optional_value_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [empty, value], [_recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || inductive.level_params.len() != 1
+        || empty.num_params != 1
+        || empty.num_fields != 0
+        || empty.is_unsafe
+        || value.num_params != 1
+        || value.num_fields != 1
+        || value.is_unsafe
+    {
+        return false;
+    }
+
+    let Some((parameters, result)) = pi_spine(export, inductive.ty, 1) else {
+        return false;
+    };
+    if !matches!(export.exprs.get(parameters[0]), Some(Expr::Sort(_)))
+        || !matches!(
+            export.exprs.get(result),
+            Some(Expr::Sort(level))
+                if exported_level_is_definitely_nonzero(export, *level, 128)
+        )
+    {
+        return false;
+    }
+
+    let Some((value_domains, _)) = pi_spine(export, value.ty, 2) else {
+        return false;
+    };
+    is_bvar(export, value_domains[1], 0)
+}
+
+// Two independently closed fields need no new dependent telescope law.
+// Selection alone grants nothing: the field universe and every rule annotation
+// are independently checked before the existing constructor contract is used.
+fn closed_pair_record_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [_]) = (
+        block.types.as_slice(), block.constructors.as_slice(), block.recursors.as_slice(),
+    ) else { return false; };
+    if inductive.num_params != 0 || constructor.num_params != 0 || constructor.num_fields != 2 {
+        return false;
+    }
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 2) else { return false; };
+    fields.iter().all(|field|!expression_contains_constant(export,*field,inductive.name)
+        && !expression_contains_bvar(export,*field,0))
+}
+
+fn closed_pair_record_obligations(
+    export: &ResolvedExport, environment: &Environment, block: &InductiveBlock,
+    limits: Limits, delta_policy: DeltaPolicy,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(), block.constructors.as_slice(), block.recursors.as_slice(),
+    ) else { return false; };
+    let Some(Expr::Sort(level)) = export.exprs.get(inductive.ty) else { return false; };
+    let substitution = parameter_substitution(&inductive.level_params);
+    let Ok(carrier_level) = crate::level::instantiate_level(&export.levels, *level, &substitution, limits.judgment_steps)
+        else { return false; };
+    let checker = TypeChecker::with_level_substitution(&export.exprs, &export.levels, environment, substitution)
+        .with_delta_policy(delta_policy);
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 2) else { return false; };
+    for field in &fields {
+        let Judgment::Proven { value: field_type, .. } = checker.infer(*field, limits.judgment_steps)
+            else { return false; };
+        if !checker.convert(&field_type, &TypeValue::Sort(carrier_level.clone()), limits.judgment_steps).is_proven() {
+            return false;
+        }
+    }
+    let Some((rec_domains, _)) = pi_spine(export, recursor.ty, 3) else { return false; };
+    let [rule] = recursor.rules.as_slice() else { return false; };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, 4) else { return false; };
+    rec_domains[..2].iter().zip(&rule_domains[..2])
+        .all(|(a,b)| expr_eq_with_bvar_shift(export, *a, *b, 0, 0))
+        && fields.iter().zip(&rule_domains[2..]).enumerate()
+            .all(|(i,(a,b))| expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
+}
+
+fn closed_record_obligations(
+    export: &ResolvedExport, environment: &Environment, block: &InductiveBlock,
+    limits: Limits, delta_policy: DeltaPolicy,
+) -> bool {
+    let ([inductive], constructors, [recursor]) = (
+        block.types.as_slice(), block.constructors.as_slice(), block.recursors.as_slice(),
+    ) else { return false; };
+    let Some(Expr::Sort(level)) = export.exprs.get(inductive.ty) else { return false; };
+    let substitution = parameter_substitution(&inductive.level_params);
+    let Ok(carrier) = crate::level::instantiate_level(&export.levels, *level, &substitution, limits.judgment_steps)
+        else { return false; };
+    let checker = TypeChecker::with_level_substitution(&export.exprs, &export.levels, environment, substitution)
+        .with_delta_policy(delta_policy);
+    let prefix = constructors.len() + 1;
+    for constructor in constructors {
+    let Ok(count) = usize::try_from(constructor.num_fields) else { return false; };
+    let Some((fields, _)) = pi_spine(export, constructor.ty, count) else { return false; };
+    for field in &fields {
+        // This extension admits only independently closed field types in
+        // exactly the carrier universe. Dependent/larger fields stay UNKNOWN.
+        let Judgment::Proven { value, .. } = checker.infer(*field, limits.judgment_steps) else { return false; };
+        if !checker.convert(&value, &TypeValue::Sort(carrier.clone()), limits.judgment_steps).is_proven() {
+            return false;
+        }
+    }
+    let Some((rec_domains, _)) = pi_spine(export, recursor.ty, prefix + 1) else { return false; };
+    let Some(rule) = recursor.rules.iter().find(|r| r.constructor == constructor.name) else { return false; };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, count + prefix) else { return false; };
+    if !rec_domains[..prefix].iter().zip(&rule_domains[..prefix])
+        .all(|(a,b)| expr_eq_with_bvar_shift(export, *a, *b, 0, 0))
+        || !fields.iter().zip(&rule_domains[prefix..]).enumerate()
+            .all(|(i,(a,b))| {
+                let Judgment::Proven { value, .. } = checker.infer(*b, limits.judgment_steps) else { return false; };
+                checker.convert(&value, &TypeValue::Sort(carrier.clone()), limits.judgment_steps).is_proven()
+                    && expr_eq_with_bvar_shift(export,
+                        checked_erased_closed_field(export, environment, *a),
+                        checked_erased_closed_field(export, environment, *b), i as u64, prefix as u64)
+            }) { return false; }
+    }
+    true
+}
+
+// The new obligation is a relation over one sort parameter together with a
+// proof about that relation. The carrier sort is max(1, u): the relation
+// field lives there, while the second field must independently inhabit Prop.
+fn generic_relation_proof_record_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [_recursor]) = (
+        block.types.as_slice(), block.constructors.as_slice(), block.recursors.as_slice(),
+    ) else { return false; };
+    if inductive.num_params != 1 || constructor.num_params != 1 || constructor.num_fields != 2 {
+        return false;
+    }
+    let Some((parameters, result)) = pi_spine(export, inductive.ty, 1) else { return false; };
+    let Some(Expr::Sort(parameter_level)) = export.exprs.get(parameters[0]) else { return false; };
+    let Some(Expr::Sort(result_level)) = export.exprs.get(result) else { return false; };
+    let Some(Level::Max(left, right)) = export.levels.get(*result_level) else { return false; };
+    let is_one = |level: LevelId| matches!(export.levels.get(level), Some(Level::Succ(LevelId(0))));
+    if !((*left == *parameter_level && is_one(*right)) || (*right == *parameter_level && is_one(*left))) {
+        return false;
+    }
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 3) else { return false; };
+    if fields[0] != parameters[0] { return false; }
+    let Some((relation_domains, relation_result)) = pi_spine(export, fields[1], 2) else { return false; };
+    is_bvar(export, relation_domains[0], 0)
+        && is_bvar(export, relation_domains[1], 1)
+        && is_prop_sort(export, relation_result)
+        && !expression_contains_constant(export, fields[2], inductive.name)
+}
+
+fn relation_proof_record_obligations(
+    export: &ResolvedExport, environment: &Environment, block: &InductiveBlock,
+    limits: Limits, delta_policy: DeltaPolicy,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(), block.constructors.as_slice(), block.recursors.as_slice(),
+    ) else { return false; };
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 3) else { return false; };
+    let Some((rec_domains, _)) = pi_spine(export, recursor.ty, 4) else { return false; };
+    let [rule] = recursor.rules.as_slice() else { return false; };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, 5) else { return false; };
+    if !rec_domains[..3].iter().zip(&rule_domains[..3])
+        .all(|(a, b)| expr_eq_with_bvar_shift(export, *a, *b, 0, 0))
+        || !fields[1..].iter().zip(&rule_domains[3..]).enumerate()
+            .all(|(i, (a, b))| expr_eq_with_bvar_shift(export, *a, *b, i as u64, 2))
+    { return false; }
+
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs, &export.levels, environment, parameter_substitution(&inductive.level_params),
+    ).with_delta_policy(delta_policy);
+    let parameter_frame = EnvFrame::empty().extend_free(FreeId(75_000));
+    let context = vec![
+        TypeValue::Term(checker.closure(fields[0], EnvFrame::empty())),
+        TypeValue::Term(checker.closure(fields[1], parameter_frame.clone())),
+    ];
+    let frame = parameter_frame.extend_free(FreeId(75_001));
+    matches!(checker.is_proposition_in_context(fields[2], &context, &frame, limits.judgment_steps), Judgment::Proven { .. })
+}
+
+fn generic_nonrecursive_constructor_result_is_definitely_malformed(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+) -> bool {
+    // Constructor ordinal is metadata about position in the block, not part of
+    // the result-type law.  The caller separately checks the exact ordinal.
+    if constructor.inductive != inductive.name
+        || constructor.num_params != inductive.num_params
+        || constructor.level_params != inductive.level_params
+    {
+        return true;
+    }
+
+    let Some(num_binders) = constructor.num_params.checked_add(constructor.num_fields) else {
+        return true;
+    };
+    let mut result = constructor.ty;
+    for _ in 0..num_binders {
+        let Some(Expr::Pi { body, .. }) = export.exprs.get(result) else {
+            return true;
+        };
+        result = *body;
+    }
+
+    let (head, arguments) = application_spine(export, result);
+    if !inductive_constant_uses_declared_levels(
+        export,
+        head,
+        inductive.name,
+        &inductive.level_params,
+    ) {
+        return true;
+    }
+
+    let Some(expected_arguments) = inductive.num_params.checked_add(inductive.num_indices) else {
+        return true;
+    };
+    let Ok(expected_arguments) = usize::try_from(expected_arguments) else {
+        return true;
+    };
+    if arguments.len() != expected_arguments {
+        return true;
+    }
+
+    let Ok(num_params) = usize::try_from(inductive.num_params) else {
+        return true;
+    };
+    for parameter in 0..num_params {
+        let parameter = parameter as u64;
+        let expected_bvar = constructor.num_fields + inductive.num_params - 1 - parameter;
+        if !is_bvar(export, arguments[parameter as usize], expected_bvar) {
+            return true;
+        }
+    }
+
+    arguments[num_params..]
+        .iter()
+        .any(|argument| expression_contains_constant(export, *argument, inductive.name))
+}
+
+fn expr_eq_with_bvar_shift(
+    export: &ResolvedExport, left: ExprId, right: ExprId, cutoff: u64, shift: u64,
+) -> bool {
+    match (export.exprs.get(left), export.exprs.get(right)) {
+        (Some(Expr::BVar(a)), Some(Expr::BVar(b))) =>
+            if *a >= cutoff { a.checked_add(shift) == Some(*b) } else { a == b },
+        (Some(Expr::NatLit(a)), Some(Expr::NatLit(b))) => a == b,
+        (Some(Expr::StrLit(a)), Some(Expr::StrLit(b))) => a == b,
+        (Some(Expr::Sort(a)), Some(Expr::Sort(b))) => a == b,
+        (Some(Expr::Const{name:an,levels:al}),Some(Expr::Const{name:bn,levels:bl})) =>
+            an == bn && al == bl,
+        (Some(Expr::App{fun:af,arg:aa}),Some(Expr::App{fun:bf,arg:ba})) =>
+            expr_eq_with_bvar_shift(export,*af,*bf,cutoff,shift)
+                && expr_eq_with_bvar_shift(export,*aa,*ba,cutoff,shift),
+        (Some(Expr::Lam{domain:ad,body:ab}),Some(Expr::Lam{domain:bd,body:bb}))
+        | (Some(Expr::Pi{domain:ad,body:ab}),Some(Expr::Pi{domain:bd,body:bb})) =>
+            expr_eq_with_bvar_shift(export,*ad,*bd,cutoff,shift)
+                && expr_eq_with_bvar_shift(export,*ab,*bb,cutoff.saturating_add(1),shift),
+        (Some(Expr::Let{ty:at,value:av,body:ab}),Some(Expr::Let{ty:bt,value:bv,body:bb})) =>
+            expr_eq_with_bvar_shift(export,*at,*bt,cutoff,shift)
+                && expr_eq_with_bvar_shift(export,*av,*bv,cutoff,shift)
+                && expr_eq_with_bvar_shift(export,*ab,*bb,cutoff.saturating_add(1),shift),
+        (Some(Expr::Proj{type_name:at,index:ai,structure:as_}),
+         Some(Expr::Proj{type_name:bt,index:bi,structure:bs})) =>
+            at == bt && ai == bi && expr_eq_with_bvar_shift(export,*as_,*bs,cutoff,shift),
+        _ => false,
+    }
+}
+
+// Source lineage: 02b30cf99530a3da31e60262132aff90dcb9afbd.
+// An exact source beta certificate: a checked two-lambda definition
+// returning its first argument. Telescope and actual source formation
+// obligations remain independent of this shape comparison.
+fn checked_erased_closed_field(export: &ResolvedExport, environment: &Environment, field: ExprId) -> ExprId {
+    let (head, args) = application_spine(export, field);
+    if args.len() != 2 { return field; }
+    let Some(Expr::Const { name, levels }) = export.exprs.get(head) else { return field; };
+    let Some(declaration) = environment.get(*name) else { return field; };
+    if declaration.level_params.len() != levels.len() { return field; }
+    let Some(value) = declaration.value else { return field; };
+    let Some(Expr::Lam { body: second, .. }) = export.exprs.get(value) else { return field; };
+    let Some(Expr::Lam { body: result, .. }) = export.exprs.get(*second) else { return field; };
+    if is_bvar(export, *result, 1) { args[0] } else { field }
+}
+
+fn generic_nonrecursive_recursor_shape(
+    export: &ResolvedExport,
+    environment: &Environment,
+    inductive: &crate::syntax::InductiveType,
+    constructors: &[Constructor],
+    recursor: &Recursor,
+) -> bool {
+    let Ok(p) = usize::try_from(inductive.num_params) else { return false; };
+    let c = constructors.len();
+    let Some((ind_params,_)) = pi_spine(export,inductive.ty,p) else { return false; };
+    let Some((domains,result)) = pi_spine(export,recursor.ty,p+c+2) else { return false; };
+    if !domains[..p]
+        .iter()
+        .zip(&ind_params)
+        .all(|(recursor_parameter, inductive_parameter)| {
+            recursor_parameter == inductive_parameter
+                || identity_alias_application_matches(
+                    export,
+                    environment,
+                    *inductive_parameter,
+                    *recursor_parameter,
+                )
+                || identity_alias_application_matches(
+                    export,
+                    environment,
+                    *recursor_parameter,
+                    *inductive_parameter,
+                )
+        })
+    {
+        return false;
+    }
+
+    let motive=domains[p];
+    let Some((motive_domains,motive_sort))=pi_spine(export,motive,1) else{return false;};
+    let [motive_target]=motive_domains.as_slice() else{return false;};
+    let (mh,ma)=application_spine(export,*motive_target);
+    if ma.len()!=p || !is_declared_level_constant(export,mh,inductive.name,&inductive.level_params)
+       || !ma.iter().enumerate().all(|(i,a)|is_bvar(export,*a,(p-1-i) as u64)){return false;}
+    let motive_level=match export.exprs.get(motive_sort){
+        Some(Expr::Sort(l))=>match export.levels.get(*l){Some(Level::Param(n))=>*n,_=>return false},
+        _=>return false
+    };
+    if recursor.level_params.first().copied()!=Some(motive_level)
+       || recursor.level_params.get(1..)!=Some(inductive.level_params.as_slice()){return false;}
+
+    for (j,ctor) in constructors.iter().enumerate(){
+        let Ok(f)=usize::try_from(ctor.num_fields) else{return false;};
+        let Some((ctor_domains,_))=pi_spine(export,ctor.ty,p+f) else{return false;};
+        let Some((minor_fields,minor_result))=pi_spine(export,domains[p+1+j],f) else{return false;};
+        for (k,(cd,md)) in ctor_domains[p..].iter().zip(&minor_fields).enumerate(){
+            let cd = checked_erased_closed_field(export, environment, *cd);
+            let md = checked_erased_closed_field(export, environment, *md);
+            if !expr_eq_with_bvar_shift(export,cd,md,k as u64,(1+j) as u64){return false;}
+        }
+        let Some(Expr::App{fun:mm,arg:constructed})=export.exprs.get(minor_result) else{return false;};
+        if !is_bvar(export,*mm,(f+j) as u64){return false;}
+        let (ch,ca)=application_spine(export,*constructed);
+        if ca.len()!=p+f || !is_declared_level_constant(export,ch,ctor.name,&ctor.level_params){return false;}
+        for (i, argument) in ca.iter().take(p).enumerate() {
+            if !is_bvar(export, *argument, (f + j + 1 + (p - 1 - i)) as u64) {
+                return false;
+            }
+        }
+        for (k, argument) in ca.iter().skip(p).take(f).enumerate() {
+            if !is_bvar(export, *argument, (f - 1 - k) as u64) {
+                return false;
+            }
+        }
+    }
+
+    let target=domains[p+1+c];
+    let (th,ta)=application_spine(export,target);
+    if ta.len()!=p || !is_declared_level_constant(export,th,inductive.name,&inductive.level_params)
+       || !ta.iter().enumerate().all(|(i,a)|is_bvar(export,*a,(c+1+(p-1-i)) as u64))
+       || !is_bvar_application(export,result,(c+1) as u64,0){return false;}
+
+    if recursor.rules.len()!=c{return false;}
+    for (j,(ctor,rule)) in constructors.iter().zip(&recursor.rules).enumerate(){
+        let Ok(f)=usize::try_from(ctor.num_fields) else{return false;};
+        let Some((_,rr))=lam_spine(export,rule.rhs,p+1+c+f) else{return false;};
+        let (h,args)=application_spine(export,rr);
+        if !is_bvar(export,h,(f+(c-1-j)) as u64) || args.len()!=f
+           || !args.iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f-1-k) as u64)){return false;}
+    }
+    true
+}
+
+// Elaborator-only parameter markers such as `semiOutParam` are reducible
+// identity definitions.  Recursor exports may erase the marker while the
+// inductive arity retains it, so accept only the directly certified identity
+// redex rather than granting general delta conversion to shape matching.
+fn identity_alias_application_matches(
+    export: &ResolvedExport,
+    environment: &Environment,
+    wrapped: ExprId,
+    plain: ExprId,
+) -> bool {
+    let Some(Expr::App { fun, arg }) = export.exprs.get(wrapped) else {
+        return false;
+    };
+    if *arg != plain {
+        return false;
+    }
+    let Some(Expr::Const { name, levels }) = export.exprs.get(*fun) else {
+        return false;
+    };
+    let Some(declaration) = environment.get(*name) else {
+        return false;
+    };
+    if levels.len() != declaration.level_params.len() {
+        return false;
+    }
+    let Some(value) = declaration.value else {
+        return false;
+    };
+    matches!(
+        export.exprs.get(value),
+        Some(Expr::Lam { body, .. }) if is_bvar(export, *body, 0)
+    )
+}
+
+fn generic_prop_singleton_large_elim_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if inductive.num_params > 64 || constructor.num_fields > 64
+        || inductive.num_indices != 0 || inductive.num_nested != 0
+        || inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe
+        || constructor.is_unsafe || recursor.is_unsafe
+        || constructor.num_params != inductive.num_params
+        || recursor.level_params.len() != inductive.level_params.len().saturating_add(1)
+        || recursor.level_params.get(1..) != Some(inductive.level_params.as_slice())
+    { return false; }
+    let Ok(parameters)=usize::try_from(inductive.num_params) else {return false;};
+    pi_spine(export,inductive.ty,parameters).is_some_and(|(_,result)|is_prop_sort(export,result))
+
+}
+
+fn generic_prop_singleton_field_is_proposition(
+    export: &ResolvedExport,
+    environment: &Environment,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> bool {
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Ok(field_count) = usize::try_from(constructor.num_fields) else {
+        return false;
+    };
+    let Some((inductive_parameters, _)) = pi_spine(export, inductive.ty, parameter_count) else {
+        return false;
+    };
+    let Some((constructor_domains, _)) =
+        pi_spine(
+            export,
+            constructor.ty,
+            parameter_count.saturating_add(field_count),
+        )
+    else {
+        return false;
+    };
+
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(&recursor.level_params),
+    )
+    .with_delta_policy(delta_policy);
+
+    let mut remaining=limits.judgment_steps;
+    checker.checked_prop_field_telescope(
+        &inductive_parameters, &constructor_domains[..parameter_count],
+        &constructor_domains[parameter_count..], &mut remaining,
+    )
+}
+
+fn check_generic_prop_singleton_large_elim(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !generic_prop_singleton_large_elim_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // The rule is a source lambda telescope over exactly these parameters,
+    // motive, minor, and actual constructor fields. This also covers proof
+    // fields depending on earlier proof fields without quotienting binders.
+    let parameter_count=usize::try_from(inductive.num_params).map_err(|_|Verdict::Unknown)?;
+    let field_count=usize::try_from(constructor.num_fields).map_err(|_|Verdict::Unknown)?;
+    let [rule]=recursor.rules.as_slice() else {return Err(Verdict::Unknown);};
+    let Some((rec_domains,_))=pi_spine(export,recursor.ty,parameter_count+3) else {return Err(Verdict::Unknown);};
+    let Some((ctor_domains,_))=pi_spine(export,constructor.ty,parameter_count+field_count) else {return Err(Verdict::Unknown);};
+    let Some((rule_domains,_))=lam_spine(export,rule.rhs,parameter_count+2+field_count) else {return Err(Verdict::Unknown);};
+    let prefix=parameter_count+2;
+    if !rec_domains[..prefix].iter().zip(&rule_domains[..prefix]).all(|(a,b)|
+        expr_eq_with_bvar_shift(export,*a,*b,0,0)
+        || identity_alias_application_matches(export,environment,*a,*b)
+        || identity_alias_application_matches(export,environment,*b,*a))
+        || !ctor_domains[parameter_count..].iter().zip(&rule_domains[prefix..]).enumerate().all(|(k,(a,b))|
+            expr_eq_with_bvar_shift(export,
+                checked_erased_closed_field(export,environment,*a),
+                checked_erased_closed_field(export,environment,*b),k as u64,2))
+    {return Err(Verdict::Unknown);}
+
+    let arity_ok = inductive_arity_metadata_is_well_formed(export, inductive);
+    let all_ok = inductive.all == [inductive.name];
+    let constructors_ok = inductive.constructors == [constructor.name];
+    let levels_unique = !has_duplicate_parameter(&inductive.level_params);
+    let constructor_contracts_ok = constructor.index == 0
+        && constructor.inductive == inductive.name
+        && constructor.num_params == inductive.num_params
+        && constructor.level_params == inductive.level_params
+        && !generic_nonrecursive_constructor_result_is_definitely_malformed(
+            export,
+            inductive,
+            constructor,
+        )
+        && !constructor_has_definite_negative_recursive_field(export, inductive, constructor);
+    let recursor_metadata_ok = recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == inductive.level_params.len().saturating_add(1)
+            && recursor.level_params.get(1..) == Some(inductive.level_params.as_slice()),
+    );
+    let recursor_shape_ok =
+        generic_nonrecursive_recursor_shape(
+            export,
+            environment,
+            inductive,
+            &block.constructors,
+            recursor,
+        );
+    let field_is_prop = generic_prop_singleton_field_is_proposition(
+        export,
+        environment,
+        inductive,
+        constructor,
+        recursor,
+        limits,
+        delta_policy,
+    );
+
+    if std::env::var_os("NUCLEUS_TRACE_PROP_SINGLETON").is_some() {
+        eprintln!(
+            "NUCLEUS_PROP_SINGLETON:name={}:arity={arity_ok}:all={all_ok}:constructors={constructors_ok}:levels_unique={levels_unique}:ctor_contracts={constructor_contracts_ok}:rec_metadata={recursor_metadata_ok}:rec_shape={recursor_shape_ok}:field_prop={field_is_prop}",
+            trace_name(export, inductive.name),
+        );
+    }
+
+    if !arity_ok
+        || !all_ok
+        || !constructors_ok
+        || !levels_unique
+        || !constructor_contracts_ok
+        || !recursor_metadata_ok
+        || !recursor_shape_ok
+        || !field_is_prop
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    derivation.promote(
+        export,
+        derived_inductive,
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_constructor(constructor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment = derivation.finish();
+    // Shape certificates do not excuse an ill-formed source annotation.
+    // Infer the actual lambda under the fully checked staged signatures.
+    let rule_checker=TypeChecker::with_level_substitution(
+        &export.exprs,&export.levels,&environment,parameter_substitution(&recursor.level_params),
+    ).with_delta_policy(delta_policy);
+    match rule_checker.infer(rule.rhs,limits.judgment_steps) {
+        Judgment::Proven{..}=>{},
+        Judgment::Refuted{..}|Judgment::Unknown{..}=>return Err(Verdict::Unknown),
+    }
+
+
+    let parameter_count =
+        usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
+    let field_count = usize::try_from(constructor.num_fields).map_err(|_| Verdict::Unknown)?;
+    let Some((constructor_domains, _)) = pi_spine(
+        export,
+        constructor.ty,
+        parameter_count.saturating_add(field_count),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    let environment = environment
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: parameter_count,
+                field_types: constructor_domains[parameter_count..]
+                    .iter()
+                    .copied()
+                    .map(ProjectionFieldType::Derived)
+                    .collect(),
+                eta_expandable: false,
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
+fn generic_nonrecursive_prop_small_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let [inductive] = block.types.as_slice() else {
+        return false;
+    };
+    let [recursor] = block.recursors.as_slice() else {
+        return false;
+    };
+    if inductive.num_nested != 0
+        || inductive.num_indices != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || block.constructors.is_empty()
+        || block.constructors.iter().any(|constructor| constructor.is_unsafe)
+        || recursor.is_unsafe
+    {
+        return false;
+    }
+
+    // Earlier Crystal generations deliberately sealed fieldless singleton
+    // families and two-parameter/two-field product representations.  Do not
+    // silently transfer those representation classes under a renamed type.
+    if let [constructor] = block.constructors.as_slice() {
+        if constructor.num_fields == 0
+            || (inductive.num_params == 2 && constructor.num_fields == 2)
+        {
+            return false;
+        }
+    }
+
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((_, result)) = pi_spine(export, inductive.ty, parameter_count) else {
+        return false;
+    };
+    is_prop_sort(export, result)
+}
+
+fn generic_nonrecursive_prop_small_recursor_shape(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructors: &[Constructor],
+    recursor: &Recursor,
+) -> bool {
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let constructor_count = constructors.len();
+    let Some((inductive_parameters, _)) =
+        pi_spine(export, inductive.ty, parameter_count)
+    else {
+        return false;
+    };
+    let Some((domains, result)) =
+        pi_spine(export, recursor.ty, parameter_count + constructor_count + 2)
+    else {
+        return false;
+    };
+    if domains[..parameter_count] != inductive_parameters[..] {
+        return false;
+    }
+
+    let motive = domains[parameter_count];
+    let Some((motive_domains, motive_sort)) = pi_spine(export, motive, 1) else {
+        return false;
+    };
+    let [motive_target] = motive_domains.as_slice() else {
+        return false;
+    };
+    let (motive_head, motive_arguments) = application_spine(export, *motive_target);
+    if motive_arguments.len() != parameter_count
+        || !is_declared_level_constant(
+            export,
+            motive_head,
+            inductive.name,
+            &inductive.level_params,
+        )
+        || !motive_arguments.iter().enumerate().all(|(index, argument)| {
+            is_bvar(
+                export,
+                *argument,
+                (parameter_count.saturating_sub(1 + index)) as u64,
+            )
+        })
+        || !is_prop_sort(export, motive_sort)
+        || recursor.level_params != inductive.level_params
+    {
+        return false;
+    }
+
+    for (minor_index, constructor) in constructors.iter().enumerate() {
+        let Ok(field_count) = usize::try_from(constructor.num_fields) else {
+            return false;
+        };
+        let Some((constructor_domains, _)) =
+            pi_spine(export, constructor.ty, parameter_count + field_count)
+        else {
+            return false;
+        };
+        let Some((minor_fields, minor_result)) =
+            pi_spine(export, domains[parameter_count + 1 + minor_index], field_count)
+        else {
+            return false;
+        };
+        for (field_index, (constructor_domain, minor_domain)) in constructor_domains
+            [parameter_count..]
+            .iter()
+            .zip(&minor_fields)
+            .enumerate()
+        {
+            if !expr_eq_with_bvar_shift(
+                export,
+                *constructor_domain,
+                *minor_domain,
+                field_index as u64,
+                (1 + minor_index) as u64,
+            ) {
+                return false;
+            }
+        }
+
+        let Some(Expr::App {
+            fun: motive_application,
+            arg: constructed,
+        }) = export.exprs.get(minor_result)
+        else {
+            return false;
+        };
+        if !is_bvar(
+            export,
+            *motive_application,
+            (field_count + minor_index) as u64,
+        ) {
+            return false;
+        }
+
+        let (constructor_head, constructor_arguments) =
+            application_spine(export, *constructed);
+        if constructor_arguments.len() != parameter_count + field_count
+            || !is_declared_level_constant(
+                export,
+                constructor_head,
+                constructor.name,
+                &constructor.level_params,
+            )
+        {
+            return false;
+        }
+        for parameter_index in 0..parameter_count {
+            if !is_bvar(
+                export,
+                constructor_arguments[parameter_index],
+                (field_count
+                    + minor_index
+                    + 1
+                    + (parameter_count - 1 - parameter_index)) as u64,
+            ) {
+                return false;
+            }
+        }
+        for field_index in 0..field_count {
+            if !is_bvar(
+                export,
+                constructor_arguments[parameter_count + field_index],
+                (field_count - 1 - field_index) as u64,
+            ) {
+                return false;
+            }
+        }
+    }
+
+    let target = domains[parameter_count + 1 + constructor_count];
+    let (target_head, target_arguments) = application_spine(export, target);
+    if target_arguments.len() != parameter_count
+        || !is_declared_level_constant(
+            export,
+            target_head,
+            inductive.name,
+            &inductive.level_params,
+        )
+        || !target_arguments.iter().enumerate().all(|(index, argument)| {
+            is_bvar(
+                export,
+                *argument,
+                (constructor_count + 1 + (parameter_count - 1 - index)) as u64,
+            )
+        })
+        || !is_bvar_application(export, result, (constructor_count + 1) as u64, 0)
+    {
+        return false;
+    }
+
+    if recursor.rules.len() != constructor_count {
+        return false;
+    }
+    for (minor_index, (constructor, rule)) in
+        constructors.iter().zip(&recursor.rules).enumerate()
+    {
+        let Ok(field_count) = usize::try_from(constructor.num_fields) else {
+            return false;
+        };
+        let Some((_, rule_result)) =
+            lam_spine(
+                export,
+                rule.rhs,
+                parameter_count + 1 + constructor_count + field_count,
+            )
+        else {
+            return false;
+        };
+        let (rule_head, rule_arguments) = application_spine(export, rule_result);
+        if !is_bvar(
+            export,
+            rule_head,
+            (field_count + (constructor_count - 1 - minor_index)) as u64,
+        ) || rule_arguments.len() != field_count
+            || !rule_arguments.iter().enumerate().all(|(field_index, argument)| {
+                is_bvar(export, *argument, (field_count - 1 - field_index) as u64)
+            })
+        {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn check_generic_nonrecursive_prop_small(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if !generic_nonrecursive_prop_small_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    let arity_ok = inductive_arity_metadata_is_well_formed(export, inductive);
+    let all_ok = inductive.all == [inductive.name];
+    let constructors_ok = inductive.constructors
+        == block
+            .constructors
+            .iter()
+            .map(|constructor| constructor.name)
+            .collect::<Vec<_>>();
+    let levels_unique = !has_duplicate_parameter(&inductive.level_params);
+    let constructor_contracts_ok =
+        block.constructors.iter().enumerate().all(|(index, constructor)| {
+            constructor.index == index as u64
+                && constructor.inductive == inductive.name
+                && constructor.num_params == inductive.num_params
+                && constructor.level_params == inductive.level_params
+                && !generic_nonrecursive_constructor_result_is_definitely_malformed(
+                    export,
+                    inductive,
+                    constructor,
+                )
+                && !constructor_has_definite_negative_recursive_field(
+                    export,
+                    inductive,
+                    constructor,
+                )
+        });
+    let recursor_metadata_ok = recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params == inductive.level_params,
+    );
+    let recursor_shape_ok = generic_nonrecursive_prop_small_recursor_shape(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+    );
+
+    if std::env::var_os("NUCLEUS_TRACE_PROP_SMALL").is_some() {
+        eprintln!(
+            "NUCLEUS_PROP_SMALL:arity={arity_ok}:all={all_ok}:constructors={constructors_ok}:levels_unique={levels_unique}:ctor_contracts={constructor_contracts_ok}:rec_metadata={recursor_metadata_ok}:rec_shape={recursor_shape_ok}:params={}:ctors={}",
+            inductive.num_params,
+            block.constructors.len(),
+        );
+    }
+
+    // This first transfer experiment is positive-only: failure to establish
+    // the full structural contract preserves UNKNOWN rather than inventing a
+    // new negative boundary.
+    if !arity_ok
+        || !all_ok
+        || !constructors_ok
+        || !levels_unique
+        || !constructor_contracts_ok
+        || !recursor_metadata_ok
+        || !recursor_shape_ok
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    derivation.promote(
+        export,
+        derived_inductive,
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let mut environment = derivation.finish();
+
+    if let [constructor] = block.constructors.as_slice() {
+        let parameter_count =
+            usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
+        let field_count =
+            usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?;
+        let Some((constructor_domains, _)) =
+            pi_spine(export, constructor.ty, parameter_count + field_count)
+        else {
+            return Err(Verdict::Unknown);
+        };
+        let field_types = constructor_domains[parameter_count..]
+            .iter()
+            .copied()
+            .map(ProjectionFieldType::Derived)
+            .collect::<Vec<_>>();
+        environment = environment
+            .install_projection_spec(
+                inductive.name,
+                ProjectionSpec {
+                    constructor: constructor.name,
+                    num_params: parameter_count,
+                    field_types,
+                    eta_expandable: false,
+                },
+            )
+            .map_err(|_| Verdict::Reject)?;
+    }
+
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
+fn check_generic_nonrecursive_type(
+    export:&ResolvedExport, environment:&Environment, block:&InductiveBlock,
+    limits:Limits, delta_policy:DeltaPolicy,
+)->Result<Environment,Verdict>{
+    let [inductive]=block.types.as_slice() else{return Err(Verdict::Unknown);};
+    let [recursor]=block.recursors.as_slice() else{return Err(Verdict::Unknown);};
+    if !generic_nonrecursive_type_candidate(export,block)
+        && !generic_two_parameter_sum_candidate(export, block)
+        && !generic_optional_value_candidate(export, block)
+        && !closed_field_enum_candidate(export, block)
+        && !parametric_field_enum_candidate(export, block)
+    {
+        return Err(Verdict::Unknown);
+    }
+    if same_universe_pair_candidate(export,block) && !same_universe_pair_obligations(export,block) {return Err(Verdict::Unknown);}
+    if parameter_record_candidate(export,block) && !parameter_record_obligations(export,environment,block,limits,delta_policy) {return Err(Verdict::Unknown);}
+    if parametric_field_enum_candidate(export, block)
+        && !parametric_field_enum_obligations(export, environment, block, limits, delta_policy) { return Err(Verdict::Unknown); }
+    if closed_pair_record_candidate(export, block)
+        && !closed_pair_record_obligations(export, environment, block, limits, delta_policy)
+    {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.num_params == 0
+        && (block.constructors.first().is_some_and(|ctor| (3..=64).contains(&ctor.num_fields))
+            || closed_field_enum_candidate(export, block))
+        && !closed_record_obligations(export, environment, block, limits, delta_policy)
+    {
+        return Err(Verdict::Unknown);
+    }
+    if generic_relation_proof_record_candidate(export, block)
+        && !relation_proof_record_obligations(export, environment, block, limits, delta_policy)
+    {
+        return Err(Verdict::Unknown);
+    }
+    let arity_ok = inductive_arity_metadata_is_well_formed(export, inductive);
+    let all_ok = inductive.all == [inductive.name];
+    let constructors_ok = inductive.constructors
+        == block.constructors.iter().map(|constructor| constructor.name).collect::<Vec<_>>();
+    let levels_unique = !has_duplicate_parameter(&inductive.level_params);
+    let trace_generic = std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some();
+    let mut constructor_contracts_ok = true;
+    for (index, constructor) in block.constructors.iter().enumerate() {
+        let index_ok = constructor.index == index as u64;
+        let owner_ok = constructor.inductive == inductive.name;
+        let params_ok = constructor.num_params == inductive.num_params;
+        let levels_ok = constructor.level_params == inductive.level_params;
+        let result_ok =
+            !generic_nonrecursive_constructor_result_is_definitely_malformed(export, inductive, constructor);
+        let recursive_field_ok =
+            !constructor_has_definite_negative_recursive_field(export, inductive, constructor);
+        if trace_generic {
+            eprintln!(
+                "NUCLEUS_GENERIC_CTOR:index={}:index_ok={}:owner_ok={}:params_ok={}:levels_ok={}:result_ok={}:recursive_field_ok={}:fields={}",
+                index,
+                index_ok,
+                owner_ok,
+                params_ok,
+                levels_ok,
+                result_ok,
+                recursive_field_ok,
+                constructor.num_fields,
+            );
+        }
+        constructor_contracts_ok &= index_ok
+            && owner_ok
+            && params_ok
+            && levels_ok
+            && result_ok
+            && recursive_field_ok;
+    }
+    let recursor_metadata_ok = recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == inductive.level_params.len() + 1,
+    );
+    let recursor_shape_ok =
+        generic_nonrecursive_recursor_shape(
+            export,
+            environment,
+            inductive,
+            &block.constructors,
+            recursor,
+        );
+
+    if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
+        eprintln!(
+            "NUCLEUS_GENERIC_NONREC:arity={}:all={}:constructors={}:levels_unique={}:ctor_contracts={}:rec_metadata={}:rec_shape={}:params={}:ctors={}",
+            arity_ok,
+            all_ok,
+            constructors_ok,
+            levels_unique,
+            constructor_contracts_ok,
+            recursor_metadata_ok,
+            recursor_shape_ok,
+            inductive.num_params,
+            block.constructors.len(),
+        );
+    }
+
+    if !arity_ok
+        || !all_ok
+        || !constructors_ok
+        || !levels_unique
+        || !constructor_contracts_ok
+        || !recursor_metadata_ok
+        || !recursor_shape_ok
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut d=ClosedNonrecursiveDerivation::begin(environment);
+    let ty=if inductive.level_params.is_empty(){derived_type(inductive.name,inductive.ty)}
+        else{derived_polymorphic_type(inductive.name,&inductive.level_params,inductive.ty)};
+    d.promote(export,ty,limits.judgment_steps,delta_policy)?;
+    for c in &block.constructors{
+        d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
+    }
+    d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy)?;
+    let mut environment = d.finish();
+
+    if let [constructor] = block.constructors.as_slice() {
+        let p = usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
+        let fields = usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?;
+        let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
+            return Err(Verdict::Unknown);
+        };
+        let field_types = constructor_domains[p..]
+            .iter()
+            .copied()
+            .map(ProjectionFieldType::Derived)
+            .collect::<Vec<_>>();
+        environment = environment
+            .install_projection_spec(
+                inductive.name,
+                ProjectionSpec {
+                    constructor: constructor.name,
+                    num_params: p,
+                    field_types,
+                    eta_expandable: false,
+                },
+            )
+            .map_err(|_| Verdict::Reject)?;
+    }
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
+fn check_single_constructor_inductive(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if name_is_root_str(export, inductive.name, "SortElimProp2") {
+        check_exact_sort_elim_prop2(export, environment, block, limits, delta_policy)
+    } else if name_is_root_str(export, inductive.name, "SortElimProp") {
+        check_exact_sort_elim_prop(export, environment, block, limits, delta_policy)
+    } else if name_is_root_str(export, inductive.name, "NewSingleton") {
+        check_exact_new_singleton(export, environment, block, limits, delta_policy)
+    } else if name_is_root_str(export, inductive.name, "Exists") {
+        check_exact_exists_family(export, environment, block, limits, delta_policy)
+    } else if name_is_root_str(export, inductive.name, "And") {
+        check_exact_binary_product_family(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+            BinaryProductFamily::And,
+        )
+    } else if name_is_root_str(export, inductive.name, "Prod") {
+        check_exact_binary_product_family(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+            BinaryProductFamily::Prod,
+        )
+    } else if name_is_root_str(export, inductive.name, "PProd") {
+        check_exact_binary_product_family(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+            BinaryProductFamily::PProd,
+        )
+    } else if name_is_root_str(export, inductive.name, "OfNat") {
+        check_exact_ofnat(export, environment, block, limits, delta_policy)
+    } else if name_is_root_str(export, inductive.name, "TwoBool") {
+        check_twobool_structure(export, environment, block, limits, delta_policy)
+    } else if name_is_root_str(export, inductive.name, "reduceCtorParam") {
+        check_conversion_lifted_unary_recursive(export, environment, block, limits, delta_policy)
+    } else if generic_closed_prop_singleton_candidate(block) {
+        check_generic_closed_prop_singleton(export, environment, block, limits, delta_policy)
+    } else if generic_prop_singleton_large_elim_candidate(export, block) {
+        check_generic_prop_singleton_large_elim(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        )
+    } else if generic_parameterized_nullary_candidate(export, block) {
+        check_generic_parameterized_nullary(export, environment, block, limits, delta_policy)
+    } else if fin_like_structure_candidate(export, block) {
+        check_fin_like_structure(export, environment, block, limits, delta_policy)
+    } else if single_derived_field_structure_candidate(export, block) {
+        check_single_derived_field_structure(export, environment, block, limits, delta_policy)
+    } else if inductive.num_params == 1
+        && inductive.num_indices == 0
+        && inductive.num_nested == 0
+        && inductive.is_recursive
+        && inductive.is_reflexive
+        && !inductive.is_unsafe
+    {
+        check_conversion_lifted_reflexive_unary(export, environment, block, limits, delta_policy)
+    } else if unary_field_universe_candidate(export, block) {
+        check_unary_field_universe_inductive(export, environment, block, limits, delta_policy)
+    } else if generic_nonrecursive_type_candidate(export, block) {
+        match check_generic_nonrecursive_type(export, environment, block, limits, delta_policy) {
+            Ok(environment) => Ok(environment),
+            Err(Verdict::Unknown)
+                if generic_nonrecursive_prop_small_candidate(export, block) =>
+            {
+                check_generic_nonrecursive_prop_small(
+                    export,
+                    environment,
+                    block,
+                    limits,
+                    delta_policy,
+                )
+            }
+            Err(Verdict::Unknown) => check_unrecognized_single_constructor_coherence(export, block),
+            Err(verdict) => Err(verdict),
+        }
+    } else if generic_nonrecursive_prop_small_candidate(export, block) {
+        check_generic_nonrecursive_prop_small(export, environment, block, limits, delta_policy)
+    } else {
+        check_unrecognized_single_constructor_coherence(export, block)
+    }
+}
+
+/// Exact built-in-shaped OfNat structure used by the Nat literal extension.
+///
+/// The exported recursor is reconstructed from the declaration; only after the
+/// telescope, constructor, motive/minor and rule body agree do we install the
+/// single field projection. No generic structure authority is granted here.
+fn check_exact_ofnat(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+    let [carrier_level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.level_params != [*carrier_level]
+        || constructor.num_params != 2
+        || constructor.num_fields != 1
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !ofnat_type(export, inductive.ty, *carrier_level)
+        || !ofnat_constructor_type(
+            export,
+            constructor.ty,
+            inductive.name,
+            constructor.name,
+            *carrier_level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+    let [motive_level, declared_carrier] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if *declared_carrier != *carrier_level
+        || *motive_level == *carrier_level
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !ofnat_recursor_type(
+            export,
+            recursor.ty,
+            inductive.name,
+            constructor.name,
+            *carrier_level,
+            *motive_level,
+        )
+        || !ofnat_recursor_rule(
+            export,
+            recursor,
+            inductive.name,
+            constructor.name,
+            *carrier_level,
+            *motive_level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment = derivation
+        .finish()
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: 2,
+                field_types: vec![ProjectionFieldType::Parameter(0)],
+                eta_expandable: false,
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
+fn native_nat_unary_signature(export:&ResolvedExport,environment:&Environment,nat:NameId,name:NameId)->bool {
+    let Some(declaration)=environment.get(name)else{return false;};
+    if !declaration.level_params.is_empty()||declaration.value.is_none(){return false;}
+    let Some((domains,result))=pi_spine(export,declaration.ty,1)else{return false;};
+    domains.len()==1&&domains.iter().copied().chain([result]).all(|expression|
+        matches!(export.exprs.get(expression),Some(Expr::Const{name,levels}) if *name==nat&&levels.is_empty()))
+}
+
+fn native_nat_binary_signature(export: &ResolvedExport, environment: &Environment, nat: NameId, name: NameId) -> bool {
+    let Some(declaration) = environment.get(name) else { return false };
+    if !declaration.level_params.is_empty() || declaration.value.is_none() { return false; }
+    let Some((domains, result)) = pi_spine(export, declaration.ty, 2) else { return false };
+    domains.len() == 2 && domains.iter().copied().chain([result]).all(|expression|
+        matches!(export.exprs.get(expression), Some(Expr::Const { name, levels }) if *name == nat && levels.is_empty()))
+}
+
+fn is_nat_constant(export: &ResolvedExport, expression: ExprId) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if levels.is_empty() && name_is_root_str(export, *name, "Nat")
+    )
+}
+
+fn ofnat_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    carrier_level: NameId,
+    carrier: u64,
+    numeral: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_unary_polymorphic_constant(export, head, inductive, carrier_level)
+        && are_bvars(export, &arguments, &[carrier, numeral])
+}
+
+fn ofnat_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    carrier_level: NameId,
+    carrier: u64,
+    numeral: u64,
+    field: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_unary_polymorphic_constant(export, head, constructor, carrier_level)
+        && are_bvars(export, &arguments, &[carrier, numeral, field])
+}
+
+fn ofnat_type(export: &ResolvedExport, expression: ExprId, carrier_level: NameId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [carrier, numeral] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, carrier_level)
+        && is_nat_constant(export, *numeral)
+        && is_sort_succ_parameter(export, result, carrier_level)
+}
+
+fn ofnat_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    _constructor: NameId,
+    carrier_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [carrier, numeral, field] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, carrier_level)
+        && is_nat_constant(export, *numeral)
+        && is_bvar(export, *field, 1)
+        && ofnat_application(export, result, inductive, carrier_level, 2, 1)
+}
+
+fn ofnat_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    carrier_level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [target] = domains.as_slice() else {
+        return false;
+    };
+    ofnat_application(export, *target, inductive, carrier_level, 1, 0)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn ofnat_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    carrier_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, *field, 2) {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 1)
+        && ofnat_constructor_application(export, *constructed, constructor, carrier_level, 3, 2, 0)
+}
+
+fn ofnat_recursor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    carrier_level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 5) else {
+        return false;
+    };
+    let [carrier, numeral, motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, carrier_level)
+        && is_nat_constant(export, *numeral)
+        && ofnat_motive_type(export, *motive, inductive, carrier_level, motive_level)
+        && ofnat_minor_type(export, *minor, constructor, carrier_level)
+        && ofnat_application(export, *target, inductive, carrier_level, 3, 2)
+        && is_bvar_application(export, result, 2, 0)
+}
+
+fn ofnat_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    carrier_level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.constructor != constructor || rule.num_fields != 1 {
+        return false;
+    }
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 5) else {
+        return false;
+    };
+    let [carrier, numeral, motive, minor, field] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, carrier_level)
+        && is_nat_constant(export, *numeral)
+        && ofnat_motive_type(export, *motive, inductive, carrier_level, motive_level)
+        && ofnat_minor_type(export, *minor, constructor, carrier_level)
+        && is_bvar(export, *field, 3)
+        && is_bvar_application(export, result, 1, 0)
+}
+
+/// G30-001: exact indexed Prop family with one constructor field hidden
+/// behind a reducible identity in an index.
+///
+/// This is deliberately *not* a relaxation of G29 large elimination.  The
+/// recursor must be Prop-only (no motive universe parameter), so the checker
+/// admits ordinary Prop elimination even though the first field is not
+/// directly recoverable from the result indices without reduction.
+fn check_exact_sort_elim_prop2(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    if inductive.num_params != 1
+        || inductive.num_indices != 2
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || !sort_elim_prop_inductive_type(export, inductive.ty)
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 1
+        || constructor.num_fields != 2
+        || !constructor.level_params.is_empty()
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !sort_elim_prop2_constructor_type(export, constructor.ty, inductive.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    if !recursor.level_params.is_empty()
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !sort_elim_prop2_recursor_type(export, recursor.ty, inductive.name, constructor.name)
+        || !sort_elim_prop2_recursor_rule(export, recursor, inductive.name, constructor.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn is_bool_identity_application(export: &ResolvedExport, expression: ExprId, binder: u64) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    let [carrier, value] = arguments.as_slice() else {
+        return false;
+    };
+    let Some(Expr::Const { name, levels }) = export.exprs.get(head) else {
+        return false;
+    };
+    matches!(
+        levels.as_slice(),
+        [level]
+            if matches!(
+                export.levels.get(*level),
+                Some(Level::Succ(inner))
+                    if matches!(export.levels.get(*inner), Some(Level::Zero))
+            )
+    ) && name_is_root_str(export, *name, "id")
+        && is_bool_constant(export, *carrier)
+        && is_bvar(export, *value, binder)
+}
+
+fn sort_elim_prop2_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [parameter, first_field, second_field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bool_constant(export, *parameter)
+        || !is_bool_constant(export, *first_field)
+        || !is_bool_constant(export, *second_field)
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    let [family_parameter, first_index, second_index] = arguments.as_slice() else {
+        return false;
+    };
+    is_empty_constant(export, head, inductive)
+        && is_bvar(export, *family_parameter, 2)
+        && is_bvar(export, *first_index, 0)
+        && is_bool_identity_application(export, *second_index, 1)
+}
+
+fn sort_elim_prop2_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [first_index, second_index, target] = domains.as_slice() else {
+        return false;
+    };
+    is_bool_constant(export, *first_index)
+        && is_bool_constant(export, *second_index)
+        && sort_elim_prop_application(export, *target, inductive, [2, 1, 0])
+        && is_prop_sort(export, result)
+}
+
+fn sort_elim_prop2_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [first_field, second_field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bool_constant(export, *first_field) || !is_bool_constant(export, *second_field) {
+        return false;
+    }
+    let (motive, arguments) = application_spine(export, result);
+    let [first_index, second_index, target] = arguments.as_slice() else {
+        return false;
+    };
+    is_bvar(export, motive, 2)
+        && is_bvar(export, *first_index, 0)
+        && is_bool_identity_application(export, *second_index, 1)
+        && sort_elim_prop_constructor_application(export, *target, constructor, [3, 1, 0])
+}
+
+fn sort_elim_prop2_recursor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 6) else {
+        return false;
+    };
+    let [parameter, motive, minor, first_index, second_index, target] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bool_constant(export, *parameter)
+        || !sort_elim_prop2_motive_type(export, *motive, inductive)
+        || !sort_elim_prop2_minor_type(export, *minor, constructor)
+        || !is_bool_constant(export, *first_index)
+        || !is_bool_constant(export, *second_index)
+        || !sort_elim_prop_application(export, *target, inductive, [4, 1, 0])
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    arguments.len() == 3 && is_bvar(export, head, 4) && are_bvars(export, &arguments, &[2, 1, 0])
+}
+
+fn sort_elim_prop2_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 5) else {
+        return false;
+    };
+    let [parameter, motive, minor, first_field, second_field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bool_constant(export, *parameter)
+        || !sort_elim_prop2_motive_type(export, *motive, inductive)
+        || !sort_elim_prop2_minor_type(export, *minor, constructor)
+        || !is_bool_constant(export, *first_field)
+        || !is_bool_constant(export, *second_field)
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    arguments.len() == 2 && is_bvar(export, head, 2) && are_bvars(export, &arguments, &[1, 0])
+}
+
+/// G29-001: exact indexed Prop family whose constructor data are
+/// recoverable directly from the result indices.
+///
+/// This is the first qualified large-elimination rule for an indexed Prop.
+/// The external envelope remains name-sealed to `SortElimProp`.  The two
+/// constructor fields must occur as bare result indices (here in swapped
+/// order); no conversion is used to recover them and no generic indexed-Prop
+/// elimination authority is installed.
+fn check_exact_sort_elim_prop(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    if inductive.num_params != 1
+        || inductive.num_indices != 2
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || !sort_elim_prop_inductive_type(export, inductive.ty)
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 1
+        || constructor.num_fields != 2
+        || !constructor.level_params.is_empty()
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !sort_elim_prop_constructor_type(export, constructor.ty, inductive.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        true,
+    ) || !sort_elim_prop_recursor_type(
+        export,
+        recursor.ty,
+        inductive.name,
+        constructor.name,
+        *motive_level,
+    ) || !sort_elim_prop_recursor_rule(
+        export,
+        recursor,
+        inductive.name,
+        constructor.name,
+        *motive_level,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn is_bool_constant(export: &ResolvedExport, expression: ExprId) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if levels.is_empty() && name_is_root_str(export, *name, "Bool")
+    )
+}
+
+fn sort_elim_prop_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    binders: [u64; 3],
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_empty_constant(export, head, inductive)
+        && are_bvars(export, &arguments, &binders)
+}
+
+fn sort_elim_prop_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    binders: [u64; 3],
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_empty_constant(export, head, constructor)
+        && are_bvars(export, &arguments, &binders)
+}
+
+fn sort_elim_prop_inductive_type(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [parameter, first_index, second_index] = domains.as_slice() else {
+        return false;
+    };
+    is_bool_constant(export, *parameter)
+        && is_bool_constant(export, *first_index)
+        && is_bool_constant(export, *second_index)
+        && is_prop_sort(export, result)
+}
+
+fn sort_elim_prop_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [parameter, first_field, second_field] = domains.as_slice() else {
+        return false;
+    };
+    is_bool_constant(export, *parameter)
+        && is_bool_constant(export, *first_field)
+        && is_bool_constant(export, *second_field)
+        && sort_elim_prop_application(export, result, inductive, [2, 0, 1])
+}
+
+fn sort_elim_prop_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [first_index, second_index, target] = domains.as_slice() else {
+        return false;
+    };
+    is_bool_constant(export, *first_index)
+        && is_bool_constant(export, *second_index)
+        && sort_elim_prop_application(export, *target, inductive, [2, 1, 0])
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn sort_elim_prop_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [first_field, second_field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bool_constant(export, *first_field) || !is_bool_constant(export, *second_field) {
+        return false;
+    }
+    let (motive, arguments) = application_spine(export, result);
+    arguments.len() == 3
+        && is_bvar(export, motive, 2)
+        && are_bvars(export, &arguments[..2], &[0, 1])
+        && sort_elim_prop_constructor_application(export, arguments[2], constructor, [3, 1, 0])
+}
+
+fn sort_elim_prop_recursor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 6) else {
+        return false;
+    };
+    let [parameter, motive, minor, first_index, second_index, target] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bool_constant(export, *parameter)
+        || !sort_elim_prop_motive_type(export, *motive, inductive, motive_level)
+        || !sort_elim_prop_minor_type(export, *minor, constructor)
+        || !is_bool_constant(export, *first_index)
+        || !is_bool_constant(export, *second_index)
+        || !sort_elim_prop_application(export, *target, inductive, [4, 1, 0])
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    arguments.len() == 3 && is_bvar(export, head, 4) && are_bvars(export, &arguments, &[2, 1, 0])
+}
+
+fn sort_elim_prop_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 5) else {
+        return false;
+    };
+    let [parameter, motive, minor, first_field, second_field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bool_constant(export, *parameter)
+        || !sort_elim_prop_motive_type(export, *motive, inductive, motive_level)
+        || !sort_elim_prop_minor_type(export, *minor, constructor)
+        || !is_bool_constant(export, *first_field)
+        || !is_bool_constant(export, *second_field)
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    arguments.len() == 2 && is_bvar(export, head, 2) && are_bvars(export, &arguments, &[1, 0])
+}
+
+/// G28-001: exact nullary singleton Type plus its first qualified
+/// computation rule.  Recognition is name-sealed to `NewSingleton`; the
+/// executable rule is installed only after type, constructor, recursor, and
+/// exported rule shape have all been independently checked.
+fn expression_matches_binder_lift(
+    export: &ResolvedExport,
+    original: ExprId,
+    lifted: ExprId,
+    cutoff: u64,
+    amount: u64,
+) -> bool {
+    let (Some(left), Some(right)) = (export.exprs.get(original), export.exprs.get(lifted)) else {
+        return false;
+    };
+    match (left, right) {
+        (Expr::BVar(left), Expr::BVar(right)) => {
+            *right
+                == if *left >= cutoff {
+                    left.saturating_add(amount)
+                } else {
+                    *left
+                }
+        }
+        (Expr::NatLit(left), Expr::NatLit(right)) => left == right,
+        (Expr::StrLit(left), Expr::StrLit(right)) => left == right,
+        (Expr::Sort(left), Expr::Sort(right)) => left == right,
+        (
+            Expr::Const {
+                name: left_name,
+                levels: left_levels,
+            },
+            Expr::Const {
+                name: right_name,
+                levels: right_levels,
+            },
+        ) => left_name == right_name && left_levels == right_levels,
+        (
+            Expr::App {
+                fun: left_fun,
+                arg: left_arg,
+            },
+            Expr::App {
+                fun: right_fun,
+                arg: right_arg,
+            },
+        ) => {
+            expression_matches_binder_lift(export, *left_fun, *right_fun, cutoff, amount)
+                && expression_matches_binder_lift(export, *left_arg, *right_arg, cutoff, amount)
+        }
+        (
+            Expr::Lam {
+                domain: left_domain,
+                body: left_body,
+            },
+            Expr::Lam {
+                domain: right_domain,
+                body: right_body,
+            },
+        )
+        | (
+            Expr::Pi {
+                domain: left_domain,
+                body: left_body,
+            },
+            Expr::Pi {
+                domain: right_domain,
+                body: right_body,
+            },
+        ) => {
+            expression_matches_binder_lift(export, *left_domain, *right_domain, cutoff, amount)
+                && expression_matches_binder_lift(
+                    export,
+                    *left_body,
+                    *right_body,
+                    cutoff.saturating_add(1),
+                    amount,
+                )
+        }
+        (
+            Expr::Let {
+                ty: left_ty,
+                value: left_value,
+                body: left_body,
+            },
+            Expr::Let {
+                ty: right_ty,
+                value: right_value,
+                body: right_body,
+            },
+        ) => {
+            expression_matches_binder_lift(export, *left_ty, *right_ty, cutoff, amount)
+                && expression_matches_binder_lift(export, *left_value, *right_value, cutoff, amount)
+                && expression_matches_binder_lift(
+                    export,
+                    *left_body,
+                    *right_body,
+                    cutoff.saturating_add(1),
+                    amount,
+                )
+        }
+        (
+            Expr::Proj {
+                type_name: left_type,
+                index: left_index,
+                structure: left_structure,
+            },
+            Expr::Proj {
+                type_name: right_type,
+                index: right_index,
+                structure: right_structure,
+            },
+        ) => {
+            left_type == right_type
+                && left_index == right_index
+                && expression_matches_binder_lift(
+                    export,
+                    *left_structure,
+                    *right_structure,
+                    cutoff,
+                    amount,
+                )
+        }
+        _ => false,
+    }
+}
+
+fn fin_like_structure_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || constructor.num_params != 1
+        || constructor.num_fields != 2
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+        || recursor.k
+        || recursor.is_unsafe
+        || recursor.num_params != 1
+        || recursor.num_indices != 0
+        || recursor.rules.len() != 1
+        || recursor.rules[0].num_fields != 2
+        || recursor.level_params.len() != 1
+    {
+        return false;
+    }
+    let Some((_, result)) = pi_spine(export, inductive.ty, 1) else {
+        return false;
+    };
+    if !matches!(
+        export.exprs.get(result),
+        Some(Expr::Sort(level)) if !matches!(export.levels.get(*level), Some(Level::Zero))
+    ) {
+        return false;
+    }
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 3) else {
+        return false;
+    };
+    let first = constructor_domains[1];
+    let second = constructor_domains[2];
+    !expression_contains_constant(export, first, inductive.name)
+        && !expression_contains_constant(export, second, inductive.name)
+        && expression_contains_bvar(export, second, 0)
+}
+
+fn check_fin_like_structure(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 3) else {
+        return Err(Verdict::Unknown);
+    };
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment = derivation
+        .finish()
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: 1,
+                field_types: vec![
+                    ProjectionFieldType::Derived(constructor_domains[1]),
+                    ProjectionFieldType::Derived(constructor_domains[2]),
+                ],
+                eta_expandable: false,
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
+fn single_derived_field_structure_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    let Ok(p) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    if p == 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.num_params != inductive.num_params
+        || constructor.num_fields != 1
+        || constructor.is_unsafe
+        || recursor.k
+        || recursor.is_unsafe
+        || recursor.level_params.len() != inductive.level_params.len().saturating_add(1)
+        || recursor.level_params.get(1..) != Some(inductive.level_params.as_slice())
+    {
+        return false;
+    }
+    let Some((_, result)) = pi_spine(export, inductive.ty, p) else {
+        return false;
+    };
+    if !matches!(
+        export.exprs.get(result),
+        Some(Expr::Sort(level)) if !matches!(export.levels.get(*level), Some(Level::Zero))
+    ) {
+        return false;
+    }
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + 1) else {
+        return false;
+    };
+    !expression_contains_constant(export, constructor_domains[p], inductive.name)
+}
+
+fn single_derived_field_recursor_shape(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+) -> bool {
+    let Ok(p) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + 1) else {
+        return false;
+    };
+    let field_type = constructor_domains[p];
+
+    let Some((domains, result)) = pi_spine(export, recursor.ty, p + 3) else {
+        return false;
+    };
+    let motive = domains[p];
+    let minor = domains[p + 1];
+    let target = domains[p + 2];
+
+    let Some((motive_domains, motive_result)) = pi_spine(export, motive, 1) else {
+        return false;
+    };
+    let [motive_target] = motive_domains.as_slice() else {
+        return false;
+    };
+    let (motive_head, motive_args) = application_spine(export, *motive_target);
+    if motive_args.len() != p
+        || !is_declared_level_constant(export, motive_head, inductive.name, &inductive.level_params)
+        || !motive_args
+            .iter()
+            .enumerate()
+            .all(|(i, arg)| is_bvar(export, *arg, (p - 1 - i) as u64))
+    {
+        return false;
+    }
+
+    let motive_level = match export.exprs.get(motive_result) {
+        Some(Expr::Sort(level)) => match export.levels.get(*level) {
+            Some(Level::Param(name)) => *name,
+            _ => return false,
+        },
+        _ => return false,
+    };
+    if recursor.level_params.first().copied() != Some(motive_level)
+        || recursor.level_params.get(1..) != Some(inductive.level_params.as_slice())
+    {
+        return false;
+    }
+
+    let Some((minor_domains, minor_result)) = pi_spine(export, minor, 1) else {
+        return false;
+    };
+    let [minor_field] = minor_domains.as_slice() else {
+        return false;
+    };
+    if !expression_matches_binder_lift(export, field_type, *minor_field, 0, 1) {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: minor_motive,
+        arg: constructed,
+    }) = export.exprs.get(minor_result)
+    else {
+        return false;
+    };
+    if !is_bvar(export, *minor_motive, 1) {
+        return false;
+    }
+    let (constructor_head, constructor_args) = application_spine(export, *constructed);
+    if constructor_args.len() != p + 1
+        || !is_declared_level_constant(
+            export,
+            constructor_head,
+            constructor.name,
+            &constructor.level_params,
+        )
+    {
+        return false;
+    }
+    for (i, arg) in constructor_args.iter().take(p).enumerate() {
+        if !is_bvar(export, *arg, (p + 1 - i) as u64) {
+            return false;
+        }
+    }
+    if !is_bvar(export, constructor_args[p], 0) {
+        return false;
+    }
+
+    let (target_head, target_args) = application_spine(export, target);
+    if target_args.len() != p
+        || !is_declared_level_constant(export, target_head, inductive.name, &inductive.level_params)
+        || !target_args
+            .iter()
+            .enumerate()
+            .all(|(i, arg)| is_bvar(export, *arg, (p + 1 - i) as u64))
+        || !is_bvar_application(export, result, 2, 0)
+    {
+        return false;
+    }
+
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.constructor != constructor.name || rule.num_fields != 1 {
+        return false;
+    }
+    let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, p + 3) else {
+        return false;
+    };
+    if rule_domains[p] != motive || rule_domains[p + 1] != minor {
+        return false;
+    }
+    if !expression_matches_binder_lift(export, *minor_field, rule_domains[p + 2], 0, 1) {
+        return false;
+    }
+    let (rule_head, rule_args) = application_spine(export, rule_result);
+    is_bvar(export, rule_head, 1)
+        && matches!(rule_args.as_slice(), [field] if is_bvar(export, *field, 0))
+}
+
+fn single_derived_field_parameter_telescopes_convert(
+    export: &ResolvedExport,
+    environment: &Environment,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> bool {
+    let Ok(p) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((inductive_params, _)) = pi_spine(export, inductive.ty, p) else {
+        return false;
+    };
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + 1) else {
+        return false;
+    };
+    let constructor_params = &constructor_domains[..p];
+    let Some((recursor_domains, _)) = pi_spine(export, recursor.ty, p + 3) else {
+        return false;
+    };
+    let recursor_params = &recursor_domains[..p];
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, p + 3) else {
+        return false;
+    };
+    let rule_params = &rule_domains[..p];
+
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(&recursor.level_params),
+    )
+    .with_delta_policy(delta_policy);
+    let mut remaining=limits.judgment_steps;
+    checker.checked_parameter_telescope_equivalence(&inductive_params,&[constructor_params,recursor_params,rule_params],&mut remaining)
+}
+
+fn check_single_derived_field_structure(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    let trace = std::env::var_os("NUCLEUS_TRACE_SINGLE_FIELD").is_some();
+    let name = trace_name(export, inductive.name);
+
+    let candidate = single_derived_field_structure_candidate(export, block);
+    if trace {
+        eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=candidate:value={candidate}");
+    }
+    if !candidate {
+        return Err(Verdict::Unknown);
+    }
+
+    let metadata_ok = inductive.all == [inductive.name]
+        && inductive.constructors == [constructor.name]
+        && constructor.index == 0
+        && constructor.inductive == inductive.name
+        && constructor.level_params == inductive.level_params
+        && !has_duplicate_parameter(&inductive.level_params)
+        && !constructor_result_is_definitely_malformed(export, inductive, constructor)
+        && recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        );
+    let shape_ok = single_derived_field_recursor_shape(export, inductive, constructor, recursor);
+    if trace {
+        eprintln!(
+            "NUCLEUS_SINGLE_FIELD:name={name}:stage=precheck:metadata={metadata_ok}:shape={shape_ok}"
+        );
+    }
+    if !metadata_ok || !shape_ok {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    if let Err(verdict) = derivation.promote(
+        export,
+        derived_inductive,
+        limits.judgment_steps,
+        delta_policy,
+    ) {
+        if trace {
+            eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=type-promotion:verdict={verdict:?}");
+        }
+        return Err(verdict);
+    }
+    if trace {
+        eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=type-promotion:verdict=PASS");
+    }
+
+    let telescopes = single_derived_field_parameter_telescopes_convert(
+        export,
+        derivation.environment(),
+        inductive,
+        constructor,
+        recursor,
+        limits,
+        delta_policy,
+    );
+    if trace {
+        eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=parameter-telescopes:value={telescopes}");
+    }
+    if !telescopes {
+        return Err(Verdict::Unknown);
+    }
+
+    if let Err(verdict) = derivation.promote_all(
+        export,
+        [derived_constructor(constructor), derived_recursor(recursor)],
+        limits.judgment_steps,
+        delta_policy,
+    ) {
+        if trace {
+            eprintln!(
+                "NUCLEUS_SINGLE_FIELD:name={name}:stage=constructor-recursor-promotion:verdict={verdict:?}"
+            );
+        }
+        return Err(verdict);
+    }
+    if trace {
+        eprintln!(
+            "NUCLEUS_SINGLE_FIELD:name={name}:stage=constructor-recursor-promotion:verdict=PASS"
+        );
+    }
+
+    let Ok(p) = usize::try_from(inductive.num_params) else {
+        return Err(Verdict::Reject);
+    };
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + 1) else {
+        return Err(Verdict::Reject);
+    };
+    let field_type = constructor_domains[p];
+
+    let environment = match derivation.finish().install_projection_spec(
+        inductive.name,
+        ProjectionSpec {
+            constructor: constructor.name,
+            num_params: p,
+            field_types: vec![ProjectionFieldType::Derived(field_type)],
+            eta_expandable: pi_spine(export,inductive.ty,p).is_some_and(|(_,result)|
+                matches!(export.exprs.get(result),Some(Expr::Sort(level)) if exported_level_is_definitely_nonzero(export,*level,128))),
+        },
+    ) {
+        Ok(environment) => environment,
+        Err(_) => {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_SINGLE_FIELD:name={name}:stage=projection-install:verdict=REJECT"
+                );
+            }
+            return Err(Verdict::Reject);
+        }
+    };
+    if trace {
+        eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=projection-install:verdict=PASS");
+    }
+
+    let result = install_certified_recursor_reduction(environment, &block.constructors, recursor);
+    if trace {
+        eprintln!(
+            "NUCLEUS_SINGLE_FIELD:name={name}:stage=recursor-install:verdict={}",
+            match &result {
+                Ok(_) => "PASS",
+                Err(Verdict::Accept) => "ACCEPT",
+                Err(Verdict::Reject) => "REJECT",
+                Err(Verdict::Unknown) => "UNKNOWN",
+                Err(Verdict::Error) => "ERROR",
+            }
+        );
+    }
+    result
+}
+
+fn generic_parameterized_nullary_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    inductive.num_params > 0
+        && inductive.num_indices == 0
+        && inductive.num_nested == 0
+        && !inductive.is_recursive
+        && !inductive.is_reflexive
+        && !inductive.is_unsafe
+        && constructor.num_params == inductive.num_params
+        && constructor.num_fields == 0
+        && !constructor.is_unsafe
+        && !recursor.k
+        && !recursor.is_unsafe
+        && matches!(pi_spine(export, inductive.ty, inductive.num_params as usize),
+            Some((_, result)) if matches!(export.exprs.get(result), Some(Expr::Sort(level))
+                if !matches!(export.levels.get(*level), Some(Level::Zero))))
+}
+
+fn generic_parameterized_nullary_recursor_shape(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+) -> bool {
+    let p = inductive.num_params as usize;
+    let Some((domains, result)) = pi_spine(export, recursor.ty, p + 3) else {
+        return false;
+    };
+    let params = &domains[..p];
+    let motive = domains[p];
+    let minor = domains[p + 1];
+    let target = domains[p + 2];
+
+    // Parameters in the recursor telescope must match the inductive's own
+    // parameter telescope exactly. This first generic corridor is deliberately
+    // syntactic; conversion-lifted parameters remain a later extension.
+    let Some((ind_params, _)) = pi_spine(export, inductive.ty, p) else {
+        return false;
+    };
+    if params != ind_params.as_slice() {
+        return false;
+    }
+
+    let (motive_domains, motive_result) = match pi_spine(export, motive, 1) {
+        Some(pair) => pair,
+        None => return false,
+    };
+    let [motive_target] = motive_domains.as_slice() else {
+        return false;
+    };
+    let (head, args) = application_spine(export, *motive_target);
+    if args.len() != p
+        || !is_declared_level_constant(export, head, inductive.name, &inductive.level_params)
+        || !args
+            .iter()
+            .enumerate()
+            .all(|(i, arg)| is_bvar(export, *arg, (p - 1 - i) as u64))
+    {
+        return false;
+    }
+
+    let motive_level = match export.exprs.get(motive_result) {
+        Some(Expr::Sort(level)) => match export.levels.get(*level) {
+            Some(Level::Param(name)) => *name,
+            _ => return false,
+        },
+        _ => return false,
+    };
+    if recursor.level_params.first().copied() != Some(motive_level)
+        || recursor.level_params.get(1..) != Some(inductive.level_params.as_slice())
+    {
+        return false;
+    }
+
+    // minor : motive (ctor params)
+    let Some(Expr::App {
+        fun: minor_motive,
+        arg: constructed,
+    }) = export.exprs.get(minor)
+    else {
+        return false;
+    };
+    if !is_bvar(export, *minor_motive, 0) {
+        return false;
+    }
+    let (ctor_head, ctor_args) = application_spine(export, *constructed);
+    if ctor_args.len() != p
+        || !is_declared_level_constant(
+            export,
+            ctor_head,
+            constructor.name,
+            &constructor.level_params,
+        )
+        || !ctor_args
+            .iter()
+            .enumerate()
+            .all(|(i, arg)| is_bvar(export, *arg, (p - i) as u64))
+    {
+        return false;
+    }
+
+    let (target_head, target_args) = application_spine(export, target);
+    if target_args.len() != p
+        || !is_declared_level_constant(export, target_head, inductive.name, &inductive.level_params)
+        || !target_args
+            .iter()
+            .enumerate()
+            .all(|(i, arg)| is_bvar(export, *arg, (p + 1 - i) as u64))
+        || !is_bvar_application(export, result, 2, 0)
+    {
+        return false;
+    }
+
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, p + 2) else {
+        return false;
+    };
+    if rule_domains.len() != p + 2 || !is_bvar(export, rule_result, 0) {
+        return false;
+    }
+    true
+}
+
+fn is_declared_level_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+    name: NameId,
+    level_params: &[NameId],
+) -> bool {
+    let Some(Expr::Const {
+        name: actual,
+        levels,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    *actual == name
+        && levels.len() == level_params.len()
+        && levels.iter().zip(level_params).all(|(level, parameter)| {
+            matches!(export.levels.get(*level), Some(Level::Param(actual)) if actual == parameter)
+        })
+}
+
+fn check_generic_parameterized_nullary(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !generic_parameterized_nullary_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.level_params != inductive.level_params
+        || has_duplicate_parameter(&inductive.level_params)
+        || constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !generic_parameterized_nullary_recursor_shape(export, inductive, constructor, recursor)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    derivation.promote_all(
+        export,
+        [
+            derived_inductive,
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn generic_closed_prop_singleton_candidate(block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    inductive.num_params == 0
+        && inductive.num_indices == 0
+        && inductive.num_nested == 0
+        && !inductive.is_recursive
+        && !inductive.is_reflexive
+        && !inductive.is_unsafe
+        && inductive.level_params.is_empty()
+        && constructor.num_params == 0
+        && constructor.num_fields == 0
+        && !constructor.is_unsafe
+        && recursor.k
+        && !recursor.is_unsafe
+}
+
+fn check_generic_closed_prop_singleton(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if !generic_closed_prop_singleton_candidate(block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // Lean's K target for this structural envelope is a closed inductive Prop
+    // with one constructor whose telescope contains only the parameters
+    // (there are none here).  Derive every remaining exported claim rather
+    // than trusting the metadata.
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || !matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level)) if matches!(export.levels.get(*level), Some(Level::Zero))
+        )
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || !constructor.level_params.is_empty()
+        || !is_empty_constant(export, constructor.ty, inductive.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(export, inductive, &block.constructors, recursor, true, true)
+        || !new_singleton_recursor_type(
+            export,
+            recursor.ty,
+            inductive.name,
+            constructor.name,
+            *motive_level,
+        )
+        || !new_singleton_recursor_rule(
+            export,
+            recursor,
+            inductive.name,
+            constructor.name,
+            *motive_level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation
+        .finish()
+        .install_singleton_recursor_reduction(recursor.name)
+        .map_err(|_| Verdict::Reject)
+}
+
+fn check_exact_new_singleton(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || !matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level))
+                if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
+        )
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_fields != 0
+        || constructor.num_params != 0
+        || !constructor.level_params.is_empty()
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !is_empty_constant(export, constructor.ty, inductive.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        true,
+    ) || !new_singleton_recursor_type(
+        export,
+        recursor.ty,
+        inductive.name,
+        constructor.name,
+        *motive_level,
+    ) || !new_singleton_recursor_rule(
+        export,
+        recursor,
+        inductive.name,
+        constructor.name,
+        *motive_level,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation
+        .finish()
+        .install_singleton_recursor_reduction(recursor.name)
+        .map_err(|_| Verdict::Reject)
+}
+
+fn new_singleton_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [target] = domains.as_slice() else {
+        return false;
+    };
+    is_empty_constant(export, *target, inductive) && is_sort_parameter(export, result, motive_level)
+}
+
+fn new_singleton_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+) -> bool {
+    is_bvar_applied_to_constant(export, expression, 0, constructor)
+}
+
+fn new_singleton_recursor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    new_singleton_motive_type(export, *motive, inductive, motive_level)
+        && new_singleton_minor_type(export, *minor, constructor)
+        && is_empty_constant(export, *target, inductive)
+        && is_bvar_application(export, result, 2, 0)
+}
+
+fn new_singleton_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    lam_spine(export, rule.rhs, 2).is_some_and(|(domains, result)| {
+        let [motive, minor] = domains.as_slice() else {
+            return false;
+        };
+        new_singleton_motive_type(export, *motive, inductive, motive_level)
+            && new_singleton_minor_type(export, *minor, constructor)
+            && is_bvar(export, result, 0)
+    })
+}
+
+/// G23-001: conversion-lifted one-parameter, one-field recursion.
+///
+/// The family remains name-sealed at dispatch. The reusable law is the
+/// important part: after staging the inductive type, parameter and recursive
+/// field domains are compared by the kernel's existing conversion relation
+/// under shared free binders. Recursor/motive/minor/rule shapes are still
+/// derived structurally before opaque promotion.
+fn check_conversion_lifted_unary_recursive(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || !inductive_arity_metadata_is_well_formed(export, inductive)
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let Some(Expr::Pi {
+        domain: inductive_parameter,
+        body: inductive_result,
+    }) = export.exprs.get(inductive.ty)
+    else {
+        return Err(Verdict::Reject);
+    };
+    if !matches!(export.exprs.get(*inductive_result), Some(Expr::Sort(_))) {
+        return Err(Verdict::Reject);
+    }
+
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if constructor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || !constructor.level_params.is_empty()
+        || constructor.num_params != 1
+        || constructor.num_fields != 1
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let Some(Expr::Pi {
+        domain: constructor_parameter,
+        body,
+    }) = export.exprs.get(constructor.ty)
+    else {
+        return Err(Verdict::Reject);
+    };
+    let Some(Expr::Pi {
+        domain: constructor_field,
+        body: constructor_result,
+    }) = export.exprs.get(*body)
+    else {
+        return Err(Verdict::Reject);
+    };
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == 1,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let Some((recursor_parameter, recursor_minor_field, rule_field)) =
+        conversion_lifted_unary_shapes(export, inductive.name, constructor.name, recursor)
+    else {
+        return Err(Verdict::Reject);
+    };
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_type(inductive.name, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    // Conversion is tested only after the inductive type itself has been
+    // staged, so recursive applications have real kernel authority.
+    {
+        let checker = TypeChecker::new(&export.exprs, &export.levels, derivation.environment())
+            .with_delta_policy(delta_policy);
+
+        let empty = EnvFrame::empty();
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(checker.closure(*inductive_parameter, empty.clone())),
+            &TypeValue::Term(checker.closure(*constructor_parameter, empty.clone())),
+            limits.judgment_steps,
+        ))?;
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(checker.closure(*inductive_parameter, empty.clone())),
+            &TypeValue::Term(checker.closure(recursor_parameter, empty.clone())),
+            limits.judgment_steps,
+        ))?;
+
+        let alpha = FreeId(10_001);
+        let field = FreeId(10_002);
+        let motive = FreeId(10_003);
+        let minor = FreeId(10_004);
+        let parameter_frame = EnvFrame::empty().extend_free(alpha);
+        let constructor_result_frame = parameter_frame.clone().extend_free(field);
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(checker.closure(*constructor_field, parameter_frame.clone())),
+            &TypeValue::Term(checker.closure(*constructor_result, constructor_result_frame)),
+            limits.judgment_steps,
+        ))?;
+
+        let recursor_minor_frame = parameter_frame.clone().extend_free(motive);
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(checker.closure(*constructor_field, parameter_frame.clone())),
+            &TypeValue::Term(checker.closure(recursor_minor_field, recursor_minor_frame)),
+            limits.judgment_steps,
+        ))?;
+
+        let rule_field_frame = parameter_frame.clone().extend_free(motive).extend_free(minor);
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(
+                checker.closure(*constructor_field, parameter_frame),
+            ),
+            &TypeValue::Term(checker.closure(rule_field, rule_field_frame)),
+            limits.judgment_steps,
+        ))?;
+    }
+
+    derivation.promote_all(
+        export,
+        [derived_constructor(constructor), derived_recursor(recursor)],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+/// Residual-generated extension of G23: one-parameter reflexive recursion
+/// whose sole recursive field is a function. The field's parameter and
+/// codomain are admitted only after reducible conversion proves them equal
+/// to the inductive parameter and recursive target. The recursor must carry
+/// the corresponding pointwise induction hypothesis.
+fn check_conversion_lifted_reflexive_unary(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || !inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || !inductive_arity_metadata_is_well_formed(export, inductive)
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || !constructor.level_params.is_empty()
+        || constructor.num_params != 1
+        || constructor.num_fields != 1
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            recursor.level_params.len() == 1,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let Some(Expr::Pi {
+        domain: inductive_parameter,
+        body: inductive_result,
+    }) = export.exprs.get(inductive.ty)
+    else {
+        return Err(Verdict::Reject);
+    };
+    if !matches!(export.exprs.get(*inductive_result), Some(Expr::Sort(_))) {
+        return Err(Verdict::Reject);
+    }
+
+    let Some(Expr::Pi {
+        domain: constructor_parameter,
+        body: constructor_body,
+    }) = export.exprs.get(constructor.ty)
+    else {
+        return Err(Verdict::Reject);
+    };
+    let Some(Expr::Pi {
+        domain: constructor_field,
+        body: constructor_result,
+    }) = export.exprs.get(*constructor_body)
+    else {
+        return Err(Verdict::Reject);
+    };
+    if !matches!(export.exprs.get(*constructor_field), Some(Expr::Pi { .. })) {
+        return Err(Verdict::Reject);
+    }
+
+    let Some((recursor_parameter, recursor_minor_field, rule_field)) =
+        conversion_lifted_reflexive_shapes(export, inductive.name, constructor.name, recursor)
+    else {
+        return Err(Verdict::Reject);
+    };
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_type(inductive.name, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    {
+        let checker = TypeChecker::new(&export.exprs, &export.levels, derivation.environment())
+            .with_delta_policy(delta_policy);
+        let empty = EnvFrame::empty();
+
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(checker.closure(*inductive_parameter, empty.clone())),
+            &TypeValue::Term(checker.closure(*constructor_parameter, empty.clone())),
+            limits.judgment_steps,
+        ))?;
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(checker.closure(*inductive_parameter, empty.clone())),
+            &TypeValue::Term(checker.closure(recursor_parameter, empty)),
+            limits.judgment_steps,
+        ))?;
+
+        let alpha = FreeId(20_001);
+        let field = FreeId(20_002);
+        let point = FreeId(20_003);
+        let motive = FreeId(20_004);
+        let minor = FreeId(20_005);
+        let parameter_frame = EnvFrame::empty().extend_free(alpha);
+
+        // The constructor field itself may be presented through reducible
+        // wrappers. Its WHNF must be a function α → I α.
+        let exposed_field = checker.machine().expose(
+            checker.closure(*constructor_field, parameter_frame.clone()),
+            Transparency::Reducible,
+            limits.judgment_steps,
+        );
+        let Some(Value::Pi {
+            domain: field_domain,
+            body: field_body,
+        }) = exposed_field.proven_value()
+        else {
+            return Err(Verdict::Reject);
+        };
+        let reduced_field_domain = checker.machine().expose(
+            field_domain.clone(),
+            Transparency::Reducible,
+            limits.judgment_steps,
+        );
+        let Some(Value::Neutral(neutral_domain)) = reduced_field_domain.proven_value() else {
+            return Err(Verdict::Reject);
+        };
+        if !matches!(neutral_domain.head, NeutralHead::Free(free, _) if free == alpha)
+            || !neutral_domain.spine.is_empty()
+        {
+            return Err(Verdict::Reject);
+        }
+
+        let recursive_body = field_body.under_free(point);
+        let constructor_target = checker.closure(
+            *constructor_result,
+            parameter_frame.clone().extend_free(field),
+        );
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(recursive_body),
+            &TypeValue::Term(constructor_target),
+            limits.judgment_steps,
+        ))?;
+
+        // The exported recursor and rule must expose the same field type under
+        // their shifted binders. Pointwise IH shape is checked structurally.
+        let recursor_minor_frame = parameter_frame.clone().extend_free(motive);
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(checker.closure(*constructor_field, parameter_frame.clone())),
+            &TypeValue::Term(checker.closure(recursor_minor_field, recursor_minor_frame)),
+            limits.judgment_steps,
+        ))?;
+
+        let rule_field_frame = parameter_frame.clone().extend_free(motive).extend_free(minor);
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(
+                checker.closure(*constructor_field, parameter_frame),
+            ),
+            &TypeValue::Term(checker.closure(rule_field, rule_field_frame)),
+            limits.judgment_steps,
+        ))?;
+    }
+
+    derivation.promote_all(
+        export,
+        [derived_constructor(constructor), derived_recursor(recursor)],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn reflexive_unary_minor_field(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+) -> Option<ExprId> {
+    let (domains, result) = pi_spine(export, expression, 2)?;
+    let [field, induction_hypothesis] = domains.as_slice() else {
+        return None;
+    };
+    if !matches!(export.exprs.get(*field), Some(Expr::Pi { .. })) {
+        return None;
+    }
+
+    let Expr::Pi {
+        domain: ih_argument,
+        body: ih_result,
+    } = export.exprs.get(*induction_hypothesis)?
+    else {
+        return None;
+    };
+    if !is_bvar(export, *ih_argument, 2) {
+        return None;
+    }
+    let Expr::App {
+        fun: ih_motive,
+        arg: field_at_argument,
+    } = export.exprs.get(*ih_result)?
+    else {
+        return None;
+    };
+    if !is_bvar(export, *ih_motive, 2) || !is_bvar_application(export, *field_at_argument, 1, 0) {
+        return None;
+    }
+
+    let Expr::App {
+        fun: result_motive,
+        arg: constructed,
+    } = export.exprs.get(result)?
+    else {
+        return None;
+    };
+    if !is_bvar(export, *result_motive, 2)
+        || !is_constructor_applied_to_two_bvars(export, *constructed, constructor, 3, 1)
+    {
+        return None;
+    }
+
+    // The recursive target itself is validated by conversion after the
+    // inductive signature has been staged.
+    let _ = inductive;
+    Some(*field)
+}
+
+fn conversion_lifted_reflexive_shapes(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+) -> Option<(ExprId, ExprId, ExprId)> {
+    let (domains, result) = pi_spine(export, recursor.ty, 4)?;
+    let [parameter, motive, minor, target] = domains.as_slice() else {
+        return None;
+    };
+    if !is_unary_recursive_motive_type(export, *motive, inductive, recursor.level_params[0])
+        || !is_empty_inductive_applied_to_bvar(export, *target, inductive, 2)
+        || !is_bvar_application(export, result, 2, 0)
+    {
+        return None;
+    }
+    let minor_field = reflexive_unary_minor_field(export, *minor, inductive, constructor)?;
+
+    let [rule] = recursor.rules.as_slice() else {
+        return None;
+    };
+    let (rule_domains, rule_result) = lam_spine(export, rule.rhs, 4)?;
+    let [_parameter, rule_motive, rule_minor, rule_field] = rule_domains.as_slice() else {
+        return None;
+    };
+    if !is_unary_recursive_motive_type(export, *rule_motive, inductive, recursor.level_params[0])
+        || reflexive_unary_minor_field(export, *rule_minor, inductive, constructor).is_none()
+        || !matches!(export.exprs.get(*rule_field), Some(Expr::Pi { .. }))
+    {
+        return None;
+    }
+
+    let Expr::App {
+        fun: minor_at_field,
+        arg: pointwise_ih,
+    } = export.exprs.get(rule_result)?
+    else {
+        return None;
+    };
+    if !is_bvar_application(export, *minor_at_field, 1, 0) {
+        return None;
+    }
+    let Expr::Lam {
+        domain: ih_domain,
+        body: recursive_call,
+        ..
+    } = export.exprs.get(*pointwise_ih)?
+    else {
+        return None;
+    };
+    if !is_bvar(export, *ih_domain, 3) {
+        return None;
+    }
+
+    let (head, arguments) = application_spine(export, *recursive_call);
+    let [parameter_arg, motive_arg, minor_arg, target_arg] = arguments.as_slice() else {
+        return None;
+    };
+    if !is_unary_polymorphic_constant(export, head, recursor.name, recursor.level_params[0])
+        || !is_bvar(export, *parameter_arg, 4)
+        || !is_bvar(export, *motive_arg, 3)
+        || !is_bvar(export, *minor_arg, 2)
+        || !is_bvar_application(export, *target_arg, 1, 0)
+    {
+        return None;
+    }
+
+    Some((*parameter, minor_field, *rule_field))
+}
+
+fn is_empty_inductive_applied_to_bvar(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    parameter: u64,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_empty_constant(export, *fun, inductive)
+                && is_bvar(export, *arg, parameter)
+    )
+}
+
+fn is_unary_recursive_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: target,
+        body: result,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    is_empty_inductive_applied_to_bvar(export, *target, inductive, 0)
+        && is_sort_parameter(export, *result, motive_level)
+}
+
+fn unary_recursive_minor_field(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+) -> Option<ExprId> {
+    let Expr::Pi {
+        domain: field,
+        body,
+    } = export.exprs.get(expression)?
+    else {
+        return None;
+    };
+    let Expr::Pi {
+        domain: induction_hypothesis,
+        body: result,
+    } = export.exprs.get(*body)?
+    else {
+        return None;
+    };
+    if !is_bvar_application(export, *induction_hypothesis, 1, 0) {
+        return None;
+    }
+    let Expr::App {
+        fun: motive,
+        arg: constructed,
+    } = export.exprs.get(*result)?
+    else {
+        return None;
+    };
+    (is_bvar(export, *motive, 2)
+        && is_constructor_applied_to_two_bvars(export, *constructed, constructor, 3, 1))
+    .then_some(*field)
+}
+
+fn conversion_lifted_unary_shapes(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+) -> Option<(ExprId, ExprId, ExprId)> {
+    let (recursor_domains, recursor_result) = pi_spine(export, recursor.ty, 4)?;
+    let [parameter, motive, minor, target] = recursor_domains.as_slice() else {
+        return None;
+    };
+    if !is_unary_recursive_motive_type(export, *motive, inductive, recursor.level_params[0])
+        || !is_empty_inductive_applied_to_bvar(export, *target, inductive, 2)
+        || !is_bvar_application(export, recursor_result, 2, 0)
+    {
+        return None;
+    }
+    let recursor_minor_field = unary_recursive_minor_field(export, *minor, constructor)?;
+
+    let [rule] = recursor.rules.as_slice() else {
+        return None;
+    };
+    let (rule_domains, rule_result) = lam_spine(export, rule.rhs, 4)?;
+    let [_parameter, rule_motive, rule_minor, rule_field] = rule_domains.as_slice() else {
+        return None;
+    };
+    if !is_unary_recursive_motive_type(export, *rule_motive, inductive, recursor.level_params[0])
+        || unary_recursive_minor_field(export, *rule_minor, constructor).is_none()
+    {
+        return None;
+    }
+
+    let Expr::App {
+        fun: minor_at_field,
+        arg: recursive_call,
+    } = export.exprs.get(rule_result)?
+    else {
+        return None;
+    };
+    if !is_bvar_application(export, *minor_at_field, 1, 0) {
+        return None;
+    }
+    let (head, arguments) = application_spine(export, *recursive_call);
+    if !is_unary_polymorphic_constant(export, head, recursor.name, recursor.level_params[0])
+        || !are_bvars(export, &arguments, &[3, 2, 1, 0])
+    {
+        return None;
+    }
+
+    Some((*parameter, recursor_minor_field, *rule_field))
+}
+
+/// G24-001 candidate frontier: one manifest field, no parameters or indices.
+///
+/// This is deliberately structural and narrow. It recognizes the first
+/// untouched universe corridor without granting a general inductive engine:
+/// one safe, nonrecursive, nonreflexive, nonnested inductive; one `.mk`
+/// constructor with exactly one manifest Sort field; and one recursor.
+fn unary_field_universe_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    inductive.num_params == 0
+        && inductive.num_indices == 0
+        && inductive.num_nested == 0
+        && !inductive.is_recursive
+        && !inductive.is_reflexive
+        && !inductive.is_unsafe
+        && constructor.num_params == 0
+        && constructor.num_fields == 1
+        && !constructor.is_unsafe
+        && !recursor.is_unsafe
+        && name_is_child_str(export, constructor.name, inductive.name, "mk")
+        && matches!(export.exprs.get(inductive.ty), Some(Expr::Sort(_)))
+        && matches!(
+            export.exprs.get(constructor.ty),
+            Some(Expr::Pi { domain, .. })
+                if matches!(export.exprs.get(*domain), Some(Expr::Sort(_)))
+        )
+}
+
+fn unary_field_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: &crate::syntax::InductiveType,
+    motive_level: Option<NameId>,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: target,
+        body: result,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    inductive_constant_uses_declared_levels(
+        export,
+        *target,
+        inductive.name,
+        &inductive.level_params,
+    ) && match motive_level {
+        None => is_prop_sort(export, *result),
+        Some(level) => is_sort_parameter(export, *result, level),
+    }
+}
+
+fn unary_field_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: &Constructor,
+    field: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 1
+        && inductive_constant_uses_declared_levels(
+            export,
+            head,
+            constructor.name,
+            &constructor.level_params,
+        )
+        && is_bvar(export, arguments[0], field)
+}
+
+fn unary_field_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    field_domain: ExprId,
+    constructor: &Constructor,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: field,
+        body: result,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    if *field != field_domain {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(*result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 1)
+        && unary_field_constructor_application(export, *constructed, constructor, 0)
+}
+
+fn unary_field_recursor_shape(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+    field_domain: ExprId,
+    motive_level: Option<NameId>,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 3) else {
+        return false;
+    };
+    let [motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    if !unary_field_motive_type(export, *motive, inductive, motive_level)
+        || !unary_field_minor_type(export, *minor, field_domain, constructor)
+        || !inductive_constant_uses_declared_levels(
+            export,
+            *target,
+            inductive.name,
+            &inductive.level_params,
+        )
+        || !is_bvar_application(export, result, 2, 0)
+    {
+        return false;
+    }
+
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, 3) else {
+        return false;
+    };
+    let [rule_motive, rule_minor, rule_field] = rule_domains.as_slice() else {
+        return false;
+    };
+    unary_field_motive_type(export, *rule_motive, inductive, motive_level)
+        && unary_field_minor_type(export, *rule_minor, field_domain, constructor)
+        && *rule_field == field_domain
+        && is_bvar_application(export, rule_result, 1, 0)
+}
+
+fn check_unary_field_universe_inductive(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.level_params != inductive.level_params
+        || has_duplicate_parameter(&inductive.level_params)
+        || constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let Some(Expr::Sort(inductive_level_id)) = export.exprs.get(inductive.ty) else {
+        return Err(Verdict::Unknown);
+    };
+    let Some(Expr::Pi {
+        domain: field_domain,
+        ..
+    }) = export.exprs.get(constructor.ty)
+    else {
+        return Err(Verdict::Reject);
+    };
+    let Some(Expr::Sort(field_level_id)) = export.exprs.get(*field_domain) else {
+        return Err(Verdict::Unknown);
+    };
+
+    let substitution = parameter_substitution(&inductive.level_params);
+    let inductive_level = crate::level::instantiate_level(
+        &export.levels,
+        *inductive_level_id,
+        &substitution,
+        limits.judgment_steps,
+    )
+    .map_err(|_| Verdict::Unknown)?;
+    let field_level = crate::level::instantiate_level(
+        &export.levels,
+        *field_level_id,
+        &substitution,
+        limits.judgment_steps,
+    )
+    .map_err(|_| Verdict::Unknown)?;
+
+    let is_prop = matches!(inductive_level, crate::level::LevelTerm::Zero);
+    if !is_prop {
+        let field_type_level = crate::level::succ(field_level);
+        let upper = crate::level::max(field_type_level, inductive_level.clone());
+        verdict_boundary(crate::level::level_equal(
+            upper,
+            inductive_level.clone(),
+            limits.judgment_steps,
+        ))?;
+    }
+
+    let motive_level = if is_prop {
+        if !recursor.level_params.is_empty() {
+            return Err(Verdict::Reject);
+        }
+        None
+    } else {
+        let Some((first, rest)) = recursor.level_params.split_first() else {
+            return Err(Verdict::Reject);
+        };
+        if rest != inductive.level_params.as_slice() {
+            return Err(Verdict::Reject);
+        }
+        Some(*first)
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        true,
+    ) || !unary_field_recursor_shape(
+        export,
+        inductive,
+        constructor,
+        recursor,
+        *field_domain,
+        motive_level,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    derivation.promote_all(
+        export,
+        [derived_inductive, derived_constructor(constructor)],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+/// G27-001: the exact dependent existential Prop family.
+///
+/// This is deliberately name-sealed to `Exists`.  The newly earned law is
+/// narrower than general singleton-Prop elimination: one universe-polymorphic
+/// carrier, one dependent predicate parameter, one witness field and one proof
+/// field, with a recursor whose motive itself lands in Prop.  No iota rule,
+/// indexed elimination, or general structure authority is installed.
+fn check_exact_exists_family(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    // Preserve broader envelopes as UNKNOWN.  Inside this exact named
+    // envelope, structural disagreement is a malformed Exists claim.
+    if inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let [level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 2
+        || constructor.num_fields != 2
+        || constructor.level_params != [*level]
+        || !name_is_child_str(export, constructor.name, inductive.name, "intro")
+        || !is_exists_inductive_type(export, inductive.ty, *level)
+        || !is_exists_constructor_type(
+            export,
+            constructor.ty,
+            inductive.name,
+            constructor.name,
+            *level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(constructor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params == [*level],
+    ) || !is_exists_recursor_type(
+        export,
+        recursor.ty,
+        inductive.name,
+        constructor.name,
+        *level,
+    ) || !is_exists_recursor_rule(export, recursor, inductive.name, constructor.name, *level)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn is_exists_predicate_type(export: &ResolvedExport, expression: ExprId, carrier: u64) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Pi { domain, body })
+            if is_bvar(export, *domain, carrier) && is_prop_sort(export, *body)
+    )
+}
+
+fn is_exists_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    carrier: u64,
+    predicate: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_unary_polymorphic_constant(export, head, inductive, level)
+        && are_bvars(export, &arguments, &[carrier, predicate])
+}
+
+fn is_exists_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    level: NameId,
+    binders: [u64; 4],
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 4
+        && is_unary_polymorphic_constant(export, head, constructor, level)
+        && are_bvars(export, &arguments, &binders)
+}
+
+fn is_exists_inductive_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [carrier, predicate] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_exists_predicate_type(export, *predicate, 0)
+        && is_prop_sort(export, result)
+}
+
+fn is_exists_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    _constructor: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 4) else {
+        return false;
+    };
+    let [carrier, predicate, witness, proof] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_exists_predicate_type(export, *predicate, 0)
+        && is_bvar(export, *witness, 1)
+        && is_bvar_application(export, *proof, 1, 0)
+        && is_exists_application(export, result, inductive, level, 3, 2)
+}
+
+fn is_exists_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [target] = domains.as_slice() else {
+        return false;
+    };
+    is_exists_application(export, *target, inductive, level, 1, 0) && is_prop_sort(export, result)
+}
+
+fn is_exists_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [witness, proof] = domains.as_slice() else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *witness, 2)
+        && is_bvar_application(export, *proof, 2, 0)
+        && is_bvar(export, *motive, 2)
+        && is_exists_constructor_application(export, *constructed, constructor, level, [4, 3, 1, 0])
+}
+
+fn is_exists_recursor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 5) else {
+        return false;
+    };
+    let [carrier, predicate, motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_exists_predicate_type(export, *predicate, 0)
+        && is_exists_motive_type(export, *motive, inductive, level)
+        && is_exists_minor_type(export, *minor, constructor, level)
+        && is_exists_application(export, *target, inductive, level, 3, 2)
+        && is_bvar_application(export, result, 2, 0)
+}
+
+fn is_exists_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 6) else {
+        return false;
+    };
+    let [carrier, predicate, motive, minor, witness, proof] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_exists_predicate_type(export, *predicate, 0)
+        && is_exists_motive_type(export, *motive, inductive, level)
+        && is_exists_minor_type(export, *minor, constructor, level)
+        && is_bvar(export, *witness, 3)
+        && is_bvar_application(export, *proof, 3, 0)
+        && is_binary_bvar_application(export, result, 2, 1, 0)
+}
+
+/// G21-001 is a rejection-only constructor-result law for the otherwise
+/// unrecognized single-constructor frontier. It does not compare constructor
+/// parameter domains, because those may require conversion (tutorial 055).
+/// Instead it checks only hard structural invariants of the constructor result:
+/// owner/index metadata, declared universe order, parameter reuse/order, and
+/// absence of the inductive itself inside an index.
+fn check_unrecognized_single_constructor_coherence(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+
+    // Preserve unsupported semantic envelopes rather than strengthening them
+    // merely because they are unfamiliar.
+    if inductive.is_unsafe
+        || inductive.is_reflexive
+        || inductive.num_nested != 0
+        || constructor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    if constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+    {
+        Err(Verdict::Reject)
+    } else {
+        Err(Verdict::Unknown)
+    }
+}
+
+fn expression_has_definite_negative_occurrence(
+    export: &ResolvedExport,
+    expression: ExprId,
+    target: NameId,
+    positive: bool,
+) -> bool {
+    match export.exprs.get(expression) {
+        Some(Expr::Const { name, .. }) => *name == target && !positive,
+        Some(Expr::App { fun, arg }) => {
+            expression_has_definite_negative_occurrence(export, *fun, target, positive)
+                || expression_has_definite_negative_occurrence(export, *arg, target, positive)
+        }
+        Some(Expr::Pi { domain, body }) => {
+            expression_has_definite_negative_occurrence(export, *domain, target, !positive)
+                || expression_has_definite_negative_occurrence(export, *body, target, positive)
+        }
+        Some(Expr::Lam { domain, body }) => {
+            expression_has_definite_negative_occurrence(export, *domain, target, positive)
+                || expression_has_definite_negative_occurrence(export, *body, target, positive)
+        }
+        Some(Expr::Let { ty, value, body }) => {
+            expression_has_definite_negative_occurrence(export, *ty, target, positive)
+                || expression_has_definite_negative_occurrence(export, *value, target, positive)
+                || expression_has_definite_negative_occurrence(export, *body, target, positive)
+        }
+        Some(Expr::Proj { structure, .. }) => {
+            expression_has_definite_negative_occurrence(export, *structure, target, positive)
+        }
+        Some(Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_)) | None => false,
+    }
+}
+
+fn constructor_has_definite_negative_recursive_field(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+) -> bool {
+    let Some(total_binders) = constructor.num_params.checked_add(constructor.num_fields) else {
+        return false;
+    };
+    let mut expression = constructor.ty;
+    for binder in 0..total_binders {
+        let Some(Expr::Pi { domain, body }) = export.exprs.get(expression) else {
+            return false;
+        };
+        if binder >= constructor.num_params
+            && expression_has_definite_negative_occurrence(export, *domain, inductive.name, true)
+        {
+            return true;
+        }
+        expression = *body;
+    }
+    false
+}
+
+/// G21-001 result-spine coherence; G22-001 adds only a definite-negative
+/// field rejection above. Neither law grants positive inductive authority.
+fn constructor_result_is_definitely_malformed(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+) -> bool {
+    if constructor.inductive != inductive.name
+        || constructor.index != 0
+        || constructor.num_params != inductive.num_params
+        || constructor.level_params != inductive.level_params
+    {
+        return true;
+    }
+
+    let Some(num_binders) = constructor.num_params.checked_add(constructor.num_fields) else {
+        return true;
+    };
+    let mut result = constructor.ty;
+    for _ in 0..num_binders {
+        let Some(Expr::Pi { body, .. }) = export.exprs.get(result) else {
+            return true;
+        };
+        result = *body;
+    }
+
+    let (head, arguments) = application_spine(export, result);
+    if !inductive_constant_uses_declared_levels(
+        export,
+        head,
+        inductive.name,
+        &inductive.level_params,
+    ) {
+        return true;
+    }
+
+    let Some(expected_arguments) = inductive.num_params.checked_add(inductive.num_indices) else {
+        return true;
+    };
+    let Ok(expected_arguments) = usize::try_from(expected_arguments) else {
+        return true;
+    };
+    if arguments.len() != expected_arguments {
+        return true;
+    }
+
+    let Ok(num_params) = usize::try_from(inductive.num_params) else {
+        return true;
+    };
+    for parameter in 0..num_params {
+        let parameter = parameter as u64;
+        let expected_bvar = constructor.num_fields + inductive.num_params - 1 - parameter;
+        if !is_bvar(export, arguments[parameter as usize], expected_bvar) {
+            return true;
+        }
+    }
+
+    arguments[num_params..]
+        .iter()
+        .any(|argument| expression_contains_constant(export, *argument, inductive.name))
+}
+
+fn inductive_constant_uses_declared_levels(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level_params: &[NameId],
+) -> bool {
+    let Some(Expr::Const { name, levels }) = export.exprs.get(expression) else {
+        return false;
+    };
+    *name == inductive
+        && levels.len() == level_params.len()
+        && levels.iter().zip(level_params).all(|(level, expected)| {
+            matches!(export.levels.get(*level), Some(Level::Param(name)) if name == expected)
+        })
+}
+
+fn expression_contains_bvar(export: &ResolvedExport, expression: ExprId, target: u64) -> bool {
+    match export.exprs.get(expression) {
+        Some(Expr::BVar(index)) => *index == target,
+        Some(Expr::App { fun, arg }) => {
+            expression_contains_bvar(export, *fun, target)
+                || expression_contains_bvar(export, *arg, target)
+        }
+        Some(Expr::Lam { domain, body }) | Some(Expr::Pi { domain, body }) => {
+            expression_contains_bvar(export, *domain, target)
+                || expression_contains_bvar(export, *body, target.saturating_add(1))
+        }
+        Some(Expr::Let { ty, value, body }) => {
+            expression_contains_bvar(export, *ty, target)
+                || expression_contains_bvar(export, *value, target)
+                || expression_contains_bvar(export, *body, target.saturating_add(1))
+        }
+        Some(Expr::Proj { structure, .. }) => expression_contains_bvar(export, *structure, target),
+        Some(Expr::Const { .. } | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_)) | None => {
+            false
+        }
+    }
+}
+
+fn expression_contains_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+    target: NameId,
+) -> bool {
+    match export.exprs.get(expression) {
+        Some(Expr::Const { name, .. }) => *name == target,
+        Some(Expr::App { fun, arg }) => {
+            expression_contains_constant(export, *fun, target)
+                || expression_contains_constant(export, *arg, target)
+        }
+        Some(Expr::Lam { domain, body }) | Some(Expr::Pi { domain, body }) => {
+            expression_contains_constant(export, *domain, target)
+                || expression_contains_constant(export, *body, target)
+        }
+        Some(Expr::Let { ty, value, body }) => {
+            expression_contains_constant(export, *ty, target)
+                || expression_contains_constant(export, *value, target)
+                || expression_contains_constant(export, *body, target)
+        }
+        Some(Expr::Proj {
+            type_name,
+            structure,
+            ..
+        }) => *type_name == target || expression_contains_constant(export, *structure, target),
+        Some(Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_)) | None => false,
+    }
+}
+
+/// G9-001's deliberately narrow promotion boundary. Parsing preserves the
+/// complete block, but authority is granted only to the exact safe empty-type
+/// schema whose recursor signature is independently derived below.
+fn check_empty_inductive(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if !block.constructors.is_empty() {
+        return Err(Verdict::Unknown);
+    }
+
+    // G20-001 is deliberately scoped to the zero-constructor frontier. It is
+    // rejection-only and therefore cannot grant new inductive authority.
+    // Within this frontier, malformed arity metadata is decidable: declared
+    // parameters/indices must correspond to the exact Pi telescope ending in
+    // Sort, and universe parameters must be unique.
+    if !inductive_arity_metadata_is_well_formed(export, inductive) {
+        return Err(Verdict::Reject);
+    }
+
+    if let [owner_level] = inductive.level_params.as_slice()
+        && matches!(export.exprs.get(inductive.ty), Some(Expr::Sort(level))
+            if matches!(export.levels.get(*level), Some(Level::Param(name)) if name == owner_level))
+    {
+        let [recursor] = block.recursors.as_slice() else { return Err(Verdict::Unknown) };
+        let [motive_level, recursor_owner_level] = recursor.level_params.as_slice() else { return Err(Verdict::Unknown) };
+        if inductive.num_params != 0 || inductive.num_indices != 0 || inductive.num_nested != 0
+            || inductive.all != [inductive.name] || !inductive.constructors.is_empty()
+            || inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe
+            || recursor.is_unsafe || motive_level == owner_level || recursor_owner_level != owner_level
+            || !recursor_metadata_admissible(export, inductive, &[], recursor, false, true)
+            || !empty_recursor_obligation_at(export, inductive.name, &inductive.level_params, recursor)
+        {
+            return Err(Verdict::Unknown);
+        }
+        // No constructor or computation equation is introduced. An empty
+        // carrier admits the exact source-derived motive/major eliminator.
+        let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+        derivation.promote_all(export, [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_recursor(recursor),
+        ], limits.judgment_steps, delta_policy)?;
+        return Ok(derivation.finish());
+    }
+
+    // This is the G9 family discriminator, not a general empty inductive
+    // rule: a nullary type living structurally in either Prop or Type.  Prop
+    // is included because the extra/orphan-rec falsifiers target `False`.
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || !matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level)) if matches!(
+                export.levels.get(*level),
+                Some(Level::Zero | Level::Succ(LevelId(0)))
+            )
+        )
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let exact_type_metadata = inductive.all == [inductive.name]
+        && inductive.constructors.is_empty()
+        && !inductive.is_recursive
+        && !inductive.is_reflexive
+        && !inductive.is_unsafe
+        && inductive.level_params.is_empty();
+    if !exact_type_metadata {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_type(inductive.name, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        !recursor.is_unsafe && recursor.level_params.len() == 1,
+    ) || !empty_recursor_obligation(export, inductive.name, recursor)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn empty_recursor_obligation(
+    export: &ResolvedExport,
+    inductive: NameId,
+    recursor: &Recursor,
+) -> bool {
+    empty_recursor_obligation_at(export, inductive, &[], recursor)
+}
+
+fn empty_recursor_obligation_at(
+    export: &ResolvedExport,
+    inductive: NameId,
+    owner_levels: &[NameId],
+    recursor: &Recursor,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 2) else {
+        return false;
+    };
+    let [motive, target] = domains.as_slice() else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: motive_argument,
+        body: motive_sort,
+    }) = export.exprs.get(*motive)
+    else {
+        return false;
+    };
+    let owner = |expression| matches!(export.exprs.get(expression), Some(Expr::Const { name, levels })
+        if *name == inductive && levels.len() == owner_levels.len()
+            && levels.iter().zip(owner_levels).all(|(level, expected)|
+                matches!(export.levels.get(*level), Some(Level::Param(actual)) if actual == expected)));
+    owner(*motive_argument)
+        && owner(*target)
+        && matches!(
+            export.exprs.get(*motive_sort),
+            Some(Expr::Sort(level)) if matches!(
+                export.levels.get(*level),
+                Some(Level::Param(name)) if name == &recursor.level_params[0]
+            )
+        )
+        && is_bvar_application(export, result, 1, 0)
+}
+
+fn is_empty_constant(export: &ResolvedExport, expression: ExprId, name: NameId) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name: actual, levels }) if *actual == name && levels.is_empty()
+    )
+}
+
+/// G34: exact unary-polymorphic List family.
+///
+/// This does not introduce a second recursive evaluator.  It validates the
+/// standard List telescope, constructors, recursor and certified rule bodies,
+/// then reuses the G33 rule-body reduction capability.
+fn check_exact_list(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+    let [level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    let Some((type_domains, type_result)) = pi_spine(export, inductive.ty, 1) else {
+        return Err(Verdict::Reject);
+    };
+    let [carrier] = type_domains.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !is_sort_succ_parameter(export, *carrier, *level)
+        || !is_sort_succ_parameter(export, type_result, *level)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [nil, cons] = block.constructors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if nil.is_unsafe || cons.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [nil.name, cons.name]
+        || nil.index != 0
+        || nil.inductive != inductive.name
+        || nil.level_params != [*level]
+        || nil.num_params != 1
+        || nil.num_fields != 0
+        || !name_is_child_str(export, nil.name, inductive.name, "nil")
+        || !list_nil_constructor_type(export, nil.ty, inductive.name, *level)
+        || cons.index != 1
+        || cons.inductive != inductive.name
+        || cons.level_params != [*level]
+        || cons.num_params != 1
+        || cons.num_fields != 2
+        || !name_is_child_str(export, cons.name, inductive.name, "cons")
+        || !list_cons_constructor_type(export, cons.ty, inductive.name, *level)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    let levels_ok = matches!(
+        recursor.level_params.as_slice(),
+        [motive_level, carrier_level]
+            if *carrier_level == *level && *motive_level != *carrier_level
+    );
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        levels_ok,
+    ) || !list_recursor_type(
+        export,
+        inductive.name,
+        nil.name,
+        cons.name,
+        *level,
+        recursor,
+    ) || !list_recursor_rules(
+        export,
+        inductive.name,
+        nil.name,
+        cons.name,
+        *level,
+        recursor,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(nil),
+            derived_constructor(cons),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn list_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constant: NameId,
+    level: NameId,
+    argument: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [arg]
+        if is_unary_polymorphic_constant(export, head, constant, level)
+            && is_bvar(export, *arg, argument))
+}
+
+fn list_nil_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nil: NameId,
+    level: NameId,
+    carrier: u64,
+) -> bool {
+    list_application(export, expression, nil, level, carrier)
+}
+
+fn list_cons_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    cons: NameId,
+    level: NameId,
+    carrier: u64,
+    head: u64,
+    tail: u64,
+) -> bool {
+    let (constant, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_unary_polymorphic_constant(export, constant, cons, level)
+        && are_bvars(export, &arguments, &[carrier, head, tail])
+}
+
+fn list_nil_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [carrier] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, level)
+        && list_application(export, result, inductive, level, 0)
+}
+
+fn list_cons_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [carrier, head, tail] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, level)
+        && is_bvar(export, *head, 0)
+        && list_application(export, *tail, inductive, level, 1)
+        && list_application(export, result, inductive, level, 2)
+}
+
+fn list_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    carrier_level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [target] = domains.as_slice() else {
+        return false;
+    };
+    list_application(export, *target, inductive, carrier_level, 0)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn list_nil_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nil: NameId,
+    carrier_level: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_bvar(export, *fun, 0)
+                && list_nil_application(export, *arg, nil, carrier_level, 1)
+    )
+}
+
+fn list_cons_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    cons: NameId,
+    carrier_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [head, tail, tail_ih] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, *head, 2)
+        || !list_application(export, *tail, inductive, carrier_level, 3)
+        || !is_bvar_application(export, *tail_ih, 3, 0)
+    {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 4)
+        && list_cons_application(export, *constructed, cons, carrier_level, 5, 2, 1)
+}
+
+fn list_recursor_type(
+    export: &ResolvedExport,
+    inductive: NameId,
+    nil: NameId,
+    cons: NameId,
+    carrier_level: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [motive_level, declared_carrier] = recursor.level_params.as_slice() else {
+        return false;
+    };
+    if *declared_carrier != carrier_level {
+        return false;
+    }
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 5) else {
+        return false;
+    };
+    let [carrier, motive, nil_minor, cons_minor, target] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, carrier_level)
+        && list_motive_type(export, *motive, inductive, carrier_level, *motive_level)
+        && list_nil_minor_type(export, *nil_minor, nil, carrier_level)
+        && list_cons_minor_type(export, *cons_minor, inductive, cons, carrier_level)
+        && list_application(export, *target, inductive, carrier_level, 3)
+        && is_bvar_application(export, result, 3, 0)
+}
+
+fn list_recursor_rules(
+    export: &ResolvedExport,
+    inductive: NameId,
+    nil: NameId,
+    cons: NameId,
+    carrier_level: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [motive_level, declared_carrier] = recursor.level_params.as_slice() else {
+        return false;
+    };
+    if *declared_carrier != carrier_level {
+        return false;
+    }
+    let [nil_rule, cons_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+
+    let nil_ok = lam_spine(export, nil_rule.rhs, 4).is_some_and(|(domains, result)| {
+        let [carrier, motive, nil_minor, cons_minor] = domains.as_slice() else {
+            return false;
+        };
+        is_sort_succ_parameter(export, *carrier, carrier_level)
+            && list_motive_type(export, *motive, inductive, carrier_level, *motive_level)
+            && list_nil_minor_type(export, *nil_minor, nil, carrier_level)
+            && list_cons_minor_type(export, *cons_minor, inductive, cons, carrier_level)
+            && is_bvar(export, result, 1)
+    });
+
+    let cons_ok = lam_spine(export, cons_rule.rhs, 6).is_some_and(|(domains, result)| {
+        let [carrier, motive, nil_minor, cons_minor, head, tail] = domains.as_slice() else {
+            return false;
+        };
+        if !is_sort_succ_parameter(export, *carrier, carrier_level)
+            || !list_motive_type(export, *motive, inductive, carrier_level, *motive_level)
+            || !list_nil_minor_type(export, *nil_minor, nil, carrier_level)
+            || !list_cons_minor_type(export, *cons_minor, inductive, cons, carrier_level)
+            || !is_bvar(export, *head, 3)
+            || !list_application(export, *tail, inductive, carrier_level, 4)
+        {
+            return false;
+        }
+        let (minor, arguments) = application_spine(export, result);
+        let [head_arg, tail_arg, recursive_call] = arguments.as_slice() else {
+            return false;
+        };
+        if !is_bvar(export, minor, 2)
+            || !is_bvar(export, *head_arg, 1)
+            || !is_bvar(export, *tail_arg, 0)
+        {
+            return false;
+        }
+        let (recursive, recursive_arguments) = application_spine(export, *recursive_call);
+        recursive_arguments.len() == 5
+            && is_polymorphic_constant(
+                export,
+                recursive,
+                recursor.name,
+                *motive_level,
+                carrier_level,
+            )
+            && are_bvars(export, &recursive_arguments, &[5, 4, 3, 2, 0])
+    });
+
+    nil_ok && cons_ok
+}
+
+fn acc_relation_type(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [left, right]
+        if is_bvar(export, *left, 0)
+            && is_bvar(export, *right, 1)
+            && is_prop_sort(export, result))
+}
+
+fn acc_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    carrier: u64,
+    relation: u64,
+    index: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_unary_polymorphic_constant(export, head, inductive, level)
+        && are_bvars(export, &arguments, &[carrier, relation, index])
+}
+
+#[allow(clippy::too_many_arguments)]
+fn acc_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    level: NameId,
+    carrier: u64,
+    relation: u64,
+    index: u64,
+    recursive_field: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 4
+        && is_unary_polymorphic_constant(export, head, constructor, level)
+        && are_bvars(
+            export,
+            &arguments,
+            &[carrier, relation, index, recursive_field],
+        )
+}
+
+fn acc_recursive_field_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    carrier: u64,
+    relation: u64,
+    index: u64,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: point,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    if !is_bvar(export, *point, carrier) {
+        return false;
+    }
+    let Some(Expr::Pi {
+        domain: edge,
+        body: recursive,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    if !is_binary_bvar_application(
+        export,
+        *edge,
+        relation.saturating_add(1),
+        0,
+        index.saturating_add(1),
+    ) {
+        return false;
+    }
+    acc_application(
+        export,
+        *recursive,
+        inductive,
+        level,
+        carrier.saturating_add(2),
+        relation.saturating_add(2),
+        1,
+    )
+}
+
+fn acc_inductive_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [carrier, relation, index] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && acc_relation_type(export, *relation)
+        && is_bvar(export, *index, 1)
+        && is_prop_sort(export, result)
+}
+
+fn acc_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 4) else {
+        return false;
+    };
+    let [carrier, relation, index, recursive_field] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && acc_relation_type(export, *relation)
+        && is_bvar(export, *index, 1)
+        && acc_recursive_field_type(export, *recursive_field, inductive, level, 2, 1, 0)
+        && acc_application(export, result, inductive, level, 3, 2, 1)
+}
+
+fn acc_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    motive_level: NameId,
+    carrier: u64,
+    relation: u64,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [index, target] = domains.as_slice() else {
+        return false;
+    };
+    is_bvar(export, *index, carrier)
+        && acc_application(
+            export,
+            *target,
+            inductive,
+            level,
+            carrier.saturating_add(1),
+            relation.saturating_add(1),
+            0,
+        )
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn acc_induction_hypothesis_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    carrier: u64,
+    relation: u64,
+    index: u64,
+    motive: u64,
+    recursive_field: u64,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: point,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    if !is_bvar(export, *point, carrier) {
+        return false;
+    }
+    let Some(Expr::Pi {
+        domain: edge,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    if !is_binary_bvar_application(
+        export,
+        *edge,
+        relation.saturating_add(1),
+        0,
+        index.saturating_add(1),
+    ) {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, *result);
+    if !is_bvar(export, head, motive.saturating_add(2)) || arguments.len() != 2 {
+        return false;
+    }
+    let [point_arg, recursive_target] = arguments.as_slice() else {
+        return false;
+    };
+    is_bvar(export, *point_arg, 1)
+        && is_binary_bvar_application(
+            export,
+            *recursive_target,
+            recursive_field.saturating_add(2),
+            1,
+            0,
+        )
+}
+
+fn acc_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [index, recursive_field, induction_hypothesis] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, *index, 2)
+        || !acc_recursive_field_type(export, *recursive_field, inductive, level, 3, 2, 0)
+        || !acc_induction_hypothesis_type(export, *induction_hypothesis, 4, 3, 1, 2, 0)
+    {
+        return false;
+    }
+
+    let (motive, arguments) = application_spine(export, result);
+    if !is_bvar(export, motive, 3) || arguments.len() != 2 {
+        return false;
+    }
+    let [index_arg, constructed] = arguments.as_slice() else {
+        return false;
+    };
+    is_bvar(export, *index_arg, 2)
+        && acc_constructor_application(export, *constructed, constructor, level, 5, 4, 2, 1)
+        && motive_level != level
+}
+
+fn acc_recursor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 6) else {
+        return false;
+    };
+    let [carrier, relation, motive, minor, index, target] = domains.as_slice() else {
+        return false;
+    };
+    if !is_sort_parameter(export, *carrier, level)
+        || !acc_relation_type(export, *relation)
+        || !acc_motive_type(export, *motive, inductive, level, motive_level, 1, 0)
+        || !acc_minor_type(export, *minor, inductive, constructor, level, motive_level)
+        || !is_bvar(export, *index, 3)
+        || !acc_application(export, *target, inductive, level, 4, 3, 0)
+    {
+        return false;
+    }
+    let (result_motive, result_arguments) = application_spine(export, result);
+    result_arguments.len() == 2
+        && is_bvar(export, result_motive, 3)
+        && are_bvars(export, &result_arguments, &[1, 0])
+}
+
+fn acc_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.constructor != constructor || rule.num_fields != 2 {
+        return false;
+    }
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 6) else {
+        return false;
+    };
+    let [carrier, relation, motive, minor, index, recursive_field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_sort_parameter(export, *carrier, level)
+        || !acc_relation_type(export, *relation)
+        || !acc_motive_type(export, *motive, inductive, level, motive_level, 1, 0)
+        || !acc_minor_type(export, *minor, inductive, constructor, level, motive_level)
+        || !is_bvar(export, *index, 3)
+        || !acc_recursive_field_type(export, *recursive_field, inductive, level, 4, 3, 0)
+    {
+        return false;
+    }
+
+    let (minor_head, minor_arguments) = application_spine(export, result);
+    let [index_arg, field_arg, pointwise_ih] = minor_arguments.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, minor_head, 2)
+        || !is_bvar(export, *index_arg, 1)
+        || !is_bvar(export, *field_arg, 0)
+    {
+        return false;
+    }
+
+    let Some(Expr::Lam {
+        domain: point,
+        body,
+    }) = export.exprs.get(*pointwise_ih)
+    else {
+        return false;
+    };
+    if !is_bvar(export, *point, 5) {
+        return false;
+    }
+    let Some(Expr::Lam {
+        domain: edge,
+        body: recursive_call,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    if !is_binary_bvar_application(export, *edge, 5, 0, 2) {
+        return false;
+    }
+
+    let (recursive_head, recursive_arguments) = application_spine(export, *recursive_call);
+    let [
+        carrier_arg,
+        relation_arg,
+        motive_arg,
+        minor_arg,
+        point_arg,
+        target_arg,
+    ] = recursive_arguments.as_slice()
+    else {
+        return false;
+    };
+    is_polymorphic_constant(export, recursive_head, recursor.name, motive_level, level)
+        && are_bvars(
+            export,
+            &[
+                *carrier_arg,
+                *relation_arg,
+                *motive_arg,
+                *minor_arg,
+                *point_arg,
+            ],
+            &[7, 6, 5, 4, 1],
+        )
+        && is_binary_bvar_application(export, *target_arg, 2, 1, 0)
+}
+
+fn decidable_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    decidable: NameId,
+    proposition: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [argument]
+        if is_empty_constant(export, head, decidable)
+            && is_bvar(export, *argument, proposition))
+}
+
+fn not_bvar_application(export: &ResolvedExport, expression: ExprId, proposition: u64) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [argument]
+        if is_root_empty_constant_named(export, head, "Not")
+            && is_bvar(export, *argument, proposition))
+}
+
+fn decidable_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    proposition: u64,
+    witness: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_empty_constant(export, head, constructor)
+        && are_bvars(export, &arguments, &[proposition, witness])
+}
+
+fn decidable_type(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [proposition] = domains.as_slice() else {
+        return false;
+    };
+    is_prop_sort(export, *proposition)
+        && matches!(
+            export.exprs.get(result),
+            Some(Expr::Sort(level))
+                if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
+        )
+}
+
+fn decidable_false_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    decidable: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [proposition, refutation] = domains.as_slice() else {
+        return false;
+    };
+    is_prop_sort(export, *proposition)
+        && not_bvar_application(export, *refutation, 0)
+        && decidable_application(export, result, decidable, 1)
+}
+
+fn decidable_true_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    decidable: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [proposition, proof] = domains.as_slice() else {
+        return false;
+    };
+    is_prop_sort(export, *proposition)
+        && is_bvar(export, *proof, 0)
+        && decidable_application(export, result, decidable, 1)
+}
+
+fn decidable_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    decidable: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [target] = domains.as_slice() else {
+        return false;
+    };
+    decidable_application(export, *target, decidable, 0)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn decidable_false_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    false_ctor: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [refutation] = domains.as_slice() else {
+        return false;
+    };
+    if !not_bvar_application(export, *refutation, 1) {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 1)
+        && decidable_constructor_application(export, *constructed, false_ctor, 2, 0)
+}
+
+fn decidable_true_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    true_ctor: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [proof] = domains.as_slice() else {
+        return false;
+    };
+    // The true minor follows the false minor in Decidable.rec's telescope.
+    // Before the proof binder, p is therefore bvar 2; after the proof binder,
+    // motive is bvar 2 and p is bvar 3.
+    if !is_bvar(export, *proof, 2) {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 2)
+        && decidable_constructor_application(export, *constructed, true_ctor, 3, 0)
+}
+
+fn decidable_recursor_type(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    decidable: NameId,
+    false_ctor: NameId,
+    true_ctor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 5) else {
+        return false;
+    };
+    let [proposition, motive, false_minor, true_minor, target] = domains.as_slice() else {
+        return false;
+    };
+    is_prop_sort(export, *proposition)
+        && decidable_motive_type(export, *motive, decidable, motive_level)
+        && decidable_false_minor_type(export, *false_minor, false_ctor)
+        && decidable_true_minor_type(export, *true_minor, true_ctor)
+        && decidable_application(export, *target, decidable, 3)
+        && is_bvar_application(export, result, 3, 0)
+}
+
+fn decidable_recursor_rules(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    decidable: NameId,
+    false_ctor: NameId,
+    true_ctor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let [false_rule, true_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+
+    let false_ok = lam_spine(export, false_rule.rhs, 5).is_some_and(|(domains, result)| {
+        let [proposition, motive, false_minor, true_minor, refutation] = domains.as_slice() else {
+            return false;
+        };
+        is_prop_sort(export, *proposition)
+            && decidable_motive_type(export, *motive, decidable, motive_level)
+            && decidable_false_minor_type(export, *false_minor, false_ctor)
+            && decidable_true_minor_type(export, *true_minor, true_ctor)
+            && not_bvar_application(export, *refutation, 3)
+            && is_bvar_application(export, result, 2, 0)
+    });
+
+    let true_ok = lam_spine(export, true_rule.rhs, 5).is_some_and(|(domains, result)| {
+        let [proposition, motive, false_minor, true_minor, proof] = domains.as_slice() else {
+            return false;
+        };
+        is_prop_sort(export, *proposition)
+            && decidable_motive_type(export, *motive, decidable, motive_level)
+            && decidable_false_minor_type(export, *false_minor, false_ctor)
+            && decidable_true_minor_type(export, *true_minor, true_ctor)
+            && is_bvar(export, *proof, 3)
+            && is_bvar_application(export, result, 1, 0)
+    });
+
+    false_ok && true_ok
+}
+
+fn check_exact_decidable(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [false_ctor, true_ctor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || false_ctor.is_unsafe
+        || true_ctor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [false_ctor.name, true_ctor.name]
+        || !name_is_root_str(export, inductive.name, "Decidable")
+        || !decidable_type(export, inductive.ty)
+        || false_ctor.index != 0
+        || false_ctor.inductive != inductive.name
+        || false_ctor.num_params != 1
+        || false_ctor.num_fields != 1
+        || !false_ctor.level_params.is_empty()
+        || !name_is_child_str(export, false_ctor.name, inductive.name, "isFalse")
+        || !decidable_false_constructor_type(export, false_ctor.ty, inductive.name)
+        || true_ctor.index != 1
+        || true_ctor.inductive != inductive.name
+        || true_ctor.num_params != 1
+        || true_ctor.num_fields != 1
+        || !true_ctor.level_params.is_empty()
+        || !name_is_child_str(export, true_ctor.name, inductive.name, "isTrue")
+        || !decidable_true_constructor_type(export, true_ctor.ty, inductive.name)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !decidable_recursor_type(
+            export,
+            recursor,
+            inductive.name,
+            false_ctor.name,
+            true_ctor.name,
+            *motive_level,
+        )
+        || !decidable_recursor_rules(
+            export,
+            recursor,
+            inductive.name,
+            false_ctor.name,
+            true_ctor.name,
+            *motive_level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(false_ctor),
+            derived_constructor(true_ctor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn check_exact_heq(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 2
+        || inductive.num_indices != 2
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || inductive.level_params.len() != 1
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 2
+        || constructor.num_fields != 0
+        || constructor.is_unsafe
+        || constructor.level_params != inductive.level_params
+        || !name_is_child_str(export, constructor.name, inductive.name, "refl")
+        || recursor.is_unsafe
+        || !recursor.k
+        || recursor.num_params != 2
+        || recursor.num_indices != 2
+        || recursor.rules.len() != 1
+        || recursor.rules[0].constructor != constructor.name
+        || recursor.rules[0].num_fields != 0
+        || recursor.level_params.len() != 2
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            true,
+            true,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn check_exact_acc(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 2
+        || inductive.num_indices != 1
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || !inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let [level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    let [motive_level, recursor_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if *recursor_level != *level || *motive_level == *level {
+        return Err(Verdict::Reject);
+    }
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || !name_is_root_str(export, inductive.name, "Acc")
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.level_params != [*level]
+        || constructor.num_params != 2
+        || constructor.num_fields != 2
+        || !name_is_child_str(export, constructor.name, inductive.name, "intro")
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+        || !acc_inductive_type(export, inductive.ty, *level)
+        || !acc_constructor_type(export, constructor.ty, inductive.name, *level)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !acc_recursor_type(
+            export,
+            recursor.ty,
+            inductive.name,
+            constructor.name,
+            *level,
+            *motive_level,
+        )
+        || !acc_recursor_rule(
+            export,
+            recursor,
+            inductive.name,
+            constructor.name,
+            *level,
+            *motive_level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn nat_le_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    le: NameId,
+    lower: u64,
+    upper: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_empty_constant(export, head, le)
+        && are_bvars(export, &arguments, &[lower, upper])
+}
+
+fn nat_le_refl_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    refl: NameId,
+    value: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [argument]
+        if is_empty_constant(export, head, refl)
+            && is_bvar(export, *argument, value))
+}
+
+fn nat_le_step_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    step: NameId,
+    lower: u64,
+    upper: u64,
+    proof: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_empty_constant(export, head, step)
+        && are_bvars(export, &arguments, &[lower, upper, proof])
+}
+
+fn nat_succ_bvar(export: &ResolvedExport, expression: ExprId, succ: NameId, value: u64) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_empty_constant(export, *fun, succ)
+                && is_bvar(export, *arg, value)
+    )
+}
+
+fn nat_le_type(export: &ResolvedExport, expression: ExprId, nat: NameId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [lower, upper]
+        if is_empty_constant(export, *lower, nat)
+            && is_empty_constant(export, *upper, nat)
+            && is_prop_sort(export, result))
+}
+
+fn nat_le_refl_type(export: &ResolvedExport, expression: ExprId, nat: NameId, le: NameId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [value]
+        if is_empty_constant(export, *value, nat)
+            && nat_le_application(export, result, le, 0, 0))
+}
+
+fn nat_le_step_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nat: NameId,
+    succ: NameId,
+    le: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [lower, upper, proof] = domains.as_slice() else {
+        return false;
+    };
+    if !is_empty_constant(export, *lower, nat)
+        || !is_empty_constant(export, *upper, nat)
+        || !nat_le_application(export, *proof, le, 1, 0)
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    let [lower_arg, upper_arg] = arguments.as_slice() else {
+        return false;
+    };
+    is_empty_constant(export, head, le)
+        && is_bvar(export, *lower_arg, 2)
+        && nat_succ_bvar(export, *upper_arg, succ, 1)
+}
+
+fn nat_le_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nat: NameId,
+    le: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [upper, proof] = domains.as_slice() else {
+        return false;
+    };
+    is_empty_constant(export, *upper, nat)
+        && nat_le_application(export, *proof, le, 1, 0)
+        && is_prop_sort(export, result)
+}
+
+fn nat_le_refl_minor_type(export: &ResolvedExport, expression: ExprId, refl: NameId) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    let [upper, proof] = arguments.as_slice() else {
+        return false;
+    };
+    is_bvar(export, head, 0)
+        && is_bvar(export, *upper, 1)
+        && nat_le_refl_application(export, *proof, refl, 1)
+}
+
+fn nat_le_step_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nat: NameId,
+    succ: NameId,
+    le: NameId,
+    step: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [upper, proof, induction_hypothesis] = domains.as_slice() else {
+        return false;
+    };
+    if !is_empty_constant(export, *upper, nat)
+        || !nat_le_application(export, *proof, le, 3, 0)
+        || !is_binary_bvar_application(export, *induction_hypothesis, 3, 1, 0)
+    {
+        return false;
+    }
+    let (motive, arguments) = application_spine(export, result);
+    let [next_upper, stepped] = arguments.as_slice() else {
+        return false;
+    };
+    is_bvar(export, motive, 4)
+        && nat_succ_bvar(export, *next_upper, succ, 2)
+        && nat_le_step_application(export, *stepped, step, 5, 2, 1)
+}
+
+fn nat_le_recursor_type(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    nat: NameId,
+    succ: NameId,
+    le: NameId,
+    refl: NameId,
+    step: NameId,
+) -> bool {
+    if !recursor.level_params.is_empty() {
+        return false;
+    }
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 6) else {
+        return false;
+    };
+    let [lower, motive, refl_minor, step_minor, upper, proof] = domains.as_slice() else {
+        return false;
+    };
+    if !is_empty_constant(export, *lower, nat)
+        || !nat_le_motive_type(export, *motive, nat, le)
+        || !nat_le_refl_minor_type(export, *refl_minor, refl)
+        || !nat_le_step_minor_type(export, *step_minor, nat, succ, le, step)
+        || !is_empty_constant(export, *upper, nat)
+        || !nat_le_application(export, *proof, le, 4, 0)
+    {
+        return false;
+    }
+    is_binary_bvar_application(export, result, 4, 1, 0)
+}
+
+fn nat_le_recursor_rules(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    nat: NameId,
+    succ: NameId,
+    le: NameId,
+    refl: NameId,
+    step: NameId,
+) -> bool {
+    let [refl_rule, step_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+
+    let refl_ok = lam_spine(export, refl_rule.rhs, 4).is_some_and(|(domains, result)| {
+        let [lower, motive, refl_minor, step_minor] = domains.as_slice() else {
+            return false;
+        };
+        is_empty_constant(export, *lower, nat)
+            && nat_le_motive_type(export, *motive, nat, le)
+            && nat_le_refl_minor_type(export, *refl_minor, refl)
+            && nat_le_step_minor_type(export, *step_minor, nat, succ, le, step)
+            && is_bvar(export, result, 1)
+    });
+
+    let step_ok = lam_spine(export, step_rule.rhs, 6).is_some_and(|(domains, result)| {
+        let [lower, motive, refl_minor, step_minor, upper, proof] = domains.as_slice() else {
+            return false;
+        };
+        if !is_empty_constant(export, *lower, nat)
+            || !nat_le_motive_type(export, *motive, nat, le)
+            || !nat_le_refl_minor_type(export, *refl_minor, refl)
+            || !nat_le_step_minor_type(export, *step_minor, nat, succ, le, step)
+            || !is_empty_constant(export, *upper, nat)
+            || !nat_le_application(export, *proof, le, 4, 0)
+        {
+            return false;
+        }
+        let Some(Expr::App {
+            fun: step_at_proof,
+            arg: recursive_call,
+        }) = export.exprs.get(result)
+        else {
+            return false;
+        };
+        if !is_binary_bvar_application(export, *step_at_proof, 2, 1, 0) {
+            return false;
+        }
+        let (head, arguments) = application_spine(export, *recursive_call);
+        arguments.len() == 6
+            && is_empty_constant(export, head, recursor.name)
+            && are_bvars(export, &arguments, &[5, 4, 3, 2, 1, 0])
+    });
+
+    refl_ok && step_ok
+}
+
+fn check_exact_nat_le(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [refl, step], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    let Some(nat) = environment.nat_primitives() else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 1
+        || inductive.num_indices != 1
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || refl.is_unsafe
+        || step.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [refl.name, step.name]
+        || !name_is_child_str(export, inductive.name, nat.type_name, "le")
+        || !nat_le_type(export, inductive.ty, nat.type_name)
+        || refl.index != 0
+        || refl.inductive != inductive.name
+        || !refl.level_params.is_empty()
+        || refl.num_params != 1
+        || refl.num_fields != 0
+        || !name_is_child_str(export, refl.name, inductive.name, "refl")
+        || !nat_le_refl_type(export, refl.ty, nat.type_name, inductive.name)
+        || step.index != 1
+        || step.inductive != inductive.name
+        || !step.level_params.is_empty()
+        || step.num_params != 1
+        || step.num_fields != 2
+        || !name_is_child_str(export, step.name, inductive.name, "step")
+        || !nat_le_step_type(export, step.ty, nat.type_name, nat.succ, inductive.name)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            recursor.level_params.is_empty(),
+        )
+        || !nat_le_recursor_type(
+            export,
+            recursor,
+            nat.type_name,
+            nat.succ,
+            inductive.name,
+            refl.name,
+            step.name,
+        )
+        || !nat_le_recursor_rules(
+            export,
+            recursor,
+            nat.type_name,
+            nat.succ,
+            inductive.name,
+            refl.name,
+            step.name,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(refl),
+            derived_constructor(step),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+/// G18-001: exact local recursive N. Recursion is admitted only inside this
+/// name-sealed envelope; the existing staged signature transaction is reused
+/// and no general positivity or recursive-inductive search is introduced.
+fn check_exact_nat(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+    if !inductive.is_recursive {
+        return Err(Verdict::Reject);
+    }
+    if !inductive.level_params.is_empty()
+        || !matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level))
+                if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [zero, succ] = block.constructors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if zero.is_unsafe || succ.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    let constructor_names_ok = if name_is_root_str(export, inductive.name, "N") {
+        (name_is_child_str(export, zero.name, inductive.name, "zero")
+            && name_is_child_str(export, succ.name, inductive.name, "succ"))
+            || (name_is_child_str(export, zero.name, inductive.name, "O")
+                && name_is_child_str(export, succ.name, inductive.name, "S"))
+    } else {
+        name_is_child_str(export, zero.name, inductive.name, "zero")
+            && name_is_child_str(export, succ.name, inductive.name, "succ")
+    };
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [zero.name, succ.name]
+        || zero.index != 0
+        || zero.inductive != inductive.name
+        || !zero.level_params.is_empty()
+        || zero.num_fields != 0
+        || zero.num_params != 0
+        || !constructor_names_ok
+        || !is_empty_constant(export, zero.ty, inductive.name)
+        || succ.index != 1
+        || succ.inductive != inductive.name
+        || !succ.level_params.is_empty()
+        || succ.num_fields != 1
+        || succ.num_params != 0
+        || !matches!(
+            export.exprs.get(succ.ty),
+            Some(Expr::Pi { domain, body })
+                if is_empty_constant(export, *domain, inductive.name)
+                    && is_empty_constant(export, *body, inductive.name)
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == 1,
+    ) || !nat_recursor_obligations(export, inductive.name, zero.name, succ.name, recursor)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(zero),
+            derived_constructor(succ),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment =
+        install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)?;
+    let Some(type_expr) = export.exprs.iter_raw().find_map(|(raw, expression)| {
+        matches!(
+            expression,
+            Expr::Const { name, levels }
+                if *name == inductive.name && levels.is_empty()
+        )
+        .then_some(ExprId(raw))
+    }) else {
+        return Err(Verdict::Unknown);
+    };
+    environment
+        .install_nat_primitives(NatPrimitives {
+            type_name: inductive.name,
+            type_expr,
+            zero: zero.name,
+            succ: succ.name,
+            recursor: recursor.name,
+            add: None, mul:None, pow:None,land:None,shift_right:None,div:None,modulo:None,
+            sub: None,
+            pred: None,
+            virtual_bvar_zero: export.exprs.iter_raw().find_map(|(raw, e)| {
+                matches!(e, Expr::BVar(0)).then_some(ExprId(raw))
+            }),
+            ble: None,
+            beq: None,
+        })
+        .map_err(|_| Verdict::Reject)
+}
+
+fn install_certified_recursor_reduction(
+    environment: Environment,
+    constructors: &[Constructor],
+    recursor: &Recursor,
+) -> Result<Environment, Verdict> {
+    if constructors.len() != recursor.rules.len() {
+        return Err(Verdict::Reject);
+    }
+    let rules = constructors
+        .iter()
+        .zip(&recursor.rules)
+        .map(|(constructor, rule)| {
+            Ok(RecursorRule {
+                constructor: constructor.name,
+                constructor_level_params: constructor.level_params.clone(),
+                num_params: usize::try_from(constructor.num_params).map_err(|_| Verdict::Reject)?,
+                num_fields: usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?,
+                rhs: rule.rhs,
+            })
+        })
+        .collect::<Result<Vec<_>, Verdict>>()?;
+    let reduction = RecursorReduction {
+        k: recursor.k,
+        num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
+        num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
+        level_params: recursor.level_params.clone(),
+        rules,
+    };
+    environment
+        .install_recursor_reduction(recursor.name, reduction)
+        .map_err(|_| Verdict::Reject)
+}
+
+fn nat_recursor_obligations(
+    export: &ResolvedExport,
+    inductive: NameId,
+    zero: NameId,
+    succ: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let motive_level = recursor.level_params[0];
+
+    let motive_ok = |expression: ExprId| {
+        matches!(
+            export.exprs.get(expression),
+            Some(Expr::Pi { domain, body })
+                if is_empty_constant(export, *domain, inductive)
+                    && is_sort_parameter(export, *body, motive_level)
+        )
+    };
+
+    let succ_minor_ok = |expression: ExprId| {
+        let Some((domains, result)) = pi_spine(export, expression, 2) else {
+            return false;
+        };
+        let [value, induction_hypothesis] = domains.as_slice() else {
+            return false;
+        };
+        let Some(Expr::App {
+            fun: motive,
+            arg: succ_value,
+        }) = export.exprs.get(result)
+        else {
+            return false;
+        };
+        let Some(Expr::App {
+            fun: succ_head,
+            arg: succ_arg,
+        }) = export.exprs.get(*succ_value)
+        else {
+            return false;
+        };
+        is_empty_constant(export, *value, inductive)
+            && is_bvar_application(export, *induction_hypothesis, 2, 0)
+            && is_bvar(export, *motive, 3)
+            && is_empty_constant(export, *succ_head, succ)
+            && is_bvar(export, *succ_arg, 1)
+    };
+
+    let Some((type_domains, type_result)) = pi_spine(export, recursor.ty, 4) else {
+        return false;
+    };
+    let [motive, zero_minor, succ_minor, target] = type_domains.as_slice() else {
+        return false;
+    };
+    let type_ok = motive_ok(*motive)
+        && is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
+        && succ_minor_ok(*succ_minor)
+        && is_empty_constant(export, *target, inductive)
+        && is_bvar_application(export, type_result, 3, 0);
+
+    let [zero_rule, succ_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let zero_ok = lam_spine(export, zero_rule.rhs, 3).is_some_and(|(domains, result)| {
+        matches!(domains.as_slice(), [motive, zero_minor, succ_minor]
+            if motive_ok(*motive)
+                && is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
+                && succ_minor_ok(*succ_minor)
+                && is_bvar(export, result, 1))
+    });
+
+    let succ_ok = lam_spine(export, succ_rule.rhs, 4).is_some_and(|(domains, result)| {
+        let [motive, zero_minor, succ_minor, value] = domains.as_slice() else {
+            return false;
+        };
+        if !motive_ok(*motive)
+            || !is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
+            || !succ_minor_ok(*succ_minor)
+            || !is_empty_constant(export, *value, inductive)
+        {
+            return false;
+        }
+        let Some(Expr::App {
+            fun: succ_step,
+            arg: recursive_call,
+        }) = export.exprs.get(result)
+        else {
+            return false;
+        };
+        if !is_bvar_application(export, *succ_step, 1, 0) {
+            return false;
+        }
+        let (head, arguments) = application_spine(export, *recursive_call);
+        arguments.len() == 4
+            && is_unary_polymorphic_constant(export, head, recursor.name, motive_level)
+            && are_bvars(export, &arguments, &[3, 2, 1, 0])
+    });
+
+    type_ok && zero_ok && succ_ok
+}
+
+fn check_exact_rbtree(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_nested != 0 || inductive.is_reflexive || inductive.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.num_params != 1 || inductive.num_indices != 2 || !inductive.is_recursive {
+        return Err(Verdict::Reject);
+    }
+    let [level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    let Some((type_domains, type_result)) = pi_spine(export, inductive.ty, 3) else {
+        return Err(Verdict::Reject);
+    };
+    let [carrier, color, height] = type_domains.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !is_sort_succ_parameter(export, *carrier, *level)
+        || !is_root_empty_constant_named(export, *color, "Color")
+        || !is_root_empty_constant_named(export, *height, "N")
+        || !is_sort_succ_parameter(export, type_result, *level)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [leaf, red, black] = block.constructors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if leaf.is_unsafe || red.is_unsafe || black.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    let leaf_type_valid = pi_spine(export, leaf.ty, 1).is_some_and(|(domains, result)| {
+        let [leaf_carrier] = domains.as_slice() else {
+            return false;
+        };
+        rbtree_application_parts(export, result, inductive.name, *level).is_some_and(
+            |(result_carrier, result_color, result_height)| {
+                is_sort_succ_parameter(export, *leaf_carrier, *level)
+                    && is_bvar(export, result_carrier, 0)
+                    && is_child_empty_constant_named(export, result_color, "Color", "b")
+                    && is_child_empty_constant_named(export, result_height, "N", "zero")
+            },
+        )
+    });
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [leaf.name, red.name, black.name]
+        || !valid_rbtree_constructor_metadata(export, inductive.name, *level, leaf, 0, 0, "leaf")
+        || !valid_rbtree_constructor_metadata(export, inductive.name, *level, red, 1, 4, "red")
+        || !valid_rbtree_constructor_metadata(export, inductive.name, *level, black, 2, 6, "black")
+        || !leaf_type_valid
+        || !is_derived_rbtree_branch_type(export, red.ty, inductive.name, *level, RbBranch::Red)
+        || !is_derived_rbtree_branch_type(export, black.ty, inductive.name, *level, RbBranch::Black)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == 2
+            && recursor.level_params[1] == *level
+            && recursor.level_params[0] != *level,
+    ) || !is_derived_rbtree_recursor_type(
+        export,
+        inductive.name,
+        *level,
+        [leaf.name, red.name, black.name],
+        recursor,
+    ) || !are_derived_rbtree_rules(
+        export,
+        inductive.name,
+        *level,
+        [leaf.name, red.name, black.name],
+        recursor,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(leaf),
+            derived_constructor(red),
+            derived_constructor(black),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn valid_rbtree_constructor_metadata(
+    export: &ResolvedExport,
+    inductive: NameId,
+    level: NameId,
+    constructor: &Constructor,
+    index: u64,
+    fields: u64,
+    suffix: &str,
+) -> bool {
+    constructor.index == index
+        && constructor.inductive == inductive
+        && constructor.level_params == [level]
+        && constructor.num_fields == fields
+        && constructor.num_params == 1
+        && name_is_child_str(export, constructor.name, inductive, suffix)
+}
+
+fn rbtree_application_parts(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> Option<(ExprId, ExprId, ExprId)> {
+    let (head, arguments) = application_spine(export, expression);
+    let [carrier, color, height] = arguments.as_slice() else {
+        return None;
+    };
+    is_unary_polymorphic_constant(export, head, inductive, level)
+        .then_some((*carrier, *color, *height))
+}
+
+fn is_root_empty_constant_named(export: &ResolvedExport, expression: ExprId, root: &str) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if levels.is_empty() && name_is_root_str(export, *name, root)
+    )
+}
+
+fn is_child_empty_constant_named(
+    export: &ResolvedExport,
+    expression: ExprId,
+    root: &str,
+    child: &str,
+) -> bool {
+    let Some(Expr::Const { name, levels }) = export.exprs.get(expression) else {
+        return false;
+    };
+    if !levels.is_empty() {
+        return false;
+    }
+    matches!(
+        export.names.get(*name),
+        Some(Name::Str { prefix, value })
+            if value == child && name_is_root_str(export, *prefix, root)
+    )
+}
+
+fn is_named_succ_bvar(
+    export: &ResolvedExport,
+    expression: ExprId,
+    root: &str,
+    child: &str,
+    argument: u64,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_child_empty_constant_named(export, *fun, root, child)
+                && is_bvar(export, *arg, argument)
+    )
+}
+
+fn is_derived_rbtree_branch_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    branch: RbBranch,
+) -> bool {
+    let branch_index = match branch {
+        RbBranch::Red => 0,
+        RbBranch::Black => 1,
+    };
+    let extra_colors = 2 * branch_index;
+    let arity = 5 + extra_colors;
+    let Some((domains, result)) = pi_spine(export, expression, arity) else {
+        return false;
+    };
+
+    let carrier = domains[0];
+    let height = domains[1 + extra_colors];
+    let left = domains[2 + extra_colors];
+    let value = domains[3 + extra_colors];
+    let right = domains[4 + extra_colors];
+
+    let (
+        Some((left_carrier, left_color, left_height)),
+        Some((right_carrier, right_color, right_height)),
+        Some((result_carrier, result_color, result_height)),
+    ) = (
+        rbtree_application_parts(export, left, inductive, level),
+        rbtree_application_parts(export, right, inductive, level),
+        rbtree_application_parts(export, result, inductive, level),
+    )
+    else {
+        return false;
+    };
+
+    let prefix_colors_ok = match branch {
+        RbBranch::Red => true,
+        RbBranch::Black => {
+            is_root_empty_constant_named(export, domains[1], "Color")
+                && is_root_empty_constant_named(export, domains[2], "Color")
+        }
+    };
+    let child_colors_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, left_color, "Color", "b")
+                && is_child_empty_constant_named(export, right_color, "Color", "b")
+        }
+        RbBranch::Black => is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3),
+    };
+    let result_index_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, result_color, "Color", "r")
+                && is_bvar(export, result_height, 3)
+        }
+        RbBranch::Black => {
+            is_child_empty_constant_named(export, result_color, "Color", "b")
+                && is_named_succ_bvar(export, result_height, "N", "succ", 3)
+        }
+    };
+
+    is_sort_succ_parameter(export, carrier, level)
+        && prefix_colors_ok
+        && is_root_empty_constant_named(export, height, "N")
+        && is_bvar(export, left_carrier, 1 + 2 * branch_index as u64)
+        && child_colors_ok
+        && is_bvar(export, left_height, 0)
+        && is_bvar(export, value, 2 + 2 * branch_index as u64)
+        && is_bvar(export, right_carrier, 3 + 2 * branch_index as u64)
+        && is_bvar(export, right_height, 2)
+        && is_bvar(export, result_carrier, 4 + 2 * branch_index as u64)
+        && result_index_ok
+}
+
+fn application_spine(export: &ResolvedExport, expression: ExprId) -> (ExprId, Vec<ExprId>) {
+    let mut head = expression;
+    let mut arguments = Vec::new();
+    while let Some(Expr::App { fun, arg }) = export.exprs.get(head) {
+        arguments.push(*arg);
+        head = *fun;
+    }
+    arguments.reverse();
+    (head, arguments)
+}
+
+fn pi_spine(
+    export: &ResolvedExport,
+    expression: ExprId,
+    count: usize,
+) -> Option<(Vec<ExprId>, ExprId)> {
+    let mut current = expression;
+    let mut domains = Vec::with_capacity(count);
+    for _ in 0..count {
+        let Expr::Pi { domain, body } = export.exprs.get(current)? else {
+            return None;
+        };
+        domains.push(*domain);
+        current = *body;
+    }
+    Some((domains, current))
+}
+
+fn lam_spine(
+    export: &ResolvedExport,
+    expression: ExprId,
+    count: usize,
+) -> Option<(Vec<ExprId>, ExprId)> {
+    let mut current = expression;
+    let mut domains = Vec::with_capacity(count);
+    for _ in 0..count {
+        let Expr::Lam { domain, body } = export.exprs.get(current)? else {
+            return None;
+        };
+        domains.push(*domain);
+        current = *body;
+    }
+    Some((domains, current))
+}
+
+fn motive_application_parts(
+    export: &ResolvedExport,
+    expression: ExprId,
+    motive: u64,
+) -> Option<(ExprId, ExprId, ExprId)> {
+    let (head, arguments) = application_spine(export, expression);
+    if !is_bvar(export, head, motive) || arguments.len() != 3 {
+        return None;
+    }
+    Some((arguments[0], arguments[1], arguments[2]))
+}
+
+fn rbtree_constructor_application_args(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    level: NameId,
+) -> Option<Vec<ExprId>> {
+    let (head, arguments) = application_spine(export, expression);
+    is_unary_polymorphic_constant(export, head, constructor, level).then_some(arguments)
+}
+
+fn rbtree_recursor_application_args(
+    export: &ResolvedExport,
+    expression: ExprId,
+    recursor: NameId,
+    motive_level: NameId,
+    level: NameId,
+) -> Option<Vec<ExprId>> {
+    let (head, arguments) = application_spine(export, expression);
+    is_polymorphic_constant(export, head, recursor, motive_level, level).then_some(arguments)
+}
+
+fn is_rbtree_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [color, height, tree] = domains.as_slice() else {
+        return false;
+    };
+    let Some((carrier, tree_color, tree_height)) =
+        rbtree_application_parts(export, *tree, inductive, level)
+    else {
+        return false;
+    };
+    is_root_empty_constant_named(export, *color, "Color")
+        && is_root_empty_constant_named(export, *height, "N")
+        && is_bvar(export, carrier, 2)
+        && is_bvar(export, tree_color, 1)
+        && is_bvar(export, tree_height, 0)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+#[derive(Clone, Copy)]
+enum RbBranch {
+    Red,
+    Black,
+}
+
+fn is_rbtree_branch_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+    branch: RbBranch,
+) -> bool {
+    let color_prefix = match branch {
+        RbBranch::Red => 0,
+        RbBranch::Black => 2,
+    };
+    let arity = 6 + color_prefix;
+    let Some((domains, result)) = pi_spine(export, expression, arity) else {
+        return false;
+    };
+
+    let height = domains[color_prefix];
+    let left = domains[color_prefix + 1];
+    let value = domains[color_prefix + 2];
+    let right = domains[color_prefix + 3];
+    let left_ih = domains[color_prefix + 4];
+    let right_ih = domains[color_prefix + 5];
+
+    let (
+        Some((left_carrier, left_color, left_height)),
+        Some((right_carrier, right_color, right_height)),
+    ) = (
+        rbtree_application_parts(export, left, inductive, level),
+        rbtree_application_parts(export, right, inductive, level),
+    )
+    else {
+        return false;
+    };
+
+    let (left_motive, right_motive, result_motive) = match branch {
+        RbBranch::Red => (5, 6, 7),
+        RbBranch::Black => (8, 9, 10),
+    };
+    let (
+        Some((left_ih_color, left_ih_height, left_ih_tree)),
+        Some((right_ih_color, right_ih_height, right_ih_tree)),
+        Some((result_color, result_height, result_tree)),
+    ) = (
+        motive_application_parts(export, left_ih, left_motive),
+        motive_application_parts(export, right_ih, right_motive),
+        motive_application_parts(export, result, result_motive),
+    )
+    else {
+        return false;
+    };
+
+    let Some(result_args) =
+        rbtree_constructor_application_args(export, result_tree, constructor, level)
+    else {
+        return false;
+    };
+
+    let branch_index = match branch {
+        RbBranch::Red => 0,
+        RbBranch::Black => 1,
+    };
+    let prefix_colors_ok = match branch {
+        RbBranch::Red => true,
+        RbBranch::Black => {
+            is_root_empty_constant_named(export, domains[0], "Color")
+                && is_root_empty_constant_named(export, domains[1], "Color")
+        }
+    };
+    let child_colors_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, left_color, "Color", "b")
+                && is_child_empty_constant_named(export, right_color, "Color", "b")
+        }
+        RbBranch::Black => is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3),
+    };
+    let ih_colors_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, left_ih_color, "Color", "b")
+                && is_child_empty_constant_named(export, right_ih_color, "Color", "b")
+        }
+        RbBranch::Black => is_bvar(export, left_ih_color, 5) && is_bvar(export, right_ih_color, 5),
+    };
+    let result_index_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, result_color, "Color", "r")
+                && is_bvar(export, result_height, 5)
+        }
+        RbBranch::Black => {
+            is_child_empty_constant_named(export, result_color, "Color", "b")
+                && is_named_succ_bvar(export, result_height, "N", "succ", 5)
+        }
+    };
+
+    let mut result_bvars = vec![8 + 3 * branch_index];
+    result_bvars.extend((2..=5 + color_prefix as u64).rev());
+
+    prefix_colors_ok
+        && is_root_empty_constant_named(export, height, "N")
+        && is_bvar(export, left_carrier, 3 + 3 * branch_index)
+        && child_colors_ok
+        && is_bvar(export, left_height, 0)
+        && is_bvar(export, value, 4 + 3 * branch_index)
+        && is_bvar(export, right_carrier, 5 + 3 * branch_index)
+        && is_bvar(export, right_height, 2)
+        && ih_colors_ok
+        && is_bvar(export, left_ih_height, 3)
+        && is_bvar(export, left_ih_tree, 2)
+        && is_bvar(export, right_ih_height, 4)
+        && is_bvar(export, right_ih_tree, 1)
+        && result_index_ok
+        && result_args.len() == 5 + color_prefix
+        && are_bvars(export, &result_args, &result_bvars)
+}
+
+fn is_derived_rbtree_recursor_type(
+    export: &ResolvedExport,
+    inductive: NameId,
+    level: NameId,
+    constructors: [NameId; 3],
+    recursor: &Recursor,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 8) else {
+        return false;
+    };
+    let [
+        carrier,
+        motive,
+        leaf_minor,
+        red_minor,
+        black_minor,
+        color,
+        height,
+        target,
+    ] = domains.as_slice()
+    else {
+        return false;
+    };
+    let Some((target_carrier, target_color, target_height)) =
+        rbtree_application_parts(export, *target, inductive, level)
+    else {
+        return false;
+    };
+    let Some((result_color, result_height, result_tree)) =
+        motive_application_parts(export, result, 6)
+    else {
+        return false;
+    };
+    let leaf_minor_valid =
+        motive_application_parts(export, *leaf_minor, 0).is_some_and(|(color, height, tree)| {
+            rbtree_constructor_application_args(export, tree, constructors[0], level).is_some_and(
+                |arguments| {
+                    is_child_empty_constant_named(export, color, "Color", "b")
+                        && is_child_empty_constant_named(export, height, "N", "zero")
+                        && matches!(arguments.as_slice(), [argument] if is_bvar(export, *argument, 1))
+                },
+            )
+        });
+
+    is_sort_succ_parameter(export, *carrier, level)
+        && is_rbtree_motive_type(export, *motive, inductive, level, recursor.level_params[0])
+        && leaf_minor_valid
+        && is_rbtree_branch_minor_type(
+            export,
+            *red_minor,
+            inductive,
+            constructors[1],
+            level,
+            RbBranch::Red,
+        )
+        && is_rbtree_branch_minor_type(
+            export,
+            *black_minor,
+            inductive,
+            constructors[2],
+            level,
+            RbBranch::Black,
+        )
+        && is_root_empty_constant_named(export, *color, "Color")
+        && is_root_empty_constant_named(export, *height, "N")
+        && is_bvar(export, target_carrier, 6)
+        && is_bvar(export, target_color, 1)
+        && is_bvar(export, target_height, 0)
+        && is_bvar(export, result_color, 2)
+        && is_bvar(export, result_height, 1)
+        && is_bvar(export, result_tree, 0)
+}
+
+fn peel_rbtree_rule_prefix(
+    export: &ResolvedExport,
+    expression: ExprId,
+    expected: (ExprId, ExprId, ExprId, ExprId, ExprId),
+) -> Option<ExprId> {
+    let (domains, body) = lam_spine(export, expression, 5)?;
+    let [carrier, motive, leaf, red, black] = domains.as_slice() else {
+        return None;
+    };
+    let (carrier_ty, motive_ty, leaf_ty, red_ty, black_ty) = expected;
+    (*carrier == carrier_ty
+        && *motive == motive_ty
+        && *leaf == leaf_ty
+        && *red == red_ty
+        && *black == black_ty)
+        .then_some(body)
+}
+
+fn is_derived_rbtree_branch_rule(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    recursor: &Recursor,
+    prefix: (ExprId, ExprId, ExprId, ExprId, ExprId),
+    branch: RbBranch,
+) -> bool {
+    let Some(body) = peel_rbtree_rule_prefix(export, expression, prefix) else {
+        return false;
+    };
+    let color_prefix = match branch {
+        RbBranch::Red => 0,
+        RbBranch::Black => 2,
+    };
+    let arity = 4 + color_prefix;
+    let Some((domains, result)) = lam_spine(export, body, arity) else {
+        return false;
+    };
+    let height = domains[color_prefix];
+    let left = domains[color_prefix + 1];
+    let value = domains[color_prefix + 2];
+    let right = domains[color_prefix + 3];
+
+    let (
+        Some((left_carrier, left_color, left_height)),
+        Some((right_carrier, right_color, right_height)),
+    ) = (
+        rbtree_application_parts(export, left, inductive, level),
+        rbtree_application_parts(export, right, inductive, level),
+    )
+    else {
+        return false;
+    };
+
+    let (head, arguments) = application_spine(export, result);
+    if !is_bvar(export, head, 5 + (color_prefix / 2) as u64) || arguments.len() != arity + 2 {
+        return false;
+    }
+    let Some(left_call) = rbtree_recursor_application_args(
+        export,
+        arguments[arity],
+        recursor.name,
+        recursor.level_params[0],
+        level,
+    ) else {
+        return false;
+    };
+    let Some(right_call) = rbtree_recursor_application_args(
+        export,
+        arguments[arity + 1],
+        recursor.name,
+        recursor.level_params[0],
+        level,
+    ) else {
+        return false;
+    };
+
+    let prefix_bvars = (0..arity as u64).rev().collect::<Vec<_>>();
+    let recursive_prefix = (0..5)
+        .map(|offset| 8 + color_prefix as u64 - offset)
+        .collect::<Vec<_>>();
+
+    let colors_ok = match branch {
+        RbBranch::Red => true,
+        RbBranch::Black => {
+            is_root_empty_constant_named(export, domains[0], "Color")
+                && is_root_empty_constant_named(export, domains[1], "Color")
+        }
+    };
+    let child_colors_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, left_color, "Color", "b")
+                && is_child_empty_constant_named(export, right_color, "Color", "b")
+        }
+        RbBranch::Black => is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3),
+    };
+    let call_colors_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, left_call[5], "Color", "b")
+                && is_child_empty_constant_named(export, right_call[5], "Color", "b")
+        }
+        RbBranch::Black => is_bvar(export, left_call[5], 5) && is_bvar(export, right_call[5], 4),
+    };
+
+    colors_ok
+        && is_root_empty_constant_named(export, height, "N")
+        && is_bvar(export, left_carrier, 5 + color_prefix as u64)
+        && child_colors_ok
+        && is_bvar(export, left_height, 0)
+        && is_bvar(export, value, 6 + color_prefix as u64)
+        && is_bvar(export, right_carrier, 7 + color_prefix as u64)
+        && is_bvar(export, right_height, 2)
+        && are_bvars(export, &arguments[..arity], &prefix_bvars)
+        && left_call.len() == 8
+        && are_bvars(export, &left_call[..5], &recursive_prefix)
+        && call_colors_ok
+        && is_bvar(export, left_call[6], 3)
+        && is_bvar(export, left_call[7], 2)
+        && right_call.len() == 8
+        && are_bvars(export, &right_call[..5], &recursive_prefix)
+        && is_bvar(export, right_call[6], 3)
+        && is_bvar(export, right_call[7], 0)
+}
+
+fn are_derived_rbtree_rules(
+    export: &ResolvedExport,
+    inductive: NameId,
+    level: NameId,
+    constructors: [NameId; 3],
+    recursor: &Recursor,
+) -> bool {
+    let [leaf_rule, red_rule, black_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((prefix_domains, _)) = pi_spine(export, recursor.ty, 5) else {
+        return false;
+    };
+    let [carrier, motive, leaf, red, black] = prefix_domains.as_slice() else {
+        return false;
+    };
+    let prefix = (*carrier, *motive, *leaf, *red, *black);
+    leaf_rule.constructor == constructors[0]
+        && leaf_rule.num_fields == 0
+        && red_rule.constructor == constructors[1]
+        && red_rule.num_fields == 4
+        && black_rule.constructor == constructors[2]
+        && black_rule.num_fields == 6
+        && peel_rbtree_rule_prefix(export, leaf_rule.rhs, prefix)
+            .is_some_and(|result| is_bvar(export, result, 2))
+        && is_derived_rbtree_branch_rule(
+            export,
+            red_rule.rhs,
+            inductive,
+            level,
+            recursor,
+            prefix,
+            RbBranch::Red,
+        )
+        && is_derived_rbtree_branch_rule(
+            export,
+            black_rule.rhs,
+            inductive,
+            level,
+            recursor,
+            prefix,
+            RbBranch::Black,
+        )
+}
+
+/// Residual-generated closed reflexive function-tree law.
+///
+/// One safe closed Type-valued recursive+reflexive inductive has a nullary
+/// leaf and one node field D -> I for an already-declared closed domain D.
+/// The recursor must expose the exact pointwise induction hypothesis and rule
+/// equation.  This is structural and grants no authority to parameterized,
+/// indexed, nested, unsafe, multi-field, or differently reflexive families.
+fn exact_closed_reflexive_tree_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [leaf, node], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || !inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [leaf.name, node.name]
+    {
+        return false;
+    }
+
+    let type_level_ok = matches!(
+        export.exprs.get(inductive.ty),
+        Some(Expr::Sort(level))
+            if matches!(
+                export.levels.get(*level),
+                Some(Level::Succ(inner))
+                    if matches!(export.levels.get(*inner), Some(Level::Zero))
+            )
+    );
+    if !type_level_ok
+        || leaf.index != 0
+        || leaf.inductive != inductive.name
+        || leaf.is_unsafe
+        || !leaf.level_params.is_empty()
+        || leaf.num_params != 0
+        || leaf.num_fields != 0
+        || !is_empty_constant(export, leaf.ty, inductive.name)
+        || node.index != 1
+        || node.inductive != inductive.name
+        || node.is_unsafe
+        || !node.level_params.is_empty()
+        || node.num_params != 0
+        || node.num_fields != 1
+        || recursor.is_unsafe
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            recursor.level_params.len() == 1,
+        )
+    {
+        return false;
+    }
+
+    let Some(domain) = reflexive_tree_constructor_domain(export, node.ty, inductive.name) else {
+        return false;
+    };
+    reflexive_tree_recursor_obligations(
+        export,
+        inductive.name,
+        leaf.name,
+        node.name,
+        domain,
+        recursor,
+    )
+}
+
+fn check_exact_closed_reflexive_tree(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [leaf, node], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !exact_closed_reflexive_tree_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(leaf),
+            derived_constructor(node),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn reflexive_tree_constructor_domain(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+) -> Option<NameId> {
+    let Expr::Pi {
+        domain: field,
+        body: result,
+    } = export.exprs.get(expression)?
+    else {
+        return None;
+    };
+    if !is_empty_constant(export, *result, inductive) {
+        return None;
+    }
+    let Expr::Pi {
+        domain,
+        body: recursive_result,
+    } = export.exprs.get(*field)?
+    else {
+        return None;
+    };
+    if !is_empty_constant(export, *recursive_result, inductive) {
+        return None;
+    }
+    let Expr::Const { name, levels } = export.exprs.get(*domain)? else {
+        return None;
+    };
+    levels.is_empty().then_some(*name)
+}
+
+fn reflexive_tree_field_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    domain: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Pi {
+            domain: field_domain,
+            body,
+        }) if is_empty_constant(export, *field_domain, domain)
+            && is_empty_constant(export, *body, inductive)
+    )
+}
+
+fn reflexive_tree_node_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    node: NameId,
+    field: u64,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_empty_constant(export, *fun, node)
+                && is_bvar(export, *arg, field)
+    )
+}
+
+fn reflexive_tree_node_minor(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    node: NameId,
+    domain: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [field, induction_hypothesis] = domains.as_slice() else {
+        return false;
+    };
+    if !reflexive_tree_field_type(export, *field, inductive, domain) {
+        return false;
+    }
+
+    let Some(Expr::Pi {
+        domain: ih_domain,
+        body: ih_body,
+    }) = export.exprs.get(*induction_hypothesis)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: ih_motive,
+        arg: field_at_point,
+    }) = export.exprs.get(*ih_body)
+    else {
+        return false;
+    };
+    if !is_empty_constant(export, *ih_domain, domain)
+        || !is_bvar(export, *ih_motive, 3)
+        || !is_bvar_application(export, *field_at_point, 1, 0)
+    {
+        return false;
+    }
+
+    matches!(
+        export.exprs.get(result),
+        Some(Expr::App {
+            fun: result_motive,
+            arg: constructed,
+        }) if is_bvar(export, *result_motive, 3)
+            && reflexive_tree_node_application(export, *constructed, node, 1)
+    )
+}
+
+fn reflexive_tree_recursor_call(
+    export: &ResolvedExport,
+    expression: ExprId,
+    recursor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    let [motive, leaf_minor, node_minor, target] = arguments.as_slice() else {
+        return false;
+    };
+    is_unary_polymorphic_constant(export, head, recursor, motive_level)
+        && is_bvar(export, *motive, 4)
+        && is_bvar(export, *leaf_minor, 3)
+        && is_bvar(export, *node_minor, 2)
+        && is_bvar_application(export, *target, 1, 0)
+}
+
+fn reflexive_tree_recursor_obligations(
+    export: &ResolvedExport,
+    inductive: NameId,
+    leaf: NameId,
+    node: NameId,
+    domain: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return false;
+    };
+
+    let motive_ok = |expression: ExprId| {
+        matches!(
+            export.exprs.get(expression),
+            Some(Expr::Pi {
+                domain: target,
+                body: result,
+            }) if is_empty_constant(export, *target, inductive)
+                && is_sort_parameter(export, *result, *motive_level)
+        )
+    };
+
+    let Some((type_domains, type_result)) = pi_spine(export, recursor.ty, 4) else {
+        return false;
+    };
+    let [motive, leaf_minor, node_minor, target] = type_domains.as_slice() else {
+        return false;
+    };
+    if !motive_ok(*motive)
+        || !is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+        || !reflexive_tree_node_minor(export, *node_minor, inductive, node, domain)
+        || !is_empty_constant(export, *target, inductive)
+        || !is_bvar_application(export, type_result, 3, 0)
+    {
+        return false;
+    }
+
+    let [leaf_rule, node_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let leaf_ok = lam_spine(export, leaf_rule.rhs, 3).is_some_and(|(domains, result)| {
+        let [motive, leaf_minor, node_minor] = domains.as_slice() else {
+            return false;
+        };
+        motive_ok(*motive)
+            && is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+            && reflexive_tree_node_minor(export, *node_minor, inductive, node, domain)
+            && is_bvar(export, result, 1)
+    });
+
+    let node_ok = lam_spine(export, node_rule.rhs, 4).is_some_and(|(domains, result)| {
+        let [motive, leaf_minor, node_minor, field] = domains.as_slice() else {
+            return false;
+        };
+        if !motive_ok(*motive)
+            || !is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+            || !reflexive_tree_node_minor(export, *node_minor, inductive, node, domain)
+            || !reflexive_tree_field_type(export, *field, inductive, domain)
+        {
+            return false;
+        }
+
+        let (minor_head, arguments) = application_spine(export, result);
+        let [field_arg, pointwise_ih] = arguments.as_slice() else {
+            return false;
+        };
+        if !is_bvar(export, minor_head, 1) || !is_bvar(export, *field_arg, 0) {
+            return false;
+        }
+        let Some(Expr::Lam {
+            domain: ih_domain,
+            body: recursive_call,
+        }) = export.exprs.get(*pointwise_ih)
+        else {
+            return false;
+        };
+        is_empty_constant(export, *ih_domain, domain)
+            && reflexive_tree_recursor_call(export, *recursive_call, recursor.name, *motive_level)
+    });
+
+    leaf_ok && node_ok
+}
+
+/// Residual-generated closed binary-tree law.
+///
+/// This is deliberately structural rather than name-sealed: one safe closed
+/// Type-valued recursive inductive, a nullary leaf, a binary node whose two
+/// fields are direct recursive occurrences, and one canonical recursor with
+/// the exact derived motive/minor/rule equations.  It grants no authority to
+/// parameterized, indexed, reflexive, nested, unsafe, or differently-shaped
+/// recursive families.
+/// Derive the recursor of a closed Type 0 inductive with direct recursive
+/// fields and independently closed Type 0 payloads. Occurrences under any
+/// other type former are excluded rather than trusted as positive.
+/// Direct recursion over one fixed Type-u parameter. Every recursive field
+/// preserves that parameter, and every IH/source recursive call is derived
+/// from the corresponding field position. Other fields are independently
+/// formed in their exact constructor context and bounded by the carrier.
+fn parameter_direct_recursive_contract(export:&ResolvedExport,environment:&Environment,block:&InductiveBlock,limits:Limits,policy:DeltaPolicy)->bool {
+    let ([inductive],ctors,[recursor])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+    let [universe]=inductive.level_params.as_slice() else{return false;};
+    if ctors.is_empty() || ctors.len()>16 || inductive.num_params!=1 || inductive.num_indices!=0 || inductive.num_nested!=0
+        || !inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe || inductive.all!=[inductive.name]
+        || inductive.constructors!=ctors.iter().map(|c|c.name).collect::<Vec<_>>() || recursor.is_unsafe || recursor.k
+        || !recursor_metadata_admissible(export,inductive,ctors,recursor,false,recursor.level_params.len()==2)
+        || recursor.level_params.get(1)!=Some(universe) {return false;}
+    let Some((parameters,result))=pi_spine(export,inductive.ty,1) else{return false;};
+    if !is_sort_succ_parameter(export,parameters[0],*universe) || !is_sort_succ_parameter(export,result,*universe) {return false;}
+    let Some(Expr::Sort(carrier_id))=export.exprs.get(result) else{return false;};
+    let substitution=parameter_substitution(&inductive.level_params);
+    let Ok(carrier)=crate::level::instantiate_level(&export.levels,*carrier_id,&substitution,limits.judgment_steps) else{return false;};
+    let checker=TypeChecker::with_level_substitution(&export.exprs,&export.levels,environment,substitution).with_delta_policy(policy);
+    let owner=|expression:ExprId,parameter:u64| {
+        let (head,args)=application_spine(export,expression);
+        is_declared_level_constant(export,head,inductive.name,&inductive.level_params) && args.len()==1 && is_bvar(export,args[0],parameter)
+    };
+    let prefix=ctors.len()+2;
+    let Some((rec_domains,rec_result))=pi_spine(export,recursor.ty,prefix+1) else{return false;};
+    if !expr_eq_with_bvar_shift(export,parameters[0],rec_domains[0],0,0)
+        || !matches!(export.exprs.get(rec_domains[1]),Some(Expr::Pi{domain,body}) if owner(*domain,0) && is_sort_parameter(export,*body,recursor.level_params[0]))
+        || !owner(rec_domains[prefix],(prefix-1) as u64) || !is_bvar_application(export,rec_result,(prefix-1) as u64,0) {return false;}
+    let mut seen=false;
+    for (c,ctor) in ctors.iter().enumerate() {
+        if ctor.index!=c as u64 || ctor.inductive!=inductive.name || ctor.is_unsafe || ctor.level_params!=inductive.level_params || ctor.num_params!=1 || ctor.num_fields>16 {return false;}
+        let f=ctor.num_fields as usize;
+        let Some((domains,result))=pi_spine(export,ctor.ty,f+1) else{return false;};
+        if !expr_eq_with_bvar_shift(export,parameters[0],domains[0],0,0) || !owner(result,f as u64) {return false;}
+        let fields=&domains[1..];let mut recursive=Vec::new();
+        let mut frame=EnvFrame::empty().extend_free(FreeId(0));
+        let mut context=vec![TypeValue::Term(checker.closure(parameters[0],EnvFrame::empty()))];
+        for (j,field) in fields.iter().enumerate() {
+            if owner(*field,j as u64) {recursive.push(j);seen=true;}
+            else {
+                if expression_contains_constant(export,*field,inductive.name) {return false;}
+                let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*field,&context,&frame,limits.judgment_steps) else{return false;};
+                if !crate::level::level_equal(crate::level::max(sort,carrier.clone()),carrier.clone(),limits.judgment_steps).is_proven() {return false;}
+            }
+            context.push(TypeValue::Term(checker.closure(*field,frame.clone())));frame=frame.extend_free(FreeId((j+1) as u64));
+        }
+        let r=recursive.len();
+        let Some((minor_domains,minor_result))=pi_spine(export,rec_domains[c+2],f+r) else{return false;};
+        if !fields.iter().zip(&minor_domains[..f]).enumerate().all(|(j,(a,b))|expr_eq_with_bvar_shift(export,*a,*b,j as u64,(c+1) as u64)) {return false;}
+        for (k,j) in recursive.iter().enumerate() {if !is_bvar_application(export,minor_domains[f+k],(c+f+k) as u64,(f+k-1-j) as u64) {return false;}}
+        let (mh,ma)=application_spine(export,minor_result);
+        if ma.len()!=1 || !is_bvar(export,mh,(c+f+r) as u64) {return false;}
+        let (ch,ca)=application_spine(export,ma[0]);
+        if !is_declared_level_constant(export,ch,ctor.name,&ctor.level_params) || ca.len()!=f+1 || !is_bvar(export,ca[0],(c+f+r+1) as u64)
+            || !ca[1..].iter().enumerate().all(|(j,a)|is_bvar(export,*a,(f+r-1-j) as u64)) {return false;}
+        let Some(rule)=recursor.rules.get(c) else{return false;};
+        let Some((annotations,rhs))=lam_spine(export,rule.rhs,prefix+f) else{return false;};
+        if !annotations[..prefix].iter().zip(&rec_domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+            || !fields.iter().zip(&annotations[prefix..]).enumerate().all(|(j,(a,b))|expr_eq_with_bvar_shift(export,*a,*b,j as u64,(prefix-1) as u64)) {return false;}
+        let (minor,args)=application_spine(export,rhs);
+        if !is_bvar(export,minor,(f+ctors.len()-1-c) as u64) || args.len()!=f+r || !args[..f].iter().enumerate().all(|(j,a)|is_bvar(export,*a,(f-1-j) as u64)) {return false;}
+        for (k,j) in recursive.iter().enumerate() {
+            let (head,call)=application_spine(export,args[f+k]);
+            if !is_declared_level_constant(export,head,recursor.name,&recursor.level_params) || call.len()!=prefix+1
+                || !call[..prefix].iter().enumerate().all(|(i,a)|is_bvar(export,*a,(prefix+f-1-i) as u64)) || !is_bvar(export,call[prefix],(f-1-j) as u64) {return false;}
+        }
+    }
+    seen
+}
+
+fn closed_direct_recursive_contract(
+    export: &ResolvedExport, environment: &Environment, block: &InductiveBlock,
+    limits: Limits, delta_policy: DeltaPolicy,
+) -> bool {
+    let ([inductive], constructors, [recursor]) = (
+        block.types.as_slice(), block.constructors.as_slice(), block.recursors.as_slice(),
+    ) else { return false; };
+    if constructors.is_empty() || constructors.len() > 16
+        || inductive.num_params != 0 || inductive.num_indices != 0 || inductive.num_nested != 0
+        || !inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe
+        || !inductive.level_params.is_empty() || inductive.all != [inductive.name]
+        || inductive.constructors != constructors.iter().map(|c|c.name).collect::<Vec<_>>()
+        || recursor.is_unsafe
+        || !recursor_metadata_admissible(export, inductive, constructors, recursor, false, recursor.level_params.len() == 1)
+    { return false; }
+    let Some(Expr::Sort(carrier)) = export.exprs.get(inductive.ty) else { return false; };
+    if !matches!(export.levels.get(*carrier), Some(Level::Succ(z)) if matches!(export.levels.get(*z), Some(Level::Zero))) { return false; }
+    let Ok(carrier) = crate::level::instantiate_level(&export.levels, *carrier, &HashMap::new(), limits.judgment_steps) else { return false; };
+    let checker = TypeChecker::new(&export.exprs, &export.levels, environment).with_delta_policy(delta_policy);
+    let equivalent_field = |a:ExprId,b:ExprId| {
+        // Erasure is permitted only after the exported annotation itself
+        // forms a closed Type 0. The direct recursive owner is separately
+        // staged at that same universe before signature admission.
+        if !is_empty_constant(export,b,inductive.name) {
+            let Judgment::Proven{value,..}=checker.infer(b,limits.judgment_steps) else{return false;};
+            if !checker.convert(&value,&TypeValue::Sort(carrier.clone()),limits.judgment_steps).is_proven() {return false;}
+        }
+        expr_eq_with_bvar_shift(export,checked_erased_closed_field(export,environment,a),checked_erased_closed_field(export,environment,b),0,0)
+    };
+    let prefix = constructors.len() + 1;
+    let Some((rec_domains, rec_result)) = pi_spine(export, recursor.ty, prefix + 1) else { return false; };
+    let motive_level = recursor.level_params[0];
+    if !matches!(export.exprs.get(rec_domains[0]), Some(Expr::Pi {domain, body})
+        if is_empty_constant(export,*domain,inductive.name) && is_sort_parameter(export,*body,motive_level))
+        || !is_empty_constant(export,rec_domains[prefix],inductive.name)
+        || !is_bvar_application(export,rec_result,prefix as u64,0)
+    { return false; }
+    let mut recursive_seen = false;
+    for (c, constructor) in constructors.iter().enumerate() {
+        if constructor.index != c as u64 || constructor.inductive != inductive.name
+            || constructor.is_unsafe || !constructor.level_params.is_empty() || constructor.num_params != 0
+            || constructor.num_fields > 16 { return false; }
+        let f = constructor.num_fields as usize;
+        let Some((fields,result)) = pi_spine(export,constructor.ty,f) else { return false; };
+        if !is_empty_constant(export,result,inductive.name) { return false; }
+        let mut recursive = Vec::new();
+        for (j,field) in fields.iter().enumerate() {
+            if is_empty_constant(export,*field,inductive.name) { recursive.push(j); recursive_seen = true; }
+            else {
+                if expression_contains_constant(export,*field,inductive.name) { return false; }
+                let Judgment::Proven {value,..} = checker.infer(*field,limits.judgment_steps) else { return false; };
+                if !checker.convert(&value,&TypeValue::Sort(carrier.clone()),limits.judgment_steps).is_proven() { return false; }
+            }
+        }
+        // Constructor fields precede all induction hypotheses in Lean's minor.
+        let r = recursive.len();
+        let Some((minor_domains,minor_result)) = pi_spine(export,rec_domains[c+1],f+r) else { return false; };
+        if !fields.iter().zip(&minor_domains[..f]).all(|(a,b)|equivalent_field(*a,*b)) { return false; }
+        for (k,j) in recursive.iter().enumerate() {
+            if !is_bvar_application(export,minor_domains[f+k],(c+f+k) as u64,(f+k-1-j) as u64) { return false; }
+        }
+        let (mh,ma) = application_spine(export,minor_result);
+        if ma.len()!=1 || !is_bvar(export,mh,(c+f+r) as u64) { return false; }
+        let (ch,ca) = application_spine(export,ma[0]);
+        if !is_empty_constant(export,ch,constructor.name) || ca.len()!=f
+            || !ca.iter().enumerate().all(|(j,a)|is_bvar(export,*a,(f+r-1-j) as u64)) { return false; }
+        let rule = &recursor.rules[c];
+        let Some((rule_domains,rule_result)) = lam_spine(export,rule.rhs,prefix+f) else { return false; };
+        if !rec_domains[..prefix].iter().zip(&rule_domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+            || !fields.iter().zip(&rule_domains[prefix..]).all(|(a,b)|equivalent_field(*a,*b)) { return false; }
+        let (rh,ra) = application_spine(export,rule_result);
+        if !is_bvar(export,rh,(f+constructors.len()-1-c) as u64) || ra.len()!=f+r
+            || !ra[..f].iter().enumerate().all(|(j,a)|is_bvar(export,*a,(f-1-j) as u64)) { return false; }
+        for (k,j) in recursive.iter().enumerate() {
+            let (call_head,call_args) = application_spine(export,ra[f+k]);
+            if !is_unary_polymorphic_constant(export,call_head,recursor.name,motive_level)
+                || call_args.len()!=prefix+1
+                || !call_args[..prefix].iter().enumerate().all(|(i,a)|is_bvar(export,*a,(prefix+f-1-i) as u64))
+                || !is_bvar(export,call_args[prefix],(f-1-j) as u64) { return false; }
+        }
+    }
+    recursive_seen
+}
+
+fn check_closed_direct_recursive(
+    export: &ResolvedExport, environment: &Environment, block: &InductiveBlock,
+    limits: Limits, delta_policy: DeltaPolicy,
+) -> Result<Environment,Verdict> {
+    if !closed_direct_recursive_contract(export,environment,block,limits,delta_policy) { return Err(Verdict::Unknown); }
+    let inductive = &block.types[0];
+    let recursor = &block.recursors[0];
+    let mut signatures = vec![derived_type(inductive.name,inductive.ty)];
+    signatures.extend(block.constructors.iter().map(derived_constructor));
+    signatures.push(derived_recursor(recursor));
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(export,signatures,limits.judgment_steps,delta_policy)?;
+    install_certified_recursor_reduction(derivation.finish(),&block.constructors,recursor)
+}
+
+fn exact_closed_binary_tree_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [leaf, node], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [leaf.name, node.name]
+    {
+        return false;
+    }
+
+    let type_level_ok = matches!(
+        export.exprs.get(inductive.ty),
+        Some(Expr::Sort(level))
+            if matches!(
+                export.levels.get(*level),
+                Some(Level::Succ(inner))
+                    if matches!(export.levels.get(*inner), Some(Level::Zero))
+            )
+    );
+    if !type_level_ok
+        || leaf.index != 0
+        || leaf.inductive != inductive.name
+        || leaf.is_unsafe
+        || !leaf.level_params.is_empty()
+        || leaf.num_params != 0
+        || leaf.num_fields != 0
+        || !is_empty_constant(export, leaf.ty, inductive.name)
+        || node.index != 1
+        || node.inductive != inductive.name
+        || node.is_unsafe
+        || !node.level_params.is_empty()
+        || node.num_params != 0
+        || node.num_fields != 2
+        || !binary_tree_node_type(export, node.ty, inductive.name)
+        || recursor.is_unsafe
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            recursor.level_params.len() == 1,
+        )
+    {
+        return false;
+    }
+
+    binary_tree_recursor_obligations(export, inductive.name, leaf.name, node.name, recursor)
+}
+
+fn check_exact_closed_binary_tree(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [leaf, node], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !exact_closed_binary_tree_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(leaf),
+            derived_constructor(node),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn binary_tree_node_type(export: &ResolvedExport, expression: ExprId, inductive: NameId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    matches!(
+        domains.as_slice(),
+        [left, right]
+            if is_empty_constant(export, *left, inductive)
+                && is_empty_constant(export, *right, inductive)
+                && is_empty_constant(export, result, inductive)
+    )
+}
+
+fn binary_tree_node_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    node: NameId,
+    left: u64,
+    right: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(
+        arguments.as_slice(),
+        [left_arg, right_arg]
+            if is_empty_constant(export, head, node)
+                && is_bvar(export, *left_arg, left)
+                && is_bvar(export, *right_arg, right)
+    )
+}
+
+fn binary_tree_node_minor(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    node: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 4) else {
+        return false;
+    };
+    let [left, right, left_ih, right_ih] = domains.as_slice() else {
+        return false;
+    };
+    is_empty_constant(export, *left, inductive)
+        && is_empty_constant(export, *right, inductive)
+        && is_bvar_application(export, *left_ih, 3, 1)
+        && is_bvar_application(export, *right_ih, 4, 1)
+        && matches!(
+            export.exprs.get(result),
+            Some(Expr::App { fun: motive, arg })
+                if is_bvar(export, *motive, 5)
+                    && binary_tree_node_application(export, *arg, node, 3, 2)
+        )
+}
+
+fn binary_tree_recursor_call(
+    export: &ResolvedExport,
+    expression: ExprId,
+    recursor: NameId,
+    motive_level: NameId,
+    target: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 4
+        && is_unary_polymorphic_constant(export, head, recursor, motive_level)
+        && are_bvars(export, &arguments, &[4, 3, 2, target])
+}
+
+fn binary_tree_recursor_obligations(
+    export: &ResolvedExport,
+    inductive: NameId,
+    leaf: NameId,
+    node: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return false;
+    };
+
+    let motive_ok = |expression: ExprId| {
+        matches!(
+            export.exprs.get(expression),
+            Some(Expr::Pi { domain, body })
+                if is_empty_constant(export, *domain, inductive)
+                    && is_sort_parameter(export, *body, *motive_level)
+        )
+    };
+
+    let Some((type_domains, type_result)) = pi_spine(export, recursor.ty, 4) else {
+        return false;
+    };
+    let [motive, leaf_minor, node_minor, target] = type_domains.as_slice() else {
+        return false;
+    };
+    let type_ok = motive_ok(*motive)
+        && is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+        && binary_tree_node_minor(export, *node_minor, inductive, node)
+        && is_empty_constant(export, *target, inductive)
+        && is_bvar_application(export, type_result, 3, 0);
+    if !type_ok {
+        return false;
+    }
+
+    let [leaf_rule, node_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let leaf_ok = lam_spine(export, leaf_rule.rhs, 3).is_some_and(|(domains, result)| {
+        let [motive, leaf_minor, node_minor] = domains.as_slice() else {
+            return false;
+        };
+        motive_ok(*motive)
+            && is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+            && binary_tree_node_minor(export, *node_minor, inductive, node)
+            && is_bvar(export, result, 1)
+    });
+
+    let node_ok = lam_spine(export, node_rule.rhs, 5).is_some_and(|(domains, result)| {
+        let [motive, leaf_minor, node_minor, left, right] = domains.as_slice() else {
+            return false;
+        };
+        if !motive_ok(*motive)
+            || !is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+            || !binary_tree_node_minor(export, *node_minor, inductive, node)
+            || !is_empty_constant(export, *left, inductive)
+            || !is_empty_constant(export, *right, inductive)
+        {
+            return false;
+        }
+
+        let (minor_head, arguments) = application_spine(export, result);
+        let [left_arg, right_arg, left_call, right_call] = arguments.as_slice() else {
+            return false;
+        };
+        is_bvar(export, minor_head, 2)
+            && is_bvar(export, *left_arg, 1)
+            && is_bvar(export, *right_arg, 0)
+            && binary_tree_recursor_call(export, *left_call, recursor.name, *motive_level, 1)
+            && binary_tree_recursor_call(export, *right_call, recursor.name, *motive_level, 0)
+    });
+
+    leaf_ok && node_ok
+}
+
+/// G10-001: a closed, safe, two-constructor enum. This admits no constructor
+/// fields and therefore needs neither positivity search nor recursive
+/// occurrences. Exported recursor equations are checked against a derived
+/// de Bruijn shape but are not installed as runtime iota rules.
+#[derive(Clone, Copy)]
+enum BinaryEnumSortLaw {
+    Type,
+    Prop,
+}
+
+fn check_binary_enum(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+
+    // Existing Type-level authority remains name-sealed to Bool/Color. G25
+    // adds one independently earned Prop-level family, BoolProp, while sharing
+    // the internal binary-enum derivation below.
+    let sort_law = if name_is_root_str(export, inductive.name, "BoolProp") {
+        if !is_prop_sort(export, inductive.ty) {
+            return Err(Verdict::Reject);
+        }
+        BinaryEnumSortLaw::Prop
+    } else if name_is_root_str(export, inductive.name, "Bool")
+        || name_is_root_str(export, inductive.name, "Color")
+    {
+        if !matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level))
+                if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
+        ) {
+            return Err(Verdict::Unknown);
+        }
+        BinaryEnumSortLaw::Type
+    } else if generic_nonrecursive_type_candidate(export, block)
+        || generic_two_parameter_sum_candidate(export, block)
+        || generic_optional_value_candidate(export, block)
+    {
+        return check_generic_nonrecursive_type(export, environment, block, limits, delta_policy);
+    } else if generic_nonrecursive_prop_small_candidate(export, block) {
+        return check_generic_nonrecursive_prop_small(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
+    } else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 0 || inductive.num_indices != 0 || inductive.num_nested != 0 {
+        return Err(Verdict::Unknown);
+    }
+    let constructor_names = block
+        .constructors
+        .iter()
+        .map(|constructor| constructor.name)
+        .collect::<Vec<_>>();
+    if inductive.all != [inductive.name]
+        || inductive.constructors != constructor_names
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_type(inductive.name, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    for (index, constructor) in block.constructors.iter().enumerate() {
+        if constructor.index != index as u64
+            || constructor.inductive != inductive.name
+            || constructor.is_unsafe
+            || !constructor.level_params.is_empty()
+            || constructor.num_fields != 0
+            || constructor.num_params != 0
+            || !is_empty_constant(export, constructor.ty, inductive.name)
+        {
+            return Err(Verdict::Reject);
+        }
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    let levels_ok = match sort_law {
+        BinaryEnumSortLaw::Type => recursor.level_params.len() == 1,
+        BinaryEnumSortLaw::Prop => recursor.level_params.is_empty(),
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        !recursor.is_unsafe && levels_ok,
+    ) || !binary_enum_recursor_obligations(
+        export,
+        inductive.name,
+        &constructor_names,
+        recursor,
+        sort_law,
+    ) {
+        return Err(Verdict::Reject);
+    }
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment = derivation.finish();
+
+    // G31 installs executable iota authority only for the exact Bool family.
+    // Color and BoolProp retain declaration authority without computation.
+    if name_is_root_str(export, inductive.name, "Bool") {
+        let rules = block
+            .constructors
+            .iter()
+            .zip(&recursor.rules)
+            .map(|(constructor, rule)| {
+                Ok(RecursorRule {
+                    constructor: constructor.name,
+                    constructor_level_params: constructor.level_params.clone(),
+                    num_params: usize::try_from(constructor.num_params)
+                        .map_err(|_| Verdict::Reject)?,
+                    num_fields: usize::try_from(constructor.num_fields)
+                        .map_err(|_| Verdict::Reject)?,
+                    rhs: rule.rhs,
+                })
+            })
+            .collect::<Result<Vec<_>, Verdict>>()?;
+        let reduction = RecursorReduction {
+            k: recursor.k,
+            num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
+            num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
+            level_params: recursor.level_params.clone(),
+            rules,
+        };
+        let environment = environment
+            .install_recursor_reduction(recursor.name, reduction)
+            .map_err(|_| Verdict::Reject)?;
+        let [false_ctor, true_ctor] = constructor_names.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if !name_is_child_str(export, *false_ctor, inductive.name, "false")
+            || !name_is_child_str(export, *true_ctor, inductive.name, "true")
+        {
+            return Err(Verdict::Unknown);
+        }
+        environment
+            .install_bool_primitives(BoolPrimitives {
+                false_ctor: *false_ctor,
+                true_ctor: *true_ctor,
+            })
+            .map_err(|_| Verdict::Reject)
+    } else {
+        Ok(environment)
+    }
+}
+
+fn binary_enum_motive_sort_ok(
+    export: &ResolvedExport,
+    expression: ExprId,
+    recursor: &Recursor,
+    sort_law: BinaryEnumSortLaw,
+) -> bool {
+    match sort_law {
+        BinaryEnumSortLaw::Prop => is_prop_sort(export, expression),
+        BinaryEnumSortLaw::Type => recursor
+            .level_params
+            .first()
+            .is_some_and(|motive_level| is_sort_parameter(export, expression, *motive_level)),
+    }
+}
+
+fn binary_enum_recursor_obligations(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructors: &[NameId],
+    recursor: &Recursor,
+    sort_law: BinaryEnumSortLaw,
+) -> bool {
+    let [first, second] = constructors else {
+        return false;
+    };
+
+    let type_ok = pi_spine(export, recursor.ty, 4).is_some_and(|(domains, result)| {
+        let [motive, first_minor, second_minor, target] = domains.as_slice() else {
+            return false;
+        };
+        matches!(
+            export.exprs.get(*motive),
+            Some(Expr::Pi {
+                domain: motive_arg,
+                body: motive_sort,
+            }) if is_empty_constant(export, *motive_arg, inductive)
+                && binary_enum_motive_sort_ok(export, *motive_sort, recursor, sort_law)
+        ) && is_bvar_applied_to_constant(export, *first_minor, 0, *first)
+            && is_bvar_applied_to_constant(export, *second_minor, 1, *second)
+            && is_empty_constant(export, *target, inductive)
+            && is_bvar_application(export, result, 3, 0)
+    });
+
+    let rules_ok = recursor.rules.iter().enumerate().all(|(index, rule)| {
+        lam_spine(export, rule.rhs, 3).is_some_and(|(domains, result)| {
+            let [motive, first_minor, second_minor] = domains.as_slice() else {
+                return false;
+            };
+            let motive_ok = matches!(
+                export.exprs.get(*motive),
+                Some(Expr::Pi {
+                    domain: motive_arg,
+                    body: motive_sort,
+                }) if is_empty_constant(export, *motive_arg, inductive)
+                    && match sort_law {
+                        BinaryEnumSortLaw::Prop => is_prop_sort(export, *motive_sort),
+                        // Preserve the previously qualified Type-enum rule
+                        // boundary: the recursor type fixes its universe.
+                        BinaryEnumSortLaw::Type => true,
+                    }
+            );
+            motive_ok
+                && is_bvar_applied_to_constant(export, *first_minor, 0, *first)
+                && is_bvar_applied_to_constant(export, *second_minor, 1, *second)
+                && is_bvar(export, result, 1 - index as u64)
+        })
+    });
+
+    type_ok && rules_ok
+}
+
+fn is_bvar_applied_to_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+    variable: u64,
+    constant: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if matches!(export.exprs.get(*fun), Some(Expr::BVar(index)) if *index == variable)
+                && is_empty_constant(export, *arg, constant)
+    )
+}
+
+/// G15-001's closed internal quotient, extended by G16-001's independently
+/// earned nullary law. External recognition remains name-sealed: adding this
+/// variant cannot authorize any unrelated fourth product family.
+fn recursor_metadata_admissible(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructors: &[Constructor],
+    recursor: &Recursor,
+    expected_k: bool,
+    levels_ok: bool,
+) -> bool {
+    recursor.all == [inductive.name]
+        && recursor.k == expected_k
+        && levels_ok
+        && !has_duplicate_parameter(&recursor.level_params)
+        && recursor.num_params == inductive.num_params
+        && recursor.num_indices == inductive.num_indices
+        && recursor.num_motives == 1
+        && recursor.num_minors == constructors.len() as u64
+        && recursor.rules.len() == constructors.len()
+        && recursor
+            .rules
+            .iter()
+            .zip(constructors)
+            .all(|(rule, constructor)| {
+                rule.constructor == constructor.name && rule.num_fields == constructor.num_fields
+            })
+        && name_is_child_str(export, recursor.name, inductive.name, "rec")
+}
+
+#[derive(Clone, Copy)]
+enum BinaryProductSortLaw {
+    And,
+    Prod { first: NameId, second: NameId },
+    PProd { first: NameId, second: NameId },
+    PUnit { level: NameId },
+    Eq { level: NameId },
+}
+
+impl BinaryProductSortLaw {
+    fn parameter_sort(self, export: &ResolvedExport, expression: ExprId, first: bool) -> bool {
+        match self {
+            Self::PUnit { .. } | Self::Eq { .. } => false,
+            Self::And => is_prop_sort(export, expression),
+            Self::Prod {
+                first: first_level,
+                second: second_level,
+            } => is_sort_succ_parameter(
+                export,
+                expression,
+                if first { first_level } else { second_level },
+            ),
+            Self::PProd {
+                first: first_level,
+                second: second_level,
+            } => is_sort_parameter(
+                export,
+                expression,
+                if first { first_level } else { second_level },
+            ),
+        }
+    }
+
+    fn result_sort(self, export: &ResolvedExport, expression: ExprId) -> bool {
+        match self {
+            Self::PUnit { level } => is_sort_parameter(export, expression, level),
+            Self::Eq { .. } | Self::And => is_prop_sort(export, expression),
+            Self::Prod { first, second } => {
+                let Some(Expr::Sort(level)) = export.exprs.get(expression) else {
+                    return false;
+                };
+                let Some(Level::Max(left, right)) = export.levels.get(*level) else {
+                    return false;
+                };
+                level_is_succ_parameter(export, *left, first)
+                    && level_is_succ_parameter(export, *right, second)
+            }
+            Self::PProd { first, second } => {
+                let Some(Expr::Sort(level)) = export.exprs.get(expression) else {
+                    return false;
+                };
+                let Some(Level::Max(left, right)) = export.levels.get(*level) else {
+                    return false;
+                };
+                let Some(Level::Max(one, first_level)) = export.levels.get(*left) else {
+                    return false;
+                };
+                matches!(
+                    export.levels.get(*one),
+                    Some(Level::Succ(inner))
+                        if matches!(export.levels.get(*inner), Some(Level::Zero))
+                ) && matches!(
+                    export.levels.get(*first_level),
+                    Some(Level::Param(name)) if *name == first
+                ) && matches!(
+                    export.levels.get(*right),
+                    Some(Level::Param(name)) if *name == second
+                )
+            }
+        }
+    }
+
+    fn constant(self, export: &ResolvedExport, expression: ExprId, name: NameId) -> bool {
+        match self {
+            Self::PUnit { level } | Self::Eq { level } => {
+                is_unary_polymorphic_constant(export, expression, name, level)
+            }
+            Self::And => is_empty_constant(export, expression, name),
+            Self::Prod { first, second } | Self::PProd { first, second } => {
+                is_polymorphic_constant(export, expression, name, first, second)
+            }
+        }
+    }
+
+    fn declaration_levels(
+        self,
+        inductive: &crate::syntax::InductiveType,
+        constructor: &Constructor,
+    ) -> bool {
+        match self {
+            Self::PUnit { level } | Self::Eq { level } => {
+                inductive.level_params == [level] && constructor.level_params == [level]
+            }
+            Self::And => inductive.level_params.is_empty() && constructor.level_params.is_empty(),
+            Self::Prod { first, second } | Self::PProd { first, second } => {
+                first != second
+                    && inductive.level_params == [first, second]
+                    && constructor.level_params == inductive.level_params
+            }
+        }
+    }
+
+    fn recursor_levels(self, inductive_level_params: &[NameId], recursor: &Recursor) -> bool {
+        match self {
+            Self::PUnit { .. } | Self::Eq { .. } => {
+                recursor.level_params.len() == 2
+                    && recursor.level_params[1] == inductive_level_params[0]
+            }
+            Self::And => recursor.level_params.len() == 1,
+            Self::Prod { .. } | Self::PProd { .. } => {
+                recursor.level_params.len() == 3
+                    && &recursor.level_params[1..] == inductive_level_params
+            }
+        }
+    }
+
+    fn num_params(self) -> u64 {
+        match self {
+            Self::PUnit { .. } => 0,
+            Self::Eq { .. } | Self::And | Self::Prod { .. } | Self::PProd { .. } => 2,
+        }
+    }
+
+    fn num_fields(self) -> u64 {
+        match self {
+            Self::PUnit { .. } | Self::Eq { .. } => 0,
+            Self::And | Self::Prod { .. } | Self::PProd { .. } => 2,
+        }
+    }
+
+    fn recursor_uses_rule_k(self) -> bool {
+        matches!(self, Self::Eq { .. })
+    }
+
+    fn validates_recursor_metadata(
+        self,
+        export: &ResolvedExport,
+        inductive: &crate::syntax::InductiveType,
+        constructor: &Constructor,
+        recursor: &Recursor,
+    ) -> bool {
+        recursor_metadata_admissible(
+            export,
+            inductive,
+            std::slice::from_ref(constructor),
+            recursor,
+            self.recursor_uses_rule_k(),
+            self.recursor_levels(&inductive.level_params, recursor),
+        )
+    }
+
+    fn validates_type(self, export: &ResolvedExport, expression: ExprId) -> bool {
+        match self {
+            Self::PUnit { .. } => self.result_sort(export, expression),
+            Self::Eq { level } => {
+                let Some((domains, result)) = pi_spine(export, expression, 3) else {
+                    return false;
+                };
+                let [carrier, parameter, index] = domains.as_slice() else {
+                    return false;
+                };
+                is_sort_parameter(export, *carrier, level)
+                    && is_bvar(export, *parameter, 0)
+                    && is_bvar(export, *index, 1)
+                    && is_prop_sort(export, result)
+            }
+            Self::And | Self::Prod { .. } | Self::PProd { .. } => {
+                is_exact_binary_product_parameter_telescope(export, expression, self)
+            }
+        }
+    }
+
+    fn validates_constructor(
+        self,
+        export: &ResolvedExport,
+        expression: ExprId,
+        inductive: NameId,
+    ) -> bool {
+        match self {
+            Self::PUnit { .. } => self.constant(export, expression, inductive),
+            Self::Eq { level } => {
+                let Some((domains, result)) = pi_spine(export, expression, 2) else {
+                    return false;
+                };
+                let [carrier, parameter] = domains.as_slice() else {
+                    return false;
+                };
+                is_sort_parameter(export, *carrier, level)
+                    && is_bvar(export, *parameter, 0)
+                    && is_eq_application(export, result, inductive, self, 1, 0, 0)
+            }
+            Self::And | Self::Prod { .. } | Self::PProd { .. } => {
+                is_derived_binary_product_constructor_type(export, expression, inductive, self)
+            }
+        }
+    }
+}
+
+struct ExactBinaryProductDerivation<'a> {
+    inductive: &'a crate::syntax::InductiveType,
+    constructor: &'a Constructor,
+    recursor: &'a Recursor,
+    constructor_suffix: &'static str,
+    law: BinaryProductSortLaw,
+}
+
+impl ExactBinaryProductDerivation<'_> {
+    fn validate_and_promote(
+        &self,
+        export: &ResolvedExport,
+        environment: &Environment,
+        limits: Limits,
+        delta_policy: DeltaPolicy,
+    ) -> Result<Environment, Verdict> {
+        if !self
+            .law
+            .declaration_levels(self.inductive, self.constructor)
+            || !self.law.validates_type(export, self.inductive.ty)
+            || self.inductive.all != [self.inductive.name]
+            || self.inductive.constructors != [self.constructor.name]
+            || self.constructor.index != 0
+            || self.constructor.inductive != self.inductive.name
+            || self.constructor.num_fields != self.law.num_fields()
+            || self.constructor.num_params != self.law.num_params()
+            || !name_is_child_str(
+                export,
+                self.constructor.name,
+                self.inductive.name,
+                self.constructor_suffix,
+            )
+            || !self
+                .law
+                .validates_constructor(export, self.constructor.ty, self.inductive.name)
+        {
+            return Err(Verdict::Reject);
+        }
+
+        let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+        let derived_type = if self.inductive.level_params.is_empty() {
+            derived_type(self.inductive.name, self.inductive.ty)
+        } else {
+            derived_polymorphic_type(
+                self.inductive.name,
+                &self.inductive.level_params,
+                self.inductive.ty,
+            )
+        };
+        derivation.promote_all(
+            export,
+            [derived_type, derived_constructor(self.constructor)],
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+
+        let valid_recursor = match self.law {
+            BinaryProductSortLaw::PUnit { .. } => {
+                let type_valid =
+                    pi_spine(export, self.recursor.ty, 3).is_some_and(|(domains, result)| {
+                        matches!(domains.as_slice(), [motive, minor, target]
+                            if is_punit_motive_type(
+                                export,
+                                *motive,
+                                self.inductive.name,
+                                self.recursor.level_params[0],
+                                self.law,
+                            )
+                                && is_punit_minor_type(
+                                    export,
+                                    *minor,
+                                    self.constructor.name,
+                                    self.law,
+                                )
+                                && self.law.constant(export, *target, self.inductive.name)
+                                && is_bvar_application(export, result, 2, 0))
+                    });
+                let rule_valid = matches!(self.recursor.rules.as_slice(), [rule]
+                if lam_spine(export, rule.rhs, 2).is_some_and(|(domains, result)| {
+                    matches!(domains.as_slice(), [motive, minor]
+                        if is_punit_motive_type(
+                            export,
+                            *motive,
+                            self.inductive.name,
+                            self.recursor.level_params[0],
+                            self.law,
+                        )
+                            && is_punit_minor_type(
+                                export,
+                                *minor,
+                                self.constructor.name,
+                                self.law,
+                            )
+                            && is_bvar(export, result, 0))
+                }));
+                self.law.validates_recursor_metadata(
+                    export,
+                    self.inductive,
+                    self.constructor,
+                    self.recursor,
+                ) && type_valid
+                    && rule_valid
+            }
+            BinaryProductSortLaw::Eq { level } => {
+                let type_valid =
+                    pi_spine(export, self.recursor.ty, 6).is_some_and(|(domains, result)| {
+                        matches!(domains.as_slice(), [carrier, parameter, motive, minor, index, proof]
+                            if is_sort_parameter(export, *carrier, level)
+                                && is_bvar(export, *parameter, 0)
+                                && is_eq_motive_type(
+                                    export,
+                                    *motive,
+                                    self.inductive.name,
+                                    self.recursor.level_params[0],
+                                    self.law,
+                                )
+                                && is_eq_minor_type(
+                                    export,
+                                    *minor,
+                                    self.constructor.name,
+                                    self.law,
+                                )
+                                && is_bvar(export, *index, 3)
+                                && is_eq_application(
+                                    export,
+                                    *proof,
+                                    self.inductive.name,
+                                    self.law,
+                                    4,
+                                    3,
+                                    0,
+                                )
+                                && is_binary_bvar_application(export, result, 3, 1, 0))
+                    });
+                let rule_valid = matches!(self.recursor.rules.as_slice(), [rule]
+                if lam_spine(export, rule.rhs, 4).is_some_and(|(domains, result)| {
+                    matches!(domains.as_slice(), [carrier, parameter, motive, minor]
+                        if is_sort_parameter(export, *carrier, level)
+                            && is_bvar(export, *parameter, 0)
+                            && is_eq_motive_type(
+                                export,
+                                *motive,
+                                self.inductive.name,
+                                self.recursor.level_params[0],
+                                self.law,
+                            )
+                            && is_eq_minor_type(
+                                export,
+                                *minor,
+                                self.constructor.name,
+                                self.law,
+                            )
+                            && is_bvar(export, result, 0))
+                }));
+                self.law.validates_recursor_metadata(
+                    export,
+                    self.inductive,
+                    self.constructor,
+                    self.recursor,
+                ) && type_valid
+                    && rule_valid
+            }
+            BinaryProductSortLaw::And
+            | BinaryProductSortLaw::Prod { .. }
+            | BinaryProductSortLaw::PProd { .. } => {
+                self.law.validates_recursor_metadata(
+                    export,
+                    self.inductive,
+                    self.constructor,
+                    self.recursor,
+                ) && is_derived_binary_product_recursor_type(
+                    export,
+                    self.inductive.name,
+                    self.constructor.name,
+                    self.recursor,
+                    self.law,
+                ) && is_derived_binary_product_rule(
+                    export,
+                    self.inductive.name,
+                    self.constructor.name,
+                    self.recursor,
+                    self.law,
+                )
+            }
+        };
+        if !valid_recursor {
+            return Err(Verdict::Reject);
+        }
+        derivation.promote(
+            export,
+            derived_recursor(self.recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+        let environment = derivation.finish();
+        let environment = if matches!(
+            self.law,
+            BinaryProductSortLaw::And
+                | BinaryProductSortLaw::Prod { .. }
+                | BinaryProductSortLaw::PProd { .. }
+        ) {
+            environment
+                .install_projection_spec(
+                    self.inductive.name,
+                    ProjectionSpec {
+                        constructor: self.constructor.name,
+                        num_params: 2,
+                        field_types: vec![
+                            ProjectionFieldType::Parameter(0),
+                            ProjectionFieldType::Parameter(1),
+                        ],
+                        eta_expandable: matches!(
+                            self.law,
+                            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::PProd { .. }
+                        ),
+                    },
+                )
+                .map_err(|_| Verdict::Reject)?
+        } else {
+            environment
+        };
+
+        let environment = if matches!(self.law, BinaryProductSortLaw::PUnit { .. }) {
+            environment
+                .install_unit_like_type(self.inductive.name)
+                .map_err(|_| Verdict::Reject)?
+        } else {
+            environment
+        };
+
+        // Reuse constructor-iota authority for exact Prod/PProd and the
+        // separately checked exact Eq recursor. The exported K bit remains guarded by
+        // typed compatibility at the conversion boundary.
+        if matches!(
+            self.law,
+            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::PProd { .. } | BinaryProductSortLaw::Eq { .. }
+        ) {
+            let [rule] = self.recursor.rules.as_slice() else {
+                return Err(Verdict::Reject);
+            };
+            let reduction = RecursorReduction {
+                k: self.recursor.k,
+                num_params: usize::try_from(self.recursor.num_params)
+                    .map_err(|_| Verdict::Reject)?,
+                num_indices: usize::try_from(self.recursor.num_indices)
+                    .map_err(|_| Verdict::Reject)?,
+                level_params: self.recursor.level_params.clone(),
+                rules: vec![RecursorRule {
+                    constructor: self.constructor.name,
+                    constructor_level_params: self.constructor.level_params.clone(),
+                    num_params: usize::try_from(self.constructor.num_params)
+                        .map_err(|_| Verdict::Reject)?,
+                    num_fields: usize::try_from(self.constructor.num_fields)
+                        .map_err(|_| Verdict::Reject)?,
+                    rhs: rule.rhs,
+                }],
+            };
+            environment
+                .install_recursor_reduction(self.recursor.name, reduction)
+                .map_err(|_| Verdict::Reject)
+        } else {
+            Ok(environment)
+        }
+    }
+}
+
+/// G12-001's complete external frontier: the built-in-shaped `And` declaration
+/// with two Prop parameters and one field for each parameter. This is a named
+/// classifier, not a general parameterized-inductive rule. The shared
+/// promotion transaction is reused unchanged and installs no computation.
+#[derive(Clone, Copy)]
+enum BinaryProductFamily {
+    And,
+    Prod,
+    PProd,
+}
+
+fn check_exact_binary_product_family(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+    family: BinaryProductFamily,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    // And's already-qualified envelope treats any universe-polymorphic
+    // neighbor as unsupported before recursor validation.
+    if matches!(family, BinaryProductFamily::And)
+        && (!inductive.level_params.is_empty() || !constructor.level_params.is_empty())
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+
+    let (constructor_suffix, law) = match family {
+        BinaryProductFamily::And => ("intro", BinaryProductSortLaw::And),
+        BinaryProductFamily::Prod => {
+            if has_dependent_parameter_neighbor(export, inductive.ty) {
+                return Err(Verdict::Unknown);
+            }
+            let [first, second] = inductive.level_params.as_slice() else {
+                return Err(Verdict::Reject);
+            };
+            (
+                "mk",
+                BinaryProductSortLaw::Prod {
+                    first: *first,
+                    second: *second,
+                },
+            )
+        }
+        BinaryProductFamily::PProd => {
+            if has_dependent_parameter_neighbor(export, inductive.ty)
+                || pprod_has_dependent_field_neighbor(export, constructor.ty)
+            {
+                return Err(Verdict::Unknown);
+            }
+            let [first, second] = inductive.level_params.as_slice() else {
+                return Err(Verdict::Reject);
+            };
+            (
+                "mk",
+                BinaryProductSortLaw::PProd {
+                    first: *first,
+                    second: *second,
+                },
+            )
+        }
+    };
+
+    ExactBinaryProductDerivation {
+        inductive,
+        constructor,
+        recursor,
+        constructor_suffix,
+        law,
+    }
+    .validate_and_promote(export, environment, limits, delta_policy)
+}
+
+fn is_prop_sort(export: &ResolvedExport, expression: ExprId) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Sort(level)) if matches!(export.levels.get(*level), Some(Level::Zero))
+    )
+}
+
+fn is_bvar(export: &ResolvedExport, expression: ExprId, expected: u64) -> bool {
+    matches!(export.exprs.get(expression), Some(Expr::BVar(index)) if *index == expected)
+}
+
+fn are_bvars(export: &ResolvedExport, expressions: &[ExprId], expected: &[u64]) -> bool {
+    expressions.len() == expected.len()
+        && expressions
+            .iter()
+            .zip(expected)
+            .all(|(expression, expected)| is_bvar(export, *expression, *expected))
+}
+
+fn is_bvar_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    function: u64,
+    argument: u64,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_bvar(export, *fun, function) && is_bvar(export, *arg, argument)
+    )
+}
+
+fn is_binary_bvar_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    function: u64,
+    first: u64,
+    second: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_bvar(export, head, function)
+        && are_bvars(export, &arguments, &[first, second])
+}
+
+fn is_exact_binary_product_parameter_telescope(
+    export: &ResolvedExport,
+    expression: ExprId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [first, second] = domains.as_slice() else {
+        return false;
+    };
+    law.parameter_sort(export, *first, true)
+        && law.parameter_sort(export, *second, false)
+        && law.result_sort(export, result)
+}
+
+fn is_derived_binary_product_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 4) else {
+        return false;
+    };
+    let [first, second, left, right] = domains.as_slice() else {
+        return false;
+    };
+    law.parameter_sort(export, *first, true)
+        && law.parameter_sort(export, *second, false)
+        && is_bvar(export, *left, 1)
+        && is_bvar(export, *right, 1)
+        && is_binary_product_constant_application(export, result, inductive, 3, 2, law)
+}
+
+fn is_derived_binary_product_recursor_type(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 5) else {
+        return false;
+    };
+    let [first, second, motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    law.parameter_sort(export, *first, true)
+        && law.parameter_sort(export, *second, false)
+        && is_binary_product_motive_type(export, *motive, inductive, recursor.level_params[0], law)
+        && is_binary_product_minor_type(export, *minor, constructor, law)
+        && is_binary_product_constant_application(export, *target, inductive, 3, 2, law)
+        && is_bvar_application(export, result, 2, 0)
+}
+
+fn is_binary_product_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [argument] = domains.as_slice() else {
+        return false;
+    };
+    is_binary_product_constant_application(export, *argument, inductive, 1, 0, law)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn is_binary_product_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [left, right] = domains.as_slice() else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *left, 2)
+        && is_bvar(export, *right, 2)
+        && is_bvar(export, *motive, 2)
+        && is_binary_product_constructor_application(export, *constructed, constructor, law)
+}
+
+fn is_derived_binary_product_rule(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 6) else {
+        return false;
+    };
+    let [first, second, motive, minor, left, right] = domains.as_slice() else {
+        return false;
+    };
+    law.parameter_sort(export, *first, true)
+        && law.parameter_sort(export, *second, false)
+        && is_binary_product_motive_type(export, *motive, inductive, recursor.level_params[0], law)
+        && is_binary_product_minor_type(export, *minor, constructor, law)
+        && is_bvar(export, *left, 3)
+        && is_bvar(export, *right, 3)
+        && is_binary_bvar_application(export, result, 2, 1, 0)
+}
+
+fn is_binary_product_constant_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constant: NameId,
+    first: u64,
+    second: u64,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && law.constant(export, head, constant)
+        && are_bvars(export, &arguments, &[first, second])
+}
+
+fn is_binary_product_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 4
+        && law.constant(export, head, constructor)
+        && are_bvars(export, &arguments, &[4, 3, 1, 0])
+}
+
+fn is_unary_polymorphic_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constant: NameId,
+    level_parameter: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if *name == constant
+                && matches!(levels.as_slice(), [level]
+                    if matches!(export.levels.get(*level), Some(Level::Param(name)) if *name == level_parameter))
+    )
+}
+
+fn is_punit_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [argument] = domains.as_slice() else {
+        return false;
+    };
+    law.constant(export, *argument, inductive) && is_sort_parameter(export, result, motive_level)
+}
+
+fn is_punit_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_bvar(export, *fun, 0) && law.constant(export, *arg, constructor)
+    )
+}
+
+fn is_eq_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    law: BinaryProductSortLaw,
+    carrier: u64,
+    parameter: u64,
+    index: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && law.constant(export, head, inductive)
+        && are_bvars(export, &arguments, &[carrier, parameter, index])
+}
+
+fn is_eq_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    law: BinaryProductSortLaw,
+    carrier: u64,
+    parameter: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && law.constant(export, head, constructor)
+        && are_bvars(export, &arguments, &[carrier, parameter])
+}
+
+fn is_eq_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [index, proof] = domains.as_slice() else {
+        return false;
+    };
+    is_bvar(export, *index, 1)
+        && is_eq_application(export, *proof, inductive, law, 2, 1, 0)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn is_eq_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some(Expr::App {
+        fun: motive_at_parameter,
+        arg: refl,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    is_bvar_application(export, *motive_at_parameter, 0, 1)
+        && is_eq_constructor_application(export, *refl, constructor, law, 2, 1)
+}
+
+fn has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
+        return false;
+    };
+    matches!(
+        export.exprs.get(*body),
+        Some(Expr::Pi { domain, .. }) if matches!(export.exprs.get(*domain), Some(Expr::Pi { .. }))
+    )
+}
+
+fn is_sort_parameter(export: &ResolvedExport, expression: ExprId, parameter: NameId) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Sort(level)) if matches!(export.levels.get(*level), Some(Level::Param(name)) if *name == parameter)
+    )
+}
+
+fn is_sort_succ_parameter(export: &ResolvedExport, expression: ExprId, parameter: NameId) -> bool {
+    let Some(Expr::Sort(level)) = export.exprs.get(expression) else {
+        return false;
+    };
+    level_is_succ_parameter(export, *level, parameter)
+}
+
+fn level_is_succ_parameter(export: &ResolvedExport, level: LevelId, parameter: NameId) -> bool {
+    matches!(
+        export.levels.get(level),
+        Some(Level::Succ(inner)) if matches!(export.levels.get(*inner), Some(Level::Param(name)) if *name == parameter)
+    )
+}
+
+fn is_polymorphic_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constant: NameId,
+    first_level: NameId,
+    second_level: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if *name == constant
+                && matches!(levels.as_slice(), [first, second]
+                    if matches!(export.levels.get(*first), Some(Level::Param(name)) if *name == first_level)
+                        && matches!(export.levels.get(*second), Some(Level::Param(name)) if *name == second_level))
+    )
+}
+
+/// G14-001's name-specific frontier. G15 shares only its already-qualified
+/// derivation skeleton; this envelope and its Sort-level law remain separate.
+fn pprod_has_dependent_field_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some((domains, _)) = pi_spine(export, expression, 4) else {
+        return false;
+    };
+    domains[2..].iter().any(|domain| {
+        matches!(
+            export.exprs.get(*domain),
+            Some(Expr::Pi { .. } | Expr::App { .. })
+        )
+    })
+}
+
+/// G11-001's exact `TwoBool` promotion boundary. This deliberately names the
+/// fixture family: a generic structure/positivity rule has not yet been
+/// earned. The exported rule is validated but no iota, projection, or eta
+/// operation is installed.
+fn check_twobool_structure(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || !name_is_root_str(export, inductive.name, "TwoBool")
+        || !matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level))
+                if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
+        )
+    {
+        return Err(Verdict::Unknown);
+    }
+    let [constructor] = block.constructors.as_slice() else {
+        unreachable!("dispatched by constructor count");
+    };
+    if constructor.is_unsafe || !constructor.level_params.is_empty() {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_fields != 2
+        || constructor.num_params != 0
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+    {
+        return Err(Verdict::Reject);
+    }
+    let Some(bool_name) = first_constructor_domain_constant(export, constructor.ty) else {
+        return Err(Verdict::Reject);
+    };
+    if !name_is_root_str(export, bool_name, "Bool")
+        || !is_twobool_constructor_type(export, constructor.ty, bool_name, inductive.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        !recursor.is_unsafe && recursor.level_params.len() == 1,
+    ) || !twobool_recursor_obligations(
+        export,
+        inductive.name,
+        constructor.name,
+        bool_name,
+        recursor,
+    ) {
+        return Err(Verdict::Reject);
+    }
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn is_twobool_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    field_type: NameId,
+    inductive: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [first, second] = domains.as_slice() else {
+        return false;
+    };
+    is_empty_constant(export, *first, field_type)
+        && is_empty_constant(export, *second, field_type)
+        && is_empty_constant(export, result, inductive)
+}
+
+fn twobool_recursor_obligations(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    field_type: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let type_ok = pi_spine(export, recursor.ty, 3).is_some_and(|(domains, result)| {
+        matches!(domains.as_slice(), [motive, minor, target]
+            if matches!(
+                export.exprs.get(*motive),
+                Some(Expr::Pi {
+                    domain: motive_arg,
+                    body: motive_sort,
+                }) if is_empty_constant(export, *motive_arg, inductive)
+                    && matches!(
+                        export.exprs.get(*motive_sort),
+                        Some(Expr::Sort(level)) if matches!(
+                            export.levels.get(*level),
+                            Some(Level::Param(name)) if name == &recursor.level_params[0]
+                        )
+                    )
+            )
+                && is_twobool_minor_type(export, *minor, constructor, field_type)
+                && is_empty_constant(export, *target, inductive)
+                && is_bvar_application(export, result, 2, 0))
+    });
+
+    let rule_ok = matches!(recursor.rules.as_slice(), [rule]
+    if lam_spine(export, rule.rhs, 4).is_some_and(|(domains, result)| {
+        matches!(domains.as_slice(), [motive, minor, first, second]
+            if matches!(
+                export.exprs.get(*motive),
+                Some(Expr::Pi { domain: motive_arg, .. })
+                    if is_empty_constant(export, *motive_arg, inductive)
+            )
+                && is_twobool_minor_type(export, *minor, constructor, field_type)
+                && is_empty_constant(export, *first, field_type)
+                && is_empty_constant(export, *second, field_type)
+                && is_binary_bvar_application(export, result, 2, 1, 0))
+    }));
+
+    type_ok && rule_ok
+}
+
+fn is_twobool_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    field_type: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [first, second] = domains.as_slice() else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_empty_constant(export, *first, field_type)
+        && is_empty_constant(export, *second, field_type)
+        && is_bvar(export, *motive, 2)
+        && is_constructor_applied_to_two_bvars(export, *constructed, constructor, 1, 0)
+}
+
+fn is_constructor_applied_to_two_bvars(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    first: u64,
+    second: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_empty_constant(export, head, constructor)
+        && are_bvars(export, &arguments, &[first, second])
+}
+
+fn trace_name(export: &ResolvedExport, mut name: NameId) -> String {
+    if name == NameId(0) {
+        return "_root".to_string();
+    }
+    let mut parts = Vec::new();
+    let mut guard = 0usize;
+    while name != NameId(0) && guard < 128 {
+        guard += 1;
+        match export.names.get(name) {
+            Some(Name::Str { prefix, value }) => {
+                parts.push(value.clone());
+                name = *prefix;
+            }
+            Some(Name::Num { prefix, value }) => {
+                parts.push(value.to_string());
+                name = *prefix;
+            }
+            None => {
+                parts.push(format!("#{}", name.0));
+                break;
+            }
+        }
+    }
+    parts.reverse();
+    parts.join(".")
+}
+
+fn name_is_root_str(export: &ResolvedExport, name: NameId, value: &str) -> bool {
+    matches!(export.names.get(name), Some(Name::Str { prefix: NameId(0), value: actual }) if actual == value)
+}
+
+fn name_is_child_str(export: &ResolvedExport, name: NameId, prefix: NameId, value: &str) -> bool {
+    matches!(export.names.get(name), Some(Name::Str { prefix: actual_prefix, value: actual }) if *actual_prefix == prefix && actual == value)
+}
+
+fn first_constructor_domain_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+) -> Option<NameId> {
+    let (domains, _) = pi_spine(export, expression, 1)?;
+    let Expr::Const { name, levels } = export.exprs.get(domains[0])? else {
+        return None;
+    };
+    levels.is_empty().then_some(*name)
+}
+
+fn derived_type(name: NameId, ty: ExprId) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Type,
+        name,
+        level_params: Vec::new(),
+        ty,
+    }
+}
+
+fn derived_polymorphic_type(name: NameId, level_params: &[NameId], ty: ExprId) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Type,
+        name,
+        level_params: level_params.to_vec(),
+        ty,
+    }
+}
+
+fn derived_constructor(constructor: &Constructor) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Constructor,
+        name: constructor.name,
+        level_params: constructor.level_params.clone(),
+        ty: constructor.ty,
+    }
+}
+
+fn derived_recursor(recursor: &Recursor) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Recursor,
+        name: recursor.name,
+        level_params: recursor.level_params.clone(),
+        ty: recursor.ty,
+    }
+}
+
+fn has_duplicate_parameter(parameters: &[NameId]) -> bool {
+    parameters
+        .iter()
+        .enumerate()
+        .any(|(index, parameter)| parameters[..index].contains(parameter))
+}
+
+fn parameter_substitution(parameters: &[NameId]) -> HashMap<NameId, LevelTerm> {
+    parameters
+        .iter()
+        .map(|parameter| (*parameter, LevelTerm::param(format!("u#{}", parameter.0))))
+        .collect()
+}
+
+fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
+    match judgment {
+        Judgment::Proven { .. } => Ok(()),
+        Judgment::Refuted { .. } => Err(Verdict::Reject),
+        Judgment::Unknown { .. } => Err(Verdict::Unknown),
+    }
+}
+
+fn trace_verdict_boundary(
+    export: &ResolvedExport,
+    name: NameId,
+    stage: &'static str,
+    judgment: Judgment<()>,
+) -> Result<(), Verdict> {
+    let trace = std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some();
+    match judgment {
+        Judgment::Proven { .. } => Ok(()),
+        Judgment::Refuted { obstruction } => {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_DOWNSTREAM:name={}:stage={stage}:verdict=REJECT:reason={}",
+                    trace_name(export, name),
+                    obstruction.0
+                );
+            }
+            Err(Verdict::Reject)
+        }
+        Judgment::Unknown { residual } => {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_DOWNSTREAM:name={}:stage={stage}:verdict=UNKNOWN:reason={}",
+                    trace_name(export, name),
+                    residual.0
+                );
+            }
+            Err(Verdict::Unknown)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use super::{
+        BinaryProductSortLaw, Limits, check_export, check_export_with_policy, check_inductive,
+        is_binary_product_constant_application, is_binary_product_minor_type,
+        is_binary_product_motive_type, is_bvar_application,
+        is_derived_binary_product_constructor_type, is_derived_binary_product_recursor_type,
+        is_derived_binary_product_rule, is_exact_binary_product_parameter_telescope, is_prop_sort,
+        name_is_root_str,
+    };
+    use crate::convert::DeltaPolicy;
+    use crate::convert::{reset_test_conversion_calls, test_conversion_calls};
+    use crate::environment::Environment;
+    use crate::id::NameId;
+    use crate::parser::parse;
+    use crate::syntax::{Declaration, Expr};
+    use crate::verdict::Verdict;
+
+    #[test]
+    fn good_beta_definition_uses_the_trusted_conversion_route() {
+        let bytes = include_bytes!("../tests/fixtures/good-beta-definition.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+        reset_test_conversion_calls();
+
+        assert_eq!(check_export(export, Limits::default()), Verdict::Accept);
+        assert!(test_conversion_calls() > 0, "accepted beta definition must still use trusted conversion");
+    }
+
+    #[test]
+    fn g3_001_ablation_requires_guarded_semantic_delta() {
+        let bytes = include_bytes!("../evidence/residuals/G3-001/fixture.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+
+        assert_eq!(
+            check_export_with_policy(
+                export.clone(),
+                Limits::default(),
+                DeltaPolicy::PreferredOnly,
+            ),
+            Verdict::Reject,
+        );
+        assert_eq!(
+            check_export_with_policy(
+                export,
+                Limits::default(),
+                DeltaPolicy::GuardedSemanticFallback,
+            ),
+            Verdict::Accept,
+        );
+    }
+
+    #[test]
+    fn universe_parameter_uniqueness_keeps_distinct_binders() {
+        assert!(!super::has_duplicate_parameter(&[]));
+        assert!(!super::has_duplicate_parameter(&[NameId(1), NameId(2)]));
+        assert!(super::has_duplicate_parameter(&[NameId(1), NameId(1)]));
+        assert!(super::has_duplicate_parameter(&[
+            NameId(1),
+            NameId(2),
+            NameId(1),
+        ]));
+    }
+
+    #[test]
+    fn rejected_twobool_block_cannot_partially_extend_authority() {
+        let bytes = include_bytes!("../evidence/residuals/G11-001/fixture.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+        let blocks: Vec<_> = export
+            .declarations
+            .iter()
+            .filter_map(|declaration| match declaration {
+                Declaration::Inductive(block) => Some(block.clone()),
+                _ => None,
+            })
+            .collect();
+        let [bool_block, twobool_block] = blocks.as_slice() else {
+            panic!("fixture must contain Bool followed by TwoBool");
+        };
+        let environment = check_inductive(
+            &export,
+            &Environment::empty(),
+            bool_block,
+            Limits::default(),
+            DeltaPolicy::GuardedSemanticFallback,
+        )
+        .unwrap();
+        let authority_before = environment.authority();
+        let mut malformed = twobool_block.clone();
+        malformed.recursors[0].rules[0].num_fields = 1;
+
+        assert!(matches!(
+            check_inductive(
+                &export,
+                &environment,
+                &malformed,
+                Limits::default(),
+                DeltaPolicy::GuardedSemanticFallback,
+            ),
+            Err(Verdict::Reject)
+        ));
+        assert_eq!(environment.authority(), authority_before);
+        for name in [
+            twobool_block.types[0].name,
+            twobool_block.constructors[0].name,
+            twobool_block.recursors[0].name,
+        ] {
+            assert!(environment.get(name).is_none());
+        }
+    }
+
+    #[test]
+    fn g25_boolprop_reconstructs_prop_only_binary_recursor() {
+        let bytes = include_bytes!("../evidence/residuals/G25-001/072_boolPropRec.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+
+        assert_eq!(
+            check_export(export.clone(), Limits::default()),
+            Verdict::Accept
+        );
+
+        let block = export
+            .declarations
+            .iter()
+            .find_map(|declaration| match declaration {
+                Declaration::Inductive(block)
+                    if name_is_root_str(&export, block.types[0].name, "BoolProp") =>
+                {
+                    Some(block.clone())
+                }
+                _ => None,
+            })
+            .unwrap();
+
+        let mut wrong_metadata = block.clone();
+        wrong_metadata.recursors[0].num_motives = 0;
+        assert!(matches!(
+            check_inductive(
+                &export,
+                &Environment::empty(),
+                &wrong_metadata,
+                Limits::default(),
+                DeltaPolicy::GuardedSemanticFallback,
+            ),
+            Err(Verdict::Reject)
+        ));
+
+        let mut illicit_large_elim_metadata = block;
+        illicit_large_elim_metadata.recursors[0]
+            .level_params
+            .push(NameId(5));
+        assert!(matches!(
+            check_inductive(
+                &export,
+                &Environment::empty(),
+                &illicit_large_elim_metadata,
+                Limits::default(),
+                DeltaPolicy::GuardedSemanticFallback,
+            ),
+            Err(Verdict::Reject)
+        ));
+    }
+
+    #[test]
+    fn g26_rejects_impossible_owned_recursor_metadata() {
+        let bytes = include_bytes!("../evidence/residuals/G25-001/073_BogusRecursor.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+        assert_eq!(check_export(export, Limits::default()), Verdict::Reject);
+    }
+
+    #[test]
+    fn exact_and_fixture_satisfies_each_independently_derived_claim() {
+        let bytes = include_bytes!("../evidence/residuals/G12-001/fixture.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+        let block = export
+            .declarations
+            .iter()
+            .find_map(|declaration| match declaration {
+                Declaration::Inductive(block) => Some(block),
+                _ => None,
+            })
+            .unwrap();
+        let inductive = &block.types[0];
+        let constructor = &block.constructors[0];
+        let recursor = &block.recursors[0];
+
+        assert!(is_exact_binary_product_parameter_telescope(
+            &export,
+            inductive.ty,
+            BinaryProductSortLaw::And,
+        ));
+        assert!(is_derived_binary_product_constructor_type(
+            &export,
+            constructor.ty,
+            inductive.name,
+            BinaryProductSortLaw::And,
+        ));
+        assert!(BinaryProductSortLaw::And.validates_recursor_metadata(
+            &export,
+            inductive,
+            constructor,
+            recursor,
+        ));
+        let Expr::Pi {
+            domain: first,
+            body,
+        } = export.exprs.get(recursor.ty).unwrap()
+        else {
+            panic!("recursor parameter one");
+        };
+        let Expr::Pi {
+            domain: second,
+            body,
+        } = export.exprs.get(*body).unwrap()
+        else {
+            panic!("recursor parameter two");
+        };
+        let Expr::Pi {
+            domain: motive,
+            body,
+        } = export.exprs.get(*body).unwrap()
+        else {
+            panic!("recursor motive");
+        };
+        let Expr::Pi {
+            domain: minor,
+            body,
+        } = export.exprs.get(*body).unwrap()
+        else {
+            panic!("recursor minor");
+        };
+        let Expr::Pi {
+            domain: target,
+            body: result,
+        } = export.exprs.get(*body).unwrap()
+        else {
+            panic!("recursor target");
+        };
+        assert!(is_prop_sort(&export, *first));
+        assert!(is_prop_sort(&export, *second));
+        assert!(is_binary_product_motive_type(
+            &export,
+            *motive,
+            inductive.name,
+            recursor.level_params[0],
+            BinaryProductSortLaw::And,
+        ));
+        assert!(is_binary_product_minor_type(
+            &export,
+            *minor,
+            constructor.name,
+            BinaryProductSortLaw::And,
+        ));
+        assert!(is_binary_product_constant_application(
+            &export,
+            *target,
+            inductive.name,
+            3,
+            2,
+            BinaryProductSortLaw::And,
+        ));
+        assert!(is_bvar_application(&export, *result, 2, 0));
+        assert!(is_derived_binary_product_recursor_type(
+            &export,
+            inductive.name,
+            constructor.name,
+            recursor,
+            BinaryProductSortLaw::And,
+        ));
+        assert!(is_derived_binary_product_rule(
+            &export,
+            inductive.name,
+            constructor.name,
+            recursor,
+            BinaryProductSortLaw::And,
+        ));
+    }
+}
+
+#[cfg(test)]
+mod nested_nullary_source_tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    #[ignore = "requires pinned frozen196 NUCLEUS_FROZEN196"]
+    fn source_checked_multi_motive_nullary_rule_is_derived() {
+        let root=std::env::var("NUCLEUS_FROZEN196").expect("pinned corpus path");
+        let raw=std::fs::read_to_string(format!("{root}/good/init-prelude.ndjson")).unwrap();
+        let export=crate::parser::parse(Cursor::new(&raw)).unwrap().resolve().unwrap();
+        let block=export.declarations.iter().find_map(|d|match d {
+            Declaration::Inductive(b) if trace_name(&export,b.types[0].name)=="Lean.Syntax"=>Some(b),_=>None,
+        }).unwrap();
+        let rec=block.recursors.iter().find(|r|trace_name(&export,r.name)=="Lean.Syntax.rec").unwrap();
+        let rules=derive_nested_nullary_rules(&export,block,rec);
+        assert_eq!(rules.len(),1,"checked Syntax.missing minor equation must have computation authority");
+        assert_eq!(rules[0].prefix_len,10);
+        assert_eq!(rules[0].minor_argument,3);
+        let mut forged=rec.clone();
+        let bad=export.exprs.iter_raw().find_map(|(id,e)|matches!(e,Expr::BVar(0)).then_some(ExprId(id))).unwrap();
+        forged.rules.iter_mut().find(|r|r.num_fields==0).unwrap().rhs=bad;
+        assert!(derive_nested_nullary_rules(&export,block,&forged).is_empty());
+        let other=block.recursors.iter().flat_map(|r|&r.rules).find(|r|r.num_fields==0 && r.constructor!=rules[0].constructor).unwrap();
+        let mut wrong_minor=rec.clone();
+        wrong_minor.rules.iter_mut().find(|r|r.num_fields==0).unwrap().rhs=other.rhs;
+        assert!(derive_nested_nullary_rules(&export,block,&wrong_minor).is_empty());
+        let mut wrong_motive=rec.clone();
+        wrong_motive.ty=block.recursors.iter().find(|r|r.name!=rec.name).unwrap().ty;
+        assert!(derive_nested_nullary_rules(&export,block,&wrong_motive).is_empty());
+        let renamed=crate::parser::parse(Cursor::new(raw.replace("\"str\":\"Syntax\"","\"str\":\"RenamedSyntax\""))).unwrap().resolve().unwrap();
+        let renamed_block=renamed.declarations.iter().find_map(|d|match d {Declaration::Inductive(b) if b.types[0].name==block.types[0].name=>Some(b),_=>None}).unwrap();
+        let renamed_rec=renamed_block.recursors.iter().find(|r|r.name==rec.name).unwrap();
+        assert_eq!(derive_nested_nullary_rules(&renamed,renamed_block,renamed_rec).len(),1);
+        // Test the generalized rule derivation against the same source
+        // environment signatures. Runtime admission still follows full checks.
+        let mut signatures=Environment::empty();
+        for declaration in &export.declarations {
+            if matches!(declaration,Declaration::Inductive(b) if b.types[0].name==block.types[0].name) {break;}
+            let mut entries=Vec::new();
+            match declaration {
+                Declaration::Axiom{name,level_params,ty}=>entries.push((*name,ConstantDecl::axiom(level_params.clone(),*ty))),
+                Declaration::Definition{name,level_params,ty,value,preferred_for_reduction}=>entries.push((*name,ConstantDecl::definition(level_params.clone(),*ty,*value,*preferred_for_reduction))),
+                Declaration::Theorem{name,level_params,ty,..}|Declaration::Opaque{name,level_params,ty,..}=>entries.push((*name,ConstantDecl::theorem(level_params.clone(),*ty))),
+                Declaration::Inductive(b)=>{
+                    for t in &b.types {entries.push((t.name,ConstantDecl::inductive_type(t.level_params.clone(),t.ty)));}
+                    for c in &b.constructors {entries.push((c.name,ConstantDecl::constructor(c.level_params.clone(),c.ty)));}
+                    for r in &b.recursors {entries.push((r.name,ConstantDecl::recursor(r.level_params.clone(),r.ty)));}
+                }
+                Declaration::Quot{name,level_params,ty,..}=>entries.push((*name,ConstantDecl::axiom(level_params.clone(),*ty))),
+                _=>{},
+            }
+            for (name,decl) in entries {signatures=signatures.extend(name,decl).unwrap();}
+        }
+        for t in &block.types {signatures=signatures.extend(t.name,ConstantDecl::inductive_type(t.level_params.clone(),t.ty)).unwrap();}
+        for c in &block.constructors {signatures=signatures.extend(c.name,ConstantDecl::constructor(c.level_params.clone(),c.ty)).unwrap();}
+        for r in &block.recursors {signatures=signatures.extend(r.name,ConstantDecl::recursor(r.level_params.clone(),r.ty)).unwrap();}
+        let full=derive_closed_nested_rules(&export,&signatures,block,rec,Limits::default(),DeltaPolicy::GuardedSemanticFallback);
+        assert_eq!(full.len(),4,"every closed Syntax constructor equation must be independently derived");
+        let node=rec.rules.iter().find(|r|r.num_fields==3).unwrap();
+        let (_,body)=lam_spine(&export,node.rhs,13).unwrap();
+        let (_,arguments)=application_spine(&export,body);
+        let recursive_call=*arguments.last().unwrap();
+        let Some(Expr::App{fun,..})=export.exprs.get(recursive_call) else{panic!("recursive major application");};
+        let wrong_field=export.exprs.iter_raw().find_map(|(id,e)|matches!(e,Expr::BVar(1)).then_some(ExprId(id))).unwrap();
+        let replace_expression=|id:ExprId,replacement:Expr| {
+            let mut changed=export.clone();
+            let mut expressions=crate::id::IdTable::default();
+            for (raw,e) in export.exprs.iter_raw() {
+                expressions.insert(ExprId(raw),if raw==id.0 {replacement.clone()} else {e.clone()}).unwrap();
+            }
+            changed.exprs=expressions;changed
+        };
+        let wrong_ih=replace_expression(recursive_call,Expr::App{fun:*fun,arg:wrong_field});
+        assert_eq!(derive_closed_nested_rules(&wrong_ih,&signatures,block,rec,Limits::default(),DeltaPolicy::GuardedSemanticFallback).len(),3,"IH must recur on its own constructor field");
+        let Some(Expr::Lam{body,..})=export.exprs.get(node.rhs) else{panic!("rule annotation");};
+        let wrong_annotation=replace_expression(node.rhs,Expr::Lam{domain:bad,body:*body});
+        assert_eq!(derive_closed_nested_rules(&wrong_annotation,&signatures,block,rec,Limits::default(),DeltaPolicy::GuardedSemanticFallback).len(),3,"rule annotation must match its checked prefix");
+        for target in &block.recursors {
+            let derived=derive_closed_nested_rules(&export,&signatures,block,target,Limits::default(),DeltaPolicy::GuardedSemanticFallback);
+            assert_eq!(derived.len(),target.rules.len(),"every corresponding carrier rule must check: {}",trace_name(&export,target.name));
+        }
+        let rows=raw.lines().collect::<Vec<_>>();
+        let end=rows.iter().position(|line| {
+            let row:serde_json::Value=serde_json::from_str(line).unwrap();
+            row["inductive"]["types"][0]["name"].as_u64()==Some(block.types[0].name.0)
+        }).unwrap();
+        let prefix=rows[..=end].join("\n")+"\n";
+        let renamed_prefix=prefix.replace("\"str\":\"Syntax\"","\"str\":\"RenamedSyntax\"");
+        let renamed_export=crate::parser::parse(Cursor::new(renamed_prefix)).unwrap().resolve().unwrap();
+        assert_eq!(check_export(renamed_export,Limits::default()),Verdict::Accept,"live checking must retain its source catalogue and independently admit a renamed nested family");
+
+
+    }
+}
+
+/// Certify only a closed nullary constructor of the admitted nested owner.
+/// The source minor telescope determines its position; neither constructor
+/// name nor the desired conversion result chooses the branch.
+fn derive_nested_nullary_rules(
+    export:&ResolvedExport, block:&InductiveBlock, recursor:&Recursor,
+)->Vec<crate::machine::NullaryMinorReduction> {
+    let [inductive]=block.types.as_slice() else {return Vec::new();};
+    if inductive.num_params!=0 || inductive.num_indices!=0 || !inductive.level_params.is_empty()
+        || recursor.num_params!=0 || recursor.num_indices!=0 || recursor.is_unsafe || recursor.k
+        || recursor.level_params.len()!=1 || recursor.num_motives<2
+        || recursor.num_motives>16 || recursor.num_minors>64 {return Vec::new();}
+    let motives=recursor.num_motives as usize;
+    let prefix=motives+recursor.num_minors as usize;
+    let Some((domains,result))=pi_spine(export,recursor.ty,prefix+1) else {return Vec::new();};
+    if !is_empty_constant(export,domains[prefix],inductive.name) {return Vec::new();}
+    let owner_motives=(0..motives).filter(|i|matches!(export.exprs.get(domains[*i]),
+        Some(Expr::Pi {domain,body}) if is_empty_constant(export,*domain,inductive.name)
+            && is_sort_parameter(export,*body,recursor.level_params[0]))).collect::<Vec<_>>();
+    let [owner_motive]=owner_motives.as_slice() else {return Vec::new();};
+    if !is_bvar_application(export,result,(prefix-owner_motive) as u64,0) {return Vec::new();}
+    let mut certified=Vec::new();
+    for constructor in &block.constructors {
+        if constructor.inductive!=inductive.name || constructor.num_params!=0 || constructor.num_fields!=0
+            || constructor.is_unsafe || !constructor.level_params.is_empty()
+            || !is_empty_constant(export,constructor.ty,inductive.name) {continue;}
+        let candidate_minors=(0..recursor.num_minors as usize).filter(|j|
+            is_bvar_applied_to_constant(export,domains[motives+j],(motives+j-1-owner_motive) as u64,constructor.name)
+        ).collect::<Vec<_>>();
+        let [minor]=candidate_minors.as_slice() else {continue;};
+        let rules=recursor.rules.iter().filter(|r|r.constructor==constructor.name).collect::<Vec<_>>();
+        let [rule]=rules.as_slice() else {continue;};
+        if rule.num_fields!=0 {continue;}
+        let Some((annotations,body))=lam_spine(export,rule.rhs,prefix) else {continue;};
+        let minor_argument=motives+minor;
+        if !annotations.iter().zip(&domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+            || !is_bvar(export,body,(prefix-1-minor_argument) as u64) {continue;}
+        certified.push(crate::machine::NullaryMinorReduction {
+            constructor:constructor.name,level_arity:recursor.level_params.len(),prefix_len:prefix,minor_argument,
+        });
+    }
+    certified
+}
+
+fn install_derived_nested_nullary(export:&ResolvedExport,block:&InductiveBlock,mut established:Environment,limits:Limits,policy:DeltaPolicy)->Result<Environment,Verdict> {
+    for recursor in &block.recursors {
+        let rules=derive_nested_nullary_rules(export,block,recursor);
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_NULLARY_MINOR").is_some() {eprintln!("NUCLEUS_NULLARY_CERT:recursor={}:rules={}",trace_name(export,recursor.name),rules.len());}
+        if !rules.is_empty() {established=established.install_nullary_minor_reductions(recursor.name,rules).map_err(|_|Verdict::Reject)?;}
+        let nested=derive_closed_nested_rules(export,&established,block,recursor,limits,policy);
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_NULLARY_MINOR").is_some() {eprintln!("NUCLEUS_CLOSED_NESTED_CERT:recursor={}:rules={}",trace_name(export,recursor.name),nested.len());}
+        if !nested.is_empty() {established=established.install_closed_nested_minor_reductions(recursor.name,nested).map_err(|_|Verdict::Reject)?;}
+    }
+    Ok(established)
+}
+
+fn closed_nested_carrier(
+    export:&ResolvedExport, expression:ExprId,
+)->Option<(NameId,Vec<LevelTerm>,Vec<(NameId,Vec<LevelTerm>)>)> {
+    let (head,args)=application_spine(export,expression);
+    let Some(Expr::Const{name,levels})=export.exprs.get(head) else{return None;};
+    let resolve=|ids:&[LevelId]|ids.iter().map(|l|crate::level::instantiate_level(&export.levels,*l,&HashMap::new(),128).ok()).collect::<Option<Vec<_>>>();
+    let mut parameters=Vec::new();
+    for arg in args {
+        let Some(Expr::Const{name,levels})=export.exprs.get(arg) else{return None;};
+        parameters.push((*name,resolve(levels)?));
+    }
+    Some((*name,resolve(levels)?,parameters))
+}
+
+/// A conservative simultaneous first-order equation contract: each motive
+/// carrier is a closed Type 0 specialization; recursive fields must match
+/// one of those carriers exactly. Every IH and recursive source call is
+/// derived from that field position and preserves the full checked prefix.
+fn derive_closed_nested_rules(
+    export:&ResolvedExport, environment:&Environment, block:&InductiveBlock,
+    recursor:&Recursor, limits:Limits, policy:DeltaPolicy,
+)->Vec<crate::machine::ClosedNestedMinorReduction> {
+    use crate::value::{Closure,LevelSubstitution};
+    if block.types.len()!=1 || block.types[0].num_params!=0 || block.types[0].num_indices!=0
+        || !block.types[0].level_params.is_empty() || recursor.num_params!=0 || recursor.num_indices!=0
+        || recursor.is_unsafe || recursor.k || recursor.level_params.len()!=1
+        || !(2..=16).contains(&recursor.num_motives) || recursor.num_minors>64 {return Vec::new();}
+    let nm=recursor.num_motives as usize;
+    let prefix=nm+recursor.num_minors as usize;
+    let Some((domains,result))=pi_spine(export,recursor.ty,prefix+1) else{return Vec::new();};
+    let checker=TypeChecker::with_level_substitution(&export.exprs,&export.levels,environment,parameter_substitution(&recursor.level_params)).with_delta_policy(policy);
+    let mut carriers=Vec::new();
+    for motive in &domains[..nm] {
+        let Some(Expr::Pi{domain,body})=export.exprs.get(*motive) else{return Vec::new();};
+        if !is_sort_parameter(export,*body,recursor.level_params[0]) || closed_nested_carrier(export,*domain).is_none() {return Vec::new();}
+        let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*domain,&[],&EnvFrame::empty(),limits.judgment_steps) else{return Vec::new();};
+        if !crate::level::level_equal(sort,crate::level::succ(LevelTerm::Zero),limits.judgment_steps).is_proven() {return Vec::new();}
+        carriers.push(*domain);
+    }
+    let owners=(0..nm).filter(|i|expr_eq_with_bvar_shift(export,carriers[*i],domains[prefix],0,0)).collect::<Vec<_>>();
+    let [owner_motive]=owners.as_slice() else{return Vec::new();};
+    if !is_bvar_application(export,result,(prefix-owner_motive) as u64,0) {return Vec::new();}
+    let Some((owner,owner_levels,parameters))=closed_nested_carrier(export,domains[prefix]) else{return Vec::new();};
+    let mut certified=Vec::new();
+    for rule in &recursor.rules {
+        let candidate=(||->Option<crate::machine::ClosedNestedMinorReduction>{
+            let ctor=export.declarations.iter().filter_map(|d|match d {Declaration::Inductive(b)=>Some(b),_=>None}).flat_map(|b|&b.constructors).find(|c|c.name==rule.constructor)?;
+            if ctor.inductive!=owner || ctor.is_unsafe || ctor.num_fields!=rule.num_fields || ctor.num_fields>16
+                || ctor.num_params as usize!=parameters.len() {return None;}
+            let admitted=environment.get(ctor.name)?;
+            if admitted.ty!=ctor.ty || admitted.level_params!=ctor.level_params {return None;}
+            let p=ctor.num_params as usize;let f=ctor.num_fields as usize;
+            let (ctor_domains,ctor_result)=pi_spine(export,ctor.ty,p+f)?;
+            let (cth,cta)=application_spine(export,ctor_result);
+            if !is_declared_level_constant(export,cth,owner,&ctor.level_params) || cta.len()!=p
+                || !cta.iter().enumerate().all(|(i,a)|is_bvar(export,*a,(f+p-1-i) as u64)) {return None;}
+            // Locate the minor by its owner motive and full specialized ctor.
+            let mut matches=Vec::new();
+            for j in 0..recursor.num_minors as usize {
+                let mut terminal=domains[nm+j];
+                for _ in 0..32 {
+                    if let Some(Expr::Pi{body,..})=export.exprs.get(terminal) {terminal=*body;} else {break;}
+                }
+                let Some(Expr::App{arg,..})=export.exprs.get(terminal) else{continue;};
+                let (head,_)=application_spine(export,*arg);
+                if matches!(export.exprs.get(head),Some(Expr::Const{name,..}) if *name==ctor.name) {matches.push(j);}
+            }
+            let [j]=matches.as_slice() else{return None;};let j=*j;
+            let mut field_frame=EnvFrame::empty();
+            let (_,minor_terminal)=pi_spine(export,domains[nm+j],f)?;
+            let mut terminal=minor_terminal;
+            for _ in 0..16 {if let Some(Expr::Pi{body,..})=export.exprs.get(terminal) {terminal=*body;} else {break;}}
+            let Some(Expr::App{arg:constructed,..})=export.exprs.get(terminal) else{return None;};
+            let (ch,ca)=application_spine(export,*constructed);
+            let Some(Expr::Const{name:constructor,levels:ctor_level_ids})=export.exprs.get(ch) else{return None;};
+            if *constructor!=ctor.name || ctor_level_ids.len()!=ctor.level_params.len() {return None;}
+            let ctor_levels=ctor_level_ids.iter().map(|l|crate::level::instantiate_level(&export.levels,*l,&HashMap::new(),128).ok()).collect::<Option<Vec<_>>>()?;
+            if ctor_levels!=owner_levels || ca.len()<p {return None;}
+            let specialization=LevelSubstitution::new(ctor.level_params.iter().copied().zip(ctor_levels.iter().cloned()).collect());
+            for (i,arg) in ca[..p].iter().enumerate() {
+                let Some(Expr::Const{name,levels})=export.exprs.get(*arg) else{return None;};
+                let actual=levels.iter().map(|l|crate::level::instantiate_level(&export.levels,*l,&HashMap::new(),128).ok()).collect::<Option<Vec<_>>>()?;
+                if (*name,actual)!=parameters[i] {return None;}
+                field_frame=field_frame.extend(Closure::new(*arg,EnvFrame::empty()));
+            }
+            let mut recursive=Vec::new();
+            let mut actual_fields=Vec::new();
+            for (k,domain) in ctor_domains[p..].iter().enumerate() {
+                let field=Closure::with_levels(*domain,field_frame.clone(),specialization.clone());
+                let positions=(0..nm).filter(|i|checker.convert(&TypeValue::Term(field.clone()),&TypeValue::Term(checker.closure(carriers[*i],EnvFrame::empty())),limits.judgment_steps).is_proven()).collect::<Vec<_>>();
+                match positions.as_slice() {
+                    [i]=>recursive.push((k,*i)),
+                    []=>{
+                        // Closed owner payloads are checked independently;
+                        // specialized external fields must be direct carriers.
+                        if p!=0 || expression_contains_constant(export,*domain,block.types[0].name) {return None;}
+                        let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*domain,&[],&EnvFrame::empty(),limits.judgment_steps) else{return None;};
+                        if !crate::level::level_equal(sort,crate::level::succ(LevelTerm::Zero),limits.judgment_steps).is_proven() {return None;}
+                    }
+                    _=>return None,
+                }
+                actual_fields.push(field);
+                field_frame=field_frame.extend_free(FreeId(k as u64));
+            }
+            let r=recursive.len();
+            let (minor_domains,minor_result)=pi_spine(export,domains[nm+j],f+r)?;
+            for (a,b) in actual_fields.iter().zip(&minor_domains[..f]) {
+                if !checker.convert(&TypeValue::Term(a.clone()),&TypeValue::Term(checker.closure(*b,EnvFrame::empty())),limits.judgment_steps).is_proven() {return None;}
+            }
+            for (k,(position,motive)) in recursive.iter().enumerate() {
+                if !is_bvar_application(export,minor_domains[f+k],(nm+j+f+k-1-motive) as u64,(f+k-1-position) as u64) {return None;}
+            }
+            let Some(Expr::App{fun:motive,arg:constructed})=export.exprs.get(minor_result) else{return None;};
+            if !is_bvar(export,*motive,(nm+j+f+r-1-owner_motive) as u64) {return None;}
+            let (head,args)=application_spine(export,*constructed);
+            if !expr_eq_with_bvar_shift(export,head,ch,0,0) || args.len()!=p+f
+                || !args[..p].iter().zip(&ca[..p]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+                || !args[p..].iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f+r-1-k) as u64)) {return None;}
+            let (annotations,rhs)=lam_spine(export,rule.rhs,prefix+f)?;
+            if !annotations[..prefix].iter().zip(&domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0)) {return None;}
+            for (a,b) in actual_fields.iter().zip(&annotations[prefix..]) {
+                let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*b,&[],&EnvFrame::empty(),limits.judgment_steps) else{return None;};
+                if !crate::level::level_equal(sort,crate::level::succ(LevelTerm::Zero),limits.judgment_steps).is_proven() {return None;}
+                if !checker.convert(&TypeValue::Term(a.clone()),&TypeValue::Term(checker.closure(*b,EnvFrame::empty())),limits.judgment_steps).is_proven() {return None;}
+            }
+            let (minor,args)=application_spine(export,rhs);
+            if !is_bvar(export,minor,(f+recursor.num_minors as usize-1-j) as u64) || args.len()!=f+r
+                || !args[..f].iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f-1-k) as u64)) {return None;}
+            for (k,(position,motive)) in recursive.iter().enumerate() {
+                let callees=block.recursors.iter().filter(|callee| {
+                    if callee.num_params!=0 || callee.num_indices!=0 || callee.num_motives!=recursor.num_motives || callee.num_minors!=recursor.num_minors || callee.level_params!=recursor.level_params {return false;}
+                    let Some((cd,cr))=pi_spine(export,callee.ty,prefix+1) else{return false;};
+                    cd[..prefix].iter().zip(&domains[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+                        && expr_eq_with_bvar_shift(export,cd[prefix],carriers[*motive],0,0)
+                        && is_bvar_application(export,cr,(prefix-motive) as u64,0)
+                }).collect::<Vec<_>>();
+                let [callee]=callees.as_slice() else{return None;};
+                let (head,arguments)=application_spine(export,args[f+k]);
+                if !is_unary_polymorphic_constant(export,head,callee.name,recursor.level_params[0]) || arguments.len()!=prefix+1
+                    || !arguments[..prefix].iter().enumerate().all(|(i,a)|is_bvar(export,*a,(prefix+f-1-i) as u64))
+                    || !is_bvar(export,arguments[prefix],(f-1-position) as u64) {return None;}
+            }
+            Some(crate::machine::ClosedNestedMinorReduction {constructor:ctor.name,constructor_levels:ctor_levels,constructor_parameters:parameters.clone(),num_fields:f,rhs:rule.rhs,level_params:recursor.level_params.clone(),prefix_len:prefix,minor_argument:nm+j})
+        })();
+        if let Some(rule)=candidate {certified.push(rule);}
+    }
+    certified
+}
+#[cfg(test)]
+mod derived_formal_parameter_owner_tests {
+ use super::*;
+ use crate::id::{IdTable,LevelId};
+ #[test]
+ fn shifted_derived_parameter_reuses_one_actual_owner_and_rejects_recreated_owner(){
+  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
+  for(i,v)in[(0,Expr::Sort(LevelId(1))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::Pi{domain:ExprId(1),body:ExprId(0)}),(3,Expr::Const{name:NameId(2),levels:vec![]}),(4,Expr::BVar(0)),(5,Expr::BVar(1)),(6,Expr::App{fun:ExprId(3),arg:ExprId(4)}),(7,Expr::App{fun:ExprId(3),arg:ExprId(5)})]{e.insert(ExprId(i),v).unwrap();}
+  let env=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(2))).unwrap();let c=TypeChecker::new(&e,&l,&env);
+  let original=EnvFrame::empty().extend_free(FreeId(10001));let shifted=original.clone().extend_free(FreeId(10003));
+  let lhs=TypeValue::Term(c.closure(ExprId(6),original));let rhs=TypeValue::Term(c.closure(ExprId(7),shifted));assert!(c.convert(&lhs,&rhs,4096).is_proven(),"a shifted body still refers to the ONE original formal parameter");
+  let unrelated=TypeValue::Term(c.closure(ExprId(6),EnvFrame::empty().extend_free(FreeId(10001))));assert!(!c.convert(&unrelated,&rhs,4096).is_proven(),"reusing a numeric FreeId cannot identify independently introduced parameters");
+ }
+}

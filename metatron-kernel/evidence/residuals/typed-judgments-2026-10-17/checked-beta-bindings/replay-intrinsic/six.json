@@ -1,0 +1,48 @@
+{
+  "binary_sha256": "11d38950fb65a76d584b553d4102c4f39748db33d472991cfdc4dfe8d94b0ce2",
+  "qualification_scope": "six targeted full exports only",
+  "rows": [
+    {
+      "case": "good/perf/fueled-chain.ndjson",
+      "rc": 2,
+      "sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "seconds": 0.4873399169955519,
+      "terminal": "CHECKED_BETA_BINDING frame=1884 source=ExprId(1298) gamma=5 remaining=64953\nCHECKED_BETA_BINDING frame=1892 source=ExprId(1298) gamma=5 remaining=64946\nNUCLEUS_DOWNSTREAM:name=Nat.eq_of_beq_eq_true:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/grind-ring-5.ndjson",
+      "rc": 2,
+      "sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "seconds": 0.7050417920036125,
+      "terminal": "CHECKED_BETA_BINDING frame=1432 source=ExprId(479) gamma=5 remaining=150\nCHECKED_BETA_BINDING frame=1437 source=ExprId(81) gamma=5 remaining=83\nCHECKED_BETA_BINDING frame=1438 source=ExprId(475) gamma=5 remaining=11\nCHECKED_BETA_BINDING frame=1956 source=ExprId(1306) gamma=7 remaining=64473\nCHECKED_BETA_BINDING frame=1944 source=ExprId(1306) gamma=7 remaining=64351\nCHECKED_BETA_BINDING frame=1979 source=ExprId(1306) gamma=7 remaining=64453\nCHECKED_BETA_BINDING frame=1967 source=ExprId(1306) gamma=7 remaining=64332\nCHECKED_BETA_BINDING frame=4494 source=ExprId(2634) gamma=4 remaining=166\nCHECKED_BETA_BINDING frame=5012 source=ExprId(2843) gamma=10 remaining=62933\nCHECKED_BETA_BINDING frame=5013 source=ExprId(2842) gamma=10 remaining=62558\nCHECKED_BETA_BINDING frame=5840 source=ExprId(3240) gamma=9 remaining=63886\nCHECKED_BETA_BINDING frame=6271 source=ExprId(3478) gamma=12 remaining=57517\nCHECKED_BETA_BINDING frame=6143 source=ExprId(3436) gamma=12 remaining=56735\nCHECKED_BETA_BINDING frame=6384 source=ExprId(3436) gamma=9 remaining=57345\nCHECKED_BETA_BINDING frame=6092 source=ExprId(3397) gamma=9 remaining=56973\nCHECKED_BETA_BINDING frame=6093 source=ExprId(3396) gamma=9 remaining=56674\nCHECKED_BETA_BINDING frame=6094 source=ExprId(3395) gamma=10 remaining=54964\nCHECKED_BETA_BINDING frame=6796 source=ExprId(3656) gamma=16 remaining=48522\nCHECKED_BETA_BINDING frame=6612 source=ExprId(3604) gamma=16 remaining=47408\nCHECKED_BETA_BINDING frame=6931 source=ExprId(3604) gamma=13 remaining=48522\nNUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.succ_le_succ.match_1_7:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n21.ndjson",
+      "rc": 2,
+      "sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "seconds": 0.0697907909998321,
+      "terminal": "CHECKED_BETA_BINDING frame=2661 source=ExprId(1675) gamma=4 remaining=166\nCHECKED_BETA_BINDING frame=3179 source=ExprId(1884) gamma=10 remaining=62933\nCHECKED_BETA_BINDING frame=3180 source=ExprId(1883) gamma=10 remaining=62558\nCHECKED_BETA_BINDING frame=4007 source=ExprId(2281) gamma=9 remaining=63886\nCHECKED_BETA_BINDING frame=4438 source=ExprId(2519) gamma=12 remaining=57517\nCHECKED_BETA_BINDING frame=4310 source=ExprId(2477) gamma=12 remaining=56735\nCHECKED_BETA_BINDING frame=4551 source=ExprId(2477) gamma=9 remaining=57345\nCHECKED_BETA_BINDING frame=4259 source=ExprId(2438) gamma=9 remaining=56973\nCHECKED_BETA_BINDING frame=4260 source=ExprId(2437) gamma=9 remaining=56674\nCHECKED_BETA_BINDING frame=4261 source=ExprId(2436) gamma=10 remaining=54964\nCHECKED_BETA_BINDING frame=4963 source=ExprId(2697) gamma=16 remaining=48522\nCHECKED_BETA_BINDING frame=4779 source=ExprId(2645) gamma=16 remaining=47408\nCHECKED_BETA_BINDING frame=5098 source=ExprId(2645) gamma=13 remaining=48522\nNUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.succ_le_succ.match_1_7:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-deep-n36.ndjson",
+      "rc": 2,
+      "sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "seconds": 0.06980562500393717,
+      "terminal": "CHECKED_BETA_BINDING frame=2660 source=ExprId(1674) gamma=4 remaining=166\nCHECKED_BETA_BINDING frame=3178 source=ExprId(1883) gamma=10 remaining=62933\nCHECKED_BETA_BINDING frame=3179 source=ExprId(1882) gamma=10 remaining=62558\nCHECKED_BETA_BINDING frame=4006 source=ExprId(2280) gamma=9 remaining=63886\nCHECKED_BETA_BINDING frame=4437 source=ExprId(2518) gamma=12 remaining=57517\nCHECKED_BETA_BINDING frame=4309 source=ExprId(2476) gamma=12 remaining=56735\nCHECKED_BETA_BINDING frame=4550 source=ExprId(2476) gamma=9 remaining=57345\nCHECKED_BETA_BINDING frame=4258 source=ExprId(2437) gamma=9 remaining=56973\nCHECKED_BETA_BINDING frame=4259 source=ExprId(2436) gamma=9 remaining=56674\nCHECKED_BETA_BINDING frame=4260 source=ExprId(2435) gamma=10 remaining=54964\nCHECKED_BETA_BINDING frame=4962 source=ExprId(2696) gamma=16 remaining=48522\nCHECKED_BETA_BINDING frame=4778 source=ExprId(2644) gamma=16 remaining=47408\nCHECKED_BETA_BINDING frame=5097 source=ExprId(2644) gamma=13 remaining=48522\nNUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.succ_le_succ.match_1_7:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n21.ndjson",
+      "rc": 2,
+      "sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "seconds": 0.050560666000819765,
+      "terminal": "CHECKED_BETA_BINDING frame=1879 source=ExprId(1238) gamma=4 remaining=166\nCHECKED_BETA_BINDING frame=2397 source=ExprId(1449) gamma=10 remaining=62933\nCHECKED_BETA_BINDING frame=2398 source=ExprId(1448) gamma=10 remaining=62558\nCHECKED_BETA_BINDING frame=3225 source=ExprId(1847) gamma=9 remaining=63886\nCHECKED_BETA_BINDING frame=3656 source=ExprId(2085) gamma=12 remaining=57517\nCHECKED_BETA_BINDING frame=3528 source=ExprId(2043) gamma=12 remaining=56735\nCHECKED_BETA_BINDING frame=3769 source=ExprId(2043) gamma=9 remaining=57345\nCHECKED_BETA_BINDING frame=3477 source=ExprId(2004) gamma=9 remaining=56973\nCHECKED_BETA_BINDING frame=3478 source=ExprId(2003) gamma=9 remaining=56674\nCHECKED_BETA_BINDING frame=3479 source=ExprId(2002) gamma=10 remaining=54964\nCHECKED_BETA_BINDING frame=4181 source=ExprId(2263) gamma=16 remaining=48522\nCHECKED_BETA_BINDING frame=3997 source=ExprId(2211) gamma=16 remaining=47408\nCHECKED_BETA_BINDING frame=4316 source=ExprId(2211) gamma=13 remaining=48522\nNUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.succ_le_succ.match_1_7:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "case": "good/perf/magma-list-pair-n7.ndjson",
+      "rc": 2,
+      "sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "seconds": 0.048996250006894115,
+      "terminal": "CHECKED_BETA_BINDING frame=1882 source=ExprId(1241) gamma=4 remaining=166\nCHECKED_BETA_BINDING frame=2400 source=ExprId(1452) gamma=10 remaining=62933\nCHECKED_BETA_BINDING frame=2401 source=ExprId(1451) gamma=10 remaining=62558\nCHECKED_BETA_BINDING frame=3228 source=ExprId(1850) gamma=9 remaining=63886\nCHECKED_BETA_BINDING frame=3659 source=ExprId(2088) gamma=12 remaining=57517\nCHECKED_BETA_BINDING frame=3531 source=ExprId(2046) gamma=12 remaining=56735\nCHECKED_BETA_BINDING frame=3772 source=ExprId(2046) gamma=9 remaining=57345\nCHECKED_BETA_BINDING frame=3480 source=ExprId(2007) gamma=9 remaining=56973\nCHECKED_BETA_BINDING frame=3481 source=ExprId(2006) gamma=9 remaining=56674\nCHECKED_BETA_BINDING frame=3482 source=ExprId(2005) gamma=10 remaining=54964\nCHECKED_BETA_BINDING frame=4184 source=ExprId(2266) gamma=16 remaining=48522\nCHECKED_BETA_BINDING frame=4000 source=ExprId(2214) gamma=16 remaining=47408\nCHECKED_BETA_BINDING frame=4319 source=ExprId(2214) gamma=13 remaining=48522\nNUCLEUS_DOWNSTREAM:name=_private.Init.Prelude.0.Nat.succ_le_succ.match_1_7:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+    }
+  ]
+}
