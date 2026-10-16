@@ -1,0 +1,21 @@
+test_module_execution_dispatches_through_importable_checker_module (research.unified_consequence_runtime.test_native_frontier_v4_entrypoint.NativeFrontierV4Entrypoint.test_module_execution_dispatches_through_importable_checker_module) ... FAIL
+
+======================================================================
+FAIL: test_module_execution_dispatches_through_importable_checker_module (research.unified_consequence_runtime.test_native_frontier_v4_entrypoint.NativeFrontierV4Entrypoint.test_module_execution_dispatches_through_importable_checker_module)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_frontier_v4_entrypoint.py", line 32, in test_module_execution_dispatches_through_importable_checker_module
+    self.assertEqual(called, [MODULE],
+AssertionError: Lists differ: [] != ['research.unified_consequence_runtime.qualify_native_frontier_v4']
+
+Second list contains 1 additional elements.
+First extra element 0:
+'research.unified_consequence_runtime.qualify_native_frontier_v4'
+
+- []
++ ['research.unified_consequence_runtime.qualify_native_frontier_v4'] : real -m execution did not use the canonical checker module: independent v4 environment qualification is required before prospective freeze
+
+----------------------------------------------------------------------
+Ran 1 test in 0.058s
+
+FAILED (failures=1)

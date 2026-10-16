@@ -1,0 +1,111 @@
+name: Minimum sufficient native authority v4
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/udm-native-authority-v4-20261016]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: udm-native-authority-v4-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  qualify-admission:
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[qualify-authority-v4]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Prepare exact original catalog runtimes before native controls
+        run: |
+          set -euo pipefail
+          python -B -m venv "$RUNNER_TEMP/v4-controller"
+          "$RUNNER_TEMP/v4-controller/bin/python" -B -m pip install --disable-pip-version-check --no-input pytest==8.3.5 packaging==26.3
+          "$RUNNER_TEMP/v4-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py --dest-root "$RUNNER_TEMP/v4-runtimes" --out "$RUNNER_TEMP/v4-runtime-paths.json"
+      - name: Freeze committed source, acceptance and runtime authority
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/v4-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_environment_selection_v4 --write-freeze --repo "$GITHUB_WORKSPACE" --runtimes "$RUNNER_TEMP/v4-runtime-paths.json" --out qualification/FREEZE.json
+          cp "$RUNNER_TEMP/v4-runtime-paths.json" qualification/RUNTIMES.json
+          git rev-parse HEAD > qualification/source-commit.txt
+      - name: Verify private integration and measured Git audit contracts
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/v4-controller/bin/python" -B -m unittest research.unified_consequence_runtime.test_native_environment_v4 research.unified_consequence_runtime.test_audit_index_v4 research.unified_consequence_runtime.test_qualify_native_frontier_v4 research.unified_consequence_runtime.test_native_frontier_v4_entrypoint research.unified_consequence_runtime.test_frontier_v4_preparation_tools research.unified_consequence_runtime.test_frontier_v4_curation_lineage -v 2>&1 | tee qualification/binding-contracts.log
+      - name: Verify new native controls under independently pinned legacy interpreter
+        run: |
+          set -euo pipefail
+          export UDM_NATIVE_V3_INTERPRETER="$(python -B -c 'import json; print(json.load(open("qualification/FREEZE.json"))["runtimes"]["cpython-3.6.5-pytest-5.4.3-linux-x86_64"]["interpreter"])')"
+          export UDM_V4_NATIVE_EVIDENCE_ROOT="$GITHUB_WORKSPACE/qualification/legacy-native-evidence"
+          "$RUNNER_TEMP/v4-controller/bin/python" -B -m unittest research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4 -v 2>&1 | tee qualification/legacy-contracts.log
+      - name: Independently execute all frozen modern native authority controls and exposed metadata diagnostics
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/v4-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_environment_selection_v4 --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json --out "$GITHUB_WORKSPACE/qualification/admission-v4"
+      - name: Check strictly admission-only result
+        run: |
+          python -B - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('qualification/admission-v4/RESULT.json').read_text())
+          assert r['status']=='ADMISSION_ONLY_QUALIFIED'
+          assert r['first_task_gate']['status']=='PASS'
+          assert r['contracts']['run']==29 and r['contracts']['successful'] and not r['contracts']['skipped']
+          assert len(r['exposed_diagnostics'])==7
+          assert r['attempt_costs']['native_calls']>0 and r['attempt_costs']['collection_calls']>0
+          assert r['verdicts']['G0_G1']=='PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY'
+          assert all(r['verdicts'][f'G{i}']=='UNKNOWN' for i in range(2,7))
+          assert not r['index_audit']['changes']
+          print(json.dumps({'status':r['status'],'contracts':r['contracts']['run'],'attempt_costs':r['attempt_costs'],'verdicts':r['verdicts']},sort_keys=True))
+          PY
+      - name: Retain post-control runtime byte audit
+        if: ${{ always() && hashFiles('qualification/FREEZE.json') != '' }}
+        run: |
+          "$RUNNER_TEMP/v4-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py --audit-freeze qualification/FREEZE.json --out qualification/POST_CONTROL_RUNTIME_AUDIT.json
+      - name: Archive exact committed source and complete native evidence
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          git archive --format=tar.gz --output=qualification/SOURCE.tar.gz HEAD research/unified_consequence_runtime .github/workflows docs/superpowers/plans/2026-10-16-udm-native-authority-v4.md
+          python -B - <<'PY'
+          import hashlib,json,os,subprocess,tarfile
+          from pathlib import Path
+          root=Path('qualification');entries={}
+          for origin,prefix in [(root,''),(Path(os.environ['RUNNER_TEMP'])/'v4-runtimes','runtime-bootstrap/')]:
+              if not origin.exists():continue
+              for folder,dirs,names in os.walk(origin,followlinks=False):
+                  dirs[:]=sorted(n for n in dirs if n not in {'venv','.git','source','metadata-source','base-build','miniconda-base','wheels'} and not (Path(folder)/n).is_symlink())
+                  for n in sorted(names):
+                      p=Path(folder)/n
+                      if p.is_file() and not p.is_symlink() and n not in {'MANIFEST.json','NATIVE_AUTHORITY_V4_EVIDENCE.tar.gz'}:entries[prefix+p.relative_to(origin).as_posix()]=p
+          files={n:hashlib.sha256(p.read_bytes()).hexdigest() for n,p in sorted(entries.items())}
+          archive=root/'NATIVE_AUTHORITY_V4_EVIDENCE.tar.gz'
+          with tarfile.open(archive,'w:gz') as t:
+              for n,p in sorted(entries.items()):t.add(p,arcname=n,recursive=False)
+          files[archive.name]=hashlib.sha256(archive.read_bytes()).hexdigest()
+          (root/'MANIFEST.json').write_text(json.dumps({'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'run_id':os.environ['GITHUB_RUN_ID'],'files':files},sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-authority-v4-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            qualification/*.json
+            qualification/*.txt
+            qualification/*.log
+            qualification/SOURCE.tar.gz
+            qualification/NATIVE_AUTHORITY_V4_EVIDENCE.tar.gz
+          include-hidden-files: true
+          retention-days: 90

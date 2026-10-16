@@ -8,10 +8,13 @@ was performed to prepare it. Existing v3 records and source are historical input
 not a frontier that can be made untouched again.
 
 The next distinct frontier may be selected and frozen **only after independently
-qualified v4 admission evidence binds the final exact v4 implementation**. This
+qualified v4 metadata/environment evidence binds the final exact v4 implementation**. This
 document is neither that admission gate nor an executable v4 controller. The
 v4 module and record names below describe required adapter seams, not APIs claimed
-to exist at the reviewed base.
+to exist at the reviewed base. The settled v4 change is metadata inference only:
+`native_execution_v3`, its qualified `native_admission_v2` checks, and
+`NativeRuntimeV3` remain exact qualified source. V4 does not introduce a native
+worker, native admission implementation or runtime version.
 
 ## 1. Reuse the existing mechanism and preserve its authority boundary
 
@@ -51,7 +54,10 @@ support scoring and V99 probe scoring still need a separately frozen generic
 native semantics; the historical mains use supplied task worlds. The current
 G2 path uses a supplied grammar and selects an existing ranking policy. Adding
 statistics, learned constructor support or recursive observation promotion would
-change the experimental scope and is not needed for this thin v4 binding.
+change the experimental scope and is not needed for this thin v4 binding. Original
+V104 retention and V99 components also require at least two source-distinct
+training supports; this driver has one training role and one protected future,
+so it cannot establish that source-distinct constructor/medoid acquisition.
 
 ## 2. The minimal v4 adapter seams
 
@@ -63,11 +69,11 @@ is required.
 
 | Seam in the present implementation | Required v4 binding |
 | --- | --- |
-| `qualify_native_frontier_v3._guard`, `protocol`, `require_environment_gate`, `ENVIRONMENT_GATE_FILES` | A v4-owned exact-source guard and admission-gate validator, binding the final qualified v4 worker, AST/inventory/admission policy, environment bridge, bootstrap, catalog, protocol, workflow, result and archived provider evidence. An admission-only result leaves G2–G6 UNKNOWN. A v3 PASS is not a v4 gate. |
-| v3 `isolated_binding()` and its wrappers for `native_probe`, `checked_record`, `bounded_catalog`, `search`, `reconstruct_profiles`, budgets and observation extraction | Preserve original algorithm bytecode and policy semantics; use a v4-owned private namespace with the v4 worker, paths, protocol, guards and accounting functions. Resolve every internal call through the intended v4 binding. Replacing a module attribute alone does not replace the globals already held by cloned functions. |
-| v3 `_prepare()` | It has a local `from .native_runtime_v3 import NativeRuntimeV3`. It must explicitly instantiate the v4 runtime; changing `qualifier.worker` cannot change this local import. Preserve collection, independent recollection, baseline, prepared-parent and source-release obligations. |
-| `native_runtime_v3`'s `_runtime_globals` and inherited v2 methods | A v4 runtime binds **both** the v4 verifier and v4 admission/AST authority, its own `__file__`, source descriptor hashes, checked source guard and explicit runtime version. Preserve Machine/CAS/Metatron/FLASH events and causal liveness. v3's namespace still contains `admission=native_admission_v2`; changing only `verifier` leaves stale AST identity in constructor/scope checks. The v2 `__class__` closures and `super()` path need explicit inspection when reusing methods. |
-| v3 source freeze/check, CLI parent validation and source-release records | New paths/schemas must bind the actual v4 source file set, clean committed HEAD, complete historical preservation, exact qualified gate, fresh runner-local runtime inventory, screening meter and sealed manifest. Existing code hard-codes v3 source paths and schemas. Preserve typed `screen`, `catalog`, `agent` authorities and externally supplied expected hashes. |
+| `qualify_native_frontier_v3._guard`, `protocol`, `require_environment_gate`, `ENVIRONMENT_GATE_FILES` | A v4-owned exact-source guard and metadata/environment gate validator binding `native_environment_selection_v4`, `native_environment_v4`, `qualify_environment_selection_v4`, acceptance protocol/tests and `udm-native-authority-v4.yml`, plus unchanged native worker/environment v3, catalog and bootstrap. Result/freeze schemas are `UDM_NATIVE_ENVIRONMENT_QUALIFICATION_RESULT_V4` and `UDM_NATIVE_ENVIRONMENT_QUALIFICATION_FREEZE_V4`; the seven-field gate retains `ADMISSION_ONLY_QUALIFIED`, with `first_task_gate.status=PASS`. G2–G6 remain UNKNOWN. A v3 environment PASS does not qualify changed v4 metadata inference. |
+| v3 `isolated_binding()` and its wrappers for `native_probe`, `checked_record`, `bounded_catalog`, `search`, `reconstruct_profiles`, budgets and observation extraction | Preserve original algorithm bytecode and policy semantics; use a v4-owned namespace with unchanged native worker v3, new metadata environment, paths, protocol, guards and accounting functions. Resolve every internal call through that binding. Replacing a module attribute alone does not replace globals already held by cloned functions. |
+| v3 `_prepare()` | Preserve exact bytecode and its local `from .native_runtime_v3 import NativeRuntimeV3`. Rebind only its `environment` global to `native_environment_v4`; collection, independent recollection, baseline, native runtime, prepared-parent and source-release obligations stay unchanged. |
+| `native_runtime_v3`'s `_runtime_globals` and inherited v2 methods | No change. They correctly bind the unchanged native worker/admission source and runtime version three. Do not add runtime v4 or change native certificate/receipt schemas merely because the metadata bridge has a new version. |
+| v3 source freeze/check, CLI parent validation and source-release records | New external paths/frontier schema bind actual v4 source, clean committed HEAD, base `95029db0d0b2122836bee7268299461bfbdb5a66`, historical preservation, exact qualified gate, fresh runtime inventory, screening meter and sealed manifest. Override only literal old-path checks that cannot resolve new globals; keep internal native evidence schemas three. Preserve typed `screen`, `catalog`, `agent` authorities and externally supplied expected hashes. |
 | `native_meta_decision._checker_source` and `invoke_meta_policy` | Keep unchanged. Supply a genuine top-level importable v4 `reconstruct_profiles` entrypoint. The imported module attribute must be that function and `inspect.getsourcefile(function)` must equal the module's own file. A copied function with old `co_filename` or an edited registry entry is insufficient. |
 | v3 curator `query()` and `prepare_records.py` | New wrappers bind the v4 gate/controller and new immutable v4 record paths; both currently import v3 directly. Keep the original scanner, classifications, metadata projections, commit/tree binding and record assembly semantics. Extend historical exclusions with the entire v3 frontier universe and records below. |
 | `.github/workflows/udm-prospective-native-selection-v3.yml` | A distinct v4 workflow can reproduce an already committed v4 frontier with fresh canonical checkouts/runtimes and complete evidence retention. The current workflow imports qv3, binds old source and says reproduction explicitly. It does not select a new frontier or run a coding agent in CI. |
@@ -76,14 +82,16 @@ Do not implement this by mutating old module globals, a shared admission/runtime
 registry, `_LOADED_*` hash fields, source pins or a worker's validity predicates.
 The execution worker itself has `_controller_globals`; the runtime has
 `_runtime_globals`; the qualifier has another layer of cloned v2 globals. All are
-distinct bindings. Keep the original files and namespaces intact and expose new
-versioned functions. Refusals must identify the actual missing binding instead of
-turning a partial old authority into a v4 qualification.
+distinct bindings. Reuse qv3 functions in a new owned namespace, with the few
+literal old-path/gate/protocol checks wrapped explicitly; do not copy the entire
+1164-line controller. Keep original native files and namespaces intact. Refusals
+must identify the missing binding instead of turning a partial old authority into
+qualification of changed metadata inference.
 
 ## 3. Exact sequence for a later freeze
 
-1. **Finish and qualify admission v4 first.** Freeze/commit the final generic v4
-   policy and implementation against the exposed development diagnostics. Retain
+1. **Finish and qualify metadata/environment v4 first.** Freeze/commit the final generic v4
+   metadata policy and implementation against the exposed development diagnostics. Retain
    failed attempts, independent checks, exact provider run/artifact identities,
    downloaded artifact digest and member readback evidence. The independently
    audited gate must bind that final source and catalog. Do not choose or query a
@@ -346,3 +354,68 @@ they do not qualify its future v4 binding.
 | `archaeology/native-environment-v3/prepare_records.py` | `7ab47d2339641a09d5ab2c6e417ed148298477e83bf19f8580b56a9655c6ce5a` |
 | `archaeology/native-environment-v3/PROSPECTIVE_RUNBOOK.md` | `382407bce0b749af36451ad63ac0c89875ad26f0308bcb81d4a3beeadcd26e11` |
 | repository `.github/workflows/udm-prospective-native-selection-v3.yml` | `f459863bbbc905f9f820603f41609509f0dd3da5f3d2aeed6d05b8fefbc15b4d` |
+
+## 8. Prepared bindings added after acceptance freeze
+
+The eight source-free q4 acceptance tests were committed in `663d9583` before
+`qualify_native_frontier_v4.py` was added. The thin module reuses q3 functions
+in its own globals, preserves q3 `_prepare` bytecode and original q2 search
+bytecode, retains native v3, consumes the v4 qualifier's `SOURCE_GATE_FILES`,
+and checks the few changed external schema/path/base literals explicitly.
+The canonical `-m` entrypoint imports q4 before dispatch so that the retained
+checker has an importable source identity rather than `__main__`.
+
+New local wrappers live alongside this note:
+
+* `prepare_records.py` exposes the existing `prepare-screening`, `write-requests`
+  and `finalize-records` commands with original helper bytecode bound to q4.
+* `curate_frontier.py` imports with `UNIVERSE=()`. Its new `--universe` input
+  must be an ordinary in-repository JSON record with schema
+  `UDM_NATIVE_AUTHORITY_V4_DECLARED_UNIVERSE_V1`, `repositories` containing at most
+  nine sorted unique lowercase names, and `environment_gate` equal to the real
+  qualified wrapper. The wrapper validates the v4 gate and qualification archive
+  before reading that universe; it rejects every historical exclusion above.
+  The input must be canonical `DECLARED_UNIVERSE.json`; prequery and output
+  records are canonical `PREQUERY.json` and this records directory. An existing
+  query receipt or its committed history prevents another query round after a
+  process restart. No new output directory can substitute a replacement pool.
+  The original scanner, metadata projections, selection predicates and query
+  accounting remain unchanged. The only original query import is explicitly
+  rebound to q4's gate validator.
+
+Both curator commands require `--universe`, `--environment-gate`, and
+`--qualification-artifact`; the modes remain `--write-prequery PATH` and
+`--query-after-committed-prequery PATH --out NEW_DIRECTORY`. No universe record
+has been created and neither command has been run against a target. All three
+new CLIs' `--help` paths were exercised without source access.
+
+`FRONTIER_AND_PREPARATION_GREEN.log` records 29 passing tests: eight frozen q4
+contracts, one separately added canonical-entrypoint regression, four separately
+added preparation-wrapper contracts, and sixteen unchanged native-meta tests.
+The additional regressions have their own observed RED logs. The completed
+eight-failure q4 RED output is retained as
+`FRONTIER_BINDING_TEST_RED_REEXECUTION.log`; the originally committed
+`FRONTIER_BINDING_TEST_RED.log` was empty and is preserved exactly, so that empty
+file is not claimed as evidence of a test run. A subsequent independent review
+found the restart lineage gap; three new controls have a separate observed RED
+and pass with the durable fix. `FRONTIER_AND_PREPARATION_GREEN_V2.log` records all
+32 combined tests passing. The preparation gate-import fixture was amended to
+use the now-required canonical paths; the eight frozen acceptance tests remain
+unchanged.
+
+The new `.github/workflows/udm-prospective-native-selection-v4.yml` is a thin
+reproduction adapter over the old workflow: canonical q4 module, new evidence
+paths, the `research/udm-native-authority-v4-20261016` branch and
+`[qualify-native-v4]` marker. Original component/method SHA pins and native v3
+bootstrap are unchanged. Static validation passed nine shell blocks and five
+Python heredocs. A not-ready frontier fails its readiness gate honestly; this
+workflow performs no new metadata selection and runs no coding agent in CI.
+
+The broader q3 regression run retained in `FRONTIER_PRIOR_REGRESSION_FAILURE.log`
+has one pre-existing error:
+`test_qualification_refuses_unqualified_gate_before_any_source_transport` assumes
+the committed q3 gate is unqualified, but it is already qualified and the fixture
+then attempts to read `/unused`. The same error was reproduced in a fresh Python
+process running that q3 test alone without importing q4. Historical test/source
+bytes were not edited. These prepared-state checks establish no native frontier
+result and do not replace independent v4 admission qualification.

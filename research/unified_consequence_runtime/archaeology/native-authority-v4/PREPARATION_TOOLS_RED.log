@@ -1,0 +1,41 @@
+test_curator_excludes_all_previous_v3_universe_members (research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_curator_excludes_all_previous_v3_universe_members) ... FAIL
+test_curator_has_no_universe_before_a_qualified_v4_gate (research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_curator_has_no_universe_before_a_qualified_v4_gate) ... FAIL
+test_curator_query_imports_v4_gate_before_any_metadata_query (research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_curator_query_imports_v4_gate_before_any_metadata_query) ... FAIL
+test_record_assembly_uses_v4_without_changing_original_helper (research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_record_assembly_uses_v4_without_changing_original_helper) ... FAIL
+
+======================================================================
+FAIL: test_curator_excludes_all_previous_v3_universe_members (research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_curator_excludes_all_previous_v3_universe_members)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_preparation_tools.py", line 49, in test_curator_excludes_all_previous_v3_universe_members
+    self.assertTrue(path.is_file(), 'new metadata curator wrapper required')
+AssertionError: False is not true : new metadata curator wrapper required
+
+======================================================================
+FAIL: test_curator_has_no_universe_before_a_qualified_v4_gate (research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_curator_has_no_universe_before_a_qualified_v4_gate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_preparation_tools.py", line 35, in test_curator_has_no_universe_before_a_qualified_v4_gate
+    self.assertTrue(path.is_file(), 'new gate-bound metadata curator wrapper required')
+AssertionError: False is not true : new gate-bound metadata curator wrapper required
+
+======================================================================
+FAIL: test_curator_query_imports_v4_gate_before_any_metadata_query (research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_curator_query_imports_v4_gate_before_any_metadata_query)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_preparation_tools.py", line 58, in test_curator_query_imports_v4_gate_before_any_metadata_query
+    self.assertTrue(path.is_file(), 'new metadata curator wrapper required')
+AssertionError: False is not true : new metadata curator wrapper required
+
+======================================================================
+FAIL: test_record_assembly_uses_v4_without_changing_original_helper (research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_record_assembly_uses_v4_without_changing_original_helper)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_preparation_tools.py", line 24, in test_record_assembly_uses_v4_without_changing_original_helper
+    self.assertTrue(path.is_file(), 'new versioned local-only record wrapper required')
+AssertionError: False is not true : new versioned local-only record wrapper required
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+FAILED (failures=4)
