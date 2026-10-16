@@ -2641,7 +2641,10 @@ fn check_inductive(
         return install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor);
     }
 
-    if closed_field_enum_candidate(export, block) || parametric_field_enum_candidate(export, block) {
+    if closed_finite_nullary_enum_candidate(export, block)
+        || closed_field_enum_candidate(export, block)
+        || parametric_field_enum_candidate(export, block)
+    {
         return check_generic_nonrecursive_type(export, environment, block, limits, delta_policy);
     }
     match block.constructors.len() {
@@ -2668,6 +2671,54 @@ fn exported_level_is_definitely_nonzero(
         }
         Some(Level::Zero | Level::IMax(_, _) | Level::Param(_)) | None => false,
     }
+}
+
+// A closed, nonrecursive finite data enum has no constructor fields and
+// therefore no positivity obligation involving recursive occurrences. A
+// candidate here is NOT an acceptance: all canonical recursor type, minor,
+// rule, universe and source signatures are checked by the existing generic
+// derivation below. This reuses that verifier for arity >= 3 (e.g. Ordering).
+fn closed_finite_nullary_enum_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], constructors, [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if !(3..=16).contains(&constructors.len())
+        || inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.k
+        || recursor.num_params != 0
+        || recursor.num_indices != 0
+        || recursor.num_motives != 1
+        || recursor.num_minors != constructors.len() as u64
+        || recursor.rules.len() != constructors.len()
+        || recursor.level_params.len() != 1
+        || !matches!(export.exprs.get(inductive.ty), Some(Expr::Sort(level))
+            if exported_level_is_definitely_nonzero(export, *level, 128))
+    {
+        return false;
+    }
+    constructors.iter().enumerate().all(|(index, constructor)| {
+        !constructor.is_unsafe
+            && constructor.index == index as u64
+            && constructor.inductive == inductive.name
+            && constructor.level_params.is_empty()
+            && constructor.num_params == 0
+            && constructor.num_fields == 0
+            && is_empty_constant(export, constructor.ty, inductive.name)
+    })
 }
 
 fn closed_field_enum_candidate(
@@ -4098,6 +4149,7 @@ fn check_generic_nonrecursive_type(
     if !generic_nonrecursive_type_candidate(export,block)
         && !generic_two_parameter_sum_candidate(export, block)
         && !generic_optional_value_candidate(export, block)
+        && !closed_finite_nullary_enum_candidate(export, block)
         && !closed_field_enum_candidate(export, block)
         && !parametric_field_enum_candidate(export, block)
     {
