@@ -15,7 +15,9 @@ import hashlib
 import json
 from pathlib import Path
 
-from . import qualify_v8_exposed_stratified_v104 as previous
+import subprocess
+
+from .qualify_recursive_frontier import PINS
 from . import typed_source_inventory_v5 as typed
 from . import decisive_native as original
 
@@ -25,7 +27,23 @@ SCHEMA="UDM_V14_OBSERVED_SOURCE_SLOT_ORIGINAL_V104_SCHEDULER"
 
 def original_programs(triskelion):
     """Only the exact historical authenticated V104 grammar may be loaded."""
-    ns,pin=previous._original_program_namespace(Path(triskelion).absolute())
+    pin=PINS["constructor_language"]
+    raw=subprocess.check_output(
+        ["git","--no-replace-objects","-C",str(Path(triskelion).absolute()),
+         "show",pin["commit"]+":"+pin["path"]],stderr=subprocess.PIPE,timeout=45)
+    if hashlib.sha256(raw).hexdigest()!=pin["sha256"]:
+        raise ValueError("original V104 method Git source differs from pin")
+    definition_tree=ast.parse(raw)
+    definitions=[node for node in definition_tree.body if (
+        isinstance(node,ast.FunctionDef) and node.name in pin["definitions"]
+        or isinstance(node,ast.Assign) and any(
+            isinstance(target,ast.Name) and target.id in pin["assignments"]
+            for target in node.targets))]
+    found={node.name for node in definitions if isinstance(node,ast.FunctionDef)}
+    if found!=set(pin["definitions"]):
+        raise ValueError("original V104 AST grammar definitions unavailable")
+    ns={"ast":ast,"copy":copy,"hashlib":hashlib}
+    exec(compile(ast.Module(body=definitions,type_ignores=[]),pin["path"],"exec"),ns)
     if (pin["commit"]!="426c54f7c774560e0fabe7213c5ef333b1327c71"
             or len(ns["BUILDERS"])!=15
             or len(ns["SELECTORS"])!=5
