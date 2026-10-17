@@ -2760,6 +2760,20 @@ impl<'a> TypeChecker<'a> {
                         );
                     }
                 }
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_RIGID_PROOF_REJECT").is_some()
+                    && matches!(&conversion,Judgment::Refuted{obstruction}
+                       if obstruction.0=="rigid-value-constructor-mismatch")
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static FOUND:AtomicUsize=AtomicUsize::new(0);
+                    if FOUND.fetch_add(1,Ordering::Relaxed)<12 {
+                        eprintln!(
+                          "NUCLEUS_RIGID_PROOF_REJECT:expr={expression:?}:expression_node={:?}:context_len={}:frame={}:remaining={}:actual_type={value:?}:expected_type={expected:?}:rejection={conversion:?}",
+                          self.expressions.get(expression),context.len(),frame.id(),*remaining
+                        );
+                    }
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
