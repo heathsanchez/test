@@ -1,0 +1,181 @@
+{
+  "schema": "UDM_G2_SOURCE_DISTINCT_FROZEN_METADATA_POOL_V1",
+  "state": "COMMITTED_METADATA_BEFORE_TARGET_SOURCE_OR_NATIVE",
+  "prequery_source_commit": "8b6e60a22c659d81533e61facc6d9a008054d407",
+  "prequery_path": "research/unified_consequence_runtime/G2_SOURCE_DISTINCT_PREQUERY_V1.json",
+  "universe": [
+    "agronholm/anyio",
+    "alexmojaki/executing",
+    "pallets/jinja",
+    "pallets/werkzeug",
+    "pypa/platformdirs",
+    "python-jsonschema/referencing"
+  ],
+  "selection_rule": "First metadata-qualified PR in search_prs('fix',closed,updated,desc,topn20) order per declared repository, with fixed predicates of frozen prequery. Native case screening and future-role admission not yet executed.",
+  "case_pool": [
+    {
+      "repo": "agronholm/anyio",
+      "pr": 1354,
+      "metadata_url": "https://github.com/agronholm/anyio/pull/1354",
+      "title": "Fix pytest plugin running Hypothesis async tests on all backends",
+      "search_index": 4,
+      "base": "1805944a9f6a062527c10aa044ded959782bfc3e",
+      "base_tree": "c6465ce4b900e2f21aa73ebbe16c779f5c6ae9bf",
+      "head": "90876855b731fb057d45e7e1cbdf1df013be6091",
+      "head_tree": "19184ff00483c316f5f8a243ce6e5181ab845dda",
+      "tree_metadata": {
+        "base_entries": 166,
+        "head_entries": 167,
+        "head_regular_files": 154,
+        "head_symlinks": 0,
+        "head_gitlinks": 0
+      },
+      "production": [
+        {
+          "path": "src/anyio/pytest_plugin.py",
+          "base_blob": "d6238cd110ab793ccccb9671fc7eccc33c5415e5",
+          "head_blob": "9cd9f788e13f020925d3b1816ed3842b3a2d70d4",
+          "mode": "100644",
+          "additions": 8,
+          "deletions": 4
+        }
+      ],
+      "head_author_tests": [
+        {
+          "path": "tests/test_pytest_plugin.py",
+          "base_blob": "d832d91ae6328916843f8f7af9f6ace94538b313",
+          "head_blob": "b15d4da74a17b7f80fa07b0d172c03eb752be7f4",
+          "mode": "100644",
+          "status": "modified",
+          "additions": 43,
+          "deletions": 0
+        }
+      ],
+      "status": "METADATA_QUALIFIED_NOT_NATIVE_ADMITTED"
+    },
+    {
+      "repo": "alexmojaki/executing",
+      "pr": 50,
+      "metadata_url": "https://github.com/alexmojaki/executing/pull/50",
+      "title": "fix decorator detection bug",
+      "search_index": 16,
+      "base": "589d79803cdbe0eac064227525c38a2a8ee2c680",
+      "base_tree": "8aec0ba4ffc95fa63fba837c25d990bacb77beff",
+      "head": "e2eae3fa255db11e422e34a731f31cef149cc4fe",
+      "head_tree": "990210d7409913da304febc77f7da3a8535b3e3c",
+      "tree_metadata": {
+        "base_entries": 52,
+        "head_entries": 53,
+        "head_regular_files": 47,
+        "head_symlinks": 0,
+        "head_gitlinks": 0
+      },
+      "production": [
+        {
+          "path": "executing/_position_node_finder.py",
+          "base_blob": "851ce016f01e99b01200539b3c3a4daad94a99fa",
+          "head_blob": "3a9d8c05a40cf421959c7a1c08d11f81761e1cda",
+          "mode": "100644",
+          "additions": 4,
+          "deletions": 0
+        }
+      ],
+      "head_author_tests": [
+        {
+          "path": "tests/analyse.py",
+          "base_blob": null,
+          "head_blob": "253f0f6852c14c25f7828848787971319980842b",
+          "mode": "100644",
+          "status": "added",
+          "additions": 139,
+          "deletions": 0
+        },
+        {
+          "path": "tests/test_main.py",
+          "base_blob": "9b0f973d2849b4e5445f478e58f968d4f22d0964",
+          "head_blob": "d534e3a5e7e1ecbf1016ff4c9b21ad41bc43ff36",
+          "mode": "100644",
+          "status": "modified",
+          "additions": 13,
+          "deletions": 0
+        }
+      ],
+      "status": "METADATA_QUALIFIED_HELDOUT_SOURCE_UNOPENED"
+    }
+  ],
+  "rejected": {
+    "agronholm/anyio": [
+      {
+        "pr": 1422,
+        "reason": "PRODUCTION_EDIT_EXCEEDS_FROZEN_ADD_DELETE_BOUND",
+        "prod_additions": 16,
+        "prod_deletions": 19
+      }
+    ],
+    "alexmojaki/executing": [
+      {
+        "pr": 107,
+        "reason": "UNMERGED"
+      },
+      {
+        "pr": 95,
+        "reason": "NEW_PRODUCTION_MODULE_AND_SOURCE_CONFIG_CHANGED"
+      },
+      {
+        "pr": 94,
+        "reason": "NEW_PRODUCTION_MODULE"
+      },
+      {
+        "pr": 86,
+        "reason": "PRODUCTION_ADDITIONS_EXCEED_8"
+      },
+      {
+        "pr": 83,
+        "reason": "SOURCE_CONFIG_CHANGED"
+      }
+    ],
+    "pallets/jinja": [
+      {
+        "reason": "NO_TITLE_STARTS_FIX_IN_FIRST_20_SEARCH_RESULTS"
+      }
+    ],
+    "pallets/werkzeug": [
+      {
+        "pr": 3299,
+        "reason": "NO_CHANGED_AUTHOR_PYTHON_TEST"
+      },
+      {
+        "pr": 3223,
+        "reason": "UNMERGED"
+      }
+    ],
+    "pypa/platformdirs": [
+      {
+        "reason": "GITHUB_SEARCH_API_422_RESOURCE_NOT_ACCESSIBLE_OR_NOT_FOUND"
+      }
+    ],
+    "python-jsonschema/referencing": [
+      {
+        "pr": 358,
+        "reason": "NO_CHANGED_AUTHOR_PYTHON_TEST"
+      }
+    ]
+  },
+  "audit_limits": [
+    "Metadata requests returned PR bodies and file patches to an isolated projection, but neither text nor patch bytes were emitted or used in selection. Only metadata fields are recorded; full absence of model exposure outside these calls cannot be authenticated.",
+    "The AnyIO #1392 PR metadata was queried in an overlapping batch after #1354 became the first eligible candidate; this unnecessary metadata-only query is preserved as QUERY_OVERREACH and must not be hidden. It did not change fixed returned-order selection; no source/native outcomes were queried.",
+    "GitHub search responses used browser URLs to recover PR numbers because search_prs did not populate number. Extracted paths and SHA fields were independently cross-checked against Git trees.",
+    "Bounded exclusions scanned two explicitly declared historical records only. No global proof of unseen source or model pretraining.",
+    "Upstream base/head commits exist; no source bytes, author tests, native outcomes, repaired head production, method selection, dependency resolution or coding-agent result have yet been admitted."
+  ],
+  "native_calls": 0,
+  "scientific_verdict": {
+    "G0_G1": "PRESERVED_PRIOR_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "next": "Run training case admission and original unmodified source with head author-test overlay; native test failure must be independently real. Future source stays sealed until training method/policy freezes. No outcome-based replacement."
+}
