@@ -1,0 +1,58 @@
+name: UDM G2 independent native admission
+on:
+  push:
+    branches:
+      - research/udm-g2-prospective-freeze-20261018
+    paths:
+      - '.github/workflows/udm-g2-native-admission.yml'
+      - 'research/unified_consequence_runtime/g2_native_admission.py'
+      - 'research/unified_consequence_runtime/G2_PROSPECTIVE_PROTOCOL_20261018.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-native-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Freeze upstream commit before reading target
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/g2
+          git ls-remote https://github.com/pallets/itsdangerous.git refs/tags/2.2.0 refs/tags/2.2.0^{} > evidence/g2/upstream-refs.txt
+          python - <<'PY'
+          import json,pathlib,re
+          lines=pathlib.Path('evidence/g2/upstream-refs.txt').read_text().splitlines()
+          refs=dict(line.split('\t',1)[::-1] for line in lines)
+          sha=refs.get('refs/tags/2.2.0^{}') or refs.get('refs/tags/2.2.0')
+          assert sha and re.fullmatch(r'[0-9a-f]{40}',sha)
+          pathlib.Path('evidence/g2/pin.json').write_text(json.dumps({'url':'https://github.com/pallets/itsdangerous.git','ref':'refs/tags/2.2.0','sha':sha},sort_keys=True,indent=2))
+          PY
+      - name: Clone only exact frozen source and install native tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha="$(python -c "import json;print(json.load(open('evidence/g2/pin.json'))['sha'])")"
+          git clone --filter=blob:none --no-checkout https://github.com/pallets/itsdangerous.git /tmp/g2-native
+          git -C /tmp/g2-native checkout --detach "$sha"
+          test "$(git -C /tmp/g2-native rev-parse HEAD)" = "$sha"
+          python -m pip install pytest
+          python -m pip install -e /tmp/g2-native
+          python -m pip freeze > evidence/g2/pip-freeze.txt
+      - name: Require genuine native test assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/unified_consequence_runtime/g2_native_admission.py /tmp/g2-native evidence/g2
+      - name: Archive evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-independent-native-admission
+          path: evidence/g2/
+          if-no-files-found: error
