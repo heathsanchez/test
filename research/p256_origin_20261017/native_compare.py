@@ -7,7 +7,9 @@ import subprocess
 from pathlib import Path
 
 def run_native(program,a,p):
-    proc=subprocess.run([str(program),str(a),str(p)],capture_output=True,text=True,timeout=30,check=True)
+    proc=subprocess.run([str(program),str(a),str(p)],capture_output=True,text=True,timeout=30,check=False)
+    if proc.returncode:
+        raise RuntimeError(f"Native 1997 FreeLIP failed rc={proc.returncode}; stdout={proc.stdout!r}; stderr={proc.stderr!r}")
     lines=proc.stdout.strip().splitlines()
     if len(lines)!=1 or not lines[0].lstrip('-').isdigit():
         raise AssertionError(('invalid native transcript',proc.stdout,proc.stderr))
