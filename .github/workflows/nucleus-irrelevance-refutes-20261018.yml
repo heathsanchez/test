@@ -1,0 +1,79 @@
+name: Nucleus irrelevance-refutes exact Arena gate
+on:
+  push:
+    branches: [research/nucleus-irrelevance-refutes-20261018]
+    paths: ['.github/workflows/nucleus-irrelevance-refutes-20261018.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact independent checker
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-report
+          git rev-parse HEAD:metatron-kernel > /tmp/nucleus-report/checker-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Retrieve exact Arena 58de35b1 export and frozen196
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/newzip /tmp/oldzip /tmp/new /tmp/old
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/12041256910/zip > /tmp/new.zip
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/old.zip
+          sha256sum /tmp/new.zip /tmp/old.zip > /tmp/nucleus-report/artifact-hashes.txt
+          unzip -q /tmp/new.zip -d /tmp/newzip
+          unzip -q /tmp/old.zip -d /tmp/oldzip
+          tar -xzf /tmp/newzip/lean-arena-tests.tar.gz -C /tmp/new
+          tar -xzf /tmp/oldzip/lean-arena-tests.tar.gz -C /tmp/old
+          test -s /tmp/new/good/perf/irrelevance-refutes.ndjson
+      - name: Exact positive and protected full196 replay
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,subprocess,pathlib,json,hashlib,time
+          exe='metatron-kernel/target/release/metatron-kernel'
+          root=pathlib.Path('/tmp/old')
+          new=pathlib.Path('/tmp/new/good/perf/irrelevance-refutes.ndjson')
+          flags=['RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA']
+          report={'arena_sha':'58de35b1b322c3cab584b88ae2786be3bdcfe856','arena_artifact':12041256910,'fixture_sha256':hashlib.sha256(new.read_bytes()).hexdigest(),'modes':{}}
+          for mode in ('origin','demand'):
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in flags})
+              if mode=='demand':env['NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR']='1'
+              def run(path,timeout):
+                  t=time.monotonic()
+                  try:
+                      with path.open('rb') as f:p=subprocess.run([exe],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=timeout)
+                      return {'rc':p.returncode,'wall_seconds':round(time.monotonic()-t,4),'stderr_tail':p.stderr.decode(errors='replace')[-500:]}
+                  except subprocess.TimeoutExpired:return {'rc':124,'wall_seconds':round(time.monotonic()-t,4),'stderr_tail':'TIMEOUT'}
+              target=run(new,50)
+              rows=[]
+              for group in ('good','bad'):
+                  for path in sorted((root/group).rglob('*.ndjson')):
+                      r=run(path,180)
+                      rows.append({'case':str(path.relative_to(root)),'rc':r['rc']})
+              assert len(rows)==196
+              counts={'accept':sum(x['rc']==0 for x in rows),'reject':sum(x['rc']==1 for x in rows),'unknown':sum(x['rc']==2 for x in rows),'wrong':sum((x['case'].startswith('good/') and x['rc']==1) or (x['case'].startswith('bad/') and x['rc']==0) for x in rows),'errors':sum(x['rc'] not in (0,1,2) for x in rows)}
+              controls={}
+              for name in ('protected-false-index.ndjson','protected-eta-ctor-alias.ndjson'):
+                  controls[name]=run(pathlib.Path('metatron-kernel/tests/fixtures')/name,50)['rc']
+              report['modes'][mode]={'target':target,'counts':counts,'controls':controls}
+              print('NUCLEUS_IRRELEVANCE='+json.dumps({'mode':mode,'target':target,'counts':counts,'controls':controls}),flush=True)
+          pathlib.Path('/tmp/nucleus-report/report.json').write_text(json.dumps(report,indent=2))
+          assert all(v['counts']=={'accept':119,'reject':71,'unknown':6,'wrong':0,'errors':0} for v in report['modes'].values())
+          assert all(all(rc in (1,2) for rc in v['controls'].values()) for v in report['modes'].values())
+          assert all(v['target']['rc']==0 for v in report['modes'].values()),'New valid case not ACCEPT within 50 seconds'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-irrelevance-refutes-${{ github.sha }}
+          path: /tmp/nucleus-report/
+          if-no-files-found: warn
