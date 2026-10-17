@@ -59,7 +59,8 @@ def source_inventory(root, commit):
         raise ValueError('UNKNOWN_SOURCE_COMMIT')
     if git(root, 'status', '--porcelain', '--untracked-files=no').strip():
         raise ValueError('UNKNOWN_TRACKED_SOURCE_DIRTY')
-    extras=git(root,'ls-files','-z','--others','--exclude-standard').split(b'\0')
+    extras=(git(root,'ls-files','-z','--others','--exclude-standard').split(b'\0')
+            +git(root,'ls-files','-z','--others','--ignored','--exclude-standard').split(b'\0'))
     if any(name.startswith((b'tests/',b'src/')) or name.endswith((b'.py',b'.pyc',b'.so',b'.pyd'))
            for name in extras if name):
         raise ValueError('UNKNOWN_UNTRACKED_EXECUTABLE_SOURCE')
@@ -102,7 +103,8 @@ def authorized_assertion(root, prefix):
                and n.name==name]
         if len(nodes)!=1:return False
         body=nodes[0].body
-    return any(isinstance(n,ast.Assert) for stmt in body for n in ast.walk(stmt))
+    # A nested/dormant assertion cannot establish execution merely because pytest called this test.
+    return any(isinstance(stmt,ast.Assert) for stmt in body)
 
 
 def matches(node,prefix):
@@ -120,7 +122,9 @@ def execute(source,out):
             raise ValueError('UNKNOWN_PATH_AUTHORITY')
         if not out.is_dir() or (out/'admission.json').exists():
             raise ValueError('UNKNOWN_EVIDENCE_OUTPUT')
-        pin=json.loads((out/'pin.json').read_text())
+        pin_raw=(out/'pin.json').read_bytes()
+        pin=json.loads(pin_raw)
+        summary['pin_sha256']=digest(pin_raw)
         if set(pin)!={'repository','sha','test_paths','required_test_prefixes','requirements_blob','scope'}:
             raise ValueError('UNKNOWN_PIN_SCHEMA')
         if (pin['scope']!='CALIBRATION_ONLY' or pin['test_paths']!=['tests']
@@ -153,6 +157,8 @@ def execute(source,out):
         summary['returncode']=attempt.returncode
         (out/'native.stdout').write_bytes(attempt.stdout)
         (out/'native.stderr').write_bytes(attempt.stderr)
+        if (out/'pin.json').read_bytes()!=pin_raw:
+            raise ValueError('UNKNOWN_EXTERNAL_PIN_MUTATION')
         if source_inventory(source,pin['sha'])!=summary['source_identity']:
             raise ValueError('UNKNOWN_SOURCE_MUTATION')
         events=json.loads((out/'events.json').read_text())
