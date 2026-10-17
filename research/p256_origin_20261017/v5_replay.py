@@ -84,7 +84,8 @@ def main():
         fail_closed('POINT_COUNT_RESOURCE_UNKNOWN','gp execution timed out',str(exc))
     raw=proc.stdout+'\n'+proc.stderr
     (HERE/'V5_PARI_OUTPUT.txt').write_text(raw)
-    if proc.returncode!=0 or '***' in raw:
+    gp_errors=[line for line in raw.splitlines() if '***' in line and 'Warning:' not in line]
+    if proc.returncode!=0 or gp_errors:
         fail_closed('POINT_COUNT_RUN_RED',f'PARI exited {proc.returncode} or emitted an error',raw)
     rows={}
     for label,order,prime in re.findall(r'V5\|([a-z_]+)\|(\d+)\|(-?\d+)',raw):
