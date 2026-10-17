@@ -1,0 +1,115 @@
+name: V13 exposed protected-branch observation before original MSI/V104 ranking
+on:
+  push:
+    branches: [research/udm-v13-source-branch-observation-20261017]
+    paths:
+      - .github/workflows/udm-v13-observed-branch.yml
+      - research/unified_consequence_runtime/observed_branch_v13.py
+      - research/unified_consequence_runtime/test_observed_branch_v13.py
+      - research/unified_consequence_runtime/qualify_observed_branch_v13.py
+      - research/unified_consequence_runtime/archaeology/typed-v104-v13/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: udm-exposed-source-observation-v13-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native-branch-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+      GIT_CONFIG_NOSYSTEM: '1'
+      UDM_V13_EXPOSED: 'EXPOSED_OBSERVATION_ONLY'
+      UDM_V13_OUT: ${{ github.workspace }}/qualification/v13/native
+      UDM_V7_TRISKELION: ${{ github.workspace }}/components/triskelion
+      UDM_V7_MSI: ${{ github.workspace }}/components/msi
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Preserve original verifier and preregistered observation-only protocol
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/v13
+          git rev-parse HEAD > qualification/v13/SOURCE_COMMIT.txt
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/test_observed_branch_v13.py)" = \
+            "db0ce347756bc0dacd0818fbbd6edcce77c39981"
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/archaeology/typed-v104-v13/FROZEN_BRANCH_PROTOCOL.json)" = \
+            "5985d2a0a81e27bf8003a63985d09634bf4d26db"
+          for name in typed_native_authority_v6.py typed_native_authority_v10.py \
+            qualify_source_bound_g2_v9.py typed_v104_msi_bridge_v7.py \
+            decisive_native.py qualify_exposed_guard_v12.py \
+            archaeology/typed-v104-v12/FROZEN_GUARDS.json capability_index.json; do
+            p="research/unified_consequence_runtime/$name"
+            test "$(git rev-parse HEAD:"$p")" = \
+                 "$(git rev-parse 4432052f790a4a29424e6d22a56446d19111f554:"$p")"
+          done
+      - name: Prepare exact native pytest and source-pinned original MSI/V104 dependencies
+        run: |
+          set -euo pipefail
+          python -B -m pip install --disable-pip-version-check --no-input \
+            pytest==8.3.5 pytest-cov==6.2.1 pluggy==1.6.0 coverage==7.10.6 \
+            packaging==26.3 attrs==24.3.0 hypothesis==6.122.3 \
+            typing_extensions==4.12.2 colorama==0.4.6 rich==13.9.4 \
+            click==8.2.0 tenacity==9.1.2 markupsafe==3.0.2
+          git fetch --quiet --no-tags --depth=1 origin \
+            6031466188046f56b4660d772d13ad731ed4c0f2
+          mkdir -p components
+          git init -q components/triskelion
+          git -C components/triskelion fetch -q --depth=1 \
+            https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C components/triskelion checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q components/msi
+          git -C components/msi fetch -q --depth=1 \
+            https://github.com/heathsanchez/Minimal-Sufficient-Interface.git \
+            56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C components/msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+      - name: Execute frozen generic runtime source observation and inherited original native contracts
+        run: |
+          set -euo pipefail
+          python -B -m unittest \
+            research.unified_consequence_runtime.test_observed_branch_v13 \
+            research.unified_consequence_runtime.test_typed_native_authority_v10 \
+            -v 2>&1 | tee qualification/v13/CONTRACTS.log
+      - name: Real source-exposed Tenacity protected trace and source-bound original MSI/V104 catalog
+        timeout-minutes: 8
+        run: |
+          set +e
+          env -u GH_TOKEN -u GITHUB_TOKEN \
+            python -B -m research.unified_consequence_runtime.qualify_observed_branch_v13 \
+            > qualification/v13/SCIENCE.log 2>&1
+          status=$?
+          echo "$status" > qualification/v13/SCIENCE_EXIT.txt
+          tail -n 40 qualification/v13/SCIENCE.log
+          exit "$status"
+      - name: Preserve G2 UNKNOWN and all original source byte identities
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("qualification/v13/native/RESULT.json")
+          if p.is_file():
+              v=json.loads(p.read_text())
+              assert all(v.get(k)=="UNKNOWN" for k in ("G2","G3","G4","G5","G6"))
+              assert v["packaging_source_opened"] is False
+              assert v["source_exposed"] is True
+              print("V13_OBSERVATION_ONLY",v.get("status"),v.get("observation"),v.get("catalog"))
+          else: print("V13_UNKNOWN_NO_NATIVE_RESULT")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-v13-exposed-observation-${{ github.sha }}-${{ github.run_attempt }}
+          path: qualification/v13/
+          retention-days: 90
