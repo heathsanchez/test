@@ -16,7 +16,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq -y pari-gp pari-seadata
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq -y pari-gp pari-seadata gcc-multilib libc6-dev-i386
       - name: Reconstruct complete first-77 candidate cardinalities (not prime-only)
         shell: bash
         run: |
@@ -105,7 +105,8 @@ jobs:
             printf("NATIVE_RNG|%ld|%ld|%ld\n",first,after,second);return 0;
           }
           C
-          gcc -std=gnu89 -O2 -w -I"$RUNNER_TEMP/freelip" V10_ORIGINAL_C_WRAPPER.c "$RUNNER_TEMP/freelip/lip.c" -lm -o "$RUNNER_TEMP/v10-old-FreeLIP"
+          gcc -m32 -std=gnu89 -O1 -g -w -I"$RUNNER_TEMP/freelip" V10_ORIGINAL_C_WRAPPER.c "$RUNNER_TEMP/freelip/lip.c" -lm -o "$RUNNER_TEMP/v10-old-FreeLIP"
+          file "$RUNNER_TEMP/v10-old-FreeLIP"
           timeout 180s "$RUNNER_TEMP/v10-old-FreeLIP" > V10_NATIVE_STDOUT.txt
           python3 - <<'PY'
           import json,re,hashlib
