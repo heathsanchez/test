@@ -43,17 +43,21 @@ jobs:
           test "$(git -C "$RUNNER_TEMP/freelip" hash-object lip.c)" = a86ce8ae5be49e0f35999a2c87f52e1718ebdb81
           test "$(git -C "$RUNNER_TEMP/freelip" hash-object lip.h)" = 080cda8aec8c0939348452ea3beb9f1afad845ef
           sed -n '11730,11748p' "$RUNNER_TEMP/freelip/lip.c"
-          # FreeLIP README documents PLAIN as an alternative to Karatsuba.
-          # Reconfigure only historical lippar.h; original lip.c/h remain byte-pinned.
-          test "$(grep -Ec '^#define[[:space:]]+KARAT[[:space:]]+1' "$RUNNER_TEMP/freelip/lippar.h")" = 1
-          sed -i -E 's/^#define[[:space:]]+KARAT[[:space:]]+1/#define PLAIN 1/' "$RUNNER_TEMP/freelip/lippar.h"
-          grep -qE '^#define[[:space:]]+PLAIN[[:space:]]+1' "$RUNNER_TEMP/freelip/lippar.h"
-          echo "Build variant: FreeLIP original C, documented PLAIN arithmetic configuration; ASAN enabled"
+          # Historical lip.h defaults SIZEOFLONG=4; match a 32-bit ABI.
+          # Keep lippar.h, lip.c and lip.h byte-identical at the pinned commit.
+          echo "Architecture: historical 32-bit long; original KARAT=1; ASan enabled"
+      - name: Install 32-bit GCC runtime for historical FreeLIP ABI
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gcc-multilib libc6-dev-i386
+
       - name: Compile and execute original 1997 zsqrtmod against all curves
         shell: bash
         run: |
           set -euo pipefail
-          gcc -std=gnu89 -O1 -g -fsanitize=address -fno-omit-frame-pointer -w -I"$RUNNER_TEMP/freelip" \
+          gcc -m32 -std=gnu89 -O1 -g -fsanitize=address -fno-omit-frame-pointer -w -I"$RUNNER_TEMP/freelip" \
             research/p256_origin_20261017/native_freelip_sqrt.c \
             "$RUNNER_TEMP/freelip/lip.c" -lm -o "$RUNNER_TEMP/native_freelip_sqrt"
           ASAN_OPTIONS=detect_leaks=0:abort_on_error=0 python3 research/p256_origin_20261017/native_compare.py \
