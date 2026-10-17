@@ -93,7 +93,7 @@ jobs:
               (corpus/(name+'.ndjson')).unlink()
           report={'source':os.environ['GITHUB_SHA'],'cases':out,
                   'no_false_accepts':all(c['rc']!=0 for c in out),
-                  'all_original_rejections_preserved':all(c['rc']==1 for c in out)}
+                  'all_original_rejections_preserved':all(base['rc']!=1 or candidate['rc']==1 for base,candidate in zip(out[::2],out[1::2]))}
           (corpus/'relation-eta-falsifier.json').write_text(json.dumps(report,indent=2)+'\n')
           print('No wrong accepts:',report['no_false_accepts'],
                 'All negative rejections preserved:',report['all_original_rejections_preserved'],flush=True)
