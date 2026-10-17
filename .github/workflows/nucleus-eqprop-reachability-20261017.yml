@@ -1,0 +1,118 @@
+name: Nucleus EqProp source-proof six exact Arena differential
+on:
+  push:
+    branches: [research/nucleus-eqprop-conversion-20261017]
+    paths: [".github/workflows/nucleus-eqprop-reachability-20261017.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reachability-singletons:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      REACH_SHA: d822b1c70b4a6ec858b54ee51f12b0cb30628982
+      EXPORTER_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build unchanged Nucleus and pinned upstream Arena reachability
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          export PATH="$HOME/.elan/bin:$PATH"
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter34
+          git -C /tmp/exporter34 checkout -q "$EXPORTER_SHA"
+          echo leanprover/lean4:v4.34.1 > /tmp/exporter34/lean-toolchain
+          (cd /tmp/exporter34 && lake build)
+          git clone -q https://github.com/Arrow7000/reachability /tmp/reach
+          git -C /tmp/reach checkout -q "$REACH_SHA"
+          mkdir -p /tmp/reach/bench/Bench
+          cat > /tmp/reach/bench/Bench/Arena.lean <<'EOF'
+          import Bench.Graphs
+          namespace Bench.Arena
+          open Relation
+          set_option Elab.async false
+          theorem path_reachable : TransGen (path 100).Adj 0 99 := by decide +kernel
+          theorem path_unreachable : ¬TransGen (path 100).Adj 1 0 := by decide +kernel
+          theorem grid_reachable : TransGen (grid 10).Adj 0 99 := by decide +kernel
+          theorem random_reachable : TransGen (random 100 3 0).Adj 0 99 := by decide +kernel
+          theorem dag_reachable : TransGen (dag 300).Adj 0 299 := by decide +kernel
+          theorem grid_shortest :
+              (grid 5).shortest 0 24 = some [1, 2, 3, 4, 9, 14, 19] := by decide +kernel
+          end Bench.Arena
+          EOF
+          (cd /tmp/reach && lake update && lake exe cache get && lake build Bench.Arena)
+      - name: Export six singleton dependent closures and classify every Nucleus verdict
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          python3 - <<'PY'
+          import subprocess,json,os,pathlib,time,hashlib
+          tmp=pathlib.Path('/tmp');out=tmp/'evidence';proj=tmp/'reach'
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel')
+          exporter=tmp/'exporter34/.lake/build/bin/lean4export'
+          pins=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pins['origin_flags']})
+          env['METATRON_KERNEL_DIAGNOSTICS']='1';env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          decls=['path_reachable','path_unreachable','grid_reachable','random_reachable','dag_reachable','grid_shortest']
+          expected={
+            'path_reachable':'96918fb408e535b34b50780d6b8fcbae51e5340659ec5a782d0cded926eae479',
+            'path_unreachable':'94936bd2b67b68ba3af0171995db66f5b5ed683b3133297476c129a5571a18b6',
+            'grid_reachable':'d1bff6435961f85499f3cc0786190c29356ddc6b8cde6ee7dbb5a832ed1ca989',
+            'random_reachable':'00bf8e4ec979a1cc5d99776b4dbcb5a23398945a123684fabd1c67515b233d2d',
+            'dag_reachable':'c2c0bf6baeeed8ef547daf4c1845767034abfa4d1ead62cbc1af9f8663ee6389',
+            'grid_shortest':'3b2a4f4dcad347f69501fc867ba648523e0c6c5900f2e80725dc6536a32ce023',
+          }
+          rows=[]
+          def run(checker_env,path,label):
+              start=time.monotonic()
+              with path.open('rb') as f:
+                  try:
+                      result=subprocess.run([str(binary)],stdin=f,capture_output=True,env=checker_env,timeout=120)
+                      rc=result.returncode
+                      stderr=(result.stderr+result.stdout).decode(errors='replace')[-10000:]
+                  except subprocess.TimeoutExpired: rc,stderr=124,'TIMEOUT 120s'
+              return {'mode':label,'rc':rc,'time_sec':round(time.monotonic()-start,4),'trace':stderr}
+          for name in decls:
+              p=out/(name+'.ndjson')
+              with p.open('wb') as f:
+                  subprocess.run(['lake','env',str(exporter),'Bench.Arena','--','Bench.Arena.'+name],
+                                 cwd=proj,stdout=f,check=True,timeout=120)
+              digest=hashlib.sha256(p.read_bytes()).hexdigest()
+              assert digest==expected[name],(name,digest,expected[name])
+              with p.open('rb') as f:
+                  metadata=json.loads(f.readline())['meta']
+              assert metadata['format']['version']=='3.1.0'
+              baseline=run(env,p,'original')
+              proposed=dict(env);proposed['NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS']='1';proposed['NUCLEUS_EXPERIMENTAL_EQPROP_PROOF_DECLINE']='1'
+              proposed['NUCLEUS_TRACE_EXACT_PROOF_NEUTRALS']='1'
+              candidate=run(proposed,p,'candidate')
+              rows.append({'decl':name,'bytes':p.stat().st_size,'sha256':digest,
+                           'base':baseline,'candidate':candidate})
+              print(name,'baseline=',baseline['rc'],'candidate=',candidate['rc'],
+                    'candidate_sec=',candidate['time_sec'],flush=True)
+              p.unlink()
+          wins=[r['decl'] for r in rows if r['base']['rc']==2 and r['candidate']['rc']==0]
+          stable=all(r['base']['rc']==2 for r in rows)
+          no_wrong=all(r['candidate']['rc'] in (0,2) for r in rows)
+          output={'reach_sha':os.environ['REACH_SHA'],'exporter':os.environ['EXPORTER_SHA'],
+                  'candidate_source':os.environ['GITHUB_SHA'],'rows':rows,
+                  'new_complete_accepts':wins,'baseline_stable':stable,'no_false_reject_or_error':no_wrong,
+                  'warranted_within_checked_scope':stable and no_wrong}
+          (out/'reach-singletons-report.json').write_text(json.dumps(output,indent=2)+'\n')
+          print(json.dumps({'new_complete_accepts':wins,'baseline_stable':stable,
+                            'no_false_reject_or_error':no_wrong}),flush=True)
+          assert stable and no_wrong,'Regression in pinned Arena baseline or checker crashed/rejected official proof'
+          PY
+      - name: Preserve reachability singleton evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-eqprop-reachability
+          path: /tmp/evidence
+
