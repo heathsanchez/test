@@ -1,0 +1,72 @@
+name: P-256 V14 1997 FreeLIP 26-bit native source fidelity
+on:
+  push:
+    branches: [research/p256-freelip-native-source-fidelity-v14-20261017]
+    paths:
+      - 'research/p256_origin_20261017/V14_*'
+      - 'research/p256_origin_20261017/v14_*'
+      - '.github/workflows/p256-source-fidelity-v14.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-1997-source-vs-model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact 1997 mirrored FreeLIP, validate unchanged blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/lrobot/freelip.git "$RUNNER_TEMP/freelip"
+          git -C "$RUNNER_TEMP/freelip" checkout --quiet 00898a4814d2cc1244bf348682be6ed10dda35f0
+          test "$(git -C "$RUNNER_TEMP/freelip" rev-parse HEAD)" = 00898a4814d2cc1244bf348682be6ed10dda35f0
+          test "$(git -C "$RUNNER_TEMP/freelip" hash-object lip.c)" = a86ce8ae5be49e0f35999a2c87f52e1718ebdb81
+          test "$(git -C "$RUNNER_TEMP/freelip" hash-object lip.h)" = 080cda8aec8c0939348452ea3beb9f1afad845ef
+          test -f research/p256_origin_20261017/V14_FROZEN_PROTOCOL.md
+      - name: Install 32-bit C headers/toolchain for 1997 32-bit ABI
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gcc-multilib libc6-dev-i386
+          gcc --version | head -1
+      - name: Compile original 1997 FreeLIP C with SINGLE_MUL 26-bit code, no patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          gcc -std=gnu89 -m32 -O2 -w -DSINGLE_MUL -I"$RUNNER_TEMP/freelip" v14_native.c "$RUNNER_TEMP/freelip/lip.c" -lm -o native_freelip
+          file native_freelip
+          test "$(./native_freelip 20000 words | wc -l)" -eq 20
+      - name: Independently compare native zrandom and native zrandomb against 107-bit integer model
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          python3 -B v14_check.py | tee V14_STDOUT.log
+          grep -q 'WARRANTED_BOUNDED_NATIVE_SOURCE_26BIT_SAMPLER_FIDELITY' V14_STDOUT.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          d=json.loads(Path('V14_RESULTS.json').read_text())
+          assert d['frozen_protocol_commit']=='8d8dc687b2c0e7cf94c9aaab44cccd4ba8f7f951'
+          assert d['test_seed_count']==5 and d['tested_words']==100 and d['tested_direct_points']==5
+          assert all(x['native_and_independent_20_words_match'] and x['native_point_equals_python_11_limb_sampler'] and x['two_mutation_guards_pass'] for x in d['tests'])
+          assert d['historical_NSA_1997_source']=='UNKNOWN'
+          print('V14_NATIVE_SOURCE_SCOPE_QUALIFIED')
+          PY
+      - name: Archive exact source and native test outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v14-native-1997-source-fidelity
+          path: |
+            research/p256_origin_20261017/V14_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/v14_native.c
+            research/p256_origin_20261017/v14_check.py
+            research/p256_origin_20261017/V14_RESULTS.json
+            research/p256_origin_20261017/V14_STDOUT.log
+          if-no-files-found: error
+          retention-days: 90
