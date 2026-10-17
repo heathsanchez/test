@@ -27,6 +27,14 @@ Do **not** describe the ten UNKNOWNs as failures, the 37 incomplete policies as 
 
 The V11 output also exposed a **separate factual integration defect**: V9's `_original_catalog` supplies `observation={}` to `typed_v104_msi_bridge_v7.catalog_v104_typed`. Consequently the native-failure distance feature `K` defaults to `1000000` for every constructor candidate, instead of incorporating verified source-specific failing traces. The independent original `decisive_native.trace_lines` mechanism is already present but is not activated by this path. This is a missing **observation-to-existing-policy connection**, not proof that another operation or framework is needed.
 
+## Post-hoc source-locus audit (artifact-derived, no new candidate execution)
+
+I independently downloaded the RED V11 artifact and compared its 15 candidate-stage ASTs against the exact base AST using the source-pinned `decisive_native.changed_lines` **AST structural** method. Every one of the 15 candidates changed exactly one original-source AST line: **10 at `tenacity/__init__.py:97`** (`return tornado is not None`) and **five at `tenacity/asyncio/__init__.py:72`** (`return asyncio.sleep(seconds)`). **Zero** changed the original source's likely relevant `_run_wait` guard at `tenacity/__init__.py:425` (`if not self.wait`), implicated by the independently authored falsy-callable regression. This is an independently reproducible candidate-locality fact, **not** a verified unique semantic-causation claim.
+
+The original V104 generator has 75 selector×builder signatures and 15 builder templates but no direct `ast.Compare` constructor. This does not establish that all semantically equivalent repairs are impossible or that an operation is missing from other qualified Metalogic machinery. The finite V11 original first-eight policy prefixes only reached unrelated source locations. The original V9→V11 `_original_catalog` also passed empty observations, so all source-failure locality feature `K` values defaulted to 1000000. The exact diagnosis is **both pre-candidate source-slot selection and independent native-observation activation**, rather than merely post-hoc MSI order reordering.
+
+Exact [AST slot audit](https://github.com/heathsanchez/test/blob/research/udm-v11-exposed-tenacity-census-20261017/research/unified_consequence_runtime/V11_AST_SLOT_LOCALIZATION_AUDIT.json).
+
 ## Smallest next test
 
 1. On this **exposed** Tenacity task, independently obtain the first true native FAIL receipts and attempt **source-pinned** traceback line extraction. If authentic production line evidence is absent, return exact UNKNOWN; never invent source locality.
