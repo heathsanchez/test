@@ -1,0 +1,92 @@
+name: UDM original V104 and MSI source-only catalog qualification (G2 UNKNOWN)
+
+on:
+  push:
+    branches:
+      - research/udm-g2-frozen-source-distinct-admission-20261018
+    paths:
+      - .github/workflows/udm-g2-v104-training-catalog-v1.yml
+      - research/unified_consequence_runtime/g2_v104_catalog_pre_native_v1.py
+      - research/unified_consequence_runtime/G2_TRAINING_METHOD_V104_PROTOCOL_V1.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-original-method-catalog:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install only control-plane parsing and source-inspection prerequisites
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input \
+            'packaging==26.3' 'pytest==9.1.1'
+          mkdir -p evidence/g2-original-catalog
+          python -m pip freeze > evidence/g2-original-catalog/PIP_FREEZE.txt
+
+      - name: Source-only original AnyIO base plus original V104 and MSI pins
+        run: |
+          set -euo pipefail
+          git init -q /tmp/udm-v104-anyio
+          git -C /tmp/udm-v104-anyio remote add upstream https://github.com/agronholm/anyio.git
+          git -C /tmp/udm-v104-anyio fetch -q --depth=1 --no-tags --filter=blob:none upstream 1805944a9f6a062527c10aa044ded959782bfc3e
+          git -C /tmp/udm-v104-anyio checkout -q --detach 1805944a9f6a062527c10aa044ded959782bfc3e
+          git init -q /tmp/udm-original-triskelion
+          git -C /tmp/udm-original-triskelion fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C /tmp/udm-original-triskelion checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q /tmp/udm-original-msi
+          git -C /tmp/udm-original-msi fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C /tmp/udm-original-msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C /tmp/udm-v104-anyio status --porcelain > evidence/g2-original-catalog/BASE_STATUS.txt
+          git -C /tmp/udm-original-triskelion rev-parse HEAD > evidence/g2-original-catalog/V104_PIN.txt
+          git -C /tmp/udm-original-msi rev-parse HEAD > evidence/g2-original-catalog/MSI_PIN.txt
+
+      - name: Emit all ORIGINAL V104 candidates and 37 MSI orders before any native candidate outcome
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B \
+            research/unified_consequence_runtime/g2_v104_catalog_pre_native_v1.py \
+            /tmp/udm-v104-anyio /tmp/udm-original-triskelion /tmp/udm-original-msi \
+            "$GITHUB_WORKSPACE/evidence/g2-original-catalog/catalog"
+
+      - name: Keep admission, catalog and developmental outcomes separate
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib,os
+          p=pathlib.Path('evidence/g2-original-catalog')
+          p.mkdir(parents=True,exist_ok=True)
+          c=p/'catalog/RESULT.json'
+          result=json.loads(c.read_text()) if c.exists() else {}
+          boundary={'schema':'UDM_FROZEN_ORIGINAL_V104_SOURCE_ONLY_RESULT_V1',
+                    'commit':os.environ['GITHUB_SHA'],
+                    'training_baseline':'WARRANTED_BOUNDED_AUTHENTIC_NATIVE_FAIL_39077610372',
+                    'catalog':result.get('status','UNKNOWN_NO_CATALOG'),
+                    'candidate_count':result.get('candidate_count',0),
+                    'native_candidate_calls':0,
+                    'future_source':'UNOPENED',
+                    'MSI_method_selection':'NOT_EXECUTED',
+                    'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN','G5':'UNKNOWN','G6':'UNKNOWN'}
+          (p/'SCIENTIFIC_BOUNDARY.json').write_text(json.dumps(boundary,indent=2,sort_keys=True)+'\n')
+          PY
+      - name: Retain full source-only proposal IDs, original policy orders and qualification faults
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-original-v104-msi-training-catalog-v1
+          path: evidence/g2-original-catalog/
+          if-no-files-found: error
