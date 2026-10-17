@@ -1,0 +1,59 @@
+name: RSA relation supply frozen holdout
+on:
+  push:
+    branches:
+      - research/rsa-relation-supply-symmetry-20261018
+    paths:
+      - "research/rsa_relation_supply_v2/**"
+      - ".github/workflows/rsa-relation-supply-v2.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-symmetric-producer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify original preregistration and source before result
+        run: |
+          git merge-base --is-ancestor 3f5d2da19c706d68c449849188b2065c6f2a9533 HEAD
+          git merge-base --is-ancestor d62b4b76218d40623a5fcdf51ae0064d5c0ec71e HEAD
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Pin established SIQS comparison
+        run: python -m pip install --disable-pip-version-check sympy==1.14.0
+      - name: Frozen original calibration
+        run: python research/rsa_relation_supply_v2/experiment_v2.py --split calibration
+      - name: Frozen original protected heldout
+        run: python research/rsa_relation_supply_v2/experiment_v2.py --split heldout
+      - name: Independent exhaustive candidate/certificate verifier
+        run: python research/rsa_relation_supply_v2/verify_v2_independent.py
+      - name: Post-result corrected one-pass timing comparison
+        run: |
+          python research/rsa_relation_supply_v2/experiment_v2b.py --split calibration
+          python research/rsa_relation_supply_v2/experiment_v2b.py --split heldout
+      - name: Check correction does not affect source-relative consequences
+        run: python research/rsa_relation_supply_v2/assert_equivalence.py
+      - name: Preserve original, corrected, and independently checked evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsa-relation-supply-v2-evidence
+          if-no-files-found: warn
+          retention-days: 90
+          path: |
+            research/rsa_relation_supply_v2/frozen_manifest.json
+            research/rsa_relation_supply_v2/experiment_v2.py
+            research/rsa_relation_supply_v2/experiment_v2b.py
+            research/rsa_relation_supply_v2/verify_v2_independent.py
+            research/rsa_relation_supply_v2/assert_equivalence.py
+            research/rsa_relation_supply_v2/results_calibration.json
+            research/rsa_relation_supply_v2/results_heldout.json
+            research/rsa_relation_supply_v2/results_v2b_calibration.json
+            research/rsa_relation_supply_v2/results_v2b_heldout.json
+            research/rsa_relation_supply_v2/audit_independent.json
+            research/rsa_relation_supply_v2/README.md
