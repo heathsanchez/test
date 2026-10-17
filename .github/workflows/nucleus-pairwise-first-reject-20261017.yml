@@ -76,7 +76,7 @@ jobs:
                       'trace':(result.stderr+result.stdout).decode(errors='replace')[-16000:]}
                   records.append(row)
                   print(name,'enabled',enabled,'rc',row['rc'],'bytes',row['bytes'],flush=True)
-              source.unlink()
+              # Preserve exact original NDJSON for minimal expression-tree review.
           negatives=[]
           for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']:
               p=pathlib.Path('metatron-kernel/tests/fixtures')/name
