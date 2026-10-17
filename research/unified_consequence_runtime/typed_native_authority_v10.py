@@ -51,7 +51,15 @@ def run_protected(repo,commit,dest,*,required,interpreter=None,timeout=55,paths=
     verified_v6_source()
     kwargs={"required":required,"timeout":timeout,"paths":paths}
     if interpreter is not None:kwargs["interpreter"]=interpreter
-    return _RUN(repo,commit,dest,**kwargs)
+    receipt=_RUN(repo,commit,dest,**kwargs)
+    # V6 deliberately refuses a skipped required call as "not executed".
+    # V10 may name the narrower cause, but MUST retain UNKNOWN. It does
+    # not treat a skip as a failure and cannot promote a warrant.
+    if (receipt.get("status")=="UNKNOWN_PROTECTED_NOT_EXECUTED"
+            and receipt.get("junit",{}).get("skipped",0)>0):
+        receipt=dict(receipt,status="UNKNOWN_SKIPPED",
+                     source_v6_status="UNKNOWN_PROTECTED_NOT_EXECUTED")
+    return receipt
 
 
 def stage(repo,commit,dest):
