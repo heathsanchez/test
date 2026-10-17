@@ -1,0 +1,89 @@
+name: UDM V16 preserved native-method regression matrix (G2 UNKNOWN)
+on:
+  push:
+    branches:
+      - research/udm-g2-admission-v16-20261018
+    paths:
+      - .github/workflows/udm-g2-v16-inherited-regressions.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inherited-machinery-regressions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+      GIT_CONFIG_NOSYSTEM: '1'
+      UDM_V15_EXPOSED: 'EXPOSED_COMPOSITION_NOT_G2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Assert unchanged V15 and V6 frozen tests
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/g2-preservation
+          git rev-parse HEAD > evidence/g2-preservation/RESEARCH_HEAD.txt
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/test_observation_composition_v15.py)" = 83557a8f5f6a9ac9c6cb0d5a16804297d913619e
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/test_typed_native_authority_v6.py)" = 0489cd0eebdd9880eb8065c2fbe8a554ea248a0d
+          git diff --name-only ef32d67166f7c0e7a6b9f9d6f6e1bcce15a860be HEAD > evidence/g2-preservation/CHANGED_SOURCE_PATHS.txt
+          python - <<'PY'
+          from pathlib import Path
+          changed=set(Path('evidence/g2-preservation/CHANGED_SOURCE_PATHS.txt').read_text().splitlines())
+          permitted={
+           '.github/workflows/udm-g2-native-admission-v16.yml',
+           '.github/workflows/udm-g2-v16-inherited-regressions.yml',
+           'research/unified_consequence_runtime/g2_native_admission_v2.py',
+           'research/unified_consequence_runtime/test_g2_native_admission_v2.py',
+           'research/unified_consequence_runtime/audit_g2_native_admission_v16.py',
+           'research/unified_consequence_runtime/archaeology/g2-v16/FINAL_REPORT.md'
+          }
+          if not changed or not changed<=permitted:
+              raise SystemExit('UNEXPECTED_HISTORICAL_SOURCE_DIFF '+repr(sorted(changed-permitted)))
+          print('Source preservation PASS: '+str(len(changed))+' changed V16 files; original V5/V6/V10/V13/V15 frozen sources untouched')
+          PY
+      - name: Install the existing exact V15 method-test interpreter profile
+        run: |
+          set -euo pipefail
+          python -B -m pip install --disable-pip-version-check --no-input pytest==8.3.5 pytest-cov==6.2.1 pluggy==1.6.0 coverage==7.10.6 packaging==26.3 attrs==24.3.0 hypothesis==6.122.3 typing_extensions==4.12.2 colorama==0.4.6 rich==13.9.4 click==8.2.0 tenacity==9.1.2 markupsafe==3.0.2
+          git fetch --quiet --no-tags --depth=1 origin 6031466188046f56b4660d772d13ad731ed4c0f2
+          mkdir -p components
+          git init -q components/triskelion
+          git -C components/triskelion fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C components/triskelion checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q components/msi
+          git -C components/msi fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C components/msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+      - name: Execute all frozen and inherited V15 V13 V10 V6 V5 authority tests
+        run: |
+          set -euo pipefail
+          export UDM_V7_MSI="$GITHUB_WORKSPACE/components/msi"
+          export UDM_V7_TRISKELION="$GITHUB_WORKSPACE/components/triskelion"
+          export UDM_V15_OUT="$GITHUB_WORKSPACE/evidence/g2-preservation/exposed-only"
+          python -B -m unittest research.unified_consequence_runtime.test_observation_composition_v15 research.unified_consequence_runtime.test_observed_branch_v13 research.unified_consequence_runtime.test_typed_native_authority_v10 research.unified_consequence_runtime.test_typed_native_authority_v6 research.unified_consequence_runtime.test_typed_source_inventory_v5 research.unified_consequence_runtime.test_native_suite_authority -v 2>&1 | tee evidence/g2-preservation/CONTRACTS.log
+      - name: Archive regression and scientific boundary
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib,os
+          p=pathlib.Path('evidence/g2-preservation');p.mkdir(parents=True,exist_ok=True)
+          v={'source':os.environ['GITHUB_SHA'],'G2':'UNKNOWN',
+             'scope':'Inherited frozen contract tests, not new prospective development',
+             'V15':'SOURCE_EXPOSED_CAUSAL_NATIVE_RESULT_PRESERVED',
+             'external_tasks':'NOT_CONSTRUCTED_IN_THIS_JOB'}
+          (p/'SCIENTIFIC_BOUNDARY.json').write_text(json.dumps(v,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-v16-inherited-machinery-regression
+          path: evidence/g2-preservation/
+          if-no-files-found: warn
