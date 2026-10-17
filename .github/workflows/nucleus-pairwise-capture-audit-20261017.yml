@@ -42,7 +42,8 @@ jobs:
           base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
           base.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pin['origin_flags']})
           base.update({'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_RIGID_PROOF_REJECT':'1',
-                       'NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_EXACT_PROOF_NEUTRALS':'1',
+                       'NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_VALUE_MISMATCH':'1',
+                       'NUCLEUS_TRACE_EXACT_PROOF_NEUTRALS':'1',
                        'METATRON_KERNEL_DIAGNOSTICS':'1'})
           records=[]
           for name in ['List.pairwise_append_comm','List.pairwise_middle']:
@@ -58,6 +59,7 @@ jobs:
                             if l.startswith(('NUCLEUS_RIGID_PROOF_REJECT:',
                                              'NUCLEUS_RIGID_CAPTURE:',
                                              'NUCLEUS_RIGID_BOOL_PAIR:',
+                                             'NUCLEUS_VALUE_MISMATCH:',
                                              'NUCLEUS_DOWNSTREAM:',
                                              'NUCLEUS_EXACT_PROOFS:'))]
                   records.append({'name':name,'enabled':enabled,'verdict':r.returncode,
