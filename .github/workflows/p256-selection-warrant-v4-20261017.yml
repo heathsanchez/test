@@ -1,0 +1,54 @@
+name: P-256 V4 selection identifiability exact replay
+on:
+  push:
+    branches:
+      - research/p256-selection-warrant-v4-20261017
+    paths:
+      - research/p256_origin_20261017/V4_*
+      - research/p256_origin_20261017/p256_selection_v4.py
+      - .github/workflows/p256-selection-warrant-v4-20261017.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-exact-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact research head
+        uses: actions/checkout@v4
+      - name: Run frozen dual-implementation arithmetic tests
+        run: python3 research/p256_origin_20261017/p256_selection_v4.py
+      - name: Independently enforce source and epistemic boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          r = json.loads(Path('research/p256_origin_20261017/V4_RESULTS.json').read_text())
+          assert r['frozen_protocol_commit'] == '0d48ca1489af07549b5e9a0bd5c67ccfeecb3dac'
+          assert r['candidate_indices'] == [876, 1842]
+          assert r['reconstruction']['876']['seed']=='50C71A63F911DB7B2F31618ECF609D37154437F9'
+          assert r['reconstruction']['1842']['seed']=='C49D360886E704936A6678E1139D26B7819F7E90'
+          assert r['reconstruction']['1842']['c'].lower()=='0x7efba1662985be9403cb055c75d4f7e0ce8d84a9c5114abcaf3177680104fa0d'
+          assert all(r['reconstruction'][str(i)]['nonsingular'] and r['reconstruction'][str(i)]['nist_congruence'] for i in (876, 1842))
+          assert all(r['positive_controls'].values()) and all(isinstance(v,bool) and v for k,v in r['negative_controls'].items() if k!='first_nonresidue_c')
+          d=r['decision']
+          assert d['prime_order_876']=='SOURCE_REPORTED_BY_ANTHROPIC_NOT_INDEPENDENTLY_CERTIFIED'
+          assert d['selection_rule']=='UNKNOWN'
+          assert d['first_acceptable_rule']=='CONDITIONALLY_REFUTED_GIVEN_ANTHROPIC_ORDER_CLAIM'
+          assert d['historical_execution_trace']=='UNKNOWN'
+          print('WARRANTED_FINITE_ARITHMETIC; CONDITIONAL_FIRST_ACCEPTABLE_REFUTATION; HISTORY_UNKNOWN')
+          PY
+      - name: Preserve exact source and result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v4-candidate-876-warrant-evidence
+          path: |
+            research/p256_origin_20261017/V4_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/V4_REPORT.md
+            research/p256_origin_20261017/V4_RESULTS.json
+            research/p256_origin_20261017/p256_selection_v4.py
+          retention-days: 60

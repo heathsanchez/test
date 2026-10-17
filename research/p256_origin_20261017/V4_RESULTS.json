@@ -1,0 +1,80 @@
+{
+  "candidate_indices": [
+    876,
+    1842
+  ],
+  "decision": {
+    "compatible_histories": "TWO_POSSIBLE_SELECTION_POLICIES_IF_BOTH_CURVES_PASS_FULL_SECURITY_TESTS",
+    "first_acceptable_rule": "CONDITIONALLY_REFUTED_GIVEN_ANTHROPIC_ORDER_CLAIM",
+    "historical_execution_trace": "UNKNOWN",
+    "independently_warranted": "SEEDS_SHA1_C_B_ROOTS_NONSINGULAR_EXACT",
+    "prime_order_876": "SOURCE_REPORTED_BY_ANTHROPIC_NOT_INDEPENDENTLY_CERTIFIED",
+    "selection_rule": "UNKNOWN"
+  },
+  "frozen_protocol_commit": "0d48ca1489af07549b5e9a0bd5c67ccfeecb3dac",
+  "historical_sources": {
+    "anthropic": "https://www.anthropic.com/research/ecdsa-curve-origins",
+    "nist_2023": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-186.pdf"
+  },
+  "negative_controls": {
+    "c_discriminant_zero_refused": true,
+    "c_zero_refused": true,
+    "first_nonresidue_c": 3,
+    "mutant_seed_breaks_published_c_and_b": true,
+    "nonresidue_refused": true
+  },
+  "positive_controls": {
+    "exact_published_order_times_G_is_infinity": true,
+    "first_876_seed_differs": true,
+    "p256_b_sign_root": true,
+    "p256_c": true,
+    "p256_published_seed": true,
+    "published_G_on_curve": true,
+    "stdlib_python_matches_system_native_lrand48": true,
+    "two_independent_sha1_c_derivations_agree": true
+  },
+  "reconstruction": {
+    "1842": {
+      "b_roots": [
+        "0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B",
+        "0xA539CA2655C56C194C1442AA896779439AE2F95033AC4F09C431C3C1D82D9FB4"
+      ],
+      "c": "0x7EFBA1662985BE9403CB055C75D4F7E0CE8D84A9C5114ABCAF3177680104FA0D",
+      "example_point_construction": "smallest x in [0,127] with an even sqrt y; diagnostic only",
+      "example_point_on_curve": [
+        "0x0",
+        "0x66485C780E2F83D72433BD5D84A06BB6541C2AF31DAE871728BF856A174F93F4"
+      ],
+      "j_invariant": "0x1198954424EBB0F8479DE43131CAECE8EE0A9B13A558C21E0B2F74E3FCD36AA3",
+      "nist_congruence": true,
+      "nonsingular": true,
+      "order_and_emb_degree": "PUBLISHED_N_AND_EXACT_NG_CHECK",
+      "seed": "C49D360886E704936A6678E1139D26B7819F7E90"
+    },
+    "876": {
+      "b_roots": [
+        "0x57B035B319C68D8A8A3315B5631325B46FF3CD238179E6D548E4CAA0217DAA42",
+        "0xA84FCA4BE639727675CCEA4A9CECDA4B900C32DD7E86192AB71B355FDE8255BD"
+      ],
+      "c": "0x276E46B26A6E09FBA8200CDD418D6DC3738C6B169131927838EC8E71DE4E8548",
+      "example_point_construction": "smallest x in [0,127] with an even sqrt y; diagnostic only",
+      "example_point_on_curve": [
+        "0x1",
+        "0x7F282DC52692D049B4A9C0B5E400C58053D46372C4DEBFCF8CC4CDFE4A3193C0"
+      ],
+      "j_invariant": "0x24D7AB1AC1BFC5BE2C83808334AFC37CCA1EBE9FCEA6C634CAB0CEC80A318CE7",
+      "nist_congruence": true,
+      "nonsingular": true,
+      "order_and_emb_degree": "EXTERNAL_SOURCE_REPORT",
+      "seed": "50C71A63F911DB7B2F31618ECF609D37154437F9"
+    }
+  },
+  "scope_limits": [
+    "This computes neither #E(Fp) for candidate 876 nor its embedding degree.",
+    "The 2023 NIST restatement is not a contemporaneous 1997 implementation trace.",
+    "A smallest-x point construction is only an arithmetic witness, not historical evidence.",
+    "A numerical explanation does not establish historical provenance or cryptographic weakness."
+  ],
+  "sha256_source": "50b191a28cb70b9849feecd24d3c91c554e506d9974a4afc6c567f14483a2a2a",
+  "title": "P-256 V4 conditional selection witness"
+}
