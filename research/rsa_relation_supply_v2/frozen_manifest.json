@@ -1,0 +1,106 @@
+{
+  "freeze_version": "RSA-relation-supply-2026-10-18-v1",
+  "status": "FROZEN_BEFORE_IMPLEMENTATION_AND_HELDOUT_OUTCOMES",
+  "generation_prefix": "mathgraph-rsa-symmetric-producer-2026-10-18-v1",
+  "generation": "p/q obtained by sympy.nextprime of top binary 11 plus low b-2 bits of sha256(PREFIX/id/p or q) and odd bit, balanced halves. factor commitment SHA256('min:max')",
+  "objective": "Compare known one-sided and symmetric candidate production under same fixed budget, and full exact prime-power root sieving with original direct trial division; strong actually-executed SIQS comparator. No novelty claim.",
+  "params": {
+    "candidates_per_arm": 40000,
+    "factor_base_bound": 1000,
+    "large_cofactor_bound": 100000,
+    "siqs_prime_bound": 2000,
+    "siqs_interval": 8000,
+    "siqs_seed": 1234,
+    "siqs_timeout_seconds": 30,
+    "repeat_timing_repetitions": 1
+  },
+  "hypotheses": {
+    "H1": "symmetrically sample x around ceil(sqrt n), preserves signed-Q parity, more independent relations per 40000 candidates than forward only",
+    "H2": "exact p-power root sieve preserves exact factorization classification for all 40000 forward candidates, may lower work, fully charges setup",
+    "H3": "actual established SIQS strongly controls full performance, no new algorithm or RSA-270 transfer from synthetic case"
+  },
+  "protocol": {
+    "primary_metric": "actual nontrivial factor certificates and full-budget useful relation counts for both producers",
+    "secondary_metric": "exhaustive sieve vs trial-division equality, end-to-end wall and modulo/division/mark costs; checked certificate correctness",
+    "stop": "no tuning based on heldout, no novel GNFS claim"
+  },
+  "target_records": [
+    {
+      "id": "cal-58",
+      "split": "calibration",
+      "bits_actual": 58,
+      "n": "238747693573415779",
+      "factor_pair_sha256": "afcfbb013caaa11a8748a4c2558f6d9f08cfa7af5d1883bce0e68f90e77d6ad2"
+    },
+    {
+      "id": "cal-62",
+      "split": "calibration",
+      "bits_actual": 62,
+      "n": "3704215807319041297",
+      "factor_pair_sha256": "8bde9dd11d6cde56cf4c1d817c43cd1fe492508456d5abfa6cdf594a6911fe1a"
+    },
+    {
+      "id": "cal-66",
+      "split": "calibration",
+      "bits_actual": 66,
+      "n": "52724440163091348599",
+      "factor_pair_sha256": "7d093db15a5739ce4ab788f33a09d21de061b4d4a8e58f3fea36239ccf0ab583"
+    },
+    {
+      "id": "hold-58-1",
+      "split": "heldout",
+      "bits_actual": 58,
+      "n": "162786587921169467",
+      "factor_pair_sha256": "9d049f503a2069aa4509489625b984d66df3855fe3f614eb36d19e336207f4f6"
+    },
+    {
+      "id": "hold-60-1",
+      "split": "heldout",
+      "bits_actual": 60,
+      "n": "818043512791945579",
+      "factor_pair_sha256": "f0046e9f3fa83b8108499dd936701b0cd0387e141d7d246e22f83f0457175b8a"
+    },
+    {
+      "id": "hold-62-1",
+      "split": "heldout",
+      "bits_actual": 62,
+      "n": "4048619423750724959",
+      "factor_pair_sha256": "bb677136547ee269cafa73b7b152a25594e9ba8acd7a33058cd2138c3b3e32fd"
+    },
+    {
+      "id": "hold-64-1",
+      "split": "heldout",
+      "bits_actual": 64,
+      "n": "15399084411771235519",
+      "factor_pair_sha256": "c4145bc4d2c2c980e2d147d61a0736c3be501467237c9f786600aea3c2b3c7ba"
+    },
+    {
+      "id": "hold-66-1",
+      "split": "heldout",
+      "bits_actual": 66,
+      "n": "58238210481681773363",
+      "factor_pair_sha256": "db1afe49c4f412fa95dcc4cbfec3707317893ef72750eacb519b15b28a251954"
+    },
+    {
+      "id": "hold-68-1",
+      "split": "heldout",
+      "bits_actual": 68,
+      "n": "227515072036051729991",
+      "factor_pair_sha256": "d2dc90d099dcd192c3084589d1881207462f6f689c6a0f4eb0e55e2f41b4eab2"
+    },
+    {
+      "id": "hold-70-1",
+      "split": "heldout",
+      "bits_actual": 70,
+      "n": "933170480733763243381",
+      "factor_pair_sha256": "dca6e1497487882211bcbbc68c0e7b56a7a9f8bb22c3bf148cd8cc92cad46d39"
+    },
+    {
+      "id": "hold-72-1",
+      "split": "heldout",
+      "bits_actual": 72,
+      "n": "3857910606975387647263",
+      "factor_pair_sha256": "0d27636aded972a255af3b3b6a0b241f2f1dcfbdf08a9ef5306b92b1ef5d84ac"
+    }
+  ]
+}
