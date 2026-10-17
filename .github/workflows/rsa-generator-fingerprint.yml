@@ -1,0 +1,32 @@
+name: RSA generator fingerprint replay
+on:
+  push:
+    branches:
+      - research/rsa-generator-fingerprint-v1-20261017
+    paths:
+      - "research/rsa_generator_fingerprint/**"
+      - ".github/workflows/rsa-generator-fingerprint.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure GNU multiprecision developer headers
+        run: sudo apt-get update -qq && sudo apt-get install -y libgmp-dev gcc
+      - name: Recalculate source checksums and bounded model controls
+        run: python3 research/rsa_generator_fingerprint/replay.py
+      - name: Preserve raw model statistics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsa-generator-gap-boundary
+          path: |
+            research/rsa_generator_fingerprint/data.json
+            research/rsa_generator_fingerprint/result.json
+            research/rsa_generator_fingerprint/README.md
+          if-no-files-found: warn
+          retention-days: 90
