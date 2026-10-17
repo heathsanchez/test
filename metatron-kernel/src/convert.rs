@@ -2331,6 +2331,17 @@ fn compare_neutral_heads(
             && right_levels.is_empty()
             && checker.distinct_bool_constructors(*left_name, *right_name) =>
         {
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_RIGID_PROOF_REJECT").is_some() {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static SEEN:AtomicUsize=AtomicUsize::new(0);
+                if SEEN.fetch_add(1,Ordering::Relaxed)<12 {
+                    eprintln!(
+                      "NUCLEUS_RIGID_BOOL_PAIR:depth={depth}:context_len={}:left={left:?}:right={right:?}:budget={budget}",
+                      context.len(),
+                    );
+                }
+            }
             Judgment::refuted("rigid-value-constructor-mismatch")
         }
         (
