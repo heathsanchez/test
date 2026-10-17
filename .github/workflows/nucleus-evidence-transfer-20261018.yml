@@ -1,0 +1,113 @@
+name: Nucleus evidence transfer causal ablation
+on:
+  push:
+    branches: [research/nucleus-evidence-transfer-20261018]
+    paths: [".github/workflows/nucleus-evidence-transfer-20261018.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  first-obligation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build candidate checker without altering semantics
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence /tmp/inputs
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Recover SHA-sealed official Lean Pairwise export
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12081878830/zip > /tmp/pairwise.zip
+          unzip -q /tmp/pairwise.zip -d /tmp/inputs
+          echo 'e48fd06172e653cad2f4a15a7b454280f8bf00c16e0eba41a3d18265a5012c69  /tmp/inputs/List.pairwise_middle.ndjson' | sha256sum -c -
+      - name: Recover two independent transfer witnesses and original protected negatives
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12077748490/zip > /tmp/perm.zip
+          unzip -oq /tmp/perm.zip -d /tmp/inputs
+          echo '6feb6fdc9ec8190efeee6bc37bbda217d9a1ef60cbb5664c9642bb4a6885a107  /tmp/inputs/list-perm-reconswap.ndjson' | sha256sum -c -
+          echo '5ec75f541dd6dad0ee707feb7a3d52000918735f633a9bc189c1c0f68021b714  /tmp/inputs/List.pairwise_append_comm.ndjson' | sha256sum -c -
+      - name: Execute frozen three-mode source operation transfer and causal ablation
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,pathlib,subprocess,time,hashlib
+          evidence=pathlib.Path('/tmp/evidence')
+          data=pathlib.Path('/tmp/inputs/List.pairwise_middle.ndjson').read_bytes()
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pin['origin_flags']})
+          env.update({'NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS':'1',
+                      'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                      'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
+                      'NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION':'1',
+                      'NUCLEUS_TRACE_EQPROP_TRISTATE':'1',
+                      'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                      'METATRON_KERNEL_DIAGNOSTICS':'1'})
+          # A frozen source-obligation-to-operation transfer experiment:
+          # test the previously qualified proof-neutral operation on an
+          # unfamiliar Pairwise theorem, ablate its availability, and keep
+          # original negative decisions as causal controls.
+          rows=[]
+          checker='metatron-kernel/target/release/metatron-kernel'
+          cases=[
+              ('Pairwise-middle',data),
+              ('Perm-recOnSwap',pathlib.Path('/tmp/inputs/list-perm-reconswap.ndjson').read_bytes()),
+              ('Pairwise-append',pathlib.Path('/tmp/inputs/List.pairwise_append_comm.ndjson').read_bytes()),
+          ]
+          modes=[
+              ('baseline',False,False),
+              ('proof-only',True,False),
+              ('proof-and-eqprop',True,True),
+          ]
+          for name,raw in cases:
+              for mode,proof,eqprop in modes:
+                  flags=dict(env)
+                  if not proof:flags.pop('NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS',None)
+                  if eqprop:flags['NUCLEUS_EXPERIMENTAL_EQPROP_PROOF_DECLINE']='1'
+                  t=time.perf_counter()
+                  run=subprocess.run([checker],input=raw,capture_output=True,env=flags,timeout=75)
+                  stderr=run.stderr.decode(errors='replace')
+                  record={'case':name,'mode':mode,'rc':run.returncode,
+                    'elapsed_sec':round(time.perf_counter()-t,4),
+                    'sha256':hashlib.sha256(raw).hexdigest(),
+                    'trace':stderr[-3500:]}
+                  rows.append(record)
+                  print(name,mode,record['rc'],flush=True)
+          negatives=[]
+          for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']:
+              raw=(pathlib.Path('metatron-kernel/tests/fixtures')/name).read_bytes()
+              for mode,proof,eqprop in modes:
+                  flags=dict(env)
+                  if not proof:flags.pop('NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS',None)
+                  if eqprop:flags['NUCLEUS_EXPERIMENTAL_EQPROP_PROOF_DECLINE']='1'
+                  run=subprocess.run([checker],input=raw,capture_output=True,env=flags,timeout=60)
+                  negatives.append({'case':name,'mode':mode,'rc':run.returncode,
+                    'sha256':hashlib.sha256(raw).hexdigest()})
+          by={(r['case'],r['mode']):r['rc'] for r in rows}
+          report={
+              'source':os.environ['GITHUB_SHA'],
+              'hypothesis':'Can independently checked source proof-irrelevance be activated on an unseen Pairwise dependency without corrupting original evidence?',
+              'outcomes':rows,'negatives':negatives,
+              'ablation_effect':by[('Perm-recOnSwap','baseline')]==2 and by[('Perm-recOnSwap','proof-only')]==0,
+              'cross_problem_transfer':by[('Pairwise-middle','proof-and-eqprop')]==0,
+              'safe_decline':by[('Pairwise-middle','proof-and-eqprop')]==2,
+              'negative_controls_safe':all(r['rc']!=0 for r in negatives),
+          }
+          (evidence/'causal-transfer.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps({k:v for k,v in report.items() if k not in ('outcomes','negatives')},sort_keys=True),flush=True)
+          assert report['ablation_effect'] and report['negative_controls_safe']
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-evidence-transfer-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
