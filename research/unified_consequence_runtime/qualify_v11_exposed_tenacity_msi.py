@@ -37,10 +37,19 @@ def original_training_with_v10():
                          previous._observation.__defaults__,previous._observation.__closure__)
     observe.__kwdefaults__=previous._observation.__kwdefaults__
     priv["_observation"]=observe
-    training=FunctionType(previous._execute_training.__code__,priv,"_execute_training",
-                          previous._execute_training.__defaults__,
-                          previous._execute_training.__closure__)
-    training.__kwdefaults__=previous._execute_training.__kwdefaults__
+    # Frozen V9 never reached candidate evaluation, so its source contains
+    # an operator-precedence typo: (baseout/"candidate-")+suffix. Repair
+    # exactly that Python path grouping in this exposed-only diagnostic,
+    # without modifying V9, V104, MSI, any source task or science outcome.
+    import inspect
+    original_text=inspect.getsource(previous._execute_training)
+    wrong='baseout/"candidate-"+str(len(states)).zfill(3)'
+    right='baseout/("candidate-"+str(len(states)).zfill(3))'
+    if original_text.count(wrong)!=1:
+        raise ValueError("V9 original source maintenance site changed")
+    adapted=original_text.replace(wrong,right)
+    exec(compile(adapted,previous.__file__,"exec"),priv)
+    training=priv["_execute_training"]
     return training
 
 
