@@ -38,7 +38,7 @@ jobs:
           mkdir -p qualification/v10
           git rev-parse HEAD > qualification/v10/SOURCE_COMMIT.txt
           test "$(git rev-parse HEAD:research/unified_consequence_runtime/test_typed_native_authority_v10.py)" = \
-            "bce8cbc9270456e90247431d88eb5b9dc1345e41"
+            "495d9fc40083a51de82c4ded7cd3fae8c0858f41"
           for path in \
             research/unified_consequence_runtime/typed_native_authority_v6.py \
             research/unified_consequence_runtime/typed_v104_msi_bridge_v7.py \
