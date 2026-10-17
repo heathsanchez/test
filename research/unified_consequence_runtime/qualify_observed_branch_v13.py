@@ -144,7 +144,7 @@ def run(dest):
         if (cold["source"]!=informed["source"] or
                 cold["original_typed_source_sha256"]!=informed["original_typed_source_sha256"]
                 or [x["id"] for x in cold["rows"]]!=[x["id"] for x in informed["rows"]]
-                or len(cold["orders"])!=len(informed["orders"])!=37):
+                or len(cold["orders"])!=37 or len(informed["orders"])!=37):
             result["status"]="UNKNOWN_ORIGINAL_LANGUAGE_INTEGRITY"
             return result
         altered=[{"id":x["id"],"path":x["path"],"changed_lines":x["changed_lines"],
