@@ -1,0 +1,67 @@
+{
+  "schema": "UDM_V10_CLASS_QUALIFIED_NATIVE_AUTHORITY_RESULT",
+  "mode": "EXPOSED_V9_DIAGNOSTIC_AND_SYNTHETIC_QUALIFICATION",
+  "status": "WARRANTED_BOUNDED_CLASS_QUALIFIED_SOURCE_NATIVE",
+  "qualified_commit": "4e6540d5cbd21ea73e4fdf032f8a46f4ad205794",
+  "qualified_actions_run": 38985872094,
+  "artifact_id": 12082614167,
+  "artifact_sha256": "1e62bd15d565340c06cfd48dff29940c0943e58d51707382ed8f4b168c46802d",
+  "download_verified_sha256": true,
+  "frozen_original_v6_git_blob": "7a813db84ef34a2dd16713b29fd3aced162a4955",
+  "tests": {
+    "V10_new": 10,
+    "V6_inherited": 15,
+    "V9_inherited": 10,
+    "passed": 35,
+    "total": 35
+  },
+  "original_v9_prospective_red": {
+    "run": 38985251065,
+    "source": "jd/tenacity PR741",
+    "native_executed": 0,
+    "charged_budget_units": 2,
+    "heldout_source_opened": false,
+    "verdict": "G2_UNKNOWN"
+  },
+  "source_grounded_real_tenacity_diagnostic": {
+    "repository": "jd/tenacity",
+    "source_base": "4a74682e0186b5f2d25906aa190cd639c705a958",
+    "protected_head_test_blob": "577720ec7cf0a48b9b2909e45ddde29235f460ac",
+    "protected_method": "tests/test_tenacity.py::TestWaitConditions::test_wait_falsy_callable_is_called",
+    "original_repaired_production_fetched": false,
+    "head_test_source_exposed": true,
+    "runs": [
+      {
+        "passed": 141,
+        "failed": 1,
+        "skipped": 0,
+        "errors": 0,
+        "native_calls": 1,
+        "status": "FAIL_NATIVE_PROTECTED"
+      },
+      {
+        "passed": 141,
+        "failed": 1,
+        "skipped": 0,
+        "errors": 0,
+        "native_calls": 1,
+        "status": "FAIL_NATIVE_PROTECTED"
+      }
+    ],
+    "protected_method_executed_both": true,
+    "source_stage_rechecked": true,
+    "original_scope": "tests/test_tenacity.py",
+    "heldout_packaging_source_opened": false
+  },
+  "boundary": "Prior original verifier source remained unmodified. V10 privately rebinds the V6 native test-node lexical pattern to support class-qualified paths and reclassifies skipped original tests UNKNOWN_SKIPPED. No G2 self-improvement, O1→O2, general adversarial Python containment, formal correspondence or matched comparator established.",
+  "verdicts": {
+    "source_native_class_method": "WARRANTED_BOUNDED",
+    "G0_G1": "PRESERVED",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "next_gate": "Run source-exposed original V104/MSI training diagnostic under V10 while preserving unopened Packaging, then freeze new previously uninspected training source for actual prospective G2."
+}
