@@ -2772,6 +2772,18 @@ impl<'a> TypeChecker<'a> {
                           "NUCLEUS_RIGID_PROOF_REJECT:expr={expression:?}:expression_node={:?}:context_len={}:frame={}:remaining={}:actual_type={value:?}:expected_type={expected:?}:rejection={conversion:?}",
                           self.expressions.get(expression),context.len(),frame.id(),*remaining
                         );
+                        if let (TypeValue::Term(actual),TypeValue::Term(wanted))=(&value,expected) {
+                            let capture = |source:&Closure| {
+                                (0..10u64).filter_map(|offset| {
+                                    source.env.lookup_with_node_id(offset).map(|(id,element)| {
+                                        (offset,id,format!("{element:?}").chars().take(650).collect::<String>())
+                                    })
+                                }).collect::<Vec<_>>()
+                            };
+                            eprintln!("NUCLEUS_RIGID_CAPTURE:expr={expression:?}:actual_expr={:?}:expected_expr={:?}:actual_frame={}:expected_frame={}:actual_capture={:?}:expected_capture={:?}",
+                                self.expressions.get(actual.expr),self.expressions.get(wanted.expr),
+                                actual.env.id(),wanted.env.id(),capture(actual),capture(wanted));
+                        }
                     }
                 }
                 match conversion {
