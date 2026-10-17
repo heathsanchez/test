@@ -177,7 +177,7 @@ def run(repo, triskelion, msi, output):
         cost_ceiling = protocol["native_gate"]["training_wall_seconds"]
         timeout = protocol["native_gate"]["timeout_per_native_call_seconds"]
         base = original._observation(
-            repo, task["base"], authors, {"replacements": []},
+            repo, task["base"], authors[0], {"replacements": []},
             output / "native-baseline", source_task, timeout,
         )
         result["baseline"] = {
@@ -203,7 +203,7 @@ def run(repo, triskelion, msi, output):
                 break
             row = index[key]
             observed = original._observation(
-                repo, task["base"], authors, row["candidate"],
+                repo, task["base"], authors[0], row["candidate"],
                 output / ("candidate-" + str(number).zfill(3)),
                 source_task, timeout,
             )
