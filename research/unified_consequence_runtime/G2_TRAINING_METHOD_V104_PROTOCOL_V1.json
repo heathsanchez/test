@@ -1,0 +1,59 @@
+{
+  "schema": "UDM_G2_TRAINING_METHOD_V104_PRESEARCH_PROTOCOL_V1",
+  "state": "FROZEN_BEFORE_CONSTRUCTOR_CATALOG_OR_CANDIDATE_NATIVE_OUTCOMES",
+  "parent_source_admission_commit": "fc90fa2a9a2c7a7aa13a156cf42a435ed670dec3",
+  "parent_source_admission_run": 39077610372,
+  "parent_source_admission_artifact_sha256": "2fa8e5c12ec13523a21686dd35e91b72a062ca91db1d1783357af318366a5611",
+  "training": {
+    "repo": "agronholm/anyio",
+    "base": "1805944a9f6a062527c10aa044ded959782bfc3e",
+    "test_head": "90876855b731fb057d45e7e1cbdf1df013be6091",
+    "test_blob": "b15d4da74a17b7f80fa07b0d172c03eb752be7f4",
+    "test_path": "tests/test_pytest_plugin.py",
+    "production_paths": [
+      "src/anyio/pytest_plugin.py"
+    ],
+    "protected": [
+      "tests/test_pytest_plugin.py::test_hypothesis_multiple_backends",
+      "tests/test_pytest_plugin.py::test_hypothesis_multiple_backends_in_class"
+    ]
+  },
+  "heldout": {
+    "repo": "alexmojaki/executing",
+    "pr": 50,
+    "metadata_pool_sha_commit": "b90328c2315bd07d30bf7ddf05711e7431589aaf",
+    "source": "SEALED_UNOPENED"
+  },
+  "original_methods": {
+    "constructor_git": "heathsanchez/triskelion@426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "msi_git": "heathsanchez/Minimal-Sufficient-Interface@56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+    "machine_bridge": "research/unified_consequence_runtime/typed_v104_msi_bridge_v7.py",
+    "original_catalog_algorithm": "catalog_v104_typed with unchanged original_candidates and original.orders",
+    "native_verifier": "research/unified_consequence_runtime/typed_native_authority_v6.py",
+    "observation": "{}",
+    "method_cap_per_production_file": 64,
+    "policy_count_expected": 37,
+    "representation": "exact frozen source / changed production file, no user-authored winning builder or AST operation injected"
+  },
+  "catalog_gate": "Execute original source-pinned emitter and all original MSI policy orders without native candidates, archive IDs/features/sha. Source-bound catalog must be Git-committed before subsequent native candidate trials. If zero or incomplete -> UNKNOWN, no fallback retargeting.",
+  "native_gate": {
+    "horizon_per_policy": 8,
+    "aggregate_candidate_budget_max": 64,
+    "training_native_calls_max": 64,
+    "timeout_per_native_call_seconds": 120,
+    "training_wall_seconds": 900,
+    "run_each_candidate_twice": true,
+    "original_base_protected_failure_must_replay": true
+  },
+  "selection": "Original V9 schedule union of each of the 37 policies' first 8 candidate IDs; any unverified, missing, skipped, error or timeout makes affected profile UNKNOWN (never FAIL); use original Pareto chooser only after complete profiles. Unique noncold verified selection needed before future source unseals.",
+  "causal_requirement": "No G2 on training-only success. Future O2 must be newly independent, source-distinct and within unchanged horizon; full cold negative, selected positive, program withdrawal, cold reverified restoration and matched ledger/agent comparisons separate gates.",
+  "negative_controls": "Wrong frozen file SHA, changed constructor MSI pin, altered catalog hash, source/test mutation, missing required native assertion, unsupported source/import, arbitrary candidate path / leaked head production => UNKNOWN or fail closed.",
+  "status": {
+    "training_fail": "WARRANTED_BOUNDED",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}
