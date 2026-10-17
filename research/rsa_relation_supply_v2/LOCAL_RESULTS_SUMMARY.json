@@ -1,0 +1,153 @@
+{
+  "status": "WARRANTED_LOCAL_BOUNDED, CI GREEN NOT CONFIRMED",
+  "original_manifest_commit": "3f5d2da19c706d68c449849188b2065c6f2a9533",
+  "original_code_commit": "d62b4b76218d40623a5fcdf51ae0064d5c0ec71e",
+  "audit_commit": "6a741d096cd1768b967a13d2f5e3a26015e1084e",
+  "timing_amendment_commit": "f6b5f7f8794b40aa99eadb4f6f446276372a5f00",
+  "source": "local Python 3.13.5 SymPy 1.14, separate standalone exhaustive trial oracle; precommitted generation",
+  "epistemic_boundary": "Known prior-art QS algebra; not RSA-270/GNFS success or proof of novelty",
+  "params": {
+    "candidates_per_arm": 40000,
+    "factor_base_bound": 1000,
+    "large_cofactor_bound": 100000,
+    "siqs_prime_bound": 2000,
+    "siqs_interval": 8000,
+    "siqs_seed": 1234,
+    "siqs_timeout_seconds": 30,
+    "repeat_timing_repetitions": 1
+  },
+  "calibration": {
+    "cases": 3,
+    "forward_relations": 434,
+    "symmetric_relations": 600,
+    "forward_factors": 2,
+    "symmetric_factors": 2,
+    "siqs_factors": 3
+  },
+  "heldout": {
+    "cases": 8,
+    "forward_relations": 269,
+    "symmetric_relations": 378,
+    "forward_factors": 0,
+    "symmetric_factors": 3,
+    "siqs_factors": 8,
+    "relation_gain_instances": 7,
+    "per_case": [
+      {
+        "id": "hold-58-1",
+        "n": "162786587921169467",
+        "forward_relations": 9,
+        "symmetric_relations": 14,
+        "forward_factor": false,
+        "symmetric_factor": false,
+        "siqs_factor": true
+      },
+      {
+        "id": "hold-60-1",
+        "n": "818043512791945579",
+        "forward_relations": 64,
+        "symmetric_relations": 103,
+        "forward_factor": false,
+        "symmetric_factor": true,
+        "siqs_factor": true
+      },
+      {
+        "id": "hold-62-1",
+        "n": "4048619423750724959",
+        "forward_relations": 72,
+        "symmetric_relations": 98,
+        "forward_factor": false,
+        "symmetric_factor": true,
+        "siqs_factor": true
+      },
+      {
+        "id": "hold-64-1",
+        "n": "15399084411771235519",
+        "forward_relations": 66,
+        "symmetric_relations": 96,
+        "forward_factor": false,
+        "symmetric_factor": true,
+        "siqs_factor": true
+      },
+      {
+        "id": "hold-66-1",
+        "n": "58238210481681773363",
+        "forward_relations": 18,
+        "symmetric_relations": 23,
+        "forward_factor": false,
+        "symmetric_factor": false,
+        "siqs_factor": true
+      },
+      {
+        "id": "hold-68-1",
+        "n": "227515072036051729991",
+        "forward_relations": 6,
+        "symmetric_relations": 5,
+        "forward_factor": false,
+        "symmetric_factor": false,
+        "siqs_factor": true
+      },
+      {
+        "id": "hold-70-1",
+        "n": "933170480733763243381",
+        "forward_relations": 27,
+        "symmetric_relations": 31,
+        "forward_factor": false,
+        "symmetric_factor": false,
+        "siqs_factor": true
+      },
+      {
+        "id": "hold-72-1",
+        "n": "3857910606975387647263",
+        "forward_relations": 7,
+        "symmetric_relations": 8,
+        "forward_factor": false,
+        "symmetric_factor": false,
+        "siqs_factor": true
+      }
+    ]
+  },
+  "local_timing_posthoc_seconds": {
+    "trial_forward_sum": 2.271732,
+    "exact_sieve_forward_sum": 0.93262,
+    "trial_symmetric_sum": 2.302213,
+    "exact_sieve_symmetric_sum": 0.942642
+  },
+  "independent_controls": {
+    "candidate_classifications_recomputed": 880000,
+    "original_and_sieve_trace_compared_per_case": 22,
+    "precommitted_factor_pair_hashes_checked": 11,
+    "nontrivial_witnesses_checked": 7,
+    "tampered_witnesses_rejected": 7
+  },
+  "exact_heldout_certificates": [
+    {
+      "id": "hold-60-1",
+      "p": "956282857",
+      "q": "855440947",
+      "x": "475852366317915340",
+      "y": "561714826591879951",
+      "e": "114957784093798121",
+      "candidate": 29675
+    },
+    {
+      "id": "hold-62-1",
+      "p": "1933784771",
+      "q": "2093624629",
+      "x": "3288676922629202294",
+      "y": "3988249588413900412",
+      "e": "2271446789698712917",
+      "candidate": 39165
+    },
+    {
+      "id": "hold-64-1",
+      "p": "4190614933",
+      "q": "3674659843",
+      "x": "14323462223885333240",
+      "y": "3505313262098386526",
+      "e": "8157486133359093742",
+      "candidate": 36847
+    }
+  ],
+  "limitations": "Synthetic 58–72-bit semiprimes; open-source classic techniques; original full-trial path repeated a second division sweep for accounting, source preserved. Posthoc V2b fixes timing, validates all original stream and certificate bytes invariant. One host; CI Actions not independently seen green."
+}
