@@ -43,6 +43,12 @@ jobs:
           test "$(git -C "$RUNNER_TEMP/freelip" hash-object lip.c)" = a86ce8ae5be49e0f35999a2c87f52e1718ebdb81
           test "$(git -C "$RUNNER_TEMP/freelip" hash-object lip.h)" = 080cda8aec8c0939348452ea3beb9f1afad845ef
           sed -n '11730,11748p' "$RUNNER_TEMP/freelip/lip.c"
+          # FreeLIP README documents PLAIN as an alternative to Karatsuba.
+          # Reconfigure only historical lippar.h; original lip.c/h remain byte-pinned.
+          test "$(grep -Ec '^#define[[:space:]]+KARAT[[:space:]]+1' "$RUNNER_TEMP/freelip/lippar.h")" = 1
+          sed -i -E 's/^#define[[:space:]]+KARAT[[:space:]]+1/#define PLAIN 1/' "$RUNNER_TEMP/freelip/lippar.h"
+          grep -qE '^#define[[:space:]]+PLAIN[[:space:]]+1' "$RUNNER_TEMP/freelip/lippar.h"
+          echo "Build variant: FreeLIP original C, documented PLAIN arithmetic configuration; ASAN enabled"
       - name: Compile and execute original 1997 zsqrtmod against all curves
         shell: bash
         run: |
