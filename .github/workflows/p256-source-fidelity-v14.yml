@@ -32,12 +32,33 @@ jobs:
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gcc-multilib libc6-dev-i386
           gcc --version | head -1
-      - name: Compile original 1997 FreeLIP C with SINGLE_MUL 26-bit code, no patch
+      - name: Compile 1997 FreeLIP with documented SINGLE_MUL 26-bit configuration
         shell: bash
         run: |
           set -euo pipefail
           cd research/p256_origin_20261017
-          gcc -std=gnu89 -m32 -O2 -w -DSINGLE_MUL -I"$RUNNER_TEMP/freelip" v14_native.c "$RUNNER_TEMP/freelip/lip.c" -lm -o native_freelip
+          # Historical lippar.h ships with KARAT enabled. That conflicting
+          # configuration sets ILLEGAL=1 under SINGLE_MUL and drops ALL symbols.
+          # Preserve exact upstream lip.c and lip.h. Change only the build config
+          # in an isolated copy and archive the one-line diff as evidence.
+          mkdir -p "$RUNNER_TEMP/freelip26"
+          cp "$RUNNER_TEMP/freelip/lip.c" "$RUNNER_TEMP/freelip/lip.h" "$RUNNER_TEMP/freelip/lippar.h" "$RUNNER_TEMP/freelip26/"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          src=Path(os.environ['RUNNER_TEMP'])/'freelip26/lippar.h'
+          old=src.read_text()
+          assert old.count('#define KARAT\t1\n')==1,repr(old)
+          updated=old.replace('#define KARAT\t1\n','',1)
+          assert updated==('#define KAR_MUL_CROV\t30\n#define KAR_SQU_CROV\t33\n')
+          src.write_text(updated)
+          PY
+          test "$(git hash-object "$RUNNER_TEMP/freelip26/lip.c")" = a86ce8ae5be49e0f35999a2c87f52e1718ebdb81
+          test "$(git hash-object "$RUNNER_TEMP/freelip26/lip.h")" = 080cda8aec8c0939348452ea3beb9f1afad845ef
+          test "$(git hash-object "$RUNNER_TEMP/freelip/lippar.h")" = a893f4b056730ca0d47da4abffee72af703f8fab
+          diff -u "$RUNNER_TEMP/freelip/lippar.h" "$RUNNER_TEMP/freelip26/lippar.h" > V14_CONFIG_DIFF.txt || test "$?" -eq 1
+          cat V14_CONFIG_DIFF.txt
+          gcc -std=gnu89 -m32 -O2 -w -DSINGLE_MUL -I"$RUNNER_TEMP/freelip26" v14_native.c "$RUNNER_TEMP/freelip26/lip.c" -lm -o native_freelip
           file native_freelip
           test "$(./native_freelip 20000 words | wc -l)" -eq 20
       - name: Independently compare native zrandom and native zrandomb against 107-bit integer model
@@ -68,5 +89,6 @@ jobs:
             research/p256_origin_20261017/v14_check.py
             research/p256_origin_20261017/V14_RESULTS.json
             research/p256_origin_20261017/V14_STDOUT.log
+            research/p256_origin_20261017/V14_CONFIG_DIFF.txt
           if-no-files-found: error
           retention-days: 90
