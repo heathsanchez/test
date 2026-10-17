@@ -1,0 +1,57 @@
+{
+  "schema": "UDM_V11_ORIGINAL_V104_AST_SLOT_LOCALIZATION_AUDIT",
+  "source": "PINNED_EXPOSED_NATIVE_V11_ACTIONS_ARTIFACT_12083352185",
+  "artifact_zip_sha256": "ebeb15e77a42072a8ab1432227298a0ec212f2890506e97e8c399d4df2532b29",
+  "audit_method": "Read original candidate stage source bytes and baseline bytes from independently downloaded GitHub artifact. Compare ast.parse() trees using unchanged decisive_native.changed_lines structural algorithm; not a text diff.",
+  "checked_candidates": 15,
+  "classified": {
+    "tenacity/__init__.py:97": 10,
+    "tenacity/asyncio/__init__.py:72": 5
+  },
+  "all_candidates_change_one_AST_line": true,
+  "protected_source_guard": {
+    "path": "tenacity/__init__.py",
+    "line": 425,
+    "original_expression": "if not self.wait:",
+    "witness_test": "tests/test_tenacity.py::TestWaitConditions::test_wait_falsy_callable_is_called",
+    "source_relevance": "Causal candidate, not independently proven unique correction. Unchanged branch may suppress a falsy callable's wait invocation."
+  },
+  "candidates_touching_guard_line_425": 0,
+  "emitted_candidates": 128,
+  "original_policies": 37,
+  "eligible_first_eight_unique_candidates": 15,
+  "all_original_catalog_K_default": 1000000,
+  "observation_passed_into_original_catalog": {},
+  "original_V104_primitive_grammar": {
+    "selectors": [
+      [
+        "While",
+        "test"
+      ],
+      [
+        "If",
+        "test"
+      ],
+      [
+        "Return",
+        "value"
+      ],
+      [
+        "Call",
+        "func"
+      ],
+      [
+        "Call",
+        "arg"
+      ]
+    ],
+    "builder_count": 15,
+    "explicitly_constructs_ast_Compare": false,
+    "qualified_scope": "Original SHA256-pinned constructor only; does not exclude other known Metalogic methods, later grammar extensions or semantically equivalent repair paths."
+  },
+  "verdict": "WARRANTED_BOUNDED_EXECUTION_SCHEDULING_AND_OBSERVATION_BINDING_DIAGNOSIS_ONLY",
+  "G2": "UNKNOWN",
+  "G3": "UNKNOWN",
+  "G4": "UNKNOWN",
+  "recommended_decisive_next": "Before native candidate evaluation, connect an authenticated, source-specific observation to AST slot selection and existing capable constructor methods; independently verify actual source relevance and native outcomes. Do not count this exposed source as prospective."
+}
