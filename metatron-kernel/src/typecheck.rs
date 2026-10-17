@@ -2223,6 +2223,23 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                // Only a witnessed source proof of Eq between propositions
+                // may decline a conversion whose underlying lambda-vs-neutral
+                // comparison is not certified. This is an UNKNOWN, never an
+                // equality or ACCEPT; the original REJECT remains otherwise.
+                let conversion = if std::env::var_os(
+                        "NUCLEUS_EXPERIMENTAL_EQPROP_PROOF_DECLINE",
+                    ).is_some()
+                    && matches!(&conversion,Judgment::Refuted {obstruction}
+                        if obstruction.0=="rigid-value-constructor-mismatch")
+                    && self.undecided_propositional_equality_proof(
+                        expression,&value,expected,(*remaining).min(2048)
+                    )
+                {
+                    Judgment::unknown("source-Eq-Prop-dependent-conversion-unresolved")
+                } else {
+                    conversion
+                };
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION").is_some()
                     && matches!(&conversion, Judgment::Unknown { residual }
