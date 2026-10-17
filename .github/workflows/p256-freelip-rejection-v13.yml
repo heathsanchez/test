@@ -1,0 +1,97 @@
+name: P-256 V13 source-complete FreeLIP 26-bit rejection-bound exclusion
+on:
+  push:
+    branches: [research/p256-free-lip-rejection-complete-v13-20261017]
+    paths:
+      - 'research/p256_origin_20261017/V13_*'
+      - 'research/p256_origin_20261017/v13_rejection.py'
+      - 'research/p256_origin_20261017/make_v13_certificate.py'
+      - 'research/p256_origin_20261017/verify_v13_certificate.py'
+      - '.github/workflows/p256-freelip-rejection-v13.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-prng-census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned exact integer lattice-reduction dependency
+        run: python3 -m pip install --disable-pip-version-check sympy==1.14.0
+      - name: Independently replay 22 rejection-gap proofs and all 20 source schedules
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          python3 v13_rejection.py --out V13_CI_RESULTS.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          local=json.loads(Path('V13_RESULTS.json').read_text())
+          ci=json.loads(Path('V13_CI_RESULTS.json').read_text())
+          assert local==ci,'Source / full mathematical result differs from pinned original'
+          assert ci['status']=='NO_FREELIP_11x26_Gx_SOURCE_SAMPLER_ALL_STATES'
+          assert ci['total_fully_matching_source_models']==0
+          assert len(ci['rejection_gap_certificates'])==22
+          assert len(ci['one_rejection_schedules'])==20
+          assert all(not x['rejected_state_pair_witnesses'] for x in ci['rejection_gap_certificates'])
+          assert len(ci['positive_controls'])==6
+          print('QUALIFIED_BOUNDED_SOURCE_FREELIP_11x26_REJECTION_COMPLETE_NO_P256_GX')
+          PY
+      - name: Recreate frozen certificate exactly
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          sha256sum V13_CERTIFICATE.json >/tmp/V13_CERTIFICATE.sha256
+          python3 make_v13_certificate.py
+          sha256sum -c /tmp/V13_CERTIFICATE.sha256
+      - name: Archive exact original/replayed source and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v13-exact-1997-source-control-census
+          path: |
+            research/p256_origin_20261017/V13_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/V13_REPORT.md
+            research/p256_origin_20261017/v13_rejection.py
+            research/p256_origin_20261017/make_v13_certificate.py
+            research/p256_origin_20261017/V13_RESULTS.json
+            research/p256_origin_20261017/V13_CI_RESULTS.json
+            research/p256_origin_20261017/V13_CERTIFICATE.json
+          if-no-files-found: error
+  independent-proof-checker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently recheck V12 exact no-rejection certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          python3 -B verify_v12_certificate.py | tee V12_CERTIFICATE_REUSE.log
+          grep -q 'WARRANTED_11_LIMB_EXACT_NO_REJECTION_MODEL' V12_CERTIFICATE_REUSE.log
+      - name: Independently recheck all 42 V13 exact lattice certificates
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          python3 -B verify_v13_certificate.py | tee V13_CERTIFICATE_CHECK.log
+          grep -q 'INDEPENDENT_EXACT_SOURCE_FREELIP_11x26_EXCLUDED' V13_CERTIFICATE_CHECK.log
+          grep -q 'all_2\^30_q_covered_by_106_exact_invariant_bits' V13_CERTIFICATE_CHECK.log
+      - name: Publish independent stdlib certificate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v13-pure-standard-library-complete-proof
+          path: |
+            research/p256_origin_20261017/V13_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/verify_v13_certificate.py
+            research/p256_origin_20261017/verify_v12_certificate.py
+            research/p256_origin_20261017/V13_CERTIFICATE.json
+            research/p256_origin_20261017/V12_CERTIFICATE.json
+            research/p256_origin_20261017/V12_CERTIFICATE_REUSE.log
+            research/p256_origin_20261017/V13_CERTIFICATE_CHECK.log
+          if-no-files-found: error
