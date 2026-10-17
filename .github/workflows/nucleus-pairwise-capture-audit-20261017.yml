@@ -1,0 +1,82 @@
+name: Nucleus Pairwise captured Π proof-type mismatch audit
+on:
+  push:
+    branches: [research/nucleus-pairwise-rejection-20261017]
+    paths:
+      - ".github/workflows/nucleus-pairwise-capture-audit-20261017.yml"
+      - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/convert.rs"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build unchanged-verdict diagnostic candidate
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Recover SHA-sealed Lean 4.34.1 pairwise input bytes
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/original
+          gh api repos/heathsanchez/test/actions/artifacts/12081878830/zip > /tmp/inputs.zip
+          unzip -q /tmp/inputs.zip -d /tmp/original
+          echo 'e48fd06172e653cad2f4a15a7b454280f8bf00c16e0eba41a3d18265a5012c69  /tmp/original/List.pairwise_middle.ndjson' | sha256sum -c -
+          echo '5ec75f541dd6dad0ee707feb7a3d52000918735f633a9bc189c1c0f68021b714  /tmp/original/List.pairwise_append_comm.ndjson' | sha256sum -c -
+      - name: Classify real dependent capture and Boolean constructor refutation in both modes
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,subprocess,pathlib,time,hashlib
+          evidence=pathlib.Path('/tmp/evidence')
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          base.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pin['origin_flags']})
+          base.update({'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_RIGID_PROOF_REJECT':'1',
+                       'NUCLEUS_TRACE_NEUTRAL_HEADS':'1','NUCLEUS_TRACE_EXACT_PROOF_NEUTRALS':'1',
+                       'METATRON_KERNEL_DIAGNOSTICS':'1'})
+          records=[]
+          for name in ['List.pairwise_append_comm','List.pairwise_middle']:
+              payload=(pathlib.Path('/tmp/original')/(name+'.ndjson')).read_bytes()
+              for enabled in (False,True):
+                  env=dict(base)
+                  if enabled: env['NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS']='1'
+                  t=time.perf_counter()
+                  r=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=payload,
+                                   env=env,capture_output=True,timeout=90)
+                  stderr=r.stderr.decode(errors='replace')
+                  filtered=[l for l in stderr.splitlines()
+                            if l.startswith(('NUCLEUS_RIGID_PROOF_REJECT:',
+                                             'NUCLEUS_RIGID_CAPTURE:',
+                                             'NUCLEUS_RIGID_BOOL_PAIR:',
+                                             'NUCLEUS_DOWNSTREAM:',
+                                             'NUCLEUS_EXACT_PROOFS:'))]
+                  records.append({'name':name,'enabled':enabled,'verdict':r.returncode,
+                                  'elapsed_sec':round(time.perf_counter()-t,5),
+                                  'input_sha256':hashlib.sha256(payload).hexdigest(),
+                                  'last_trace':stderr[-6000:],'filtered':filtered[-60:]})
+                  print(name,enabled,r.returncode,
+                        'bool_pair_events',len([x for x in filtered if x.startswith('NUCLEUS_RIGID_BOOL_PAIR')]),
+                        'captures',len([x for x in filtered if x.startswith('NUCLEUS_RIGID_CAPTURE')]),
+                        flush=True)
+          (evidence/'pairwise-capture-audit.json').write_text(json.dumps({
+              'candidate_source':os.environ['GITHUB_SHA'],'records':records,
+          },indent=2)+'\n')
+          assert [x['verdict'] for x in records]==[0,0,1,1], 'Changed diagnostic semantics'
+          assert any('NUCLEUS_RIGID_CAPTURE' in x for r in records[2:] for x in r['filtered'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-pairwise-captured-Pi-audit-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
