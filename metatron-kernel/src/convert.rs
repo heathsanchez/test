@@ -1902,13 +1902,14 @@ fn compare_values(
             // This is a scoped three-valued conversion experiment: preserve
             // the existing trusted Boolean, Nat and constructor mismatches.
             (Value::Lam { .. }, Value::Neutral(Neutral {
-                head: NeutralHead::Free(_), spine,
+                head: NeutralHead::Free(free), spine,
             }))
             | (Value::Neutral(Neutral {
-                head: NeutralHead::Free(_), spine,
+                head: NeutralHead::Free(free), spine,
             }), Value::Lam { .. })
                 if std::env::var_os("NUCLEUS_EXPERIMENTAL_OPEN_LAMBDA_DECLINE").is_some()
                     && spine.is_empty()
+                    && checker.checked_binary_prop_relation_free(*free, context, current_budget)
                 =>
             {
                 #[cfg(feature="diagnostics")]
