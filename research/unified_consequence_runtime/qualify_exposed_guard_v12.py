@@ -83,7 +83,8 @@ def transform(arm, source):
 def native_status(first, second):
     # Existing V9's replay rule checks actual call counts, required/executed,
     # deselection, imported source hashes and matching original manifest.
-    return v9.replayed(first,second)
+    verdict=v9.replayed(first,second)
+    return "UNKNOWN" if verdict==v9.UNVERIFIED else verdict
 
 
 def _candidate(base, raw, arm):
@@ -230,7 +231,7 @@ def run(out):
               "unrelated_sham_failed":True,"original_source_restored_failed":True,
               "autonomous_selection":False
             }
-        elif any(x=="UNKNOWN_NATIVE_APPARATUS" or x=="UNKNOWN_NATIVE_EVIDENCE" for x in outcomes.values()):
+        elif any(x in ("UNKNOWN","UNKNOWN_NATIVE_APPARATUS","UNKNOWN_NATIVE_EVIDENCE") for x in outcomes.values()):
             result["status"]="UNKNOWN_INCOMPLETE_NATIVE_ARM_EVIDENCE"
         else:
             result["status"]="EXPOSED_GUARD_HYPOTHESIS_REJECTED_BY_NATIVE_CONTROLS"
