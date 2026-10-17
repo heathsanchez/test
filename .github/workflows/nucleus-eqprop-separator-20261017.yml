@@ -1,0 +1,110 @@
+name: Nucleus source-complete Eq-over-Prop proof tri-state separator
+on:
+  push:
+    branches: [research/nucleus-eqprop-conversion-20261017]
+    paths:
+      - ".github/workflows/nucleus-eqprop-separator-20261017.yml"
+      - "metatron-kernel/src/convert.rs"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build opt-in source evaluator with existing diagnostics
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Recover independently SHA-pinned Lean 4.34.1 theorem exports
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/inputs
+          gh api repos/heathsanchez/test/actions/artifacts/12081878830/zip > /tmp/pairwise.zip
+          unzip -q /tmp/pairwise.zip -d /tmp/inputs
+          gh api repos/heathsanchez/test/actions/artifacts/12077748490/zip > /tmp/permutation.zip
+          unzip -oq /tmp/permutation.zip -d /tmp/inputs
+          printf '%s\n' \
+            'e48fd06172e653cad2f4a15a7b454280f8bf00c16e0eba41a3d18265a5012c69  /tmp/inputs/List.pairwise_middle.ndjson' \
+            '5ec75f541dd6dad0ee707feb7a3d52000918735f633a9bc189c1c0f68021b714  /tmp/inputs/List.pairwise_append_comm.ndjson' \
+            '6feb6fdc9ec8190efeee6bc37bbda217d9a1ef60cbb5664c9642bb4a6885a107  /tmp/inputs/list-perm-reconswap.ndjson' | sha256sum -c -
+      - name: Recover original pinned bad funEtaBad export
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-artifact /tmp/arena-tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/arena.zip
+          unzip -q /tmp/arena.zip -d /tmp/arena-artifact
+          tar --no-same-owner -xzf /tmp/arena-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+          echo '54a1fa957b69925682e54479b3c152bfd131ca7f4a9713c05b195c83e9cd239a  /tmp/arena-tests/bad/tutorial/116_funEtaBad.ndjson' | sha256sum -c -
+      - name: Verify native verdicts and retain each source-scoped mode
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib,subprocess,time
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          base.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pin['origin_flags']})
+          base.update({'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_EQPROP_TRISTATE':'1'})
+          original=pathlib.Path('/tmp/inputs')
+          out=pathlib.Path('/tmp/evidence')
+          checker='metatron-kernel/target/release/metatron-kernel'
+          def check(label,data,enable_proof,enable_decline):
+              env=dict(base)
+              if enable_proof:env['NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS']='1'
+              if enable_decline:env['NUCLEUS_EXPERIMENTAL_EQPROP_PROOF_DECLINE']='1'
+              t=time.perf_counter()
+              r=subprocess.run([checker],input=data,env=env,capture_output=True,timeout=60)
+              return {'label':label,'proof_flag':enable_proof,'decline_flag':enable_decline,
+                      'rc':r.returncode,'seconds':round(time.perf_counter()-t,5),
+                      'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
+                      'trace':(r.stderr+r.stdout).decode(errors='replace')[-2000:]}
+          cases=[]
+          files=[('pairwise_append_comm','List.pairwise_append_comm.ndjson'),
+                 ('pairwise_middle','List.pairwise_middle.ndjson'),
+                 ('List.Perm.recOnSwap','list-perm-reconswap.ndjson')]
+          for name,filename in files:
+              source=(original/filename).read_bytes()
+              for proof,decline in [(False,False),(True,False),(True,True)]:
+                  r=check(name,source,proof,decline)
+                  cases.append(r)
+                  print(name,proof,decline,r['rc'],r['trace'][-160:],flush=True)
+          negatives=[]
+          for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']:
+              source=(pathlib.Path('metatron-kernel/tests/fixtures')/name).read_bytes()
+              negatives.append(check(name,source,True,True))
+          raw=(original/'List.pairwise_middle.ndjson').read_bytes()
+          rows=[json.loads(x) for x in raw.splitlines()]
+          target=[r for r in rows if 'thm' in r and r['thm']['name']==975]
+          assert len(target)==1
+          target[0]['thm']['value']=3
+          forged=('\n'.join(json.dumps(x,separators=(',',':')) for x in rows)+'\n').encode()
+          negatives.append(check('forged-pairwise-proof',forged,True,True))
+          bad=pathlib.Path('/tmp/arena-tests/bad/tutorial/116_funEtaBad.ndjson').read_bytes()
+          invalid_off=check('funEtaBad',bad,True,False)
+          invalid_on=check('funEtaBad',bad,True,True)
+          negatives.extend([invalid_off,invalid_on])
+          passed=all(x['rc']==0 for x in cases if x['label']=='pairwise_append_comm') \
+             and next(x for x in cases if x['label']=='pairwise_middle' and not x['proof_flag'])['rc']==1 \
+             and next(x for x in cases if x['label']=='pairwise_middle' and x['decline_flag'])['rc']==2 \
+             and next(x for x in cases if x['label']=='List.Perm.recOnSwap' and x['proof_flag'] and x['decline_flag'])['rc']==0 \
+             and all(x['rc']!=0 for x in negatives) \
+             and invalid_off['rc']==1 and invalid_on['rc']==1
+          report={'candidate_source':os.environ['GITHUB_SHA'],'cases':cases,'negatives':negatives,'qualified':passed}
+          (out/'lambda-neutral-gate.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps({'passed':passed,'cases':[(x['label'],x['proof_flag'],x['decline_flag'],x['rc']) for x in cases],
+              'negatives':[(x['label'],x['rc']) for x in negatives]},sort_keys=True),flush=True)
+          assert passed,'Protected checker parity or ambiguity boundary failed'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-eqprop-tristate-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
