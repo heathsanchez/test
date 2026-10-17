@@ -1,0 +1,37 @@
+{
+  "schema": "UDM_G2_SOURCE_DISTINCT_PREQUERY_V1",
+  "state": "PREQUERY_SOURCE_BLIND_FROZEN",
+  "parent_qualified_source": "12c5af49efbe8c14f17ac3d694d9c0bc199428e4",
+  "parent_qualified_ci": 39075931136,
+  "research_limit": "Admission-only source-distinct external native obligations; no G2 claim or target-specific method tuning before new protected failures and original-native verification.",
+  "repos": [
+    "agronholm/anyio",
+    "alexmojaki/executing",
+    "pallets/jinja",
+    "pallets/werkzeug",
+    "pypa/platformdirs",
+    "python-jsonschema/referencing"
+  ],
+  "history_check": "Exact case-insensitive repository names absent from V41 PREQUERY and V4 HISTORICAL_REPOSITORIES at parent commit; bounded accessible-record check only, no comprehensive unfamiliarity claim.",
+  "metadata_method": {
+    "search": "GitHub search_prs(query='fix',state='closed',sort='updated',order='desc',topn=20) for each exact repo in declared order",
+    "inspect": "For each returned PR number, GET /pulls/{number} and /pulls/{number}/files?per_page=100&page=1 in returned order, at most 12 entries with title starting fix case-insensitive per repo. Retain rejection metadata and reasons; inspect only metadata projections.",
+    "qualifier": "Merged PR with one or more modified existing production .py and one added or modified author .py test under tests/ or test_ filename; 1 to 3 production Python changes, combined production additions <=8 and deletions <=8; exclude renamed/removed changed files and changes touching pyproject.toml, setup.py, setup.cfg, tox.ini or requirements/; complete nonpaginated file list required.",
+    "tie_break": "First qualifying PR in returned search order per repository; no post-source substitution and no second PR chosen after viewing native outcomes."
+  },
+  "source_authority": "Bind base/head SHAs and each changed test file Git blob ID before reading source bodies. Source-bearing API responses are projected to metadata and never forwarded as patches or PR bodies.",
+  "roles": "First two source-distinct native-admitted PRs in declared repo order are TRAINING and SEALED_HELDOUT. Hold future source and outcomes unopened until training method is frozen.",
+  "budget": {
+    "max_repositories": 6,
+    "search_results_per_repository": 20,
+    "max_title_eligible_prs_inspected_per_repository": 12,
+    "metadata_seconds": 900,
+    "initial_admission_native_seconds_per_case": 120,
+    "total_native_source_admission_seconds": 1800
+  },
+  "author_source_protection": "Freeze exact upstream base and author head; apply test-only author overlay to original base for native FAIL witness; no repaired head production supplied. Reject wrong Git source/mode/content/authority or source mutations.",
+  "science_requirements": "Native original FAIL with authentic author-protected assertion on training; unchanged candidate search/budget; later source-distinct future under actual native oracle; physical ablation, cold restart and equally informed ledger/coding-agent needed separately. Neither admissibility nor a native FAIL establishes G2.",
+  "negative_controls": "Wrong source OID, altered test blob, zero required node, skip/deselection, wrong source import, path escapes and run timeout must fail closed.",
+  "prior_science": "V15 exposed-source bounded native composition preserved; clean itsdangerous admission 297/297 and 71/71 original authority regressions preserved. G2-G6 UNKNOWN.",
+  "out_of_scope": "No change to frozen methods/verifiers, external repository write, production merger, service deployment or external action permission."
+}
