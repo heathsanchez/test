@@ -1,0 +1,32 @@
+{
+  "evidence_oracle": "NIST named-source parameters via openssl; reused V7 exact source-translated modular sqrt for construction of test points",
+  "historical_use": "UNKNOWN",
+  "next_residual": "authentic 1997-98 source or prospective P224 candidate-selection experiment; origin G remains unknown",
+  "old_v7_native_green_run": 38992150553,
+  "p224": {
+    "additional_law_pairs": 24,
+    "freeLIP_b": "0x4bfaf57af3fb4c540abecda9afbb4f4728402745d8f4c6bcdcaa004d",
+    "group_order_relation": "#E_b = #E_{-b} by explicit Fp-isomorphism",
+    "mutual_inverse_map_points": 64,
+    "negation_pairs": 12,
+    "p_hex": "0xffffffffffffffffffffffffffffffff000000000000000000000001",
+    "prime_order_independent_census": "NOT_NEEDED_FOR_EQUIVALENCE",
+    "published_b": "0xb4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4",
+    "quadratic_nonresidue": 11,
+    "sample_x_examined": 135,
+    "sqrt_minus_one": "0xe04ce3d9fc37fa7cfaca1a05af3062ab2cb969e6c198a5e71bdabe19",
+    "u_squared_is_minus_one": true
+  },
+  "p256": {
+    "actual_pair_prime_status": "V5 skipped candidate 876 b_hi prime / b_lo composite",
+    "invalid_fake_u_checks": 3,
+    "minus_one_legendre": -1,
+    "no_sqrt_minus_one_in_Fp": true,
+    "p_hex": "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+    "published_b": "0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+    "root_paired_curve_relation": "quadratic twist: #E_b + #E_{-b}=2(p+1) (standard nonsingular case)"
+  },
+  "source_sha256": "8a7e5daa027ceadc092bc845766bde921bd0ed2175d2f6a0b70411641d8acb5f",
+  "status": "PASS_EXACT_FIELD_ISOMORPHISM_BOUNDARY; NOT_LEAN_CERTIFIED",
+  "symbolic_proof": "X=-x, Y=u*y; Y^2=-(x^3+a*x+b)=X^3+a*X-b when u^2=-1; inverse X->-X,Y->u^-1*Y; group law transported by nonsingular Weierstrass coordinate change."
+}

@@ -1,0 +1,58 @@
+name: P-256 V8 prime-field root equivalence and twist separator
+on:
+  push:
+    branches:
+      - research/p256-root-equivalence-v8-20261017
+    paths:
+      - 'research/p256_origin_20261017/V8_*'
+      - 'research/p256_origin_20261017/v8_root_equivalence.py'
+      - '.github/workflows/p256-root-equivalence-v8-20261017.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-algebraic-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source-frozen protocol and real OpenSSL curve parameters
+        run: |
+          set -euo pipefail
+          test -f research/p256_origin_20261017/V8_FROZEN_PROTOCOL.md
+          openssl version
+          python3 research/p256_origin_20261017/v8_root_equivalence.py
+      - name: Verify independent reproducibility and failure boundaries
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, hashlib
+          f=pathlib.Path('research/p256_origin_20261017/V8_RESULTS.json')
+          j=json.loads(f.read_text())
+          assert j['status']=='PASS_EXACT_FIELD_ISOMORPHISM_BOUNDARY; NOT_LEAN_CERTIFIED'
+          assert j['historical_use']=='UNKNOWN'
+          assert j['p224']['mutual_inverse_map_points']==64
+          assert j['p224']['additional_law_pairs']==24
+          assert j['p224']['negation_pairs']==12
+          assert j['p224']['quadratic_nonresidue']==11
+          assert j['p224']['u_squared_is_minus_one'] is True
+          assert j['p224']['prime_order_independent_census']=='NOT_NEEDED_FOR_EQUIVALENCE'
+          assert j['p256']['no_sqrt_minus_one_in_Fp'] is True
+          assert j['p256']['invalid_fake_u_checks']==3
+          assert j['source_sha256']==hashlib.sha256(pathlib.Path('research/p256_origin_20261017/v8_root_equivalence.py').read_bytes()).hexdigest()
+          assert json.loads(pathlib.Path('research/p256_origin_20261017/V8_RESULTS.json').read_text())==j
+          assert j['old_v7_native_green_run']==38992150553
+          print('WARRANTED_EXACT_ALGEBRA_BOUNDARY_P224_ISOMORPHISM_P256_TWIST; HISTORICAL_ORIGIN_UNKNOWN')
+          PY
+      - name: Archive source, exact test and verdict
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v8-signed-b-roots-equivalence-receipt
+          path: |
+            research/p256_origin_20261017/V8_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/V8_REPORT.md
+            research/p256_origin_20261017/v8_root_equivalence.py
+            research/p256_origin_20261017/V8_RESULTS.json
+          if-no-files-found: error
+          retention-days: 90
