@@ -60,7 +60,7 @@ jobs:
           cat V14_CONFIG_DIFF.txt
           gcc -std=gnu89 -m32 -O2 -w -DSINGLE_MUL -I"$RUNNER_TEMP/freelip26" v14_native.c "$RUNNER_TEMP/freelip26/lip.c" -lm -o native_freelip
           file native_freelip
-          test "$(./native_freelip 20000 words | wc -l)" -eq 20
+          test "$(timeout --signal=TERM --kill-after=2s 20s ./native_freelip 20000 words | wc -l)" -eq 20
       - name: Independently compare native zrandom and native zrandomb against 107-bit integer model
         shell: bash
         run: |
