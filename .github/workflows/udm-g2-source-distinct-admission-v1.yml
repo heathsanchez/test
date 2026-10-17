@@ -1,0 +1,125 @@
+name: UDM frozen source-distinct native training admission (G2 UNKNOWN)
+
+on:
+  push:
+    branches:
+      - research/udm-g2-frozen-source-distinct-admission-20261018
+    paths:
+      - .github/workflows/udm-g2-source-distinct-admission-v1.yml
+      - research/unified_consequence_runtime/G2_SOURCE_DISTINCT_PREQUERY_V1.json
+      - research/unified_consequence_runtime/G2_SOURCE_DISTINCT_POOL_V1.json
+      - research/unified_consequence_runtime/g2_source_distinct_training_admission_v1.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  training-source-authority:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bind frozen prequery and metadata before target source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/g2-frozen
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          from research.unified_consequence_runtime.g2_source_distinct_training_admission_v1 import load_pool
+          plan=load_pool(Path.cwd())
+          assert plan['state']=='COMMITTED_METADATA_BEFORE_TARGET_SOURCE_OR_NATIVE'
+          assert [row['repo'] for row in plan['case_pool']]==['agronholm/anyio','alexmojaki/executing']
+          Path('evidence/g2-frozen/METADATA_BINDING.json').write_text(json.dumps({
+            'status':'FROZEN_SOURCE_BLIND_METADATA_VERIFIED',
+            'pool_commit':'b90328c2315bd07d30bf7ddf05711e7431589aaf',
+            'training':'agronholm/anyio',
+            'future':'alexmojaki/executing',
+            'future_source_read':False,'G2':'UNKNOWN'
+          },sort_keys=True,indent=2)+'\n')
+          PY
+
+      - name: Obtain only frozen base and author-test Git objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init -q /tmp/udm-anyio
+          git -C /tmp/udm-anyio remote add original https://github.com/agronholm/anyio.git
+          git -C /tmp/udm-anyio fetch -q --no-tags --filter=blob:none --depth=1 original 1805944a9f6a062527c10aa044ded959782bfc3e
+          git -C /tmp/udm-anyio checkout -q --detach 1805944a9f6a062527c10aa044ded959782bfc3e
+          test "$(git -C /tmp/udm-anyio rev-parse HEAD^{tree})" = c6465ce4b900e2f21aa73ebbe16c779f5c6ae9bf
+          git -C /tmp/udm-anyio fetch -q --no-tags --filter=blob:none --depth=1 original 90876855b731fb057d45e7e1cbdf1df013be6091
+          test "$(git -C /tmp/udm-anyio rev-parse HEAD)" = 1805944a9f6a062527c10aa044ded959782bfc3e
+          printf "%s\n" "Source method: exact committed AnyIO base with head test object only" > evidence/g2-frozen/SOURCE_ACQUISITION_SCOPE.txt
+
+      - name: Install declared original test dependency group in isolated CI runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'pip==25.3'
+          python -m pip install --disable-pip-version-check --no-input \
+            -e '/tmp/udm-anyio[trio]' \
+            --group '/tmp/udm-anyio/pyproject.toml:test' \
+            'pytest==9.1.1' 'pytest-cov==7.0.0'
+          python -m pip check
+          python -m pip freeze > evidence/g2-frozen/PIP_FREEZE.txt
+          python - <<'PY'
+          import importlib.metadata as md,json,pathlib
+          names=('pytest','pytest-cov','hypothesis','anyio','trio','pytest-mock','pytest-timeout','trustme')
+          pathlib.Path('evidence/g2-frozen/ACTUAL_RUNTIME_VERSIONS.json').write_text(
+            json.dumps({name:md.version(name) for name in names},sort_keys=True,indent=2)+'\n')
+          PY
+          git -C /tmp/udm-anyio status --porcelain > evidence/g2-frozen/PRE_OVERLAY_STATUS.txt
+
+      - name: Run original failing author tests twice with independent typed native verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B \
+            research/unified_consequence_runtime/g2_source_distinct_training_admission_v1.py \
+            /tmp/udm-anyio "$GITHUB_WORKSPACE/evidence/g2-frozen/training"
+
+      - name: Retain honest G2 and apparatus boundary
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,pathlib,os
+          root=pathlib.Path('evidence/g2-frozen')
+          root.mkdir(parents=True,exist_ok=True)
+          p=root/'training/RESULT.json'
+          outcome=json.loads(p.read_text()) if p.exists() else {}
+          verdict={'schema':'UDM_SOURCE_DISTINCT_G2_ADMISSION_BOUNDARY_V1',
+                   'ci_sha':os.environ['GITHUB_SHA'],
+                   'training_native_status':outcome.get('status','UNKNOWN_APPARATUS_BEFORE_NATIVE'),
+                   'training_native_calls':outcome.get('native_calls',0),
+                   'heldout_source':'UNOPENED','future_native_obligation':'NOT_EXECUTED',
+                   'learning':'NOT_EXECUTED','ledger':'NOT_EXECUTED','coding_agent':'NOT_EXECUTED',
+                   'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN','G5':'UNKNOWN','G6':'UNKNOWN',
+                   'source_exposure_scope':'Only frozen AnyIO base and its PR-head author test; not author repaired head production or executing future',
+                   'external_execution_containment':'NOT_PROVED_SANDBOX'}
+          (root/'SCIENTIFIC_BOUNDARY.json').write_text(json.dumps(verdict,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Archive all admissions, negatives, and costs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-frozen-source-distinct-training-admission-v1
+          path: evidence/g2-frozen/
+          if-no-files-found: error
