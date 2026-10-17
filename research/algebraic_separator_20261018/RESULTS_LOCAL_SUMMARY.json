@@ -1,0 +1,119 @@
+{
+  "status": "LOCAL_EXECUTED_AND_INDEPENDENTLY_CHECKED__CI_UNCONFIRMED",
+  "prereg_commit": "b01d6af55f4d3f0abda515e2927d6b14c902812b",
+  "solver_source_commit": "ecce586745bb99ce9a72e19701fb39697a4cd8aa",
+  "independent_checker_commit": "7f6986fccff3ba2014baf4b840fb5d857a925ac9",
+  "epistemic_result": "REJECTED_BOUNDED_AS_COMPETITIVE_SHORTCUT",
+  "environment": "Python 3.13.5, SymPy 1.14.0, local host",
+  "budget_per_case": {
+    "A_and_B_polynomial_candidates": 60000,
+    "smooth_prime_cutoff": 1000,
+    "paired_cofactor_cutoff": 100000
+  },
+  "calibration": {
+    "cases": 3,
+    "A_success": 0,
+    "B_success": 0,
+    "SIQS_success": 3,
+    "rho_success": 3,
+    "fermat_success": 0
+  },
+  "heldout": {
+    "cases": 6,
+    "A_success": 0,
+    "B_success": 1,
+    "SIQS_success": 6,
+    "rho_success": 5,
+    "fermat_success": 0,
+    "per_case": [
+      {
+        "id": "hold-64-a",
+        "bits": 64,
+        "A_candidates": 60000,
+        "A_rows": 17,
+        "B_candidates": 60000,
+        "B_rows": 39,
+        "B_dependencies": 0,
+        "SIQS": true,
+        "rho": true
+      },
+      {
+        "id": "hold-64-b",
+        "bits": 64,
+        "A_candidates": 60000,
+        "A_rows": 72,
+        "B_candidates": 24003,
+        "B_rows": 85,
+        "B_dependencies": 1,
+        "SIQS": true,
+        "rho": true
+      },
+      {
+        "id": "hold-70-a",
+        "bits": 70,
+        "A_candidates": 60000,
+        "A_rows": 21,
+        "B_candidates": 60000,
+        "B_rows": 51,
+        "B_dependencies": 0,
+        "SIQS": true,
+        "rho": true
+      },
+      {
+        "id": "hold-70-b",
+        "bits": 70,
+        "A_candidates": 60000,
+        "A_rows": 17,
+        "B_candidates": 60000,
+        "B_rows": 30,
+        "B_dependencies": 0,
+        "SIQS": true,
+        "rho": true
+      },
+      {
+        "id": "hold-76-a",
+        "bits": 76,
+        "A_candidates": 60000,
+        "A_rows": 8,
+        "B_candidates": 60000,
+        "B_rows": 10,
+        "B_dependencies": 0,
+        "SIQS": true,
+        "rho": false
+      },
+      {
+        "id": "hold-76-b",
+        "bits": 76,
+        "A_candidates": 60000,
+        "A_rows": 10,
+        "B_candidates": 60000,
+        "B_rows": 13,
+        "B_dependencies": 0,
+        "SIQS": true,
+        "rho": true
+      }
+    ],
+    "B_witness": {
+      "n": "12183504419152496609",
+      "x": "278779868213889935",
+      "y": "6148127171078010572",
+      "idempotent": "1348196705187522425",
+      "factor_1": "3433785661",
+      "factor_2": "3548126069",
+      "dependency_rows": 41,
+      "congruence_verified": true,
+      "corrupt_y_plus_one_rejected": true
+    },
+    "sum_local_wall_seconds": {
+      "A": 2.342213,
+      "B": 2.125749,
+      "SIQS_approx": 1.647715
+    },
+    "full_local_sha256": {
+      "results_calibration": "fc230383a2f45a88b9cbd7eff056940cd88d4c09de7c1725a18385d0adda151e",
+      "results_heldout": "46bafee318bd35d78e7e817e63bb089d83ebfb9bacdce2c8802a7271fbe52017",
+      "independent_verification": "94ac490f63446904eeab08f48f62b050d1e93319c33d838df24bd17ab7d1f420"
+    }
+  },
+  "limitation": "All controls use artificial synthetic semiprimes and different work units for SIQS/rho, not RSA-270 or new GNFS algebra; local is not independently GREEN Actions qualified."
+}
