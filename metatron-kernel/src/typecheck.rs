@@ -2783,6 +2783,16 @@ impl<'a> TypeChecker<'a> {
                             eprintln!("NUCLEUS_RIGID_CAPTURE:expr={expression:?}:actual_expr={:?}:expected_expr={:?}:actual_frame={}:expected_frame={}:actual_capture={:?}:expected_capture={:?}",
                                 self.expressions.get(actual.expr),self.expressions.get(wanted.expr),
                                 actual.env.id(),wanted.env.id(),capture(actual),capture(wanted));
+                            if context.len() == 6 {
+                                for probe in [128usize,512,2048,8192] {
+                                    let preferred=crate::convert::convert_with_policy_in_context(
+                                        self,&value,expected,probe,
+                                        crate::convert::DeltaPolicy::PreferredOnly,
+                                        context.len(),context,
+                                    );
+                                    eprintln!("NUCLEUS_RIGID_CAPTURE:preferred_retry:expr={expression:?}:budget={probe}:result={preferred:?}");
+                                }
+                            }
                         }
                     }
                 }
