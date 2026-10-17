@@ -10,7 +10,7 @@ def run_native(program,a,p):
     proc=subprocess.run([str(program),str(a),str(p)],capture_output=True,text=True,timeout=30,check=False)
     if proc.returncode:
         raise RuntimeError(f"Native 1997 FreeLIP failed rc={proc.returncode}; stdout={proc.stdout!r}; stderr={proc.stderr!r}")
-    normalized=proc.stdout.strip().replace('\\\\\n','').replace('\n','')
+    normalized=proc.stdout.strip().replace(chr(92)+chr(10),'').replace(chr(10),'')
     # FreeLIP zwriteln splits long decimal output at OUT_LINE, using '\\' + newline.
     if not normalized.lstrip('-').isdigit():
         raise AssertionError(('invalid native transcript',proc.stdout,proc.stderr))
