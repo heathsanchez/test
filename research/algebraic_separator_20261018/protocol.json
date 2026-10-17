@@ -1,0 +1,99 @@
+{
+  "freeze_version": "2026-10-18-v1",
+  "status": "PREREGISTRATION_PRE_EVALUATION",
+  "objective": "Test whether known one-large-cofactor pairing reduces charged separator construction on heldout synthetic semiprimes, compared with smooth-only and established SIQS. No new algorithm or RSA-270 extrapolation.",
+  "generation_prefix": "mathgraph-separator-2026-10-18-frozen-v1",
+  "generation": "p from sha256(PREFIX:label:p); q from first sha256(PREFIX:label:q{i}), i=0..63, with |p-q|>2^(bits_each_prime-6); low bits + binary 11 + odd, then sympy nextprime; n=pq; factor hashes stored without exposing factors to solver",
+  "target_records": [
+    {
+      "id": "cal-60-a",
+      "split": "calibration",
+      "bits": 60,
+      "n": "862132868427366143",
+      "factor_pair_sha256": "8bc80bf4a6283173cda815a913bd9faa04a2cf98fb09ba1749f3e98bf3529192"
+    },
+    {
+      "id": "cal-64-b",
+      "split": "calibration",
+      "bits": 64,
+      "n": "13896868572263976653",
+      "factor_pair_sha256": "f8938f4005e538675d5272e76b3cbea3e31099d94d323e7881f7bb7343471be3"
+    },
+    {
+      "id": "cal-70-c",
+      "split": "calibration",
+      "bits": 70,
+      "n": "956636536306368443987",
+      "factor_pair_sha256": "cba961a1bbb24c7630f314031ce031b22c95e5e08aa1885c20d8cb550c1d23a0"
+    },
+    {
+      "id": "hold-64-a",
+      "split": "heldout",
+      "bits": 64,
+      "n": "13451708179234875983",
+      "factor_pair_sha256": "6db16dce16e045b9396f0026050d50dc97d367c18911d2eeda84d1600e3c46d9"
+    },
+    {
+      "id": "hold-64-b",
+      "split": "heldout",
+      "bits": 64,
+      "n": "12183504419152496609",
+      "factor_pair_sha256": "c7fe50b4d4c058616dd66f9f8a631773d2e39df3cc5c04e49448e74cd6aa053d"
+    },
+    {
+      "id": "hold-70-a",
+      "split": "heldout",
+      "bits": 70,
+      "n": "846756375292071526123",
+      "factor_pair_sha256": "b4a114280c22453f00da17873d3d65e3f49d544b0ce20f5966f44c0c515782d4"
+    },
+    {
+      "id": "hold-70-b",
+      "split": "heldout",
+      "bits": 70,
+      "n": "879170652415250061473",
+      "factor_pair_sha256": "54d9cd1091c8b597901cf25c1b0708f162686924131e31f6cebeb1509193cfb1"
+    },
+    {
+      "id": "hold-76-a",
+      "split": "heldout",
+      "bits": 76,
+      "n": "46692374997545905228463",
+      "factor_pair_sha256": "6df7231838528cab675a61e3792592b4393a89156f2c9c7f9e7233d2bc891866"
+    },
+    {
+      "id": "hold-76-b",
+      "split": "heldout",
+      "bits": 76,
+      "n": "62327036944597355346029",
+      "factor_pair_sha256": "4f422ff535b01a5177fdb66c1de6270e44e1f1d8ac09d0dd47b4d4b283c03b94"
+    }
+  ],
+  "comparator_arms": {
+    "A": "streamed smooth-only relations plus GF2 dependence",
+    "B": "A plus paired equal residual cofactor up to declared limit and exact square witness",
+    "C": "SymPy 1.14 SIQS, same n and explicitly charged total execution, recognized prior-art strong baseline",
+    "D": "bounded Fermat and Pollard rho traditional controls"
+  },
+  "params": {
+    "factor_base_prime_max": 1000,
+    "large_cofactor_max": 100000,
+    "candidate_limit": 60000,
+    "siqs_prime_bound": 2000,
+    "siqs_interval": 8000,
+    "siqs_seed": 1234,
+    "pollard_max_steps": 200000,
+    "pollard_seed": 1234,
+    "fermat_max_steps": 60000,
+    "siqs_wall_timeout_seconds": 30
+  },
+  "primary_metric": "number of candidate x^2-n values fully trial-divided before independently verified nontrivial congruence-of-squares gcd; failed arms right-censored at 60000",
+  "secondary_metrics": [
+    "trial divisibility tests",
+    "relations, partials, dependencies, gcd checks",
+    "wall-clock with overhead, separately per arm",
+    "strong comparator successful counts and speed"
+  ],
+  "success_condition": "B strictly beats A on heldout median factor-witness candidate cost and does not reduce successes; any scientific advantage additionally requires B outperform an actually executed full-information mature comparator in total cost and a novel operation beyond published single-large-prime methods",
+  "hard_limits": "No genuine blindness claim (synthetic), no new factoring law from known one-large-prime variant, preserve negative controls and independently unqualified results as UNKNOWN."
+}
