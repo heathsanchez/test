@@ -1,0 +1,107 @@
+name: P-224 V9 frozen pre-selection full prime-order census
+on:
+  push:
+    branches:
+      - research/p224-preselection-census-v9-20261017
+    paths:
+      - research/p256_origin_20261017/V9_*
+      - research/p256_origin_20261017/v9_*.py
+      - .github/workflows/p224-selection-census-v9.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  construct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm source freeze and regenerate exact 7026 candidate table
+        run: |
+          set -euo pipefail
+          test -f research/p256_origin_20261017/V9_FROZEN_PROTOCOL.md
+          python3 research/p256_origin_20261017/v9_candidates.py
+          python3 - <<'PY'
+          import json, pathlib
+          p=pathlib.Path('research/p256_origin_20261017/V9_CONSTRUCTION.json')
+          x=json.loads(p.read_text())
+          assert x['candidate_table_sha256']=='6ae4d488768e622d5ff307ca7bb1af2c2b7d10c0f6935fac2e7107eac1fa5d22'
+          assert x['accepted_seed']=='BD71344799D5C7FCDC45B59FA3B9AB8F6A948BC5'
+          assert x['counts']['ELIGIBLE_FOR_POINT_COUNT']==3545
+          assert x['counts']['NON_RESIDUE']==3481
+          print('EXACT_CANDIDATE_CONSTRUCTION_7026/7026_PASS; GROUP_ORDER_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: p224-v9-stage-a-source
+          path: |
+            research/p256_origin_20261017/V9_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/v9_candidates.py
+            research/p256_origin_20261017/V9_CONSTRUCTION.json
+            research/p256_origin_20261017/V9_CANDIDATES.json
+          if-no-files-found: error
+          retention-days: 90
+  sea_shard:
+    needs: construct
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install independently maintained PARI/GP and seadata
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq pari-gp pari-seadata
+          command -v gp
+          printf 'print(version());quit(0);\n' | gp -q -f
+      - name: Reconstruct and qualify exact frozen shard
+        run: |
+          set -euo pipefail
+          python3 research/p256_origin_20261017/v9_candidates.py > /dev/null
+          python3 research/p256_origin_20261017/v9_run_shard.py --shard ${{ matrix.shard }} --timeout 1200
+      - name: Retain PASS or explicit UNKNOWN, never fictitious zero
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p224-v9-sea-shard-${{ matrix.shard }}
+          path: |
+            research/p256_origin_20261017/V9_SHARD_${{ matrix.shard }}.json
+            research/p256_origin_20261017/V9_SHARD_${{ matrix.shard }}.gp
+            research/p256_origin_20261017/V9_SHARD_${{ matrix.shard }}_PARI_LOG.txt
+          if-no-files-found: warn
+          retention-days: 90
+  conclude:
+    needs: [construct, sea_shard]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all eight immutable native PARI receipts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: p224-v9-sea-shard-*
+          path: research/p256_origin_20261017
+          merge-multiple: true
+      - name: Reconstruct 7026 source candidates and require all eight exact shards
+        run: |
+          set -euo pipefail
+          python3 research/p256_origin_20261017/v9_candidates.py > /dev/null
+          python3 research/p256_origin_20261017/v9_aggregate.py
+      - name: Preserve complete source and result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p224-v9-independent-full-census
+          path: |
+            research/p256_origin_20261017/V9_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/v9_candidates.py
+            research/p256_origin_20261017/v9_run_shard.py
+            research/p256_origin_20261017/v9_aggregate.py
+            research/p256_origin_20261017/V9_CONSTRUCTION.json
+            research/p256_origin_20261017/V9_AGGREGATE.json
+          if-no-files-found: warn
+          retention-days: 90
