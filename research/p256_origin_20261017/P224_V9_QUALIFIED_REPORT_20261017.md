@@ -33,7 +33,7 @@
 | **5736** | `3C170A30EE6709DF9B4C9EA0B6C1E95FCD6200CE` | `ffffffffffffffffffffffffffff610362eb9e61800d49507468b249` |
 | **7026 (published)** | `BD71344799D5C7FCDC45B59FA3B9AB8F6A948BC5` | `ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d` |
 
-**3/3** independently reconstructed earlier qualifying indices agrees with the Anthropic source-reported *count* three. This alone does not establish novelty of those indices; they might already appear in the source figure.
+**3/3** independently reconstructed earlier qualifying indices agrees with the Anthropic source-reported count three. **NOT NOVEL:** Filippo Valsorda had already published the exact 777 / 1485 / 5736 indices, the size filter, and the remaining selection ambiguity in his [16 October 2026 bounty resolution](https://words.filippo.io/seeds-solved/). V9 is independently verified *reproduction and audit*, not first discovery or a competing bounty result.
 
 ## Exact bounded discriminator
 
@@ -43,6 +43,6 @@ Additional historical criteria (root sign, base point generator, private code st
 
 ## Decisive next experiment
 
-Find independently authenticated 1997–98 source, logs, or selection documentation that supplies a previously unfitted criterion. Freeze it, run **unchanged on the four candidates**, require a prediction selecting 7026 and at least one source-distinct accepted curve (e.g. P-256 1842) while rejecting earlier viable alternatives, or preserve UNKNOWN. No more arbitrary seed sweeps, post-hoc score fitting, or second root-sign SEA on P-224.
+Filippo Valsorda's contemporary [reconstruction](https://words.filippo.io/seeds-solved/) identifies two still-untested implementation-mechanism possibilities: shared-RNG draws consumed during curve-validation loops, or intermittent rejection by an old order-test implementation. **Neither is established or a unique historical explanation**. Seek independently authenticated 1997–98 source, logs, or selection documentation supplying a previously unfitted criterion. Freeze it, run **unchanged on the four candidates**, require a prediction selecting 7026 and at least one source-distinct accepted curve (e.g. P-256 1842) while rejecting earlier viable alternatives, or preserve UNKNOWN. No more arbitrary seed sweeps, post-hoc score fitting, or second root-sign SEA on P-224.
 
 Exact source code in the [V9 frozen branch](https://github.com/heathsanchez/test/tree/research/p224-preselection-census-v9-20261017/research/p256_origin_20261017); retained old V1–V8 results are unchanged.
