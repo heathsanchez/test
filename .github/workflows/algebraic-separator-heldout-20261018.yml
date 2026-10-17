@@ -1,0 +1,46 @@
+name: Frozen algebraic separator pilot
+on:
+  push:
+    branches: [research/algebraic-separator-heldout-20261018]
+    paths:
+      - "research/algebraic_separator_20261018/**"
+      - ".github/workflows/algebraic-separator-heldout-20261018.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-heldout-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify preregistration is an ancestor
+        run: git merge-base --is-ancestor b01d6af55f4d3f0abda515e2927d6b14c902812b HEAD
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Pin established number-theory comparator
+        run: python -m pip install --disable-pip-version-check sympy==1.14.0
+      - name: Calibration source-native replay
+        run: python research/algebraic_separator_20261018/experiment.py --split calibration
+      - name: Protected heldout source-native replay
+        run: python research/algebraic_separator_20261018/experiment.py --split heldout
+      - name: Independently check factor commitments, square witnesses and ablations
+        run: python research/algebraic_separator_20261018/verify_independent.py
+      - name: Preserve complete evidence and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: algebraic-separator-heldout-evidence
+          if-no-files-found: warn
+          retention-days: 90
+          path: |
+            research/algebraic_separator_20261018/protocol.json
+            research/algebraic_separator_20261018/experiment.py
+            research/algebraic_separator_20261018/verify_independent.py
+            research/algebraic_separator_20261018/results_calibration.json
+            research/algebraic_separator_20261018/results_heldout.json
+            research/algebraic_separator_20261018/independent_verification.json
+            research/algebraic_separator_20261018/README.md
