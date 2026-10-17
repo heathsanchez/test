@@ -1896,6 +1896,27 @@ fn compare_values(
                     work,
                     context,
                 ) => {}
+            // An open rigid function and an unrelated lambda have no
+            // source-certified eta equality. A failed eta candidate is not
+            // an independently checked constructor-disjointness proof.
+            // This is a scoped three-valued conversion experiment: preserve
+            // the existing trusted Boolean, Nat and constructor mismatches.
+            (Value::Lam { .. }, Value::Neutral(Neutral {
+                head: NeutralHead::Free(_), spine,
+            }))
+            | (Value::Neutral(Neutral {
+                head: NeutralHead::Free(_), spine,
+            }), Value::Lam { .. })
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_OPEN_LAMBDA_DECLINE").is_some()
+                    && spine.is_empty()
+                =>
+            {
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_OPEN_LAMBDA_DECLINE").is_some() {
+                    eprintln!("NUCLEUS_OPEN_LAMBDA_DECLINE:depth={depth}:left={current_left:?}:right={current_right:?}:budget={current_budget}");
+                }
+                return Judgment::unknown("open-lambda-neutral-requires-typed-eta");
+            }
             _ => {
                 if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
                     eprintln!(
