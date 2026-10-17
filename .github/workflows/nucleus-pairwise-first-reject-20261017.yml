@@ -1,0 +1,99 @@
+name: Nucleus Pairwise first false rejection separator
+on:
+  push:
+    branches: [research/nucleus-pairwise-rejection-20261017]
+    paths:
+      - ".github/workflows/nucleus-pairwise-first-reject-20261017.yml"
+      - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/convert.rs"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pairwise:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      LEAN_SOURCE_SHA: 5045d0056413266e57c625dcd7c365b10e377c52
+      EXPORTER_SOURCE_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile isolated Nucleus diagnostics without changing verdict semantics
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/evidence/binary.sha256
+      - name: Pin Lean 4.34.1 and lean4export source
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --githash | tee /tmp/evidence/lean-githash.txt
+          test "$(cat /tmp/evidence/lean-githash.txt)" = "$LEAN_SOURCE_SHA"
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter
+          git -C /tmp/exporter checkout -q "$EXPORTER_SOURCE_SHA"
+          echo leanprover/lean4:v4.34.1 > /tmp/exporter/lean-toolchain
+          (cd /tmp/exporter && lake build)
+      - name: Independently export two native Pairwise proof dependencies
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd /tmp/exporter
+          for name in List.pairwise_append_comm List.pairwise_middle; do
+            lake env .lake/build/bin/lean4export Init.Data.List.Pairwise -- "$name" > "/tmp/evidence/$name.ndjson"
+            sha256sum "/tmp/evidence/$name.ndjson"
+          done
+      - name: Compare exact checker verdict before and after proof-irrelevance admission
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib,subprocess,time
+          evidence=pathlib.Path('/tmp/evidence')
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pin['origin_flags']})
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          env['NUCLEUS_TRACE_RIGID_PROOF_REJECT']='1'
+          env['NUCLEUS_TRACE_EXACT_PROOF_NEUTRALS']='1'
+          checker='metatron-kernel/target/release/metatron-kernel'
+          records=[]
+          for name in ['List.pairwise_append_comm','List.pairwise_middle']:
+              source=evidence/(name+'.ndjson')
+              raw=source.read_bytes()
+              first=json.loads(raw.splitlines()[0])['meta']
+              assert first['format']['version']=='3.1.0',first
+              for enabled in (False,True):
+                  flags=dict(env)
+                  if enabled: flags['NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS']='1'
+                  t=time.perf_counter()
+                  result=subprocess.run([checker],input=raw,capture_output=True,env=flags,timeout=120)
+                  row={'name':name,'candidate_enabled':enabled,'rc':result.returncode,
+                      'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw),
+                      'elapsed':round(time.perf_counter()-t,5),
+                      'trace':(result.stderr+result.stdout).decode(errors='replace')[-16000:]}
+                  records.append(row)
+                  print(name,'enabled',enabled,'rc',row['rc'],'bytes',row['bytes'],flush=True)
+              source.unlink()
+          negatives=[]
+          for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']:
+              p=pathlib.Path('metatron-kernel/tests/fixtures')/name
+              flags=dict(env);flags['NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS']='1'
+              result=subprocess.run([checker],input=p.read_bytes(),capture_output=True,env=flags,timeout=60)
+              negatives.append({'name':name,'rc':result.returncode})
+          (evidence/'pairwise-results.json').write_text(json.dumps(
+              {'checker_sha':os.environ['GITHUB_SHA'],'lean_source':os.environ['LEAN_SOURCE_SHA'],
+               'exporter_source':os.environ['EXPORTER_SOURCE_SHA'],'cases':records,'negative_controls':negatives},
+              indent=2)+'\n')
+          assert all(v['rc']!=0 for v in negatives),'Soundness control falsely accepted'
+          assert all(v['rc'] in (0,1,2) for v in records),'Unexpected checker error'
+          PY
+      - name: Preserve precise first-obstruction evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-pairwise-first-reject-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
