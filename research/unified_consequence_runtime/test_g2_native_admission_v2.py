@@ -149,5 +149,44 @@ class AdmissionV16Controls(unittest.TestCase):
         self.assertIn('UNKNOWN_NONREGULAR',x['reason'])
 
 
+    def test_15_dormant_assertion_does_not_certify_executed_assert(self):
+        self.set_test('def test_protected():\n    if False:\n        assert False\n')
+        self.commit();self.write_pin()
+        x=self.run_gate()
+        self.assertEqual(x['status'],'UNKNOWN_ADMISSION',x)
+        self.assertIn('UNKNOWN_PROTECTED_ASSERTION_SOURCE',x['reason'])
+        self.assertEqual(x['native_calls'],0)
+
+    def test_16_gitignored_foreign_python_test_refused(self):
+        (self.repo/'.gitignore').write_text('tests/test_extra.py\n')
+        self.commit();self.write_pin()
+        (self.repo/'tests/test_extra.py').write_text('def test_extra():\n    assert True\n')
+        x=self.run_gate()
+        self.assertEqual(x['status'],'UNKNOWN_ADMISSION',x)
+        self.assertIn('UNKNOWN_UNTRACKED_EXECUTABLE_SOURCE',x['reason'])
+
+    def test_17_native_modification_of_original_tracked_source_invalidates_admission(self):
+        self.set_test('from pathlib import Path\ndef test_protected():\n    assert True\n    path=Path(__file__)\n    path.write_text(path.read_text()+"\\n# modified during test\\n")\n')
+        self.commit();self.write_pin()
+        x=self.run_gate()
+        self.assertEqual(x['status'],'UNKNOWN_ADMISSION',x)
+        self.assertEqual(x['native_calls'],1)
+        self.assertIn('UNKNOWN_TRACKED_SOURCE_DIRTY',x['reason'])
+
+    def test_18_missing_required_node_refused(self):
+        self.write_pin(required_test_prefixes=['tests/test_warrant.py::test_nonexistent'])
+        x=self.run_gate()
+        self.assertEqual(x['status'],'UNKNOWN_ADMISSION')
+        self.assertEqual(x['native_calls'],0)
+
+    def test_19_parametrized_original_assertion_is_observed_per_case(self):
+        self.set_test('import pytest\n@pytest.mark.parametrize("x",[1,2,3])\ndef test_protected(x):\n    assert x>0\n')
+        self.commit();self.write_pin()
+        x=self.run_gate()
+        self.assertEqual(x['status'],'ADMITTED_NATIVE_PASS_CALIBRATION',x)
+        self.assertEqual(x['counts']['cases'],3)
+        self.assertEqual(len(x['observed_call_nodes']),3)
+
+
 if __name__=='__main__':
     unittest.main()
