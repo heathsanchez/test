@@ -45,7 +45,9 @@ jobs:
                 (fun x y => R y x) = R :=
               fun _ R => unchecked Eq.refl R
           EOF
-          lake env lean -o RelationEta.olean RelationEta.lean
+          mkdir -p .lake/build/lib/lean
+          lake env lean -o .lake/build/lib/lean/RelationEta.olean RelationEta.lean
+          test -s .lake/build/lib/lean/RelationEta.olean
           sha256sum RelationEta.lean > /tmp/evidence/lean-falsifier-source.sha256
           git clone -q https://github.com/leanprover/lean4export /tmp/exporter
           git -C /tmp/exporter checkout -q "$EXPORTER_SHA"
