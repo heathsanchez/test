@@ -4,7 +4,7 @@
 
 ## Source and provenance
 
-- Source input: [Anthropic, 16 Oct 2026](https://www.anthropic.com/research/ecdsa-curve-origins), 1998-04-03 12:52:07 UTC `srand48`, five high bits? **Actual emitted seed bytes are `lrand48()>>23`, equivalently `state>>40`**, index 7026 official P-224 seed. Anthropic reported three earlier viable curves, but ordinary article text did not list their indices.
+- Source input: [Anthropic, 16 Oct 2026](https://www.anthropic.com/research/ecdsa-curve-origins), 1998-04-03 12:52:07 UTC `srand48`, emitted seed bytes `lrand48()>>23`, equivalently `state>>40`, index 7026 official P-224 seed. Anthropic reported three earlier viable curves, but ordinary article text did not list their indices.
 - 1998 ANSI X9.62 / NIST P-224 seed-SHA1 relation and public parameters, verified separately in [V6 source](https://github.com/heathsanchez/test/tree/research/p256-coefficient-sign-v6-20261017/research/p256_origin_20261017). P224 sign quotient mathematically certified in [V8](https://github.com/heathsanchez/test/commit/6df818d531984d07eddc7120ada374f350428c7f).
 - **V9 protocol frozen BEFORE V9 calculations** at [40555025](https://github.com/heathsanchez/test/commit/405550256a06c74d1a06d9af30a57b84f0ef9457).
 - **Qualified source/CI head:** [be67866d](https://github.com/heathsanchez/test/commit/be67866dda38e2e3f4776f398d29d036b0993de8); independent [GitHub Actions #38994719714 SUCCESS](https://github.com/heathsanchez/test/actions/runs/38994719714), all ten jobs successful (construction, 8 SEA shards, aggregation).
