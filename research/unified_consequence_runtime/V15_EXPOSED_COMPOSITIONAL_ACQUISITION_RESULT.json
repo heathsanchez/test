@@ -1,0 +1,101 @@
+{
+  "schema": "UDM_V15_EXPOSED_COMPOSITIONAL_ACQUISITION_QUALIFIED",
+  "epistemic": "WARRANTED_BOUNDED_EXPOSED_NATIVE_COMPOSITE_ACQUISITION_AND_SOURCE_ABLATION",
+  "branch": "research/udm-v15-compositional-source-growth-20261017",
+  "base_parent": "51949ec7d9deed23e625b9d108c45e86da7a909f",
+  "frozen_protocol_commit": "e310b561ba6cfceb4bab24543389dac9171ccbf7",
+  "frozen_protocol_blob": "02f92d6fdc013774f9947313384e63d6f8a66d5d",
+  "frozen_test_commit": "bb7a69eb0cfb66a301abdde3f3bb4467f743ebd2",
+  "frozen_test_blob": "83557a8f5f6a9ac9c6cb0d5a16804297d913619e",
+  "qualified_source_commit": "b809fe7ae27182ff12947e0ac4f4d3285f9a443d",
+  "ci_run": 39019070653,
+  "artifact_id": 12096360196,
+  "zip_sha256": "142f27a7b5a882cf77706d632de8c5534bc9d1c6108fe43c9e92bf8f66710a4e",
+  "artifact_independently_downloaded_and_hashed": true,
+  "contracts": {
+    "passed": 32,
+    "total": 32
+  },
+  "source": {
+    "repository": "jd/tenacity",
+    "base_commit": "4a74682e0186b5f2d25906aa190cd639c705a958",
+    "author_test": "tests/test_tenacity.py",
+    "exposed": true,
+    "source_guard": "tenacity/__init__.py",
+    "observed_branch_line": 425,
+    "observed_attribute": "wait",
+    "event_origin": "V13 twice native observed callable falsy attribute executing THEN branch",
+    "original_repaired_head_fetched": false,
+    "future_packaging_opened": false
+  },
+  "grammar": {
+    "nature": "Supplied generic finite AST atoms and pairwise composition; independently native selected resulting predicate, no human winning code injected",
+    "precommitted_candidates": 24,
+    "native_candidates_tested": 5,
+    "selected_index": 4,
+    "selected_signature": "NOT_CALLABLE",
+    "selected_source_predicate": "if not callable(self.wait):",
+    "chosen_candidate_source_sha256": "3c3a44bc56bbe3abf0e1201d5a6e834fc6d27445f695ec232ab70e42d434e71c",
+    "no_claim_of_complete_old_grammar_exhaustion": true,
+    "previous_old_V104_native_result": "V14 0/8 verified PASS, 4 verified FAIL, 4 UNKNOWN",
+    "unknown_prior_composite_candidates": 4
+  },
+  "causal_native": {
+    "actual_native_calls": 16,
+    "experimental_elapsed_seconds": 102.442940315,
+    "original": {
+      "replays": 2,
+      "passed": 141,
+      "failed": 1,
+      "skipped": 0,
+      "status": "VERIFIED_REPEATED_FAIL_NATIVE_PROTECTED"
+    },
+    "generated": {
+      "replays": 2,
+      "passed": 142,
+      "failed": 0,
+      "skipped": 0,
+      "status": "VERIFIED_REPEATED_PASS_SCOPED_NATIVE"
+    },
+    "withdrawal": {
+      "replays": 2,
+      "passed": 141,
+      "failed": 1,
+      "skipped": 0,
+      "status": "VERIFIED_REPEATED_FAIL_NATIVE_PROTECTED"
+    },
+    "restoration": {
+      "replays": 2,
+      "passed": 142,
+      "failed": 0,
+      "skipped": 0,
+      "status": "VERIFIED_REPEATED_PASS_SCOPED_NATIVE"
+    },
+    "candidate_source_rebuilt_on_restoration": true,
+    "original_source_staged_bytes_verified": true,
+    "full_upstream_suite": "NOT_EXECUTED_OR_QUALIFIED"
+  },
+  "limits": {
+    "method_selection_not_prospective": true,
+    "source_exposure_leakage": "Task and bug pattern known from V12; generic AST composition family engineer supplied",
+    "not_general_autonomous_operator_invention": true,
+    "not_software_refinement_proof": true,
+    "no_downstream_source_distinct_success": true,
+    "ledger_competitor_not_run": true,
+    "coding_agent_competitor_not_run": true,
+    "full_lifecycle_economics_unknown": true,
+    "same_informed_method_baseline_not_matched": true,
+    "cannot_claim_unique_winner": true,
+    "cannot_claim_semantic_equivalence_on_all_inputs": true
+  },
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_SCOPE",
+    "V15": "WARRANTED_BOUNDED_EXPOSED_CONSTRUCTIVE_SELECTION_AND_SOURCE_ABLATION",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "next_gate": "Freeze independently source-distinct unfamiliar new native tasks, program grammar, paid strong fully informed ledger and competent agent controls before source access. Test whether newly selected finite AST method changes future discoverability with physical capability withdrawal and measured cost. No retrospective promotion of Tenacity."
+}
