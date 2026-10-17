@@ -32,9 +32,9 @@ jobs:
           arr=[v for v in rows[:77] if v['state']=='ELIGIBLE_FOR_POINT_COUNT']
           assert len(arr)==48 and len(rows[:77])==77 and arr[-1]['index']==77
           p=int('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001',16)
-          gp=[f'default(parisizemax,1500000000);p={p};','print("VERSION|",version());',
-           'v10(i,b)={my(E,u,n,h,l,prime,mov,k,z,ok);E=ellinit([-3,b],p);u=ellsea(E,0);if(u<=0,print("V10|",i,"|UNKNOWN|",u);return());n=u;h=1;forprime(l=2,255,while(n%l==0,n=n/l;h=h*l));prime=isprime(n);mov=1;z=1;if(n>1,for(k=1,20,z=(z*p)%n;if(z==1,mov=0;break)));ok=(prime==1&&n>2^160&&n*n>16*p&&u!=p&&mov==1);print("V10|",i,"|",u,"|",h,"|",n,"|",prime,"|",mov,"|",ok);};']
-          gp += [f"v10({v['index']},{int(v['b'],16)});" for v in arr]
+          gp=['default(parisizemax,1500000000);','print("VERSION|",version());',
+           'v10(i,b,modulus)={my(E,u,n,h,l,prime,mov,k,z,ok);E=ellinit([-3,b],modulus);u=ellsea(E,0);if(u<=0,print("V10|",i,"|UNKNOWN|",u);return());n=u;h=1;forprime(l=2,255,while(n%l==0,n=n/l;h=h*l));prime=isprime(n);mov=1;z=1;if(n>1,for(k=1,20,z=(z*modulus)%n;if(z==1,mov=0;break)));ok=(prime==1&&n>2^160&&n*n>16*modulus&&u!=modulus&&mov==1);print("V10|",i,"|",u,"|",h,"|",n,"|",prime,"|",mov,"|",ok);};']
+          gp += [f"v10({v['index']},{int(v['b'],16)},{p});" for v in arr]
           gp += ['print("FINISHED");','quit(0);']
           open('V10_PREFIX.gp','w').write('\n'.join(gp)+'\n')
           PY
