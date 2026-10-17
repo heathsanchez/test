@@ -47,10 +47,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gcc -std=gnu89 -O2 -w -I"$RUNNER_TEMP/freelip" \
+          gcc -std=gnu89 -O1 -g -fsanitize=address -fno-omit-frame-pointer -w -I"$RUNNER_TEMP/freelip" \
             research/p256_origin_20261017/native_freelip_sqrt.c \
             "$RUNNER_TEMP/freelip/lip.c" -lm -o "$RUNNER_TEMP/native_freelip_sqrt"
-          python3 research/p256_origin_20261017/native_compare.py \
+          ASAN_OPTIONS=detect_leaks=0:abort_on_error=0 python3 research/p256_origin_20261017/native_compare.py \
             --native "$RUNNER_TEMP/native_freelip_sqrt" \
             --data research/p256_origin_20261017/V7_RESULTS.json \
             --out research/p256_origin_20261017/V7_NATIVE_RESULTS.json \
