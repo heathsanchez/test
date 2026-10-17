@@ -1,0 +1,90 @@
+name: P-256 V12 all FreeLIP 11-limb states via quotient-invariant observations
+on:
+  push:
+    branches: [research/p256-full-native-11limb-inverse-v12-20261017]
+    paths:
+      - 'research/p256_origin_20261017/V12_*'
+      - 'research/p256_origin_20261017/v12_inverse.py'
+      - 'research/p256_origin_20261017/make_v12_certificate.py'
+      - 'research/p256_origin_20261017/verify_v12_certificate.py'
+      - '.github/workflows/p256-full-native-11limb-v12.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  full-state-inversion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned matrix-reduction implementation
+        run: python3 -m pip install --disable-pip-version-check sympy==1.14.0
+      - name: Independently replay all 2^30 quotient invariants and complete lattice census
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          python3 v12_inverse.py --out V12_CI_RESULTS.json
+          python3 - <<'PY'
+          import json
+          old=json.load(open('V12_RESULTS.json'));new=json.load(open('V12_CI_RESULTS.json'))
+          fields=('status','invariants','parameters','known_source_seed_positive_controls',
+                  'all_hidden_initial_states_quantified','all_reduction_quotients_quantified',
+                  'total_target_hidden_state_candidates','total_exact_P256_full_matches','source_sha256')
+          for field in fields:assert old[field]==new[field],field
+          for a,b in zip(old['target_orientations'],new['target_orientations']):
+              for key in ('orientation','observed','exact_total_nodes','exact_sphere_leaves',
+                          'true_box_hidden_states','full_Gx_matches','source_native_accepted_matches',
+                          'states','verified_unimodular_lattice_change','exact_full_sphere_enumeration'):
+                  assert a[key]==b[key],(a['orientation'],key)
+          assert new['status']=='BOUNDED_11_LIMB_NO_STATE_MATCH_UNDER_NO_REJECTIONS'
+          assert new['invariants']['invariant_bits_total']==106
+          assert sum(x['true_box_hidden_states'] for x in new['target_orientations'])==2
+          print('QUALIFIED_WITHIN_SOURCE_11x26_NO_REJECTION_FREE_LIP_GRAMMAR')
+          PY
+      - name: Reconstruct exact immutable certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          sha256sum V12_CERTIFICATE.json >/tmp/V12_certificate.sha256
+          python3 make_v12_certificate.py
+          sha256sum -c /tmp/V12_certificate.sha256
+      - name: Archive original and independently rerun evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v12-source-original-state-census
+          path: |
+            research/p256_origin_20261017/V12_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/V12_REPORT.md
+            research/p256_origin_20261017/v12_inverse.py
+            research/p256_origin_20261017/make_v12_certificate.py
+            research/p256_origin_20261017/V12_RESULTS.json
+            research/p256_origin_20261017/V12_CI_RESULTS.json
+            research/p256_origin_20261017/V12_CERTIFICATE.json
+          if-no-files-found: error
+  stand-alone-independent-certificate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Complete original integer witness, no SymPy/LLL dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          python3 -B verify_v12_certificate.py | tee V12_CERTIFICATE_CHECK.log
+          grep -q 'WARRANTED_11_LIMB_EXACT_NO_REJECTION_MODEL' V12_CERTIFICATE_CHECK.log
+          grep -q 'full_2\^30_q_domain_invariants_verified' V12_CERTIFICATE_CHECK.log
+      - name: Archive independent proof receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v12-pure-python-checkable-certificate
+          path: |
+            research/p256_origin_20261017/V12_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/verify_v12_certificate.py
+            research/p256_origin_20261017/V12_CERTIFICATE.json
+            research/p256_origin_20261017/V12_CERTIFICATE_CHECK.log
+          if-no-files-found: error

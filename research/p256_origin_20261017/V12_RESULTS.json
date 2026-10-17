@@ -1,0 +1,217 @@
+{
+  "all_hidden_initial_states_quantified": true,
+  "all_reduction_quotients_quantified": true,
+  "epistemic": {
+    "ECDSA_cryptanalytic_vulnerability": "NOT_CLAIMED",
+    "FreeLIP_rejection_skip_cases": "NOT_COVERED",
+    "NSA_1997_curve_generator_usage": "NOT_ESTABLISHED",
+    "actual_historical_G_generation": "UNKNOWN",
+    "different_limb_widths_or_external_generator": "NOT_COVERED",
+    "independent_CI_verdict": "AWAITING",
+    "strong_coding_agent_advantage": "NOT_RUN"
+  },
+  "invariants": {
+    "high_slice_130_to_191_stable": true,
+    "high_slice_end_lt_2^192": true,
+    "invariant_bits_total": 106,
+    "invariant_digit_lowbits": {
+      "2": {
+        "known_low_bits": 26,
+        "value": 54136650
+      },
+      "3": {
+        "known_low_bits": 18,
+        "value": 47020
+      },
+      "5": {
+        "known_low_bits": 26,
+        "value": 15274044
+      },
+      "6": {
+        "known_low_bits": 26,
+        "value": 63860310
+      },
+      "7": {
+        "known_low_bits": 10,
+        "value": 994
+      }
+    },
+    "q_max": 1073741823,
+    "whole_q_interval_proved_by_endpoint_inequalities": true,
+    "x_low52_gt_qmax": true
+  },
+  "known_source_seed_positive_controls": [
+    {
+      "box_state_count": 3,
+      "complete": true,
+      "matched_correct_state": true,
+      "offset": 7,
+      "orientation": "msf",
+      "seed": 20000
+    },
+    {
+      "box_state_count": 3,
+      "complete": true,
+      "matched_correct_state": true,
+      "offset": 7,
+      "orientation": "lsf",
+      "seed": 20000
+    },
+    {
+      "box_state_count": 2,
+      "complete": true,
+      "matched_correct_state": true,
+      "offset": 29,
+      "orientation": "msf",
+      "seed": 20420
+    },
+    {
+      "box_state_count": 3,
+      "complete": true,
+      "matched_correct_state": true,
+      "offset": 29,
+      "orientation": "lsf",
+      "seed": 20420
+    }
+  ],
+  "parameters": {
+    "A": "56455876562739436995171414077326",
+    "M": "162259276829213363391578010288127",
+    "nlimbs": 11,
+    "p": "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+    "target_Gx": "0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296",
+    "u": 67108864
+  },
+  "protocol_commit": "9578ccae67a49f68c4e85ebe0103f46733e8125e",
+  "scope": "11x26 consecutive accepted low-bit FreeLIP outputs (no rejection), both output packing directions; all M states; all 2^30 reduction quotients via exact invariant bit masks",
+  "source": "FreeLIP v1.1 1997 mirror 00898a4814d2cc1244bf348682be6ed10dda35f0; no independent historical NSA program",
+  "source_sha256": "d429bfd4bc9c3e84f1b2b0b1980271f70221c1b2237f48b68578c59242641ca5",
+  "status": "BOUNDED_11_LIMB_NO_STATE_MATCH_UNDER_NO_REJECTIONS",
+  "target_orientations": [
+    {
+      "elapsed_seconds": 0.0034,
+      "exact_full_sphere_enumeration": true,
+      "exact_sphere_leaves": 17,
+      "exact_total_nodes": 46,
+      "full_Gx_matches": 0,
+      "max_candidate_integer_interval": 8,
+      "observed": [
+        [
+          3,
+          10,
+          994
+        ],
+        [
+          4,
+          26,
+          63860310
+        ],
+        [
+          5,
+          26,
+          15274044
+        ],
+        [
+          7,
+          18,
+          47020
+        ],
+        [
+          8,
+          26,
+          54136650
+        ]
+      ],
+      "orientation": "msf",
+      "source_native_accepted_matches": 0,
+      "states": [
+        {
+          "accepted_no_internal_skips": true,
+          "first_observation_state": "92625773300170008962998359505890",
+          "matches_P256_Gx": false,
+          "prng_lowbits": [
+            41459421,
+            65774665,
+            66607473,
+            37698530,
+            63860310,
+            15274044,
+            43993623,
+            57456556,
+            54136650,
+            27666283,
+            45136684
+          ],
+          "raw_full_11_hex": "0x2789eddfae9127f859718fcef8bce6e563a440f29f4a17db2deb33a0f4a6989daeb0bb2c",
+          "raw_mod_p_hex": "0xd61b15d731e7a1eff8bce6e563a440f277c029fc2deb33a0f4a6989dd63aa90b",
+          "temporal_first_state": "62456320893756113469690097475293"
+        },
+        {
+          "accepted_no_internal_skips": true,
+          "first_observation_state": "27570711702338208140139242641378",
+          "matches_P256_Gx": false,
+          "prng_lowbits": [
+            25354849,
+            53440524,
+            29834466,
+            47634402,
+            63860310,
+            15274044,
+            59474056,
+            60864428,
+            54136650,
+            7336623,
+            23387722
+          ],
+          "raw_full_11_hex": "0x182e261cbdc031c73ce2b5b5f8bce6e563a440f38b8088e82deb33a0f4a1bfcabd64de4a",
+          "raw_mod_p_hex": "0xd5ee57e324b48f99f8bce6e563a440f3735262cc2deb33a0f4a1bfcad5930466",
+          "temporal_first_state": "105426249382505249314148477756001"
+        }
+      ],
+      "true_box_hidden_states": 2,
+      "verified_unimodular_lattice_change": true
+    },
+    {
+      "elapsed_seconds": 0.0029,
+      "exact_full_sphere_enumeration": true,
+      "exact_sphere_leaves": 20,
+      "exact_total_nodes": 50,
+      "full_Gx_matches": 0,
+      "max_candidate_integer_interval": 8,
+      "observed": [
+        [
+          2,
+          26,
+          54136650
+        ],
+        [
+          3,
+          18,
+          47020
+        ],
+        [
+          5,
+          26,
+          15274044
+        ],
+        [
+          6,
+          26,
+          63860310
+        ],
+        [
+          7,
+          10,
+          994
+        ]
+      ],
+      "orientation": "lsf",
+      "source_native_accepted_matches": 0,
+      "states": [],
+      "true_box_hidden_states": 0,
+      "verified_unimodular_lattice_change": true
+    }
+  ],
+  "total_exact_P256_full_matches": 0,
+  "total_target_hidden_state_candidates": 2
+}
