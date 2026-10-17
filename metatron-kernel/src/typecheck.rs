@@ -3133,6 +3133,66 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    /// Identify the type of a caller-owned binary predicate variable.
+    ///
+    /// This is solely a conservative UNKNOWN gate for a failed function eta
+    /// comparison, not a conversion or term-acceptance rule. Each Pi telescope
+    /// comes from an already checked lexical context. Both binders are opened
+    /// in that same context, and only a literal Sort 0 result is admitted.
+    /// Functions with a data-valued result never qualify.
+    pub(crate) fn checked_binary_prop_relation_free(
+        &self,
+        free: FreeId,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if budget < 64 || context.len() > 64 {
+            return false;
+        }
+        let Some(mut current) = usize::try_from(free.0).ok()
+            .and_then(|i| context.get(i)).cloned() else {
+            return false;
+        };
+        let mut protected = context.to_vec();
+        let mut fuel = budget.min(1024);
+        for _ in 0..2 {
+            let Some((domain, body)) = self.pi_view(
+                Judgment::proven(current, "checked-local-binary-relation"),
+                fuel.min(512),
+            ) else { return false };
+            let Some(local) = u64::try_from(protected.len()).ok().map(FreeId)
+                else { return false };
+            current = match body {
+                PiBody::Closure(closure) =>
+                    TypeValue::Term(closure.under_free(local)),
+                PiBody::Fixed(binder, ty) => {
+                    let Some(opened) = self.reopen_fixed_pi_body(
+                        &ty, binder, local, &mut fuel,
+                    ) else { return false };
+                    opened
+                },
+            };
+            protected.push(domain);
+        }
+        let result = match current {
+            TypeValue::Sort(level) => level == LevelTerm::Zero,
+            TypeValue::Term(result) => {
+                matches!(self.machine().expose(
+                    result, Transparency::Reducible, fuel.min(512),
+                ).proven_value(), Some(Value::Sort(LevelTerm::Zero)))
+            }
+            TypeValue::Pi { .. } => false,
+        };
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_OPEN_LAMBDA_DECLINE").is_some() {
+            eprintln!(
+                "NUCLEUS_RELATION_SORT:free={free:?}:depth={}:Prop_return={result}",
+                context.len(),
+            );
+        }
+        result
+    }
+
     pub(crate) fn expression(&self, expression: ExprId) -> Option<&Expr> {
         self.expressions.get(expression)
     }
