@@ -1,0 +1,83 @@
+name: P-256 V11 exact hidden FreeLIP-state inverse witness
+on:
+  push:
+    branches: [research/p256-hidden-state-inversion-v11-20261017]
+    paths:
+      - 'research/p256_origin_20261017/V11_*'
+      - 'research/p256_origin_20261017/v11_*'
+      - 'research/p256_origin_20261017/make_v11_certificate.py'
+      - '.github/workflows/p256-hidden-state-v11.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inverse-lattice-census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install reproducible matrix-reduction dependency
+        run: python3 -m pip install --disable-pip-version-check sympy==1.14.0
+      - name: Independently generate the full-state inverse census and six positive controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          python3 v11_full_state.py --out V11_CI_RESULTS.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('V11_RESULTS.json'))
+          b=json.load(open('V11_CI_RESULTS.json'))
+          for name in ('status','scope','all_quotient_cases','total_state_hits',
+                       'every_case_exactly_exhaustive','parameters','synthetic_known_state_positive_controls'):
+              assert a[name]==b[name],name
+          assert all(a['quotient_orientation_cases'][i]['exact_lattice_census']==b['quotient_orientation_cases'][i]['exact_lattice_census'] for i in range(32))
+          assert a['status']=='BOUNDED_10_LIMB_107_BIT_NO_STATE_EXACT'
+          assert a['source_sha256']==b['source_sha256']
+          print('PASS: independent same-source full exact lattice census, 6/6 positive and 32/32 no-state')
+          PY
+      - name: Recreate frozen small certificate and check exact byte identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          sha256sum V11_CERTIFICATE.json > /tmp/expected_certificate.sha256
+          python3 make_v11_certificate.py
+          sha256sum -c /tmp/expected_certificate.sha256
+      - name: Archive source, actual logs and exact witness
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v11-full-state-search
+          path: |
+            research/p256_origin_20261017/V11_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/v11_full_state.py
+            research/p256_origin_20261017/make_v11_certificate.py
+            research/p256_origin_20261017/V11_RESULTS.json
+            research/p256_origin_20261017/V11_CI_RESULTS.json
+            research/p256_origin_20261017/V11_CERTIFICATE.json
+          if-no-files-found: error
+  independent-certificate-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recheck unimodular proof and all 32 exclusions, stdlib only
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          python3 -B verify_v11_certificate.py | tee V11_CERTIFICATE_CHECK.log
+          grep 'EXACT_INTEGER_CERTIFICATE_VERIFIED' V11_CERTIFICATE_CHECK.log
+          test "$(grep -c 'feasible_two_projection_pairs' V11_CERTIFICATE_CHECK.log)" = 1
+      - name: Publish independently verified certificate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v11-independent-stdlib-certificate
+          path: |
+            research/p256_origin_20261017/V11_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/V11_CERTIFICATE.json
+            research/p256_origin_20261017/verify_v11_certificate.py
+            research/p256_origin_20261017/V11_CERTIFICATE_CHECK.log
+          if-no-files-found: error
