@@ -1,0 +1,124 @@
+{
+  "candidate_876": {
+    "V5_group_order": "PRIME",
+    "basis": "V5 point count, no new order computation",
+    "result_b_hex": "0xa84fca4be639727675ccea4a9cecda4b900c32dd7e86192ab71b355fde8255bd"
+  },
+  "case_match_count": 4,
+  "cases": [
+    {
+      "alternate_sign": false,
+      "curve": "prime192v1",
+      "first_quadratic_nonresidue": null,
+      "iterations": 0,
+      "native_zsqrtmod_check": "PENDING_CI",
+      "original_zsqrtmod_b_hex": "0x64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1",
+      "original_zsqrtmod_matches_published_b": true,
+      "p_hex": "0xfffffffffffffffffffffffffffffffeffffffffffffffff",
+      "p_mod4": 3,
+      "seed": "3045AE6FC8422F64ED579528D38120EAE12196D5",
+      "sha256_openssl_source": "f74fce5c93da34272c8cdfbbb2edca2cc02b3f36b63b394c1f57352bbbd9db88",
+      "source_b_hex": "0x64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1",
+      "source_c_hex": "0x3099d2bbbfcb2538542dcd5fb078b6ef5f3d6fe2c745de65"
+    },
+    {
+      "alternate_sign": true,
+      "curve": "secp224r1",
+      "first_quadratic_nonresidue": 11,
+      "iterations": 51,
+      "native_zsqrtmod_check": "PENDING_CI",
+      "original_zsqrtmod_b_hex": "0x4bfaf57af3fb4c540abecda9afbb4f4728402745d8f4c6bcdcaa004d",
+      "original_zsqrtmod_matches_published_b": false,
+      "p_hex": "0xffffffffffffffffffffffffffffffff000000000000000000000001",
+      "p_mod4": 1,
+      "seed": "BD71344799D5C7FCDC45B59FA3B9AB8F6A948BC5",
+      "sha256_openssl_source": "3e4cfdaa9db6a9fe85927431ce631be5e351df02d5860464cc371a04cdab657a",
+      "source_b_hex": "0xb4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4",
+      "source_c_hex": "0x5b056c7e11dd68f40469ee7f3c7a7d74f7d121116506d031218291fb"
+    },
+    {
+      "alternate_sign": false,
+      "curve": "prime256v1",
+      "first_quadratic_nonresidue": null,
+      "iterations": 0,
+      "native_zsqrtmod_check": "PENDING_CI",
+      "original_zsqrtmod_b_hex": "0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+      "original_zsqrtmod_matches_published_b": true,
+      "p_hex": "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+      "p_mod4": 3,
+      "seed": "C49D360886E704936A6678E1139D26B7819F7E90",
+      "sha256_openssl_source": "4f266c2addbbf24097a4c507f41bb39da33f5494bc756fa3d2f810bfc1655486",
+      "source_b_hex": "0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+      "source_c_hex": "0x7efba1662985be9403cb055c75d4f7e0ce8d84a9c5114abcaf3177680104fa0d"
+    },
+    {
+      "alternate_sign": false,
+      "curve": "secp384r1",
+      "first_quadratic_nonresidue": null,
+      "iterations": 0,
+      "native_zsqrtmod_check": "PENDING_CI",
+      "original_zsqrtmod_b_hex": "0xb3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",
+      "original_zsqrtmod_matches_published_b": true,
+      "p_hex": "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+      "p_mod4": 3,
+      "seed": "A335926AA319A27A1D00896A6773A4827ACDAC73",
+      "sha256_openssl_source": "0744f644ee05f7e9c7da1dca411a11c1cabccc42bf63d91a15e9edb66dc33040",
+      "source_b_hex": "0xb3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",
+      "source_c_hex": "0x79d1e655f868f02fff48dcdee14151ddb80643c1406d0ca10dfe6fc52009540a495e8042ea5f744f6e184667cc722483"
+    },
+    {
+      "alternate_sign": false,
+      "curve": "secp521r1",
+      "first_quadratic_nonresidue": null,
+      "iterations": 0,
+      "native_zsqrtmod_check": "PENDING_CI",
+      "original_zsqrtmod_b_hex": "0x51953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00",
+      "original_zsqrtmod_matches_published_b": true,
+      "p_hex": "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "p_mod4": 3,
+      "seed": "D09E8800291CB85396CC6717393284AAA0DA64BA",
+      "sha256_openssl_source": "9f20adfcf29b793eb993bcc636497575a765d2661da84486aa4239478252d18b",
+      "source_b_hex": "0x51953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00",
+      "source_c_hex": "0xb48bfa5f420a34949539d2bdfc264eeeeb077688e44fbf0ad8f6d0edb37bd6b533281000518e19f1b9ffbe0fe9ed8a3c2200b8f875e523868c70c1e5bf55bad637"
+    }
+  ],
+  "crypto_security_implication": "NONE",
+  "historical_point_G_origin": "UNKNOWN",
+  "historical_selector": "UNKNOWN",
+  "negative_nonresidue_controls": [
+    {
+      "nonresidue": 11,
+      "p_bits": 192,
+      "rejected": true
+    },
+    {
+      "nonresidue": 11,
+      "p_bits": 224,
+      "rejected": true
+    },
+    {
+      "nonresidue": 3,
+      "p_bits": 256,
+      "rejected": true
+    },
+    {
+      "nonresidue": 19,
+      "p_bits": 384,
+      "rejected": true
+    },
+    {
+      "nonresidue": 3,
+      "p_bits": 521,
+      "rejected": true
+    }
+  ],
+  "protocol": "V7_FROZEN_PROTOCOL.md",
+  "source_description": "source-translated 1997 zsqrtmod; not a claim of historical NSA program use",
+  "source_ref": {
+    "lip_c_blob": "a86ce8ae5be49e0f35999a2c87f52e1718ebdb81",
+    "lip_h_blob": "080cda8aec8c0939348452ea3beb9f1afad845ef",
+    "mirror_commit": "00898a4814d2cc1244bf348682be6ed10dda35f0"
+  },
+  "source_sha256": "c83c1a3cb0dd0e463161252f9f9a759deece6260d5b76705e29aa9eb64eaf413",
+  "status": "LOCAL_EXACT_SOURCE_TRANSLATION; HISTORICAL_USE_UNKNOWN"
+}

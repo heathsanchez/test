@@ -1,0 +1,70 @@
+name: P-256 V7 1997 FreeLIP native modular-root source comparison
+on:
+  push:
+    branches:
+      - research/p256-historical-zsqrt-v7-20261017
+    paths:
+      - 'research/p256_origin_20261017/V7_*'
+      - 'research/p256_origin_20261017/v7_zsqrt.py'
+      - 'research/p256_origin_20261017/native_*'
+      - '.github/workflows/p256-freeLIP-zsqrt-v7-20261017.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify-historical-root:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frozen source and Python standard-curve relations
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f research/p256_origin_20261017/V7_FROZEN_PROTOCOL.md
+          python3 research/p256_origin_20261017/v7_zsqrt.py | tee "$RUNNER_TEMP/v7-python-summary.txt"
+          python3 - <<'PY'
+          import json
+          p='research/p256_origin_20261017/V7_RESULTS.json'
+          d=json.load(open(p))
+          assert d['case_match_count']==4 and len(d['cases'])==5
+          assert [q['curve'] for q in d['cases'] if not q['original_zsqrtmod_matches_published_b']]==['secp224r1']
+          assert d['candidate_876']['V5_group_order']=='PRIME'
+          assert d['historical_selector']=='UNKNOWN'
+          print('PASS_PY_SOURCE_ALGORITHM_BOUNDARY')
+          PY
+      - name: Fetch immutable original FreeLIP v1.1 and verify Git blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/lrobot/freelip.git "$RUNNER_TEMP/freelip"
+          git -C "$RUNNER_TEMP/freelip" checkout --quiet 00898a4814d2cc1244bf348682be6ed10dda35f0
+          test "$(git -C "$RUNNER_TEMP/freelip" rev-parse HEAD)" = 00898a4814d2cc1244bf348682be6ed10dda35f0
+          test "$(git -C "$RUNNER_TEMP/freelip" hash-object lip.c)" = a86ce8ae5be49e0f35999a2c87f52e1718ebdb81
+          test "$(git -C "$RUNNER_TEMP/freelip" hash-object lip.h)" = 080cda8aec8c0939348452ea3beb9f1afad845ef
+          sed -n '11730,11748p' "$RUNNER_TEMP/freelip/lip.c"
+      - name: Compile and execute original 1997 zsqrtmod against all curves
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcc -std=gnu89 -O2 -w -I"$RUNNER_TEMP/freelip" \
+            research/p256_origin_20261017/native_freelip_sqrt.c \
+            "$RUNNER_TEMP/freelip/lip.c" -lm -o "$RUNNER_TEMP/native_freelip_sqrt"
+          python3 research/p256_origin_20261017/native_compare.py \
+            --native "$RUNNER_TEMP/native_freelip_sqrt" \
+            --data research/p256_origin_20261017/V7_RESULTS.json \
+            --out research/p256_origin_20261017/V7_NATIVE_RESULTS.json \
+            | tee "$RUNNER_TEMP/v7-native-summary.txt"
+      - name: Preserve exact source and native receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v7-freelip-original-C-sign-control
+          path: |
+            research/p256_origin_20261017/V7_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/v7_zsqrt.py
+            research/p256_origin_20261017/native_freelip_sqrt.c
+            research/p256_origin_20261017/native_compare.py
+            research/p256_origin_20261017/V7_RESULTS.json
+            research/p256_origin_20261017/V7_NATIVE_RESULTS.json
+          retention-days: 90
