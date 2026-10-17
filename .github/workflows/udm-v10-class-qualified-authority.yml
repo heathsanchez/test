@@ -1,0 +1,102 @@
+name: V10 class-qualified native protected test authority (V9 failure diagnostic)
+on:
+  push:
+    branches: [research/udm-class-qualified-authority-v10-20261017]
+    paths:
+      - .github/workflows/udm-v10-class-qualified-authority.yml
+      - research/unified_consequence_runtime/typed_native_authority_v10.py
+      - research/unified_consequence_runtime/test_typed_native_authority_v10.py
+      - research/unified_consequence_runtime/qualify_exposed_tenacity_v10.py
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: udm-native-class-v10-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  frozen-class-authority:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+      GIT_CONFIG_NOSYSTEM: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Require frozen V10 tests and exact old verifier/source lineage
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/v10
+          git rev-parse HEAD > qualification/v10/SOURCE_COMMIT.txt
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/test_typed_native_authority_v10.py)" = \
+            "bce8cbc9270456e90247431d88eb5b9dc1345e41"
+          for path in \
+            research/unified_consequence_runtime/typed_native_authority_v6.py \
+            research/unified_consequence_runtime/typed_v104_msi_bridge_v7.py \
+            research/unified_consequence_runtime/typed_source_inventory_v5.py \
+            research/unified_consequence_runtime/qualify_source_bound_g2_v9.py \
+            research/unified_consequence_runtime/archaeology/typed-v104-v9/FROZEN_PROTOCOL.json; do
+            test "$(git rev-parse HEAD:"$path")" = \
+                 "$(git rev-parse 61d3274ec2fd932d111b01e0da4182b7345f9fae:"$path")"
+          done
+      - name: Install original versioned native pytest and source tools
+        run: |
+          set -euo pipefail
+          python -B -m pip install --disable-pip-version-check --no-input \
+            pytest==8.3.5 pytest-cov==6.2.1 pluggy==1.6.0 coverage==7.10.6 \
+            packaging==26.3 attrs==24.3.0 hypothesis==6.122.3 \
+            typing_extensions==4.12.2 colorama==0.4.6 rich==13.9.4 \
+            click==8.2.0 tenacity==9.1.2 markupsafe==3.0.2
+      - name: Execute frozen class-method authority tests and original native regressions
+        run: |
+          set -euo pipefail
+          python -B -m unittest \
+            research.unified_consequence_runtime.test_typed_native_authority_v10 \
+            research.unified_consequence_runtime.test_typed_native_authority_v6 \
+            research.unified_consequence_runtime.test_source_bound_g2_v9 \
+            -v 2>&1 | tee qualification/v10/CONTRACTS.log
+      - name: Exposed Tenacity class-method diagnostic only, never fresh G2
+        timeout-minutes: 8
+        run: |
+          set +e
+          # No GitHub token injected into an untrusted upstream test process.
+          env -u GH_TOKEN -u GITHUB_TOKEN \
+            python -B -m research.unified_consequence_runtime.qualify_exposed_tenacity_v10 \
+            > qualification/v10/EXPOSED_DIAGNOSTIC.log 2>&1
+          status=$?
+          echo "$status" > qualification/v10/EXPOSED_DIAGNOSTIC_EXIT.txt
+          tail -n 22 qualification/v10/EXPOSED_DIAGNOSTIC.log
+          exit "$status"
+      - name: Preserve actual boundary and G2 UNKNOWN
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/v10
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib,subprocess
+          p=Path('research/unified_consequence_runtime/typed_native_authority_v10.py')
+          data={'schema':'UDM_CLASS_QUALIFIED_NATIVE_V10_BOUNDARY',
+                'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                'source_sha256':hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None,
+                'old_v9_prospective_run':38985251065,
+                'v9_scientific_red_preserved':True,
+                'tenacity_now_exposed':True,'packaging_unopened':True,
+                'new_G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN','G5':'UNKNOWN','G6':'UNKNOWN'}
+          Path('qualification/v10/BOUNDARY.json').write_text(json.dumps(data,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-v10-class-authority-${{ github.sha }}-${{ github.run_attempt }}
+          path: qualification/v10/
+          retention-days: 90
