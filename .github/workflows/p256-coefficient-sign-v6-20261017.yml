@@ -1,0 +1,57 @@
+name: P-256 V6 multi-curve root-choice falsifier
+on:
+  push:
+    branches:
+      - research/p256-coefficient-sign-v6-20261017
+    paths:
+      - research/p256_origin_20261017/V6_*
+      - research/p256_origin_20261017/v6_root_rules.py
+      - .github/workflows/p256-coefficient-sign-v6-20261017.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-standards-crosscurve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout frozen candidate protocol and experiment
+        uses: actions/checkout@v4
+      - name: Check native OpenSSL and run five authoritative parameter cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          openssl version
+          python3 research/p256_origin_20261017/v6_root_rules.py
+      - name: Independent guard of full five-curve reproducibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib
+          x=json.loads(pathlib.Path('research/p256_origin_20261017/V6_RESULTS.json').read_text())
+          assert x['protocol_sha']=='ac022b760f5bdd785b5e127c2814d4214c336779'
+          assert [r['curve'] for r in x['cases']]==['prime192v1','secp224r1','prime256v1','secp384r1','secp521r1']
+          assert len(x['cases'])==5
+          assert all(r['rules']['sha1_seed_coefficient_equation'] for r in x['cases'])
+          assert x['published_policy_results']['R_min']['mismatches']==['secp224r1','secp384r1']
+          assert x['published_policy_results']['R_even']['mismatches']==['prime192v1','prime256v1','secp384r1']
+          assert x['published_policy_results']['R_mod4']['matches']==4
+          assert x['published_policy_results']['R_mod4']['applicable']==4
+          assert x['candidate_876']['b_low']['R_min'] is True
+          assert x['candidate_876']['b_high']['R_mod4'] is True
+          assert x['published_1842_rules']['R_mod4'] is True
+          assert x['general_provenance']=='UNKNOWN'
+          print('BOUNDED_CROSSCURVE_ROOT_RULE_REJECTION_VERIFIED; HISTORY_UNKNOWN')
+          PY
+      - name: Archive actual native full evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v6-five-standard-curves-root-choice
+          path: |
+            research/p256_origin_20261017/V6_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/v6_root_rules.py
+            research/p256_origin_20261017/V6_RESULTS.json
+          if-no-files-found: error
+          retention-days: 90

@@ -1,0 +1,160 @@
+{
+  "candidate_876": {
+    "b_high": {
+      "R_even": false,
+      "R_min": false,
+      "R_mod4": true,
+      "b": "0xa84fca4be639727675ccea4a9cecda4b900c32dd7e86192ab71b355fde8255bd",
+      "b_complement": "0x57b035b319c68d8a8a3315b5631325b46ff3cd238179e6d548e4caa0217daa42",
+      "p_mod4": 3,
+      "sha1_seed_coefficient_equation": true
+    },
+    "b_high_group_order": "PRIME_PARIGP_V5",
+    "b_low": {
+      "R_even": true,
+      "R_min": true,
+      "R_mod4": false,
+      "b": "0x57b035b319c68d8a8a3315b5631325b46ff3cd238179e6d548e4caa0217daa42",
+      "b_complement": "0xa84fca4be639727675ccea4a9cecda4b900c32dd7e86192ab71b355fde8255bd",
+      "p_mod4": 3,
+      "sha1_seed_coefficient_equation": true
+    },
+    "b_low_group_order": "COMPOSITE_PARIGP_V5"
+  },
+  "cases": [
+    {
+      "curve": "prime192v1",
+      "derived_c": "0x3099d2bbbfcb2538542dcd5fb078b6ef5f3d6fe2c745de65",
+      "field_bits": 192,
+      "p": "0xfffffffffffffffffffffffffffffffeffffffffffffffff",
+      "published_b": "0x64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1",
+      "rules": {
+        "R_even": false,
+        "R_min": true,
+        "R_mod4": true,
+        "b": "0x64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1",
+        "b_complement": "0x9bdefae61a637f18f05816548ddbcfb5014721133eb9464e",
+        "p_mod4": 3,
+        "sha1_seed_coefficient_equation": true
+      },
+      "seed": "3045AE6FC8422F64ED579528D38120EAE12196D5",
+      "source_sha256": "f74fce5c93da34272c8cdfbbb2edca2cc02b3f36b63b394c1f57352bbbd9db88"
+    },
+    {
+      "curve": "secp224r1",
+      "derived_c": "0x5b056c7e11dd68f40469ee7f3c7a7d74f7d121116506d031218291fb",
+      "field_bits": 224,
+      "p": "0xffffffffffffffffffffffffffffffff000000000000000000000001",
+      "published_b": "0xb4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4",
+      "rules": {
+        "R_even": true,
+        "R_min": false,
+        "R_mod4": null,
+        "b": "0xb4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4",
+        "b_complement": "0x4bfaf57af3fb4c540abecda9afbb4f4728402745d8f4c6bcdcaa004d",
+        "p_mod4": 1,
+        "sha1_seed_coefficient_equation": true
+      },
+      "seed": "BD71344799D5C7FCDC45B59FA3B9AB8F6A948BC5",
+      "source_sha256": "3e4cfdaa9db6a9fe85927431ce631be5e351df02d5860464cc371a04cdab657a"
+    },
+    {
+      "curve": "prime256v1",
+      "derived_c": "0x7efba1662985be9403cb055c75d4f7e0ce8d84a9c5114abcaf3177680104fa0d",
+      "field_bits": 256,
+      "p": "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+      "published_b": "0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+      "rules": {
+        "R_even": false,
+        "R_min": true,
+        "R_mod4": true,
+        "b": "0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+        "b_complement": "0xa539ca2655c56c194c1442aa896779439ae2f95033ac4f09c431c3c1d82d9fb4",
+        "p_mod4": 3,
+        "sha1_seed_coefficient_equation": true
+      },
+      "seed": "C49D360886E704936A6678E1139D26B7819F7E90",
+      "source_sha256": "4f266c2addbbf24097a4c507f41bb39da33f5494bc756fa3d2f810bfc1655486"
+    },
+    {
+      "curve": "secp384r1",
+      "derived_c": "0x79d1e655f868f02fff48dcdee14151ddb80643c1406d0ca10dfe6fc52009540a495e8042ea5f744f6e184667cc722483",
+      "field_bits": 384,
+      "p": "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+      "published_b": "0xb3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",
+      "rules": {
+        "R_even": false,
+        "R_min": false,
+        "R_mod4": true,
+        "b": "0xb3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",
+        "b_complement": "0x4cced0581dc1181b6771fa941c07d2e6e7e26391017ebeedfcebf770afec78a439a9c67175d12e62d57a37132c13d510",
+        "p_mod4": 3,
+        "sha1_seed_coefficient_equation": true
+      },
+      "seed": "A335926AA319A27A1D00896A6773A4827ACDAC73",
+      "source_sha256": "0744f644ee05f7e9c7da1dca411a11c1cabccc42bf63d91a15e9edb66dc33040"
+    },
+    {
+      "curve": "secp521r1",
+      "derived_c": "0xb48bfa5f420a34949539d2bdfc264eeeeb077688e44fbf0ad8f6d0edb37bd6b533281000518e19f1b9ffbe0fe9ed8a3c2200b8f875e523868c70c1e5bf55bad637",
+      "field_bits": 521,
+      "p": "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "published_b": "0x51953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00",
+      "rules": {
+        "R_even": true,
+        "R_min": true,
+        "R_mod4": true,
+        "b": "0x51953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00",
+        "b_complement": "0x1ae6ac1469e71e365e06d65de5f497abf115d258da4664cea0c474b766e710ef61ea9e6c6ae13816c84e9ad3f42c44e40f8ca8c2077c2d3cb0e10bae02b94afc0ff",
+        "p_mod4": 3,
+        "sha1_seed_coefficient_equation": true
+      },
+      "seed": "D09E8800291CB85396CC6717393284AAA0DA64BA",
+      "source_sha256": "9f20adfcf29b793eb993bcc636497575a765d2661da84486aa4239478252d18b"
+    }
+  ],
+  "conclusion": "R_min/R_even and other exact rule failures only falsify a common uniform convention, not local P256 root-choice history; first-acceptable conditioned on documented b-root choice is not independently refuted; history unknown",
+  "cryptographic_security_implication": "NONE",
+  "date": "2026-10-17",
+  "general_provenance": "UNKNOWN",
+  "openssl_version": "OpenSSL 3.5.5 27 Jan 2026 (Library: OpenSSL 3.5.5 27 Jan 2026)",
+  "protocol_sha": "ac022b760f5bdd785b5e127c2814d4214c336779",
+  "published_1842_rules": {
+    "R_even": false,
+    "R_min": true,
+    "R_mod4": true,
+    "b": "0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+    "b_complement": "0xa539ca2655c56c194c1442aa896779439ae2f95033ac4f09c431c3c1d82d9fb4",
+    "p_mod4": 3,
+    "sha1_seed_coefficient_equation": true
+  },
+  "published_policy_results": {
+    "R_even": {
+      "all_published_compatible": false,
+      "applicable": 5,
+      "matches": 2,
+      "mismatches": [
+        "prime192v1",
+        "prime256v1",
+        "secp384r1"
+      ]
+    },
+    "R_min": {
+      "all_published_compatible": false,
+      "applicable": 5,
+      "matches": 3,
+      "mismatches": [
+        "secp224r1",
+        "secp384r1"
+      ]
+    },
+    "R_mod4": {
+      "all_published_compatible": false,
+      "applicable": 4,
+      "matches": 4,
+      "mismatches": []
+    }
+  },
+  "source": "OpenSSL 3.5.5 installed on developer runner; official named NIST curve constants",
+  "status": "WARRANTED_BOUNDED_EXACT_PARAMETER_CROSSCHECK; HISTORICAL_POLICY_UNKNOWN"
+}
