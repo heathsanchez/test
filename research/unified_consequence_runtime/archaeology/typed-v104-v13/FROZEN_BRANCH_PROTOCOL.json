@@ -1,0 +1,39 @@
+{
+  "schema": "UDM_V13_EXPOSED_SOURCE_DERIVED_BRANCH_OBSERVATION",
+  "parent": "4432052f790a4a29424e6d22a56446d19111f554",
+  "earlier_frozen_v12": "4f9a9b7daef5e3799c6e79706f6665a24e763737",
+  "v12_RED_native_run": 39013082924,
+  "v12_artifact_sha256": "1d66cb7f975a218a73228c6a3d09ff2710b11f2d96205f85920472fb1e224c5c",
+  "source_task": "original jd/tenacity PR741 base + exact original independently HEAD-authored test, previously exposed",
+  "source_from": "V9 frozen role source and V10 class-method native authority",
+  "heldout": "pypa/packaging",
+  "heldout_opened": false,
+  "original_selection": {
+    "v104": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "msi": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+    "cap_per_file": 64,
+    "policy_count": 37,
+    "horizon": 8
+  },
+  "observation_language": "Original unmodified protected failing test runtime line-edge observation on ANY AST If(Not(self.<attribute>)) with callable(self.<attribute>) while branch body is actually taken. No source filename, line number, operator replacement, or repaired HEAD is supplied to the detector. Observations must be independently reproduced, exact Git source bound, conditioned on an actual protected native FAIL and non-skipped collection. This is diagnostic evidence, not enough for causality or G2.",
+  "costs": {
+    "protected_native_verifier_calls": 2,
+    "observer_native_calls": 2,
+    "all_calls_charged": true,
+    "per_call_seconds": 90
+  },
+  "options": {
+    "no_pytest_test_changes": true,
+    "no_original_verifier_changes": true,
+    "no_test_or_source_patch_for_observation": true,
+    "no_fresh_task_claim": true,
+    "unknown_if_no_executable_line_evidence": true
+  },
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}
