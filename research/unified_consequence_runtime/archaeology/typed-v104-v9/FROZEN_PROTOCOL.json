@@ -1,0 +1,100 @@
+{
+  "schema": "UDM_V9_SOURCE_BOUND_G2_PROSPECTIVE_FREEZE",
+  "title": "Protected source-native method-selection prospective test after Click V7/V8 negative",
+  "authority": "SOURCE_BYTES_UNOPENED_AT_NEW_FREEZE; METADATA_ONLY; ADAPTIVE_REDESIGN_DISCLOSED",
+  "parent": "e3ac262c379fc90687e25eba9ba4a2249db02f4c",
+  "previous_qualified_bridge": "https://github.com/heathsanchez/test/actions/runs/38976887979",
+  "previous_exposed_training": "pallets/click PR3884; G2 UNKNOWN; 64 emitted V104 candidates cannot repair protected Click within fixed source-native scope, original stratified V8 28 FAIL 36 UNKNOWN",
+  "scope": "SCOPED_HEAD_AUTHORED_TEST_FILE_ONLY; NOT FULL_AUTHOR_SUITE; NO ARBITRARY_EXTERNAL_CODE_SANDBOX",
+  "task_roles": [
+    {
+      "role": "TRAINING",
+      "repository": "jd/tenacity",
+      "pr": 741,
+      "base": "4a74682e0186b5f2d25906aa190cd639c705a958",
+      "head": "a391c24599f04f4e0e90851b546ec1b405e962b4",
+      "production": [
+        "tenacity/__init__.py",
+        "tenacity/asyncio/__init__.py"
+      ],
+      "author_tests": [
+        "tests/test_tenacity.py"
+      ]
+    },
+    {
+      "role": "HELDOUT_FUTURE",
+      "repository": "pypa/packaging",
+      "pr": 1446,
+      "base": "332d716676eb934b67ede4054a3e3e0d4022b2d3",
+      "head": "a4f5d377a62e96759a4d9237256ec5dc3b19444e",
+      "production": [
+        "src/packaging/pylock.py"
+      ],
+      "author_tests": [
+        "tests/test_pylock.py"
+      ]
+    }
+  ],
+  "frozen_author_test_git_blob_refs": [
+    {
+      "repository": "jd/tenacity",
+      "head_commit": "a391c24599f04f4e0e90851b546ec1b405e962b4",
+      "path": "tests/test_tenacity.py",
+      "git_oid": "577720ec7cf0a48b9b2909e45ddde29235f460ac",
+      "mode": "100644"
+    },
+    {
+      "repository": "pypa/packaging",
+      "head_commit": "a4f5d377a62e96759a4d9237256ec5dc3b19444e",
+      "path": "tests/test_pylock.py",
+      "git_oid": "e8d51790856a17c4c722692f760ff7b3d30c4762",
+      "mode": "100644"
+    }
+  ],
+  "method_pins": {
+    "typed_native": "74b1bd4b9357a32e6ec3d68fc26ea12d23c7780f",
+    "original_v104": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "original_msi_v10": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+    "original_pareto": "6031466188046f56b4660d772d13ad731ed4c0f2"
+  },
+  "fixed_versions": {
+    "python": "3.12.14",
+    "pytest": "8.3.5",
+    "pytest_cov": "6.2.1",
+    "coverage": "7.10.6",
+    "pluggy": "1.6.0",
+    "packaging": "26.3",
+    "attrs": "24.3.0",
+    "hypothesis": "6.122.3",
+    "typing_extensions": "4.12.2",
+    "colorama": "0.4.6",
+    "rich": "13.9.4",
+    "click": "8.2.0",
+    "tenacity": "9.1.2",
+    "markupsafe": "3.0.2"
+  },
+  "budget": {
+    "candidate_cap_per_production_file": 64,
+    "search_horizon_per_policy": 8,
+    "native_reexecutions_per_candidate": 2,
+    "max_native_calls_training": 130,
+    "max_native_calls_heldout": 36,
+    "max_seconds_per_native_call": 75,
+    "training_wall_seconds": 1900,
+    "heldout_wall_seconds": 720,
+    "total_scientific_wall_seconds": 2700
+  },
+  "selection": "Freeze baseline native outcome, then all original V104 candidates and 37 original MSI policy orders before native candidate testing. If original native baseline is not two-run genuine protected FAIL, stop. Otherwise execute all distinct 8-candidate policy prefixes under declared budget and require complete trusted status profile. Only select a unique policy by original Pareto on training. No human winning policy. Do not open heldout until this gate. Upon heldout disclosure, check 8 cold candidates and 8 selected candidates with exact same source, interpreter, cost rules, then deletion/control of selected policy and cold restart. Never convert UNKNOWN to fail or success.",
+  "matched_ledger": "Equal-information executable memory obtains same candidates/evidence, may reproduce matched method; actual comparative G4 requires independently executed fully charged baseline, not numerical simulation.",
+  "coding_agent": "NOT_RUN unless independently executing model/tool route is actually provided; no invented comparator or secretly provided winning patch.",
+  "outcome_policy": {
+    "G0_G1": "PRESERVE_PRIOR",
+    "G2": "WARRANTED_BOUNDED only if heldout succeeds uniquely for autonomously selected policy, complete cold failure, independent native replay and removal/restoration with actual charged costs",
+    "G3": "UNKNOWN: future O2 not supplied",
+    "G4": "UNKNOWN unless a stronger matched agent + ledger are executed",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "permissions": "Local disposable CI research source copies only; no upstream writes, no token injection into untrusted pytest tests, no production or outreach.",
+  "scientific_prospective_boundary": "Newly precommitted protocol for source bodies previously reserved as V7 futures and reported unopened. Role reassignment follows failed Click training: adaptive selection disclosed, not global untouchedness or a repeat of original V7 preregistration."
+}
