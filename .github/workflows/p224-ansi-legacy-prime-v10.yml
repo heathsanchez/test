@@ -1,0 +1,138 @@
+name: P224 V10 historical ANSI near-primality and FreeLIP witness
+on:
+  push:
+    branches: [research/p224-ansi-legacy-prime-v10-20261017]
+    paths: [.github/workflows/p224-ansi-legacy-prime-v10.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-causal-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install independent PARI arithmetic
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -qq -y pari-gp pari-seadata
+      - name: Reconstruct complete first-77 candidate cardinalities (not prime-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          test -f V10_FROZEN_PROTOCOL.md && test -f V10_PREFREEZE_CORRECTION.md
+          python3 v9_candidates.py > V10_REGEN_V9_LOG.txt
+          python3 - <<'PY'
+          import json,hashlib
+          rows=json.load(open('V9_CANDIDATES.json'))
+          sha=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          assert sha=='6ae4d488768e622d5ff307ca7bb1af2c2b7d10c0f6935fac2e7107eac1fa5d22'
+          arr=[v for v in rows[:77] if v['state']=='ELIGIBLE_FOR_POINT_COUNT']
+          assert len(arr)==48 and len(rows[:77])==77 and arr[-1]['index']==77
+          p=int('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001',16)
+          gp=[f'default(parisizemax,1500000000);p={p};','print("VERSION|",version());',
+           'v10(i,b)={my(E,u,n,h,l,prime,mov,k,z,ok);E=ellinit([-3,b],p);u=ellsea(E,0);if(u<=0,print("V10|",i,"|UNKNOWN|",u);return());n=u;h=1;forprime(l=2,255,while(n%l==0,n=n/l;h=h*l));prime=isprime(n);mov=1;z=1;if(n>1,for(k=1,20,z=(z*p)%n;if(z==1,mov=0;break)));ok=(prime==1&&n>2^160&&n*n>16*p&&u!=p&&mov==1);print("V10|",i,"|",u,"|",h,"|",n,"|",prime,"|",mov,"|",ok);};']
+          gp += [f"v10({v['index']},{int(v['b'],16)});" for v in arr]
+          gp += ['print("FINISHED");','quit(0);']
+          open('V10_PREFIX.gp','w').write('\n'.join(gp)+'\n')
+          PY
+          timeout 1250s gp -q -f V10_PREFIX.gp > V10_PREFIX_GP_LOG.txt 2>&1
+          python3 - <<'PY'
+          import json,re,math,hashlib
+          from pathlib import Path
+          p=int('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001',16)
+          rows=json.load(open('V9_CANDIDATES.json'))
+          arr=[v for v in rows[:77] if v['state']=='ELIGIBLE_FOR_POINT_COUNT']
+          t=Path('V10_PREFIX_GP_LOG.txt').read_text()
+          lines=[list(map(int,m.groups())) for m in re.finditer(r'^V10\|(\d+)\|(\d+)\|(\d+)\|(\d+)\|([01])\|([01])\|([01])$',t,re.M)]
+          errs=[s for s in t.splitlines() if '***' in s and 'Warning:' not in s]
+          assert not errs and 'FINISHED' in t and len(lines)==len(arr)==48 and len(set(a[0] for a in lines))==48,(errs,len(lines),t[-2000:])
+          small_primes=[q for q in range(2,256) if all(q%d for d in range(2,math.isqrt(q)+1))]
+          rec=[]
+          for v,(i,u,h,n,pr,mov,admit) in zip(arr,lines):
+              assert v['index']==i and u==h*n and u>0 and n>1
+              assert (u-p-1)**2<=4*p
+              h2=1;n2=u
+              for q in small_primes:
+                  while n2%q==0:n2//=q;h2*=q
+              assert n==n2 and h==h2
+              m=all(pow(p,k,n)!=1 for k in range(1,21))
+              good=bool(pr and n>2**160 and n*n>16*p and u!=p and m)
+              assert admit==int(good) and mov==int(m)
+              rec.append({'index':i,'seed':v['seed'],'order':str(u),'cofactor_lmax255':str(h),'prime_subgroup':str(n),'prime_proved_PARIGP':bool(pr),'admitted':good,'group_bits':u.bit_length()})
+          N77=26959946667150639794667015087019640528296954594188780422282879336101
+          assert rec[-1]['index']==77 and int(rec[-1]['order'])==N77 and rec[-1]['admitted']
+          passed=[r['index'] for r in rec if r['admitted']]
+          output={'status':'WARRANTED_BOUNDED_COMPLETE_PREFIX_WITHIN_DECLARED_ANSI_255','counted':48,'field_excluded':29,'first_ansi_255':min(passed),'admitted_indices':passed,'all_rows':rec,'original_NSA_selection':'UNKNOWN','candidate_77_earliest_whole_group_prime_from_V9':True,'gp_version':re.findall(r'^VERSION\|(.*)$',t,re.M),'gp_source_sha256':hashlib.sha256(Path('V10_PREFIX.gp').read_bytes()).hexdigest()}
+          Path('V10_ANSI_PREFIX.json').write_text(json.dumps(output,indent=2,sort_keys=True)+'\n')
+          print('EXACT_ANSI_PREFIX',output['first_ansi_255'],passed)
+          PY
+      - name: Replay the 1997 FreeLIP primality API and libc RNG isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/p256_origin_20261017
+          git clone -q https://github.com/lrobot/freelip.git "$RUNNER_TEMP/freelip"
+          git -C "$RUNNER_TEMP/freelip" checkout -q 00898a4814d2cc1244bf348682be6ed10dda35f0
+          test "$(git -C "$RUNNER_TEMP/freelip" hash-object lip.c)" = a86ce8ae5be49e0f35999a2c87f52e1718ebdb81
+          test "$(git -C "$RUNNER_TEMP/freelip" hash-object lip.h)" = 080cda8aec8c0939348452ea3beb9f1afad845ef
+          cat > V10_ORIGINAL_C_WRAPPER.c <<'C'
+          #define _DEFAULT_SOURCE 1
+          #include "lip.h"
+          #include <stdio.h>
+          #include <stdlib.h>
+          struct trial {const char *id;const char *value;int expected;};
+          static struct trial cases[]={
+          {"77","26959946667150639794667015087019640528296954594188780422282879336101",1},
+          {"777","26959946667150639794667015087019626772004636449709276710155965861059",1},
+          {"1485","26959946667150639794667015087019630513412936534849010933930420795721",1},
+          {"5736","26959946667150639794667015087019627449002316305930334921237593633353",1},
+          {"7026","26959946667150639794667015087019625940457807714424391721682722368061",1},
+          {"77x3","80879840001451919384001045261058921584890863782566341266848638008303",0},
+          {"7026x3","80879840001451919384001045261058877821373423143273175165048167104183",0}};
+          int main(void){
+            long first,after,second;int i,j;int rounds[]={1,5,12};verylong n=0;
+            srand48(891607927L);first=lrand48();srand48(891607927L);
+            for(i=0;i<7;i++)for(j=0;j<3;j++){
+              int v;
+              if(zstrtoz((char*)cases[i].value,&n)<=0)return 17;
+              v=(int)zprobprime(n,rounds[j]);
+              printf("NATIVE|%s|%d|%d|%d\n",cases[i].id,rounds[j],v,cases[i].expected);fflush(stdout);
+            }
+            after=lrand48();srand48(891607927L);(void)lrand48();second=lrand48();
+            printf("NATIVE_RNG|%ld|%ld|%ld\n",first,after,second);return 0;
+          }
+          C
+          gcc -std=gnu89 -O2 -w -I"$RUNNER_TEMP/freelip" V10_ORIGINAL_C_WRAPPER.c "$RUNNER_TEMP/freelip/lip.c" -lm -o "$RUNNER_TEMP/v10-old-FreeLIP"
+          timeout 180s "$RUNNER_TEMP/v10-old-FreeLIP" > V10_NATIVE_STDOUT.txt
+          python3 - <<'PY'
+          import json,re,hashlib
+          from pathlib import Path
+          s=Path('V10_NATIVE_STDOUT.txt').read_text()
+          lines=re.findall(r'^NATIVE\|([\dx]+)\|(1|5|12)\|(0|1)\|(0|1)$',s,re.M)
+          assert len(lines)==21 and len({(i,k) for i,k,_,_ in lines})==21
+          r=re.findall(r'^NATIVE_RNG\|(\d+)\|(\d+)\|(\d+)$',s,re.M);assert len(r)==1
+          before,after,nextval=map(int,r[0]);assert before!=nextval
+          diffs=[{'case':i,'round':k,'actual':a,'expected':e} for i,k,a,e in lines if a!=e]
+          result={'status':'EXACT_NATIVE_FREE_LIP_RUN_COMPLETED','tested_calls':21,'matches':21-len(diffs),'false_results':diffs,'lrand48_untouched':before==after,'lrand48_differential_positive':before!=nextval,'original_NSA_generator':'UNKNOWN','C_wrapper_SHA256':hashlib.sha256(Path('V10_ORIGINAL_C_WRAPPER.c').read_bytes()).hexdigest()}
+          Path('V10_NATIVE_RESULTS.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('ORIGINAL_FREELIP_NATIVE',result['matches'],'/21',result['lrand48_untouched'])
+          PY
+      - name: Retain actual executed evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p224-v10-ansi-nearprime-original-freelip
+          path: |
+            research/p256_origin_20261017/V10_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/V10_PREFREEZE_CORRECTION.md
+            research/p256_origin_20261017/V10_PREFIX.gp
+            research/p256_origin_20261017/V10_PREFIX_GP_LOG.txt
+            research/p256_origin_20261017/V10_ANSI_PREFIX.json
+            research/p256_origin_20261017/V10_ORIGINAL_C_WRAPPER.c
+            research/p256_origin_20261017/V10_NATIVE_STDOUT.txt
+            research/p256_origin_20261017/V10_NATIVE_RESULTS.json
+          if-no-files-found: warn
+          retention-days: 90
