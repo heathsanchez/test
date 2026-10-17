@@ -1,0 +1,77 @@
+name: Nucleus dependent proof transport decisive trace
+on:
+  push:
+    branches: [research/nucleus-dependent-transport-gate-20261018]
+    paths: [".github/workflows/nucleus-dependent-transport-gate-20261018.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  first-obligation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build candidate checker without altering semantics
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence /tmp/inputs
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Recover SHA-sealed official Lean Pairwise export
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12081878830/zip > /tmp/pairwise.zip
+          unzip -q /tmp/pairwise.zip -d /tmp/inputs
+          echo 'e48fd06172e653cad2f4a15a7b454280f8bf00c16e0eba41a3d18265a5012c69  /tmp/inputs/List.pairwise_middle.ndjson' | sha256sum -c -
+      - name: Report next source dependent typing obligation, flag-off and flag-on
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,pathlib,subprocess,time,hashlib
+          evidence=pathlib.Path('/tmp/evidence')
+          data=pathlib.Path('/tmp/inputs/List.pairwise_middle.ndjson').read_bytes()
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pin['origin_flags']})
+          env.update({'NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS':'1',
+                      'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                      'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1',
+                      'NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION':'1',
+                      'NUCLEUS_TRACE_EQPROP_TRISTATE':'1',
+                      'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                      'METATRON_KERNEL_DIAGNOSTICS':'1'})
+          rows=[]
+          for enabled in (False,True):
+              check_env=dict(env)
+              if enabled:check_env['NUCLEUS_EXPERIMENTAL_EQPROP_PROOF_DECLINE']='1'
+              t=time.perf_counter()
+              run=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+                      input=data,capture_output=True,env=check_env,timeout=60)
+              stderr=run.stderr.decode(errors='replace')
+              relevant=[line for line in stderr.splitlines() if line.startswith((
+                  'NUCLEUS_DOWNSTREAM:', 'NUCLEUS_APPLICATION_FUNCTION_TYPE:',
+                  'NUCLEUS_APP_DOMAIN_OBLIGATION:', 'NUCLEUS_EQPROP_PROOF:',
+                  'NUCLEUS_NEUTRAL_HEAD_MISMATCH:'))]
+              row={'policy_enabled':enabled,'rc':run.returncode,
+                   'elapsed_sec':round(time.perf_counter()-t,4),
+                   'sha256':hashlib.sha256(data).hexdigest(),
+                   'first_relevant':relevant[:15], 'last_relevant':relevant[-20:],
+                   'stderr_tail':stderr[-5000:]}
+              rows.append(row)
+              print('enabled',enabled,'rc',row['rc'],'terminal',relevant[-1:] if relevant else [],flush=True)
+          (evidence/'first-obligation.json').write_text(json.dumps({
+             'source':os.environ['GITHUB_SHA'],'rows':rows,
+          },indent=2)+'\n')
+          assert all(x['rc'] != 0 for x in rows),'Unexpected new ACCEPT: inspect and qualify before promotion'
+          assert any('NUCLEUS_APPLICATION_FUNCTION_TYPE:' in x for x in rows[-1]['last_relevant']+rows[-1]['first_relevant'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-eqprop-next-obligation-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
