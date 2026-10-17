@@ -7,6 +7,7 @@ on:
       - .github/workflows/udm-g2-native-admission-v16.yml
       - research/unified_consequence_runtime/g2_native_admission_v2.py
       - research/unified_consequence_runtime/test_g2_native_admission_v2.py
+      - research/unified_consequence_runtime/audit_g2_native_admission_v16.py
   workflow_dispatch:
 permissions:
   contents: read
@@ -81,6 +82,55 @@ jobs:
           assert result["G2"]=="UNKNOWN",result
           assert result["native_calls"]==1,result
           assert result["counts"]["cases"]>0,result
+          PY
+      - name: Independent admission-packet audit and forged-packet controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m research.unified_consequence_runtime.audit_g2_native_admission_v16 \
+            evidence/g2-v16 evidence/g2-v16/independent_audit.json
+          python - <<'PY'
+          import json
+          import shutil
+          import tempfile
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          from research.unified_consequence_runtime.audit_g2_native_admission_v16 import audit
+          baseline=Path('evidence/g2-v16').resolve()
+          controls={}
+          for change in ('wrong_pin','forged_G2','forged_case_count','forged_calls',
+                         'forged_source_manifest','forged_skipped_test'):
+              with tempfile.TemporaryDirectory() as directory:
+                  trial=Path(directory)/'packet'
+                  shutil.copytree(baseline,trial)
+                  if change in ('wrong_pin','forged_G2','forged_case_count',
+                                'forged_calls','forged_source_manifest'):
+                      file={'wrong_pin':'pin.json','forged_G2':'admission.json',
+                            'forged_case_count':'admission.json','forged_calls':'events.json',
+                            'forged_source_manifest':'admission.json'}[change]
+                      target=trial/file
+                      value=json.loads(target.read_text())
+                      if change=='wrong_pin':value['sha']='f'*40
+                      elif change=='forged_G2':value['G2']='WARRANTED'
+                      elif change=='forged_case_count':value['counts']['cases']+=1
+                      elif change=='forged_calls':value['calls'][0]['outcome']='failed'
+                      elif change=='forged_source_manifest':
+                          value['source_identity']['entries'][0]['oid']='f'*40
+                      target.write_text(json.dumps(value,sort_keys=True)+'\n')
+                  else:
+                      tree=ET.parse(trial/'native.xml')
+                      first=next(tree.getroot().iter('testcase'))
+                      ET.SubElement(first,'skipped')
+                      tree.write(trial/'native.xml',encoding='utf-8',xml_declaration=True)
+                  try:
+                      audit(trial)
+                  except (ValueError,ET.ParseError):
+                      controls[change]='REJECTED_AS_REQUIRED'
+                  else:
+                      raise AssertionError('forged packet was accepted: '+change)
+          (baseline/'AUDIT_NEGATIVE_CONTROLS.json').write_text(
+              json.dumps(controls,sort_keys=True,indent=2)+'\n')
+          assert len(controls)==6
           PY
       - name: Archive real-source PASS or original UNKNOWN
         if: always()
