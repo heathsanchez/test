@@ -94,7 +94,7 @@ jobs:
              and next(x for x in cases if x['label']=='pairwise_middle' and not x['proof_flag'])['rc']==1 \
              and next(x for x in cases if x['label']=='pairwise_middle' and x['decline_flag'])['rc']==2 \
              and next(x for x in cases if x['label']=='List.Perm.recOnSwap' and x['proof_flag'] and x['decline_flag'])['rc']==0 \
-             and all(x['rc']!=0 for x in negatives) \\
+             and all(x['rc']!=0 for x in negatives) \
              and invalid_off['rc']==1 and invalid_on['rc']==1
           report={'candidate_source':os.environ['GITHUB_SHA'],'cases':cases,'negatives':negatives,'qualified':passed}
           (out/'lambda-neutral-gate.json').write_text(json.dumps(report,indent=2)+'\n')
