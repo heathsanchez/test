@@ -1,0 +1,81 @@
+name: Independent official Lean kernel replay of exact NDJSON Pairwise and List.Perm
+on:
+  push:
+    branches: [research/nucleus-listpairwise-decline-20261017]
+    paths: [".github/workflows/nucleus-reference-kernel-pairwise-20261017.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARENA_SHA: 58de35b1b322c3cab584b88ae2786be3bdcfe856
+      EXPORTER_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+      LEAN_SHA: 5045d0056413266e57c625dcd7c365b10e377c52
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover SHA-sealed NDJSON inputs
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/inputs /tmp/evidence
+          gh api repos/heathsanchez/test/actions/artifacts/12081878830/zip > /tmp/pairwise.zip
+          unzip -q /tmp/pairwise.zip -d /tmp/inputs
+          gh api repos/heathsanchez/test/actions/artifacts/12077748490/zip > /tmp/listperm.zip
+          unzip -oq /tmp/listperm.zip -d /tmp/inputs
+          printf '%s\n' \
+            'e48fd06172e653cad2f4a15a7b454280f8bf00c16e0eba41a3d18265a5012c69  /tmp/inputs/List.pairwise_middle.ndjson' \
+            '5ec75f541dd6dad0ee707feb7a3d52000918735f633a9bc189c1c0f68021b714  /tmp/inputs/List.pairwise_append_comm.ndjson' \
+            '6feb6fdc9ec8190efeee6bc37bbda217d9a1ef60cbb5664c9642bb4a6885a107  /tmp/inputs/list-perm-reconswap.ndjson' | sha256sum -c -
+      - name: Install pinned official Lean kernel and Arena reference checker source
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          export PATH="$HOME/.elan/bin:$PATH"
+          test "$(lean --githash)" = "$LEAN_SHA"
+          git init -q /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena
+          git -C /tmp/arena fetch -q --depth=1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout -q FETCH_HEAD
+          test "$(git -C /tmp/arena rev-parse HEAD)" = "$ARENA_SHA"
+          cd /tmp/arena/checkers/official
+          sed -i "s|rev = \"master\"|rev = \"$EXPORTER_SHA\"|" lakefile.toml
+          grep -F "$EXPORTER_SHA" lakefile.toml
+          lake update
+          lake build
+          echo "$ARENA_SHA" > /tmp/evidence/reference-arena-sha.txt
+          echo "$EXPORTER_SHA" > /tmp/evidence/reference-exporter-sha.txt
+          lean --githash > /tmp/evidence/reference-lean-sha.txt
+      - name: Cross-check all exact exports in reference Lean kernel
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd /tmp/arena/checkers/official
+          python3 - <<'PY'
+          import pathlib,subprocess,json,hashlib,time,os
+          out=pathlib.Path('/tmp/evidence')
+          checks=[]
+          for name in ['List.pairwise_append_comm','List.pairwise_middle','list-perm-reconswap']:
+              p=pathlib.Path('/tmp/inputs')/(name+'.ndjson')
+              start=time.perf_counter()
+              r=subprocess.run(['.lake/build/bin/kernel',str(p)],capture_output=True,timeout=180)
+              item={'name':name,'exit':r.returncode,'seconds':round(time.perf_counter()-start,4),
+                    'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                    'stdout':r.stdout.decode(errors='replace')[-2000:],
+                    'stderr':r.stderr.decode(errors='replace')[-2000:]}
+              checks.append(item)
+              print(name,'kernel exit=',r.returncode,item['stdout'],item['stderr'],flush=True)
+          (out/'kernel-reference-replay.json').write_text(json.dumps({
+              'lean_sha':os.environ['LEAN_SHA'],'arena_sha':os.environ['ARENA_SHA'],
+              'exporter_sha':os.environ['EXPORTER_SHA'],'cases':checks
+          },indent=2)+'\n')
+          assert all(c['exit']==0 for c in checks),'Reference official kernel rejected or declined a pinned export'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-pairwise-official-kernel-crosscheck-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
