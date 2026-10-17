@@ -3133,6 +3133,64 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    /// UNKNOWN-only source-typed proof conversion candidate. Rewriting an
+    /// equality between propositions can leave a function-valued subterm
+    /// unresolved under captured source binders. This grants no equality,
+    /// and never authorizes an ACCEPT; it is limited to a completed source
+    /// constant-application proof and equality propositions whose carrier
+    /// reduces to literal Sort 0. In particular Eq of functions, including
+    /// invalid function-eta claims, cannot reach this branch.
+    fn undecided_propositional_equality_proof(
+        &self,
+        expression: ExprId,
+        actual: &TypeValue,
+        expected: &TypeValue,
+        budget: usize,
+    ) -> bool {
+        if budget < 128 {
+            return false;
+        }
+        let mut head = expression;
+        let mut arguments = 0;
+        while let Some(Expr::App { fun, .. }) = self.expressions.get(head) {
+            arguments += 1;
+            head = *fun;
+            if arguments > 20 { return false }
+        }
+        if arguments < 5
+            || !matches!(self.expressions.get(head),Some(Expr::Const { .. }))
+        {
+            return false;
+        }
+        let eq_sort0 = |ty: &TypeValue| -> Option<(NameId,Vec<LevelTerm>)> {
+            let TypeValue::Term(ty) = ty else {return None};
+            let extracted=self.machine().expose_for_conversion(
+                ty.clone(),Transparency::Reducible,budget.min(512),
+            );
+            let Value::Neutral(neutral)=extracted.proven_value()? else {return None};
+            let NeutralHead::Const { name, levels }=&neutral.head else{return None};
+            if neutral.spine.len()!=3 {return None}
+            let carrier=self.machine().expose_for_conversion(
+                neutral.spine[0].clone(),Transparency::Reducible,budget.min(512)
+            );
+            if !matches!(carrier.proven_value(),Some(Value::Sort(LevelTerm::Zero))) {
+                return None
+            }
+            let decl=self.environment.get(*name)?;
+            if decl.level_params.len()!=levels.len(){return None}
+            Some((*name,levels.clone()))
+        };
+        let result=eq_sort0(actual).zip(eq_sort0(expected))
+            .is_some_and(|(left,right)|left==right);
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_EQPROP_TRISTATE").is_some() {
+            eprintln!(
+                "NUCLEUS_EQPROP_PROOF:expr={expression:?}:spine={arguments}:same_proposition_equality_carrier={result}"
+            );
+        }
+        result
+    }
+
     /// Identify the type of a caller-owned binary predicate variable.
     ///
     /// This is solely a conservative UNKNOWN gate for a failed function eta
