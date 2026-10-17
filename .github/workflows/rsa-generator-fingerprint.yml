@@ -21,6 +21,8 @@ jobs:
         run: python3 research/rsa_generator_fingerprint/replay.py
       - name: Verify necessary affine LCG invariants on pinned factors
         run: python3 research/rsa_generator_fingerprint/affine_word_stream.py
+      - name: Exact bounded RSA-270 special-power screen
+        run: python3 research/rsa_generator_fingerprint/special_form_probe.py
       - name: Preserve raw model statistics
         if: always()
         uses: actions/upload-artifact@v4
@@ -30,6 +32,8 @@ jobs:
             research/rsa_generator_fingerprint/data.json
             research/rsa_generator_fingerprint/result.json
             research/rsa_generator_fingerprint/affine_word_stream_result.json
+            research/rsa_generator_fingerprint/special_form_result.json
+            research/rsa_generator_fingerprint/special_form_probe.py
             research/rsa_generator_fingerprint/affine_word_stream.py
             research/rsa_generator_fingerprint/README.md
           if-no-files-found: warn
