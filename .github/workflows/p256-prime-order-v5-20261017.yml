@@ -1,0 +1,61 @@
+name: P-256 V5 independent candidate-876 SEA certificate
+on:
+  push:
+    branches:
+      - research/p256-prime-order-v5-20261017
+    paths:
+      - research/p256_origin_20261017/V5_*
+      - research/p256_origin_20261017/v5_*
+      - .github/workflows/p256-prime-order-v5-20261017.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-pari-sea:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout frozen source
+        uses: actions/checkout@v4
+      - name: Install system PARI-GP and SEA tables
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends pari-gp pari-seadata
+          gp --version
+          dpkg-query -W pari-gp pari-seadata
+      - name: Independent exact elliptic point counts and group-law replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/p256_origin_20261017/v5_replay.py
+      - name: Qualification guard (not just a green job)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('research/p256_origin_20261017/V5_RESULTS.json').read_text())
+          assert r['protocol_commit']=='de2d46e682d4866098d3e5e9dfb2d7b289481e38'
+          assert r['prime_group_values']['published']['proven_prime']==1
+          assert r['prime_group_values']['published']['sea_output']==int('FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551',16)
+          assert r['result'] in ('INDEPENDENT_PARIGP_876_PRIME_ORDER_CONFIRMED','REJECTED_REPORTED_PRIME_IF_BOTH_ABORT','INDEPENDENT_PRIME_ORDER_UNKNOWN')
+          assert r['epistemic']['historical_selection_rule']=='UNKNOWN'
+          assert r['epistemic']['basepoint_origin']=='UNKNOWN'
+          print('SOURCE_FROZEN_PARIGP_BOUNDARY_QUALIFIED',r['result'])
+          PY
+      - name: Archive source/native measurements, including red evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p256-v5-876-prime-order-source-exact
+          path: |
+            research/p256_origin_20261017/V5_FROZEN_PROTOCOL.md
+            research/p256_origin_20261017/v5_ellsea.gp
+            research/p256_origin_20261017/v5_replay.py
+            research/p256_origin_20261017/V5_RESULTS.json
+            research/p256_origin_20261017/V5_PARI_OUTPUT.txt
+            research/p256_origin_20261017/V5_STATUS.json
+          retention-days: 60
