@@ -45,7 +45,7 @@ class FrozenV10ClassQualifiedNative(unittest.TestCase):
         git(self.repo,"commit","-qm","freeze exact class-qualified native source")
         return git(self.repo,"rev-parse","HEAD")
 
-    def run(self,required,*,scope=("tests/test_classes.py",),ordinary_v6=False):
+    def run_native(self,required,*,scope=("tests/test_classes.py",),ordinary_v6=False):
         runner=v6 if ordinary_v6 else v10
         return runner.run_protected(self.repo,self.sha,self.dest,required=required,
                                     paths=scope,interpreter=sys.executable,timeout=40)
@@ -61,7 +61,7 @@ class FrozenV10ClassQualifiedNative(unittest.TestCase):
                  "class TestWitness:\n    def test_case(self): assert True\n")
         self.sha=self.commit();v6.stage(self.repo,self.sha,self.dest)
         with self.assertRaisesRegex(ValueError,"protected obligation"):
-            self.run(("tests/test_classes.py::TestWitness::test_case",),ordinary_v6=True)
+            self.run_native(("tests/test_classes.py::TestWitness::test_case",),ordinary_v6=True)
 
     def test_A03_new_class_method_genuine_native_success(self):
         self.add("pkg/__init__.py","VALUE=42\n")
@@ -69,7 +69,7 @@ class FrozenV10ClassQualifiedNative(unittest.TestCase):
                  "from pkg import VALUE\n"
                  "class TestWitness:\n    def test_case(self): assert VALUE==42\n")
         self.sha=self.commit(gitlink=True);v10.stage(self.repo,self.sha,self.dest)
-        r=self.run(("tests/test_classes.py::TestWitness::test_case",))
+        r=self.run_native(("tests/test_classes.py::TestWitness::test_case",))
         self.assertEqual(r["status"],"PASS_SCOPED_NATIVE")
         self.assertEqual(r["junit"]["passed"],1)
         self.assertIn("pkg/__init__.py",r["imported_project_files"])
@@ -80,7 +80,7 @@ class FrozenV10ClassQualifiedNative(unittest.TestCase):
         self.add("tests/test_classes.py",
                  "class TestWitness:\n    def test_case(self): assert False\n")
         self.sha=self.commit();v10.stage(self.repo,self.sha,self.dest)
-        r=self.run(("tests/test_classes.py::TestWitness::test_case",))
+        r=self.run_native(("tests/test_classes.py::TestWitness::test_case",))
         self.assertEqual(r["status"],"FAIL_NATIVE_PROTECTED")
         self.assertEqual(r["junit"]["failed"],1)
 
@@ -88,14 +88,14 @@ class FrozenV10ClassQualifiedNative(unittest.TestCase):
         self.add("tests/test_classes.py",
                  "class TestWitness:\n    def test_case(self): assert True\n")
         self.sha=self.commit();v10.stage(self.repo,self.sha,self.dest)
-        r=self.run(("tests/test_classes.py::TestOther::test_case",))
+        r=self.run_native(("tests/test_classes.py::TestOther::test_case",))
         self.assertEqual(r["status"],"UNKNOWN_PROTECTED_NOT_EXECUTED")
 
     def test_A06_missing_protected_method_is_not_authorized(self):
         self.add("tests/test_classes.py",
                  "class TestWitness:\n    def test_case(self): assert True\n")
         self.sha=self.commit();v10.stage(self.repo,self.sha,self.dest)
-        r=self.run(("tests/test_classes.py::TestWitness::test_nonexistent",))
+        r=self.run_native(("tests/test_classes.py::TestWitness::test_nonexistent",))
         self.assertEqual(r["status"],"UNKNOWN_PROTECTED_NOT_EXECUTED")
 
     def test_A07_original_skip_inside_class_is_unknown(self):
@@ -104,7 +104,7 @@ class FrozenV10ClassQualifiedNative(unittest.TestCase):
                  "    @pytest.mark.skip(reason='original')\n"
                  "    def test_case(self): assert False\n")
         self.sha=self.commit();v10.stage(self.repo,self.sha,self.dest)
-        r=self.run(("tests/test_classes.py::TestWitness::test_case",))
+        r=self.run_native(("tests/test_classes.py::TestWitness::test_case",))
         self.assertEqual(r["status"],"UNKNOWN_SKIPPED")
 
     def test_A08_original_pytest_collection_error_is_unknown(self):
@@ -112,7 +112,7 @@ class FrozenV10ClassQualifiedNative(unittest.TestCase):
                  "class TestWitness:\n    def test_case(self):\n"
                  "      return False\n       pass\n")
         self.sha=self.commit();v10.stage(self.repo,self.sha,self.dest)
-        r=self.run(("tests/test_classes.py::TestWitness::test_case",))
+        r=self.run_native(("tests/test_classes.py::TestWitness::test_case",))
         self.assertEqual(r["status"],"UNKNOWN_NATIVE_COLLECTION")
 
     def test_A09_injected_unqualified_path_or_invalid_node_is_refused(self):
@@ -126,7 +126,7 @@ class FrozenV10ClassQualifiedNative(unittest.TestCase):
              ("tests/test_classes.py::TestWitness::test_case::anything",)
         ):
             with self.subTest(required=required),self.assertRaises(ValueError):
-                self.run(required)
+                self.run_native(required)
 
     def test_A10_parameterized_class_method_requires_actual_native_execution(self):
         self.add("tests/test_classes.py",
@@ -135,7 +135,7 @@ class FrozenV10ClassQualifiedNative(unittest.TestCase):
                  "    @pytest.mark.parametrize('value',[1,2])\n"
                  "    def test_case(self,value): assert value>0\n")
         self.sha=self.commit();v10.stage(self.repo,self.sha,self.dest)
-        r=self.run(("tests/test_classes.py::TestWitness::test_case",))
+        r=self.run_native(("tests/test_classes.py::TestWitness::test_case",))
         self.assertEqual(r["status"],"PASS_SCOPED_NATIVE")
         self.assertEqual(r["junit"]["passed"],2)
         self.assertEqual(len(r["executed"]),2)
