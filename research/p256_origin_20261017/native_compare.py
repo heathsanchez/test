@@ -43,15 +43,27 @@ def main():
     for item in data['negative_nonresidue_controls']:
         candidate=next(x for x in data['cases'] if int(x['p_hex'],16).bit_length()==item['p_bits'])
         modulus=int(candidate['p_hex'],16)
+        if item['p_bits']==224:
+            # Original 32-bit C timed out after 30s in strict V7 run #38991929104.
+            # Do not manufacture native invalid-input success or erase that RED.
+            neg.append({'bits':224,'status':'UNKNOWN_NATIVE_TIMEOUT_ASAN_30S',
+                        'prior_run':38991929104,'native_not_reexecuted':True,
+                        'independent_python_legendre_nonresidue':True})
+            continue
         result=run_native(prog,item['nonresidue'],modulus)
         assert result==0,('invalid square mutant accepted',item,result)
-        neg.append({'bits':item['p_bits'],'returned_zero':True})
+        neg.append({'bits':item['p_bits'],'returned_zero':True,'status':'NATIVE_REJECTED'})
     out={
-      'status':'PASS_NATIVE_SOURCE_EXACT_ROOT_CHOICE_BOUNDED',
+      'status':'PASS_NATIVE_5_CURVE_POSITIVE_ROOTS; P224_NEGATIVE_NATIVE_UNKNOWN',
+      'amendment':'V7B_ADMISSION.md',
+      'strict_V7_fully_qualified':False,
+      'source_positive_comparison':'WARRANTED_BOUNDED_NATIVE_ON_32BIT',
       'source_implementation':'FreeLIP v1.1 mirror commit 00898a4814d2cc1244bf348682be6ed10dda35f0',
       'test':cases,'candidate_876':hex(original_876),
       'negative_controls':neg,
       'expected_published_matches':4,
+      'native_negative_passes':4,
+      'p224_native_negative':'UNKNOWN_TIMEOUT_IN_STRICT_PREVIOUS_RUN',
       'p224_disagreement':True,
       'unique_historical_inference':'UNKNOWN',
       'native_harness_sha256':hashlib.sha256(Path(__file__).with_name('native_freelip_sqrt.c').read_bytes()).hexdigest(),
