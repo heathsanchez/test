@@ -1,0 +1,66 @@
+{
+  "schema": "UDM_V14_EXPOSED_ORIGINAL_V104_SOURCE_SLOT_NATIVE_RESULT",
+  "source_base": "8f28e128cfbffb48b87678e4054e80fba12a9074",
+  "frozen_protocol_blob": "f7ce15386ffa6a1a368fa3b5467365131673c9f5",
+  "frozen_contract_blob": "ea1b7099fb5fd5aade82ab3bd90681c6338c59fd",
+  "qualified_source": "e9f4c058c3435c9f2e51694eb8d5c99c36fe5b57",
+  "actions_run": 39017793736,
+  "artifact_id": 12095273174,
+  "zip_sha256": "828133726d8f123acfb9cebdfc6acf151c3cdcaea7da96642b47fbd189b1b10c",
+  "zip_independently_downloaded_and_hashed": true,
+  "contracts": {
+    "passed": 28,
+    "total": 28
+  },
+  "actual": {
+    "native_calls": 18,
+    "baseline": {
+      "passed": 141,
+      "failed": 1,
+      "skipped": 0,
+      "repetitions": 2
+    },
+    "catalog": {
+      "old_v104_emissions": 128,
+      "observed_guard_edits_before_slot_selection": 0,
+      "observed_slot_candidate_count": 8
+    },
+    "outcomes": {
+      "verified_pass": 0,
+      "verified_fail": 4,
+      "unknown": 4,
+      "unknown_timeouts": 3,
+      "other_unknown": 1
+    },
+    "first_eight_ids_sha256": "6b1e0a22fbaba58a42792f83b21002398b907c7b45315c43dba0db89f0a99234",
+    "elapsed_seconds": 608.318764604
+  },
+  "status": "WARRANTED_BOUNDED_SOURCE_EXPOSED_NEGATIVE_NO_G2",
+  "scientific_boundary": "No success among 8 original source-observed V104 builders, no full grammar exhaustion, no formal proof no expression can repair. Four unknown outcomes cannot be treated as failures.",
+  "guard_event": {
+    "source": "tenacity/__init__.py",
+    "line": 425,
+    "then": 426,
+    "attribute": "wait",
+    "callable": true,
+    "origin": "V13 Git/native bound observation, no human selected winning repair"
+  },
+  "preservation": {
+    "original_V104": true,
+    "original_MSI": true,
+    "previous_V13": true,
+    "previous_RED_V9_V11_V12": true,
+    "heldout_packaging_unopened": true,
+    "baseline_ledger_comparator": "NOT_RUN",
+    "coding_agent_comparator": "NOT_RUN"
+  },
+  "verdicts": {
+    "G0_G1": "PRESERVED",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "next_residual": "Existing V104 If.test builder grammar has no direct AST Compare or BoolOp; need independently qualified source/observation-conditioned constructive extension or reusable prior constructor genesis, then new untouched source-distinct prospective G2 with matched comparisons."
+}
