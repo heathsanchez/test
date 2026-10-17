@@ -1,0 +1,106 @@
+name: V12 exposed Tenacity guard intervention under original typed native evidence (G2 UNKNOWN)
+on:
+  push:
+    branches: [research/udm-v12-exposed-guard-intervention-20261017]
+    paths:
+      - .github/workflows/udm-v12-exposed-guard.yml
+      - research/unified_consequence_runtime/qualify_exposed_guard_v12.py
+      - research/unified_consequence_runtime/test_exposed_guard_v12.py
+      - research/unified_consequence_runtime/archaeology/typed-v104-v12/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: udm-v12-exposed-guard-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  exposed-source-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+      GIT_CONFIG_NOSYSTEM: '1'
+      UDM_V12_OUT: ${{ github.workspace }}/qualification/v12/native
+      UDM_V12_EXPOSED: 'YES_DIAGNOSTIC_NOT_G2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Check frozen guards and preserve V6–V11 source identities
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/v12
+          git rev-parse HEAD > qualification/v12/SOURCE_COMMIT.txt
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/test_exposed_guard_v12.py)" = \
+            "0ebf97827e508d855fe4a1d6de4521ea3e6d3464"
+          test "$(git rev-parse HEAD:research/unified_consequence_runtime/archaeology/typed-v104-v12/FROZEN_GUARDS.json)" = \
+            "4f9a9b7daef5e3799c6e79706f6665a24e763737"
+          for file in \
+            typed_native_authority_v6.py \
+            typed_native_authority_v10.py \
+            typed_v104_msi_bridge_v7.py \
+            qualify_source_bound_g2_v9.py \
+            qualify_v11_exposed_tenacity_msi.py \
+            capability_index.json; do
+            path="research/unified_consequence_runtime/$file"
+            test "$(git rev-parse HEAD:"$path")" = \
+                 "$(git rev-parse 89726205350c2c4f5aab8ed9268e585c6bb20e7f:"$path")"
+          done
+      - name: Install exact native test dependencies
+        run: |
+          set -euo pipefail
+          python -B -m pip install --disable-pip-version-check --no-input \
+            pytest==8.3.5 pytest-cov==6.2.1 pluggy==1.6.0 coverage==7.10.6 \
+            packaging==26.3 attrs==24.3.0 hypothesis==6.122.3 \
+            typing_extensions==4.12.2 colorama==0.4.6 rich==13.9.4 \
+            click==8.2.0 tenacity==9.1.2 markupsafe==3.0.2
+      - name: Verify frozen source-grounded finite candidate and negative contracts
+        run: |
+          set -euo pipefail
+          python -B -m unittest \
+            research.unified_consequence_runtime.test_exposed_guard_v12 \
+            research.unified_consequence_runtime.test_typed_native_authority_v10 \
+            -v 2>&1 | tee qualification/v12/CONTRACTS.log
+      - name: Run all six precommitted exposed native interventions including physical removal
+        timeout-minutes: 8
+        run: |
+          set +e
+          env -u GH_TOKEN -u GITHUB_TOKEN UDM_V12_EXPOSED=YES_DIAGNOSTIC_NOT_G2 \
+            python -B -m research.unified_consequence_runtime.qualify_exposed_guard_v12 \
+            > qualification/v12/SCIENCE.log 2>&1
+          result=$?
+          echo "$result" > qualification/v12/SCIENCE_EXIT.txt
+          tail -n 45 qualification/v12/SCIENCE.log
+          exit "$result"
+      - name: Keep all science claims in their original authority scope
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          file=Path('qualification/v12/native/RESULT.json')
+          if file.exists():
+              v=json.loads(file.read_text())
+              assert v['source_exposed'] is True
+              assert v['original_repaired_head_fetched'] is False
+              assert v['packaging_source_opened'] is False
+              assert all(v[g]=='UNKNOWN' for g in ('G2','G3','G4','G5','G6'))
+              assert v['native_calls']<=12
+              print('V12_GUARD_NATIVE_EVIDENCE',v['status'],v['candidate_outcomes'])
+          else:print('UNKNOWN_NO_SOURCE_NATIVE_RESULT')
+          PY
+      - name: Archive source mode and protected native receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-v12-exposed-guard-${{ github.sha }}-${{ github.run_attempt }}
+          path: qualification/v12/
+          retention-days: 90
