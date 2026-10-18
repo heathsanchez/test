@@ -69,6 +69,37 @@ helper = r'''
                     context.len(),
                 );
             }
+            #[cfg(feature="diagnostics")]
+            if index==1 && !verdict.is_proven()
+                && std::env::var_os("NUCLEUS_TRACE_EQPROP_ENDPOINT_PROVENANCE").is_some()
+            {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static TRACES:AtomicUsize=AtomicUsize::new(0);
+                if TRACES.fetch_add(1,Ordering::Relaxed)<6 {
+                    let mut left_fuel=2048;
+                    let left_type=self.infer_exact_closure_in_context(
+                        lhs,context,&mut left_fuel,0
+                    );
+                    let mut right_fuel=2048;
+                    let right_type=self.infer_exact_closure_in_context(
+                        rhs,context,&mut right_fuel,0
+                    );
+                    let mut identity_fuel=2048;
+                    let exact_identity=self.exact_source_capture_identity(
+                        lhs,rhs,&mut identity_fuel,
+                    );
+                    let left_whnf=self.machine().expose_for_conversion(
+                        lhs.clone(),Transparency::Reducible,budget.min(2048),
+                    );
+                    let right_whnf=self.machine().expose_for_conversion(
+                        rhs.clone(),Transparency::Reducible,budget.min(2048),
+                    );
+                    eprintln!(
+                        "NUCLEUS_EQPROP_ENDPOINT_PROVENANCE:context_len={}:left_type={left_type:?}:right_type={right_type:?}:source_identity={exact_identity}:left_whnf={left_whnf:?}:right_whnf={right_whnf:?}",
+                        context.len(),
+                    );
+                }
+            }
             if !verdict.is_proven() {return false}
         }
         true
