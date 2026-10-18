@@ -100,7 +100,57 @@ helper = r'''
                     );
                 }
             }
-            if !verdict.is_proven() {return false}
+            let mut witnessed=verdict.is_proven();
+            // Separate checked, compositional route for identical rigid heads.
+            // Every child conversion must itself be proven in the ORIGINAL
+            // lexical context. Sharing a head or a numeric FreeId is never
+            // enough. This cannot downgrade a definitive negative.
+            if !witnessed && index>0 && budget>=256 {
+                let lex=self.machine().expose_for_conversion(
+                    lhs.clone(),Transparency::Reducible,budget.min(2048),
+                );
+                let rex=self.machine().expose_for_conversion(
+                    rhs.clone(),Transparency::Reducible,budget.min(2048),
+                );
+                if let (Some(Value::Neutral(ln)),Some(Value::Neutral(rn)))=
+                    (lex.proven_value(),rex.proven_value())
+                {
+                    if let (
+                        NeutralHead::Const{name:lname,levels:ll},
+                        NeutralHead::Const{name:rname,levels:rl},
+                    )=(&ln.head,&rn.head)
+                    {
+                        if lname==rname && ll.len()==rl.len()
+                            && ln.spine.len()==rn.spine.len()
+                            && (1..=6).contains(&ln.spine.len())
+                            && ll.iter().zip(rl.iter()).all(|(a,b)|
+                                crate::level::level_equal(a.clone(),b.clone(),budget.min(1024)).is_proven()
+                            )
+                        {
+                            witnessed=true;
+                            for (child,(a,b)) in ln.spine.iter().zip(rn.spine.iter()).enumerate() {
+                                let sub=crate::convert::convert_with_policy_in_context(
+                                    self,&TypeValue::Term(a.clone()),&TypeValue::Term(b.clone()),
+                                    budget.min(2048),
+                                    crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                    context.len(),context,
+                                );
+                                #[cfg(feature="diagnostics")]
+                                if std::env::var_os("NUCLEUS_TRACE_EQPROP_ENDPOINT_PROVENANCE").is_some() {
+                                    eprintln!(
+                                        "NUCLEUS_EQPROP_NESTED_CONGRUENCE:outer_argument={index}:child={child}:head={lname:?}:result={sub:?}:lhs={a:?}:rhs={b:?}",
+                                    );
+                                }
+                                if !sub.is_proven() {
+                                    witnessed=false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if !witnessed {return false}
         }
         true
     }
