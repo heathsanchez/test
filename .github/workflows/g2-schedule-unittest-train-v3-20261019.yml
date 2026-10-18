@@ -1,0 +1,77 @@
+name: G2 generic unittest admission - exposed schedule training, schema sealed V3
+on:
+  push:
+    branches:
+      - research/g2-regex-selector-schedule-schema-20261019
+    paths:
+      - .github/workflows/g2-schedule-unittest-train-v3-20261019.yml
+permissions:
+  contents: read
+jobs:
+  native-training-reuse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Method, selector and sealed future preflight
+        run: |
+          set -euo pipefail
+          F=research/unified_consequence_runtime/
+          git merge-base --is-ancestor 0e6e8bc2ec313c38370710b82378f072f5891cbd HEAD
+          cmp "$F"g2_whole_input_regex_syntax_v2.py <(git show 21008fedf462ebd3ffc9b616f7c06d355c70abbe:"$F"g2_whole_input_regex_syntax_v2.py)
+          cmp "$F"g2_unittest_ast_admission_v3.py <(git show 27515fa428da15cc31169e5a47328a5ff7c316dc:"$F"g2_unittest_ast_admission_v3.py)
+          cmp "$F"g2_schedule_exposed_training_v3.py <(git show 8953b78e69261380d8bf20b770cd2ae64cefb381:"$F"g2_schedule_exposed_training_v3.py)
+          echo '12353d3b30f33aa98a6edf5623e1d92ba442ca2f0750e7f3f48aae930ebbc788  research/unified_consequence_runtime/g2_whole_input_regex_syntax_v2.py' | sha256sum -c
+          python -B -m py_compile "$F"g2_unittest_ast_admission_v3.py "$F"g2_schedule_exposed_training_v3.py
+          mkdir -p evidence/g2-schedule-exposed-training-v3
+          echo 'schema #356 BASE/HEAD from METADATA_ONLY; SOURCE_AND_TEST_UNOPENED' > evidence/g2-schedule-exposed-training-v3/SCHEMA_SEAL.txt
+          git rev-parse HEAD > evidence/g2-schedule-exposed-training-v3/COMMIT.txt
+      - name: Source-native schedule training, unchanged acquired regex grammar
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_schedule_exposed_training_v3.py "$GITHUB_WORKSPACE/evidence/g2-schedule-exposed-training-v3/training"
+      - name: Enforce schema remains sealed and G2 unknown
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          e=Path('evidence/g2-schedule-exposed-training-v3')
+          p=e/'training/RESULT.json'
+          r=json.loads(p.read_text()) if p.exists() else {}
+          assert (e/'SCHEMA_SEAL.txt').exists()
+          assert r.get('future','SCHEMA_SEALED_UNOPENED')=='SCHEMA_SEALED_UNOPENED'
+          assert r.get('G2','UNKNOWN')=='UNKNOWN'
+          assert r.get('no_method_rewriting',True) is True
+          s={'status':r.get('status','UNKNOWN_NO_RESULT'),
+             'source_native':r.get('admission',{}).get('status'),
+             'old_method_candidates':r.get('prior_v1_candidate_count'),
+             'V2_method_candidates':r.get('candidate_count'),
+             'future':'SCHEMA_SEALED_UNOPENED','G2':'UNKNOWN'}
+          (e/'BOUNDARY.json').write_text(json.dumps(s,indent=2)+'\n')
+          print(json.dumps(s))
+          if r.get('status') in ('UNKNOWN_FUTURE_APPARATUS','UNKNOWN_NO_RESULT'):
+              raise SystemExit('APPARATUS_FAIL_CLOSED')
+          PY
+      - name: Preserve native evidence and negatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-schedule-exposed-training-v3-unittest-native
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-schedule-exposed-training-v3/
+            research/unified_consequence_runtime/G2_SCHEDULE_SCHEMA_ADMISSION_V3_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/g2_whole_input_regex_syntax_v2.py
+            research/unified_consequence_runtime/g2_unittest_ast_admission_v3.py
+            research/unified_consequence_runtime/g2_schedule_exposed_training_v3.py
