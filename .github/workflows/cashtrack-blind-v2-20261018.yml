@@ -1,0 +1,76 @@
+name: Cash-track V2 blind-input and equal-information comparator
+
+on:
+  push:
+    branches:
+      - research/cashtrack-evidence-resource-20261018
+    paths:
+      - research/cash_track_20261018/construct_blind_v2.py
+      - research/cash_track_20261018/BLIND_RESOURCE_V2_FROZEN_PROTOCOL.md
+      - research/cash_track_20261018/runner.py
+      - research/cash_track_20261018/authorities.json
+      - .github/workflows/cashtrack-blind-v2-20261018.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - research/cash_track_20261018/construct_blind_v2.py
+      - research/cash_track_20261018/BLIND_RESOURCE_V2_FROZEN_PROTOCOL.md
+      - research/cash_track_20261018/runner.py
+      - research/cash_track_20261018/authorities.json
+      - .github/workflows/cashtrack-blind-v2-20261018.yml
+
+permissions:
+  contents: read
+
+jobs:
+  blind-resource-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact pre-code scientific freeze
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 869cf667f8dfec2c186f825c7d1f38172d904c20^{commit}
+          git merge-base --is-ancestor 869cf667f8dfec2c186f825c7d1f38172d904c20 HEAD
+          git cat-file -e bb33d34a479d439cf4d38ce9601462c53b0beda1^{commit}
+          git merge-base --is-ancestor bb33d34a479d439cf4d38ce9601462c53b0beda1 HEAD
+      - name: Source-derived blinded resource and falsification
+        run: |
+          python research/cash_track_20261018/construct_blind_v2.py --self-test --out research/cash_track_20261018/v2a
+      - name: Repeat in clean process; byte-exact comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/cash_track_20261018/construct_blind_v2.py --self-test --out research/cash_track_20261018/v2b
+          for x in agent_inputs.jsonl gold_labels.jsonl legacy_labeled_training_only.jsonl metrics.json README.md; do
+            cmp "research/cash_track_20261018/v2a/$x" "research/cash_track_20261018/v2b/$x"
+          done
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('research/cash_track_20261018/v2a')
+          a=[json.loads(x) for x in (p/'agent_inputs.jsonl').read_text().splitlines()]
+          g=[json.loads(x) for x in (p/'gold_labels.jsonl').read_text().splitlines()]
+          assert len(a)==len(g)==56
+          assert all(set(x)=={'sample_id','packet'} for x in a)
+          assert len({x['sample_id'] for x in a})==56
+          assert all(set(x)=={'sample_id','admissible','source_case','control'} for x in g)
+          m=json.loads((p/'metrics.json').read_text())
+          assert m['methods']['independent_equal_information_exact_baseline']==m['methods']['mathgraph_typed_admission']
+          assert m['methods']['accept_green_ci']['false_admissions']==49
+          print('INDEPENDENT_SPLIT_AND_NULL_COMPARATOR: PASS')
+          PY
+          sha256sum research/cash_track_20261018/v2a/*.json*
+      - name: Archive separate inference and answer-key surfaces
+        uses: actions/upload-artifact@v4
+        with:
+          name: cashtrack-blind-v2-split
+          path: research/cash_track_20261018/v2a/
+          if-no-files-found: error
