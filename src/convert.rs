@@ -784,7 +784,58 @@ fn unit_like_free_pair(
         .is_some_and(|(left, right)| left == right)
 }
 
+// Source-certified multi-binder η for the literal curried telescope.
+// The final application must supply exactly the introduced binders in
+// source order and its original head must be independent of all of them.
+// All environments and universe substitutions come from the *original*
+// closure; new locals are placeholders for bindings that the head does not
+// use. Not a blanket lambda-versus-neutral equality.
+fn eta_contract_telescope(
+    checker: &TypeChecker<'_>,
+    raw: &Closure,
+    depth: usize,
+) -> Option<Closure> {
+    let source=resolve_local_closure(checker,raw)?;
+    let mut body=source.expr;
+    let mut n=0usize;
+    while let Some(Expr::Lam {body:next,..})=checker.expression(body) {
+        if n==4 {return None}
+        n+=1;
+        body=*next;
+    }
+    if n<2 {return None}
+    let mut head=body;
+    for index in 0..n {
+        let Some(Expr::App {fun,arg})=checker.expression(head) else {return None};
+        if !matches!(checker.expression(*arg),Some(Expr::BVar(j)) if *j==index as u64) {
+            return None
+        }
+        head=*fun;
+    }
+    // The head may itself contain binders: expression_uses_bvar performs
+    // de Bruijn-aware, conservative support checking across all constructors.
+    if (0..n).any(|index|expression_uses_bvar(checker,head,index as u64,2048)) {
+        return None
+    }
+    let mut captured=source.env.clone();
+    for index in 0..n {
+        captured=captured.extend_free(fresh_local(depth.checked_add(index)?)?);
+    }
+    let contracted=source.sibling(head,captured);
+    #[cfg(feature="diagnostics")]
+    if std::env::var_os("NUCLEUS_TRACE_MULTIBINDER_ETA").is_some() {
+        eprintln!(
+            "NUCLEUS_MULTIBINDER_ETA:original={:?}:body={body:?}:head={head:?}:arity={n}:depth={depth}:candidate={contracted:?}",
+            source,
+        );
+    }
+    Some(contracted)
+}
+
 fn eta_contract(checker: &TypeChecker<'_>, closure: &Closure, depth: usize) -> Option<Closure> {
+    if let Some(contracted)=eta_contract_telescope(checker,closure,depth) {
+        return Some(contracted);
+    }
     let closure = resolve_local_closure(checker, closure)?;
     let Expr::Lam { body, .. } = checker.expression(closure.expr)? else {
         return None;
