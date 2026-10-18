@@ -1,0 +1,88 @@
+name: G2 cross-source V1 Packaging sealed future, unchanged acquired method
+on:
+  push:
+    branches:
+      - research/g2-cross-source-consequence-law-20261018
+    paths:
+      - .github/workflows/g2-cross-source-prospective-future-20261018.yml
+permissions:
+  contents: read
+concurrency:
+  group: g2-cross-source-prospective-future-20261018
+  cancel-in-progress: false
+jobs:
+  prospective-native-source-distinct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - name: Checkout exact research commit with no persisted credentials
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify prior training audit, future freeze ancestry and syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 5446c27f88d0cfd71beb6d30561668b752a710c5 HEAD
+          git merge-base --is-ancestor de234c7e180467bbb0b957cac2016263bf80920b HEAD
+          git merge-base --is-ancestor c6b14cbdefa7049a14a001a9f1ce68c89a69394e HEAD
+          cmp research/unified_consequence_runtime/g2_werkzeug_guard_genesis_v1.py <(git show 216f960c18fd8a5d1e3f78a5c811333153802e0c:research/unified_consequence_runtime/g2_werkzeug_guard_genesis_v1.py)
+          cmp research/unified_consequence_runtime/g2_cross_source_matched_baseline_v1.py <(git show c6b14cbdefa7049a14a001a9f1ce68c89a69394e:research/unified_consequence_runtime/g2_cross_source_matched_baseline_v1.py)
+          python -m py_compile research/unified_consequence_runtime/g2_cross_source_future_probe_v1.py
+          python -m py_compile research/unified_consequence_runtime/g2_pool_first_native_failure_v1.py
+      - name: Same-information two-arm syntax sanity without future source
+        shell: bash
+        run: |
+          python - <<'PY'
+          from research.unified_consequence_runtime import g2_werkzeug_guard_genesis_v1 as a
+          from research.unified_consequence_runtime import g2_cross_source_matched_baseline_v1 as b
+          src="def test(a,b,c,d):\n    if a and (b or c) and d:\n        return 1\n    return 0\n"
+          x=a.enumerate_candidates(src)
+          y=b.enumerate_candidates(src)
+          assert len(x)==len(y)==1
+          assert x[0]["_edited"]!=y[0]["_edited"]
+          assert x[0]["_edited"]!=src!=y[0]["_edited"]
+          print("FROZEN_METHOD_AND_MATCHED_BASELINE_SHAPE_VALIDATED")
+          PY
+      - name: Unseal exactly one preselected Packaging task, run native failure and fixed method
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_cross_source_future_probe_v1.py "$GITHUB_WORKSPACE/evidence/g2-cross-source-packaging-v1"
+      - name: Enforce prospective UNKNOWN until independent audit, CLC and FLASH
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("evidence/g2-cross-source-packaging-v1/RESULT.json")
+          if not p.exists():
+              print("UNKNOWN_ENVIRONMENT_NO_PROSPECTIVE_RESULT")
+          else:
+              d=json.loads(p.read_text())
+              assert d["G2"]=="UNKNOWN", "UNAUTHORIZED_SCIENTIFIC_PROMOTION"
+              assert d["Lean"]==d["CLC"]==d["FLASH"]=="NOT_EXECUTED"
+              assert d["method_changed_after_future"] is False
+              print(json.dumps({k:d.get(k) for k in ("status","future_repo","acquired_candidate_count","baseline_candidate_count","G2")}))
+          PY
+      - name: Archive exact future-native candidates, logs, source hashes and all negatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-cross-source-packaging-prospective-v1
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-cross-source-packaging-v1/
+            research/unified_consequence_runtime/G2_CROSS_SOURCE_CONSEQUENCE_LAW_V1_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/G2_WERKZEUG_ACQUIRED_OPERATOR_PRE_FUTURE_FREEZE_V1.json
+            research/unified_consequence_runtime/g2_cross_source_future_probe_v1.py
+            research/unified_consequence_runtime/g2_werkzeug_guard_genesis_v1.py
+            research/unified_consequence_runtime/g2_cross_source_matched_baseline_v1.py
