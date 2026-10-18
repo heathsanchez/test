@@ -1,0 +1,74 @@
+name: G2 second-generation locked original-source future pool
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - research/g2-cross-source-consequence-law-20261018
+    paths:
+      - .github/workflows/g2-regex-second-gen-locked-future-20261019.yml
+
+permissions:
+  contents: read
+
+jobs:
+  first-authentic-native-future:
+    if: github.head_ref == 'research/g2-regex-boundary-future-cohort-v1-20261019'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen role ordering and unchanged acquired capability before source access
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 7d9a8264173d0608e269e38a1ea68eaf79084de2 HEAD
+          git merge-base --is-ancestor c1c07b60c2bc89e2f476bf9330856c3167fd2029 HEAD
+          python -B -m py_compile research/unified_consequence_runtime/g2_regex_second_gen_future_v1.py
+          python -B research/unified_consequence_runtime/g2_regex_equal_info_baseline_v1.py
+          python -B research/unified_consequence_runtime/g2_regex_language_boundary_v1.py
+      - name: First authentic native failure then unchanged method plus independent comparator
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B \
+            research/unified_consequence_runtime/g2_regex_second_gen_future_v1.py \
+            "$GITHUB_WORKSPACE/evidence/g2-regex-second-gen-future-v1"
+      - name: Independent fail-closed no-autonomous-G2 outcome gate
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("evidence/g2-regex-second-gen-future-v1/RESULT.json").read_text())
+          assert d["schema"]=="G2_REGEX_BOUNDARY_SOURCE_DISTINCT_FUTURE_V1"
+          assert d["G2"]=="UNKNOWN"
+          assert d["Lean"]==d["CLC"]==d["FLASH"]=="NOT_EXECUTED"
+          assert d["status"] in {
+              "UNKNOWN_NO_ADMISSIBLE_NEW_FUTURE",
+              "REJECTED_NO_TRANSFER_CANDIDATE_ON_FIRST_FUTURE",
+              "REJECTED_NO_NATIVE_TRANSFER_REPAIR",
+              "UNKNOWN_NO_CAUSAL_METHOD_DIFFERENCE",
+              "CANDIDATE_BOUNDED_TRANSFER_PENDING_INDEPENDENT_CERTIFICATION"}
+          print("LOCKED_SECOND_GENERATION",d["status"],"G2",d["G2"])
+          PY
+      - name: Archive source identity native failure candidate costs and all negative evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-regex-second-gen-future-v1
+          path: |
+            research/unified_consequence_runtime/G2_GENESIS_V2_PACKAGING_TRAIN_FUTURE_POOL_PREQUERY.md
+            research/unified_consequence_runtime/G2_REGEX_BOUNDARY_SECOND_GEN_FUTURE_LOCK_V1.json
+            research/unified_consequence_runtime/g2_regex_language_boundary_v1.py
+            research/unified_consequence_runtime/g2_regex_equal_info_baseline_v1.py
+            research/unified_consequence_runtime/g2_regex_second_gen_future_v1.py
+            evidence/g2-regex-second-gen-future-v1/
+          if-no-files-found: warn
