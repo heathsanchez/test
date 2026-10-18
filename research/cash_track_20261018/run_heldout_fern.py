@@ -71,6 +71,28 @@ def verify_source(path, expected):
     return rc == 0 and out.strip() == expected
 
 
+def verify_authorized_tree(root: Path, expected_sha: str, fixture_present: bool, fixture_digest: str):
+    """Exact source-head plus clean tracked tree and single exact test overlay.
+
+    A valid HEAD alone does NOT prove that native Go executed clean source.
+    """
+    if not verify_source(root, expected_sha):
+        return False
+    rc, status = shell(["git", "status", "--porcelain=v1", "--untracked-files=all"],
+                       cwd=root, seconds=15)
+    if rc:
+        return False
+    observed = sorted(x for x in status.splitlines() if x)
+    overlay_name = "internal/api/cashtrack_outage_test.go"
+    authorized = ["?? " + overlay_name] if fixture_present else []
+    if observed != authorized:
+        return False
+    fixture_path = root / overlay_name
+    if fixture_present:
+        return fixture_path.is_file() and digest(fixture_path.read_bytes()) == fixture_digest
+    return not fixture_path.exists()
+
+
 def clone_sha(parent: Path, tag: str, expected: str):
     root = parent / tag
     root.mkdir(parents=True)
@@ -155,13 +177,67 @@ def main():
                 shutil.copyfile(TEST, test_path)
                 if digest(test_path.read_bytes()) != report["independent_test_sha256"]:
                     raise RuntimeError("Original fixture not byte-identical in both source revisions")
+                tree_pre = verify_authorized_tree(
+                    root, sha, True, report["independent_test_sha256"])
+                if not tree_pre:
+                    raise RuntimeError(f"Native {label} source tree unclean before execution")
                 actual[label] = run_go(root, label, output)
                 if not actual[label]["named_all_executed"]:
                     raise RuntimeError(f"Native {label} named 7/7 test execution missing")
+                tree_post = verify_authorized_tree(
+                    root, sha, True, report["independent_test_sha256"])
+                actual[label]["source_tree_clean_before"] = tree_pre
+                actual[label]["source_tree_clean_after"] = tree_post
+                if not tree_post:
+                    raise RuntimeError(f"Native {label} source tree dirty after execution")
                 if label == "head":
+                    code_path = root / "internal" / "api" / "coverage_verdict.go"
+                    original_source_bytes = code_path.read_bytes()
+                    code_path.write_bytes(original_source_bytes + b"\n// cashtrack-only source tamper control\n")
+                    tracked_refused = (
+                        verify_source(root, HEAD) and
+                        not verify_authorized_tree(
+                            root, HEAD, True, report["independent_test_sha256"]))
+                    code_path.write_bytes(original_source_bytes)
+                    restored_tracked = verify_authorized_tree(
+                        root, HEAD, True, report["independent_test_sha256"])
+
+                    original_fixture_bytes = test_path.read_bytes()
+                    test_path.write_bytes(original_fixture_bytes + b"\n// cashtrack-only altered test control\n")
+                    fixture_refused = (
+                        verify_source(root, HEAD) and
+                        not verify_authorized_tree(
+                            root, HEAD, True, report["independent_test_sha256"]))
+                    test_path.write_bytes(original_fixture_bytes)
+                    restored_fixture = verify_authorized_tree(
+                        root, HEAD, True, report["independent_test_sha256"])
+
+                    alien = root / "internal" / "api" / "cashtrack_untrusted_overlay.go"
+                    if alien.exists():
+                        raise RuntimeError("Unexpected second overlay already present")
+                    alien.write_text("package api\n", encoding="utf-8")
+                    second_overlay_refused = (
+                        verify_source(root, HEAD) and
+                        not verify_authorized_tree(
+                            root, HEAD, True, report["independent_test_sha256"]))
+                    alien.unlink()
+                    restored_single_overlay = verify_authorized_tree(
+                        root, HEAD, True, report["independent_test_sha256"])
+                    report["source_tree_controls"] = {
+                        "dirty_tracked_source_same_head_refused": tracked_refused,
+                        "tracked_source_restored": restored_tracked,
+                        "mutated_frozen_test_same_head_refused": fixture_refused,
+                        "test_bytes_restored": restored_fixture,
+                        "extra_untracked_go_source_refused": second_overlay_refused,
+                        "single_exact_overlay_restored": restored_single_overlay,
+                    }
+                    if not all(report["source_tree_controls"].values()):
+                        raise RuntimeError("Dirty-source or test-byte falsification gate failed")
                     # Physically remove injected test. Go may exit 0 but this
                     # must be classified as no evidence, not a test pass.
                     test_path.unlink()
+                    if not verify_authorized_tree(root, HEAD, False, report["independent_test_sha256"]):
+                        raise RuntimeError("Post-removal source state is not clean")
                     removed = run_go(root, "head_removed_test", output)
                     if removed["named_executed_count"] != 0:
                         raise RuntimeError("Unexpected named test after physical deletion")
@@ -186,7 +262,9 @@ def main():
                 raise RuntimeError("Head did not satisfy all seven independent controls")
             if not all(report["source_identity_controls"].values()):
                 raise RuntimeError("Original source-identity protected controls failed")
-            report["status"] = "WARRANTED_BOUNDED_NEW_SOURCE_NATIVE_GO_DIFF"
+            if not all(report["source_tree_controls"].values()):
+                raise RuntimeError("Strict exact-source authority was not qualified")
+            report["status"] = "WARRANTED_BOUNDED_NATIVE_GO_DIFF_EXACT_TREE_V2"
             report["limitations"] = [
                 "Test input grammar authored after reading the production-only patch, using frozen natural-language acceptance obligations",
                 "Not a blind source-native method or new human-intent discovery: original contributor disclosed the issue",
@@ -199,7 +277,7 @@ def main():
     (output / "heldout_metrics.json").write_text(
         json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2, sort_keys=True))
-    if report["status"] != "WARRANTED_BOUNDED_NEW_SOURCE_NATIVE_GO_DIFF":
+    if report["status"] != "WARRANTED_BOUNDED_NATIVE_GO_DIFF_EXACT_TREE_V2":
         sys.exit(3)
 
 
