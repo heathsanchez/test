@@ -53,7 +53,9 @@ def main(world,out,runtime):
     world=world.resolve(strict=True); out=out.resolve(); out.mkdir(parents=True,exist_ok=False)
     t=roles["training"]
     if git(world,"rev-parse","HEAD")!=t["base"]: raise ValueError("WRONG_TRAINING_BASE")
-    if git(world,"status","--porcelain")!=" M "+t["author_tests"][0]:
+    status_lines=[line for line in git(world,"status","--porcelain").splitlines() if line]
+    changed_paths=[line[3:] for line in status_lines if len(line)>=4]
+    if changed_paths != [t["author_tests"][0]]:
         raise ValueError("UNEXPECTED_TRAINING_WORKTREE:"+git(world,"status","--porcelain"))
     test=t["author_tests"][0]; prod=t["production"][0]
     expected_test=git(world,"show",t["head"]+":"+test,raw=True)
