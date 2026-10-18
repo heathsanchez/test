@@ -1,0 +1,56 @@
+{
+  "schema": "G2_TRANSFER_INTERFACE_V4_PREQUERY",
+  "date": "2026-10-18",
+  "state": "PREQUERY_ONLY_NOT_AN_EXECUTED_PROSPECTIVE_EXPERIMENT",
+  "base_evidence": {
+    "native_pool_run": 39100429606,
+    "independent_audit_run": 39100634221,
+    "method_transfer_negative_run": 39096907308
+  },
+  "frozen_interface": {
+    "source_repo": "heathsanchez/test",
+    "source_branch": "research/udm-g2-tox-projection-closure-future-v1-20261018",
+    "path": "research/unified_consequence_runtime/residual_projection_method_v1.py",
+    "git_blob_sha": "9ffb5e656d7801836cdd23c74cbf5c2ce39f2105",
+    "support_file": "research/unified_consequence_runtime/attrs_residual_observation_genesis_v1.py",
+    "support_commit": "b9d175d0b129c843bc5885aec77082f07f2b0601",
+    "boundary": "Direct single-argument parameterized Boolean assertion from changed author test, callable defined in selected production file, primitive one-step projection yields licensed separator; no new grammar, wrappers or semantic exceptions."
+  },
+  "eligibility_rules": {
+    "metadata_only": "For each repository in frozen order, examine merged PRs dated 2026-01-01 through 2026-09-30, sorted ascending by merge timestamp then PR number. Require both original-author test and production Python files changed and at least one changed test callable; take first qualifying PR. Metadata/file paths only before role freeze. Stop UNKNOWN if fewer than 4 candidate pairs; do not replace repositories.",
+    "role_assignment": "First 3 metadata-eligible distinct repositories are sequential training native admission candidates; fourth is sealed future. No reuse of attrs, AnyIO, Trio, Werkzeug or tox / prior frozen pool.",
+    "native_admission": "Run original base checkout plus exact author-head test-file overlay, compare AST new/changed Test*/test* nodes, require >=1 protected failure, >=1 executed, zero errors, zero protected skips; select first qualifying training candidate; freeze task roles and hashes before source/test bodies or native execution.",
+    "applicability": "Invoke byte-identical method after admission, no target-specific modifications. A method inapplicability is a valid negative, never count as repaired.",
+    "success": "Two native clean runs on selected protected cases, full author test file green, physical withdrawal reproduces protected failure, byte-identical restoration restores pass. Only then unseal future and test fixed method unchanged.",
+    "comparators": "On positive prospective future only: matched-information ledger and coding agent if actually available; account all native attempts and costs.",
+    "science": "G2 remains UNKNOWN until independently audited future native success and causality; do not claim generic transfer from training-only success."
+  },
+  "new_repository_universe": [
+    "encode/httpx",
+    "pallets/itsdangerous",
+    "Textualize/rich",
+    "python-jsonschema/jsonschema",
+    "pypa/hatch",
+    "agronholm/anyio"
+  ],
+  "exclusions": [
+    "python-attrs/attrs",
+    "python-trio/trio",
+    "tox-dev/tox",
+    "pallets/werkzeug",
+    "pallets/click",
+    "psf/requests",
+    "urllib3/urllib3",
+    "pydantic/pydantic",
+    "pypa/packaging"
+  ],
+  "budget": {
+    "metadata_repo_count": 6,
+    "training_slots": 3,
+    "future_slots": 1,
+    "per_native_candidate_seconds": 160,
+    "overall_native_attempts_cap": 48
+  },
+  "seal": "Do not access new PR source or tests until metadata roles frozen; no access to future source/tests until causal training qualification.",
+  "status": "NOT_RUN"
+}
