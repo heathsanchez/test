@@ -85,16 +85,43 @@ jobs:
         run: |
           set -euo pipefail
           python -B research/unified_consequence_runtime/g2_anyio_mutable_closure_observer_v1.py /tmp/udm-anyio "$GITHUB_WORKSPACE/evidence/anyio-observer-quotient/native-observer" | tee evidence/anyio-observer-quotient/NATIVE_OBSERVER_STDOUT.json
+
+      - name: Qualify native protected-failure integrity
+        run: |
           python - <<'PY'
           import json
           r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
-          assert r['status']=='WARRANTED_BOUNDED_NATIVE_SOURCE_DERIVED_STALE_CLOSURE_OBSERVATION',r
           assert r['junit']=={'tests':2,'failures':2,'errors':0,'skipped':0},r
           assert r['source_test_bytes_preserved'] is True,r
-          assert r['source_derived_mutable_closure_site_count']>=1,r
-          assert r['stale_capture_observation_count']>=1,r
-          assert len(r['protected_tests_with_stale_capture'])==2,r
           assert r['G2']=='UNKNOWN' and r['future_source']=='UNOPENED',r
+          print('PASS_NATIVE_PROTECTED_FAILURE_INTEGRITY_V1')
+          PY
+
+      - name: Qualify source-derived mutable closure site discovery
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
+          assert r['source_derived_mutable_closure_site_count']>=1,r
+          print('PASS_SOURCE_DERIVED_MUTABLE_CLOSURE_SITE_V1')
+          PY
+
+      - name: Qualify native stale closure separator
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
+          assert r.get('stale_capture_observation_count',0)>=1,r
+          print('PASS_NATIVE_STALE_CLOSURE_SEPARATOR_V1')
+          PY
+
+      - name: Qualify stale closure on both protected failures
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
+          assert len(r.get('protected_tests_with_stale_capture',[]))==2,r
+          assert r['status']=='WARRANTED_BOUNDED_NATIVE_SOURCE_DERIVED_STALE_CLOSURE_OBSERVATION',r
           print('PASS_NATIVE_MUTABLE_CLOSURE_OBSERVER_V1')
           PY
 
