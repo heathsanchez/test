@@ -1,0 +1,152 @@
+name: UDM AnyIO mutable-closure equivalence fix V2
+
+on:
+  push:
+    branches:
+      - research/udm-anyio-mutable-closure-equivalence-fix-v2-20261018
+    paths:
+      - research/unified_consequence_runtime/G2_MUTABLE_CLOSURE_EQUIVALENCE_FIX_PROTOCOL_V2.json
+      - research/unified_consequence_runtime/g2_mutable_closure_trace_plugin_v2.py
+      - research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py
+      - .github/workflows/udm-g2-anyio-mutable-closure-equivalence-fix-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Freeze check before external source execution
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/g2-anyio-v2
+          protocol=research/unified_consequence_runtime/G2_MUTABLE_CLOSURE_EQUIVALENCE_FIX_PROTOCOL_V2.json
+          cmp "$protocol" <(git show 7cc32cabf2f749e13aa7813fb2dc62cfb1a1d9ff:"$protocol")
+          python -B -m py_compile             research/unified_consequence_runtime/g2_mutable_closure_trace_plugin_v2.py             research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py
+          git rev-parse HEAD > evidence/g2-anyio-v2/EXPERIMENT_HEAD.txt
+          sha256sum "$protocol"             research/unified_consequence_runtime/g2_mutable_closure_trace_plugin_v2.py             research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py             > evidence/g2-anyio-v2/EXPERIMENT_SOURCE_SHA256.txt
+          echo PASS_PREIMPLEMENTATION_PROTOCOL_BINDING
+
+      - name: Fetch exact original AnyIO and author-test object only
+        run: |
+          set -euo pipefail
+          git init -q /tmp/udm-anyio-v2
+          git -C /tmp/udm-anyio-v2 remote add upstream https://github.com/agronholm/anyio.git
+          git -C /tmp/udm-anyio-v2 fetch -q --depth=1 --filter=blob:none --no-tags upstream 1805944a9f6a062527c10aa044ded959782bfc3e
+          git -C /tmp/udm-anyio-v2 checkout -q --detach 1805944a9f6a062527c10aa044ded959782bfc3e
+          test "$(git -C /tmp/udm-anyio-v2 rev-parse HEAD^{tree})" = c6465ce4b900e2f21aa73ebbe16c779f5c6ae9bf
+          git -C /tmp/udm-anyio-v2 fetch -q --depth=1 --filter=blob:none --no-tags upstream 90876855b731fb057d45e7e1cbdf1df013be6091
+          test "$(git -C /tmp/udm-anyio-v2 rev-parse 90876855b731fb057d45e7e1cbdf1df013be6091:tests/test_pytest_plugin.py)" = b15d4da74a17b7f80fa07b0d172c03eb752be7f4
+          git -C /tmp/udm-anyio-v2 show 90876855b731fb057d45e7e1cbdf1df013be6091:tests/test_pytest_plugin.py > /tmp/udm-anyio-v2/tests/test_pytest_plugin.py
+          printf '%s  %s
+' a0b5f23acb6f4595b75556ea20e0e166c3ede234b3d941a1e3861e1b69c95f1d /tmp/udm-anyio-v2/src/anyio/pytest_plugin.py | sha256sum -c -
+          printf '%s  %s
+' c7dc03febccc7d17bc8291cd7ace6cbe7e87da8350434bbf88f1b9b26033b5fe /tmp/udm-anyio-v2/tests/test_pytest_plugin.py | sha256sum -c -
+          test "$(git -C /tmp/udm-anyio-v2 diff --name-only)" = tests/test_pytest_plugin.py
+          echo PASS_ORIGINAL_SOURCE_PLUS_AUTHOR_TEST_ONLY
+
+      - name: Fetch exact V104 and MSI method authorities
+        run: |
+          set -euo pipefail
+          git init -q /tmp/udm-v104-v2
+          git -C /tmp/udm-v104-v2 fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C /tmp/udm-v104-v2 checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q /tmp/udm-msi-v2
+          git -C /tmp/udm-msi-v2 fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C /tmp/udm-msi-v2 checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          test "$(git -C /tmp/udm-v104-v2 rev-parse HEAD)" = 426c54f7c774560e0fabe7213c5ef333b1327c71
+          test "$(git -C /tmp/udm-msi-v2 rev-parse HEAD)" = 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          echo PASS_PINNED_METHOD_AUTHORITIES
+
+      - name: Install original AnyIO test environment
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'pip==25.3'
+          python -m pip install --disable-pip-version-check --no-input             -e '/tmp/udm-anyio-v2[trio]'             --group '/tmp/udm-anyio-v2/pyproject.toml:test'             'pytest==9.1.1' 'pytest-cov==7.0.0'
+          python -m pip check
+          python -m pip freeze > evidence/g2-anyio-v2/PIP_FREEZE.txt
+
+      - name: Run native observer repair withdrawal restoration and class selection
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/g2-anyio-v2-result"
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B             research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py             /tmp/udm-anyio-v2 /tmp/udm-v104-v2 /tmp/udm-msi-v2             "$RUNNER_TEMP/g2-anyio-v2-result"             | tee evidence/g2-anyio-v2/STDOUT.json
+          cp -a "$RUNNER_TEMP/g2-anyio-v2-result" evidence/g2-anyio-v2/result
+
+      - name: Independently qualify result boundary
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import difflib, hashlib, json, pathlib, subprocess
+          root=pathlib.Path("evidence/g2-anyio-v2/result")
+          r=json.loads((root/"RESULT.json").read_text())
+          assert r["status"]=="WARRANTED_BOUNDED_POSTHOC_TRAINING_REPAIR_AND_CLASS_SELECTOR", r.get("status")
+          assert r["G2"]=="UNKNOWN" and r["heldout_future"]=="UNOPENED"
+          assert r["author_repaired_production_read"] is False
+          assert r["pattern_count"]>=1
+          assert any(x["pass"] for x in r["observer_checks"])
+          q=r["policy_quotient"]
+          assert q["policy_name_count"]==37 and q["class_count"]==2
+          cold=[x for x in q["classes"] if x["is_cold"]]
+          warm=[x for x in q["classes"] if not x["is_cold"]]
+          assert len(cold)==len(warm)==1
+          assert len(cold[0]["members"])==1 and len(warm[0]["members"])==36
+          assert r["selection"]["unit"]=="EQUIVALENCE_CLASS_NOT_POLICY_NAME"
+          assert r["selection"]["old_noncold_alias_count"]==36
+          assert r["training_repair"]["causal_withdrawal"] is True
+          assert r["training_repair"]["restoration"] is True
+          assert r["withdrawal"]["counts"]=={"tests":2,"failures":2,"errors":0,"skipped":0}
+          assert r["restoration"]["counts"]=={"tests":2,"failures":0,"errors":0,"skipped":0}
+
+          original=pathlib.Path("/tmp/udm-anyio-v2/src/anyio/pytest_plugin.py").read_bytes()
+          # At experiment end the same generated repair is restored in the world.
+          generated=(root/"GENERATED_REPAIR.py").read_bytes()
+          assert hashlib.sha256(generated).hexdigest()==r["training_repair"]["source_sha256"]
+          # Independently reconstruct the original from the committed Git object.
+          base=subprocess.check_output([
+              "git","--no-replace-objects","-C","/tmp/udm-anyio-v2",
+              "show","1805944a9f6a062527c10aa044ded959782bfc3e:src/anyio/pytest_plugin.py"
+          ])
+          opcodes=difflib.SequenceMatcher(a=base.decode().splitlines(),b=generated.decode().splitlines()).get_opcodes()
+          changes=[row for row in opcodes if row[0]!="equal"]
+          assert len(changes)==1 and changes[0][0]=="insert", changes
+          assert changes[0][2]-changes[0][1]==0
+          assert changes[0][4]-changes[0][3]==5, changes
+          assert b"alexmojaki" not in generated
+          pathlib.Path("evidence/g2-anyio-v2/INDEPENDENT_QUALIFICATION.json").write_text(
+              json.dumps({
+                  "status":"PASS",
+                  "posthoc_training_repair":"WARRANTED_BOUNDED",
+                  "policy_selection":"EQUIVALENCE_CLASS",
+                  "inserted_source_lines":5,
+                  "heldout_future":"UNOPENED",
+                  "G2":"UNKNOWN"
+              },sort_keys=True,indent=2)+"\n"
+          )
+          print("PASS_ANYIO_MUTABLE_CLOSURE_EQUIVALENCE_FIX_V2")
+          PY
+
+      - name: Preserve complete evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-anyio-mutable-closure-equivalence-fix-v2
+          retention-days: 90
+          if-no-files-found: error
+          path: evidence/g2-anyio-v2/
