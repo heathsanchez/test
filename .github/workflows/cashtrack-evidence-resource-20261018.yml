@@ -7,6 +7,12 @@ on:
     paths:
       - research/cash_track_20261018/**
       - .github/workflows/cashtrack-evidence-resource-20261018.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - research/cash_track_20261018/**
+      - .github/workflows/cashtrack-evidence-resource-20261018.yml
   workflow_dispatch:
 
 permissions:
