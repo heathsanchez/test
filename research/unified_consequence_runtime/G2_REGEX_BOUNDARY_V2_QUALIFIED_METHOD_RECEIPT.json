@@ -1,0 +1,54 @@
+{
+  "schema": "G2_REGEX_BOUNDARY_MATCHED_FUTURE_METHOD_V2_FREEZE",
+  "state": "WARRANTED_BOUNDED_TRAINING_REQUALIFICATION_ONLY",
+  "protocol_commit": "d659a652607b82fe79adf77f4582408602c5d951",
+  "method_source_commit": "21008fedf462ebd3ffc9b616f7c06d355c70abbe",
+  "training_script_commit": "418a0fa5e662bb8465f0032fdbb6b8a77a1cb497",
+  "method_path": "research/unified_consequence_runtime/g2_whole_input_regex_syntax_v2.py",
+  "method_sha256": "12353d3b30f33aa98a6edf5623e1d92ba442ca2f0750e7f3f48aae930ebbc788",
+  "grammar": "STRICT_WHOLE_INPUT_REGEX_V2_SYNTAX_CLOSURE",
+  "properties": [
+    "retain original qualified compiled regex whole-input operators",
+    "new source-neutral inline anchored regex fullmatch operator",
+    "finite same-source composition of nonoverlapping operator sites; CAP 32"
+  ],
+  "training_source": {
+    "repo": "pypa/packaging",
+    "pr": 1446,
+    "base": "332d716676eb934b67ede4054a3e3e0d4022b2d3",
+    "head": "a4f5d377a62e96759a4d9237256ec5dc3b19444e",
+    "production": "src/packaging/pylock.py",
+    "author_test": "tests/test_pylock.py",
+    "original_sha256": "a10d2871bb4015855a6e894790949189afff40ae7364fe0210efa91e299fa32e",
+    "selected_family": "strict_terminal_regex_anchor",
+    "repaired_sha256": "cc279a0a2e8f7a5d165d9b7d299cdc4dde05d9a3e5d8ee3fe80a515f067d60f2a",
+    "original": "4PASS/1FAIL",
+    "candidate": "5PASS/0FAIL",
+    "full_author": "74PASS/0FAIL",
+    "withdrawal": "4PASS/1FAIL",
+    "restoration": "5PASS/0FAIL"
+  },
+  "training_execution": {
+    "commit": "80f69a0b31e10cec929445106291721713d0d9fd",
+    "run_id": 39165374778,
+    "artifact_id": 12150218636,
+    "zip_sha256": "37319c03dd94bffa738b3ae754648970198063deef04d86c970f7ba54ed3d431",
+    "independent_zip_crc": "PASS",
+    "independent_junit_reparse": "PASS",
+    "method_digest_verified": "PASS"
+  },
+  "sealed_future": {
+    "repo": "dbader/schedule",
+    "pr": 666,
+    "base": "82a43db1b938d8fdf60103bd41f329e06c8d3651",
+    "head": "91f41d92c3fdb10e97af430fc98b8ff5f6f48a2e",
+    "production": "schedule/__init__.py",
+    "test": "test_schedule.py",
+    "source_read_before_method_freeze": false,
+    "source_native_outcome_read_before_method_freeze": false,
+    "metadata_description_disclosed_regexp_mechanism": true
+  },
+  "scientific_limit": "This method grammar was human-designed and the schedule task selected by descriptive metadata. Positive transfer qualifies only bounded cross-project method reuse; not blind new bug discovery or autonomous general operation genesis.",
+  "G2": "UNKNOWN",
+  "formal_transport": "NOT_RUN"
+}
