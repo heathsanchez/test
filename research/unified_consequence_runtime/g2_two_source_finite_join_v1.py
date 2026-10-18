@@ -110,7 +110,7 @@ def receipt_vector(folder,file,receipt,expected_case_universe,style,*,is_mistral
     if set(vector)!=set(expected_case_universe):
         raise ValueError("UNKNOWN_NATIVE_CASE_UNIVERSE_CHANGED:"+file)
     fails=sum(v=="FAIL" for v in vector.values())
-    counts=receipt["counts"] if is_mistral else receipt
+    counts=receipt["counts"]  # Both original native receipt formats nest actual counts.
     if is_mistral:
         exit_code=receipt["exit"]
     else:
