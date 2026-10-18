@@ -158,6 +158,16 @@ class V2ImportCompositionFrozen(unittest.TestCase):
             with self.subTest(table=table),self.assertRaises(ValueError):
                 target.evaluate_lattice(table,2)
 
+    def test_17_unqualified_standard_library_imports_cannot_bind_random_repo_suffix(self):
+        # 'types' is imported from the stdlib, NOT backend/vendor/a/types.py.
+        # A one-component import has no uniquely source-certified package scope.
+        paths=[*FILES,"backend/vendor/a/types.py","backend/vendor/b/types.py"]
+        source=b"from types import SimpleNamespace\n"+TEST
+        observed=target.imported_source_module_files(source,paths,
+                      "backend/app/gateway/routers/agents.py",30)
+        self.assertEqual(set(observed),set(FILES))
+        self.assertFalse(any(p.endswith("/types.py") for p in observed))
+
     def test_16_original_contract_and_method_identity_unchanged(self):
         proto=target.frozen()
         self.assertEqual(proto["schema"],"G2_DEERFLOW_EXPOSED_IMPORT_COMPOSITION_V2_PRETEST")
