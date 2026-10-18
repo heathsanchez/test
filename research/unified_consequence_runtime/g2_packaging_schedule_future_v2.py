@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Second prospectively sealed native future: byte-identical Packaging-acquired
-whole-string generator against Click original. Never adapts to Click outcomes.
+whole-string generator against schedule original. Never adapts to future outcomes.
 """
 from __future__ import annotations
 import hashlib,json,pathlib,subprocess,sys,traceback
@@ -54,7 +54,7 @@ def main(out):
     try:
         future,receipt=fixed()
         report.update(future_repo=future["repo"],future_pr=future["pr"],
-                      training_artifact_sha256=receipt["artifact_sha256"])
+                      training_artifact_sha256=receipt["training_execution"]["zip_sha256"])
         adm=native.one(future,0,out/"original-admission")
         report["admission"]=adm
         if adm["status"]!="ADMITTED_FIRST_AUTHENTIC_PROTECTED_NATIVE_FAILURE":
