@@ -1,0 +1,72 @@
+name: G2 source-neutral new-pool metadata only
+on:
+  push:
+    branches:
+      - research/udm-g2-source-neutral-transfer-freeze-20261018
+    paths:
+      - research/unified_consequence_runtime/G2_SOURCE_NEUTRAL_NEW_POOL_PREQUERY_V1.json
+      - research/unified_consequence_runtime/g2_source_neutral_metadata_screen_v1.py
+      - .github/workflows/g2-source-neutral-metadata-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  freeze-metadata-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify preregistered original prequery and pure-Python syntax
+        run: |
+          set -euo pipefail
+          F=research/unified_consequence_runtime
+          cmp "$F/G2_SOURCE_NEUTRAL_NEW_POOL_PREQUERY_V1.json" <(git show 23f30b0e9bdf267da3054f81b0895f6b988baab0:"$F/G2_SOURCE_NEUTRAL_NEW_POOL_PREQUERY_V1.json")
+          python -B - <<'PY'
+          import ast,pathlib
+          path=pathlib.Path("research/unified_consequence_runtime/g2_source_neutral_metadata_screen_v1.py")
+          ast.parse(path.read_text())
+          print("METADATA_SCREEN_AST_PASS")
+          PY
+      - name: Metadata-only fixed-order screening without external source checkout
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python -B research/unified_consequence_runtime/g2_source_neutral_metadata_screen_v1.py "$GITHUB_WORKSPACE/evidence/g2-source-neutral-meta-v1"
+      - name: Fail closed on any false scientific promotion
+        if: always()
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("evidence/g2-source-neutral-meta-v1/RESULT.json")
+          if not p.exists():
+              print("UNKNOWN_NO_METADATA_RESULT")
+          else:
+              a=json.loads(p.read_text())
+              assert a["G2"]=="UNKNOWN" and a["G4"]=="UNKNOWN"
+              assert not a["source_opened"] and not a["native_executed"]
+              assert a["future"]=="SEALED_UNOPENED"
+              assert a["status"] in ("METADATA_7_ROLES_FROZEN_READY_FOR_SEPARATE_NATIVE_COMMIT","UNKNOWN_POOL_INCOMPLETE_NO_SUBSTITUTION")
+              print(a["status"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-source-neutral-metadata-v1
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-source-neutral-meta-v1/
+            research/unified_consequence_runtime/G2_SOURCE_NEUTRAL_NEW_POOL_PREQUERY_V1.json
+            research/unified_consequence_runtime/g2_source_neutral_metadata_screen_v1.py
