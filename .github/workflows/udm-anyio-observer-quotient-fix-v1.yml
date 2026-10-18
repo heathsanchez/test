@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/udm-anyio-observer-quotient-fix-v1.yml
       - research/unified_consequence_runtime/g2_anyio_posthoc_function_observer_v1.py
+      - research/unified_consequence_runtime/g2_anyio_mutable_closure_observer_v1.py
       - research/unified_consequence_runtime/g2_equivalence_class_selector_v1.py
       - research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVATION_PROTOCOL_V1.json
   workflow_dispatch:
@@ -112,7 +113,9 @@ jobs:
             'policy_gate_after':'TWO_EQUIVALENCE_CLASSES_UNIQUE_NONCOLD_POSSIBLE',
             'policy_classes':q['class_sizes'],
             'observer_status':o['status'],
-            'observer_other_source_locations_eligible':o['other_source_locations_eligible'],
+            'observer_source_derived_site_count':o['source_derived_mutable_closure_site_count'],
+            'observer_stale_capture_count':o['stale_capture_observation_count'],
+            'observer_protected_tests_with_stale_capture':o['protected_tests_with_stale_capture'],
             'native_protected_failures_preserved':o['junit'],
             'original_candidate_repairs':'NOT_RERUN',
             'heldout_future':'UNOPENED',
