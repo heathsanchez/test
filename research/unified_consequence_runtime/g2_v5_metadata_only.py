@@ -79,7 +79,8 @@ class GitHub:
                  else "PR_DETAIL" if "/pulls/" in path
                  else "MERGE_COMMIT" if "/commits/" in path
                  else "OTHER")
-            raise ValueError("UNKNOWN_METADATA_HTTP_"+str(exc.code)+"_"+typ) from None
+            context=(params or {}).get("q","").split("repo:",1)[-1].split(" ",1)[0] if typ=="ISSUE_SEARCH" else "NONE"
+            raise ValueError("UNKNOWN_METADATA_HTTP_"+str(exc.code)+"_"+typ+"_"+context) from None
         except (URLError,TimeoutError) as exc:
             raise ValueError("UNKNOWN_METADATA_TRANSPORT") from None
         return json.loads(raw)
