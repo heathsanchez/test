@@ -124,10 +124,12 @@ class Monitor:
         self.collected=[]
         self.deselected=[]
         self.observations=[]
+        self.outer_snapshots=defaultdict(list)
+        self.nested_calls=defaultdict(list)
         self.seen=set()
 
     def trace(self,frame,event,arg):
-        if event not in ("line","return"):
+        if event not in ("call","line","return"):
             return self.trace
         try:
             if Path(frame.f_code.co_filename).resolve()!=self.production:
@@ -135,7 +137,22 @@ class Monitor:
         except Exception:
             return self.trace
         for site in self.sites:
-            if frame.f_code.co_name!=site["outer_function"]:
+            scalar_locals={
+                name:value for name,raw in frame.f_locals.items()
+                if (value:=scalar(raw)) is not None
+            }
+            site_key=(site["outer_function"],tuple(site["attribute_path"]),site["nested_function"])
+            if event=="return" and frame.f_code.co_name==site["outer_function"]:
+                self.outer_snapshots[(self.current,site_key)].append({
+                    "line":frame.f_lineno,
+                    "scalars":scalar_locals,
+                })
+            if event=="call" and frame.f_code.co_name==site["nested_function"]:
+                self.nested_calls[(self.current,site_key)].append({
+                    "line":frame.f_lineno,
+                    "scalars":scalar_locals,
+                })
+            if frame.f_code.co_name!=site["outer_function"] or event=="call":
                 continue
             obj=frame.f_locals.get(site["object_root_local"])
             if obj is None:
@@ -257,6 +274,32 @@ def main(world: Path,out: Path):
     result["collected"]=monitor.collected
     result["deselected"]=monitor.deselected
     result["observations"]=monitor.observations
+    result["outer_snapshots"]={
+        str(key):value for key,value in monitor.outer_snapshots.items()
+    }
+    result["nested_calls"]={
+        str(key):value for key,value in monitor.nested_calls.items()
+    }
+
+    sequence_mismatches=[]
+    for key,outers in monitor.outer_snapshots.items():
+        nested=monitor.nested_calls.get(key,[])
+        for index,(outer_row,nested_row) in enumerate(zip(outers,nested)):
+            common=sorted(set(outer_row["scalars"]) & set(nested_row["scalars"]))
+            for name in common:
+                current=outer_row["scalars"][name]
+                captured=nested_row["scalars"][name]
+                if current!=captured:
+                    sequence_mismatches.append({
+                        "protected_test":key[0],
+                        "site_key":list(key[1]),
+                        "pair_index":index,
+                        "name":name,
+                        "current_outer":current,
+                        "executed_nested":captured,
+                    })
+    result["sequence_stale_capture_observations"]=sequence_mismatches
+    result["sequence_stale_capture_observation_count"]=len(sequence_mismatches)
 
     suite=ET.parse(junit).getroot()
     ts=suite if suite.tag=="testsuite" else next(suite.iter("testsuite"))
@@ -276,14 +319,16 @@ def main(world: Path,out: Path):
     if not valid:
         result["status"]="UNKNOWN_INSTRUMENTED_NATIVE_AUTHORITY"
     else:
-        mismatches=[
+        direct_mismatches=[
             obs for obs in monitor.observations
             if obs["same_named_scalar_mismatches"]
         ]
+        mismatches=direct_mismatches+sequence_mismatches
+        result["direct_stale_capture_observation_count"]=len(direct_mismatches)
         result["stale_capture_observation_count"]=len(mismatches)
         result["stale_capture_observations"]=mismatches
         tests_with_mismatch=sorted({
-            obs["protected_test"] for obs in mismatches if obs["protected_test"]
+            obs.get("protected_test") for obs in mismatches if obs.get("protected_test")
         })
         result["protected_tests_with_stale_capture"]=tests_with_mismatch
         if len(tests_with_mismatch)==2:
