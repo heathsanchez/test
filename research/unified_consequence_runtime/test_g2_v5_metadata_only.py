@@ -99,7 +99,7 @@ class V5MetadataContracts(unittest.TestCase):
                          ['x/one','y/two','z/three','w/four'])
         self.assertFalse(any(x[0]=='v/five' for x in api.paths_seen))
         self.assertEqual(len(selected),4)
-        self.assertTrue(all(x['source']=='GITHUB_METADATA_ONLY_NO_PATCH_EXPOSURE'
+        self.assertTrue(all(x['source']=='GITHUB_METADATA_PROJECTION_ONLY'
                             for x in selected))
 
     def test_09_shortfall_no_automatic_replacement(self):
