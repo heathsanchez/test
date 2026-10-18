@@ -1,0 +1,79 @@
+name: G2 Packaging acquired boundary method - Click sealed future V1
+on:
+  push:
+    branches:
+      - research/g2-packaging-boundary-genesis-click-future-20261019
+    paths:
+      - .github/workflows/g2-packaging-click-future-v1-20261019.yml
+permissions:
+  contents: read
+jobs:
+  locked-prospective-click-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate before opening preselected future
+        shell: bash
+        run: |
+          set -euo pipefail
+          F=research/unified_consequence_runtime/
+          git merge-base --is-ancestor 59061c2aaedf4e99c5ca6e610bd34d4b328d2222 HEAD
+          cmp "$F"G2_PACKAGING_TRAINED_BOUNDARY_METHOD_V1_RECEIPT.json <(git show 59061c2aaedf4e99c5ca6e610bd34d4b328d2222:"$F"G2_PACKAGING_TRAINED_BOUNDARY_METHOD_V1_RECEIPT.json)
+          cmp "$F"g2_packaging_boundary_genesis_v1.py <(git show e78097f11a83564684acdbc68f8e822aef495b25:"$F"g2_packaging_boundary_genesis_v1.py)
+          echo '1269a275d5a36399a075b6ce1196bc44363544dc95de4e52aab8a3e0fc0d0524  research/unified_consequence_runtime/g2_packaging_boundary_genesis_v1.py' | sha256sum -c
+          python -B -m py_compile "$F"g2_packaging_click_future_v1.py "$F"g2_packaging_boundary_genesis_v1.py
+          mkdir -p evidence/g2-packaging-click-future-v1
+          echo 'FROZEN_PACKAGING_TRAINING_OPERATOR; CLICK_FUTURE_PRECOMMITTED' > evidence/g2-packaging-click-future-v1/FREEZE_CHECK.txt
+          git rev-parse HEAD > evidence/g2-packaging-click-future-v1/COMMIT.txt
+      - name: Exactly one newly exposed Click native failure gate and unchanged generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_packaging_click_future_v1.py "$GITHUB_WORKSPACE/evidence/g2-packaging-click-future-v1/future"
+      - name: Final fail-closed G2 boundary
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          e=Path('evidence/g2-packaging-click-future-v1')
+          p=e/'future/RESULT.json'
+          r=json.loads(p.read_text()) if p.exists() else {}
+          assert (e/'FREEZE_CHECK.txt').exists()
+          assert r.get('G2','UNKNOWN')=='UNKNOWN'
+          assert r.get('lean_clc_flash','NOT_RUN')=='NOT_RUN'
+          assert r.get('no_method_rewriting',True) is True
+          result={'status':r.get('status','UNKNOWN_NO_RESULT'),'G2':'UNKNOWN',
+                  'native_admission':r.get('admission',{}).get('status'),
+                  'candidate_count':r.get('candidate_count',0),
+                  'independent_artifact_audit':'NOT_YET_EXECUTED'}
+          (e/'BOUNDARY.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,sort_keys=True))
+          if r.get('status') in ('UNKNOWN_FUTURE_APPARATUS','UNKNOWN_NO_RESULT'):
+              raise SystemExit('FAIL_CLOSED_APPARATUS')
+          PY
+      - name: Archive all original source/native records, negatives and comparators status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-packaging-click-future-v1-evidence
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-packaging-click-future-v1/
+            research/unified_consequence_runtime/G2_PACKAGING_CLICK_V1_BEFORE_FUTURE_PROTOCOL.md
+            research/unified_consequence_runtime/G2_PACKAGING_TRAINED_BOUNDARY_METHOD_V1_RECEIPT.json
+            research/unified_consequence_runtime/g2_packaging_boundary_genesis_v1.py
+            research/unified_consequence_runtime/g2_packaging_click_future_v1.py
