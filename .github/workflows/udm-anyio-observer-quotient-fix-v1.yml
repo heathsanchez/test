@@ -1,0 +1,135 @@
+name: UDM AnyIO observer + equivalence-class selection fix v1
+
+on:
+  push:
+    branches:
+      - research/udm-anyio-observer-quotient-fix-v1-20261018
+    paths:
+      - .github/workflows/udm-anyio-observer-quotient-fix-v1.yml
+      - research/unified_consequence_runtime/g2_anyio_posthoc_function_observer_v1.py
+      - research/unified_consequence_runtime/g2_equivalence_class_selector_v1.py
+      - research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVATION_PROTOCOL_V1.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Freeze exact exposed training source and author test only
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/anyio-observer-quotient
+          git init -q /tmp/udm-anyio
+          git -C /tmp/udm-anyio remote add upstream https://github.com/agronholm/anyio.git
+          git -C /tmp/udm-anyio fetch -q --no-tags --filter=blob:none --depth=1 upstream 1805944a9f6a062527c10aa044ded959782bfc3e
+          git -C /tmp/udm-anyio checkout -q --detach 1805944a9f6a062527c10aa044ded959782bfc3e
+          test "$(git -C /tmp/udm-anyio rev-parse HEAD^{tree})" = c6465ce4b900e2f21aa73ebbe16c779f5c6ae9bf
+          git -C /tmp/udm-anyio fetch -q --no-tags --filter=blob:none --depth=1 upstream 90876855b731fb057d45e7e1cbdf1df013be6091
+          test "$(git -C /tmp/udm-anyio rev-parse 90876855b731fb057d45e7e1cbdf1df013be6091:tests/test_pytest_plugin.py)" = b15d4da74a17b7f80fa07b0d172c03eb752be7f4
+          git -C /tmp/udm-anyio show 90876855b731fb057d45e7e1cbdf1df013be6091:tests/test_pytest_plugin.py > /tmp/udm-anyio/tests/test_pytest_plugin.py
+          test "$(git -C /tmp/udm-anyio diff --name-only)" = tests/test_pytest_plugin.py
+          test "$(git hash-object /tmp/udm-anyio/src/anyio/pytest_plugin.py)" = d6238cd110ab793ccccb9671fc7eccc33c5415e5
+          test "$(git hash-object /tmp/udm-anyio/tests/test_pytest_plugin.py)" = b15d4da74a17b7f80fa07b0d172c03eb752be7f4
+
+          git init -q /tmp/g2-v104
+          git -C /tmp/g2-v104 fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C /tmp/g2-v104 checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+
+          git init -q /tmp/g2-msi
+          git -C /tmp/g2-msi fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C /tmp/g2-msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+
+          printf '%s\n' 'alexmojaki/executing PR#50 source remains unopened in this gate' > evidence/anyio-observer-quotient/FUTURE_SEAL.txt
+
+      - name: Install original declared test environment
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'pip==25.3'
+          python -m pip install --disable-pip-version-check --no-input             -e '/tmp/udm-anyio[trio]'             --group '/tmp/udm-anyio/pyproject.toml:test'             'pytest==9.1.1' 'pytest-cov==7.0.0'
+          python -m pip check
+          python -m pip freeze > evidence/anyio-observer-quotient/PIP_FREEZE.txt
+
+      - name: Repair impossible selection gate by quotienting aliases before outcomes
+        run: |
+          set -euo pipefail
+          python -B research/unified_consequence_runtime/g2_equivalence_class_selector_v1.py             /tmp/udm-anyio /tmp/g2-v104 /tmp/g2-msi             "$GITHUB_WORKSPACE/evidence/anyio-observer-quotient/policy-quotient"             | tee evidence/anyio-observer-quotient/POLICY_QUOTIENT_STDOUT.json
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/anyio-observer-quotient/policy-quotient/RESULT.json'))
+          assert r['status']=='WARRANTED_BOUNDED_PREOUTCOME_POLICY_QUOTIENT',r
+          assert r['raw_policy_names']==37 and r['policy_classes']==2,r
+          assert r['class_sizes']=={'COLD':1,'NONCOLD':36},r
+          assert r['binary_outcome_census']['UNIQUE_NONCOLD_CLASS']>0,r
+          assert r['future_source']=='UNOPENED' and r['native_candidate_runs']==0,r
+          print('PASS_EQUIVALENCE_CLASS_SELECTOR_REPAIR_V1')
+          PY
+
+      - name: Execute source-neutral native function observation on authentic protected failures
+        run: |
+          set -euo pipefail
+          python -B research/unified_consequence_runtime/g2_anyio_posthoc_function_observer_v1.py             /tmp/udm-anyio /tmp/g2-v104             "$GITHUB_WORKSPACE/evidence/anyio-observer-quotient/native-observer"             | tee evidence/anyio-observer-quotient/NATIVE_OBSERVER_STDOUT.json
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
+          assert r['status']=='WARRANTED_BOUNDED_INSTRUMENTED_SOURCE_FUNCTION_OBSERVATION',r
+          assert r['junit']=={'tests':2,'failures':2,'errors':0,'skipped':0},r
+          assert r['source_test_bytes_preserved'] is True,r
+          assert r['other_source_locations_eligible'],r
+          assert r['G2']=='UNKNOWN' and r['future_source']=='UNOPENED',r
+          print('PASS_NATIVE_SOURCE_OBSERVER_V1')
+          PY
+
+      - name: Seal combined structural fix without retroactive G2 promotion
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path('evidence/anyio-observer-quotient')
+          q=json.load(open(root/'policy-quotient/RESULT.json'))
+          o=json.load(open(root/'native-observer/RESULT.json'))
+          result={
+            'schema':'UDM_ANYIO_OBSERVER_QUOTIENT_FIX_V1',
+            'status':'WARRANTED_BOUNDED_STRUCTURAL_FIX_READY_FOR_NEW_PROSPECTIVE_GATE',
+            'source_commit':os.environ['GITHUB_SHA'],
+            'policy_gate_before':'REJECTED_IMPOSSIBLE_NAMED_UNIQUE_NONCOLD',
+            'policy_gate_after':'TWO_EQUIVALENCE_CLASSES_UNIQUE_NONCOLD_POSSIBLE',
+            'policy_classes':q['class_sizes'],
+            'observer_status':o['status'],
+            'observer_other_source_locations_eligible':o['other_source_locations_eligible'],
+            'native_protected_failures_preserved':o['junit'],
+            'original_candidate_repairs':'NOT_RERUN',
+            'heldout_future':'UNOPENED',
+            'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN','G5':'UNKNOWN','G6':'UNKNOWN',
+            'next':'Freeze a new unfamiliar source-distinct training/future pair; use this observer and class selector before candidate outcomes; require native acquired PASS, physical withdrawal/restoration, future gain, and equal-information comparators.'
+          }
+          text=json.dumps(result,indent=2,sort_keys=True)+'\n'
+          (root/'QUALIFICATION.json').write_text(text)
+          (root/'QUALIFICATION_SHA256.txt').write_text(hashlib.sha256(text.encode()).hexdigest()+'\n')
+          print('PASS_UDM_ANYIO_OBSERVER_QUOTIENT_FIX_V1')
+          PY
+
+      - name: Archive exact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-anyio-observer-quotient-fix-v1
+          path: evidence/anyio-observer-quotient/
+          if-no-files-found: error
+          retention-days: 90
