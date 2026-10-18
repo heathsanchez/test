@@ -1,0 +1,34 @@
+{
+  "schema": "UDM_ANYIO_POSTHOC_NONINTRUSIVE_NATIVE_TRACE_V2",
+  "date": "2026-10-18",
+  "status": "FROZEN_BEFORE_V2_CODE_OR_NATIVE_OUTCOME",
+  "parent_v1": {
+    "run": 39093081788,
+    "source_commit": "66e3be84fefb970a6e3b00425603b848aa438118",
+    "v1_observer_sha": "3837b0658fb82f49d58a643f5f7f4e6bc5f13e3a",
+    "apparatus_failure": "Profiler called pathlib.Path(...).resolve() on each source function event, creating Blockbuster blocking-call failures in a protected Hypothesis native test. V1's 2 FAIL JUnit and 85 AST slots are not sufficient authority for an unperturbed protected failure."
+  },
+  "source_authority": {
+    "frozen_protocol_commit": "cb958e9c03bfcc7eb17e193c8d63d22edaf96f1e",
+    "source": "agronholm/anyio@1805944a9f6a062527c10aa044ded959782bfc3e",
+    "test_head": "90876855b731fb057d45e7e1cbdf1df013be6091",
+    "test_blob": "b15d4da74a17b7f80fa07b0d172c03eb752be7f4",
+    "source_sha256": "a0b5f23acb6f4595b75556ea20e0e166c3ede234b3d941a1e3861e1b69c95f1d",
+    "heldout": "alexmojaki/executing#50 UNOPENED"
+  },
+  "treatment": "Reuse source-pinned V13/V14 grammar and original V104 AST selector. Change profiler from invoking pathlib/IO per event to a constant-time equality against precomputed str(world / production), and capture original pytest outer failure longrepr for no-distortion audit. Do not modify original source, tests, or G2 candidate emission.",
+  "acceptance": {
+    "baseline_native_authority": "Independent untraced invocation of BOTH original two protected tests: 2 collected, 2 failed, 0 skipped/errors; each outer assertion summary retains exactly one internal passed and one internal failed, consistent with previously archived original native baseline 40 PASS / 2 FAIL; no Blockbuster error.",
+    "instrumented": "Two separate in-process plugin observation runs, source SHA and test SHA unchanged; identical exact native summary and same outer test failure mechanism; zero tracer-originated BlockingError/NameError. Source-bound function call events from original file; independently reproducible observed function/AST eligibility inventory.",
+    "pre_cap": "Old V13 remains inapplicable with 0 IF_NOT_SELF_ATTRIBUTE guards. A positive observation must show original V104 eligible source AST slots outside _is_auto_mode before original 64-slot emitter cap. This is posthoc diagnosis only, not a repaired native task.",
+    "stop": "Any native result drift, in-process plugin errors or unstable observed event trace => UNKNOWN_OBSERVER_NONNEUTRAL, no scientific pass. Keep original run RED and future source UNOPENED."
+  },
+  "budget": {
+    "native_calls": 3,
+    "timeout_seconds_each": 120,
+    "threads": "main only",
+    "permissions": "none",
+    "upstream_writes": false
+  },
+  "g2": "UNKNOWN"
+}
