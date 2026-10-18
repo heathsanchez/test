@@ -78,7 +78,7 @@ class SourceUnopenedThirdTransferV1(unittest.TestCase):
 
     def test_11_finite_join_counterexample_rejected_even_if_full_pass(self):
         with self.assertRaises(ValueError):
-            m.finite_law([0,3,2,3],2,2)
+            m.finite_law([0,1,2,7],2,3)
 
     def test_12_true_equal_info_ledger_cannot_be_reported_as_loss(self):
         original={"a":"PASS","b":"FAIL"}
@@ -104,6 +104,12 @@ class SourceUnopenedThirdTransferV1(unittest.TestCase):
         self.assertEqual(r["composed"]["winner"],3)
         self.assertEqual(r["ledger"]["winner"],3)
         self.assertEqual(r["relative_to_fully_informed_ledger"],"TIE_MINIMAL_MASK")
+
+
+    def test_14_unused_syntactic_candidate_does_not_invalidate_minimal_repair(self):
+        value=m.finite_law([0,1,0,1],2,1)
+        self.assertEqual(value["selected_minimum_mask"],1)
+        self.assertEqual(value["selected_necessary_edits"],1)
 
 
 if __name__=="__main__":
