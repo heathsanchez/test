@@ -193,10 +193,14 @@ def scan_patterns(path: str, source: bytes) -> list[dict[str, object]]:
                     if not dynamic:
                         continue
                     guard = min(guards, key=lambda g: g.lineno)
+                    code_first_line = min(
+                        [fn.lineno, *[d.lineno for d in fn.decorator_list]]
+                    )
                     base = {
                         "path": path,
                         "function": fn.name,
                         "function_line": fn.lineno,
+                        "code_first_line": code_first_line,
                         "wrapper": inner.name,
                         "wrapper_line": inner.lineno,
                         "read_variable": read_name,
