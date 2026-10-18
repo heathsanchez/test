@@ -1,0 +1,69 @@
+{
+  "schema": "G2_DEERFLOW_EXPOSED_IMPORT_COMPOSITION_V2_PRETEST",
+  "version": "2026-10-19",
+  "status": "FROZEN_PROTOCOL_NOT_EXECUTED",
+  "scope": "RETROSPECTIVE_EXPOSED_ONLY; Deer-flow was already opened for V1, no future G2 promotion",
+  "original": {
+    "repo": "bytedance/deer-flow",
+    "pr": 5960,
+    "base": "e2feca1e567d9bafce657de8ad8bc668bd7ad513",
+    "head": "cd9c12bb89c0c9d727a348b5fba3bd95730a9186",
+    "source": "backend/app/gateway/routers/agents.py",
+    "test": "backend/tests/test_custom_agent.py",
+    "source_sha256": "425a1d2b7db5dedca03b43fd7aecd0c7115f85faadcca5e7744987f3952a8727",
+    "test_sha256": "ea818312dee9eaf9b765f8a544004de926e972a9fe98d535d5d44b57da282344",
+    "frozen_future": "a75a1914a00059a66c96f334bdbe9085a4eeb0e2",
+    "prior_native_run": 39163870757,
+    "prior_status": "UNKNOWN_FUTURE_PROTECTED_CASE_MAPPING",
+    "current_source_state": "ALREADY_EXPOSED",
+    "original_native": "2 selected changed author-test functions expand to 4 cases, 2 PASS/2 FAIL, no skips or errors"
+  },
+  "dependencies": {
+    "workspace": "backend",
+    "Python": "3.12",
+    "uv": "0.11.1",
+    "native": "uv sync --locked --group dev",
+    "environment_file": "research/unified_consequence_runtime/g2_source_owned_uv_admission_v11.py",
+    "environment_commit": "fd932d730744b0fb5528f74caeafe99ab13bf9fa"
+  },
+  "method": {
+    "grammar": "strict_terminal_anchor ONLY; original re.compile raw regex ending $ to strict \\Z; no new primitive",
+    "generator_path": "research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py",
+    "generator_commit": "d45288833a13b1ddf6afde01c0b89a84bfc7ce32",
+    "composition_path": "research/unified_consequence_runtime/g2_finite_composition_mistral_v2.py",
+    "composition_commit": "0f3fd96a84a4a314c7d02beab0618bd402b41bae",
+    "discovery": "From imports/import-from in exact HEAD author test AST, map module to unique original tracked Python file by module path suffix. Do not supply edited target coordinates or author fixed production. Limit scope strictly to import-reachable source and original already-frozen production. Filter solely using frozen strict_terminal_anchor grammar.",
+    "source_only_candidate_lock_before_native": true,
+    "maximum_modules": 30,
+    "maximum_eligible_files": 6,
+    "maximum_candidates": 3,
+    "ordering": "module path, original source path, source line, native-independent generator index"
+  },
+  "native_cases": {
+    "no_test_function_to_case_assumption": true,
+    "identity": "full JUnit classname + parametrized name, bind each case to unique originally changed test function",
+    "min_cases": 4,
+    "max_cases": 24,
+    "baseline_failures": 2,
+    "require_identical_cases_every_mask": true,
+    "reject_error_skip_xfail_collection": true
+  },
+  "finite_plan": {
+    "masks": "2^k with k<=3; maximum 8 native masked states",
+    "no_outcome_chosen_edit_order": true,
+    "require": "all four protected cases in original full and all masks; full 4 PASS; monotone PASS inclusion; each edit necessary; original FAIL recovered on physical withdrawal; independent restoration PASS; complete untouched author test module PASS",
+    "charged": "1 original native admission, all masks, two repeated full, full author, withdrawal, restoration; count setup and tool costs",
+    "comparator": "fully informed exhaustive source/candidate ledger receives identical original source/test/candidates and may choose all edits. A tie is NOT a superiority warrant.",
+    "stop": "Fail closed when ambiguous/import mismatch, excessive candidates, missing test mapping, mutated source/test, incomplete native, timeout or any benchmark mismatch."
+  },
+  "verdict": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "Lean": "NOT_EXECUTED",
+    "CLC": "NOT_EXECUTED",
+    "FLASH": "NOT_EXECUTED"
+  }
+}
