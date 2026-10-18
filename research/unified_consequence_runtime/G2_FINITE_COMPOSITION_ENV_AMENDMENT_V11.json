@@ -1,0 +1,40 @@
+{
+  "schema": "G2_FINITE_COMPOSITION_ENVIRONMENT_V11_PRE_NATIVE_AMENDMENT",
+  "date": "2026-10-19",
+  "state": "APPARATUS_ONLY_CORRECTION_AFTER_SOURCE_LAYOUT_OBSERVED_BEFORE_PROTECTED_NATIVE_OUTCOMES",
+  "parent_frozen_science": "a75a1914a00059a66c96f334bdbe9085a4eeb0e2",
+  "original_workflow_run": 39163278225,
+  "original_artifact_id": 12149374052,
+  "original_artifact_sha256": "3cebe6653eb5ca63b7949253e5fe51a9b6e7dae5dfde279284d33da15e0f2290",
+  "original_stop": "UNKNOWN_FUTURE_NOT_ADMITTED_UNKNOWN_EDITABLE_INSTALL; root lacks setup.py and pyproject.toml; zero protected tests executed.",
+  "fixed_subject": {
+    "repo": "bytedance/deer-flow",
+    "pr": 5960,
+    "base": "e2feca1e567d9bafce657de8ad8bc668bd7ad513",
+    "head": "cd9c12bb89c0c9d727a348b5fba3bd95730a9186",
+    "production": "backend/app/gateway/routers/agents.py",
+    "author_test": "backend/tests/test_custom_agent.py",
+    "source_sha256": "425a1d2b7db5dedca03b43fd7aecd0c7115f85faadcca5e7744987f3952a8727",
+    "head_test_sha256": "ea818312dee9eaf9b765f8a544004de926e972a9fe98d535d5d44b57da282344",
+    "future_source_state": "OPENED_FOR_SETUP_NO_PROTECTED_NATIVE_RESULTS"
+  },
+  "apparatus": {
+    "executable": "research/unified_consequence_runtime/g2_source_owned_uv_admission_v11.py",
+    "pinned_commit": "fd932d730744b0fb5528f74caeafe99ab13bf9fa",
+    "source_authority": "Nearest common source/test parent with pyproject.toml and uv.lock; owner CI uses Python 3.12, astral-sh/setup-uv@v7 uv 0.11.1, uv sync --group dev in backend; invoke only unchanged original author selected protected tests on original base production + exact author test overlay.",
+    "toolchain": "Python 3.12 / uv 0.11.1 / uv sync --locked --group dev",
+    "no_source_or_test_changes": true
+  },
+  "unchanged_method": {
+    "freeze_commit": "a75a1914a00059a66c96f334bdbe9085a4eeb0e2",
+    "runner_commit": "ce539d95b9ee8080b863310e8d6308c9489db2b6",
+    "original_primitive_commit": "d45288833a13b1ddf6afde01c0b89a84bfc7ce32",
+    "finite_composition_commit": "0f3fd96a84a4a314c7d02beab0618bd402b41bae",
+    "no_target_pattern_or_operator_added": true
+  },
+  "outcomes_before_amendment": "NO_EXECUTED_NATIVE_PROTECTED_ASSERTIONS",
+  "stop": "If source-declared uv sync, original author test admission or one-to-one case mapping fails, record UNKNOWN and preserve every attempted step. No replacement futures.",
+  "G2": "UNKNOWN",
+  "G4": "UNKNOWN",
+  "science": "NOT_YET_EXECUTED_V11"
+}
