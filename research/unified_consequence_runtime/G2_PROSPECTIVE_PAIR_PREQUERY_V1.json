@@ -1,0 +1,92 @@
+{
+  "schema": "UDM_G2_PROSPECTIVE_PAIR_PREQUERY_V1",
+  "state": "PREQUERY_SOURCE_BLIND_FROZEN",
+  "date": "2026-10-18",
+  "objective": "Prospectively test the already-qualified mutable-closure observer, deterministic repair constructor, and equivalence-class selector on a new source-distinct training/future pair without tuning after source or outcomes.",
+  "method_authority": {
+    "qualified_commit": "094e2ddc3ba601a00eaf368151172a361e5542da",
+    "qualified_run": 39093934449,
+    "qualified_artifact": 12123712928,
+    "qualified_artifact_digest": "sha256:3689e93c67b23378642947eaba710a2d4eb7685025d417a11eeeb28aeef77b75",
+    "frozen_protocol_commit": "7cc32cabf2f749e13aa7813fb2dc62cfb1a1d9ff",
+    "immutable_files": [
+      "research/unified_consequence_runtime/G2_MUTABLE_CLOSURE_EQUIVALENCE_FIX_PROTOCOL_V2.json",
+      "research/unified_consequence_runtime/g2_mutable_closure_trace_plugin_v2.py",
+      "research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py",
+      "research/unified_consequence_runtime/qualify_g2_anyio_mutable_closure_equivalence_fix_v2.py"
+    ]
+  },
+  "excluded_prior_sources": [
+    "agronholm/anyio",
+    "alexmojaki/executing",
+    "pallets/jinja",
+    "pallets/werkzeug",
+    "pypa/platformdirs",
+    "python-jsonschema/referencing",
+    "pallets/itsdangerous",
+    "jd/tenacity",
+    "pypa/packaging",
+    "urllib3/urllib3",
+    "tkem/cachetools"
+  ],
+  "repository_universe": [
+    "aio-libs/aiohttp",
+    "encode/httpx",
+    "psf/requests",
+    "pallets/click",
+    "pydantic/pydantic",
+    "pytest-dev/pytest"
+  ],
+  "metadata_query": {
+    "per_repository": "search_prs(query='fix', state='closed', sort='updated', order='desc', topn=20)",
+    "inspect": "For returned PRs in provider order, use PR metadata and changed filenames only. Do not request diff, patch, PR body, comments, source blobs, test blobs, or repaired production before role freeze.",
+    "qualifier": [
+      "PR is merged",
+      "title begins with 'fix' case-insensitive",
+      "changed file count is between 2 and 4 inclusive",
+      "exactly one changed .py path is production-like: not under tests/, test/, docs/, examples/, scripts/, benchmarks/, benchmark/, and basename does not start test_",
+      "at least one changed .py path is author-test-like: under tests/ or test/ or basename starts test_",
+      "no changed path is pyproject.toml, setup.py, setup.cfg, tox.ini, requirements*, poetry.lock, uv.lock, pdm.lock, Pipfile*, or a .github workflow",
+      "production and test filenames are sufficient for role metadata; source contents are not inspected"
+    ],
+    "no_replacement": "The first two metadata-qualified PRs in declared repository order become TRAINING and SEALED_FUTURE. If later source/native admission fails, record that failure; do not substitute another PR."
+  },
+  "role_rule": "First metadata-qualified PR => TRAINING. Second => SEALED_FUTURE. Commit role manifest before reading either source body or author test body.",
+  "prospective_science": {
+    "training": "After role freeze, open only TRAINING base production and exact author test changes. Derive changed/added test functions mechanically from base-vs-head author test AST/text diff. Reproduce authentic failure before acquisition.",
+    "acquisition": "Run the qualified method unchanged. No added observer predicate, repair form, source-coordinate heuristic, selection rule, or candidate after source reveal.",
+    "future": "Only if TRAINING yields a warranted noncold acquired capability under causal withdrawal/restoration may SEALED_FUTURE source be opened. Apply the acquired method unchanged.",
+    "promotion": [
+      "training authentic original protected failure",
+      "source-neutral observation from method authority",
+      "generated repair qualifies natively",
+      "physical withdrawal restores failure/UNKNOWN and exact restoration restores pass",
+      "future source remained sealed until training promotion",
+      "future authentic original protected failure",
+      "unchanged learned method produces future protected improvement or new qualified repair",
+      "matched equally informed executable-ledger and strong-agent baselines if available, with total setup/native/check/restart cost charged"
+    ],
+    "fail_closed": "Any environment ambiguity, zero-test green, skipped/error-only run, source mismatch, no qualifying observation, no generated repair, or no future advantage remains UNKNOWN/REJECTED at its exact boundary."
+  },
+  "environment_policy": {
+    "python": "3.12",
+    "installer_order": [
+      "PEP 735 dependency group named test if declared",
+      "project extra named test if declared",
+      "project extra named tests if declared",
+      "project extra named dev if declared"
+    ],
+    "fixed_tools": [
+      "pip==25.3",
+      "pytest==9.1.1",
+      "pytest-cov==7.0.0"
+    ],
+    "refusal": "If no declared test dependency mechanism from this fixed list installs cleanly, environment admission is UNKNOWN and the role is not replaced."
+  },
+  "heldout_existing_executing_pr50": "REMAINS_UNOPENED_AND_UNUSED",
+  "G2": "UNKNOWN",
+  "G3": "UNKNOWN",
+  "G4": "UNKNOWN",
+  "G5": "UNKNOWN",
+  "G6": "UNKNOWN"
+}
