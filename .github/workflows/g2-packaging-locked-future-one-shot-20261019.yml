@@ -1,0 +1,77 @@
+name: G2 first locked source-distinct Packaging future test
+
+on:
+  pull_request:
+    types: [synchronize]
+    branches:
+      - main
+    paths:
+      - .github/workflows/g2-packaging-locked-future-one-shot-20261019.yml
+
+permissions:
+  contents: read
+
+jobs:
+  original-native-and-unchanged-method:
+    if: github.head_ref == 'research/g2-cross-source-consequence-law-20261018' && github.event.pull_request.number == 127
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify committed gate and unchanged method before original future fetch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor e967f86c8f486a6b55b9d7d20c8ace11619008e4 HEAD
+          git merge-base --is-ancestor 6fbfa0a633439f0eb5c8e9c55726f2b053e1bdd1 HEAD
+          python -B -m py_compile research/unified_consequence_runtime/g2_packaging_future_v1.py
+          python -B research/unified_consequence_runtime/g2_equal_info_guard_ablation_v1.py
+          python -B research/unified_consequence_runtime/g2_context_fallback_operator_v1.py
+      - name: Exactly one preselected future native test with unchanged acquired method
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B \
+            research/unified_consequence_runtime/g2_packaging_future_v1.py \
+            "$GITHUB_WORKSPACE/evidence/g2-packaging-future-v1"
+      - name: Fail closed on an accidental G2 claim
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("evidence/g2-packaging-future-v1/RESULT.json").read_text())
+          assert d["schema"]=="G2_PROSPECTIVE_PACKAGING_FUTURE_V1"
+          assert d["G2"]=="UNKNOWN"
+          assert d["lean"]=="NOT_EXECUTED"
+          assert d["CLC"]=="NOT_EXECUTED"
+          assert d["FLASH"]=="NOT_EXECUTED"
+          assert d["status"] in {
+              "UNKNOWN_FUTURE_NOT_ADMITTED",
+              "UNKNOWN_PROTECTED_FUTURE_INTEGRITY",
+              "REJECTED_PROSPECTIVE_TRANSFER_INAPPLICABLE",
+              "REJECTED_NO_NATIVE_FUTURE_REPAIR",
+              "UNKNOWN_NO_VERIFIED_COMPARATIVE_ADVANTAGE",
+              "CANDIDATE_BOUNDED_CROSS_SOURCE_GAIN_PENDING_CERTIFICATION"}
+          print("NATIVE_FUTURE_BOUNDARY",d["status"],"G2",d["G2"])
+          PY
+      - name: Archive source-native future, baseline, causal and UNKNOWN evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-locked-packaging-future-v1
+          path: |
+            research/unified_consequence_runtime/G2_CROSS_SOURCE_CONSEQUENCE_LAW_V1_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/G2_ACQUIRED_OPERATION_V1_PRE_FUTURE_LOCK.json
+            research/unified_consequence_runtime/g2_context_fallback_operator_v1.py
+            research/unified_consequence_runtime/g2_equal_info_guard_ablation_v1.py
+            research/unified_consequence_runtime/g2_packaging_future_v1.py
+            evidence/g2-packaging-future-v1/
+          if-no-files-found: warn
