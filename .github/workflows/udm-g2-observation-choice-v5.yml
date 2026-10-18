@@ -1,0 +1,69 @@
+name: UDM G2 V5 source-blind observation-choice metadata qualification
+on:
+  push:
+    branches:
+      - research/udm-g2-observation-choice-v5-20261018
+    paths:
+      - .github/workflows/udm-g2-observation-choice-v5.yml
+      - research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_PREQUERY.json
+      - research/unified_consequence_runtime/g2_v5_metadata_only.py
+      - research/unified_consequence_runtime/test_g2_v5_metadata_only.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  metadata-boundary-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check prequery was frozen before querying targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show fc3177b20e7508d511c32a9ec6c76d711cc8389d:research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_PREQUERY.json > /tmp/original-g2-v5-prequery.json
+          cmp /tmp/original-g2-v5-prequery.json research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_PREQUERY.json
+      - name: Test fail-closed metadata source/pair/role invariants
+        run: python -B -m unittest -v research.unified_consequence_runtime.test_g2_v5_metadata_only
+  metadata-only-select:
+    needs: metadata-boundary-controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch only metadata fields, discard all PR patches, seal future
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -B research/unified_consequence_runtime/g2_v5_metadata_only.py evidence/g2-v5-metadata
+      - name: Assert no science is authorized by selection alone
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('evidence/g2-v5-metadata/METADATA_RESULT.json').read_text())
+          assert d['G2']=='UNKNOWN' and d['scientific']=='NO_G2_CLAIM'
+          assert d['future']=='SEALED_UNOPENED'
+          assert d['status'] in ('ROLE_CANDIDATES_METADATA_ONLY_NOT_FROZEN','UNKNOWN_POOL_INCOMPLETE')
+          assert all(x.get('source_body')=='UNOPENED' and x.get('native_status')=='NOT_EXECUTED' for x in d['roles'])
+          assert len(d['roles']) in (0,4)
+          print('SOURCE_BLIND_ROLE_STATE',d['status'],'eligible',d.get('eligible_count'))
+          PY
+      - name: Archive metadata-only result, including shortfall
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-g2-v5-source-blind-metadata-only
+          path: evidence/g2-v5-metadata/
+          if-no-files-found: warn
