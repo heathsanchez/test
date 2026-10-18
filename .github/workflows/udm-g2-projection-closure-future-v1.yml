@@ -1,0 +1,93 @@
+name: UDM projection-closure heldout tox future V1
+
+on:
+  push:
+    branches:
+      - research/udm-g2-tox-projection-closure-future-v1-20261018
+    paths:
+      - research/unified_consequence_runtime/G2_PROJECTION_CLOSURE_FUTURE_V1_PROTOCOL.json
+      - research/unified_consequence_runtime/residual_projection_method_v1.py
+      - research/unified_consequence_runtime/g2_projection_closure_future_v1.py
+      - .github/workflows/udm-g2-projection-closure-future-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  future:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bind method freeze before future materialization
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/g2-tox-future
+          p=research/unified_consequence_runtime/G2_PROJECTION_CLOSURE_FUTURE_V1_PROTOCOL.json
+          cmp "$p" <(git show c89461f13ee4f3aae270e904966c4514726e7442:"$p")
+          cmp research/unified_consequence_runtime/residual_projection_method_v1.py             <(git show c316946a467cb5361884cbbda56a3340abc558f5:research/unified_consequence_runtime/residual_projection_method_v1.py)
+          cmp research/unified_consequence_runtime/attrs_residual_observation_genesis_v1.py             <(git show 27dbf45d6c3efc7596b6069c4e737c0a1339d014:research/unified_consequence_runtime/attrs_residual_observation_genesis_v1.py)
+          python -B -m py_compile             research/unified_consequence_runtime/residual_projection_method_v1.py             research/unified_consequence_runtime/g2_projection_closure_future_v1.py
+          echo PASS_FUTURE_METHOD_FROZEN_BEFORE_SOURCE
+
+      - name: Open exact preselected tox future base plus author test only
+        run: |
+          set -euo pipefail
+          W=/tmp/g2-tox-future
+          rm -rf "$W"
+          git init -q "$W"
+          git -C "$W" remote add upstream https://github.com/tox-dev/tox.git
+          git -C "$W" fetch -q --depth=1 --filter=blob:none --no-tags upstream e352fbe1f434be3fa77af15f8b65f31aac31a6a3
+          git -C "$W" checkout -q --detach e352fbe1f434be3fa77af15f8b65f31aac31a6a3
+          git -C "$W" fetch -q --depth=1 --filter=blob:none --no-tags upstream 10a9b2c54c70729167991c0b3fd6b97488f5e4b2
+          git -C "$W" show e352fbe1f434be3fa77af15f8b65f31aac31a6a3:tests/test_provision.py > /tmp/g2-tox-base-test.py
+          git -C "$W" show 10a9b2c54c70729167991c0b3fd6b97488f5e4b2:tests/test_provision.py > /tmp/g2-tox-head-test.py
+          cp /tmp/g2-tox-head-test.py "$W/tests/test_provision.py"
+          test "$(git -C "$W" rev-parse HEAD)" = e352fbe1f434be3fa77af15f8b65f31aac31a6a3
+          test "$(git -C "$W" diff --name-only)" = tests/test_provision.py
+          sha256sum "$W/src/tox/config/cli/parser.py" /tmp/g2-tox-base-test.py /tmp/g2-tox-head-test.py             > evidence/g2-tox-future/FUTURE_SOURCE_HASHES.txt
+          echo PASS_PRESELECTED_FUTURE_OPENED_AFTER_METHOD_FREEZE
+
+      - name: Install tox declared test environment
+        run: |
+          set -euo pipefail
+          W=/tmp/g2-tox-future
+          python -m pip install --disable-pip-version-check --no-input 'pip==25.3'
+          python -m pip install --disable-pip-version-check --no-input -e "$W"
+          python -m pip install --disable-pip-version-check --no-input --group "$W/pyproject.toml:test"
+          python -m pip check
+          python -m pip freeze > evidence/g2-tox-future/PIP_FREEZE.txt
+
+      - name: Execute unchanged projection-closure method on heldout future
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/g2-tox-future-result"
+          rm -rf "$out"
+          set +e
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B             research/unified_consequence_runtime/g2_projection_closure_future_v1.py             /tmp/g2-tox-future /tmp/g2-tox-base-test.py /tmp/g2-tox-head-test.py "$out"             | tee evidence/g2-tox-future/STDOUT.json
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ -d "$out" ]; then cp -a "$out" evidence/g2-tox-future/result; fi
+          exit "$rc"
+
+      - name: Preserve complete future evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-g2-projection-closure-tox-future-v1
+          path: evidence/g2-tox-future/
+          retention-days: 90
+          if-no-files-found: error
