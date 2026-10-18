@@ -40,6 +40,16 @@ def scalar(value):
     return None
 
 
+def attribute_chain(node):
+    attrs=[]
+    while isinstance(node,ast.Attribute):
+        attrs.append(node.attr)
+        node=node.value
+    if not isinstance(node,ast.Name):
+        return None
+    return node.id,tuple(reversed(attrs))
+
+
 def discover_sites(tree: ast.Module):
     sites=[]
     for outer in tree.body:
@@ -64,18 +74,20 @@ def discover_sites(tree: ast.Module):
             if not isinstance(value,ast.Name) or value.id not in nested:
                 continue
             for target in targets:
-                if not isinstance(target,ast.Attribute) or not isinstance(target.value,ast.Name):
+                chain=attribute_chain(target)
+                if chain is None or len(chain[1])<1:
                     continue
+                root,attrs=chain
                 sites.append({
                     "outer_function":outer.name,
                     "outer_line":outer.lineno,
                     "nested_function":value.id,
                     "nested_line":nested[value.id].lineno,
-                    "object_local":target.value.id,
-                    "attribute":target.attr,
+                    "object_root_local":root,
+                    "attribute_path":list(attrs),
                     "assignment_line":getattr(node,"lineno",None),
                 })
-    sites.sort(key=lambda x:(x["outer_line"],x["assignment_line"] or 0,x["attribute"]))
+    sites.sort(key=lambda x:(x["outer_line"],x["assignment_line"] or 0,tuple(x["attribute_path"])))
     return sites
 
 
@@ -125,10 +137,16 @@ class Monitor:
         for site in self.sites:
             if frame.f_code.co_name!=site["outer_function"]:
                 continue
-            obj=frame.f_locals.get(site["object_local"])
-            if obj is None or not hasattr(obj,site["attribute"]):
+            obj=frame.f_locals.get(site["object_root_local"])
+            if obj is None:
                 continue
-            value=getattr(obj,site["attribute"])
+            try:
+                for attr in site["attribute_path"][:-1]:
+                    obj=getattr(obj,attr)
+                final_attr=site["attribute_path"][-1]
+                value=getattr(obj,final_attr)
+            except (AttributeError,TypeError):
+                continue
             closure=callable_closure(value)
             if not closure or closure["code_name"]!=site["nested_function"]:
                 continue
@@ -143,7 +161,7 @@ class Monitor:
                 row={"name":name,"captured":old,"current":current}
                 (mismatches if old!=current else agreements).append(row)
             key=(
-                self.current,site["outer_function"],site["attribute"],frame.f_lineno,
+                self.current,site["outer_function"],tuple(site["attribute_path"]),frame.f_lineno,
                 json.dumps(closure,sort_keys=True),json.dumps(mismatches,sort_keys=True)
             )
             if key in self.seen:
