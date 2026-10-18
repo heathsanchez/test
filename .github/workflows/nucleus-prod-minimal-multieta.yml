@@ -1,0 +1,132 @@
+name: Nucleus production-base minimal multi-binder eta A/B
+on:
+  push:
+    branches: [research/nucleus-prod-minimal-multieta-20261019]
+    paths:
+      - ".github/workflows/nucleus-prod-minimal-multieta.yml"
+      - ".github/scripts/nucleus_multibinder_eta_patch_20261019.py"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile baseline and isolated source change
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence /tmp/binaries
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/binaries/original
+          python3 .github/scripts/nucleus_multibinder_eta_patch_20261019.py
+          git diff --check
+          git diff -- metatron-kernel/src/typecheck.rs > /tmp/evidence/candidate.patch
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/binaries/checked
+          sha256sum /tmp/binaries/* > /tmp/evidence/binaries.sha256
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml --test checked_relevance_signature > /tmp/evidence/relevance-tests.log 2>&1 || echo "UNIT_FAILURE_RETAINED"
+      - name: Recover official proof and protected corpus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pairwise /tmp/perm /tmp/oldzip /tmp/frozen
+          gh api repos/heathsanchez/test/actions/artifacts/12081878830/zip > /tmp/pairwise.zip
+          gh api repos/heathsanchez/test/actions/artifacts/12077748490/zip > /tmp/perm.zip
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/frozen.zip
+          unzip -oq /tmp/pairwise.zip -d /tmp/pairwise
+          unzip -oq /tmp/perm.zip -d /tmp/perm
+          unzip -oq /tmp/frozen.zip -d /tmp/oldzip
+          tar -xzf /tmp/oldzip/lean-arena-tests.tar.gz -C /tmp/frozen
+          sha256sum /tmp/pairwise.zip /tmp/perm.zip /tmp/frozen.zip > /tmp/evidence/artifacts.sha256
+          printf '%s\n' \
+          'e48fd06172e653cad2f4a15a7b454280f8bf00c16e0eba41a3d18265a5012c69  /tmp/pairwise/List.pairwise_middle.ndjson' \
+          '5ec75f541dd6dad0ee707feb7a3d52000918735f633a9bc189c1c0f68021b714  /tmp/pairwise/List.pairwise_append_comm.ndjson' \
+          '6feb6fdc9ec8190efeee6bc37bbda217d9a1ef60cbb5664c9642bb4a6885a107  /tmp/perm/list-perm-reconswap.ndjson' \
+          '54a1fa957b69925682e54479b3c152bfd131ca7f4a9713c05b195c83e9cd239a  /tmp/frozen/bad/tutorial/116_funEtaBad.ndjson' | sha256sum -c -
+      - name: Test A/B and archive exact constituent verdicts
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, subprocess, time, json, hashlib
+          out=pathlib.Path('/tmp/evidence')
+          src={
+            'pairwise_middle':pathlib.Path('/tmp/pairwise/List.pairwise_middle.ndjson'),
+            'pairwise_append_comm':pathlib.Path('/tmp/pairwise/List.pairwise_append_comm.ndjson'),
+            'recOnSwap':pathlib.Path('/tmp/perm/list-perm-reconswap.ndjson'),
+            'funEtaBad':pathlib.Path('/tmp/frozen/bad/tutorial/116_funEtaBad.ndjson'),
+            'false-index':pathlib.Path('metatron-kernel/tests/fixtures/protected-false-index.ndjson'),
+            'eta-ctor-alias':pathlib.Path('metatron-kernel/tests/fixtures/protected-eta-ctor-alias.ndjson'),
+          }
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+flag:'1' for flag in pin['origin_flags']})
+          env.update({
+                      
+                      'NUCLEUS_TRACE_MULTIBINDER_ETA':'1',
+                      'NUCLEUS_TRACE_EQPROP_TRISTATE':'1',
+                      'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+          modes=[('original','/tmp/binaries/original',False),
+                 ('patched_off','/tmp/binaries/checked',False),
+                 ('patched_on','/tmp/binaries/checked',True)]
+          report={'source_sha':os.environ['GITHUB_SHA'],'input_sha256':{k:hashlib.sha256(p.read_bytes()).hexdigest() for k,p in src.items()},'modes':{}}
+          for label,binary,enabled in modes:
+              local=dict(env)
+              if enabled:local['NUCLEUS_EXPERIMENTAL_MULTIBINDER_ETA']='1'
+              results={}
+              for name,p in src.items():
+                  t=time.monotonic()
+                  try:
+                      with p.open('rb') as stream:
+                          run=subprocess.run([binary],stdin=stream,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=70,env=local)
+                      rc=run.returncode
+                      lines=run.stderr.decode(errors='replace').splitlines()
+                      checks=[line for line in lines if line.startswith('NUCLEUS_MULTIBINDER_ETA:')]
+                      last=next((line for line in reversed(lines) if line.startswith('NUCLEUS_DOWNSTREAM:')),None)
+                  except subprocess.TimeoutExpired:
+                      rc=124;checks=[];last='TIMEOUT'
+                  results[name]={'rc':rc,'wall_s':round(time.monotonic()-t,5),'checks':checks[:12],'last':last}
+                  print('EQPROP_A_B='+json.dumps({'mode':label,'name':name,'rc':rc,'checks':checks[:3],'last':last}),flush=True)
+              report['modes'][label]=results
+          (out/'target-report.json').write_text(json.dumps(report,indent=2))
+          assert all(report['modes']['original'][c]['rc']==report['modes']['patched_off'][c]['rc'] for c in src),'Opt-out binary changed verdict'
+          assert all(report['modes']['patched_on'][c]['rc'] in (1,2) for c in ('funEtaBad','false-index','eta-ctor-alias')),'UNSOUND_ACCEPT'
+          assert report['modes']['patched_on']['funEtaBad']['rc']==report['modes']['original']['funEtaBad']['rc'],'Negative REJECT downgraded'
+          assert report['modes']['patched_on']['pairwise_append_comm']['rc']==0
+          assert report['modes']['patched_on']['recOnSwap']['rc'] in (0,2)
+          PY
+      - name: Protect all original 196 verdicts with exact input hashes
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess,os,json,hashlib
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+flag:'1' for flag in pin['origin_flags']})
+          env.update({'NUCLEUS_EXPERIMENTAL_MULTIBINDER_ETA':'1'})
+          result=[]
+          for group in ('good','bad'):
+              for p in sorted((pathlib.Path('/tmp/frozen')/group).rglob('*.ndjson')):
+                  with p.open('rb') as stream:
+                      try: r=subprocess.run(['/tmp/binaries/checked'],stdin=stream,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=180,env=env); rc=r.returncode
+                      except subprocess.TimeoutExpired:rc=124
+                  result.append({'case':str(p.relative_to('/tmp/frozen')),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'rc':rc})
+          expected={r['case']:r for r in pin['modes']['origin']['rows']}
+          bad=[r for r in result if r['case'] not in expected or r['sha256']!=expected[r['case']]['sha256'] or (expected[r['case']]['rc'] in (0,1) and r['rc']!=expected[r['case']]['rc'])]
+          counts={'accept':sum(x['rc']==0 for x in result),'reject':sum(x['rc']==1 for x in result),'unknown':sum(x['rc']==2 for x in result),'wrong':sum((x['case'].startswith('bad/') and x['rc']==0) or (x['case'].startswith('good/') and x['rc']==1) for x in result),'other':sum(x['rc'] not in (0,1,2) for x in result)}
+          pathlib.Path('/tmp/evidence/arena196.json').write_text(json.dumps({'counts':counts,'regressions':bad,'rows':result},indent=2))
+          print('FROZEN196='+json.dumps({'counts':counts,'regressions':bad[:10]}),flush=True)
+          assert len(result)==196
+          assert not bad
+          assert counts=={'accept':119,'reject':71,'unknown':6,'wrong':0,'other':0}
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-production-base-multieta-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
