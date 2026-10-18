@@ -86,7 +86,7 @@ jobs:
                           run=subprocess.run([binary],stdin=stream,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=70,env=local)
                       rc=run.returncode
                       lines=run.stderr.decode(errors='replace').splitlines()
-                      checks=[line for line in lines if line.startswith(('NUCLEUS_EQPROP_CERTIFIED_CONGRUENCE:','NUCLEUS_EQPROP_ENDPOINT_PROVENANCE:'))]
+                      checks=[line for line in lines if line.startswith(('NUCLEUS_EQPROP_CERTIFIED_CONGRUENCE:','NUCLEUS_EQPROP_ENDPOINT_PROVENANCE:','NUCLEUS_EQPROP_NESTED_CONGRUENCE:'))]
                       last=next((line for line in reversed(lines) if line.startswith('NUCLEUS_DOWNSTREAM:')),None)
                   except subprocess.TimeoutExpired:
                       rc=124;checks=[];last='TIMEOUT'
