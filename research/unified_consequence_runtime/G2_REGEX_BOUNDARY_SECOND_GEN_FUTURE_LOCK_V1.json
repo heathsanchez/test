@@ -1,0 +1,96 @@
+{
+  "schema": "G2_REGEX_BOUNDARY_SECOND_GENERATION_LOCK_V1",
+  "qualification": "WARRANTED_BOUNDED_EXPOSED_TRAINING_ONLY",
+  "frozen_method": {
+    "path": "research/unified_consequence_runtime/g2_regex_language_boundary_v1.py",
+    "commit": "c1c07b60c2bc89e2f476bf9330856c3167fd2029",
+    "sha256": "f83e7c807f9213c76f8b17e5463cdd5caa9101ff9721558899e85003960e0fd6",
+    "candidate_budget": 12,
+    "after_future_change_allowed": false
+  },
+  "training": {
+    "repo": "pypa/packaging",
+    "pr": 1446,
+    "original_source_sha256": "a10d2871bb4015855a6e894790949189afff40ae7364fe0210efa91e299fa32e",
+    "generated_patch_sha256": "cc279a0a2e8f7a5d165d9b7d299cdc4dde05d9a3e5d8ee3fe80a515f067d60f2",
+    "mechanism": "absolute_end_anchor",
+    "original_native": {
+      "pass": 4,
+      "fail": 1
+    },
+    "patched_protected": {
+      "pass": 5,
+      "fail": 0,
+      "twice": true
+    },
+    "full_author_file_pass": 74,
+    "physical_withdrawal": {
+      "pass": 4,
+      "fail": 1
+    },
+    "byte_restoration": {
+      "pass": 5,
+      "fail": 0
+    },
+    "artifact": {
+      "run_id": 39167241950,
+      "artifact_id": 12150674321,
+      "zip_sha256": "5ac4fad22273ca8aac783fe0d45a1b97f691d5ca05a30c67e431ba8e8505087a",
+      "result_json_sha256": "efc97fda08589f3f27cb0bb12e9929675aaceda815746890db5ac7a89e23ad52",
+      "independently_checked": true
+    }
+  },
+  "future": {
+    "metadata_prequery_commit": "d5327f0e72750a85f1a7a9cb0de6e82f608f572d",
+    "original_roles_commit": "57c400ea49881e440f7895acaeebeee5854363e3",
+    "selection": "FIRST_ORIGINAL_NATIVE_PROTECTED_FAIL_IN_FIXED_ORDER",
+    "roles": [
+      "pallets/click#3884",
+      "psf/requests#6963",
+      "urllib3/urllib3#5254",
+      "pydantic/pydantic#13980"
+    ],
+    "unopened": true,
+    "no_outcome_reselection": true
+  },
+  "comparators": {
+    "prior_inventory": [
+      "AnyIO mutable closure",
+      "attrs primitive projection",
+      "Werkzeug context absence fallback"
+    ],
+    "equal_info_baseline": {
+      "path": "research/unified_consequence_runtime/g2_regex_equal_info_baseline_v1.py",
+      "commit": "4877c9e8c83b935317a891343ae9e603411ee90d",
+      "method": "independently sourced one-site compiled-regex .match→.fullmatch"
+    },
+    "old_generic_guard": "research/unified_consequence_runtime/g2_equal_info_guard_ablation_v1.py@0a67b3be",
+    "native_per_arm_cap": 12,
+    "test_timeout_seconds": 120,
+    "cost_dimensions": [
+      "source_admission",
+      "candidate_generation",
+      "protected_oracle",
+      "full_author_file",
+      "withdrawal",
+      "restoration",
+      "restart"
+    ],
+    "strong_agent": "NOT_RUN",
+    "winner_claim_requires_acquired_gain_without_prior_capability": true
+  },
+  "certification": {
+    "lean": "NOT_EXECUTED_CONDITIONAL",
+    "clc": "NOT_EXECUTED_CONDITIONAL",
+    "flash": "NOT_EXECUTED_CONDITIONAL",
+    "mathgraph": "EVIDENCE_PENDING",
+    "independent_artifact_audit": "REQUIRED",
+    "G2": "UNKNOWN"
+  },
+  "lineage": [
+    "Werkzeug acquired environment fallback qualified original run 39165878373",
+    "Packaging rejected that transfer on original run 39166803643",
+    "Packaging exposed training qualified regex boundary on run 39167241950",
+    "future cohort source not read before this lock"
+  ]
+}
