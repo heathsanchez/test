@@ -1,0 +1,38 @@
+name: UDM G2 V5 first protected native failure
+on:
+  push:
+    branches:
+      - research/udm-g2-observation-choice-v5-20261018
+    paths:
+      - .github/workflows/udm-g2-v5-first-native-failure.yml
+      - research/unified_consequence_runtime/g2_v5_first_native_failure.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Assert immutable source-blind V5 roles
+        run: |
+          set -euo pipefail
+          git show d96833fa8a41b4e5b67d5a9498ee1b1607c476e2:research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_ROLE_FREEZE.json > /tmp/role-freeze-v5.json
+          cmp /tmp/role-freeze-v5.json research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_ROLE_FREEZE.json
+      - name: Execute original source plus original author protected test first-FAIL intake
+        run: |
+          python -B research/unified_consequence_runtime/g2_v5_first_native_failure.py evidence/g2-v5-native
+      - name: Retain exact native and negative evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-g2-v5-first-native-admission
+          path: evidence/g2-v5-native/
+          if-no-files-found: warn
