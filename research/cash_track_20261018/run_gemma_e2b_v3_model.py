@@ -81,7 +81,9 @@ def infer(server, model, prompt, out, report):
             (out / "model_response.json").write_bytes(raw_data)
             report["response_sha256"] = sha(raw_data)
             response = json.loads(raw_data)
-            report["usage"] = response.get("usage", {})\n            report["finish_reason"] = response["choices"][0].get("finish_reason")\n            report["reasoning_content"] = response["choices"][0]["message"].get("reasoning_content")
+            report["usage"] = response.get("usage", {})
+            report["finish_reason"] = response["choices"][0].get("finish_reason")
+            report["reasoning_content"] = response["choices"][0]["message"].get("reasoning_content")
             report["model_executed"] = True
             answer = response["choices"][0]["message"].get("content") or ""
             report["raw_answer"] = answer
