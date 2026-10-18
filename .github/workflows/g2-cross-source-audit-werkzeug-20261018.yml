@@ -1,0 +1,59 @@
+name: G2 cross-source V1 independent offline audit of original native training
+on:
+  push:
+    branches:
+      - research/g2-cross-source-consequence-law-20261018
+    paths:
+      - .github/workflows/g2-cross-source-audit-werkzeug-20261018.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  no-new-training-independent-artifact-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download exact archived native-training artifact by run identity
+        uses: actions/download-artifact@v4
+        with:
+          name: g2-cross-source-werkzeug-training-v1
+          run-id: 39112676106
+          github-token: ${{ github.token }}
+          path: .
+      - name: Verify original source operator bytes and freeze ancestry
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor de234c7e180467bbb0b957cac2016263bf80920b HEAD
+          git merge-base --is-ancestor 216f960c18fd8a5d1e3f78a5c811333153802e0c HEAD
+          cmp research/unified_consequence_runtime/g2_werkzeug_guard_genesis_v1.py <(git show 216f960c18fd8a5d1e3f78a5c811333153802e0c:research/unified_consequence_runtime/g2_werkzeug_guard_genesis_v1.py)
+          python -m py_compile research/unified_consequence_runtime/g2_werkzeug_train_receipt_auditor_v2.py
+      - name: Independently audit actual original-run receipts without new tests
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_werkzeug_train_receipt_auditor_v2.py "$GITHUB_WORKSPACE/evidence/g2-cross-source-werkzeug-train-v1"
+          python - <<'PY'
+          import json
+          p="evidence/g2-cross-source-werkzeug-train-v1/INDEPENDENT_AUDIT.json"
+          d=json.load(open(p))
+          assert d["status"]=="WARRANTED_BOUNDED_TRAINING_OPERATOR_NATIVE_RECEIPTS_REPLAYED",d
+          assert d["G2"]=="UNKNOWN" and d["future"]=="SEALED_UNOPENED"
+          PY
+      - name: Archive independently recomputed receipt and negative lineage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-cross-source-werkzeug-offline-independent-audit-v2
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-cross-source-werkzeug-train-v1/
+            research/unified_consequence_runtime/g2_werkzeug_train_receipt_auditor_v2.py
