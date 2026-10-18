@@ -1,0 +1,87 @@
+{
+  "schema": "G2_PACKAGING_SCHEDULE_TRANSFER_TRAINING_V3_RECEIPT",
+  "status": "WARRANTED_BOUNDED_MATCHED_SOURCE_DISTINCT_TRAINING_REUSE_ONLY",
+  "experiment_protocol": "0e6e8bc2ec313c38370710b82378f072f5891cbd",
+  "observed_training_source": "dbader/schedule",
+  "observed_training_pr": 666,
+  "native_commit": "4bf0d0eb08b9eb5b49cdba3aa7ff88ad0d6178aa",
+  "native_run": 39166185849,
+  "archive_artifact_id": 12150911486,
+  "artifact_sha256": "3587e6ffa3dbd6007880dcb7eae5e918bf8cf79a5c272efe1ed4d9261ea42c88",
+  "archive_zip_crc": "PASS",
+  "junit_independent_reparse": "PASS",
+  "source_original_sha256": "b0c93f8ee84cbb8dbb98bcb8284864f4ea04012fdbc216de13f8ad2141d09efa",
+  "author_test_sha256": "4feecc1907206115b2885746d4a40080d71332c1fd44f1e2ca093357fa557d95",
+  "source_repaired_sha256": "7d026912a69243f730e7d6f1d65a366ea24c6e3f2e1f436503cfe6d7b29da34e",
+  "method_path": "research/unified_consequence_runtime/g2_whole_input_regex_syntax_v2.py",
+  "method_sha256": "12353d3b30f33aa98a6edf5623e1d92ba442ca2f0750e7f3f48aae930ebbc788",
+  "admission_path": "research/unified_consequence_runtime/g2_unittest_ast_admission_v3.py",
+  "admission_sha256": "4cdf8f9d633bc0d4d3e9747afb1176c46b816c5a7da664e4c103daf0292b31e8",
+  "method_unmodified_since_packaging_native_training": true,
+  "method_qualifying_source": "pypa/packaging#1446",
+  "method_earlier_freeze": "2e65e239089d696d343afc263c8a0289e0f92f00",
+  "pre_v2_operator_applicability_on_schedule": 0,
+  "v2_candidate_count": 7,
+  "accepted_family": "inline_regex_fullmatch_composed",
+  "accepted_site_count": 3,
+  "original_protected": {
+    "tests": 1,
+    "pass": 0,
+    "fail": 1,
+    "skip": 0,
+    "error": 0
+  },
+  "repair_protected_a": {
+    "tests": 1,
+    "pass": 1,
+    "fail": 0,
+    "skip": 0,
+    "error": 0
+  },
+  "full_author": {
+    "tests": 82,
+    "pass": 41,
+    "fail": 0,
+    "skip": 41,
+    "error": 0
+  },
+  "repair_protected_b": {
+    "tests": 1,
+    "pass": 1,
+    "fail": 0,
+    "skip": 0,
+    "error": 0
+  },
+  "withdrawal": {
+    "tests": 1,
+    "pass": 0,
+    "fail": 1,
+    "skip": 0,
+    "error": 0
+  },
+  "restoration": {
+    "tests": 1,
+    "pass": 1,
+    "fail": 0,
+    "skip": 0,
+    "error": 0
+  },
+  "next_sealed_future": {
+    "repo": "keleshev/schema",
+    "pr": 356,
+    "base": "310a1239b62f500284ce3bd91b7dabf70467f23e",
+    "head": "dd07dbb89452b70be8c7b8f19a14e6b566454976",
+    "production": "schema/__init__.py",
+    "author_test": "test_schema.py",
+    "selected_from_metadata_only": true,
+    "public_description_discloses_trailing_newline": true,
+    "source_not_opened": true
+  },
+  "limitations": [
+    "schedule initially selected as future but source became exposed after selector ineligibility, then separately qualified as training",
+    "human-designed generalized grammar, not autonomous self-invention",
+    "full author suite included 41 skips; do not count skips as passes",
+    "no G2 qualification, no independent strong agent, no Lean/CLC/FLASH certificate yet"
+  ],
+  "G2": "UNKNOWN"
+}
