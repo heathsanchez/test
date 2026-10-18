@@ -1,0 +1,83 @@
+name: G2 third-source V1.1 original newly-added author-test admission
+on:
+  push:
+    branches:
+      - research/g2-third-source-frozen-transfer-v1-20261019
+    paths:
+      - .github/workflows/g2-third-source-frozen-transfer-v11.yml
+      - research/unified_consequence_runtime/G2_THIRD_SOURCE_V11_TEST_ADMISSION_APPARATUS_FREEZE.json
+      - research/unified_consequence_runtime/g2_third_source_added_author_v11.py
+      - research/unified_consequence_runtime/g2_third_source_finite_transfer_v11.py
+      - research/unified_consequence_runtime/test_g2_third_source_added_author_v11.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  versioned-no-method-change-prospective-rerun:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 38
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_CONFIG_NOSYSTEM: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check original untouched prospective preregistration and versioned apparatus amendment
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp research/unified_consequence_runtime/G2_THIRD_SOURCE_FINITE_TRANSFER_FROZEN_PREQUERY_V1.json \
+            <(git show e40ff465b7a70bd55e56aeb0b40b57edd9aa7b0c:research/unified_consequence_runtime/G2_THIRD_SOURCE_FINITE_TRANSFER_FROZEN_PREQUERY_V1.json)
+          cmp research/unified_consequence_runtime/G2_THIRD_SOURCE_V11_TEST_ADMISSION_APPARATUS_FREEZE.json \
+            <(git show 1be63843d095c636c6da6057f3b5442087601fb1:research/unified_consequence_runtime/G2_THIRD_SOURCE_V11_TEST_ADMISSION_APPARATUS_FREEZE.json)
+          python - <<'PY'
+          from research.unified_consequence_runtime.g2_third_source_finite_transfer_v1 import protocol,source_pins
+          assert len(protocol()['candidate_order'])==3
+          assert len(source_pins())==3
+          print('ORIGINAL_SOURCE_BLIND_TASK_ORDER_AND_METHOD_BLOBS_UNCHANGED')
+          PY
+      - name: Original fourteen native and informed ledger controls
+        run: python -B -m unittest -v research.unified_consequence_runtime.test_g2_third_source_finite_transfer_v1
+      - name: Six before-native genuine newly-added author Git test controls
+        run: python -B -m unittest -v research.unified_consequence_runtime.test_g2_third_source_added_author_v11
+      - name: Replay exact source-blind first-failure order with V1.1 genuine newly-added author test admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B -m research.unified_consequence_runtime.g2_third_source_finite_transfer_v11 evidence/third-prospective-v11
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('evidence/third-prospective-v11/RESULT.json')
+          r=json.loads(p.read_text())
+          assert r['G2']==r['G4']=='UNKNOWN'
+          assert r['status'] not in ('UNKNOWN_EXPERIMENT_APPARATUS','UNKNOWN_NATIVE_NOT_EXECUTED'),r.get('reason')
+          assert r['natives_after_admission']<=22
+          print('SCIENTIFIC_V11_STATUS',r['status'],r.get('eligible'),'G2',r['G2'])
+          PY
+      - name: Retain original native source, JUnit, all method/ledger outcome and source identity proofs
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p evidence/third-prospective-v11
+          git rev-parse HEAD > evidence/third-prospective-v11/RESEARCH_HEAD.txt
+          sha256sum research/unified_consequence_runtime/G2_THIRD_SOURCE_FINITE_TRANSFER_FROZEN_PREQUERY_V1.json \
+            research/unified_consequence_runtime/G2_THIRD_SOURCE_V11_TEST_ADMISSION_APPARATUS_FREEZE.json \
+            research/unified_consequence_runtime/g2_third_source_added_author_v11.py \
+            research/unified_consequence_runtime/g2_third_source_finite_transfer_v1.py \
+            research/unified_consequence_runtime/g2_third_source_finite_transfer_v11.py > evidence/third-prospective-v11/SOURCE_HASHES.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-third-source-v11-original-native-added-author-evidence
+          path: evidence/third-prospective-v11/
+          retention-days: 90
+          if-no-files-found: error
