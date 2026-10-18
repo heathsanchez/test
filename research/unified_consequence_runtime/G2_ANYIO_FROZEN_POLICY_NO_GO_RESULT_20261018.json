@@ -1,0 +1,57 @@
+{
+  "schema": "UDM_G2_ANYIO_V104_FROZEN_NONCOLD_GATE_NO_GO_2026-10-18",
+  "status": "WARRANTED_LOCAL_EXACT_BOUNDARY__PROSPECTIVE_G2_UNKNOWN",
+  "data_authority": {
+    "native_original_actions": "https://github.com/heathsanchez/test/actions/runs/39077610372",
+    "native_original_artifact_id": 12117358412,
+    "native_original_artifact_zip_sha256": "2fa8e5c12ec13523a21686dd35e91b72a062ca91db1d1783357af318366a5611",
+    "source_catalog_actions": "https://github.com/heathsanchez/test/actions/runs/39078250942",
+    "source_catalog_artifact_id": 12117742923,
+    "source_catalog_artifact_zip_sha256": "3140ce752b3b9b43cba6aafbe914c6e5f48a22f350237965e7ca5ab4edb411ae",
+    "canonical_catalog_sha256": "7199e478dc9c5dd247571559475bcdbfaa8e737ac21c39bf179cbbe977f4d9c6",
+    "frozen_native_catalog_lock_commit": "fc5cbaf37fe55ab36b06de35e53bc08844791182",
+    "original_strict_pareto_source_commit": "6031466188046f56b4660d772d13ad731ed4c0f2"
+  },
+  "source_locus": {
+    "existing_native_baseline": "two independent source-sha-pinned 42-test runs each 40 PASS, 2 protected FAIL",
+    "changed_AST_sites": 1,
+    "candidate_count": 64,
+    "selectors": [
+      "Return.value"
+    ],
+    "builders": [
+      "SCOPE_NAME"
+    ],
+    "changed_function": "_is_auto_mode",
+    "all_bare_Name_substitutions": true,
+    "author_tests_explicit_anyio_mark_and_backend_parameter": true,
+    "epistemic_limit": "Local exact AST match, not full semantic no-go or 15 native outcomes"
+  },
+  "frozen_policy_gate": {
+    "policy_names": 37,
+    "noncold_names": 36,
+    "unique_8_step_prefixes": 2,
+    "candidate_union_of_8_step_prefixes": 15,
+    "original_selection_rule": "unique strictly Pareto-dominating named policy; cold specifically disallowed",
+    "exhaustive_binary_outcomes": 32768,
+    "outcome_partition": {
+      "all_tie": 10918,
+      "noncold_36_way_tie": 10933,
+      "cold_only_winner_disallowed": 10917,
+      "admissible_unique_noncold": 0
+    },
+    "theorem": "Every noncold has 35 identically scored noncold competitors, hence cannot strictly dominate every other named policy for any choice of native outcomes. With UNKNOWN, policy vectors remain equal or incomplete. Cold winner is disallowed by authorize_future.",
+    "decision": "REJECTED_AS_POSSIBLE_UNDER_CURRENT_FROZEN_GATE: unique noncold admission"
+  },
+  "science": {
+    "G2": "UNKNOWN_NOT_PROMOTABLE_UNDER_FROZEN_GATE",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "executing_pr50_source": "UNOPENED",
+    "new_native_candidates_in_this_audit": 0,
+    "original_pinned_native_runner": "present on research/udm-g2-frozen-source-distinct-admission-20261018; current hosted results not independently authenticated in this audit"
+  },
+  "next": "Versioned cold-vs-noncold policy equivalence quotient BEFORE new native outcomes; activate source-relevant observation BEFORE emitting novel candidates; new preregistered source-distinct external native future and equal-information strong baselines. Preserve current frozen result and future seal."
+}
