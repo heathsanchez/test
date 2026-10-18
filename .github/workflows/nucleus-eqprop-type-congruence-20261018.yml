@@ -69,6 +69,7 @@ jobs:
                       'NUCLEUS_EXPERIMENTAL_EQPROP_PROOF_DECLINE':'1',
                       'NUCLEUS_TRACE_EQPROP_CERTIFIED_CONGRUENCE':'1',
                       'NUCLEUS_TRACE_EQPROP_TRISTATE':'1',
+                      'NUCLEUS_TRACE_EQPROP_ENDPOINT_PROVENANCE':'1',
                       'NUCLEUS_TRACE_DOWNSTREAM':'1'})
           modes=[('original','/tmp/binaries/original',False),
                  ('patched_off','/tmp/binaries/checked',False),
@@ -85,11 +86,11 @@ jobs:
                           run=subprocess.run([binary],stdin=stream,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=70,env=local)
                       rc=run.returncode
                       lines=run.stderr.decode(errors='replace').splitlines()
-                      checks=[line for line in lines if line.startswith('NUCLEUS_EQPROP_CERTIFIED_CONGRUENCE:')]
+                      checks=[line for line in lines if line.startswith(('NUCLEUS_EQPROP_CERTIFIED_CONGRUENCE:','NUCLEUS_EQPROP_ENDPOINT_PROVENANCE:'))]
                       last=next((line for line in reversed(lines) if line.startswith('NUCLEUS_DOWNSTREAM:')),None)
                   except subprocess.TimeoutExpired:
                       rc=124;checks=[];last='TIMEOUT'
-                  results[name]={'rc':rc,'wall_s':round(time.monotonic()-t,5),'checks':checks[:12],'last':last}
+                  results[name]={'rc':rc,'wall_s':round(time.monotonic()-t,5),'checks':checks[:25],'last':last}
                   print('EQPROP_A_B='+json.dumps({'mode':label,'name':name,'rc':rc,'checks':checks[:3],'last':last}),flush=True)
               report['modes'][label]=results
           (out/'target-report.json').write_text(json.dumps(report,indent=2))
