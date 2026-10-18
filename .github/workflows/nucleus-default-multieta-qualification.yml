@@ -1,0 +1,102 @@
+name: Nucleus default multi-eta independent qualification
+on:
+  push:
+    branches: [research/nucleus-default-multieta-promotion-gate-20261019]
+    paths: ['metatron-kernel/**', '.github/workflows/nucleus-default-multieta-qualification.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [default, origin, demand]
+    env:
+      MODE: ${{ matrix.mode }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build and test independent source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD > /tmp/evidence/commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/tree.txt
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/evidence/tests.log 2>&1
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/evidence/binary.sha256
+      - name: Recover immutable original 196 inputs
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/artifact /tmp/inputs
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/inputs.zip
+          sha256sum /tmp/inputs.zip > /tmp/evidence/input-artifact.sha256
+          unzip -q /tmp/inputs.zip -d /tmp/artifact
+          tar --no-same-owner -xzf /tmp/artifact/lean-arena-tests.tar.gz -C /tmp/inputs
+      - name: Check complete verdict vectors and protected controls
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections, hashlib, json, os, pathlib, subprocess
+          mode = os.environ['MODE']
+          flags = ['RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA']
+          env = {k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          if mode != 'default': env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in flags})
+          if mode == 'demand': env['NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR'] = '1'
+          env['NUCLEUS_TRACE_DOWNSTREAM'] = '1'
+          binary = 'metatron-kernel/target/release/metatron-kernel'
+          rows = []
+          def check(path, case, group):
+              with path.open('rb') as src:
+                  try:
+                      p = subprocess.run([binary], stdin=src, capture_output=True, env=env, timeout=180)
+                      rc, tail = p.returncode, (p.stderr+p.stdout).decode(errors='replace')[-1000:]
+                  except subprocess.TimeoutExpired: rc, tail = 124, 'TIMEOUT'
+              return dict(case=case,group=group,rc=rc,sha256=hashlib.sha256(path.read_bytes()).hexdigest(),terminal=tail)
+          root = pathlib.Path('/tmp/inputs')
+          for group in ['good','bad']:
+              for p in sorted((root/group).rglob('*.ndjson')):
+                  rows.append(check(p,str(p.relative_to(root)),group))
+          assert len(rows) == 196, len(rows)
+          baseline = json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())['modes'][mode]['rows']
+          pinned = {r['case']:r for r in baseline}
+          assert all(r['sha256']==pinned[r['case']]['sha256'] for r in rows), 'input bytes changed'
+          regressions = [r for r in rows if pinned[r['case']]['rc'] in [0,1] and r['rc'] != pinned[r['case']]['rc']]
+          counts = dict(accept=sum(r['rc']==0 for r in rows),reject=sum(r['rc']==1 for r in rows),unknown=sum(r['rc']==2 for r in rows),wrong=sum((r['group']=='bad' and r['rc']==0) or (r['group']=='good' and r['rc']==1) for r in rows),errors=sum(r['rc'] not in [0,1,2] for r in rows))
+          controls = [check(pathlib.Path('metatron-kernel/tests/fixtures')/name,name,'bad') for name in ['protected-false-index.ndjson','protected-eta-ctor-alias.ndjson']]
+          out = dict(mode=mode,source_commit=os.environ['GITHUB_SHA'],counts=counts,rows=rows,protected=controls)
+          pathlib.Path('/tmp/evidence/verdicts.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(counts),flush=True)
+          assert not regressions, regressions
+          assert counts['wrong']==counts['errors']==0,counts
+          assert counts['accept'] >= (118 if mode=='default' else 119), counts
+          assert counts['reject']==71,counts
+          assert all(r['rc'] in [1,2] for r in controls),controls
+          PY
+      - name: Recheck source-distinct official Lean Pairwise theorem
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12081878830/zip > /tmp/pairwise.zip
+          unzip -oq /tmp/pairwise.zip -d /tmp/evidence
+          echo 'e48fd06172e653cad2f4a15a7b454280f8bf00c16e0eba41a3d18265a5012c69  /tmp/evidence/List.pairwise_middle.ndjson' | sha256sum -c -
+          python3 - <<'PY'
+          import os,subprocess,pathlib,json
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+flag:'1' for flag in pin['origin_flags']})
+          with open('/tmp/evidence/List.pairwise_middle.ndjson','rb') as f:
+              r=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],stdin=f,env=env,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90)
+          print('COMMITTED_SOURCE_PAIRWISE='+json.dumps({'rc':r.returncode,'trace':r.stderr.decode(errors='replace')[-700:]}),flush=True)
+          pathlib.Path('/tmp/evidence/pairwise.json').write_text(json.dumps({'rc':r.returncode}))
+          assert r.returncode==0,'source-distinct complete Lean theorem not ACCEPT'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-default-multieta-${{ matrix.mode }}-${{ github.sha }}
+          path: /tmp/evidence/
+          if-no-files-found: error
