@@ -1,0 +1,81 @@
+name: G2 Deer-flow exposed import-scoped finite composition V2 (NOT prospective G2)
+on:
+  push:
+    branches:
+      - research/g2-deerflow-import-composition-v2-20261019
+    paths:
+      - .github/workflows/g2-deer-import-composition-v2.yml
+      - research/unified_consequence_runtime/G2_DEER_IMPORT_COMPOSITION_V2_PROTOCOL.json
+      - research/unified_consequence_runtime/G2_DEER_IMPORT_COMPOSITION_V2_SELECTOR_FREEZE.json
+      - research/unified_consequence_runtime/test_g2_deer_import_composition_v2.py
+      - research/unified_consequence_runtime/g2_deer_import_composition_v2.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-adversarial-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check exact prior training primitive and freeze integrity
+        run: |
+          set -euo pipefail
+          cmp research/unified_consequence_runtime/G2_DEER_IMPORT_COMPOSITION_V2_PROTOCOL.json \
+            <(git show 3e62cc3b225d18cdd23f1a3ed67d2ad82c460984:research/unified_consequence_runtime/G2_DEER_IMPORT_COMPOSITION_V2_PROTOCOL.json)
+          cmp research/unified_consequence_runtime/G2_DEER_IMPORT_COMPOSITION_V2_SELECTOR_FREEZE.json \
+            <(git show 7fcaf3055980a11882f8c7649554e7ab3e458ddf:research/unified_consequence_runtime/G2_DEER_IMPORT_COMPOSITION_V2_SELECTOR_FREEZE.json)
+          cmp research/unified_consequence_runtime/g2_finite_composition_mistral_v2.py \
+            <(git show 0f3fd96a84a4a314c7d02beab0618bd402b41bae:research/unified_consequence_runtime/g2_finite_composition_mistral_v2.py)
+          cmp research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py \
+            <(git show d45288833a13b1ddf6afde01c0b89a84bfc7ce32:research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py)
+        shell: bash
+      - name: Run frozen source-neutral per-case and finite-mask negatives
+        run: python -B -m unittest -v research.unified_consequence_runtime.test_g2_deer_import_composition_v2
+  read-only-original-native-replay:
+    needs: frozen-adversarial-contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: '0.11.1'
+      - name: Execute already-exposed original author cases under pinned source-owned uv environment
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          GIT_NO_REPLACE_OBJECTS: '1'
+        run: |
+          set -euo pipefail
+          env -u GH_TOKEN -u GITHUB_TOKEN python -B -m research.unified_consequence_runtime.g2_deer_import_composition_v2 evidence/g2-deer-exposed-v2
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/g2-deer-exposed-v2/RESULT.json').read_text())
+          assert r['G2']==r['G4']=='UNKNOWN'
+          assert r['science']=='EXPOSED_ONLY_NOT_G2'
+          assert r['original_future_status']=='OPENED_PRIOR_TO_THIS_EXPERIMENT'
+          assert r['status']!='UNKNOWN_EXECUTION_APPARATUS',r
+          print('QUALIFICATION_BOUNDARY',r['status'],'G2',r['G2'])
+          PY
+      - name: Archive full native/JUnit/subset/withdrawal receipts, including refusals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-deerflow-exposed-import-composition-v2-native
+          retention-days: 90
+          path: evidence/g2-deer-exposed-v2/
+          if-no-files-found: warn
