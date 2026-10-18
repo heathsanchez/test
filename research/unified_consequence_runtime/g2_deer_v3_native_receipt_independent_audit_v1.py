@@ -98,7 +98,7 @@ def pre_native_selection_audit(originals,original_test,result,pre):
     kept=[r for r in rows if r["source_bound_match_call"]
                              and r["separates_original_failing_literal"]]
     selected=result["source_candidates"]
-    if len(rows)!=6 or len(kept)!=len(selected)!=2:
+    if len(rows)!=6 or len(kept)!=len(selected) or len(selected)!=2:
         raise ValueError("SOURCE_ONLY_FILTER_SIZE_OR_TYPE")
     if [r["candidate_sha256"] for r in kept]!=[r["candidate_sha256"] for r in selected]:
         raise ValueError("POST_NATIVE_RETARGETED_WINNING_CANDIDATES")
