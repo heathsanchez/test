@@ -1,0 +1,90 @@
+name: Nucleus default multi-eta real Lean native witnesses
+on:
+  push:
+    branches: [research/nucleus-default-multieta-promotion-gate-20261019]
+    paths: [".github/workflows/nucleus-default-multieta-native.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      LEAN_REF: leanprover/lean4:v4.34.1
+      EXPORTER_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact committed Nucleus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Build entirely native Lean eta2, eta3, eta4 theorems and exporter
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain "$LEAN_REF"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --githash | tee /tmp/evidence/lean-githash.txt
+          test "$(cat /tmp/evidence/lean-githash.txt)" = "5045d0056413266e57c625dcd7c365b10e377c52"
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter
+          git -C /tmp/exporter checkout -q "$EXPORTER_SHA"
+          echo "$LEAN_REF" > /tmp/exporter/lean-toolchain
+          (cd /tmp/exporter && lake build)
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q 58de35b1b322c3cab584b88ae2786be3bdcfe856
+          cd /tmp/arena/tutorial
+          lake build Tutorial.Meta
+          cat > EtaWitness.lean <<'EOF'
+          import Tutorial.Meta
+          namespace EtaWitness
+          theorem etaBinary (α : Type) (R : α → α → Prop) :
+              (fun x y => R x y) = R := rfl
+          theorem etaTernary (α : Type) (R : α → α → α → Prop) :
+              (fun x y z => R x y z) = R := rfl
+          theorem etaQuaternary (α : Type) (R : α → α → α → α → Prop) :
+              (fun w x y z => R w x y z) = R := rfl
+          end EtaWitness
+          EOF
+          mkdir -p .lake/build/lib/lean
+          lake env lean -o .lake/build/lib/lean/EtaWitness.olean EtaWitness.lean
+          sha256sum EtaWitness.lean > /tmp/evidence/eta-source-sha256.txt
+          for decl in etaBinary etaTernary etaQuaternary; do
+              lake env /tmp/exporter/.lake/build/bin/lean4export EtaWitness -- "EtaWitness.$decl" > "/tmp/evidence/$decl.ndjson"
+          done
+      - name: Same immutable Nucleus source, eta feature off versus on
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,subprocess,pathlib,json,hashlib,time
+          root=pathlib.Path('/tmp/evidence')
+          pin=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          base.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in pin['origin_flags']})
+          rows=[]
+          for name in ('etaBinary','etaTernary','etaQuaternary'):
+              p=root/(name+'.ndjson')
+              raw=p.read_bytes()
+              assert json.loads(raw.splitlines()[0])['meta']['format']['version']=='3.1.0'
+              for enabled in (False,True):
+                  env=dict(base)
+                  if enabled: env['NUCLEUS_EXPERIMENTAL_MULTIBINDER_ETA']='1'
+                  t=time.monotonic()
+                  proc=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=raw,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=60)
+                  row={'name':name,'feature':enabled,'rc':proc.returncode,
+                       'seconds':round(time.monotonic()-t,5),'sha256':hashlib.sha256(raw).hexdigest(),
+                       'size':len(raw),'tail':proc.stderr.decode(errors='replace')[-1000:]}
+                  rows.append(row)
+                  print('NATIVE_MULTIBINDER_ETA='+json.dumps(row),flush=True)
+              p.unlink()
+          (root/'native-eta-witnesses.json').write_text(json.dumps(rows,indent=2))
+          assert all(row['rc']==0 for row in rows), 'kernel-valid multibinder eta witness not ACCEPT without flag'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-default-native-eta-${{ github.sha }}
+          path: /tmp/evidence/
+          if-no-files-found: warn
