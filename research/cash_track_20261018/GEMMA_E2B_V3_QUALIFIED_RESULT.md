@@ -33,14 +33,12 @@ A new, separately preregistered, single-run Gemma 4 E2B CPU test changed **only*
 
 Actual V3 model text, preserved unmodified in the archive:
 
-```text
 ```json
 {
   "old_regex": "CHECK FAIL\\b",
   "new_regex": "(?i)CHECK FAIL\\b",
   "claim": "The change modifies the check for 'CHECK FAIL' lines to be case-insensitive, ensuring that the logic in `envFault` correctly identifies check failures regardless of case, which is a minimal safe change to improve robustness."
 }
-```
 ```
 
 The independent frozen source's actual declared-outage matcher is `CHECK FAIL\b[^\n]* DURING DECLARED OUTAGE \S+`, not `CHECK FAIL\b`. Even a *posthoc* Markdown fence removal would not satisfy the exact `old_regex` binding. The separate generic `reCheckFail` variable does contain `CHECK FAIL\b` but changing it is **out of scope** for this protocol. Thus both response formatting and target selection were wrong; no manual repair of either is counted.
