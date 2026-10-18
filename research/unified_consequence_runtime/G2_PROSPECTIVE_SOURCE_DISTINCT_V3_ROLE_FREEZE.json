@@ -1,0 +1,89 @@
+{
+  "schema": "UDM_G2_PROSPECTIVE_SOURCE_DISTINCT_V3_ROLE_FREEZE",
+  "protocol_commit": "6b96a5dcb5fcdd449639ba09aa5fbd600da0524a",
+  "state": "ROLES_FROZEN_BEFORE_SOURCE_BODIES_OR_NATIVE_OUTCOMES",
+  "selection": {
+    "repository_order": [
+      "python-trio/trio",
+      "pytest-dev/pluggy",
+      "encode/httpx",
+      "aio-libs/yarl",
+      "pallets/click",
+      "python-attrs/attrs",
+      "hynek/structlog",
+      "python-jsonschema/jsonschema"
+    ],
+    "rule": "first eligible merged title-starts-fix PR in returned updated-desc search order per repository; first two eligible repositories in order become TRAINING/FUTURE",
+    "earlier_rejections": [
+      {
+        "repo": "python-trio/trio",
+        "pr": 3544,
+        "reason": "UNMERGED"
+      },
+      {
+        "repo": "pytest-dev/pluggy",
+        "pr": 793,
+        "reason": "UNMERGED"
+      },
+      {
+        "repo": "pytest-dev/pluggy",
+        "pr": 797,
+        "reason": "UNMERGED"
+      },
+      {
+        "repo": "pytest-dev/pluggy",
+        "pr": 796,
+        "reason": "UNMERGED"
+      }
+    ]
+  },
+  "training": {
+    "role": "TRAINING",
+    "repository": "python-trio/trio",
+    "pr": 3525,
+    "title": "Fix CI failures for 3.11 Python",
+    "url": "https://github.com/python-trio/trio/pull/3525",
+    "base": "ada9c778c86f35c62e68bae8284ca652ea2b23c2",
+    "head": "e12547f78849be25ec5c0c1a3df161986be1ae96",
+    "changed_files": [
+      "src/trio/_tests/test_exports.py",
+      "src/trio/socket.py",
+      "test-requirements.txt"
+    ],
+    "production": [
+      "src/trio/socket.py"
+    ],
+    "author_tests": [
+      "src/trio/_tests/test_exports.py"
+    ],
+    "source_body_read": false,
+    "native_outcome_read": false
+  },
+  "heldout_future": {
+    "role": "HELDOUT_FUTURE",
+    "repository": "pytest-dev/pluggy",
+    "pr": 755,
+    "title": "fix: skip registered entrypoint plugins without checking truthiness",
+    "url": "https://github.com/pytest-dev/pluggy/pull/755",
+    "base": "60b15251ee18560f781c557b6b9ef3de4d786bee",
+    "head": "e3e34d8120aac5abbc3ac247f52390fa8eaa00a0",
+    "changed_files": [
+      "changelog/755.bugfix.rst",
+      "src/pluggy/_manager.py",
+      "testing/test_pluginmanager.py"
+    ],
+    "production": [
+      "src/pluggy/_manager.py"
+    ],
+    "author_tests": [
+      "testing/test_pluginmanager.py"
+    ],
+    "source_body_read": false,
+    "native_outcome_read": false
+  },
+  "boundary": {
+    "future_must_remain_unopened_until_training_qualifies": true,
+    "repaired_head_production_must_not_be_read": true,
+    "no_post_outcome_role_substitution": true
+  }
+}
