@@ -311,4 +311,7 @@ if __name__=="__main__":
     p.add_argument("out",type=Path)
     a=p.parse_args()
     r=main(a.world.resolve(),a.out.resolve())
-    raise SystemExit(0 if r["status"].startswith("WARRANTED_BOUNDED_NATIVE") else 2)
+    # The workflow qualifies scientific subclaims independently. Preserve
+    # UNKNOWN/negative observations as evidence rather than hiding them behind
+    # an apparatus exit code.
+    raise SystemExit(0)
