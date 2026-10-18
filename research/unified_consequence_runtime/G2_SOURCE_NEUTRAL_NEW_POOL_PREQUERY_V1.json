@@ -1,0 +1,95 @@
+{
+  "schema": "G2_SOURCE_NEUTRAL_TRANSFER_NEW_POOL_PREQUERY_V1",
+  "state": "PREQUERY_FREEZE_BEFORE_NEW_TASK_METADATA_SOURCE_TEST_NATIVE",
+  "date": "2026-10-18",
+  "parent_source_commit": "7b8d26b357e9c754d7ef80c4e3d1b025d897a9c9",
+  "method": {
+    "file": "research/unified_consequence_runtime/residual_projection_method_v1.py",
+    "commit": "d83de24d3b5bb4352cd6991a85a0fbc1e72f6deb",
+    "git_blob_sha1": "9ffb5e656d7801836cdd23c74cbf5c2ce39f2105",
+    "dependency_commit": "b9d175d0b129c843bc5885aec77082f07f2b0601",
+    "status": "CANDIDATE_NOT_QUALIFIED_NEW_SOURCE"
+  },
+  "repository_order": [
+    "python-dateutil/dateutil",
+    "pypa/hatch",
+    "pallets/markupsafe",
+    "pallets/jinja",
+    "pytest-dev/pytest",
+    "pytest-dev/pluggy",
+    "pydantic/pydantic-settings",
+    "agronholm/anyio",
+    "python-trio/trio",
+    "encode/starlette",
+    "encode/uvicorn",
+    "fastapi/fastapi",
+    "aio-libs/aiosignal",
+    "aio-libs/frozenlist",
+    "python-hyper/h11",
+    "python-hyper/h2",
+    "jaraco/inflect",
+    "jaraco/path",
+    "python-poetry/poetry-core",
+    "astral-sh/ruff"
+  ],
+  "eligibility": {
+    "query": "fix",
+    "state": "closed",
+    "sort": "updated",
+    "order": "desc",
+    "per_repo_first_n": 30,
+    "inspect_title_only_first_n": 12,
+    "exact_rules": [
+      "merged PR, full base/head SHA",
+      "title begins fix or bugfix",
+      "2..8 changed files",
+      "exactly one production Python source and one original author-test Python file",
+      "no workflow/config/dependency changes",
+      "exclude any repo or PR already exposed in prior UDM training, future, method development, or historical trials",
+      "no source/test body nor patch content in metadata stage"
+    ],
+    "selection": "first eligible PR per repository in frozen order; first five are TRAINING_ADMISSION, next two SEALED_FUTURE, no outcome-based replacement",
+    "shortfall": "UNKNOWN_POOL_INCOMPLETE_NO_METADATA_RESAMPLING"
+  },
+  "native": {
+    "python": "3.12",
+    "pytest": "9.1.1",
+    "dependency_authority": "original repository source declared tests or test groups, freeze exact resolution before native",
+    "original": "BASE production + HEAD author changed tests only",
+    "selector": "AST changed original author test nodes only",
+    "require": "at least one executed protected FAIL, zero errors and protected skips",
+    "first_failure": "stop at first genuine original author protected FAIL among training order",
+    "per_task_native_timeout_seconds": 120
+  },
+  "safety": {
+    "read_only_external": true,
+    "untrusted_test_import_and_eval": true,
+    "require_credential_free_isolated_worker": true,
+    "all_future_source_sealed_until_training_causal_pass": true,
+    "no_target_specific_adapter_edits": true
+  },
+  "comparators": {
+    "A": "unchanged method inventory",
+    "B": "acquired O1 developmental",
+    "C": "equal-information executable ledger",
+    "D": "competent coding agent (if unavailable explicitly NOT_RUN)",
+    "E": "B minus physically withdrawn O1",
+    "F": "B restored after cold restart",
+    "budgets": "precommit equal total wall/calls/all verifier and setup costs before native outcomes"
+  },
+  "acceptance": {
+    "training": "two independent protected author native PASS, full relevant author file pass, physical withdrawal FAIL, restoration PASS",
+    "G2": "new source-distinct protected O2 native success with unchanged-method failure and causal withdrawal/restoration",
+    "G4": "B wins over C and D at matched total cost",
+    "G3_G5_G6": "UNKNOWN without separately frozen obligations"
+  },
+  "status": {
+    "metadata": "NOT_EXECUTED",
+    "new_native": "NOT_EXECUTED",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}
