@@ -36,7 +36,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -B research/unified_consequence_runtime/g2_finite_composition_future_v1.py \
+          python -B -m research.unified_consequence_runtime.g2_finite_composition_future_v1 \
             evidence/g2-finite-prospective-native-v1 a75a1914a00059a66c96f334bdbe9085a4eeb0e2
           python - <<'PY'
           import json
