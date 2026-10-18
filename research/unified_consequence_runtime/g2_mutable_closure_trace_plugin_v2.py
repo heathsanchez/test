@@ -18,6 +18,7 @@ _LOG = os.environ.get("UDM_G2_MUTABLE_CLOSURE_LOG")
 _EVENTS: list[dict[str, object]] = []
 _CURRENT_NODE: str | None = None
 _INSTALLED = False
+_FLUSHED = False
 
 
 def _primitive(value):
@@ -113,7 +114,8 @@ def _trace(frame, event, arg):
 
 
 def _flush():
-    if not _LOG or not _EVENTS:
+    global _FLUSHED
+    if _FLUSHED or not _LOG or not _EVENTS:
         return
     path = Path(_LOG)
     path.parent.mkdir(parents=True, exist_ok=True)
