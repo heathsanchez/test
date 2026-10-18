@@ -124,7 +124,17 @@ def shortlist(config,client):
     for repo in config["source_blind_repo_order"]:
         if len(records)>=criteria["minimum_eligible"]:break
         reasons=Counter();found=None
-        matches=client.matching_prs(repo,criteria["max_search_results_per_repo"])
+        try:
+            matches=client.matching_prs(repo,criteria["max_search_results_per_repo"])
+        except ValueError as exc:
+            # Frozen order is immutable. A nonsearchable/relinked repo remains a
+            # named metadata refusal; never auto-replace it with an ad-hoc repo.
+            if str(exc)=="UNKNOWN_METADATA_HTTP_422_ISSUE_SEARCH_"+repo:
+                all_reasons[repo]={"candidates_considered":0,
+                   "refusals":{"UNSEARCHABLE_FROZEN_REPOSITORY":1},
+                   "selected":False}
+                continue
+            raise
         if not matches:reasons["NO_MERGED_MATCHES"]+=1
         for row in matches:
             number=row["number"]
