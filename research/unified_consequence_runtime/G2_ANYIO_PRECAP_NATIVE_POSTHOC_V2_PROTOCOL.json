@@ -1,0 +1,74 @@
+{
+  "schema": "UDM_G2_ANYIO_POSTHOC_PRECAP_NATIVE_V2_FROZEN",
+  "epistemic": "POSTHOC_EXPOSED_TRAINING_ONLY_NO_G2",
+  "state": "PRENATIVE_CANDIDATE_DIGEST_FREEZE",
+  "original_native": "heathsanchez/test#39078910793",
+  "original_native_artifact_sha256": "7ec7f9922aa3925f8d0d455f79eba414f4512c6210762e7731d442e746972680",
+  "native_observer": "heathsanchez/test#39094278464",
+  "native_observer_artifact_sha256": "9748feb59bab988d3644c4ed22e5ab723319044aac129fc967b4e7b226dcbee2",
+  "source_only_pre_cap": "heathsanchez/test#39093700226",
+  "source_only_artifact_sha256": "b003c79690245997f5a75ea27660491ce171a57d0e1e864bef50b9d4f291837e",
+  "source": "agronholm/anyio@1805944a9f6a062527c10aa044ded959782bfc3e",
+  "author_head": "90876855b731fb057d45e7e1cbdf1df013be6091",
+  "production_path": "src/anyio/pytest_plugin.py",
+  "original_production_sha256": "a0b5f23acb6f4595b75556ea20e0e166c3ede234b3d941a1e3861e1b69c95f1d",
+  "protected_test_blob": "b15d4da74a17b7f80fa07b0d172c03eb752be7f4",
+  "original_v104_pin": "heathsanchez/triskelion@426c54f7c774560e0fabe7213c5ef333b1327c71",
+  "original_msi_pin": "heathsanchez/Minimal-Sufficient-Interface@56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+  "generation": "Original V104 program_candidates on 3 preselected original functions as recorded in source-only run #39093700226, cap 16 each. AST transport to original module; exact SHA256 below committed before any native call. No change of builder or selector language.",
+  "schedule": "Three round-robin rounds, each selecting first then second then third original V104 emitted variant of each function. Nine exact whole-original-program sha256 digests; cannot alter after native outcomes.",
+  "shortlist": [
+    {
+      "index": 0,
+      "function_name": "pytest_pycollect_makeitem",
+      "whole_program_sha256": "d0aab6b9d1104e2883755fbd2e8eaf20836e32ca251f5a2b84d354185c7173a2"
+    },
+    {
+      "index": 1,
+      "function_name": "pytest_pyfunc_call",
+      "whole_program_sha256": "750064d8565bc554bfba32a3ecd34b8938f8c75bbec4f1c399a827d67f707359"
+    },
+    {
+      "index": 2,
+      "function_name": "pytest_collection_finish",
+      "whole_program_sha256": "e2fae6d6dec5867c0f90341fc35431de02a9379bc871624b98ec87828523ee30"
+    },
+    {
+      "index": 3,
+      "function_name": "pytest_pycollect_makeitem",
+      "whole_program_sha256": "eeaf4fca368803bc01f32d9e90fd5548600a9fd15812640f8194fbcc0e211ab3"
+    },
+    {
+      "index": 4,
+      "function_name": "pytest_pyfunc_call",
+      "whole_program_sha256": "eee594827259aff9a62e8c6a0746e11ecc572560d98142e45c6ec158c0a8d4f5"
+    },
+    {
+      "index": 5,
+      "function_name": "pytest_collection_finish",
+      "whole_program_sha256": "4f65364dec27f65ffabd859311e8529b37738d66089a67d187d9549060673632"
+    },
+    {
+      "index": 6,
+      "function_name": "pytest_pycollect_makeitem",
+      "whole_program_sha256": "357ff91a9a83224b518386c475e1866c6fa6970fc4c5a6986df6747cde0e4259"
+    },
+    {
+      "index": 7,
+      "function_name": "pytest_pyfunc_call",
+      "whole_program_sha256": "34fc3bb6ea46fff210f458ba7bd842a9754a9390185ac83b6c8684fbfe4df28c"
+    },
+    {
+      "index": 8,
+      "function_name": "pytest_collection_finish",
+      "whole_program_sha256": "cc60a6e298296bf67ff89e814af117bccf89848d63b12cb1c2a80ea529134e03"
+    }
+  ],
+  "native_verifier": "Original pinned V6 protected stage, full author original test module 42 nodes, two independent calls per candidate; UNKNOWN on collection, skip, mutated source, wrong imports or timed-out evidence.",
+  "maximum_native_candidate_evaluations": 9,
+  "maximum_native_calls_including_baseline": 20,
+  "candidate_native_timeout_seconds": 90,
+  "wall_budget_seconds": 1150,
+  "stop": "No selected method G2 promotion from posthoc task even on repair; executing PR#50 stays unopened. Complete schedule kept with rejects and UNKNOWN. No new per-target winning operator or source family.",
+  "G2": "UNKNOWN"
+}
