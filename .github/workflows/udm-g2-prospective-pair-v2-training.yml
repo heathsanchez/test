@@ -9,6 +9,7 @@ on:
       - research/unified_consequence_runtime/G2_PROSPECTIVE_PAIR_ROLE_MANIFEST_V2.json
       - research/unified_consequence_runtime/g2_prospective_pair_training_v2.py
       - research/unified_consequence_runtime/qualify_g2_prospective_pair_training_v2.py
+      - research/unified_consequence_runtime/G2_PROSPECTIVE_PAIR_ENVIRONMENT_REPAIR_V21.json
       - .github/workflows/udm-g2-prospective-pair-v2-training.yml
   workflow_dispatch:
 
@@ -77,6 +78,7 @@ jobs:
           groups=d.get('dependency-groups',{})
           extras=d.get('project',{}).get('optional-dependencies',{})
           if 'test' in groups: print('GROUP:test')
+          elif 'tests' in groups: print('GROUP:tests')
           elif 'test' in extras: print('EXTRA:test')
           elif 'tests' in extras: print('EXTRA:tests')
           elif 'dev' in extras: print('EXTRA:dev')
@@ -87,6 +89,9 @@ jobs:
           case "$supplement" in
             GROUP:test)
               python -m pip install --disable-pip-version-check --no-input --group "$TRAIN/pyproject.toml:test"
+              ;;
+            GROUP:tests)
+              python -m pip install --disable-pip-version-check --no-input --group "$TRAIN/pyproject.toml:tests"
               ;;
             EXTRA:test)
               python -m pip install --disable-pip-version-check --no-input -e "$TRAIN[test]"
