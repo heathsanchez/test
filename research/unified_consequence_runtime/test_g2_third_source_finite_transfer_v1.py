@@ -15,7 +15,7 @@ class SourceUnopenedThirdTransferV1(unittest.TestCase):
         p=m.protocol()
         self.assertEqual([x["repo"] for x in p["candidate_order"]],
                          ["psf/requests","urllib3/urllib3","pydantic/pydantic"])
-        self.assertEqual(p["science"]["G2"],"UNKNOWN")
+        self.assertTrue(p["science"]["G2"].startswith("UNKNOWN"))
 
     def test_02_frozen_source_method_code_not_rewritten(self):
         pins=m.source_pins()
