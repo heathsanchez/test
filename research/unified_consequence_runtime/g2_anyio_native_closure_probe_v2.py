@@ -198,7 +198,7 @@ def main(world: Path,out: Path):
                 monitor.outcomes.append({"nodeid":report.nodeid,"outcome":report.outcome})
 
     sys.path[:0]=[str(world/"src"),str(world)]
-    argv=["-q","-p","no:cacheprovider","--rootdir="+str(direct_dir)] + [
+    argv=["-q","-p","no:cacheprovider","--timeout=10","--rootdir="+str(direct_dir)] + [
         str(path) for path in sorted(child_files)
     ]
     old=sys.getprofile()
