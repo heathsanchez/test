@@ -93,6 +93,12 @@ class GitHub:
 
 def eligible_paths(files):
     if not files:return "NO_CHANGED_FILES",None
+    # Treat GitHub file paths as untrusted before matching accepted regexes.
+    if any(not isinstance(x.get("path"),str) or not x["path"]
+           or x["path"].startswith("/") or "\\" in x["path"]
+           or any(part in ("",".","..") for part in x["path"].split("/"))
+           for x in files):
+        return "UNSAFE_NONCANONICAL_PATH",None
     if any(VETO.search(x["path"]) for x in files):
         return "CHANGED_BUILD_OR_ENVIRONMENT",None
     if any(x["path"].endswith(".py") and not(SRC.fullmatch(x["path"]) or TEST.fullmatch(x["path"])) for x in files):
@@ -131,7 +137,7 @@ def shortlist(config,client):
                 reasons["MISSING_PREMERGE_PARENT_SHA"]+=1;continue
             found={"repo":repo,"number":number,"base":base,"author_head":head,
                    "merge_commit":merge,"production":paths[0],"author_test":paths[1],
-                   "merged_at":pr["merged_at"],"source":"GITHUB_METADATA_ONLY_NO_PATCH_EXPOSURE"}
+                   "merged_at":pr["merged_at"],"source":"GITHUB_METADATA_PROJECTION_ONLY"}
             break
         all_reasons[repo]={"candidates_considered":sum(reasons.values())+(1 if found else 0),
                            "refusals":dict(sorted(reasons.items())),"selected":bool(found)}
