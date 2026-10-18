@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""Opt-in, fail-closed source-checked Eq-over-Prop congruence A/B.
+
+Never admits conversion from a common Eq head alone. Every actual neutral
+argument of both independently formed equality types must convert under
+the *original* context; no identities inferred from name or numeric FreeId.
+"""
+from pathlib import Path
+import sys
+
+source = Path(sys.argv[1] if len(sys.argv) > 1 else "metatron-kernel/src/typecheck.rs")
+body = source.read_text()
+anchor = "    fn undecided_propositional_equality_proof(\n"
+assert body.count(anchor) == 1
+helper = r'''
+    /// A narrow structural congruence candidate, not a new equality axiom.
+    /// Both captured types have already been inferred/formed by the caller.
+    /// Check ALL Eq arguments under the original Gamma; an omitted, refuted
+    /// or exhausted premise cannot license acceptance. Diagnostic A/B only.
+    fn experimental_checked_eq_prop_congruence(
+        &self,
+        actual: &TypeValue,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if budget < 128 || context.len() > 64 {
+            return false;
+        }
+        let expose_eq = |ty: &TypeValue| -> Option<Neutral> {
+            let TypeValue::Term(term) = ty else { return None };
+            let observed = self.machine().expose_for_conversion(
+                term.clone(), Transparency::Reducible, budget.min(2048),
+            );
+            let Value::Neutral(eq) = observed.proven_value()? else {return None};
+            if eq.spine.len()!=3 {return None}
+            let carrier = self.machine().expose_for_conversion(
+                eq.spine[0].clone(),Transparency::Reducible,budget.min(2048),
+            );
+            if !matches!(carrier.proven_value(),Some(Value::Sort(LevelTerm::Zero))) {
+                return None;
+            }
+            Some(eq.clone())
+        };
+        let (Some(left),Some(right))=(expose_eq(actual),expose_eq(expected)) else {
+            return false
+        };
+        let (
+            NeutralHead::Const {name:ln,levels:ll},
+            NeutralHead::Const {name:rn,levels:rl},
+        )=(&left.head,&right.head) else {return false};
+        if ln!=rn || ll.len()!=rl.len() ||
+            !ll.iter().zip(rl.iter()).all(|(l,r)|{
+                crate::level::level_equal(l.clone(),r.clone(),budget.min(1024)).is_proven()
+            }) {return false}
+        for (index,(lhs,rhs)) in left.spine.iter().zip(right.spine.iter()).enumerate() {
+            let verdict=crate::convert::convert_with_policy_in_context(
+                self,
+                &TypeValue::Term(lhs.clone()),
+                &TypeValue::Term(rhs.clone()),
+                budget.min(2048),
+                crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                context.len(),context,
+            );
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_EQPROP_CERTIFIED_CONGRUENCE").is_some() {
+                eprintln!(
+                    "NUCLEUS_EQPROP_CERTIFIED_CONGRUENCE:argument={index}:context_len={}:result={verdict:?}:left={lhs:?}:right={rhs:?}",
+                    context.len(),
+                );
+            }
+            if !verdict.is_proven() {return false}
+        }
+        true
+    }
+
+'''
+body = body.replace(anchor, helper + anchor)
+target='''                    Judgment::unknown("source-Eq-Prop-dependent-conversion-unresolved")
+'''
+assert body.count(target) == 1
+replacement='''                    if std::env::var_os("NUCLEUS_EXPERIMENTAL_EQPROP_CERTIFIED_CONGRUENCE").is_some()
+                        && self.experimental_checked_eq_prop_congruence(
+                            &value, expected, context, (*remaining).min(4096)
+                        )
+                    {
+                        Judgment::proven((), "source-certified-Eq-Prop-type-congruence")
+                    } else {
+                        Judgment::unknown("source-Eq-Prop-dependent-conversion-unresolved")
+                    }
+'''
+body = body.replace(target,replacement)
+source.write_text(body)
+print("Nucleus opt-in EqProp certified congruence applied")
