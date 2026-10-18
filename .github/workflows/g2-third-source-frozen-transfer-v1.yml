@@ -1,0 +1,79 @@
+name: G2 third-source prospective finite composition — informed ledger
+on:
+  push:
+    branches:
+      - research/g2-third-source-frozen-transfer-v1-20261019
+    paths:
+      - '.github/workflows/g2-third-source-frozen-transfer-v1.yml'
+      - 'research/unified_consequence_runtime/G2_THIRD_SOURCE_FINITE_TRANSFER_FROZEN_PREQUERY_V1.json'
+      - 'research/unified_consequence_runtime/g2_third_source_finite_transfer_v1.py'
+      - 'research/unified_consequence_runtime/test_g2_third_source_finite_transfer_v1.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded-independent-third-source-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 38
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_CONFIG_NOSYSTEM: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check original V1 source-blind prequery was frozen before external source access
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp research/unified_consequence_runtime/G2_THIRD_SOURCE_FINITE_TRANSFER_FROZEN_PREQUERY_V1.json \
+              <(git show e40ff465b7a70bd55e56aeb0b40b57edd9aa7b0c:research/unified_consequence_runtime/G2_THIRD_SOURCE_FINITE_TRANSFER_FROZEN_PREQUERY_V1.json)
+          python - <<'PY'
+          from research.unified_consequence_runtime.g2_third_source_finite_transfer_v1 import protocol,source_pins
+          assert len(protocol()['candidate_order'])==3
+          assert len(source_pins())==3
+          print("FROZEN_SOURCE_AND_METHOD_PINS_ACCEPTED")
+          PY
+      - name: Execute fourteen source-blind method, native mapping, source scope and informed ledger controls
+        run: python -B -m unittest -v research.unified_consequence_runtime.test_g2_third_source_finite_transfer_v1
+      - name: Freeze first original authentic failure and test fixed method against actual native oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B -m research.unified_consequence_runtime.g2_third_source_finite_transfer_v1 evidence/third-prospective-v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('evidence/third-prospective-v1/RESULT.json')
+          r=json.loads(p.read_text())
+          assert r['G2']==r['G4']=='UNKNOWN'
+          assert r['status'] not in ('UNKNOWN_EXPERIMENT_APPARATUS','UNKNOWN_NATIVE_NOT_EXECUTED'),r.get('reason')
+          assert r['natives_after_admission']<=22
+          if r.get('primitive_count',0):
+              assert Path('evidence/third-prospective-v1/CANDIDATES_BEFORE_NATIVE.json').is_file()
+          if r['status']=='CANDIDATE_NEW_SOURCE_FINITE_TRANSFER_AWAITING_INDEPENDENT_AUDIT':
+              assert r['matched_ledger']['ledger']['winner'] is not None
+              assert r['matched_ledger']['relative_to_fully_informed_ledger']=='TIE_MINIMAL_MASK'
+          print('PREDECLARED_PROSPECTIVE_RESULT',r['status'],'G2',r['G2'])
+          PY
+      - name: Retain exact source-bound original and candidate native evidence, including apparatus and negative outcomes
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p evidence/third-prospective-v1
+          git rev-parse HEAD > evidence/third-prospective-v1/RESEARCH_HEAD.txt
+          sha256sum research/unified_consequence_runtime/G2_THIRD_SOURCE_FINITE_TRANSFER_FROZEN_PREQUERY_V1.json research/unified_consequence_runtime/g2_third_source_finite_transfer_v1.py research/unified_consequence_runtime/test_g2_third_source_finite_transfer_v1.py > evidence/third-prospective-v1/SOURCE_HASHES.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-third-source-frozen-native-evidence-and-ledger
+          path: evidence/third-prospective-v1/
+          retention-days: 90
+          if-no-files-found: error
