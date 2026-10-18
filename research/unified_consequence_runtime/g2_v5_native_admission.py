@@ -87,6 +87,11 @@ def execute(output):
                   "head":role["author_head"],"author_test":role["author_test"],
                   "production":role["production"]}
             row=native.one(task,i,output/("admission-"+str(i)))
+            # The original qualified V2 primitive records the native result
+            # without repeating its immutable task paths. Rebind only the
+            # *already frozen* source/test paths before V5 strict validation.
+            row["production"]=task["production"]
+            row["author_test"]=task["author_test"]
             ok,why=clean_selected(row) if row.get("status")=="ADMITTED_FIRST_AUTHENTIC_PROTECTED_NATIVE_FAILURE" else (False,row["status"])
             row["v5_boundary"]=why
             if row.get("status")=="ADMITTED_FIRST_AUTHENTIC_PROTECTED_NATIVE_FAILURE" and not ok:
