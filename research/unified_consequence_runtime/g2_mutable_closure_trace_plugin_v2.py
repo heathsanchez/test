@@ -113,6 +113,7 @@ def _profile(frame, event, arg):
                 "function": pattern["function"],
                 "function_line": pattern["function_line"],
                 "code_first_line": pattern["code_first_line"],
+                "guard_line": pattern["guard_line"],
                 "observation_event": "RETURN",
                 "read_variable": pattern["read_variable"],
                 "dynamic_captures": captures,
