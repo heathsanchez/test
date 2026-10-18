@@ -1,0 +1,81 @@
+name: Nucleus Quotient.ind original minor domain conversion differential
+on:
+  push:
+    branches: [research/nucleus-quotient-lift2-native-proof-20261019]
+    paths: [".github/workflows/nucleus-quotient-minor-domain-probe-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-typing:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      ORIGINAL_ARTIFACT: "12150779957"
+      EXACT_SOURCE_SHA: da02144b2d6109c86e5067b1e987744c2122820629bc8ece04dfb276f243239b
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile unchanged and source-diagnostic Nucleus with one checked diff
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence /tmp/nucleus /tmp/original
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree-before.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus/original
+          python3 .github/scripts/nucleus_quotient_minor_conversion_probe_20261019.py metatron-kernel/src/typecheck.rs
+          git diff --check
+          git diff -- metatron-kernel/src/typecheck.rs > /tmp/evidence/diagnostic-only.diff
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus/diagnostic
+          sha256sum /tmp/nucleus/original /tmp/nucleus/diagnostic > /tmp/evidence/binaries.sha256
+      - name: Replay original exact source Γ11 and protected malformed controls
+        run: |
+          set -euo pipefail
+          gh api "repos/heathsanchez/test/actions/artifacts/$ORIGINAL_ARTIFACT/zip" > /tmp/quotient-input.zip
+          unzip -q /tmp/quotient-input.zip -d /tmp/original
+          echo "$EXACT_SOURCE_SHA  /tmp/original/quotient-proof.ndjson" | sha256sum -c -
+          python3 - <<'PY'
+          import os,hashlib,json,pathlib,subprocess,time
+          root=pathlib.Path('/tmp/evidence')
+          original=pathlib.Path('/tmp/original/quotient-proof.ndjson')
+          cases={'quotient-original':original,
+                 'false-index':pathlib.Path('metatron-kernel/tests/fixtures/protected-false-index.ndjson'),
+                 'eta-constructor-alias':pathlib.Path('metatron-kernel/tests/fixtures/protected-eta-ctor-alias.ndjson')}
+          modes=[('original','/tmp/nucleus/original',False),
+                 ('diagnostic-off','/tmp/nucleus/diagnostic',False),
+                 ('diagnostic-on','/tmp/nucleus/diagnostic',True)]
+          rows=[]
+          for label,binary,trace in modes:
+              for case,path in cases.items():
+                  env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+                  env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+                  if trace and case=='quotient-original':
+                      env['NUCLEUS_TRACE_QUOTIENT_MINOR_DOMAIN']='1'
+                      env['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE']='1'
+                  started=time.monotonic()
+                  with path.open('rb') as f:
+                      r=subprocess.run([binary],stdin=f,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env,timeout=90)
+                  lines=r.stderr.decode(errors='replace').splitlines()
+                  witness=[x for x in lines if x.startswith('NUCLEUS_QUOTIENT_MINOR_DOMAIN:')]
+                  terminal=[x for x in lines if x.startswith('NUCLEUS_DOWNSTREAM:')]
+                  row={'mode':label,'case':case,'rc':r.returncode,'seconds':round(time.monotonic()-started,5),
+                       'source_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+                       'source_pi_witness':witness[:4],'terminal':terminal[-2:],
+                       'function_type_traces':[x for x in lines if x.startswith('NUCLEUS_APPLICATION_FUNCTION_TYPE:')][:4]}
+                  rows.append(row)
+                  print('NUCLEUS_QUOTIENT_SOURCE_PI='+json.dumps(row),flush=True)
+          (root/'nucleus-source-pi-report.json').write_text(json.dumps(rows,indent=2))
+          assert len(rows)==9
+          assert all(row['rc']==2 for row in rows if row['case']=='quotient-original'), 'DIAGNOSTICS_CHANGED_ORIGINAL_UNKNOWN'
+          assert all(row['rc'] in (1,2) for row in rows if row['case']!='quotient-original'), 'UNSAFE_NEGATIVE_CONTROL'
+          assert any(row['source_pi_witness'] for row in rows if row['mode']=='diagnostic-on' and row['case']=='quotient-original'), 'NO_EXACT_GAMMA11_WITNESS'
+          assert all(row['terminal']==rows[i%3]['terminal'] for i,row in enumerate(rows) if row['case']=='quotient-original'), 'TERMINAL_MISMATCH'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quotient-minor-domain-probe-${{ github.sha }}
+          path: /tmp/evidence/
+          if-no-files-found: warn
