@@ -86,10 +86,11 @@ def exactly(r, pass_count, fail_count, zero_skips=True):
             and c["tests"] == pass_count + fail_count and c["failures"] == fail_count
             and c["errors"] == 0 and (not zero_skips or c["skipped"] == 0))
 
-def working_diff(world, production, test):
+def working_diff(world, production, test, patched=False):
     p = subprocess.run(["git","-C",str(world),"diff","--name-only"],
                        capture_output=True,text=True,timeout=30,check=True)
-    return sorted(p.stdout.splitlines()) == sorted([production,test])
+    expected = [test, production] if patched else [test]
+    return sorted(p.stdout.splitlines()) == sorted(expected)
 
 def main(out: Path):
     out.mkdir(parents=True, exist_ok=False)
@@ -140,7 +141,7 @@ def main(out: Path):
             try:
                 (world / production).write_bytes(c["source"])
                 assert sha((world / production).read_bytes())==c["patched_sha256"]
-                if not working_diff(world, production, task["author_test"]):
+                if not working_diff(world, production, task["author_test"], patched=True):
                     raise RuntimeError("CANDIDATE_CHANGED_OTHER_TRACKED_SOURCE")
                 first = run(py, world, nodes, out / f"candidate-{i:02d}" / "protected-a")
                 rec["protected_a"]=first
