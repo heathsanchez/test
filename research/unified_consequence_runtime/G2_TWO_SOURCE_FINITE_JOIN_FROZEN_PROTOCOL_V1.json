@@ -1,0 +1,83 @@
+{
+  "schema": "G2_TWO_REAL_SOURCE_FINITE_JOIN_CERT_V1_FROZEN",
+  "date": "2026-10-19",
+  "scientific_status_before_execution": "CANDIDATE_NOT_VERIFIED_PAIRWISE_BY_LEAN",
+  "parent_qualification_commit": "232c6d34c7dcb3d4bb757cb6ce855cd96432f9bf",
+  "cases": [
+    {
+      "name": "MISTRAL",
+      "repository": "mistralai/mistral-common",
+      "source_status": "EXPOSED_TRAINING_ONLY",
+      "original_run": 39114945496,
+      "independent_audit_run": 39162426039,
+      "independent_artifact": 12149845225,
+      "archive_sha256": "ea7ce782452db94334287fe73376e0175ab6601e8edc74e64dec31c5d4dbe82e",
+      "archive_name": "g2-finite-composition-v2-independently-audited-evidence",
+      "folder_suffix": "g2-finite-composition-mistral-v2",
+      "native_case_count": 4,
+      "selected_edit_count": 4,
+      "subset_count": 16,
+      "full_author_pass_count": 17,
+      "auditor_warrant": "WARRANTED_BOUNDED_FINITE_COMPOSITION_NATIVE_RECEIPTS",
+      "native_cases_from": "subsets",
+      "subset_file_pattern": "subset-{mask:02d}.xml",
+      "full_file": "full-author-suite.xml",
+      "withdrawal_file": "physical-all-withdrawal.xml",
+      "restoration_file": "physical-all-restoration.xml"
+    },
+    {
+      "name": "DEERFLOW",
+      "repository": "bytedance/deer-flow",
+      "source_status": "EXPOSED_SOURCE_NOT_PROSPECTIVE",
+      "original_run": 39167546376,
+      "independent_audit_run": 39168777571,
+      "independent_artifact": 12151731751,
+      "archive_sha256": "f3565fb50dfd1d8a7f8f1838199066c9e547df9945698a5b9bbffe91ef66aaf9",
+      "archive_name": "g2-deerflow-v3-independent-source-native-receipt-audit",
+      "folder_suffix": "g2-deer-v3-exposed",
+      "native_case_count": 4,
+      "selected_edit_count": 2,
+      "subset_count": 4,
+      "full_author_pass_count": 83,
+      "auditor_warrant": "WARRANTED_BOUNDED_EXPOSED_IMPORT_DERIVED_NATIVE_FINITE_COMPOSITION",
+      "native_cases_from": "masks",
+      "subset_file_pattern": "mask-{mask:02d}.xml",
+      "full_file": "complete-author.xml",
+      "withdrawal_file": "physical-all-withdrawal.xml",
+      "restoration_file": "physical-all-restoration.xml"
+    }
+  ],
+  "requirements": {
+    "source_provenance": "Each archive already independently audited against immutable original Git; this qualification rehashes source-bound actual native receipts and authenticated independent audit status, not full untrusted Git environment.",
+    "all_native_masks": "For each source 2^n actual JUnit cases; no extra/missing/duplicate, skipped, xfailed or errors; native original baseline nonzero FAIL and final all PASS.",
+    "hash_binding": "Every subset XML SHA256 must match original recorded per-mask receipt; independent auditor status exact; original archive SHA256 is inherited previously verified authority, tool download may unzip and not expose original ZIP bytes.",
+    "finite_law": "For every ordered pair edit masks A,B: passing(A OR B) == passing(A) OR passing(B) on the same original protected case universe.",
+    "necessity": "For every selected edit i, removing it from complete mask reduces protected passes.",
+    "original_author": "Full unchanged original authored suite pass counts exactly 17 and 83; physical withdrawal reproduces baseline failing-case mask; exact restoration returns complete protected pass.",
+    "lean": "Lean 4.24.0 independently checks the exact finite tables, pairwise join law and necessity propositions by kernel-evaluated decide.",
+    "comparators": "Deer-flow equally informed exhaustive ledger tied the two-edit minimum; no exclusive selection or lifecycle advantage implied."
+  },
+  "target_positive": "WARRANTED_BOUNDED_TWO_SOURCE_NATIVE_FINITE_JOIN_LAW",
+  "negative_contracts": [
+    "missing_subsets",
+    "bit_flip_in_table",
+    "unnecessary_edit",
+    "false_full_pass",
+    "incomplete_author_suite",
+    "source_native_xml_mismatch",
+    "incorrect_independent_audit_status",
+    "skipped_native_case"
+  ],
+  "non_promotions": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "general_program_semantic_soundness": "NOT_PROVED",
+    "unrestricted_development": "NOT_PROVED",
+    "FLASH_incremental_exactness": "NOT_EXECUTED_IN_THIS_TRIAL",
+    "CLC_transport": "NOT_EXECUTED_IN_THIS_TRIAL",
+    "native_vs_formal_correspondence": "PYTHON_AND_ARCHIVE_TRUST_BOUNDARY"
+  }
+}
