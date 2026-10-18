@@ -19,6 +19,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import textwrap
 import types
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -110,7 +111,10 @@ def extract_children(test_source: bytes, protected: list[str], out: Path):
         if len(payloads)!=1:
             raise ValueError("protected author child source not unique: "+parent)
         path=(out/f"test_author_child_{index}.py").resolve()
-        path.write_text(payloads[0],encoding="utf-8")
+        # pytest's Pytester.makepyfile normalizes triple-quoted test source by
+        # deindenting it before writing. Reproduce that author-defined transport
+        # rather than treating source-file indentation as child-program syntax.
+        path.write_text(textwrap.dedent(payloads[0]).lstrip(),encoding="utf-8")
         child_files[path]=parent
     return child_files
 
