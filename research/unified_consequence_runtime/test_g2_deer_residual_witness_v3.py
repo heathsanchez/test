@@ -44,8 +44,8 @@ class FrozenWitnessV3(unittest.TestCase):
             v3.source_neutral_residuals(SAMPLE,SELECTORS,outcomes)
 
     def test_04_source_unsupported_dynamic_case_must_fail_closed(self):
-        text=SAMPLE.replace(b'["valid\\\\n", "valid \\\\n"]',
-                            b'[make_private_case(), "valid \\\\n"]')
+        text=SAMPLE.replace(b'"valid\\n"',b'make_private_case()',1)
+        self.assertNotEqual(text,SAMPLE,"mutation must change frozen source")
         outcome=v2.parse_native_cases(JUNIT.encode(),SELECTORS)
         with self.assertRaises(ValueError):
             v3.source_neutral_residuals(text,SELECTORS,outcome)
