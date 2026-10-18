@@ -1,0 +1,12 @@
+{
+  "schema": "G2_DEERFLOW_EXPOSED_V2_FINITE_MASK_SELECTOR_PRE_NATIVE",
+  "original_protocol_commit": "3e62cc3b225d18cdd23f1a3ed67d2ad82c460984",
+  "state": "PRE_NATIVE_SUBSET_OUTCOMES",
+  "candidate_order": "Source-only ordered imported modules/paths; never reorder by native result",
+  "selection": "After ALL 2^k masks (k<=3) have independently complete same four-case native reports, select passing mask with fewest changed original source files, then numerically smallest mask. A selected edit is necessary iff removing it alone from selected mask restores at least one original protected failure.",
+  "if_no_passing_mask": "REJECTED_FIXED_GRAMMAR_INAPPLICABLE_TO_BOTH_OBLIGATIONS",
+  "if_incomplete_or_nonmonotone": "UNKNOWN_APPARATUS_OR_MONOTONICITY_REFUSED; never posthoc enlarge grammar",
+  "protected_requirement": "exact four original test cases, zero skip/error/xfail, full author file PASS, selected mask PASS twice, withdrawal reproduces original vector, fresh same-byte restoration PASS",
+  "strong_baseline": "Full-information exhaustive subset ledger has identical original catalog and can select same minimum passing mask. Any equality is TIE; no distinctive G4 gain",
+  "prospective": "RETROSPECTIVE_EXPOSED ONLY; G2/G3/G4 UNKNOWN irrespective of success"
+}
