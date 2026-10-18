@@ -23,7 +23,7 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/evidence
           git rev-parse HEAD:metatron-kernel | tee /tmp/evidence/nucleus-source-tree.txt
-          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml > /tmp/evidence/rust-tests.log 2>&1
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml > /tmp/evidence/rust-tests.log 2>&1
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           sha256sum metatron-kernel/target/release/metatron-kernel | tee /tmp/evidence/nucleus-binary.sha256
       - name: Pin source-native Lean and export the original proof ONLY
