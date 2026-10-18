@@ -63,19 +63,19 @@ def test_one_arm(py,world,original,task,nodes,candidates,out,label,original_coun
             first=controls.run(py,world,nodes,out/f"{label}-{i:02d}"/"protected")
             report["native_invocations"]+=1
             item["protected"]=first
-            if not controls.exactly(first,len(nodes),0):
+            if not controls.exactly(first,original_counts["tests"],0):
                 report["candidate_outcomes"].append(item)
                 continue
             again=controls.run(py,world,nodes,out/f"{label}-{i:02d}"/"protected-repeat")
             report["native_invocations"]+=1
             item["protected_repeat"]=again
-            if not controls.exactly(again,len(nodes),0):
+            if not controls.exactly(again,original_counts["tests"],0):
                 report["candidate_outcomes"].append(item)
                 continue
             full=controls.run(py,world,[task["author_test"]],out/f"{label}-{i:02d}"/"full-author-file")
             report["native_invocations"]+=1
             item["full_author_file"]=full
-            if full["returncode"]!=0 or full["counts"]["errors"] or full["counts"]["failures"] or full["counts"]["tests"]<len(nodes):
+            if full["returncode"]!=0 or full["counts"]["errors"] or full["counts"]["failures"] or full["counts"]["tests"]<original_counts["tests"]:
                 report["candidate_outcomes"].append(item)
                 continue
             (world/production).write_bytes(original)
@@ -92,7 +92,7 @@ def test_one_arm(py,world,original,task,nodes,candidates,out,label,original_coun
             restored=controls.run(py,world,nodes,out/f"{label}-{i:02d}"/"restoration")
             report["native_invocations"]+=1
             item["restoration"]=restored
-            if not controls.exactly(restored,len(nodes),0) or sha((world/production).read_bytes())!=item["candidate_sha256"]:
+            if not controls.exactly(restored,original_counts["tests"],0) or sha((world/production).read_bytes())!=item["candidate_sha256"]:
                 item["status"]="UNKNOWN_RESTORATION"
                 report["candidate_outcomes"].append(item)
                 continue
@@ -154,7 +154,17 @@ def main(out):
             return report
         nodes=original_test["protected_nodes"]
         counts=original_test["native"]["counts"]
-        if counts["tests"]!=len(nodes) or counts["skipped"] or counts["failures"]<1 or counts["errors"]:
+        # One author test function can expand into multiple protected parametrizations.
+        # Verify each changed function actually executed in the native JUnit,
+        # while preserving the exact number of protected *test cases*.
+        import xml.etree.ElementTree as ET
+        native_xml=out/"future-native-admission"/"native.xml"
+        testcase_names=[x.attrib.get("name","").split("[",1)[0]
+                        for x in ET.parse(native_xml).getroot().iter("testcase")]
+        every_node=all(node.rsplit("::",1)[-1] in testcase_names for node in nodes)
+        report["protected_parameterizations"]={"changed_ast_nodes":len(nodes),
+             "native_executed_cases":counts["tests"],"every_changed_node_executed":every_node}
+        if counts["tests"]<len(nodes) or not every_node or counts["skipped"] or counts["failures"]<1 or counts["errors"]:
             report["status"]="UNKNOWN_PROTECTED_FUTURE_INTEGRITY"
             return report
         world=Path(original_test["work_dir"])
