@@ -1,0 +1,57 @@
+name: G2 V2 finite composition prospective source-distinct native gate
+on:
+  push:
+    branches:
+      - research/g2-finite-transfer-v1-20261019
+    paths:
+      - .github/workflows/g2-finite-composition-prospective-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-distinct-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fail closed on modified prequery roles or learned method bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/unified_consequence_runtime/g2_finite_composition_future_v1.py
+          python - <<'PY'
+          from research.unified_consequence_runtime.g2_finite_composition_future_v1 import preflight
+          spec=preflight('a75a1914a00059a66c96f334bdbe9085a4eeb0e2')
+          assert spec['G2']=='UNKNOWN' and spec['science']=='NOT_EXECUTED'
+          assert spec['future']['repo']=='bytedance/deer-flow'
+          print('FUTURE_PREACCESS_PINNED', spec['future']['repo'],spec['future']['pr'])
+          PY
+      - name: Original author source-native eligibility then unchanged finite operator composition
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B research/unified_consequence_runtime/g2_finite_composition_future_v1.py \
+            evidence/g2-finite-prospective-native-v1 a75a1914a00059a66c96f334bdbe9085a4eeb0e2
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/g2-finite-prospective-native-v1/RESULT.json').read_text())
+          assert r['G2']=='UNKNOWN', 'NO_SELF_PROMOTION'
+          assert r['future_opened'] is True
+          assert r['Lean']==r['CLC']==r['FLASH']=='NOT_EXECUTED'
+          print('SCIENTIFIC_VERDICT',r['status'],'G2',r['G2'])
+          PY
+      - name: Archive original native tests, learned/baseline attempts and all UNKNOWNs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-finite-composition-prospective-future-v1
+          retention-days: 90
+          path: evidence/g2-finite-prospective-native-v1/
+          if-no-files-found: warn
