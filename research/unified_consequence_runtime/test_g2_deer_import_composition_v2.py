@@ -168,6 +168,17 @@ class V2ImportCompositionFrozen(unittest.TestCase):
         self.assertEqual(set(observed),set(FILES))
         self.assertFalse(any(p.endswith("/types.py") for p in observed))
 
+    def test_18_only_source_grammar_eligible_files_count_toward_six_file_cap(self):
+        # Original tests can import many nonmutatable helpers. Limit observed
+        # source files by the actually admitted unchanged primitive grammar.
+        extra={f"backend/vendor/helper_{i}.py": b"def helper(): return None\n"
+               for i in range(8)}
+        universe={**FILES,**extra}
+        catalog=target.source_catalog(universe,list(universe))
+        self.assertEqual(len(universe),11)
+        self.assertEqual(len({c["path"] for c in catalog}),2)
+        self.assertLessEqual(len({c["path"] for c in catalog}),6)
+
     def test_16_original_contract_and_method_identity_unchanged(self):
         proto=target.frozen()
         self.assertEqual(proto["schema"],"G2_DEERFLOW_EXPOSED_IMPORT_COMPOSITION_V2_PRETEST")
