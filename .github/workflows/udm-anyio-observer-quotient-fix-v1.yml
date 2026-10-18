@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/udm-anyio-observer-quotient-fix-v1.yml
       - research/unified_consequence_runtime/g2_anyio_mutable_closure_observer_v1.py
+      - research/unified_consequence_runtime/g2_anyio_native_closure_probe_v2.py
       - research/unified_consequence_runtime/g2_equivalence_class_selector_v1.py
       - research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVATION_PROTOCOL_V1.json
   workflow_dispatch:
@@ -81,21 +82,33 @@ jobs:
           print('PASS_EQUIVALENCE_CLASS_SELECTOR_REPAIR_V1')
           PY
 
-      - name: Execute source-neutral native mutable-closure observation
+      - name: Replay exact protected outer author failures in fresh pytest process
         run: |
           set -euo pipefail
-          python -B research/unified_consequence_runtime/g2_anyio_mutable_closure_observer_v1.py /tmp/udm-anyio "$GITHUB_WORKSPACE/evidence/anyio-observer-quotient/native-observer" | tee evidence/anyio-observer-quotient/NATIVE_OBSERVER_STDOUT.json
-
-      - name: Qualify native protected-failure integrity
-        run: |
+          mkdir -p evidence/anyio-observer-quotient/outer-authority
+          set +e
+          python -m pytest -q -p no:cacheprovider -p pytest_cov --junitxml="$GITHUB_WORKSPACE/evidence/anyio-observer-quotient/outer-authority/native.xml" --rootdir=/tmp/udm-anyio -c /tmp/udm-anyio/pyproject.toml             /tmp/udm-anyio/tests/test_pytest_plugin.py::test_hypothesis_multiple_backends             /tmp/udm-anyio/tests/test_pytest_plugin.py::test_hypothesis_multiple_backends_in_class
+          code=$?
+          set -e
+          test "$code" -eq 1
           python - <<'PY'
-          import json
-          r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
-          assert r['junit']=={'tests':2,'failures':2,'errors':0,'skipped':0},r
-          assert r['source_test_bytes_preserved'] is True,r
-          assert r['G2']=='UNKNOWN' and r['future_source']=='UNOPENED',r
+          import json,xml.etree.ElementTree as ET,pathlib
+          p=pathlib.Path('evidence/anyio-observer-quotient/outer-authority/native.xml')
+          root=ET.parse(p).getroot()
+          ts=root if root.tag=='testsuite' else next(root.iter('testsuite'))
+          counts={k:int(ts.get(k,0)) for k in ('tests','failures','errors','skipped')}
+          assert counts=={'tests':2,'failures':2,'errors':0,'skipped':0},counts
+          out={'status':'WARRANTED_BOUNDED_AUTHENTIC_NATIVE_PROTECTED_FAILURE_REPLAY',
+               'exit':1,'junit':counts,'G2':'UNKNOWN','future_source':'UNOPENED'}
+          pathlib.Path('evidence/anyio-observer-quotient/outer-authority/RESULT.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
           print('PASS_NATIVE_PROTECTED_FAILURE_INTEGRITY_V1')
           PY
+
+      - name: Execute fresh-process source-derived mutable-closure probe
+        run: |
+          set -euo pipefail
+          python -B research/unified_consequence_runtime/g2_anyio_native_closure_probe_v2.py             /tmp/udm-anyio             "$GITHUB_WORKSPACE/evidence/anyio-observer-quotient/native-observer"             | tee evidence/anyio-observer-quotient/NATIVE_OBSERVER_STDOUT.json
 
       - name: Qualify source-derived mutable closure site discovery
         run: |
@@ -103,7 +116,9 @@ jobs:
           import json
           r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
           assert r['source_derived_mutable_closure_site_count']>=1,r
-          print('PASS_SOURCE_DERIVED_MUTABLE_CLOSURE_SITE_V1')
+          assert r['source_test_bytes_preserved'] is True,r
+          assert r['G2']=='UNKNOWN' and r['future_source']=='UNOPENED',r
+          print('PASS_SOURCE_DERIVED_MUTABLE_CLOSURE_SITE_V2')
           PY
 
       - name: Qualify outer invocation snapshots
@@ -111,9 +126,8 @@ jobs:
           python - <<'PY'
           import json
           r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
-          total=sum(len(v) for v in r.get('direct_outer_snapshots',{}).values())
-          assert total>=2,r
-          print('PASS_OUTER_INVOCATION_SNAPSHOTS_V1',total)
+          assert r.get('outer_snapshot_count',0)>=2,r
+          print('PASS_OUTER_INVOCATION_SNAPSHOTS_V2',r['outer_snapshot_count'])
           PY
 
       - name: Qualify nested closure executions
@@ -121,9 +135,8 @@ jobs:
           python - <<'PY'
           import json
           r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
-          total=sum(len(v) for v in r.get('direct_nested_calls',{}).values())
-          assert total>=2,r
-          print('PASS_NESTED_CLOSURE_EXECUTIONS_V1',total)
+          assert r.get('nested_call_count',0)>=2,r
+          print('PASS_NESTED_CLOSURE_EXECUTIONS_V2',r['nested_call_count'])
           PY
 
       - name: Qualify native stale closure separator
@@ -132,17 +145,17 @@ jobs:
           import json
           r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
           assert r.get('stale_capture_observation_count',0)>=1,r
-          print('PASS_NATIVE_STALE_CLOSURE_SEPARATOR_V1')
+          print('PASS_NATIVE_STALE_CLOSURE_SEPARATOR_V2',r['stale_capture_observation_count'])
           PY
 
-      - name: Qualify stale closure on both protected failures
+      - name: Qualify stale closure on both protected author-derived children
         run: |
           python - <<'PY'
           import json
           r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
           assert len(r.get('protected_tests_with_stale_capture',[]))==2,r
           assert r['status']=='WARRANTED_BOUNDED_NATIVE_SOURCE_DERIVED_STALE_CLOSURE_OBSERVATION',r
-          print('PASS_NATIVE_MUTABLE_CLOSURE_OBSERVER_V1')
+          print('PASS_NATIVE_MUTABLE_CLOSURE_OBSERVER_V2')
           PY
 
       - name: Seal combined structural fix without retroactive G2 promotion
@@ -152,6 +165,7 @@ jobs:
           root=pathlib.Path('evidence/anyio-observer-quotient')
           q=json.load(open(root/'policy-quotient/RESULT.json'))
           o=json.load(open(root/'native-observer/RESULT.json'))
+          a=json.load(open(root/'outer-authority/RESULT.json'))
           result={
             'schema':'UDM_ANYIO_OBSERVER_QUOTIENT_FIX_V1',
             'status':'WARRANTED_BOUNDED_STRUCTURAL_FIX_READY_FOR_NEW_PROSPECTIVE_GATE',
@@ -161,9 +175,11 @@ jobs:
             'policy_classes':q['class_sizes'],
             'observer_status':o['status'],
             'observer_source_derived_site_count':o['source_derived_mutable_closure_site_count'],
+            'observer_outer_snapshot_count':o['outer_snapshot_count'],
+            'observer_nested_call_count':o['nested_call_count'],
             'observer_stale_capture_count':o['stale_capture_observation_count'],
             'observer_protected_tests_with_stale_capture':o['protected_tests_with_stale_capture'],
-            'native_protected_failures_preserved':o['junit'],
+            'native_protected_failures_preserved':a['junit'],
             'original_candidate_repairs':'NOT_RERUN',
             'heldout_future':'UNOPENED',
             'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN','G5':'UNKNOWN','G6':'UNKNOWN',
