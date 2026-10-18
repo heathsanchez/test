@@ -87,6 +87,31 @@ def single_primitive_control(source,candidates,work,py,task,protected,original_v
             "candidate_count":len(candidates),"attempted":len(attempts),
             "winner":winner,"trials":attempts,"matched_original_obligation":sorted(original_vector)}
 
+def frozen_fullmatch_control_candidates(source):
+    """Pre-existing V1 .match→.fullmatch grammar with identical composition budget.
+
+    The alternate operation is declared before future exposure, not a
+    method adapted after inspecting a protected result.
+    """
+    lines=source.splitlines(keepends=True)
+    out=[]
+    for v in primitive.enumerate_candidates(source):
+        if v["kind"]!="whole_input_match":
+            continue
+        pos=v["line"]-1
+        if not 0<=pos<len(lines) or lines[pos].count(v["old_expr"])!=1:
+            continue
+        replacement=lines.copy()
+        replacement[pos]=replacement[pos].replace(v["old_expr"],v["new_expr"],1)
+        if "".join(replacement)!=v["_edited"]:
+            continue
+        out.append({"idx":len(out),"line":v["line"],"old":v["old_expr"],
+                    "new":v["new_expr"],"candidate_sha256":v["candidate_sha256"],
+                    "bytes_added":v["bytes_added"]})
+        if len(out)>=16:
+            break
+    return out
+
 def finite_compose(source,candidates,work,py,task,protected,old_vector,out):
     # Byte-identical Mistral V2 prepare_candidates/compose/test_one functions:
     # strict improvement, no regression, finite ranked search and ≤4 parts.
@@ -221,15 +246,23 @@ def main(out,freeze_commit):
         if not catalog:
             report["status"]="REJECTED_UNCHANGED_COMPOSITION_INAPPLICABLE"
             report["unchanged_single_primitive"]="NOT_EXECUTED_NO_OPERATOR"
+            report["matched_fullmatch_composition"]="NOT_EXECUTED_ACQUIRED_METHOD_INAPPLICABLE"
             return
+        comparator=frozen_fullmatch_control_candidates(source)
+        report["matched_fullmatch_candidate_count"]=len(comparator)
+        report["matched_fullmatch_composition"]=(finite_compose(
+            source,comparator,work,py,task,original_rec["protected_nodes"],original_vector,out)
+            if comparator else {"status":"NO_FROZEN_FULLMATCH_CANDIDATES"})
         report["unchanged_single_primitive"]=single_primitive_control(
             source,catalog,work,py,task,original_rec["protected_nodes"],original_vector,out)
         report["new_composition"]=finite_compose(
             source,catalog,work,py,task,original_rec["protected_nodes"],original_vector,out)
         result=report["new_composition"]
         if result["status"]=="CANDIDATE_CAUSAL_CROSS_SOURCE_FINITE_COMPOSITION":
-            report["status"]=("CANDIDATE_TRANSFER_TIES_SINGLE_PRIMITIVE" if
+            matched=report["matched_fullmatch_composition"].get("status")
+            report["status"]=("CANDIDATE_TRANSFER_TIES_PRIOR_GRAMMAR" if
                     report["unchanged_single_primitive"]["winner"] is not None
+                    or matched=="CANDIDATE_CAUSAL_CROSS_SOURCE_FINITE_COMPOSITION"
                     else "CANDIDATE_SOURCE_DISTINCT_CAUSAL_GAIN_AWAITING_INDEPENDENT_AUDIT")
             report["future_causal_gain_verified"]=False
         else:
