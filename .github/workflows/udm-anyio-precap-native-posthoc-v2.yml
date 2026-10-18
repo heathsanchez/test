@@ -1,0 +1,118 @@
+name: AnyIO exposed source-first V104 posthoc native trials (NOT G2)
+on:
+  push:
+    branches: [research/udm-anyio-precap-native-posthoc-v2-20261018]
+    paths:
+      - "research/unified_consequence_runtime/G2_ANYIO_PRECAP_NATIVE_POSTHOC_V2_PROTOCOL.json"
+      - "research/unified_consequence_runtime/g2_anyio_pre_cap_native_v2.py"
+      - ".github/workflows/udm-anyio-precap-native-posthoc-v2.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  actual-original-native-posthoc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Freeze candidate hashes and source method before source fetch
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/anyio-precap-native
+          python - <<'PY'
+          import pathlib,json,subprocess
+          path=pathlib.Path("research/unified_consequence_runtime/G2_ANYIO_PRECAP_NATIVE_POSTHOC_V2_PROTOCOL.json")
+          raw=path.read_bytes()
+          original=subprocess.check_output(["git","show","877289b56a200b05e0c1c7915ac59a6fdef5a44b:"+str(path)])
+          assert raw==original,"FROZEN_PRE_NATIVE_PROTOCOL_MUTATED"
+          p=json.loads(raw)
+          assert len(p["shortlist"])==9 and p["G2"]=="UNKNOWN"
+          pathlib.Path("evidence/anyio-precap-native/FREEZE_BEFORE_SOURCE.json").write_text(json.dumps({
+            "source_freeze":"877289b56a200b05e0c1c7915ac59a6fdef5a44b",
+            "source_only_sha256":p["source_only_artifact_sha256"],
+            "ordered_candidate_sha256":[v["whole_program_sha256"] for v in p["shortlist"]],
+            "native_calls":0,"future":"UNOPENED","G2":"UNKNOWN"},indent=2)+"\n")
+          PY
+      - name: Fetch original source and exact author test only, plus historical V104
+        run: |
+          set -euo pipefail
+          git init -q /tmp/g2-anyio-precap-source
+          git -C /tmp/g2-anyio-precap-source remote add upstream https://github.com/agronholm/anyio.git
+          git -C /tmp/g2-anyio-precap-source fetch -q --depth=1 --no-tags --filter=blob:none upstream 1805944a9f6a062527c10aa044ded959782bfc3e
+          git -C /tmp/g2-anyio-precap-source checkout -q --detach 1805944a9f6a062527c10aa044ded959782bfc3e
+          test "$(git -C /tmp/g2-anyio-precap-source rev-parse HEAD^{tree})" = c6465ce4b900e2f21aa73ebbe16c779f5c6ae9bf
+          git -C /tmp/g2-anyio-precap-source fetch -q --depth=1 --no-tags --filter=blob:none upstream 90876855b731fb057d45e7e1cbdf1df013be6091
+          test "$(git -C /tmp/g2-anyio-precap-source rev-parse 90876855b731fb057d45e7e1cbdf1df013be6091:tests/test_pytest_plugin.py)" = b15d4da74a17b7f80fa07b0d172c03eb752be7f4
+          git init -q /tmp/g2-anyio-v104-original
+          git -C /tmp/g2-anyio-v104-original fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C /tmp/g2-anyio-v104-original checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+      - name: Install upstream-declared native source test environment
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'pip==25.3'
+          python -m pip install --disable-pip-version-check --no-input \
+            -e '/tmp/g2-anyio-precap-source[trio]' \
+            --group '/tmp/g2-anyio-precap-source/pyproject.toml:test' \
+            'pytest==9.1.1' 'pytest-cov==7.0.0'
+          python -m pip check
+          python -m pip freeze > evidence/anyio-precap-native/PIP_FREEZE.txt
+      - name: Download source-only pre-cap selection and independently verify original archive digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 3 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/12123289674/zip" \
+            -o "$RUNNER_TEMP/frozen_source_only.zip"
+          printf '%s  %s\n' 'b003c79690245997f5a75ea27660491ce171a57d0e1e864bef50b9d4f291837e' "$RUNNER_TEMP/frozen_source_only.zip" | sha256sum -c -
+      - name: Run exact original V104 candidate reconstruction and 9 actual original source-native double trials
+        env:
+          GH_TOKEN: ""
+          GITHUB_TOKEN: ""
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B \
+            research/unified_consequence_runtime/g2_anyio_pre_cap_native_v2.py \
+            /tmp/g2-anyio-precap-source /tmp/g2-anyio-v104-original \
+            "$RUNNER_TEMP/frozen_source_only.zip" \
+            "$GITHUB_WORKSPACE/evidence/anyio-precap-native/science"
+      - name: Retain original negative, G2 limitation and exact candidate outcomes
+        if: always()
+        run: |
+          python - <<'PY'
+          import pathlib,json,os
+          root=pathlib.Path("evidence/anyio-precap-native")
+          p=root/"science/RESULT.json"
+          r=json.loads(p.read_text()) if p.exists() else {}
+          (root/"SCIENTIFIC_BOUNDARY.json").write_text(json.dumps({
+            "status":r.get("status","UNKNOWN_NO_NATIVE_RESULT"),
+            "commit":os.environ["GITHUB_SHA"],
+            "native_calls_charged":r.get("native_calls_charged",0),
+            "candidate_evaluations":len(r.get("candidates",[])),
+            "outcomes":r.get("outcome_counts",{}),
+            "future":"UNOPENED","G2":"UNKNOWN","G3":"UNKNOWN","G4":"UNKNOWN","G5":"UNKNOWN","G6":"UNKNOWN",
+            "prospective_claim":"NONE","agent_ledger":"NOT_RUN"},indent=2)+"\n")
+          PY
+      - name: Preserve complete source-native evidence even for scientific RED or UNKNOWN
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anyio-posthoc-precap-native-v2-evidence
+          if-no-files-found: warn
+          retention-days: 90
+          path: |
+            research/unified_consequence_runtime/G2_ANYIO_PRECAP_NATIVE_POSTHOC_V2_PROTOCOL.json
+            research/unified_consequence_runtime/g2_anyio_pre_cap_native_v2.py
+            evidence/anyio-precap-native/
