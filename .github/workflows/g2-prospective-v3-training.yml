@@ -1,0 +1,34 @@
+name: G2 V3 prospective training
+on:
+  push:
+    branches: [research/udm-g2-prospective-source-distinct-v3-20261018]
+    paths:
+      - research/unified_consequence_runtime/g2_prospective_source_distinct_v3_training.py
+      - research/unified_consequence_runtime/G2_V3_ENVIRONMENT_ADMISSION_FREEZE.json
+      - research/unified_consequence_runtime/run_g2_v3_training.sh
+      - .github/workflows/g2-prospective-v3-training.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  train:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Execute locked, read-only source-native training gate
+        run: bash research/unified_consequence_runtime/run_g2_v3_training.sh
+      - name: Preserve evidence regardless of result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-prospective-v3-training-evidence
+          if-no-files-found: warn
+          retention-days: 90
+          path: evidence/g2-v3/
