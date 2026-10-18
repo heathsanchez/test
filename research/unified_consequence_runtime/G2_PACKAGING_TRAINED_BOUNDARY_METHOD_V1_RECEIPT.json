@@ -1,0 +1,87 @@
+{
+  "schema": "G2_PACKAGING_BOUNDARY_GENESIS_V1_TRAINED_METHOD_RECEIPT",
+  "status": "WARRANTED_BOUNDED_TRAINING_REPAIR_ONLY",
+  "role_freeze_commit": "caa16ee1a569c52b1d22a967599549c45fa39582",
+  "trainer_source_commit": "e78097f11a83564684acdbc68f8e822aef495b25",
+  "training_run_id": 39164106129,
+  "artifact_id": 12150410257,
+  "artifact_sha256": "400e6292d44dfee2ce42f32ef67cf66ddf280b5689b08f26a0d68bd359299d08",
+  "method_source_path": "research/unified_consequence_runtime/g2_packaging_boundary_genesis_v1.py",
+  "method_source_sha256": "1269a275d5a36399a075b6ce1196bc44363544dc95de4e52aab8a3e0fc0d0524",
+  "generator": "enumerate_candidates",
+  "source_neutral_families": [
+    "strict_terminal_regex_anchor",
+    "compiled_pattern_fullmatch",
+    "primitive_terminal_control_suffix"
+  ],
+  "cap": 24,
+  "selection": "minimum delta bytes then source line then family",
+  "training": {
+    "repo": "pypa/packaging",
+    "pr": 1446,
+    "original_sha256": "a10d2871bb4015855a6e894790949189afff40ae7364fe0210efa91e299fa32e",
+    "candidate_source_sha256": "cc279a0a2e8f7a5d165d9b7d299cdc4dde05d9a3e5d8ee3fe80a515f067d60f2",
+    "accepted_family": "strict_terminal_regex_anchor",
+    "original_cases": {
+      "tests": 5,
+      "passed": 4,
+      "failed": 1,
+      "skipped": 0,
+      "errors": 0
+    },
+    "candidate_protected_a": {
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0
+    },
+    "full_author": {
+      "tests": 74,
+      "passed": 74,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0
+    },
+    "candidate_protected_b": {
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0
+    },
+    "withdrawal": {
+      "tests": 5,
+      "passed": 4,
+      "failed": 1,
+      "skipped": 0,
+      "errors": 0
+    },
+    "restoration": {
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0
+    },
+    "independent_artifact_audit": {
+      "zip_digest_match": true,
+      "zip_crc_pass": true,
+      "raw_junit_reparse_pass": true,
+      "method_sha_match": true,
+      "source_sha_match": true
+    }
+  },
+  "future": {
+    "repo": "pallets/click",
+    "pr": 3884,
+    "base": "bb695aaecdef95832d167fc1d508921745aa824e",
+    "head": "c53d3732b98c764932e146c007146ad402acb229",
+    "production": "src/click/core.py",
+    "test": "tests/test_options.py",
+    "status": "SEALED_UNOPENED"
+  },
+  "G2": "UNKNOWN",
+  "lean_clc_flash": "NOT_RUN",
+  "claim_limit": "Causal Packaging training repair only. No inference about Click native outcomes or general future capability."
+}
