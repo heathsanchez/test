@@ -14,9 +14,11 @@ import ast
 from collections import defaultdict
 import hashlib
 import json
+import importlib
 from pathlib import Path
 import subprocess
 import sys
+import types
 
 ROOT=Path(__file__).resolve().parents[2]
 PROTOCOL_PATH="research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVATION_PROTOCOL_V1.json"
@@ -113,8 +115,7 @@ def extract_children(test_source: bytes, protected: list[str], out: Path):
 
 
 class Monitor:
-    def __init__(self,production: Path,sites,child_files):
-        self.production=production.resolve()
+    def __init__(self,sites,child_files):
         self.sites=sites
         self.child_files=child_files
         self.current=None
@@ -123,26 +124,60 @@ class Monitor:
         self.outcomes=[]
         self.collected=[]
         self.deselected=[]
+        self.targets=defaultdict(list)
 
-    def profile(self,frame,event,arg):
-        if event not in ("call","return"):
-            return
-        try:
-            if Path(frame.f_code.co_filename).resolve()!=self.production:
-                return
-        except Exception:
-            return
-        scalars={
+    def bind_runtime_codes(self,module):
+        for site in self.sites:
+            outer=getattr(module,site["outer_function"])
+            self.targets[outer.__code__].append(("outer",site))
+            nested=[
+                value for value in outer.__code__.co_consts
+                if isinstance(value,types.CodeType)
+                and value.co_name==site["nested_function"]
+            ]
+            if len(nested)!=1:
+                raise ValueError("runtime nested code identity not unique")
+            self.targets[nested[0]].append(("nested",site))
+
+    @staticmethod
+    def _scalars(frame):
+        return {
             name:value for name,raw in frame.f_locals.items()
             if (value:=scalar(raw)) is not None
         }
-        for site in self.sites:
-            site_key=(site["outer_function"],tuple(site["attribute_path"]),site["nested_function"])
-            if event=="return" and frame.f_code.co_name==site["outer_function"]:
-                self.outer[(self.current,site_key)].append({"line":frame.f_lineno,"scalars":scalars})
-            elif event=="call" and frame.f_code.co_name==site["nested_function"]:
-                self.nested[(self.current,site_key)].append({"line":frame.f_lineno,"scalars":scalars})
 
+    @staticmethod
+    def _site_key(site):
+        return (site["outer_function"],tuple(site["attribute_path"]),site["nested_function"])
+
+    def global_trace(self,frame,event,arg):
+        if event!="call":
+            return None
+        specs=self.targets.get(frame.f_code)
+        if not specs:
+            return None
+        scalars=self._scalars(frame)
+        for role,site in specs:
+            if role=="nested":
+                self.nested[(self.current,self._site_key(site))].append({
+                    "line":frame.f_lineno,
+                    "scalars":scalars,
+                })
+        frame.f_trace_lines=False
+        frame.f_trace_opcodes=False
+        return self.local_trace
+
+    def local_trace(self,frame,event,arg):
+        if event=="return":
+            specs=self.targets.get(frame.f_code,())
+            scalars=self._scalars(frame)
+            for role,site in specs:
+                if role=="outer":
+                    self.outer[(self.current,self._site_key(site))].append({
+                        "line":frame.f_lineno,
+                        "scalars":scalars,
+                    })
+        return self.local_trace
 
 def main(world: Path,out: Path):
     out.mkdir(parents=True,exist_ok=False)
@@ -175,7 +210,10 @@ def main(world: Path,out: Path):
         return result
 
     import pytest
-    monitor=Monitor(world/production,sites,child_files)
+    monitor=Monitor(sites,child_files)
+    module_name=production.removeprefix("src/").removesuffix(".py").replace("/",".")
+    runtime_module=importlib.import_module(module_name)
+    monitor.bind_runtime_codes(runtime_module)
 
     class Plugin:
         @pytest.hookimpl(hookwrapper=True,tryfirst=True)
@@ -201,12 +239,12 @@ def main(world: Path,out: Path):
     argv=["-q","-p","no:cacheprovider","--timeout=10","--rootdir="+str(direct_dir)] + [
         str(path) for path in sorted(child_files)
     ]
-    old=sys.getprofile()
-    sys.setprofile(monitor.profile)
+    old=sys.gettrace()
+    sys.settrace(monitor.global_trace)
     try:
         code=pytest.main(argv,plugins=[Plugin()])
     finally:
-        sys.setprofile(old)
+        sys.settrace(old)
 
     sequence=[]
     for key,outers in monitor.outer.items():
