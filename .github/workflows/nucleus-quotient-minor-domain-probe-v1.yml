@@ -24,6 +24,7 @@ jobs:
           git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree-before.txt
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus/original
+          python3 .github/scripts/nucleus_quotient_pi_source_probe_20261019.py metatron-kernel/src/typecheck.rs
           python3 .github/scripts/nucleus_quotient_minor_conversion_probe_20261019.py metatron-kernel/src/typecheck.rs
           git diff --check
           git diff -- metatron-kernel/src/typecheck.rs > /tmp/evidence/diagnostic-only.diff
@@ -53,6 +54,7 @@ jobs:
                   env['NUCLEUS_TRACE_DOWNSTREAM']='1'
                   if trace and case=='quotient-original':
                       env['NUCLEUS_TRACE_QUOTIENT_MINOR_DOMAIN']='1'
+                      env['NUCLEUS_TRACE_QUOTIENT_ORIGINAL_PI']='1'
                       env['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE']='1'
                   started=time.monotonic()
                   with path.open('rb') as f:
