@@ -1,0 +1,35 @@
+{
+  "schema": "UDM_G2_PROSPECTIVE_SOURCE_DISTINCT_V3_APPARATUS",
+  "state": "FROZEN_AFTER_ROLE_SELECTION_BEFORE_NATIVE_OUTCOME",
+  "protocol_commit": "6b96a5dcb5fcdd449639ba09aa5fbd600da0524a",
+  "role_freeze_commit": "4c5670f489c9c435f1f47d706f6dca8373d6fa96",
+  "training_runtime_matrix": [
+    "3.11",
+    "pypy3.11"
+  ],
+  "runtime_reason": "PR title metadata explicitly says Python 3.11; run both principal 3.11 implementations rather than choose after outcome",
+  "source_materialization": {
+    "base": "python-trio/trio@ada9c778c86f35c62e68bae8284ca652ea2b23c2",
+    "author_test_only": "src/trio/_tests/test_exports.py from e12547f78849be25ec5c0c1a3df161986be1ae96",
+    "repaired_head_production": "PROHIBITED",
+    "future_source": "UNOPENED"
+  },
+  "install": [
+    "python -m pip install --upgrade pip",
+    "python -m pip install -e .",
+    "python -m pip install -r test-requirements.txt"
+  ],
+  "native_command": "python -m pytest -q src/trio/_tests/test_exports.py",
+  "admission": {
+    "fail_required": true,
+    "nonempty_execution": true,
+    "collection_errors_refused": true,
+    "any_runtime_may_supply_failure_but_all_runtime_results_retained": true
+  },
+  "unchanged_method_gate": {
+    "static_observer": "scan_patterns from inherited g2_anyio_mutable_closure_equivalence_fix_v2.py",
+    "required_pattern": "persistent nested callable closes over outer attribute-read local, is identity-guarded, then written back to same attribute path",
+    "if_zero_patterns": "STOP_TRAINING_METHOD_INAPPLICABLE; future remains unopened",
+    "if_patterns_and_native_fail": "invoke exact inherited observer/repair/class-selector without target-specific tuning"
+  }
+}
