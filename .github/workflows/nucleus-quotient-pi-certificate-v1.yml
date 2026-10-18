@@ -1,0 +1,125 @@
+name: Nucleus original Quotient Pi/codomain native certificate
+on:
+  push:
+    branches: [research/nucleus-quotient-lift2-native-proof-20261019]
+    paths: [".github/workflows/nucleus-quotient-pi-certificate-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-kernel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      LEAN_TOOLCHAIN: leanprover/lean4:v4.34.1
+      LEAN_GITHASH: 5045d0056413266e57c625dcd7c365b10e377c52
+      NDJSON_SHA: da02144b2d6109c86e5067b1e987744c2122820629bc8ece04dfb276f243239b
+      ORIGINAL_ARTIFACT: "12150779957"
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire frozen independent Lean native proof input and identify exact Γ11
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/original /tmp/evidence
+          gh api "repos/heathsanchez/test/actions/artifacts/$ORIGINAL_ARTIFACT/zip" > /tmp/original.zip
+          sha256sum /tmp/original.zip > /tmp/evidence/archive.sha256
+          unzip -q /tmp/original.zip -d /tmp/original
+          echo "$NDJSON_SHA  /tmp/original/quotient-proof.ndjson" | sha256sum -c -
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          original=pathlib.Path('/tmp/original/quotient-proof.ndjson')
+          rows=[json.loads(x) for x in original.read_bytes().splitlines()]
+          expressions={r['ie']:r for r in rows if 'ie' in r}
+          thm=next(r['thm'] for r in rows if 'thm' in r and r['thm']['value']==561)
+          body=thm['value']
+          binders=[]
+          while 'lam' in expressions[body]:
+              o=expressions[body]['lam']
+              binders.append({'expr':body,'type':o['type'],'body':o['body'],'name':o['name'],'binderInfo':o['binderInfo']})
+              body=o['body']
+          assert len(binders)==11,(len(binders),body)
+          assert body==550 and expressions[body]['app']=={'fn':549,'arg':12}
+          assert expressions[549]['app']=={'fn':539,'arg':548}
+          assert expressions[12]['bvar']==3
+          report={'source_sha256':hashlib.sha256(original.read_bytes()).hexdigest(),
+                  'original_ndjson_version':rows[0]['meta']['format']['version'],
+                  'theorem_value':561,'source_binders':11,'first_failed_application':body,
+                  'function_expr':549,'argument_expr':12,'argument_bvar':3,
+                  'application_expr':expressions[body],
+                  'source_binder_types':[b['type'] for b in binders],
+                  'no_rewrite_or_mutation':True}
+          pathlib.Path('/tmp/evidence/binder-source.json').write_text(json.dumps(report,indent=2))
+          print('QUOTIENT_ORIGINAL_GAMMA='+json.dumps(report),flush=True)
+          PY
+      - name: Kernel-check original dependent application and substituted codomain under exact Γ11
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain "$LEAN_TOOLCHAIN"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --githash > /tmp/evidence/lean-githash.txt
+          test "$(cat /tmp/evidence/lean-githash.txt)" = "$LEAN_GITHASH"
+          cat > /tmp/evidence/QuotientNativePi.lean <<'EOF'
+          import Lean
+          open Lean Elab Command
+          run_cmd do
+            let env ← getEnv
+            let name := Name.str (Name.str (Name.str .anonymous "Quotient") "lift₂") "_proof_2"
+            let some (.thmInfo proof) := env.find? name
+              | throwError "WRONG_OR_MISSING_ORIGINAL_QUOTIENT_THEOREM"
+            let .ok _ := Lean.Kernel.check env {} proof.value
+              | throwError "ORIGINAL_LEAN_THEOREM_VALUE_INVALID"
+            let mut core := proof.value
+            let mut binders : List (Name × Expr × BinderInfo) := []
+            for _ in [:11] do
+              match core with
+              | .lam n t b bi =>
+                  binders := (n,t,bi)::binders
+                  core := b
+              | _ => throwError "ORIGINAL_ELEVEN_BINDER_CONTEXT_CHANGED"
+            let .app fn arg := core
+              | throwError "FIRST_QUOTIENT_OBLIGATION_NOT_APPLICATION"
+            let closeLam (e : Expr) : Expr :=
+              binders.foldl (fun acc (n,t,bi) => Expr.lam n t acc bi) e
+            let closePi (e : Expr) : Expr :=
+              binders.foldl (fun acc (n,t,bi) => Expr.forallE n t acc bi) e
+            let .ok functionType := Lean.Kernel.check env {} (closeLam fn)
+              | throwError "ORIGINAL_FUNCTION_CANNOT_TYPECHECK"
+            let .ok argumentType := Lean.Kernel.check env {} (closeLam arg)
+              | throwError "ORIGINAL_ARGUMENT_CANNOT_TYPECHECK"
+            let .ok applicationType := Lean.Kernel.check env {} (closeLam core)
+              | throwError "ORIGINAL_APPLICATION_CANNOT_TYPECHECK"
+            logInfo "NATIVE_ORIGINAL_TYPED_FUNCTION_ARGUMENT_APPLICATION=PASS"
+            let mut coreFnType := functionType
+            for _ in [:11] do
+              match coreFnType with
+              | .forallE _ _ body _ => coreFnType := body
+              | _ => throwError "FUNCTION_TYPE_LOST_ORIGINAL_BINDER_TELESCOPE"
+            let .forallE _ domain codomain _ := coreFnType
+              | throwError "ORIGINAL_FUNCTION_TYPE_IS_NOT_PI"
+            let .ok domainEquivalent := Lean.Kernel.isDefEq env {} (closePi domain) argumentType
+              | throwError "KERNEL_FUNCTION_ARGUMENT_DOMAIN_COMPARISON_FAILED"
+            unless domainEquivalent do
+              throwError "ORIGINAL_FUNCTION_ARGUMENT_DOMAIN_NOT_EQUAL"
+            logInfo "NATIVE_QUOTIENT_PI_DOMAIN=PROVEN"
+            let substitutedCodomain := codomain.instantiate1 arg
+            let .ok codomainEquivalent := Lean.Kernel.isDefEq env {} (closePi substitutedCodomain) applicationType
+              | throwError "KERNEL_SUBSTITUTED_CODOMAIN_COMPARISON_FAILED"
+            unless codomainEquivalent do
+              throwError "ORIGINAL_SUBSTITUTED_CODOMAIN_NOT_EQUAL"
+            logInfo "NATIVE_QUOTIENT_SUBSTITUTED_CODOMAIN=PROVEN"
+            match Lean.Kernel.check env {} (closeLam (.app fn (.sort .zero))) with
+            | .ok _ => throwError "KERNEL_ACCEPTED_MALFORMED_ARGUMENT"
+            | .error _ => logInfo "NATIVE_QUOTIENT_WRONG_DOMAIN_NEGATIVE=REJECT"
+          EOF
+          lean /tmp/evidence/QuotientNativePi.lean > /tmp/evidence/native-pi.log 2>&1 || { cat /tmp/evidence/native-pi.log; exit 1; }
+          grep -F 'NATIVE_ORIGINAL_TYPED_FUNCTION_ARGUMENT_APPLICATION=PASS' /tmp/evidence/native-pi.log
+          grep -F 'NATIVE_QUOTIENT_PI_DOMAIN=PROVEN' /tmp/evidence/native-pi.log
+          grep -F 'NATIVE_QUOTIENT_SUBSTITUTED_CODOMAIN=PROVEN' /tmp/evidence/native-pi.log
+          grep -F 'NATIVE_QUOTIENT_WRONG_DOMAIN_NEGATIVE=REJECT' /tmp/evidence/native-pi.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quotient-original-pi-cert-${{ github.sha }}
+          path: /tmp/evidence/
+          if-no-files-found: warn
