@@ -1,0 +1,46 @@
+{
+  "schema": "UDM_G2_ANYIO_EXPOSED_PRECAP_OBSERVATION_DIAGNOSTIC_V1",
+  "classification": "POST_OUTCOME_DIAGNOSTIC_ONLY__NO_G2_PROMOTION",
+  "source_authority": {
+    "original_frozen_native_run": 39078910793,
+    "original_zip_sha256": "7ec7f9922aa3925f8d0d455f79eba414f4512c6210762e7731d442e746972680",
+    "source_archive_path": "science/native-baseline/stage/src/anyio/pytest_plugin.py",
+    "source_git_blob": "d6238cd110ab793ccccb9671fc7eccc33c5415e5",
+    "source_sha256": "a0b5f23acb6f4595b75556ea20e0e166c3ede234b3d941a1e3861e1b69c95f1d",
+    "author_archive_path": "science/native-baseline/stage/tests/test_pytest_plugin.py",
+    "author_git_blob": "b15d4da74a17b7f80fa07b0d172c03eb752be7f4",
+    "author_sha256": "c7dc03febccc7d17bc8291cd7ace6cbe7e87da8350434bbf88f1b9b26033b5fe",
+    "original_catalog_path": "science/SOURCE_ONLY_LOCKED_CATALOG.json",
+    "original_catalog_canonical_sha256": "7199e478dc9c5dd247571559475bcdbfaa8e737ac21c39bf179cbbe977f4d9c6",
+    "v13_existing_observer_ref": "research/udm-v13-source-branch-observation-20261017 observed_branch_v13.guard_nodes",
+    "v104_original_source": "heathsanchez/triskelion@426c54f7c774560e0fabe7213c5ef333b1327c71"
+  },
+  "selected_protected_test_names": [
+    "test_hypothesis_multiple_backends",
+    "test_hypothesis_multiple_backends_in_class"
+  ],
+  "method": {
+    "first": "Run existing V13 guard_nodes over whole pinned original production; report inapplicable if empty",
+    "second": "Generic posthoc AST relevance: parse source text embedded by protected tests as Python; extract identifier tokens (Name,Attribute,Import,ImportFrom.module), compute rarity weighted overlap with source production function AST identifiers, string identifier tokens and imports; no target-specific location or repair names",
+    "third": "Rank functions by rarity-weighted overlap, prefer functions with at least two protected-source distinct terms; tie by original line then name. Top three functions.",
+    "fourth": "On separately selected original source functions, call byte-pinned unchanged V104 program_candidates with cap=16, then re-embed modified exact function AST in original module while preserving all other ASTs; no native candidate evaluation or program promotion.",
+    "fifth": "Quotient original 37 MSI named policies by identical first-eight-candidate ordered sequences (source-only); verify all alias-order equivalences without altering original Pareto selection science."
+  },
+  "evaluation": {
+    "max_emitted_per_selected_function": 16,
+    "max_selected_functions": 3,
+    "no_native_calls": true,
+    "zero_head_repaired_production_access": true,
+    "sealed_future": "alexmojaki/executing PR #50 remains UNOPENED",
+    "negative_controls": [
+      "altered source sha refused",
+      "altered test sha refused",
+      "catalog sha refused",
+      "source-token ablation independently recorded",
+      "all re-embedded unaffected top-level AST equivalent",
+      "no policy named-winner promotion"
+    ],
+    "important_distinction": "A posthoc source-derived candidate-eligibility diagnosis, not a qualified native repair. If V13 guard_nodes empty, existing V13 observer cannot be claimed activated for this source; generic lexical selector is new human-authored diagnostic."
+  },
+  "outcome_status": "UNKNOWN_PENDING_DIAGNOSTIC"
+}
