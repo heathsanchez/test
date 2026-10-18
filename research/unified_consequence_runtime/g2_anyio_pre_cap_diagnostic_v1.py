@@ -136,7 +136,7 @@ def run(archive,v104_git):
     # Source-input ablation: deliberately suppress the most informative protected
     # symbols; scores must change, but ablation does not establish causal repair.
     most_rare=sorted(set().union(*obs)-{"pytest","mark","anyio"})
-    ablated=[x-most_rare for x in obs]
+    ablated=[x-set(most_rare) for x in obs]
     _,_,control=score_functions(source,ablated)
     if control==scores:raise ValueError("FROZEN_SOURCE_SYMBOL_ABLATION_NO_EFFECT")
     # Unmodified native V104 generator applied to selected function fragments.
