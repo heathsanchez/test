@@ -1,0 +1,95 @@
+name: Nucleus expanded 199-test Arena soundness gate
+on:
+  push:
+    branches: [research/nucleus-multieta-source-promotion-20261019]
+    paths: [".github/workflows/nucleus-multieta-arena199.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARENA_SHA: 58de35b1b322c3cab584b88ae2786be3bdcfe856
+      ARTIFACT_ID: "12041256910"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build committed checker source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/source-tree.txt
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Acquire immutable official Arena corpus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/artifact /tmp/arena
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARTIFACT_ID/zip > /tmp/arena.zip
+          unzip -oq /tmp/arena.zip -d /tmp/artifact
+          tar -xzf /tmp/artifact/lean-arena-tests.tar.gz -C /tmp/arena
+          sha256sum /tmp/arena.zip > /tmp/evidence/source-archive.sha256.txt
+          python3 - <<'PY'
+          import pathlib
+          files=list(pathlib.Path('/tmp/arena').rglob('*.ndjson'))
+          assert len(files)==199,len(files)
+          assert sum('/good/' in str(p) for p in files)==127
+          assert sum('/bad/' in str(p) for p in files)==72
+          PY
+      - name: Paired all-test verifier with strict negative preservation
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess,json,os,time,hashlib
+          root=pathlib.Path('/tmp/arena')
+          source=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          base.update({'NUCLEUS_EXPERIMENTAL_'+name:'1' for name in source['origin_flags']})
+          cases=[]
+          for bucket in ('good','bad'):
+              for p in sorted((root/bucket).rglob('*.ndjson')):
+                  env0=dict(base);env1=dict(base)
+                  env1['NUCLEUS_EXPERIMENTAL_MULTIBINDER_ETA']='1'
+                  modes=[]
+                  for env in (env0,env1):
+                      t=time.monotonic()
+                      try:
+                          with p.open('rb') as handle:
+                              r=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],stdin=handle,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=70)
+                          rc=r.returncode
+                      except subprocess.TimeoutExpired:
+                          rc=124
+                      modes.append({'rc':rc,'wall_seconds':round(time.monotonic()-t,4)})
+                  record={'test':str(p.relative_to(root)),'bucket':bucket,
+                          'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'base':modes[0],'eta':modes[1]}
+                  cases.append(record)
+                  if modes[0]['rc']!=modes[1]['rc']:
+                      print('CHANGED='+json.dumps(record),flush=True)
+          counts={}
+          for mode in ('base','eta'):
+              counts[mode]={
+                  'accept':sum(r[mode]['rc']==0 for r in cases),
+                  'reject':sum(r[mode]['rc']==1 for r in cases),
+                  'unknown':sum(r[mode]['rc']==2 for r in cases),
+                  'other':sum(r[mode]['rc'] not in (0,1,2) for r in cases),
+                  'wrong':sum((r['bucket']=='good' and r[mode]['rc']==1) or (r['bucket']=='bad' and r[mode]['rc']==0) for r in cases)
+              }
+          violations=[r for r in cases if r['eta']['rc'] not in (0,1,2) or
+                      (r['bucket']=='bad' and r['eta']['rc']==0) or
+                      (r['bucket']=='good' and r['eta']['rc']==1) or
+                      (r['base']['rc'] in (0,1) and r['eta']['rc']!=r['base']['rc'])]
+          out={'source_commit':os.environ['GITHUB_SHA'],'arena_sha':os.environ['ARENA_SHA'],
+               'artifact_id':int(os.environ['ARTIFACT_ID']),'cases':cases,'counts':counts,'violations':violations}
+          pathlib.Path('/tmp/evidence/arena199.json').write_text(json.dumps(out,indent=2))
+          print('EXPANDED_ARENA199='+json.dumps({'counts':counts,'changed':sum(r['base']['rc']!=r['eta']['rc'] for r in cases),'violations':len(violations)}),flush=True)
+          assert len(cases)==199
+          assert not violations,violations[:3]
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-committed-eta-arena199-${{ github.sha }}
+          path: /tmp/evidence/
+          if-no-files-found: warn
