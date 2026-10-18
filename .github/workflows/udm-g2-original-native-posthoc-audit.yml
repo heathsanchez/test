@@ -28,7 +28,7 @@ jobs:
           set -euo pipefail
           mkdir -p evidence/g2-posthoc
           curl -fLsS --retry 3 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/12118690451/zip" -o "$RUNNER_TEMP/original_g2.zip"
-          echo '7ec7f9922aa3925f8d0d455f79eba414f4512c6210762e7731d442e746972680  '${RUNNER_TEMP}/original_g2.zip" | sha256sum -c -
+          printf '%s  %s\n' '7ec7f9922aa3925f8d0d455f79eba414f4512c6210762e7731d442e746972680' "$RUNNER_TEMP/original_g2.zip" | sha256sum -c -
           sha256sum "$RUNNER_TEMP/original_g2.zip" > evidence/g2-posthoc/ARCHIVE_SHA256.txt
       - name: Independently replay frozen AST locality and native outcomes
         run: |
