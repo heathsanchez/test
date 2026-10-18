@@ -355,8 +355,9 @@ def main(output):
         imported=imported_source_module_files((work/author_path).read_bytes(),
              tracked,task["source"],p["method"]["maximum_modules"])
         result["imported_original_source_files"]=imported
-        if len(imported)>p["method"]["maximum_eligible_files"]:
-            raise ValueError("UNKNOWN_TOO_MANY_ORIGINAL_SOURCE_IMPORTS")
+        # The file cap applies to grammar-eligible mutation files, not to
+        # harmless imported project modules. The distinct module-observation
+        # limit was already checked before this (<=30 source imports).
         originals={}
         for path in imported:
             f=work/path
@@ -369,6 +370,11 @@ def main(output):
                 raise ValueError("UNKNOWN_IMPORT_SOURCE_NOT_ORIGINAL")
             originals[path]=orig
         catalog=source_catalog(originals,imported)
+        eligible_paths={c["path"] for c in catalog}
+        result["eligible_original_source_files"]=sorted(eligible_paths)
+        if len(eligible_paths)>p["method"]["maximum_eligible_files"]:
+            result["status"]="UNKNOWN_GRAMMAR_ELIGIBLE_SOURCE_FILES_CAP"
+            return result
         result["candidate_count"]=len(catalog)
         if len(catalog)>p["method"]["maximum_candidates"]:
             result["status"]="UNKNOWN_SOURCE_NEUTRAL_CANDIDATE_CAP"
