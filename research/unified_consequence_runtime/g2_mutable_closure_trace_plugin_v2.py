@@ -108,29 +108,33 @@ def pytest_pyfunc_call(pyfuncitem):
     for pattern in patterns:
         value = _read_item_path(pyfuncitem, pattern["attribute_path"])
         pre.append(_callable(value) if callable(value) else None)
-    outcome = yield
-    context = _external_context(pyfuncitem)
-    for pattern, before in zip(patterns, pre):
-        after_value = _read_item_path(pyfuncitem, pattern["attribute_path"])
-        after = _callable(after_value) if callable(after_value) else None
-        if before is None and after is None:
-            continue
-        _EVENTS.append(
-            {
-                "pid": os.getpid(),
-                "rootpath": str(pyfuncitem.config.rootpath),
-                "nodeid": pyfuncitem.nodeid,
-                "path": pattern["path"],
-                "function": pattern["function"],
-                "pattern_id": pattern["pattern_id"],
-                "wrapper": pattern["wrapper"],
-                "attribute_path": pattern["attribute_path"],
-                "external_context": context,
-                "pre_callable": before,
-                "post_callable": after,
-            }
-        )
-    return outcome
+    try:
+        outcome = yield
+        return outcome
+    finally:
+        # The protected failure itself throws through the wrapper. Observation
+        # must therefore be exception-transparent and still record post-state.
+        context = _external_context(pyfuncitem)
+        for pattern, before in zip(patterns, pre):
+            after_value = _read_item_path(pyfuncitem, pattern["attribute_path"])
+            after = _callable(after_value) if callable(after_value) else None
+            if before is None and after is None:
+                continue
+            _EVENTS.append(
+                {
+                    "pid": os.getpid(),
+                    "rootpath": str(pyfuncitem.config.rootpath),
+                    "nodeid": pyfuncitem.nodeid,
+                    "path": pattern["path"],
+                    "function": pattern["function"],
+                    "pattern_id": pattern["pattern_id"],
+                    "wrapper": pattern["wrapper"],
+                    "attribute_path": pattern["attribute_path"],
+                    "external_context": context,
+                    "pre_callable": before,
+                    "post_callable": after,
+                }
+            )
 
 
 def pytest_runtest_setup(item):
