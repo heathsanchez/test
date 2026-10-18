@@ -1,0 +1,76 @@
+name: G2 V3 exposed residual-string witness selector and native finite composition
+on:
+  push:
+    branches:
+      - research/g2-deerflow-residual-witness-v3-20261019
+    paths:
+      - .github/workflows/g2-deer-residual-witness-v3.yml
+      - research/unified_consequence_runtime/G2_DEER_RESIDUAL_WITNESS_V3_PRE_NATIVE.json
+      - research/unified_consequence_runtime/test_g2_deer_residual_witness_v3.py
+      - research/unified_consequence_runtime/g2_deer_residual_witness_v3.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  precommitted-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check original frozen V2 algorithm and new pre-native discriminator protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp research/unified_consequence_runtime/G2_DEER_RESIDUAL_WITNESS_V3_PRE_NATIVE.json \
+            <(git show 8668a7621533254e9ae939ba6266438bf1ba4057:research/unified_consequence_runtime/G2_DEER_RESIDUAL_WITNESS_V3_PRE_NATIVE.json)
+          cmp research/unified_consequence_runtime/g2_deer_import_composition_v2.py \
+            <(git show 45f5b07cde363d9716a76e94c2fdcdb50f8c094e:research/unified_consequence_runtime/g2_deer_import_composition_v2.py)
+      - name: Run original 18 plus 8 new residual-choice controls
+        run: python -B -m unittest -v research.unified_consequence_runtime.test_g2_deer_import_composition_v2 research.unified_consequence_runtime.test_g2_deer_residual_witness_v3
+  exposed-source-native:
+    needs: precommitted-contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: '0.11.1'
+      - name: Run original authenticated author tests through pre-frozen witness filter, full finite masks and physical ablation
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          GIT_NO_REPLACE_OBJECTS: '1'
+        run: |
+          set -euo pipefail
+          env -u GH_TOKEN -u GITHUB_TOKEN python -B -m research.unified_consequence_runtime.g2_deer_residual_witness_v3 evidence/g2-deer-v3-exposed
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/g2-deer-v3-exposed/RESULT.json').read_text())
+          assert r['science']=='EXPOSED_ONLY_NOT_G2'
+          assert r['G2']==r['G4']=='UNKNOWN'
+          assert r['original_future_status']=='OPENED_PRIOR_TO_THIS_EXPERIMENT'
+          assert r['status']!='UNKNOWN_EXECUTION_APPARATUS',r.get('error')
+          print('V3_NATIVE_SCIENTIFIC_STATUS',r['status'],'G2',r['G2'])
+          PY
+      - name: Preserve original and every native JUnit receipt even if RED or UNKNOWN
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-v3-original-source-residual-choice-subset-evidence
+          retention-days: 90
+          path: evidence/g2-deer-v3-exposed/
+          if-no-files-found: warn
