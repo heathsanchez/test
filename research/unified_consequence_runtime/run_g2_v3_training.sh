@@ -92,7 +92,17 @@ set -e
 if [ -d "$RUNNER_TEMP/g2-v3-training" ]; then
   cp -a "$RUNNER_TEMP/g2-v3-training" "$E/training"
 fi
-if [ "$science_exit" -ne 0 ]; then exit "$science_exit"; fi
+if [ "$science_exit" -ne 0 ]; then
+  # A no-failure admission is a scientific UNKNOWN, not a successful G2.
+  # Preserve the first RED apparatus run; change no source or method.
+  python - "$E/training/RESULT.json" <<'PY'
+import json,sys
+r=json.loads(open(sys.argv[1]).read())
+assert r["status"] in {"UNKNOWN_NO_AUTHENTIC_TRAINING_PROTECTED_FAILURE","UNKNOWN_NO_MECHANICALLY_DERIVED_AUTHOR_TEST_NODE"}
+assert r["G2"]=="UNKNOWN" and r["future_source"]=="SEALED_UNOPENED"
+print("EXPECTED_SCIENTIFIC_STOP_NO_G2",r["status"])
+PY
+fi
 python -B "$P/qualify_g2_prospective_source_distinct_v3_training.py" \
   "$E/training/RESULT.json" "$TRAIN" "$E/INDEPENDENT_CHECK.json"
 echo "SCIENCE_VERDICT_RECORDED_FUTURE_UNOPENED"
