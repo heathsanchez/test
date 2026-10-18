@@ -1,0 +1,82 @@
+name: G2 regex boundary V1 source-native Packaging training, futures sealed
+on:
+  push:
+    branches:
+      - research/g2-regex-boundary-genesis-20261018
+    paths:
+      - .github/workflows/g2-regex-boundary-train-packaging-20261018.yml
+permissions:
+  contents: read
+concurrency:
+  group: g2-regex-boundary-train-packaging-20261018
+  cancel-in-progress: false
+jobs:
+  regex-observation-training:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Frozen futures preflight without future-source fetch
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 32de5bd464208dc14e0f374db31cfaeae72288db HEAD
+          python -m py_compile research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py
+          python -m py_compile research/unified_consequence_runtime/g2_pool_first_native_failure_v1.py
+          echo 'FUTURES python-benedict#619 / mistral-common#380 / deer-flow#5960: SEALED_UNOPENED'
+      - name: Synthetic strict-terminal and fullmatch operator controls
+        run: |
+          python - <<'PY'
+          from research.unified_consequence_runtime.g2_regex_terminal_genesis_v1 import enumerate_candidates
+          s=("import re\nNAME=re.compile(r'^x+$')\n"
+             "def valid(value):\n    return bool(NAME.match(value))\n")
+          cs=enumerate_candidates(s)
+          assert len(cs)==2,[(a['kind'],a['line']) for a in cs]
+          namespace={}
+          exec(s,namespace)
+          assert namespace["valid"]("x\n") is True
+          for c in cs:
+              ns={}
+              exec(c["_edited"],ns)
+              assert ns["valid"]("x\n") is False,c["kind"]
+              assert ns["valid"]("xxx") is True,c["kind"]
+          print("SYNTHETIC_TERMINAL_VALIDATOR_CONTROLS_PASS, NOT REAL_NATIVE")
+          PY
+      - name: Original Packaging native failure then generated source-neutral regex candidates
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py "$GITHUB_WORKSPACE/evidence/g2-regex-boundary-packaging-train-v1"
+      - name: Fail closed on incorrect promotion
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("evidence/g2-regex-boundary-packaging-train-v1/RESULT.json")
+          if not p.exists():
+              print("UNKNOWN_TRAINING_APPARATUS_NO_RESULT")
+          else:
+              r=json.loads(p.read_text())
+              assert r["G2"]=="UNKNOWN" and r["future"]=="ALL_THREE_SOURCE_UNOPENED"
+              print("FUTURE_SEAL_PRESERVED",r["status"])
+          PY
+      - name: Archive raw source/test receipts, generated patch and all negatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-regex-boundary-packaging-train-v1
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-regex-boundary-packaging-train-v1/
+            research/unified_consequence_runtime/G2_REGEX_BOUNDARY_SOURCE_DISTINCT_V1_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py
+            research/unified_consequence_runtime/G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE.json
