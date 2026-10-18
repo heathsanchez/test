@@ -7,7 +7,7 @@ on:
     paths:
       - research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_PROTOCOL.json
       - research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_ROLE_FREEZE.json
-      - research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_APPARATUS_V2.json
+      - research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_APPARATUS_V3.json
       - research/unified_consequence_runtime/g2_prospective_source_distinct_v3_training_gate.py
       - .github/workflows/udm-g2-prospective-source-distinct-v3.yml
   workflow_dispatch:
@@ -53,6 +53,9 @@ jobs:
           python -m pip install --disable-pip-version-check --no-input --upgrade pip
           python -m pip install --disable-pip-version-check --no-input -e /tmp/g2-trio-v3
           python -m pip install --disable-pip-version-check --no-input -r /tmp/g2-trio-v3/test-requirements.txt
+          if [ "${{ matrix.python }}" = "pypy3.11" ]; then
+            python -m pip install --disable-pip-version-check --no-input 'pycparser==3.0'
+          fi
           python -m pip check
 
       - name: Execute frozen prospective training gate
