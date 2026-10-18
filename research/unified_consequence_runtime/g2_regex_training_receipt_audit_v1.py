@@ -54,7 +54,7 @@ def main(root,out):
     assert op["selected_candidate_sha256"]==t["source_sha256"]
     assert op["original_source_sha256"]==RAW_SOURCE
     assert op["future_source_opened"] is False
-    sourcefile=out.parent.parent/"research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py"
+    sourcefile=out/"research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py"
     assert sourcefile.exists() and op["source_file_sha256"]==sha(sourcefile)
     work=Path("/tmp/packaging-independent-offline-audit")
     assert not work.exists()
