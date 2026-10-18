@@ -38,10 +38,10 @@ def controls(run,world,production,original,repaired,nodes,dest):
         (world/production).write_bytes(repaired)
         for label in ("repair-native-a","repair-native-b"):
             attempts.append((label,run(world,nodes,dest/label,timeout=120)))
-        full=run(world,[production.replace(production,production)],dest/"placeholder",timeout=1) if False else None
-        verified=all(check_pass(x) for _,x in attempts)
+        full=run(world,[nodes[0].split("::")[0]],dest/"full-author-file",timeout=120)
+        verified=all(check_pass(x) for _,x in attempts) and check_pass(full)
         if not verified:
-            return {"status":"REJECTED_NATIVE_REPAIR_CANDIDATE","attempts":attempts}
+            return {"status":"REJECTED_NATIVE_REPAIR_CANDIDATE","attempts":attempts,"full_author_file":full}
         (world/production).write_bytes(original)
         withdrawn=run(world,nodes,dest/"physical-withdrawal",timeout=120)
         if not check_fail(withdrawn):
@@ -50,7 +50,7 @@ def controls(run,world,production,original,repaired,nodes,dest):
         restored=run(world,nodes,dest/"byte-exact-restoration",timeout=120)
         if not check_pass(restored) or sha((world/production).read_bytes())!=sha(repaired):
             return {"status":"UNKNOWN_RESTORATION_NOT_CONFIRMED","attempts":attempts,"withdrawn":withdrawn,"restored":restored}
-        return {"status":"WARRANTED_BOUNDED_TRAINING_REPAIR_ONLY","attempts":attempts,
+        return {"status":"WARRANTED_BOUNDED_TRAINING_REPAIR_ONLY","attempts":attempts,"full_author_file":full,
                 "withdrawn":withdrawn,"restored":restored,"source_sha256":sha(repaired)}
     finally:
         (world/production).write_bytes(original)
