@@ -234,7 +234,49 @@ def stable_trace_rows(log_path: Path) -> list[dict[str, object]]:
 
 
 def trace_has_stale_capture(pattern: dict[str, object], events: list[dict[str, object]]) -> dict[str, object]:
-    relevant = [e for e in events if e.get("function") == pattern["function"] and e.get("guard_line") == pattern["guard_line"]]
+    relevant = [
+        e for e in events
+        if e.get("pattern_id") == pattern["pattern_id"]
+    ]
+
+    # Preferred nested-Pytester observation: the source hook stores a wrapper
+    # back into a persistent attribute. If the exact wrapper object written by
+    # one invocation is the object read by a later invocation under a distinct
+    # primitive fixture context, persistence across contexts is native fact.
+    persisted = []
+    for i, left in enumerate(relevant):
+        left_post = (left.get("post_callable") or {})
+        left_id = left_post.get("identity")
+        left_qn = str(left_post.get("qualname") or "")
+        if not left_id or not left_qn.endswith(str(pattern["wrapper"])):
+            continue
+        for right in relevant[i + 1 :]:
+            if left.get("pid") != right.get("pid") or left.get("rootpath") != right.get("rootpath"):
+                continue
+            right_pre = (right.get("pre_callable") or {})
+            if right_pre.get("identity") != left_id:
+                continue
+            if left.get("external_context") == right.get("external_context"):
+                continue
+            persisted.append({
+                "first_nodeid": left.get("nodeid"),
+                "second_nodeid": right.get("nodeid"),
+                "wrapper_identity": left_id,
+                "first_context": left.get("external_context"),
+                "second_context": right.get("external_context"),
+                "persisted_closure": right_pre.get("closure", {}),
+            })
+
+    if persisted:
+        return {
+            "event_count": len(relevant),
+            "distinct_context_captures": [],
+            "stale_capture_mismatches": [],
+            "persisted_wrapper_across_distinct_context": persisted,
+            "pass": True,
+        }
+
+    # Backward-compatible low-level tracer interpretation retained for lineage.
     distinct: dict[str, set[str]] = {name: set() for name in pattern["dynamic_captures"]}
     mismatches: list[dict[str, object]] = []
     for event in relevant:
@@ -261,6 +303,7 @@ def trace_has_stale_capture(pattern: dict[str, object], events: list[dict[str, o
         "event_count": len(relevant),
         "distinct_context_captures": changed,
         "stale_capture_mismatches": mismatches,
+        "persisted_wrapper_across_distinct_context": [],
         "pass": bool(changed and mismatches),
     }
 
