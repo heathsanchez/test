@@ -1,0 +1,83 @@
+name: G2 finite regex operation composition V2, original Mistral training only
+on:
+  push:
+    branches:
+      - research/g2-finite-operator-composition-v2-20261018
+    paths:
+      - .github/workflows/g2-finite-regex-composition-mistral-v2.yml
+permissions:
+  contents: read
+concurrency:
+  group: g2-finite-regex-composition-mistral-v2
+  cancel-in-progress: false
+jobs:
+  finite-composition-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Freeze and Python syntax preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 90e4b817282f0d6a4c28f989d018b421aca66b68 HEAD
+          cmp research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py <(git show d45288833a13b1ddf6afde01c0b89a84bfc7ce32:research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py)
+          python -m py_compile research/unified_consequence_runtime/g2_finite_composition_mistral_v2.py
+          echo 'EXPOSED_TRAINING=mistralai/mistral-common#380; SEALED_FUTURE=bytedance/deer-flow#5960; G2=UNKNOWN'
+      - name: Synthetic non-overlapping finite compositional grammar test
+        run: |
+          python - <<'PY'
+          from research.unified_consequence_runtime.g2_finite_composition_mistral_v2 import prepare_candidates,compose
+          src=('import re\n'
+               'A=re.compile(r"^x+$")\nB=re.compile(r"^y+$")\n'
+               'def f(s,t):\n    return bool(A.match(s)) and bool(B.match(t))\n')
+          items=prepare_candidates(src)
+          assert len(items)==2
+          a=compose(src,items,[0])
+          both=compose(src,items,[0,1])
+          assert a!=both and a!=src.encode()
+          assert both.count(b'\\Z')==2
+          print('COMPOSITION_SHAPE_PASS: 2 source-neutral disjoint boundary operations')
+          PY
+      - name: Native original failure, monotone greedy operation closure, exhaustive subset replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_finite_composition_mistral_v2.py "$GITHUB_WORKSPACE/evidence/g2-finite-composition-mistral-v2"
+      - name: Explicitly bar promotion beyond qualified native evidence
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('evidence/g2-finite-composition-mistral-v2/RESULT.json')
+          if not p.exists():
+              print('UNKNOWN_NO_NATIVE_RESULT')
+          else:
+              r=json.loads(p.read_text())
+              assert r['G2']=='UNKNOWN'
+              assert r['Lean']==r['CLC']==r['FLASH']=='NOT_EXECUTED'
+              assert r['future']=='DEER_FLOW_SOURCE_SEALED_UNOPENED'
+              print('FINITE_TRAINING_STATUS',r['status'],'subset_count',len(r.get('subsets',{})))
+          PY
+      - name: Preserve raw native receipts for independent replay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-finite-mistral-composition-v2-native-receipts
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-finite-composition-mistral-v2/
+            research/unified_consequence_runtime/G2_FINITE_REGEX_COMPOSITION_V2_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/g2_finite_composition_mistral_v2.py
+            research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py
