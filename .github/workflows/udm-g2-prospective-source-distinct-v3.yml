@@ -1,0 +1,127 @@
+name: UDM prospective source-distinct G2 V3
+
+on:
+  push:
+    branches:
+      - research/udm-g2-prospective-source-distinct-v3-20261018
+    paths:
+      - research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_PROTOCOL.json
+      - research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_ROLE_FREEZE.json
+      - research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_APPARATUS_V2.json
+      - research/unified_consequence_runtime/g2_prospective_source_distinct_v3_training_gate.py
+      - .github/workflows/udm-g2-prospective-source-distinct-v3.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  training:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "pypy3.11"]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Materialize only frozen Trio base plus exact head author test
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/g2-trio-v3
+          git init -q /tmp/g2-trio-v3
+          git -C /tmp/g2-trio-v3 remote add upstream https://github.com/python-trio/trio.git
+          git -C /tmp/g2-trio-v3 fetch -q --no-tags --filter=blob:none --depth=1 upstream ada9c778c86f35c62e68bae8284ca652ea2b23c2
+          git -C /tmp/g2-trio-v3 checkout -q --detach ada9c778c86f35c62e68bae8284ca652ea2b23c2
+          git -C /tmp/g2-trio-v3 fetch -q --no-tags --filter=blob:none --depth=1 upstream e12547f78849be25ec5c0c1a3df161986be1ae96
+          git -C /tmp/g2-trio-v3 show e12547f78849be25ec5c0c1a3df161986be1ae96:src/trio/_tests/test_exports.py > /tmp/g2-trio-v3/src/trio/_tests/test_exports.py
+          test "$(git -C /tmp/g2-trio-v3 rev-parse HEAD)" = ada9c778c86f35c62e68bae8284ca652ea2b23c2
+          test "$(git -C /tmp/g2-trio-v3 diff --name-only)" = src/trio/_tests/test_exports.py
+          echo PASS_TRAINING_SOURCE_SCOPE_FUTURE_UNOPENED
+
+      - name: Install frozen repository test environment
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input --upgrade pip
+          python -m pip install --disable-pip-version-check --no-input -e /tmp/g2-trio-v3
+          python -m pip install --disable-pip-version-check --no-input -r /tmp/g2-trio-v3/test-requirements.txt
+          python -m pip check
+
+      - name: Execute frozen prospective training gate
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/g2-v3-${{ matrix.python }}"
+          rm -rf "$out"
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B             research/unified_consequence_runtime/g2_prospective_source_distinct_v3_training_gate.py             /tmp/g2-trio-v3 "$out" --runtime "${{ matrix.python }}"
+          mkdir -p evidence/g2-v3-${{ matrix.python }}
+          cp -a "$out"/. evidence/g2-v3-${{ matrix.python }}/
+
+      - name: Preserve runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-prospective-v3-training-${{ matrix.python }}
+          path: evidence/g2-v3-${{ matrix.python }}/
+          if-no-files-found: warn
+          retention-days: 90
+
+  classify:
+    needs: training
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: g2-prospective-v3-training-*
+          path: evidence/runtime
+          merge-multiple: false
+      - name: Classify prospective training and enforce future seal
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib,os
+          root=pathlib.Path("evidence/runtime")
+          results=[]
+          for path in sorted(root.rglob("RESULT.json")):
+              results.append(json.loads(path.read_text()))
+          assert results, "NO_RUNTIME_RESULTS"
+          statuses=[r["status"] for r in results]
+          assert all(r["future_source"]=="UNOPENED" and r["future_native"]=="NOT_EXECUTED" for r in results)
+          if any(s=="CANDIDATE_METHOD_APPLICABLE_NEEDS_LOCKED_EXECUTOR" for s in statuses):
+              verdict="TRAINING_METHOD_APPLICABLE_FUTURE_STILL_SEALED_NEEDS_LOCKED_EXECUTOR"
+          elif any(s=="REJECTED_METHOD_INAPPLICABLE_NO_MUTABLE_CLOSURE_PATTERN" for s in statuses):
+              verdict="REJECTED_PROSPECTIVE_TRAINING_METHOD_INAPPLICABLE"
+          elif all(s=="UNKNOWN_NO_AUTHENTIC_TRAINING_PROTECTED_FAILURE" for s in statuses):
+              verdict="UNKNOWN_NO_AUTHENTIC_TRAINING_PROTECTED_FAILURE"
+          else:
+              verdict="UNKNOWN_PROSPECTIVE_TRAINING_APPARATUS_OR_MIXED"
+          summary={
+            "schema":"UDM_G2_PROSPECTIVE_SOURCE_DISTINCT_V3_CLASSIFICATION",
+            "status":verdict,
+            "runtime_statuses":[{"runtime":r["runtime"],"status":r["status"],"pattern_count":r["pattern_count"],"authentic_failure_runs":r["authentic_failure_runs"]} for r in results],
+            "training":"python-trio/trio#3525",
+            "future":"pytest-dev/pluggy#755",
+            "future_source":"UNOPENED",
+            "future_native":"NOT_EXECUTED",
+            "G2":"UNKNOWN","G3":"UNKNOWN","G4":"UNKNOWN","G5":"UNKNOWN","G6":"UNKNOWN"
+          }
+          pathlib.Path("evidence/CLASSIFICATION.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(summary,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g2-prospective-v3-classification
+          path: evidence/CLASSIFICATION.json
+          if-no-files-found: error
+          retention-days: 90
