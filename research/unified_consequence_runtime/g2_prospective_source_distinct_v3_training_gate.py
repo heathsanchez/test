@@ -5,11 +5,11 @@ import argparse, hashlib, json, pathlib, subprocess, sys, xml.etree.ElementTree 
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 PROTOCOL="research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_PROTOCOL.json"
 ROLE="research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_ROLE_FREEZE.json"
-APP="research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_APPARATUS_V2.json"
+APP="research/unified_consequence_runtime/G2_PROSPECTIVE_SOURCE_DISTINCT_V3_APPARATUS_V3.json"
 PINS={
     PROTOCOL:"6b96a5dcb5fcdd449639ba09aa5fbd600da0524a",
     ROLE:"4c5670f489c9c435f1f47d706f6dca8373d6fa96",
-    APP:"c9a3d984aa4d5c0658882617d14fcd961131decd",
+    APP:"083ece67095b2815851228ab423864b4eb500fb6",
 }
 
 from research.unified_consequence_runtime.g2_anyio_mutable_closure_equivalence_fix_v2 import scan_patterns
