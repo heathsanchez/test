@@ -8,9 +8,12 @@ on:
       - research/unified_consequence_runtime/G2_DEER_RESIDUAL_WITNESS_V3_PRE_NATIVE.json
       - research/unified_consequence_runtime/test_g2_deer_residual_witness_v3.py
       - research/unified_consequence_runtime/g2_deer_residual_witness_v3.py
+      - research/unified_consequence_runtime/g2_deer_v3_native_receipt_independent_audit_v1.py
+      - research/unified_consequence_runtime/G2_DEER_V3_INDEPENDENT_AUDIT_MANIFEST.json
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
   precommitted-contracts:
     runs-on: ubuntu-24.04
@@ -73,4 +76,55 @@ jobs:
           name: g2-v3-original-source-residual-choice-subset-evidence
           retention-days: 90
           path: evidence/g2-deer-v3-exposed/
+          if-no-files-found: warn
+
+  independently-reconstruct-every-native-source-mask:
+    needs: exposed-source-native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-v3-original-source-residual-choice-subset-evidence
+          path: evidence/g2-deer-v3-exposed
+      - name: Independently pin author test and producer source, without rerunning repaired tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp research/unified_consequence_runtime/g2_deer_residual_witness_v3.py \
+            <(git show 0b1760d14caca27a55aadfa1450898bcd7cec5fd:research/unified_consequence_runtime/g2_deer_residual_witness_v3.py)
+          cmp research/unified_consequence_runtime/g2_deer_import_composition_v2.py \
+            <(git show 45f5b07cde363d9716a76e94c2fdcdb50f8c094e:research/unified_consequence_runtime/g2_deer_import_composition_v2.py)
+          cmp research/unified_consequence_runtime/G2_DEER_V3_INDEPENDENT_AUDIT_MANIFEST.json \
+            <(git show cf60b46b544201b6cd86e220c0979cee587da192:research/unified_consequence_runtime/G2_DEER_V3_INDEPENDENT_AUDIT_MANIFEST.json)
+          python -B -m py_compile research/unified_consequence_runtime/g2_deer_v3_native_receipt_independent_audit_v1.py
+      - name: Rebuild original Git source, all strict regex patches and every native JUnit protected case
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B research/unified_consequence_runtime/g2_deer_v3_native_receipt_independent_audit_v1.py evidence/g2-deer-v3-exposed
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('evidence/g2-deer-v3-exposed/INDEPENDENT_AUDIT.json').read_text())
+          assert a['status']=='WARRANTED_BOUNDED_EXPOSED_IMPORT_DERIVED_NATIVE_FINITE_COMPOSITION'
+          assert a['complete_native_subset_masks']==4 and a['full_author_passed']==83
+          assert a['G2']==a['G4']=='UNKNOWN'
+          PY
+      - name: Preserve independent source/JUnit audit, including negative failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-deer-v3-same-run-independent-source-audit
+          retention-days: 90
+          path: |
+            evidence/g2-deer-v3-exposed/
+            research/unified_consequence_runtime/g2_deer_v3_native_receipt_independent_audit_v1.py
           if-no-files-found: warn
