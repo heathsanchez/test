@@ -1,0 +1,80 @@
+name: G2 frozen whole-input method - schema independent future V3
+on:
+  push:
+    branches:
+      - research/g2-regex-selector-schedule-schema-20261019
+    paths:
+      - .github/workflows/g2-schema-future-native-v3-20261019.yml
+permissions:
+  contents: read
+jobs:
+  frozen-schema-future:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Independent source and method freeze before schema access
+        run: |
+          set -euo pipefail
+          F=research/unified_consequence_runtime/
+          git merge-base --is-ancestor ba39e2948dc114f1ae8bcbd0619b1419c50af4ec HEAD
+          cmp "$F"G2_SCHEDULE_V3_QUALIFIED_CROSS_SOURCE_TRAINING_RECEIPT.json <(git show ba39e2948dc114f1ae8bcbd0619b1419c50af4ec:"$F"G2_SCHEDULE_V3_QUALIFIED_CROSS_SOURCE_TRAINING_RECEIPT.json)
+          cmp "$F"g2_whole_input_regex_syntax_v2.py <(git show 21008fedf462ebd3ffc9b616f7c06d355c70abbe:"$F"g2_whole_input_regex_syntax_v2.py)
+          cmp "$F"g2_unittest_ast_admission_v3.py <(git show 27515fa428da15cc31169e5a47328a5ff7c316dc:"$F"g2_unittest_ast_admission_v3.py)
+          cmp "$F"g2_schema_prospective_future_v3.py <(git show f2a1d67d5aef2981c99dc9aa486f6039c07e9b98:"$F"g2_schema_prospective_future_v3.py)
+          echo '12353d3b30f33aa98a6edf5623e1d92ba442ca2f0750e7f3f48aae930ebbc788  research/unified_consequence_runtime/g2_whole_input_regex_syntax_v2.py' | sha256sum -c
+          echo '4cdf8f9d633bc0d4d3e9747afb1176c46b816c5a7da664e4c103daf0292b31e8  research/unified_consequence_runtime/g2_unittest_ast_admission_v3.py' | sha256sum -c
+          python -B -m py_compile "$F"g2_schema_prospective_future_v3.py
+          mkdir -p evidence/g2-schema-prospective-future-v3
+          echo 'schema PR356 PRESELECTED BEFORE CODE/TESTS; NO_OUTCOME_BASED_SUBSTITUTION' > evidence/g2-schema-prospective-future-v3/SEAL.txt
+          git rev-parse HEAD > evidence/g2-schema-prospective-future-v3/HEAD.txt
+      - name: Exactly one prospective original schema native gate and frozen learned operator
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_schema_prospective_future_v3.py "$GITHUB_WORKSPACE/evidence/g2-schema-prospective-future-v3/future"
+      - name: Keep G2 and formal bounds until evidence admits
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          e=Path('evidence/g2-schema-prospective-future-v3')
+          p=e/'future/RESULT.json'
+          r=json.loads(p.read_text()) if p.exists() else {}
+          assert (e/'SEAL.txt').exists()
+          assert r.get('G2','UNKNOWN')=='UNKNOWN'
+          assert r.get('lean_clc_flash','NOT_RUN')=='NOT_RUN'
+          assert r.get('no_method_rewriting',True) is True
+          summary={'status':r.get('status','UNKNOWN_NO_RESULT'),
+                   'authentic_future_native':r.get('admission',{}).get('status'),
+                   'prior_v1_candidate_count':r.get('prior_v1_candidate_count'),
+                   'frozen_v2_candidate_count':r.get('candidate_count',0),
+                   'G2':'UNKNOWN','comparator':'NOT_RUN','formal':'NOT_RUN'}
+          (e/'BOUNDARY.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(summary,sort_keys=True))
+          if r.get('status') in ('UNKNOWN_FUTURE_APPARATUS','UNKNOWN_NO_RESULT'):
+              raise SystemExit('APPARATUS_REFUSED')
+          PY
+      - name: Archive source-native success or scientific negative
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-schema-prospective-native-future-v3-evidence
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-schema-prospective-future-v3/
+            research/unified_consequence_runtime/G2_SCHEDULE_SCHEMA_ADMISSION_V3_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/G2_SCHEDULE_V3_QUALIFIED_CROSS_SOURCE_TRAINING_RECEIPT.json
+            research/unified_consequence_runtime/g2_whole_input_regex_syntax_v2.py
+            research/unified_consequence_runtime/g2_unittest_ast_admission_v3.py
+            research/unified_consequence_runtime/g2_schema_prospective_future_v3.py
