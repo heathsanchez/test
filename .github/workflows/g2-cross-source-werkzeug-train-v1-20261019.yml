@@ -1,0 +1,88 @@
+name: G2 cross-source law V1 - exposed Werkzeug training only
+on:
+  push:
+    branches:
+      - research/g2-cross-source-consequence-law-20261018
+    paths:
+      - .github/workflows/g2-cross-source-werkzeug-train-v1-20261019.yml
+
+permissions:
+  contents: read
+
+jobs:
+  native-train-and-seal:
+    if: github.ref == 'refs/heads/research/g2-cross-source-consequence-law-20261018'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+    steps:
+      - name: Checkout frozen training code without persistent credentials
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify freeze and Python syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e de234c7e180467bbb0b957cac2016263bf80920b^{commit}
+          git merge-base --is-ancestor de234c7e180467bbb0b957cac2016263bf80920b HEAD
+          F=research/unified_consequence_runtime/
+          cmp "$F"G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE.json <(git show 57c400ea49881e440f7895acaeebeee5854363e3:"$F"G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE.json)
+          python -B -m py_compile "$F"g2_pool_first_native_failure_v1.py "$F"g2_cross_source_train_v1.py
+          mkdir -p evidence/g2-cross-source-werkzeug-v1
+          echo 'FUTURE pypa/packaging PR1446 SEALED_UNOPENED; NO_REPLACEMENT' > evidence/g2-cross-source-werkzeug-v1/FUTURE_SEAL.txt
+          git rev-parse HEAD > evidence/g2-cross-source-werkzeug-v1/COMMIT.txt
+          sha256sum "$F"g2_cross_source_train_v1.py > evidence/g2-cross-source-werkzeug-v1/METHOD_SOURCE_SHA.txt
+      - name: Exactly one source-native training and learned-operation gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_cross_source_train_v1.py "$GITHUB_WORKSPACE/evidence/g2-cross-source-werkzeug-v1/training"
+      - name: Preserve scientific status and fail closed on apparatus
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          out=Path('evidence/g2-cross-source-werkzeug-v1')
+          result=out/'training/RESULT.json'
+          report=json.loads(result.read_text()) if result.is_file() else {}
+          assert (out/'FUTURE_SEAL.txt').is_file(), 'SEAL_MISSING'
+          assert report.get('future','SEALED_UNOPENED')=='SEALED_UNOPENED'
+          assert report.get('G2','UNKNOWN')=='UNKNOWN'
+          assert report.get('prospective_future_visited',False) is False
+          if report.get('status')=='WARRANTED_BOUNDED_TRAINING_REPAIR_FUTURE_SEALED':
+              op=report['admitted_operator']
+              assert op['source_sha256']
+              assert any(x['status']=='WARRANTED_BOUNDED_TRAINING_ONLY' for x in report['attempts'])
+          verdict={'status':report.get('status','UNKNOWN_NO_REPORT'),
+                   'future':'SEALED_UNOPENED','G2':'UNKNOWN',
+                   'method_candidate_count':len(report.get('enumeration',[])),
+                   'native_repair_attested_by_runner':report.get('status')=='WARRANTED_BOUNDED_TRAINING_REPAIR_FUTURE_SEALED',
+                   'independent_external_audit':'NOT_EXECUTED',
+                   'source_sha256':report.get('admission',{}).get('source_sha256')}
+          (out/'BOUNDARY.json').write_text(json.dumps(verdict,sort_keys=True,indent=2)+'\n')
+          print(json.dumps(verdict,sort_keys=True))
+          if report.get('status') in ('UNKNOWN_APPARATUS','UNKNOWN_NO_REPORT','UNKNOWN_NO_NATIVE_TRAINING_OBLIGATION'):
+              raise SystemExit('FAIL_CLOSED_APPARATUS')
+          PY
+      - name: Archive exact evidence, source and negative results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-cross-source-werkzeug-train-v1-evidence
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-cross-source-werkzeug-v1/
+            research/unified_consequence_runtime/G2_CROSS_SOURCE_CONSEQUENCE_LAW_V1_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/g2_cross_source_train_v1.py
+            research/unified_consequence_runtime/g2_cross_source_admission_gate.py
