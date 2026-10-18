@@ -1,0 +1,217 @@
+{
+  "schema": "UDM_G2_PROSPECTIVE_PAIR_ROLE_MANIFEST_V2",
+  "prequery_commit": "bfa8b0ffa0874231d3fe0b3bfa5d21fdb950488f",
+  "state": "ROLES_FROZEN_BEFORE_SOURCE_OR_TEST_BODY_READ",
+  "selected": [
+    {
+      "role": "TRAINING",
+      "repository": "python-attrs/attrs",
+      "pr": 1593,
+      "title": "Fix ClassVar forward reference detection",
+      "merged_at": "2026-07-31T13:30:57Z",
+      "base": "6851ab593cd25f3c14393e9355d57d22bec2a074",
+      "head": "2e082f1c1efb019885fbdb601b32f8464dbe5d47",
+      "changed_files": [
+        "changelog.d/1593.change.md",
+        "src/attr/_make.py",
+        "tests/test_annotations.py"
+      ],
+      "production": [
+        "src/attr/_make.py"
+      ],
+      "author_tests": [
+        "tests/test_annotations.py"
+      ],
+      "source_bodies_read": false,
+      "patch_read": false,
+      "pr_body_read": false
+    },
+    {
+      "role": "SEALED_FUTURE",
+      "repository": "tox-dev/tox",
+      "pr": 4168,
+      "title": "fix(cli): --no-provision swallows the subcommand that follows it",
+      "merged_at": "2026-10-17T18:43:51Z",
+      "base": "e352fbe1f434be3fa77af15f8b65f31aac31a6a3",
+      "head": "10a9b2c54c70729167991c0b3fd6b97488f5e4b2",
+      "changed_files": [
+        "docs/changelog/4168.bugfix.rst",
+        "src/tox/config/cli/parser.py",
+        "tests/test_provision.py"
+      ],
+      "production": [
+        "src/tox/config/cli/parser.py"
+      ],
+      "author_tests": [
+        "tests/test_provision.py"
+      ],
+      "source_bodies_read": false,
+      "patch_read": false,
+      "pr_body_read": false
+    }
+  ],
+  "selection_audit": {
+    "python-attrs/attrs": [
+      {
+        "pr": 1615,
+        "reason": "changed_files=1 docs-only"
+      },
+      {
+        "pr": 1607,
+        "reason": "closed but not merged"
+      },
+      {
+        "pr": 1593,
+        "reason": "SELECTED_FIRST_QUALIFIED"
+      }
+    ],
+    "marshmallow-code/marshmallow": [
+      {
+        "pr": 3078,
+        "reason": "not merged"
+      },
+      {
+        "pr": 3058,
+        "reason": "not merged"
+      },
+      {
+        "pr": 3063,
+        "reason": "not merged"
+      },
+      {
+        "pr": 3057,
+        "reason": "not merged and no test"
+      },
+      {
+        "pr": 3056,
+        "reason": "not merged"
+      },
+      {
+        "pr": 3053,
+        "reason": "not merged"
+      },
+      {
+        "pr": 3054,
+        "reason": "not merged"
+      },
+      {
+        "pr": 3046,
+        "reason": "not merged and test-only"
+      },
+      {
+        "pr": 3000,
+        "reason": "not merged and test-only"
+      }
+    ],
+    "pygments/pygments": [
+      {
+        "pr": 3289,
+        "reason": "not merged and no Python test"
+      },
+      {
+        "pr": 3288,
+        "reason": "not merged"
+      },
+      {
+        "pr": 3314,
+        "reason": "not merged/too many files"
+      },
+      {
+        "pr": 3166,
+        "reason": "not merged/no test"
+      },
+      {
+        "pr": 3139,
+        "reason": "merged but no changed Python test"
+      },
+      {
+        "pr": 3051,
+        "reason": "merged but no changed Python test"
+      }
+    ],
+    "dateutil/dateutil": [
+      {
+        "pr": 1500,
+        "reason": "not merged"
+      },
+      {
+        "pr": 1610,
+        "reason": "not merged"
+      },
+      {
+        "pr": 1514,
+        "reason": "not merged/config only"
+      },
+      {
+        "pr": 1593,
+        "reason": "not merged"
+      },
+      {
+        "pr": 1528,
+        "reason": "not merged/no test"
+      },
+      {
+        "pr": 1581,
+        "reason": "merged but test-only"
+      },
+      {
+        "pr": 1579,
+        "reason": "merged but test-only"
+      },
+      {
+        "pr": 1578,
+        "reason": "merged but test-only"
+      },
+      {
+        "pr": 1577,
+        "reason": "merged but test-only"
+      },
+      {
+        "pr": 1565,
+        "reason": "not merged/test-only"
+      },
+      {
+        "pr": 1559,
+        "reason": "not merged/test-only"
+      },
+      {
+        "pr": 1554,
+        "reason": "not merged"
+      },
+      {
+        "pr": 1555,
+        "reason": "not merged"
+      },
+      {
+        "pr": 1542,
+        "reason": "not merged"
+      },
+      {
+        "pr": 1535,
+        "reason": "not merged/test-only"
+      }
+    ],
+    "tox-dev/tox": [
+      {
+        "pr": 4166,
+        "reason": "merged but 8 changed files and 3 production Python files"
+      },
+      {
+        "pr": 4168,
+        "reason": "SELECTED_FIRST_QUALIFIED"
+      }
+    ]
+  },
+  "contamination": {
+    "prequery_v1": "APPARATUS_INVALID_BEFORE_ROLE_FREEZE",
+    "detail": "A raw search result for encode/httpx PR #3747 exposed its PR body during V1 metadata exploration. Entire V1 repository universe was abandoned before roles/source/native. V2 uses a disjoint universe and projected metadata only."
+  },
+  "method_authority": {
+    "qualified_commit": "094e2ddc3ba601a00eaf368151172a361e5542da",
+    "run": 39093934449,
+    "artifact": 12123712928
+  },
+  "no_replacement": true,
+  "future_sealed": true,
+  "G2": "UNKNOWN"
+}
