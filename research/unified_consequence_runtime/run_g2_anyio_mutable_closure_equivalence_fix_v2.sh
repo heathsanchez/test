@@ -59,11 +59,20 @@ python -m pip install --disable-pip-version-check --no-input \
 python -m pip check
 python -m pip freeze > "$EVIDENCE/PIP_FREEZE.txt"
 
+set +e
 PYTHONPATH="$ROOT" python -B \
   research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py \
   "$ANYIO" "$V104" "$MSI" "$RESULT_ROOT" \
   | tee "$EVIDENCE/STDOUT.json"
-cp -a "$RESULT_ROOT" "$EVIDENCE/result"
+science_rc=${PIPESTATUS[0]}
+set -e
+if [ -d "$RESULT_ROOT" ]; then
+  cp -a "$RESULT_ROOT" "$EVIDENCE/result"
+fi
+if [ "$science_rc" -ne 0 ]; then
+  echo "SCIENTIFIC_RED_RC=$science_rc"
+  exit "$science_rc"
+fi
 
 python -B \
   research/unified_consequence_runtime/qualify_g2_anyio_mutable_closure_equivalence_fix_v2.py \
