@@ -163,6 +163,12 @@ def imported_source_module_files(test_bytes, tracked_paths, production_path,max_
         if not all(p.isidentifier() for p in module.split(".")):
             raise ValueError("UNKNOWN_UNSAFE_OR_NONCANONICAL_PYTHON_MODULE")
         components=module.split(".")
+        # A bare import (e.g. stdlib 'types') has no source-owned package
+        # lineage: matching every tracked file named types.py is unsound.
+        # Only explicit original package-qualified import paths are admitted
+        # as a source-to-observation binding in this versioned V2 interface.
+        if len(components)<2:
+            continue
         suffix=components[:-1]+[components[-1]+".py"]
         candidates=[path for path,parts in raw_paths.items()
                     if len(parts)>=len(suffix) and parts[-len(suffix):]==suffix]
