@@ -1,0 +1,134 @@
+{
+  "schema": "G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE",
+  "state": "ROLE_FREEZE_BEFORE_TARGET_SOURCE_TEST_BODY_NATIVE",
+  "v1_freeze_commit": "073098244dd213b09607146832a1803ca68c918e",
+  "v1_meta_stop_commit": "2222ec5e8443fec14927bbe23ad0ad4ce28bfe92",
+  "v1_stop": "V1 required 7 (five training + two future); metadata-only screen found 6. V1 stopped before source/outcome.",
+  "amendment": "V2 narrows reserved future count from two to one using first six previously frozen metadata-eligible repositories. This amendment followed metadata results but precedes ALL task source/test/native outcomes. No after-native resampling permitted.",
+  "training_candidates": [
+    {
+      "repo": "pallets/werkzeug",
+      "pr": 3215,
+      "base": "1b00618e787f40dfb21eba29caf8f8be7c8e1d93",
+      "head": "884437aef93e543ebaff3b9cdbe857ee47e7e00c",
+      "production": "src/werkzeug/routing/map.py",
+      "author_test": "tests/test_routing.py",
+      "order": 0,
+      "role": "TRAINING_ADMISSION",
+      "source_read": false,
+      "test_body_read": false,
+      "native_result_read": false
+    },
+    {
+      "repo": "pallets/click",
+      "pr": 3884,
+      "base": "bb695aaecdef95832d167fc1d508921745aa824e",
+      "head": "c53d3732b98c764932e146c007146ad402acb229",
+      "production": "src/click/core.py",
+      "author_test": "tests/test_options.py",
+      "order": 1,
+      "role": "TRAINING_ADMISSION",
+      "source_read": false,
+      "test_body_read": false,
+      "native_result_read": false
+    },
+    {
+      "repo": "psf/requests",
+      "pr": 6963,
+      "base": "7bc45877a86192af77645e156eb3744f95b47dae",
+      "head": "92bab7d1142db0c807060577233568e5f7734c9b",
+      "production": "src/requests/utils.py",
+      "author_test": "tests/test_utils.py",
+      "order": 2,
+      "role": "TRAINING_ADMISSION",
+      "source_read": false,
+      "test_body_read": false,
+      "native_result_read": false
+    },
+    {
+      "repo": "urllib3/urllib3",
+      "pr": 5254,
+      "base": "bcf84e6815f623521e1ffe3e6ab0224d778929c0",
+      "head": "4aa45cd210ebb19559d505d73c8d05a541314e2f",
+      "production": "src/urllib3/http2/probe.py",
+      "author_test": "test/test_http2_probe.py",
+      "order": 3,
+      "role": "TRAINING_ADMISSION",
+      "source_read": false,
+      "test_body_read": false,
+      "native_result_read": false
+    },
+    {
+      "repo": "pydantic/pydantic",
+      "pr": 13980,
+      "base": "d0d67ea05a9c0af3db47b112a0a24eceeccb77da",
+      "head": "ad9c1bbd1501b6b7cf4ed74d634cbda8137d92de",
+      "production": "pydantic/json_schema.py",
+      "author_test": "tests/test_json_schema.py",
+      "order": 4,
+      "role": "TRAINING_ADMISSION",
+      "source_read": false,
+      "test_body_read": false,
+      "native_result_read": false
+    }
+  ],
+  "sealed_futures": [
+    {
+      "repo": "pypa/packaging",
+      "pr": 1446,
+      "base": "332d716676eb934b67ede4054a3e3e0d4022b2d3",
+      "head": "a4f5d377a62e96759a4d9237256ec5dc3b19444e",
+      "production": "src/packaging/pylock.py",
+      "author_test": "tests/test_pylock.py",
+      "order": 5,
+      "role": "SEALED_FUTURE",
+      "source_read": false,
+      "test_body_read": false,
+      "native_result_read": false
+    }
+  ],
+  "admission": "Run native original source + exact HEAD author-test overlay sequentially in frozen training order. Select first with >=1 NEW/CHANGED protected failing testcase, zero errors, at least 1 test executed, and zero protected skipped. Abort upon selected. No source lookups for future unless training repair/withdrawal/restoration qualifies.",
+  "no_source_peeking": true,
+  "toolchain": {
+    "python": "3.12",
+    "pytest": "9.1.1",
+    "test_dependency_precedence": [
+      "pyproject dependency-groups test",
+      "pyproject dependency-groups tests",
+      "project optional-dependencies test",
+      "project optional-dependencies tests",
+      "project optional-dependencies dev",
+      "test-requirements.txt",
+      "requirements-test.txt",
+      "NONE"
+    ],
+    "per_candidate_native_timeout_seconds": 120,
+    "per_candidate_wall_total_seconds": 160,
+    "test_selection": "original base vs author HEAD test AST difference: new/modified test_* functions/methods and Test* containers; allow exact changed entire test file if no new test nodes, but require at least one protected failure. No target-specific test authoring."
+  },
+  "method_freeze": {
+    "inventory": [
+      {
+        "name": "persistent_mutable_closure",
+        "commit": "094e2ddc3ba601a00eaf368151172a361e5542da",
+        "source": "research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py"
+      },
+      {
+        "name": "primitive_projection",
+        "commit": "b9d175d0b129c843bc5885aec77082f07f2b0601",
+        "source": "research/unified_consequence_runtime/attrs_residual_observation_genesis_v1.py"
+      }
+    ],
+    "order": [
+      "persistent_mutable_closure",
+      "primitive_projection"
+    ],
+    "freeze_no_invented_new_method": true,
+    "native_budget_total": 48,
+    "selection_method": "equivalence classes of executable future consequences, not policy names; only native PASS and causal withdrawal accepted",
+    "future": "Never open until qualifying native training repair two PASS, fail again on withdrawal, PASS on restoration. Otherwise future remains sealed.",
+    "comparators": "If future admitted run equal-info executable ledger; strong coding agent if actually available, else NOT_RUN, G4 UNKNOWN."
+  },
+  "permissions": "No outside repo writes; only owned branch. CI tokens not provided to untrusted author native tests. No production deployment.",
+  "scientific_verdict": "UNKNOWN until separately verified native training and source-distinct future success; G2–G6 UNKNOWN"
+}
