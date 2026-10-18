@@ -1,0 +1,46 @@
+name: Cash-track evidence resource bounded qualification
+
+on:
+  push:
+    branches:
+      - research/cashtrack-evidence-resource-20261018
+    paths:
+      - research/cash_track_20261018/**
+      - .github/workflows/cashtrack-evidence-resource-20261018.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-packet-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify source protocol frozen before implementation
+        run: |
+          git cat-file -e bb33d34a479d439cf4d38ce9601462c53b0beda1^{commit}
+          git merge-base --is-ancestor bb33d34a479d439cf4d38ce9601462c53b0beda1 HEAD
+          git cat-file -e 67915bd323e338edd9ca3e9d4db8e7e8b3faee1c^{commit}
+          git merge-base --is-ancestor 67915bd323e338edd9ca3e9d4db8e7e8b3faee1c HEAD
+      - name: Execute bounded falsification tests
+        run: |
+          python research/cash_track_20261018/runner.py --self-test --out research/cash_track_20261018/out
+      - name: Independent fresh process replay and digest equality
+        run: |
+          python research/cash_track_20261018/runner.py --out research/cash_track_20261018/out2 > /dev/null
+          cmp research/cash_track_20261018/out/evidence_cases.jsonl research/cash_track_20261018/out2/evidence_cases.jsonl
+          cmp research/cash_track_20261018/out/metrics.json research/cash_track_20261018/out2/metrics.json
+          sha256sum research/cash_track_20261018/out/*.json*
+      - name: Archive exact evidence and metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: cashtrack-evidence-resource
+          path: research/cash_track_20261018/out/
+          if-no-files-found: error
