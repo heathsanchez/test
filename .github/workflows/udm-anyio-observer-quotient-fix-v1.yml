@@ -121,17 +121,34 @@ jobs:
           print('PASS_SOURCE_DERIVED_MUTABLE_CLOSURE_SITE_V2')
           PY
 
-      - name: Qualify direct author-derived child execution
+      - name: Qualify direct child pytest exit
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
+          assert r.get('native_exit')==1,r
+          print('PASS_DIRECT_CHILD_PYTEST_EXIT_V2')
+          PY
+
+      - name: Qualify direct child call count
         run: |
           python - <<'PY'
           import json
           r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
           counts=r.get('direct_outcome_counts',{})
-          assert r.get('native_exit')==1,r
           assert counts.get('passed',0)+counts.get('failed',0)==4,r
+          print('PASS_DIRECT_CHILD_CALL_COUNT_V2',counts)
+          PY
+
+      - name: Qualify direct child has authentic failure
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
+          counts=r.get('direct_outcome_counts',{})
           assert counts.get('failed',0)>=1,r
           assert counts.get('skipped',0)==0,r
-          print('PASS_DIRECT_AUTHOR_CHILD_EXECUTION_V2',counts)
+          print('PASS_DIRECT_CHILD_FAILURE_V2',counts)
           PY
 
       - name: Qualify outer invocation snapshots
