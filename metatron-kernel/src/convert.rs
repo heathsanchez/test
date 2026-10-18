@@ -795,9 +795,6 @@ fn eta_contract_telescope(
     raw: &Closure,
     depth: usize,
 ) -> Option<Closure> {
-    if std::env::var_os("NUCLEUS_EXPERIMENTAL_MULTIBINDER_ETA").is_none() {
-        return None;
-    }
     let source=resolve_local_closure(checker,raw)?;
     let mut body=source.expr;
     let mut n=0usize;
