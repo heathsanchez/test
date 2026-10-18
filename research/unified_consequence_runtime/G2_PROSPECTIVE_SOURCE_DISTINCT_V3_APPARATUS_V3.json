@@ -1,0 +1,35 @@
+{
+  "schema": "UDM_G2_PROSPECTIVE_SOURCE_DISTINCT_V3_APPARATUS_V3",
+  "state": "FROZEN_AFTER_TWO_PRE_NATIVE_APPARATUS_FAILURES_BEFORE_ANY_NATIVE_TEST_OUTCOME",
+  "supersedes": [
+    "9134547d27241b23d7221c8a1155293714274742",
+    "c9a3d984aa4d5c0658882617d14fcd961131decd"
+  ],
+  "protocol_commit": "6b96a5dcb5fcdd449639ba09aa5fbd600da0524a",
+  "role_freeze_commit": "4c5670f489c9c435f1f47d706f6dca8373d6fa96",
+  "unchanged_science": {
+    "training": "python-trio/trio#3525",
+    "future": "pytest-dev/pluggy#755",
+    "future_source": "UNOPENED",
+    "runtimes": [
+      "3.11",
+      "pypy3.11"
+    ],
+    "commands": [
+      "python -m pytest -q src/trio/_tests/test_exports.py",
+      "python -m pytest -q --run-slow src/trio/_tests/test_exports.py"
+    ],
+    "method": "exact inherited mutable-closure detector/observer/repair + equivalence-class selector"
+  },
+  "apparatus_corrections": [
+    {
+      "obstruction": "Git status helper stripped leading porcelain whitespace, making the exact single author-test overlay look malformed",
+      "correction": "accept exactly one nonempty porcelain line whose path suffix is the frozen author-test path; still reject any second changed path"
+    },
+    {
+      "obstruction": "On PyPy 3.11, pinned Trio test requirements exclude pycparser by marker while installed cffi 2.1.0 reports pycparser as required",
+      "correction": "install pycparser==3.0 on PyPy before pip check; no source/test/method change"
+    }
+  ],
+  "epistemic": "APPARATUS_ONLY; neither failed run executed the frozen native training gate; no scientific negative or positive inferred."
+}
