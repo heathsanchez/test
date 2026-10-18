@@ -73,6 +73,10 @@ class V5NativeAndMethodBoundary(unittest.TestCase):
             self.assertEqual(output["status"],
                              "UNKNOWN_NO_ADMITTED_TRAINING_FAILURE")
             self.assertEqual(len(invoked),3)
+            self.assertTrue(all(
+                x["production"] and x["author_test"]
+                for x in output["admissions"]
+            ),"V2 original native receipts must retain their frozen V5 source/test identity")
             future=gate.frozen_roles()["roles"][3]["repo"]
             self.assertNotIn(future,[x[0] for x in invoked])
             self.assertEqual(output["future"],"SEALED_UNOPENED")
