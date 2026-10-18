@@ -15,6 +15,7 @@ from collections import defaultdict
 import hashlib
 import json
 import importlib
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -209,6 +210,7 @@ def main(world: Path,out: Path):
         (out/"RESULT.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
         return result
 
+    os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"]="1"
     import pytest
     monitor=Monitor(sites,child_files)
     module_name=production.removeprefix("src/").removesuffix(".py").replace("/",".")
@@ -236,7 +238,7 @@ def main(world: Path,out: Path):
                 monitor.outcomes.append({"nodeid":report.nodeid,"outcome":report.outcome})
 
     sys.path[:0]=[str(world/"src"),str(world)]
-    argv=["-q","-p","no:cacheprovider","-p","anyio.pytest_plugin","--timeout=10","--rootdir="+str(direct_dir)] + [
+    argv=["-q","-p","no:cacheprovider","-p","anyio.pytest_plugin","-p","_hypothesis_pytestplugin","--rootdir="+str(direct_dir)] + [
         str(path) for path in sorted(child_files)
     ]
     old=sys.gettrace()
