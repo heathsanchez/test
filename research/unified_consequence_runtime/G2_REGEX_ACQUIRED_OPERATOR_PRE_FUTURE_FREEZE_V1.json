@@ -1,0 +1,75 @@
+{
+  "schema": "G2_REGEX_ACQUIRED_OPERATOR_FROZEN_AFTER_NATIVE_BEFORE_SOURCE_DISTINCT_FUTURE_V1",
+  "state": "TRAINING_NATIVE_BOUNDED_AND_ARCHIVED_RECEIPTS_AUDITED_FUTURES_UNOPENED",
+  "method_training": {
+    "repo": "pypa/packaging",
+    "pr": 1446,
+    "base": "332d716676eb934b67ede4054a3e3e0d4022b2d3",
+    "original_source_sha256": "a10d2871bb4015855a6e894790949189afff40ae7364fe0210efa91e299fa32e",
+    "generated_source_sha256": "cc279a0a2e8f7a5d165d9b7d299cdc4dde05d9a3e5d8ee3fe80a515f067d60f2",
+    "protected_original": "4 PASS 1 FAIL",
+    "protected_generated": "5 PASS",
+    "full_module": "74 PASS",
+    "withdrawal_reopened": "1 FAIL",
+    "restoration": "5 PASS",
+    "native_run": 39113868720,
+    "artifact_id": 12131084220,
+    "original_zip_sha256": "62dcffb55a3455d3126fc363faed732aafe1281b2dcb880498214492c8af0b8f",
+    "artifact_inspection": "Independently rehashed downloaded ZIP, CRC, native JUnit/log digest and source-scoped one-file patch; not separate native run nor external Git re-clone."
+  },
+  "acquired": {
+    "kind": "strict_terminal_anchor",
+    "mutation": "unescaped terminal regex $ -> strict Python end-of-string \\\\Z under same regex compile/match call",
+    "code_file": "research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py",
+    "code_git_commit": "d45288833a13b1ddf6afde01c0b89a84bfc7ce32",
+    "code_git_blob": "74fffa4b044d948130c6dd3b504ed8734ef60250",
+    "code_raw_sha256": "6bd5d27a57cfd8aef28e3cc9e994d96d548857c45d5d198fe354278df1b0c70c",
+    "callable": "enumerate_candidates",
+    "selector": "filter exactly kind strict_terminal_anchor; minimum abs source bytes change then line; max32 candidates; no method changes after source exposure"
+  },
+  "comparators": [
+    {
+      "kind": "unaltered original",
+      "same native oracle": true
+    },
+    {
+      "kind": "whole_input_match",
+      "description": "frozen independent AST .match -> .fullmatch boundary matcher from predeclared grammar, without the acquired strict-terminal-anchor edit",
+      "same native oracle": true,
+      "max_candidates": 32
+    }
+  ],
+  "future_prequery_protocol": "32de5bd464208dc14e0f374db31cfaeae72288db",
+  "futures_in_order": [
+    {
+      "repo": "fabiocaccamo/python-benedict",
+      "pr": 619,
+      "base": "8c3371f2877c6bd6f549483a6d4c9cb97e78655a",
+      "head": "c15df3f56dd56c8e4b419df27b24998a1ae2bc06",
+      "production": "benedict/core/match.py",
+      "test": "tests/core/test_match.py",
+      "source_opened": false
+    },
+    {
+      "repo": "mistralai/mistral-common",
+      "pr": 380,
+      "base": "737215ece92b530204c8ccd68b63c60943ce5a79",
+      "head": "3c4a07922fa3bd2f5fbcff8d73ddf7a0190c7b98",
+      "production": "src/mistral_common/protocol/instruct/validator.py",
+      "test": "tests/validation/test_validation.py",
+      "source_opened": false
+    },
+    {
+      "repo": "bytedance/deer-flow",
+      "pr": 5960,
+      "base": "e2feca1e567d9bafce657de8ad8bc668bd7ad513",
+      "head": "cd9c12bb89c0c9d727a348b5fba3bd95730a9186",
+      "production": "backend/app/gateway/routers/agents.py",
+      "test": "backend/tests/test_custom_agent.py",
+      "source_opened": false
+    }
+  ],
+  "first_native_failure_rule": "Inspect futures in exact order, original base + head author test overlay; stop at first genuine source-native protected failure (no errors/skips) before method applicability; no source-result based future reselection.",
+  "claim_boundary": "Even a cross-source success is only family-conditioned and depends on native/source-verifier assumptions; Lean/CLC/FLASH must actually check a declared finite transport and withdrawal/restart consequence before respective formal/incremental claims.",
+  "G2": "UNKNOWN"
+}
