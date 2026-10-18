@@ -7,9 +7,11 @@ on:
       - "research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVATION_PROTOCOL_V1.json"
       - ".github/workflows/udm-anyio-posthoc-native-observation-v2.yml"
       - "research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVER_V2_PROTOCOL.json"
+      - "research/unified_consequence_runtime/g2_anyio_native_decorator_replay_v2.py"
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
   actual-protected-native-observation:
     runs-on: ubuntu-24.04
@@ -144,6 +146,20 @@ jobs:
             "future_source":"UNOPENED"},indent=2)+"\n")
           print("SCIENTIFIC_RESULT",a["status"],"SOURCE_SLOTS",a.get("eligible_source_slot_count"))
           PY
+      - name: Reconcile original decorated functions with real source-native trace
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 3 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/12118690451/zip" \
+            -o "$RUNNER_TEMP/g2_original_frozen.zip"
+          printf '%s  %s\n' '7ec7f9922aa3925f8d0d455f79eba414f4512c6210762e7731d442e746972680' "$RUNNER_TEMP/g2_original_frozen.zip" | sha256sum -c -
+          python research/unified_consequence_runtime/g2_anyio_native_decorator_replay_v2.py \
+            "$RUNNER_TEMP/g2_original_frozen.zip" \
+            evidence/anyio-posthoc-observer-v2/trial-a/RESULT.json \
+            evidence/anyio-posthoc-observer-v2/trial-b/RESULT.json \
+            evidence/anyio-posthoc-observer-v2/DECORATOR_NORMALIZED_AUDIT.json
       - name: Preserve pre-frozen protocol, all native evidence, failures and limitations
         if: always()
         uses: actions/upload-artifact@v4
@@ -154,5 +170,6 @@ jobs:
           path: |
             evidence/anyio-posthoc-observer-v2/
             research/unified_consequence_runtime/g2_anyio_posthoc_function_observer_v2.py
+            research/unified_consequence_runtime/g2_anyio_native_decorator_replay_v2.py
             research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVATION_PROTOCOL_V1.json
             research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVER_V2_PROTOCOL.json
