@@ -1,0 +1,125 @@
+name: G2 AnyIO posthoc native source observation (NOT G2)
+on:
+  push:
+    branches: [research/udm-anyio-posthoc-observation-gate-v1-20261018]
+    paths:
+      - "research/unified_consequence_runtime/g2_anyio_posthoc_function_observer_v1.py"
+      - "research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVATION_PROTOCOL_V1.json"
+      - ".github/workflows/udm-anyio-posthoc-native-observation-v1.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-protected-native-observation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Authenticate frozen observer protocol before reading AnyIO source
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/anyio-posthoc-observer
+          python - <<'PY'
+          import subprocess,pathlib,json,hashlib
+          p=pathlib.Path("research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVATION_PROTOCOL_V1.json")
+          original=subprocess.check_output(["git","show","cb958e9c03bfcc7eb17e193c8d63d22edaf96f1e:"+str(p)])
+          assert p.read_bytes()==original, "OBSERVATION_PROTOCOL_MUTATED"
+          v=json.loads(original)
+          assert v["source_file"]=="src/anyio/pytest_plugin.py"
+          assert v["original_observer"]["expected_admissible_guards"]==0
+          pathlib.Path("evidence/anyio-posthoc-observer/PROTOCOL_PIN.json").write_text(
+              json.dumps({"frozen_commit":"cb958e9c03bfcc7eb17e193c8d63d22edaf96f1e",
+                          "sha256":hashlib.sha256(original).hexdigest(),
+                          "G2":"UNKNOWN","future":"UNOPENED"},indent=2)+"\n")
+          PY
+      - name: Materialize source-pinned original AnyIO and exact author tests only
+        run: |
+          set -euo pipefail
+          git init -q /tmp/posthoc-anyio
+          git -C /tmp/posthoc-anyio remote add upstream https://github.com/agronholm/anyio.git
+          git -C /tmp/posthoc-anyio fetch -q --depth=1 --filter=blob:none --no-tags upstream 1805944a9f6a062527c10aa044ded959782bfc3e
+          git -C /tmp/posthoc-anyio checkout -q --detach 1805944a9f6a062527c10aa044ded959782bfc3e
+          test "$(git -C /tmp/posthoc-anyio rev-parse HEAD^{tree})" = c6465ce4b900e2f21aa73ebbe16c779f5c6ae9bf
+          git -C /tmp/posthoc-anyio fetch -q --depth=1 --filter=blob:none --no-tags upstream 90876855b731fb057d45e7e1cbdf1df013be6091
+          test "$(git -C /tmp/posthoc-anyio rev-parse 90876855b731fb057d45e7e1cbdf1df013be6091:tests/test_pytest_plugin.py)" = b15d4da74a17b7f80fa07b0d172c03eb752be7f4
+          git -C /tmp/posthoc-anyio show 90876855b731fb057d45e7e1cbdf1df013be6091:tests/test_pytest_plugin.py > /tmp/posthoc-anyio/tests/test_pytest_plugin.py
+          git -C /tmp/posthoc-anyio diff --name-only > evidence/anyio-posthoc-observer/OVERLAY_STATUS.txt
+          test "$(cat evidence/anyio-posthoc-observer/OVERLAY_STATUS.txt)" = tests/test_pytest_plugin.py
+          git init -q /tmp/posthoc-v104
+          git -C /tmp/posthoc-v104 fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C /tmp/posthoc-v104 checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+      - name: Install upstream-declared test environment, no new production edit
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'pip==25.3'
+          python -m pip install --disable-pip-version-check --no-input \
+            -e '/tmp/posthoc-anyio[trio]' \
+            --group '/tmp/posthoc-anyio/pyproject.toml:test' \
+            'pytest==9.1.1' 'pytest-cov==7.0.0'
+          python -m pip check
+          python -m pip freeze > evidence/anyio-posthoc-observer/PIP_FREEZE.txt
+      - name: Native original protected failure observation in independent process A
+        env:
+          GH_TOKEN: ""
+          GITHUB_TOKEN: ""
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_anyio_posthoc_function_observer_v1.py \
+            /tmp/posthoc-anyio /tmp/posthoc-v104 "$GITHUB_WORKSPACE/evidence/anyio-posthoc-observer/trial-a"
+      - name: Independently repeat native protected observation in new process B
+        env:
+          GH_TOKEN: ""
+          GITHUB_TOKEN: ""
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_anyio_posthoc_function_observer_v1.py \
+            /tmp/posthoc-anyio /tmp/posthoc-v104 "$GITHUB_WORKSPACE/evidence/anyio-posthoc-observer/trial-b"
+      - name: Reject unstable sources, native results or method-eligibility differences
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib,hashlib
+          root=pathlib.Path("evidence/anyio-posthoc-observer")
+          a=json.loads((root/"trial-a/RESULT.json").read_text())
+          b=json.loads((root/"trial-b/RESULT.json").read_text())
+          for name in ("status","v13_original_eligible_guards","observed_functions",
+                       "all_original_v104_source_slot_counts","junit","actual_calls",
+                       "eligible_source_slot_count","other_source_locations_eligible"):
+              assert a.get(name)==b.get(name),f"NONDETERMINISTIC_OBSERVER_{name}"
+          assert a["G2"]==b["G2"]=="UNKNOWN"
+          assert a["future_source"]==b["future_source"]=="UNOPENED"
+          assert a["source_test_bytes_preserved"] is b["source_test_bytes_preserved"] is True
+          assert a["native_calls"]==b["native_calls"]==1
+          assert a["v13_original_eligible_guards"]==0
+          assert a["junit"]=={"tests":2,"failures":2,"errors":0,"skipped":0}
+          assert a["status"] in ("WARRANTED_BOUNDED_INSTRUMENTED_SOURCE_FUNCTION_OBSERVATION",
+                                  "UNKNOWN_NO_INSTRUMENTED_ADDITIONAL_V104_SITE")
+          (root/"REPLAY_VERDICT.json").write_text(json.dumps({
+            "status":a["status"],"independent_processes":2,
+            "observed_functions":a.get("observed_functions"),
+            "V13":"INAPPLICABLE_ORIGINAL_SOURCE","G2":"UNKNOWN",
+            "future_source":"UNOPENED"},indent=2)+"\n")
+          print("SCIENTIFIC_RESULT",a["status"],"SOURCE_SLOTS",a.get("eligible_source_slot_count"))
+          PY
+      - name: Preserve pre-frozen protocol, all native evidence, failures and limitations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-anyio-posthoc-native-observation-evidence-v1
+          if-no-files-found: warn
+          retention-days: 90
+          path: |
+            evidence/anyio-posthoc-observer/
+            research/unified_consequence_runtime/g2_anyio_posthoc_function_observer_v1.py
+            research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVATION_PROTOCOL_V1.json
