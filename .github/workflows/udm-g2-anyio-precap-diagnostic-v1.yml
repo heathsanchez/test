@@ -1,0 +1,92 @@
+name: UDM AnyIO exposed pre-cap source eligibility diagnostic (NOT G2)
+on:
+  push:
+    branches:
+      - research/udm-g2-anyio-precap-observer-diagnostic-20261018
+    paths:
+      - "research/unified_consequence_runtime/G2_ANYIO_PRECAP_DIAGNOSTIC_PROTOCOL_V1.json"
+      - "research/unified_consequence_runtime/g2_anyio_pre_cap_diagnostic_v1.py"
+      - ".github/workflows/udm-g2-anyio-precap-diagnostic-v1.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exposed-source-only-precap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    env:
+      GIT_NO_REPLACE_OBJECTS: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Confirm posthoc protocol predates source-observation implementation
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor df948d4e412b7e6eee77ad971be2f67d0085948f HEAD
+          git merge-base --is-ancestor 53eae7d8a60d7ef6ff5aaec4a584043ea5a82124 HEAD
+          python -B -m py_compile research/unified_consequence_runtime/g2_anyio_pre_cap_diagnostic_v1.py
+      - name: Install original typed-observer control-plane imports only
+        run: |
+          python -m pip install --disable-pip-version-check --no-input 'packaging==26.3' 'pytest==9.1.1'
+      - name: Download exact ORIGINAL AnyIO native archive (no future source)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/udm-g2-precap-v1
+          curl -fLsS --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/12118690451/zip" \
+            -o "$RUNNER_TEMP/original_g2.zip"
+          printf '%s  %s\n' '7ec7f9922aa3925f8d0d455f79eba414f4512c6210762e7731d442e746972680' "$RUNNER_TEMP/original_g2.zip" | sha256sum -c -
+          sha256sum "$RUNNER_TEMP/original_g2.zip" > evidence/udm-g2-precap-v1/ORIGINAL_ARTIFACT_SHA256.txt
+      - name: Fetch original SHA-pinned V104 constructor only
+        run: |
+          set -euo pipefail
+          git init -q "$RUNNER_TEMP/udm-v104-original"
+          git -C "$RUNNER_TEMP/udm-v104-original" fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C "$RUNNER_TEMP/udm-v104-original" checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          test "$(git -C "$RUNNER_TEMP/udm-v104-original" rev-parse HEAD)" = "426c54f7c774560e0fabe7213c5ef333b1327c71"
+      - name: Run V13 applicability, protected source symbol ranking, unchanged V104 generation, policy quotient
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B \
+            research/unified_consequence_runtime/g2_anyio_pre_cap_diagnostic_v1.py \
+            "$RUNNER_TEMP/original_g2.zip" \
+            "$RUNNER_TEMP/udm-v104-original" \
+            "$GITHUB_WORKSPACE/evidence/udm-g2-precap-v1/diagnostic"
+      - name: Enforce epistemic boundary
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('evidence/udm-g2-precap-v1/diagnostic/RESULT.json')
+          r=json.loads(p.read_text())
+          assert r['G2']=='UNKNOWN' and r['heldout_future']=='SEALED_UNOPENED'
+          assert r['native_candidate_verifications']==0 and r['native_observation_calls']==0
+          assert r['existing_v13_guard_count']==0
+          assert len(r['new_pre_cap_top'])==3 and all(x['score']>0 for x in r['new_pre_cap_top'])
+          assert len(r['new_production_operations'])==3
+          assert all(v['valid_reembedded']>0 for v in r['new_production_operations'])
+          assert r['policy_quotient']['prefix_class_sizes']==[1,36]
+          print('POSTHOC_DIAGNOSTIC_SOURCE_AND_SCOPE_PASS_NOT_G2')
+          PY
+      - name: Archive all source-bound positive/negative diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-g2-anyio-precap-posthoc-source-diagnostic-v1
+          if-no-files-found: warn
+          retention-days: 90
+          path: |
+            research/unified_consequence_runtime/G2_ANYIO_PRECAP_DIAGNOSTIC_PROTOCOL_V1.json
+            research/unified_consequence_runtime/g2_anyio_pre_cap_diagnostic_v1.py
+            evidence/udm-g2-precap-v1/
