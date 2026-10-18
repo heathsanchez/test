@@ -1,9 +1,9 @@
-"""Source-neutral native profile for persisted nested closure observations.
+"""Source-neutral nested-pytest observer for persistent closure state.
 
-Static AST patterns are supplied through the frozen observer. The plugin never
-chooses or edits a source location. It samples only return events for the
-statically detected production function, where current outer context and the
-persistent callable read by that invocation are both still available.
+The outer protected author tests use Pytester to execute an inner pytest run.
+This diagnostic plugin injects itself into that already-existing Pytester plugin
+list and wraps the same pytest hook named by the statically detected source
+pattern. It never edits source/test bytes or changes hook results.
 """
 from __future__ import annotations
 
@@ -13,18 +13,13 @@ import os
 from pathlib import Path
 import sys
 
+import pytest
+
 _PATTERNS = json.loads(os.environ.get("UDM_G2_MUTABLE_CLOSURE_PATTERNS", "[]"))
-_WORLD = Path(os.environ.get("UDM_G2_WORLD_ROOT", ".")).resolve()
 _LOG = os.environ.get("UDM_G2_MUTABLE_CLOSURE_LOG")
 _EVENTS: list[dict[str, object]] = []
-_CURRENT_NODE: str | None = None
-_INSTALLED = False
 _FLUSHED = False
-
-_TARGETS: dict[tuple[str, int], list[dict[str, object]]] = {}
-for _pattern in _PATTERNS:
-    _abs = str((_WORLD / _pattern["path"]).resolve())
-    _TARGETS.setdefault((_abs, int(_pattern["code_first_line"])), []).append(_pattern)
+_PLUGIN_NAME = __name__
 
 
 def _primitive(value):
@@ -34,18 +29,14 @@ def _primitive(value):
         x is None or isinstance(x, (bool, int, float, str)) for x in value
     ):
         return {"kind": "tuple", "value": list(value)}
-    if callable(value):
-        return _callable(value)
-    return {
-        "kind": "object",
-        "type": type(value).__module__ + "." + type(value).__qualname__,
-    }
+    return None
 
 
 def _callable(value):
     code = getattr(value, "__code__", None)
     result = {
         "kind": "callable",
+        "identity": str(id(value)),
         "module": getattr(value, "__module__", None),
         "qualname": getattr(value, "__qualname__", None),
     }
@@ -60,10 +51,14 @@ def _callable(value):
             except ValueError:
                 cells[name] = {"kind": "empty"}
             else:
-                if callable(cell_value):
+                primitive = _primitive(cell_value)
+                if primitive is not None:
+                    cells[name] = primitive
+                elif callable(cell_value):
                     inner_code = getattr(cell_value, "__code__", None)
                     cells[name] = {
                         "kind": "callable",
+                        "identity": str(id(cell_value)),
                         "module": getattr(cell_value, "__module__", None),
                         "qualname": getattr(cell_value, "__qualname__", None),
                         "firstlineno": (
@@ -71,18 +66,20 @@ def _callable(value):
                         ),
                     }
                 else:
-                    cells[name] = _primitive(cell_value)
+                    cells[name] = {
+                        "kind": "object",
+                        "type": type(cell_value).__module__
+                        + "."
+                        + type(cell_value).__qualname__,
+                    }
         result["closure"] = cells
     return result
 
 
-def _read_path(frame, path):
-    if not path:
+def _read_item_path(pyfuncitem, path):
+    if not path or path[0] != "pyfuncitem":
         return None
-    root = path[0]
-    if root not in frame.f_locals:
-        return None
-    value = frame.f_locals[root]
+    value = pyfuncitem
     for name in path[1:]:
         try:
             value = getattr(value, name)
@@ -91,44 +88,64 @@ def _read_path(frame, path):
     return value
 
 
-def _profile(frame, event, arg):
-    if event != "return":
-        return
-    key = (str(Path(frame.f_code.co_filename).resolve()), int(frame.f_code.co_firstlineno))
-    patterns = _TARGETS.get(key, ())
+def _external_context(pyfuncitem):
+    out = {}
+    for name, value in sorted(getattr(pyfuncitem, "funcargs", {}).items()):
+        row = _primitive(value)
+        if row is not None:
+            out[name] = row
+    return out
+
+
+def _pytest_patterns():
+    return [p for p in _PATTERNS if p.get("function") == "pytest_pyfunc_call"]
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_pyfunc_call(pyfuncitem):
+    patterns = _pytest_patterns()
+    pre = []
     for pattern in patterns:
-        if pattern["read_variable"] not in frame.f_locals:
+        value = _read_item_path(pyfuncitem, pattern["attribute_path"])
+        pre.append(_callable(value) if callable(value) else None)
+    outcome = yield
+    context = _external_context(pyfuncitem)
+    for pattern, before in zip(patterns, pre):
+        after_value = _read_item_path(pyfuncitem, pattern["attribute_path"])
+        after = _callable(after_value) if callable(after_value) else None
+        if before is None and after is None:
             continue
-        captures = {
-            name: _primitive(frame.f_locals.get(name))
-            for name in pattern["dynamic_captures"]
-        }
-        read_value = frame.f_locals.get(pattern["read_variable"])
-        stored_value = _read_path(frame, pattern["attribute_path"])
         _EVENTS.append(
             {
                 "pid": os.getpid(),
-                "nodeid": _CURRENT_NODE,
+                "rootpath": str(pyfuncitem.config.rootpath),
+                "nodeid": pyfuncitem.nodeid,
                 "path": pattern["path"],
                 "function": pattern["function"],
-                "function_line": pattern["function_line"],
-                "code_first_line": pattern["code_first_line"],
-                "guard_line": pattern["guard_line"],
-                "observation_event": "RETURN",
-                "read_variable": pattern["read_variable"],
-                "dynamic_captures": captures,
-                "read_callable": (
-                    _callable(read_value)
-                    if callable(read_value)
-                    else _primitive(read_value)
-                ),
-                "stored_callable": (
-                    _callable(stored_value)
-                    if callable(stored_value)
-                    else _primitive(stored_value)
-                ),
+                "pattern_id": pattern["pattern_id"],
+                "wrapper": pattern["wrapper"],
+                "attribute_path": pattern["attribute_path"],
+                "external_context": context,
+                "pre_callable": before,
+                "post_callable": after,
             }
         )
+    return outcome
+
+
+def pytest_runtest_setup(item):
+    # The author tests call Pytester.runpytest() in-process. Pytester's explicit
+    # plugin list is the correct non-mutating bridge into that nested run.
+    for value in getattr(item, "funcargs", {}).values():
+        if (
+            value.__class__.__module__ == "_pytest.pytester"
+            and value.__class__.__name__ == "Pytester"
+            and hasattr(value, "plugins")
+        ):
+            if _PLUGIN_NAME not in value.plugins:
+                value.plugins.append(_PLUGIN_NAME)
+            # Avoid a duplicate env-based registration inside the new plugin manager.
+            os.environ.pop("PYTEST_PLUGINS", None)
 
 
 def _flush():
@@ -138,7 +155,7 @@ def _flush():
     path = Path(_LOG)
     path.parent.mkdir(parents=True, exist_ok=True)
     row = {
-        "schema": "UDM_G2_MUTABLE_CLOSURE_NATIVE_PROFILE_V2",
+        "schema": "UDM_G2_MUTABLE_CLOSURE_NESTED_PYTEST_OBSERVATION_V2",
         "pid": os.getpid(),
         "events": _EVENTS,
     }
@@ -147,25 +164,7 @@ def _flush():
     _FLUSHED = True
 
 
-def pytest_sessionstart(session):
-    global _INSTALLED
-    if not _INSTALLED:
-        sys.setprofile(_profile)
-        _INSTALLED = True
-
-
-def pytest_runtest_setup(item):
-    global _CURRENT_NODE
-    _CURRENT_NODE = item.nodeid
-
-
-def pytest_runtest_teardown(item, nextitem):
-    global _CURRENT_NODE
-    _CURRENT_NODE = None
-
-
 def pytest_sessionfinish(session, exitstatus):
-    sys.setprofile(None)
     _flush()
 
 
