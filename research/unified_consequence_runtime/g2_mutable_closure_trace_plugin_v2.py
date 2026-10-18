@@ -1,8 +1,9 @@
-"""Source-neutral native trace for persisted nested closure observations.
+"""Source-neutral native profile for persisted nested closure observations.
 
-Loaded only by the dedicated G2 V2 experiment. Static AST patterns are supplied
-through an environment variable by the frozen observer. The plugin never chooses
-or edits a source location.
+Static AST patterns are supplied through the frozen observer. The plugin never
+chooses or edits a source location. It samples only return events for the
+statically detected production function, where current outer context and the
+persistent callable read by that invocation are both still available.
 """
 from __future__ import annotations
 
@@ -29,11 +30,16 @@ for _pattern in _PATTERNS:
 def _primitive(value):
     if value is None or isinstance(value, (bool, int, float, str)):
         return {"kind": "primitive", "value": value}
-    if isinstance(value, tuple) and all(x is None or isinstance(x, (bool, int, float, str)) for x in value):
+    if isinstance(value, tuple) and all(
+        x is None or isinstance(x, (bool, int, float, str)) for x in value
+    ):
         return {"kind": "tuple", "value": list(value)}
     if callable(value):
         return _callable(value)
-    return {"kind": "object", "type": type(value).__module__ + "." + type(value).__qualname__}
+    return {
+        "kind": "object",
+        "type": type(value).__module__ + "." + type(value).__qualname__,
+    }
 
 
 def _callable(value):
@@ -60,7 +66,9 @@ def _callable(value):
                         "kind": "callable",
                         "module": getattr(cell_value, "__module__", None),
                         "qualname": getattr(cell_value, "__qualname__", None),
-                        "firstlineno": int(inner_code.co_firstlineno) if inner_code else None,
+                        "firstlineno": (
+                            int(inner_code.co_firstlineno) if inner_code else None
+                        ),
                     }
                 else:
                     cells[name] = _primitive(cell_value)
@@ -83,15 +91,13 @@ def _read_path(frame, path):
     return value
 
 
-def _local_trace(frame, event, arg):
-    if event != "line":
-        return _local_trace
+def _profile(frame, event, arg):
+    if event != "return":
+        return
     key = (str(Path(frame.f_code.co_filename).resolve()), int(frame.f_code.co_firstlineno))
     patterns = _TARGETS.get(key, ())
-    if not patterns:
-        return None
     for pattern in patterns:
-        if frame.f_lineno != pattern["guard_line"]:
+        if pattern["read_variable"] not in frame.f_locals:
             continue
         captures = {
             name: _primitive(frame.f_locals.get(name))
@@ -99,38 +105,42 @@ def _local_trace(frame, event, arg):
         }
         read_value = frame.f_locals.get(pattern["read_variable"])
         stored_value = _read_path(frame, pattern["attribute_path"])
-        _EVENTS.append({
-            "pid": os.getpid(),
-            "nodeid": _CURRENT_NODE,
-            "path": pattern["path"],
-            "function": pattern["function"],
-            "function_line": pattern["function_line"],
-            "code_first_line": pattern["code_first_line"],
-            "guard_line": pattern["guard_line"],
-            "read_variable": pattern["read_variable"],
-            "dynamic_captures": captures,
-            "read_callable": _callable(read_value) if callable(read_value) else _primitive(read_value),
-            "stored_callable": _callable(stored_value) if callable(stored_value) else _primitive(stored_value),
-        })
-    return _local_trace
-
-
-def _global_trace(frame, event, arg):
-    if event != "call":
-        return None
-    key = (str(Path(frame.f_code.co_filename).resolve()), int(frame.f_code.co_firstlineno))
-    if key in _TARGETS:
-        return _local_trace
-    return None
+        _EVENTS.append(
+            {
+                "pid": os.getpid(),
+                "nodeid": _CURRENT_NODE,
+                "path": pattern["path"],
+                "function": pattern["function"],
+                "function_line": pattern["function_line"],
+                "code_first_line": pattern["code_first_line"],
+                "observation_event": "RETURN",
+                "read_variable": pattern["read_variable"],
+                "dynamic_captures": captures,
+                "read_callable": (
+                    _callable(read_value)
+                    if callable(read_value)
+                    else _primitive(read_value)
+                ),
+                "stored_callable": (
+                    _callable(stored_value)
+                    if callable(stored_value)
+                    else _primitive(stored_value)
+                ),
+            }
+        )
 
 
 def _flush():
     global _FLUSHED
-    if _FLUSHED or not _LOG or not _EVENTS:
+    if _FLUSHED or not _LOG:
         return
     path = Path(_LOG)
     path.parent.mkdir(parents=True, exist_ok=True)
-    row = {"schema": "UDM_G2_MUTABLE_CLOSURE_NATIVE_TRACE_V2", "pid": os.getpid(), "events": _EVENTS}
+    row = {
+        "schema": "UDM_G2_MUTABLE_CLOSURE_NATIVE_PROFILE_V2",
+        "pid": os.getpid(),
+        "events": _EVENTS,
+    }
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
     _FLUSHED = True
@@ -139,7 +149,7 @@ def _flush():
 def pytest_sessionstart(session):
     global _INSTALLED
     if not _INSTALLED:
-        sys.settrace(_global_trace)
+        sys.setprofile(_profile)
         _INSTALLED = True
 
 
@@ -154,7 +164,7 @@ def pytest_runtest_teardown(item, nextitem):
 
 
 def pytest_sessionfinish(session, exitstatus):
-    sys.settrace(None)
+    sys.setprofile(None)
     _flush()
 
 
