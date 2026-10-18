@@ -1,0 +1,50 @@
+{
+  "schema": "UDM_ANYIO_EXPOSED_SOURCE_STATE_IDENTITY_POSTHOC_DIAGNOSTIC_20261018",
+  "status": "WARRANTED_LOCAL_EXACT_SOURCE_DERIVED_SIMULATION_NOT_G2",
+  "original_native_run": 39078910793,
+  "original_archive_sha256": "7ec7f9922aa3925f8d0d455f79eba414f4512c6210762e7731d442e746972680",
+  "original_production_sha256": "a0b5f23acb6f4595b75556ea20e0e166c3ede234b3d941a1e3861e1b69c95f1d",
+  "original_test_sha256": "c7dc03febccc7d17bc8291cd7ace6cbe7e87da8350434bbf88f1b9b26033b5fe",
+  "existing_v13_if_not_self_attribute_guards": 0,
+  "original_emitted_candidate_count": 64,
+  "original_edit_locus": "_is_auto_mode Return.value line108",
+  "source_neutral_ast_pattern": {
+    "function": "pytest_pyfunc_call",
+    "function_definition_line": 269,
+    "closure": "run_with_hypothesis",
+    "guard_attr": "__qualname__",
+    "guard_line": 281,
+    "persistent_attribute": "inner_test",
+    "assignment_line": 283,
+    "captured_nonlocal_backend": "backend_name"
+  },
+  "executed_exact_function_stubs": {
+    "shared_mutable_state_backend_sequence": [
+      "asyncio",
+      "asyncio"
+    ],
+    "fresh_mutable_state_backend_sequence": [
+      "asyncio",
+      "trio"
+    ],
+    "identical_backend_negative_control": [
+      "trio",
+      "trio"
+    ],
+    "source_function_ast_unchanged": true,
+    "scope": "Exact original function AST, decorators removed, minimal external fake pytest runner and item contexts; not original 42 native tests; after-outcome test."
+  },
+  "epistemic": {
+    "structural_cross_call_persistence": "WARRANTED_BOUNDED_SOURCE_DERIVED",
+    "sole_cause_of_actual_upstream_failure": "UNKNOWN",
+    "source_native_repair": "NOT_EXECUTED",
+    "V13_V14_current_guard_admissibility": "REJECTED_FOR_ANYIO_SOURCE",
+    "prospective_G2": "UNKNOWN",
+    "heldout_future": "UNOPENED",
+    "comparative_agent_ledger": "NOT_EXECUTED"
+  },
+  "next": "Replace unsuitable V13 specialised guard event by independently qualified general source-native mutable state/closure environment observation before V104 emission; quotient policy aliases in NEW frozen experiment; do not retrofit original G2 failure.",
+  "local_replay_file_sha256": "15fafa216126eb2e8584af30f555fd1ede6bffea18e7185742b16eced636ca72",
+  "local_result_sha256": "4393da4cd126b2052ae4b5a1cb4a3fdc6478026a4e61a7bad8c85b429d543012",
+  "local_evidence_zip_sha256": "8ee0d4a797f24c699548f256aceeb52242ea3d29a683e8ce0ada2c4ffcd2dc93"
+}
