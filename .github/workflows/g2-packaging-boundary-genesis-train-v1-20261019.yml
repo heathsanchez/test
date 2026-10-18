@@ -1,0 +1,80 @@
+name: G2 Packaging whole-input-boundary training - Click future sealed V1
+on:
+  push:
+    branches:
+      - research/g2-packaging-boundary-genesis-click-future-20261019
+    paths:
+      - .github/workflows/g2-packaging-boundary-genesis-train-v1-20261019.yml
+
+permissions:
+  contents: read
+
+jobs:
+  packaging-native-new-observation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+    steps:
+      - name: Checkout immutable owned branch read-only
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify new-role freeze, version and Python syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          F=research/unified_consequence_runtime/
+          git merge-base --is-ancestor caa16ee1a569c52b1d22a967599549c45fa39582 HEAD
+          cmp "$F"g2_packaging_boundary_genesis_v1.py <(git show e78097f11a83564684acdbc68f8e822aef495b25:"$F"g2_packaging_boundary_genesis_v1.py)
+          python -B -m py_compile "$F"g2_packaging_boundary_genesis_v1.py
+          python -B -m py_compile "$F"g2_pool_first_native_failure_v1.py
+          mkdir -p evidence/g2-packaging-boundary-genesis-train-v1
+          echo 'SEALED_FUTURE pallets/click PR3884; SOURCE_UNREAD; NO_RESAMPLING' > evidence/g2-packaging-boundary-genesis-train-v1/FUTURE_SEAL.txt
+          sha256sum "$F"g2_packaging_boundary_genesis_v1.py > evidence/g2-packaging-boundary-genesis-train-v1/GENERATOR_SHA.txt
+          git rev-parse HEAD > evidence/g2-packaging-boundary-genesis-train-v1/COMMIT.txt
+      - name: Exposed Packaging native residual and frozen generic boundary search
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_packaging_boundary_genesis_v1.py "$GITHUB_WORKSPACE/evidence/g2-packaging-boundary-genesis-train-v1/training"
+      - name: Independent outer result boundary
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          e=Path('evidence/g2-packaging-boundary-genesis-train-v1')
+          p=e/'training/RESULT.json'
+          r=json.loads(p.read_text()) if p.is_file() else {}
+          assert (e/'FUTURE_SEAL.txt').exists()
+          assert r.get('future','CLICK_SEALED_UNOPENED')=='CLICK_SEALED_UNOPENED'
+          assert r.get('future_source_visited',False) is False
+          assert r.get('G2','UNKNOWN')=='UNKNOWN'
+          verdict={'status':r.get('status','UNKNOWN_NO_REPORT'),
+                   'candidate_count':len(r.get('candidates',[])),
+                   'future':'CLICK_SEALED_UNOPENED','G2':'UNKNOWN',
+                   'external_archive_audit':'NOT_YET_EXECUTED'}
+          (e/'BOUNDARY.json').write_text(json.dumps(verdict,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(verdict,sort_keys=True))
+          if r.get('status') in ('UNKNOWN_TRAINING_APPARATUS','UNKNOWN_NO_REPORT','UNKNOWN_TRAINING_NATIVE_NOT_ADMITTED'):
+              raise SystemExit('APPARATUS_NOT_ADMITTED')
+          PY
+      - name: Preserve raw records and methods
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-packaging-boundary-genesis-train-v1-evidence
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-packaging-boundary-genesis-train-v1/
+            research/unified_consequence_runtime/G2_PACKAGING_CLICK_V1_BEFORE_FUTURE_PROTOCOL.md
+            research/unified_consequence_runtime/g2_packaging_boundary_genesis_v1.py
