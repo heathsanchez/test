@@ -319,8 +319,109 @@ def main(world: Path,out: Path):
     if not valid:
         result["status"]="UNKNOWN_INSTRUMENTED_NATIVE_AUTHORITY"
     else:
+        # The protected author tests are meta-tests that create exact child test
+        # source via testdir.makepyfile(). Extract those literal payloads from the
+        # authenticated author test AST; do not author a replacement test.
+        author_tree=ast.parse(tests.decode("utf-8"),filename=author)
+        direct_dir=out/"direct-author-child"
+        direct_dir.mkdir()
+        child_files={}
+        for index,parent in enumerate(protocol["protected"]):
+            fn_name=parent.split("::")[-1]
+            fn=next(
+                node for node in author_tree.body
+                if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef))
+                and node.name==fn_name
+            )
+            payloads=[]
+            for node in ast.walk(fn):
+                if not isinstance(node,ast.Call) or not isinstance(node.func,ast.Attribute):
+                    continue
+                if node.func.attr!="makepyfile" or not node.args:
+                    continue
+                arg=node.args[0]
+                if isinstance(arg,ast.Constant) and isinstance(arg.value,str):
+                    payloads.append(arg.value)
+            if len(payloads)!=1:
+                raise AssertionError("PROTECTED_AUTHOR_CHILD_SOURCE_NOT_UNIQUE:"+parent)
+            path=(direct_dir/f"test_author_child_{index}.py").resolve()
+            path.write_text(payloads[0],encoding="utf-8")
+            child_files[path]=parent
+
+        direct=Monitor(world,production,protocol["protected"],sites)
+
+        class DirectPlugin:
+            @pytest.hookimpl(hookwrapper=True,tryfirst=True)
+            def pytest_runtest_call(self,item):
+                try:path=Path(str(item.path)).resolve()
+                except Exception:path=None
+                parent=child_files.get(path)
+                old_current=direct.current
+                direct.current=parent
+                try:
+                    yield
+                finally:
+                    direct.current=old_current
+
+            def pytest_collection_modifyitems(self,session,config,items):
+                direct.collected=[item.nodeid for item in items]
+
+            def pytest_deselected(self,items):
+                direct.deselected.extend(item.nodeid for item in items)
+
+            def pytest_runtest_logreport(self,report):
+                if report.when=="call":
+                    direct.outcomes.append({"nodeid":report.nodeid,"outcome":report.outcome})
+
+        direct_argv=[
+            "-q","-p","no:cacheprovider",
+            "--rootdir="+str(direct_dir),
+            *[str(path) for path in sorted(child_files)],
+        ]
+        old_trace=sys.gettrace()
+        sys.settrace(direct.trace)
+        try:
+            direct_code=pytest.main(direct_argv,plugins=[DirectPlugin()])
+        finally:
+            sys.settrace(old_trace)
+
+        result["direct_author_child"]={
+            "pytest_argv":direct_argv,
+            "exit":int(direct_code),
+            "outcomes":direct.outcomes,
+            "collected":direct.collected,
+            "deselected":direct.deselected,
+            "source_map":{str(path):parent for path,parent in child_files.items()},
+        }
+        result["direct_outer_snapshots"]={
+            str(key):value for key,value in direct.outer_snapshots.items()
+        }
+        result["direct_nested_calls"]={
+            str(key):value for key,value in direct.nested_calls.items()
+        }
+
+        sequence_mismatches=[]
+        for key,outers in direct.outer_snapshots.items():
+            nested=direct.nested_calls.get(key,[])
+            for index,(outer_row,nested_row) in enumerate(zip(outers,nested)):
+                common=sorted(set(outer_row["scalars"]) & set(nested_row["scalars"]))
+                for name in common:
+                    current=outer_row["scalars"][name]
+                    captured=nested_row["scalars"][name]
+                    if current!=captured:
+                        sequence_mismatches.append({
+                            "protected_test":key[0],
+                            "site_key":list(key[1]),
+                            "pair_index":index,
+                            "name":name,
+                            "current_outer":current,
+                            "executed_nested":captured,
+                        })
+        result["sequence_stale_capture_observations"]=sequence_mismatches
+        result["sequence_stale_capture_observation_count"]=len(sequence_mismatches)
+
         direct_mismatches=[
-            obs for obs in monitor.observations
+            obs for obs in direct.observations
             if obs["same_named_scalar_mismatches"]
         ]
         mismatches=direct_mismatches+sequence_mismatches
@@ -331,7 +432,14 @@ def main(world: Path,out: Path):
             obs.get("protected_test") for obs in mismatches if obs.get("protected_test")
         })
         result["protected_tests_with_stale_capture"]=tests_with_mismatch
-        if len(tests_with_mismatch)==2:
+        direct_failed=sum(row["outcome"]=="failed" for row in direct.outcomes)
+        direct_errors=sum(row["outcome"] not in ("passed","failed","skipped") for row in direct.outcomes)
+        result["direct_author_child_failure_count"]=direct_failed
+        result["direct_author_child_error_like_count"]=direct_errors
+
+        if int(direct_code) not in (0,1) or direct_errors:
+            result["status"]="UNKNOWN_DIRECT_AUTHOR_CHILD_APPARATUS"
+        elif len(tests_with_mismatch)==2:
             result["status"]="WARRANTED_BOUNDED_NATIVE_SOURCE_DERIVED_STALE_CLOSURE_OBSERVATION"
         elif mismatches:
             result["status"]="WARRANTED_BOUNDED_NATIVE_STALE_CLOSURE_PARTIAL"
