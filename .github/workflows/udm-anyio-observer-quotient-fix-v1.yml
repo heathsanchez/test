@@ -6,7 +6,6 @@ on:
       - research/udm-anyio-observer-quotient-fix-v1-20261018
     paths:
       - .github/workflows/udm-anyio-observer-quotient-fix-v1.yml
-      - research/unified_consequence_runtime/g2_anyio_posthoc_function_observer_v1.py
       - research/unified_consequence_runtime/g2_anyio_mutable_closure_observer_v1.py
       - research/unified_consequence_runtime/g2_equivalence_class_selector_v1.py
       - research/unified_consequence_runtime/G2_ANYIO_POSTHOC_OBSERVATION_PROTOCOL_V1.json
@@ -21,9 +20,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
+      GH_TOKEN: ${{ github.token }}
       PYTHONDONTWRITEBYTECODE: "1"
       GIT_NO_REPLACE_OBJECTS: "1"
       GIT_OPTIONAL_LOCKS: "0"
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,53 +50,52 @@ jobs:
           test "$(git -C /tmp/udm-anyio diff --name-only)" = tests/test_pytest_plugin.py
           test "$(git hash-object /tmp/udm-anyio/src/anyio/pytest_plugin.py)" = d6238cd110ab793ccccb9671fc7eccc33c5415e5
           test "$(git hash-object /tmp/udm-anyio/tests/test_pytest_plugin.py)" = b15d4da74a17b7f80fa07b0d172c03eb752be7f4
-
-          git init -q /tmp/g2-v104
-          git -C /tmp/g2-v104 fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
-          git -C /tmp/g2-v104 checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
-
-          git init -q /tmp/g2-msi
-          git -C /tmp/g2-msi fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
-          git -C /tmp/g2-msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
-
           printf '%s\n' 'alexmojaki/executing PR#50 source remains unopened in this gate' > evidence/anyio-observer-quotient/FUTURE_SEAL.txt
 
       - name: Install original declared test environment
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check --no-input 'pip==25.3'
-          python -m pip install --disable-pip-version-check --no-input             -e '/tmp/udm-anyio[trio]'             --group '/tmp/udm-anyio/pyproject.toml:test'             'pytest==9.1.1' 'pytest-cov==7.0.0'
+          python -m pip install --disable-pip-version-check --no-input -e '/tmp/udm-anyio[trio]' --group '/tmp/udm-anyio/pyproject.toml:test' 'pytest==9.1.1' 'pytest-cov==7.0.0'
           python -m pip check
           python -m pip freeze > evidence/anyio-observer-quotient/PIP_FREEZE.txt
 
-      - name: Repair impossible selection gate by quotienting aliases before outcomes
+      - name: Repair impossible selection gate from exact pre-outcome catalog artifact
         run: |
           set -euo pipefail
-          python -B research/unified_consequence_runtime/g2_equivalence_class_selector_v1.py             /tmp/udm-anyio /tmp/g2-v104 /tmp/g2-msi             "$GITHUB_WORKSPACE/evidence/anyio-observer-quotient/policy-quotient"             | tee evidence/anyio-observer-quotient/POLICY_QUOTIENT_STDOUT.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/12117742923/zip" > "$RUNNER_TEMP/g2-source-only-catalog.zip"
+          printf '%s  %s\n' '3140ce752b3b9b43cba6aafbe914c6e5f48a22f350237965e7ca5ab4edb411ae' "$RUNNER_TEMP/g2-source-only-catalog.zip" | sha256sum -c -
+          python -B research/unified_consequence_runtime/g2_equivalence_class_selector_v1.py "$RUNNER_TEMP/g2-source-only-catalog.zip" "$GITHUB_WORKSPACE/evidence/anyio-observer-quotient/policy-quotient" | tee evidence/anyio-observer-quotient/POLICY_QUOTIENT_STDOUT.json
           python - <<'PY'
           import json
           r=json.load(open('evidence/anyio-observer-quotient/policy-quotient/RESULT.json'))
           assert r['status']=='WARRANTED_BOUNDED_PREOUTCOME_POLICY_QUOTIENT',r
           assert r['raw_policy_names']==37 and r['policy_classes']==2,r
           assert r['class_sizes']=={'COLD':1,'NONCOLD':36},r
-          assert r['binary_outcome_census']['UNIQUE_NONCOLD_CLASS']>0,r
+          assert r['binary_outcome_census']=={
+              'UNIQUE_NONCOLD_CLASS':10933,
+              'UNIQUE_COLD_CLASS':10917,
+              'CLASS_TIE':10918,
+          },r
           assert r['future_source']=='UNOPENED' and r['native_candidate_runs']==0,r
           print('PASS_EQUIVALENCE_CLASS_SELECTOR_REPAIR_V1')
           PY
 
-      - name: Execute source-neutral native function observation on authentic protected failures
+      - name: Execute source-neutral native mutable-closure observation
         run: |
           set -euo pipefail
-          python -B research/unified_consequence_runtime/g2_anyio_posthoc_function_observer_v1.py             /tmp/udm-anyio /tmp/g2-v104             "$GITHUB_WORKSPACE/evidence/anyio-observer-quotient/native-observer"             | tee evidence/anyio-observer-quotient/NATIVE_OBSERVER_STDOUT.json
+          python -B research/unified_consequence_runtime/g2_anyio_mutable_closure_observer_v1.py /tmp/udm-anyio "$GITHUB_WORKSPACE/evidence/anyio-observer-quotient/native-observer" | tee evidence/anyio-observer-quotient/NATIVE_OBSERVER_STDOUT.json
           python - <<'PY'
           import json
           r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
-          assert r['status']=='WARRANTED_BOUNDED_INSTRUMENTED_SOURCE_FUNCTION_OBSERVATION',r
+          assert r['status']=='WARRANTED_BOUNDED_NATIVE_SOURCE_DERIVED_STALE_CLOSURE_OBSERVATION',r
           assert r['junit']=={'tests':2,'failures':2,'errors':0,'skipped':0},r
           assert r['source_test_bytes_preserved'] is True,r
-          assert r['other_source_locations_eligible'],r
+          assert r['source_derived_mutable_closure_site_count']>=1,r
+          assert r['stale_capture_observation_count']>=1,r
+          assert len(r['protected_tests_with_stale_capture'])==2,r
           assert r['G2']=='UNKNOWN' and r['future_source']=='UNOPENED',r
-          print('PASS_NATIVE_SOURCE_OBSERVER_V1')
+          print('PASS_NATIVE_MUTABLE_CLOSURE_OBSERVER_V1')
           PY
 
       - name: Seal combined structural fix without retroactive G2 promotion
