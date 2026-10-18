@@ -72,7 +72,14 @@ class GitHub:
         try:
             with urlopen(req,timeout=35) as resp:raw=resp.read()
         except HTTPError as exc:
-            raise ValueError("UNKNOWN_METADATA_HTTP_"+str(exc.code)) from None
+            # API apparatus diagnosis only: no response body, title, patch or
+            # source content can reach the experimenter in the error record.
+            typ=("ISSUE_SEARCH" if path=="search/issues"
+                 else "PR_FILES" if path.endswith("/files")
+                 else "PR_DETAIL" if "/pulls/" in path
+                 else "MERGE_COMMIT" if "/commits/" in path
+                 else "OTHER")
+            raise ValueError("UNKNOWN_METADATA_HTTP_"+str(exc.code)+"_"+typ) from None
         except (URLError,TimeoutError) as exc:
             raise ValueError("UNKNOWN_METADATA_TRANSPORT") from None
         return json.loads(raw)
