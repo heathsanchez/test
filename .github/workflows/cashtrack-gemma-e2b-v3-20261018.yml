@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   once-cpu-gemma-native:
-    if: github.event_name == 'push' && github.event.head_commit.message == 'ci: execute frozen Gemma 4 E2B nonthinking V3 exactly once'
+    if: "github.event_name == 'push' && github.event.head_commit.message == 'ci: execute frozen Gemma 4 E2B nonthinking V3 exactly once'"
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
