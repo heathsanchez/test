@@ -1,0 +1,88 @@
+name: UDM G2 V5 fixed-method applicability and causal native probe
+on:
+  push:
+    branches:
+      - research/udm-g2-observation-choice-v5-20261018
+    paths:
+      - research/unified_consequence_runtime/g2_v5_fixed_method_choice.py
+      - .github/workflows/udm-g2-v5-fixed-method.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-distinct-method-selection:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify independent frozen methods and immutable metadata roles
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=research/unified_consequence_runtime
+          python -B -m py_compile "$P/g2_v5_fixed_method_choice.py" "$P/g2_v5_first_native_failure.py"
+          cmp "$P/G2_OBSERVATION_CHOICE_V5_ROLE_FREEZE.json" <(git show d96833fa8a41b4e5b67d5a9498ee1b1607c476e2:"$P/G2_OBSERVATION_CHOICE_V5_ROLE_FREEZE.json")
+          cmp "$P/residual_projection_method_v1.py" <(git show d83de24d3b5bb4352cd6991a85a0fbc1e72f6deb:"$P/residual_projection_method_v1.py")
+          cmp "$P/attrs_residual_observation_genesis_v1.py" <(git show b9d175d0b129c843bc5885aec77082f07f2b0601:"$P/attrs_residual_observation_genesis_v1.py")
+          cmp "$P/g2_anyio_mutable_closure_equivalence_fix_v2.py" <(git show 094e2ddc3ba601a00eaf368151172a361e5542da:"$P/g2_anyio_mutable_closure_equivalence_fix_v2.py")
+      - name: Admit original frozen training native failure before inspecting method applicability
+        run: |
+          mkdir -p evidence
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_v5_first_native_failure.py "$GITHUB_WORKSPACE/evidence/v5-method-training"
+      - name: Run unchanged source-neutral methods only after admission
+        run: |
+          set -euo pipefail
+          PY="$(python - <<'PY'
+          import json
+          r=json.load(open('evidence/v5-method-training/RESULT.json'))
+          x=r.get('selected')
+          print(x['interpreter'] if x is not None else '')
+          PY
+          )"
+          if [ -z "$PY" ]; then
+            echo 'NO_AUTHENTIC_FAILURE; NO_METHOD_RUN' > evidence/METHOD_NOT_RUN.txt
+          else
+            PYTHONPATH="$GITHUB_WORKSPACE" "$PY" -B research/unified_consequence_runtime/g2_v5_fixed_method_choice.py "$GITHUB_WORKSPACE/evidence/v5-method-training/RESULT.json" "$GITHUB_WORKSPACE/evidence/v5-method-result"
+          fi
+      - name: Independently enforce no future access and no G2 claims
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          e=pathlib.Path('evidence')
+          a=json.loads((e/'v5-method-training/RESULT.json').read_text())
+          assert a['future']=='SEALED_UNOPENED' and a['G2']=='UNKNOWN'
+          m=e/'v5-method-result/RESULT.json'
+          if a.get('selected'):
+              assert m.is_file(),'EARNED_FAILURE_REQUIRES_METHOD_VERDICT'
+              r=json.loads(m.read_text())
+              assert r['future']=='SEALED_UNOPENED' and r['future_native']=='NOT_EXECUTED'
+              assert all(r[k]=='UNKNOWN' for k in ('G2','G3','G4','G5','G6'))
+              assert r['coding_agent']=='NOT_EXECUTED' and r['informed_ledger']=='NOT_EXECUTED'
+              assert r['status'] in ('UNKNOWN_NO_APPLICABLE_QUALIFIED_METHOD',
+                  'UNKNOWN_UNRESOLVED_TWO_METHOD_CHOICE',
+                  'UNKNOWN_NO_VERIFIED_GENERATED_TRAINING_REPAIR',
+                  'WARRANTED_BOUNDED_TRAINING_ONLY_FUTURE_SEALED',
+                  'UNKNOWN_METHOD_APPARATUS')
+              print('V5_METHOD_EVIDENCE',r['status'],'repair_candidates',r['generated_repair_count'])
+          else:
+              assert (e/'METHOD_NOT_RUN.txt').is_file()
+          PY
+      - name: Archive positive and negative native method evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-g2-v5-fixed-method-native-evidence
+          retention-days: 90
+          if-no-files-found: warn
+          path: evidence/
