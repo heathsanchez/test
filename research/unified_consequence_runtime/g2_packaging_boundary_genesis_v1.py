@@ -95,6 +95,14 @@ def enumerate_candidates(source):
     ordered=sorted(unique.values(),key=lambda o:(o["delta_bytes"],o["line"],o["family"]))
     return ordered[:MAX_OPTIONS]
 
+def protected_pass(rec):
+    c=rec["counts"]
+    # One changed parameterized author-test node expands to five real testcases.
+    names=[x["name"] for x in rec.get("cases",[])]
+    return (rec["returncode"]==0 and c["tests"]==5 and c["failures"]==0
+            and c["errors"]==0 and c["skipped"]==0 and len(names)==5
+            and all(x.startswith("test_pylock_file_name[") for x in names))
+
 def controls():
     sample='''import re
 _P = re.compile(r"^sample\\.([^.]+)\\.txt$")
@@ -161,7 +169,7 @@ def train(out):
                 trial={"index":i,"family":op["family"],"source_sha256":op["source_sha256"],
                        "first":a,"status":"REJECTED_PROTECTED"}
                 report.setdefault("trials",[]).append(trial)
-                if not oracle.native_pass(a,protected):
+                if not protected_pass(a):
                     continue
                 full=oracle.run_test(py,world,[task["author_test"]],dest/"full-author",timeout=180)
                 trial["full_author"]=full
@@ -170,7 +178,7 @@ def train(out):
                     continue
                 b=oracle.run_test(py,world,protected,dest/"protected-b")
                 trial["second"]=b
-                if not oracle.native_pass(b,protected):
+                if not protected_pass(b):
                     trial["status"]="REJECTED_REPEAT"
                     continue
                 source.write_bytes(orig)
@@ -182,7 +190,7 @@ def train(out):
                 source.write_bytes(op["source"])
                 restored=oracle.run_test(py,world,protected,dest/"restoration")
                 trial["restoration"]=restored
-                if not oracle.native_pass(restored,protected) or sha(source.read_bytes())!=op["source_sha256"]:
+                if not protected_pass(restored) or sha(source.read_bytes())!=op["source_sha256"]:
                     trial["status"]="UNKNOWN_NO_CAUSAL_RESTORATION"
                     continue
                 trial["status"]="WARRANTED_BOUNDED_TRAINING_ONLY"
