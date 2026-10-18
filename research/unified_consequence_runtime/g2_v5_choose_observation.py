@@ -54,6 +54,15 @@ def check_source(row,role):
         raise ValueError("UNKNOWN_PROTECTED_TEST_SCOPE")
     return source,original,head
 
+def choose_family(mutable_qualified: bool, projection_qualified: bool):
+    if mutable_qualified and projection_qualified:
+        return "UNKNOWN_CHOICE_TWO_APPLICABLE_METHODS"
+    if mutable_qualified:
+        return "APPLICABLE_MUTABLE_METHOD"
+    if projection_qualified:
+        return "APPLICABLE_PROJECTION_METHOD"
+    return "UNKNOWN_NO_APPLICABLE_FROZEN_METHOD"
+
 def prepare_choice(world,original,head,role,nodes,out):
     from . import g2_anyio_mutable_closure_equivalence_fix_v2 as mutable
     from . import residual_projection_method_v1 as projection
@@ -94,13 +103,11 @@ def prepare_choice(world,original,head,role,nodes,out):
         observations["projection"]["negative_reason"]=type(exc).__name__+":"+str(exc)[:240]
     if sha((world/role["production"]).read_bytes())!=sha(original):
         raise ValueError("UNKNOWN_PROJECTION_OBSERVER_CHANGED_SOURCE")
-    applicable=("mutable" if qualifying else None,"projection" if p else None)
-    actual=[x for x in applicable if x]
-    if len(actual)!=1:
-        return ("UNKNOWN_CHOICE_TWO_APPLICABLE_METHODS" if len(actual)==2 else
-                "UNKNOWN_NO_APPLICABLE_FROZEN_METHOD"),observations,[],None
+    decision=choose_family(bool(qualifying),bool(p))
+    if not decision.startswith("APPLICABLE_"):
+        return decision,observations,[],None
     candidates=[]
-    if actual[0]=="mutable":
+    if decision=="APPLICABLE_MUTABLE_METHOD":
         for item in sorted(qualifying,key=lambda x:x["pattern_id"])[:8]:
             repaired=mutable.repair_source(original,item)
             candidates.append({"method":"mutable","source":repaired,
