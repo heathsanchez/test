@@ -1,0 +1,64 @@
+name: G2 exposed import-scoped finite native composition V1
+on:
+  push:
+    branches:
+      - research/g2-import-scoped-composition-v1-20261019
+    paths:
+      - .github/workflows/g2-import-scoped-native-composition-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-native-calibration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: '0.11.1'
+      - name: Check frozen development protocol and original qualified operator bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp research/unified_consequence_runtime/G2_IMPORT_SCOPED_COMPOSITION_V1_PROTOCOL_20261019.md \
+            <(git show 4ce42422ce3310995f324863062438a49dafbb4f:research/unified_consequence_runtime/G2_IMPORT_SCOPED_COMPOSITION_V1_PROTOCOL_20261019.md)
+          cmp research/unified_consequence_runtime/g2_import_scope_composition_v1.py \
+            <(git show 02937a7bba497f10540d88c045fa65f21d8068d4:research/unified_consequence_runtime/g2_import_scope_composition_v1.py)
+          cmp research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py \
+            <(git show d45288833a13b1ddf6afde01c0b89a84bfc7ce32:research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py)
+          python -m py_compile research/unified_consequence_runtime/g2_import_scope_composition_v1.py
+          python - <<'PY'
+          from research.unified_consequence_runtime.g2_import_scope_composition_v1 import preflight
+          d=preflight()
+          assert d['base']=='e2feca1e567d9bafce657de8ad8bc668bd7ad513'
+          print('EXPOSED_DEVELOPMENT_ONLY',d['repo'],d['pr'])
+          PY
+      - name: Original author cases and fixed grammar import-scoped finite composition
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B -m research.unified_consequence_runtime.g2_import_scope_composition_v1 \
+            evidence/g2-exposed-import-comp-v1
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/g2-exposed-import-comp-v1/RESULT.json'))
+          assert d['G2']=='UNKNOWN'
+          assert d['epistemic']=='RETROSPECTIVE_DEVELOPMENT_ONLY'
+          assert d['future']=='ALREADY_OPENED'
+          print('EXPOSED_SCIENCE',d['status'],'G2',d['G2'])
+          PY
+      - name: Preserve every native candidate subset source checksum and apparatus UNKNOWN
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-exposed-import-finite-composition-native-v1
+          path: evidence/g2-exposed-import-comp-v1/
+          if-no-files-found: warn
+          retention-days: 90
