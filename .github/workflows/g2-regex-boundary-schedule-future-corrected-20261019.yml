@@ -1,0 +1,79 @@
+name: G2 regex strict-boundary V2 - schedule source-native apparatus corrected
+on:
+  push:
+    branches:
+      - research/g2-regex-boundary-schedule-transfer-20261019
+    paths:
+      - .github/workflows/g2-regex-boundary-schedule-future-corrected-20261019.yml
+permissions:
+  contents: read
+jobs:
+  frozen-method-schedule-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Independent pre-source freeze enforcement
+        run: |
+          set -euo pipefail
+          F=research/unified_consequence_runtime/
+          git merge-base --is-ancestor 2e65e239089d696d343afc263c8a0289e0f92f00 HEAD
+          cmp "$F"G2_REGEX_BOUNDARY_V2_QUALIFIED_METHOD_RECEIPT.json <(git show 2e65e239089d696d343afc263c8a0289e0f92f00:"$F"G2_REGEX_BOUNDARY_V2_QUALIFIED_METHOD_RECEIPT.json)
+          cmp "$F"g2_whole_input_regex_syntax_v2.py <(git show 21008fedf462ebd3ffc9b616f7c06d355c70abbe:"$F"g2_whole_input_regex_syntax_v2.py)
+          echo '12353d3b30f33aa98a6edf5623e1d92ba442ca2f0750e7f3f48aae930ebbc788  research/unified_consequence_runtime/g2_whole_input_regex_syntax_v2.py' | sha256sum -c
+          cmp "$F"g2_packaging_schedule_future_v2.py <(git show cb66f43b6a0a00be88859397cf37d1800576fa04:"$F"g2_packaging_schedule_future_v2.py)
+          python -B -m py_compile "$F"g2_packaging_schedule_future_v2.py "$F"g2_whole_input_regex_syntax_v2.py
+          mkdir -p evidence/g2-regex-v2-schedule-future
+          echo 'dbader/schedule #666 selected from public metadata; method frozen first; NO_OUTCOME_RESELECTION' > evidence/g2-regex-v2-schedule-future/SEAL.txt
+          git rev-parse HEAD > evidence/g2-regex-v2-schedule-future/HEAD.txt
+      - name: One real native previously unread schedule source under unchanged method
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_packaging_schedule_future_v2.py "$GITHUB_WORKSPACE/evidence/g2-regex-v2-schedule-future/future"
+      - name: Preserve result without auto G2 promotion
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          out=Path('evidence/g2-regex-v2-schedule-future')
+          p=out/'future/RESULT.json'
+          r=json.loads(p.read_text()) if p.exists() else {}
+          assert (out/'SEAL.txt').is_file()
+          assert r.get('G2','UNKNOWN')=='UNKNOWN'
+          assert r.get('lean_clc_flash','NOT_RUN')=='NOT_RUN'
+          assert r.get('no_method_rewriting',True) is True
+          verdict={'status':r.get('status','UNKNOWN_NO_RESULT'),
+                   'future_native':r.get('admission',{}).get('status'),
+                   'method_candidates':r.get('candidate_count',0),
+                   'prior_v1_candidates':r.get('prior_v1_candidate_count'),
+                   'strong_baseline':'NOT_RUN','formal':'NOT_RUN',
+                   'G2':'UNKNOWN'}
+          (out/'BOUNDARY.json').write_text(json.dumps(verdict,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(verdict,sort_keys=True))
+          if r.get('status') in ('UNKNOWN_FUTURE_APPARATUS','UNKNOWN_NO_RESULT'):
+              raise SystemExit('APPARATUS_REFUSED')
+          PY
+      - name: Archive authentic native evidence (positive or negative)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-regex-v2-schedule-source-native-future-corrected
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-regex-v2-schedule-future/
+            research/unified_consequence_runtime/G2_REGEX_BOUNDARY_SCHEDULE_MATCHED_V1_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/G2_REGEX_BOUNDARY_V2_QUALIFIED_METHOD_RECEIPT.json
+            research/unified_consequence_runtime/g2_whole_input_regex_syntax_v2.py
+            research/unified_consequence_runtime/g2_packaging_schedule_future_v2.py
