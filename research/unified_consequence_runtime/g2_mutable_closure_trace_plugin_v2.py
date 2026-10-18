@@ -20,6 +20,11 @@ _CURRENT_NODE: str | None = None
 _INSTALLED = False
 _FLUSHED = False
 
+_TARGETS: dict[tuple[str, int], list[dict[str, object]]] = {}
+for _pattern in _PATTERNS:
+    _abs = str((_WORLD / _pattern["path"]).resolve())
+    _TARGETS.setdefault((_abs, int(_pattern["code_first_line"])), []).append(_pattern)
+
 
 def _primitive(value):
     if value is None or isinstance(value, (bool, int, float, str)):
@@ -78,39 +83,45 @@ def _read_path(frame, path):
     return value
 
 
-def _trace(frame, event, arg):
-    if event not in ("call", "line", "return"):
-        return _trace
-    try:
-        filename = Path(frame.f_code.co_filename).resolve()
-        rel = str(filename.relative_to(_WORLD)).replace(os.sep, "/")
-    except Exception:
-        return _trace
-    for pattern in _PATTERNS:
-        if rel != pattern["path"]:
+def _local_trace(frame, event, arg):
+    if event != "line":
+        return _local_trace
+    key = (str(Path(frame.f_code.co_filename).resolve()), int(frame.f_code.co_firstlineno))
+    patterns = _TARGETS.get(key, ())
+    if not patterns:
+        return None
+    for pattern in patterns:
+        if frame.f_lineno != pattern["guard_line"]:
             continue
-        if frame.f_code.co_firstlineno != pattern["code_first_line"]:
-            continue
-        if event == "line" and frame.f_lineno == pattern["guard_line"]:
-            captures = {
-                name: _primitive(frame.f_locals.get(name))
-                for name in pattern["dynamic_captures"]
-            }
-            read_value = frame.f_locals.get(pattern["read_variable"])
-            stored_value = _read_path(frame, pattern["attribute_path"])
-            _EVENTS.append({
-                "pid": os.getpid(),
-                "nodeid": _CURRENT_NODE,
-                "path": rel,
-                "function": pattern["function"],
-                "function_line": pattern["function_line"],
-                "guard_line": pattern["guard_line"],
-                "read_variable": pattern["read_variable"],
-                "dynamic_captures": captures,
-                "read_callable": _callable(read_value) if callable(read_value) else _primitive(read_value),
-                "stored_callable": _callable(stored_value) if callable(stored_value) else _primitive(stored_value),
-            })
-    return _trace
+        captures = {
+            name: _primitive(frame.f_locals.get(name))
+            for name in pattern["dynamic_captures"]
+        }
+        read_value = frame.f_locals.get(pattern["read_variable"])
+        stored_value = _read_path(frame, pattern["attribute_path"])
+        _EVENTS.append({
+            "pid": os.getpid(),
+            "nodeid": _CURRENT_NODE,
+            "path": pattern["path"],
+            "function": pattern["function"],
+            "function_line": pattern["function_line"],
+            "code_first_line": pattern["code_first_line"],
+            "guard_line": pattern["guard_line"],
+            "read_variable": pattern["read_variable"],
+            "dynamic_captures": captures,
+            "read_callable": _callable(read_value) if callable(read_value) else _primitive(read_value),
+            "stored_callable": _callable(stored_value) if callable(stored_value) else _primitive(stored_value),
+        })
+    return _local_trace
+
+
+def _global_trace(frame, event, arg):
+    if event != "call":
+        return None
+    key = (str(Path(frame.f_code.co_filename).resolve()), int(frame.f_code.co_firstlineno))
+    if key in _TARGETS:
+        return _local_trace
+    return None
 
 
 def _flush():
@@ -122,12 +133,13 @@ def _flush():
     row = {"schema": "UDM_G2_MUTABLE_CLOSURE_NATIVE_TRACE_V2", "pid": os.getpid(), "events": _EVENTS}
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
+    _FLUSHED = True
 
 
 def pytest_sessionstart(session):
     global _INSTALLED
     if not _INSTALLED:
-        sys.settrace(_trace)
+        sys.settrace(_global_trace)
         _INSTALLED = True
 
 
