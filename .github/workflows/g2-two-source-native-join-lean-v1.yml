@@ -1,0 +1,104 @@
+name: G2 two-source original-native finite join Lean qualification
+on:
+  push:
+    branches:
+      - research/g2-cross-source-finite-join-cert-v1-20261019
+    paths:
+      - .github/workflows/g2-two-source-native-join-lean-v1.yml
+      - research/unified_consequence_runtime/G2_TWO_SOURCE_FINITE_JOIN_FROZEN_PROTOCOL_V1.json
+      - research/unified_consequence_runtime/g2_two_source_finite_join_v1.py
+      - research/unified_consequence_runtime/test_g2_two_source_finite_join_v1.py
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-two-source-evidence-and-lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen pre-experiment protocol has not been reauthored
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp research/unified_consequence_runtime/G2_TWO_SOURCE_FINITE_JOIN_FROZEN_PROTOCOL_V1.json <(git show eed380b0a50683f1f8a9c6c2160311f17b5d55f1:research/unified_consequence_runtime/G2_TWO_SOURCE_FINITE_JOIN_FROZEN_PROTOCOL_V1.json)
+      - name: Execute ten finite adversarial controls
+        run: python -B -m unittest -v research.unified_consequence_runtime.test_g2_two_source_finite_join_v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-finite-composition-v2-independently-audited-evidence
+          run-id: 39162426039
+          github-token: ${{ github.token }}
+          path: evidence/paired-original-mistral
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-deerflow-v3-independent-source-native-receipt-audit
+          run-id: 39168777571
+          github-token: ${{ github.token }}
+          path: evidence/paired-original-deer
+      - name: Reparse original JUnit source-bound masks and prepare Lean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B research/unified_consequence_runtime/g2_two_source_finite_join_v1.py evidence/paired-original-mistral evidence/paired-original-deer evidence/native-join-certificate
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('evidence/native-join-certificate/RESULT.json')
+          r=json.loads(p.read_text())
+          assert r['pairwise_relations']==272,r
+          assert {n:v['source_subset_states'] for n,v in r['sources'].items()}=={'MISTRAL':16,'DEERFLOW':4}
+          assert r['G2']==r['G4']=='UNKNOWN' and r['Lean']=='NOT_YET_EXECUTED'
+          print('INDEPENDENT_ORIGINAL_NATIVE_TABLES_QUALIFIED; 272 pairwise relations')
+          PY
+      - name: Install Lean 4.24.0 via qualified CLC toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 4 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o "$RUNNER_TEMP/elan-init.sh"
+          sh "$RUNNER_TEMP/elan-init.sh" -y --default-toolchain leanprover/lean4:v4.24.0 --no-modify-path
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/lean" --version | tee evidence/native-join-certificate/lean-version.log
+          grep -F 'version 4.24.0' evidence/native-join-certificate/lean-version.log
+      - name: Lean kernel-check source-authenticated two-source finite join and necessity
+        shell: bash
+        run: |
+          set -euo pipefail
+          lean evidence/native-join-certificate/FiniteNativeJoin.lean 2>&1 | tee evidence/native-join-certificate/lean-check.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('evidence/native-join-certificate/RESULT.json')
+          d=json.loads(p.read_text())
+          assert d['status']=='CANDIDATE_INDEPENDENT_NATIVE_TABLE_READY_FOR_LEAN'
+          assert d['G2']==d['G4']=='UNKNOWN'
+          assert d['source_count']==2 and d['pairwise_relations']==272
+          d['status']='WARRANTED_BOUNDED_TWO_SOURCE_NATIVE_FINITE_JOIN_LAW'
+          d['Lean']='KERNEL_CHECKED_4_24_0_FINITE_TABLE_ONLY'
+          d['CLC']='NOT_EXECUTED_THIS_TRIAL'
+          d['FLASH']='NOT_EXECUTED_THIS_TRIAL'
+          p.write_text(json.dumps(d,indent=2,sort_keys=True)+'\n')
+          PY
+      - name: Archive source/Lean identity and all qualification artifacts
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p evidence/native-join-certificate
+          git rev-parse HEAD > evidence/native-join-certificate/RESEARCH_HEAD.txt
+          (sha256sum research/unified_consequence_runtime/G2_TWO_SOURCE_FINITE_JOIN_FROZEN_PROTOCOL_V1.json research/unified_consequence_runtime/g2_two_source_finite_join_v1.py research/unified_consequence_runtime/test_g2_two_source_finite_join_v1.py evidence/native-join-certificate/FiniteNativeJoin.lean 2>/dev/null || true) > evidence/native-join-certificate/SOURCE_HASHES.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-two-source-lean-native-finite-join-receipts
+          path: |
+            evidence/native-join-certificate/
+          retention-days: 90
+          if-no-files-found: warn
