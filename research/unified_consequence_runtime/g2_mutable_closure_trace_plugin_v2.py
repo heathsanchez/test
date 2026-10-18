@@ -89,7 +89,7 @@ def _trace(frame, event, arg):
     for pattern in _PATTERNS:
         if rel != pattern["path"]:
             continue
-        if frame.f_code.co_firstlineno != pattern["function_line"]:
+        if frame.f_code.co_firstlineno != pattern["code_first_line"]:
             continue
         if event == "line" and frame.f_lineno == pattern["guard_line"]:
             captures = {
