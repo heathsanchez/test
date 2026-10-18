@@ -1,0 +1,110 @@
+name: Nucleus multibinder eta source-exact adversarial falsifiers
+on:
+  push:
+    branches: [research/nucleus-certified-multibinder-eta-20261019]
+    paths: [".github/workflows/nucleus-multibinder-eta-adversarial-20261019.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  relation-eta-negative:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      ARENA_SHA: 58de35b1b322c3cab584b88ae2786be3bdcfe856
+      EXPORTER_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build independent candidate Nucleus checker
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/nucleus-tree.txt
+          python3 .github/scripts/nucleus_multibinder_eta_patch_20261019.py
+          git diff --check
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Compile false binary relation eta with upstream tutorial test macro
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.1
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --githash | tee /tmp/evidence/lean-sha.txt
+          test "$(cat /tmp/evidence/lean-sha.txt)" = 5045d0056413266e57c625dcd7c365b10e377c52
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_SHA"
+          cd /tmp/arena/tutorial
+          lake build Tutorial.Meta
+          cat > RelationEta.lean <<'EOF'
+          import Tutorial.Meta
+          bad_thm binaryRelationEtaBad :
+              ∀ (α : Type) (R : α → α → Prop) (g : α → α),
+                (fun x y => R (g x) y) = R :=
+              fun _ R _ => unchecked Eq.refl R
+
+          bad_thm binaryRelationEtaSwapBad :
+              ∀ (α : Type) (R : α → α → Prop),
+                (fun x y => R y x) = R :=
+              fun _ R => unchecked Eq.refl R
+          bad_thm propositionEqualityBad :
+              ∀ (P Q : Prop), P = Q :=
+              fun P _ => unchecked Eq.refl P
+
+          bad_thm congrArgWrongTarget :
+              ∀ (P Q R : Prop), P = R :=
+              fun _ Q _ => unchecked (congrArg (fun S : Prop => S) (Eq.refl Q))
+          EOF
+          mkdir -p .lake/build/lib/lean
+          lake env lean -o .lake/build/lib/lean/RelationEta.olean RelationEta.lean
+          test -s .lake/build/lib/lean/RelationEta.olean
+          sha256sum RelationEta.lean > /tmp/evidence/lean-falsifier-source.sha256
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter
+          git -C /tmp/exporter checkout -q "$EXPORTER_SHA"
+          echo leanprover/lean4:v4.34.1 > /tmp/exporter/lean-toolchain
+          (cd /tmp/exporter && lake build)
+          for name in binaryRelationEtaBad binaryRelationEtaSwapBad propositionEqualityBad congrArgWrongTarget; do
+            lake env /tmp/exporter/.lake/build/bin/lean4export RelationEta -- "$name" > "/tmp/evidence/$name.ndjson"
+            sha256sum "/tmp/evidence/$name.ndjson"
+          done
+      - name: Compare protected bad data eta and two new bad Prop-valued eta claims
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,os,hashlib,subprocess,time
+          corpus=pathlib.Path('/tmp/evidence')
+          base=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+name:'1' for name in base['origin_flags']})
+          env.update({'NUCLEUS_TRACE_DOWNSTREAM':'1','NUCLEUS_TRACE_EQPROP_TRISTATE':'1'})
+          out=[]
+          for name in ['binaryRelationEtaBad','binaryRelationEtaSwapBad','propositionEqualityBad','congrArgWrongTarget']:
+              data=(corpus/(name+'.ndjson')).read_bytes()
+              assert json.loads(data.splitlines()[0])['meta']['format']['version']=='3.1.0'
+              for policy in [False,True]:
+                  opts=dict(env)
+                  opts['NUCLEUS_EXPERIMENTAL_EQPROP_PROOF_DECLINE']='1'
+                  if policy: opts['NUCLEUS_EXPERIMENTAL_MULTIBINDER_ETA']='1'
+                  opts['NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS']='1'
+                  t=time.perf_counter()
+                  r=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=data,
+                                   env=opts,capture_output=True,timeout=90)
+                  row={'theorem':name,'scoped_fallback':policy,'rc':r.returncode,
+                       'seconds':round(time.perf_counter()-t,5),'sha256':hashlib.sha256(data).hexdigest(),
+                       'bytes':len(data),'trace':(r.stderr+r.stdout).decode(errors='replace')[-4000:]}
+                  out.append(row)
+                  print(name,policy,r.returncode,flush=True)
+              (corpus/(name+'.ndjson')).unlink()
+          report={'source':os.environ['GITHUB_SHA'],'cases':out,
+                  'no_false_accepts':all(c['rc']!=0 for c in out),
+                  'all_original_rejections_preserved':all(base['rc']!=1 or candidate['rc']==1 for base,candidate in zip(out[::2],out[1::2]))}
+          (corpus/'relation-eta-falsifier.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('No wrong accepts:',report['no_false_accepts'],
+                'All negative rejections preserved:',report['all_original_rejections_preserved'],flush=True)
+          assert report['all_original_rejections_preserved'],'A new false Eq/Prop theorem lost a certified REJECT!'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-multibinder-eta-adversarial-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: warn
