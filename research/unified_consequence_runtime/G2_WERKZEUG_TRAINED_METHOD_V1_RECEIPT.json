@@ -1,0 +1,85 @@
+{
+  "schema": "G2_CROSS_SOURCE_TRAINED_METHOD_V1_FREEZE",
+  "status": "WARRANTED_BOUNDED_TRAINING_REPAIR_ONLY",
+  "protocol_commit": "de234c7e180467bbb0b957cac2016263bf80920b",
+  "train_execution_commit": "756439eb5c3bf4fc00bea8a5c4799f249c33475e",
+  "run_id": 39162971193,
+  "archive_artifact_id": 12149512273,
+  "archive_zip_sha256": "848ea662f25103f30a7672d12db327b8373c1b58bfb9e05ef11c44ec9633c0b0",
+  "trained_method": {
+    "path": "research/unified_consequence_runtime/g2_cross_source_train_v1.py",
+    "file_sha256": "c94bf5750b09e1c00f8e1406309c01946f92b48b5e283fd0fc341a21916680dc",
+    "method_grammar": "pure-ast-mode-disabled-fallback-v1",
+    "generator": "enumerate_candidates",
+    "max_candidates": 16,
+    "transformation": "A AND B AND C -> A AND (NOT B OR C)",
+    "initial_source_eligibility": "AST pure 3-conj relative-path return with later absolute-URL return",
+    "frozen_before_future": true
+  },
+  "training": {
+    "repo": "pallets/werkzeug",
+    "pr": 3215,
+    "original_base": "1b00618e787f40dfb21eba29caf8f8be7c8e1d93",
+    "author_test_source": "tests/test_routing.py",
+    "original_source": "src/werkzeug/routing/map.py",
+    "original_source_sha256": "02c0bbdf7c9254021b10ce296e8e9545cd60779b94053c4cf595790b868a47fd",
+    "repaired_source_sha256": "06214a68a3029c75d3734e5fdb6774197d2c0f890e25c4c4b808277d9f3cdc2a",
+    "baseline_protected": {
+      "tests": 2,
+      "pass": 1,
+      "fail": 1,
+      "skip": 0,
+      "error": 0
+    },
+    "repair_protected_first": {
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "skip": 0,
+      "error": 0
+    },
+    "author_routing_file": {
+      "tests": 150,
+      "pass": 150,
+      "fail": 0,
+      "skip": 0,
+      "error": 0
+    },
+    "repair_protected_second": {
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "skip": 0,
+      "error": 0
+    },
+    "withdrawal": {
+      "tests": 2,
+      "pass": 1,
+      "fail": 1,
+      "skip": 0,
+      "error": 0
+    },
+    "restoration": {
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "skip": 0,
+      "error": 0
+    },
+    "offline_independent_audit": {
+      "archive_sha_match": true,
+      "zip_crc_pass": true,
+      "junit_reparsed": true,
+      "method_source_sha_match": true,
+      "generated_source_sha_match": true
+    }
+  },
+  "future": {
+    "repo": "pypa/packaging",
+    "pr": 1446,
+    "role": "SEALED_UNOPENED",
+    "role_freeze_commit": "57c400ea49881e440f7895acaeebeee5854363e3"
+  },
+  "scientific_claim": "No cross-source method transfer, general formal soundness, or general self-improvement is warranted until previously sealed future and independent verification are executed.",
+  "G2": "UNKNOWN"
+}
