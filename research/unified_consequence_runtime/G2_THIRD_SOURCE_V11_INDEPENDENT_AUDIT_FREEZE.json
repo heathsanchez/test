@@ -1,0 +1,58 @@
+{
+  "schema": "G2_THIRD_SOURCE_V11_INDEPENDENT_NEGATIVE_AUDIT_FREEZE",
+  "date": "2026-10-19",
+  "status": "FROZEN_BEFORE_INDEPENDENT_AUDITOR_IMPLEMENTATION",
+  "science_prequery": "e40ff465b7a70bd55e56aeb0b40b57edd9aa7b0c",
+  "apparatus_amendment": "1be63843d095c636c6da6057f3b5442087601fb1",
+  "original_experiment_run": 39173223634,
+  "original_artifact_id": 12152934181,
+  "original_artifact_name": "g2-third-source-v11-original-native-added-author-evidence",
+  "original_artifact_zip_sha256": "94080c885272ca01f4d62d87e73b21ca1bd7a9b9669b72755e4e5999196776a2",
+  "original_source_commit": "f53b791d018b9886756fa65390e1106e573275be",
+  "role_metadata_origin": "57c400ea49881e440f7895acaeebeee5854363e3",
+  "expected": {
+    "status": "REJECTED_PROSPECTIVE_FROZEN_METHOD_INAPPLICABLE",
+    "G2": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "first": "psf/requests#6963",
+    "first_cases": 2,
+    "first_pass": 2,
+    "first_fail": 0,
+    "second": "urllib3/urllib3#5254",
+    "second_base": "bcf84e6815f623521e1ffe3e6ab0224d778929c0",
+    "second_head": "4aa45cd210ebb19559d505d73c8d05a541314e2f",
+    "author_test": "test/test_http2_probe.py",
+    "author_test_sha256": "ef65a8fe3e38ecbf8483af5fe2a92952dfc65cc0d77bccb420b681f2082987c0",
+    "source_file": "src/urllib3/http2/probe.py",
+    "source_sha256": "9e7024a9b8406a43a217be6bcfb5b4b9d677f047a1fee0fc7e357be0def71442",
+    "protected_case": "test_waiter_releases_lock_when_probe_result_is_available",
+    "original_native_junit_sha256": "678f1dc8cc7f85c6fc59e9dc60902d5e2447a6cd64a3b0b253bcb0a8f2efd65d",
+    "cases": 1,
+    "passed": 0,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 0,
+    "method_primitive_count": 0,
+    "method_scope_files": [
+      "src/urllib3/http2/probe.py"
+    ],
+    "future_source_not_accessed": "pydantic/pydantic"
+  },
+  "audit_obligations": [
+    "Independently recheck immutable original artifact ZIP SHA256, ZIP CRC and JUnit actual author-protected case(s)",
+    "Compare original protocol and role order to exact pre-native Git commits; first original Requests JUnit two PASS, next urllib3 original native FAIL",
+    "Refetch immutable urllib3 base and exact HEAD author test Git blobs, verify base test absent and head test regular mode, match exact SHA256",
+    "Independently derive source scope from literal HEAD author import AST and authenticated Git tracked original paths; must reproduce exactly original production scope",
+    "Independently rederive zero strict terminal regex operator syntactic candidates from original authenticated scope, without importing experimental method or using post-outcome labels",
+    "Require zero generated repair native test receipts and no later candidate native execution; original G2 and G4 UNKNOWN",
+    "Preserve explicit informed ledger unavailable because same frozen candidate set empty, no winning method assertion",
+    "Five forged evidence controls: wrong original SHA, forged source scope, altered protected JUnit, fabricated candidate, false G2 warrant"
+  ],
+  "statuses": {
+    "original_native_fail": "WARRANTED_BOUNDED_IF_INDEPENDENT_AUDIT_PASS",
+    "method_transfer": "REJECTED_FROZEN_METHOD_INAPPLICABLE_ON_AUTHENTIC_TASK_IF_INDEPENDENT_AUDIT_PASS",
+    "G2": "UNKNOWN",
+    "G4": "UNKNOWN"
+  },
+  "permissions": "No third-party source change or production deployment. Source code read-only original Git, no author fixed production and no repaired candidate executed."
+}
