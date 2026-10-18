@@ -111,7 +111,7 @@ def main(e):
     # The full patch must exactly reproduce the source-native generated edits.
     generated=composed(source,selected_lines,15)
     assert digest(generated)==report["full_source_sha256"]
-    patch=e/"COMPOSED_GENERATED_PATCH.diff"
+    patch=(e/"COMPOSED_GENERATED_PATCH.diff").resolve()
     assert patch.read_text().startswith("--- original/"+SOURCE+"\n+++ generated/"+SOURCE+"\n")
     assert sha(patch)==report["composed_patch_sha256"]
     command(["git","-C",str(work),"apply","--check","-p1",str(patch)])
