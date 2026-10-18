@@ -97,7 +97,7 @@ def one(task,idx,dest):
         if work.exists() or env.exists():raise RuntimeError("STALE_ISOLATION_DIR")
         call(["git","init","-q",str(work)],timeout=35)
         git(work,"remote","add","upstream","https://github.com/"+task["repo"]+".git")
-        for sha in (task["base"],task["head"]):
+        for sha in (task["base"],task["author_head"]):
             p=call(["git","-C",str(work),"fetch","--quiet","--depth=1",
                 "--filter=blob:none","--no-tags","upstream",sha],timeout=120)
             if p["returncode"]:raise RuntimeError("GIT_FETCH_SOURCE_FAILED:"+p["stderr_tail"])
@@ -106,9 +106,9 @@ def one(task,idx,dest):
         if git(work,"status","--porcelain"):raise RuntimeError("DIRTY_BASE")
         test=task["author_test"]
         base_bytes=subprocess.check_output(["git","-C",str(work),"show",task["base"]+":"+test],timeout=40)
-        head_bytes=subprocess.check_output(["git","-C",str(work),"show",task["head"]+":"+test],timeout=40)
+        head_bytes=subprocess.check_output(["git","-C",str(work),"show",task["author_head"]+":"+test],timeout=40)
         # Verify blobs against the actual pinned HEAD tree, not uncontrolled text.
-        oid=git(work,"rev-parse",task["head"]+":"+test)
+        oid=git(work,"rev-parse",task["author_head"]+":"+test)
         full_oid=subprocess.check_output(["git","-C",str(work),"hash-object","--stdin"],input=head_bytes,timeout=30).decode().strip()
         if oid!=full_oid:raise RuntimeError("AUTHOR_TEST_BLOB_INTEGRITY_FAILED")
         prot=select_protected(base_bytes,head_bytes,test)
