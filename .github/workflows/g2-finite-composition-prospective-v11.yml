@@ -1,0 +1,67 @@
+name: G2 V2 finite composition prospective native environment replay V1.1
+on:
+  push:
+    branches:
+      - research/g2-finite-transfer-v1-20261019
+    paths:
+      - .github/workflows/g2-finite-composition-prospective-v11.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-owned-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: '0.11.1'
+      - name: Verify unchanged method, original freeze and independent environment amendment
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp research/unified_consequence_runtime/G2_FINITE_COMPOSITION_ENV_AMENDMENT_V11.json \
+            <(git show 8cdabbb936ee0d9fb5045beac923e776dab1450a:research/unified_consequence_runtime/G2_FINITE_COMPOSITION_ENV_AMENDMENT_V11.json)
+          cmp research/unified_consequence_runtime/g2_source_owned_uv_admission_v11.py \
+            <(git show fd932d730744b0fb5528f74caeafe99ab13bf9fa:research/unified_consequence_runtime/g2_source_owned_uv_admission_v11.py)
+          python -m py_compile research/unified_consequence_runtime/g2_source_owned_uv_admission_v11.py
+          python -m py_compile research/unified_consequence_runtime/g2_finite_composition_future_v1.py
+          python - <<'PY'
+          from research.unified_consequence_runtime.g2_finite_composition_future_v1 import preflight
+          frozen=preflight('a75a1914a00059a66c96f334bdbe9085a4eeb0e2')
+          assert frozen['G2']=='UNKNOWN'
+          print('EXACT_PREACCESS_FROZEN_METHOD',frozen['training']['independent_audit_run'])
+          PY
+          uv --version
+      - name: Original author native test gate using project-declared locked Python workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B - <<'PY'
+          import json
+          from pathlib import Path
+          from research.unified_consequence_runtime import g2_finite_composition_future_v1 as experiment
+          from research.unified_consequence_runtime import g2_source_owned_uv_admission_v11 as apparatus
+          experiment.admission.one=apparatus.one
+          output=Path('evidence/g2-finite-prospective-uv-v11').resolve()
+          experiment.main(output,'a75a1914a00059a66c96f334bdbe9085a4eeb0e2')
+          r=json.loads((output/'RESULT.json').read_text())
+          assert r['G2']=='UNKNOWN' and r['future_opened'] is True
+          assert r['Lean']==r['CLC']==r['FLASH']=='NOT_EXECUTED'
+          print('G2_V11_SCIENCE',r['status'],'G2',r['G2'])
+          PY
+      - name: Retain original native and environment receipts, including UNKNOWN
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-finite-composition-prospective-uv-v11
+          retention-days: 90
+          path: evidence/g2-finite-prospective-uv-v11/
+          if-no-files-found: warn
