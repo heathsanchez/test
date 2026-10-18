@@ -1,0 +1,24 @@
+{
+  "schema": "UDM_G2_V3_ENVIRONMENT_ADMISSION_FREEZE",
+  "state": "BEFORE_TRAINING_SOURCE_READ_OR_NATIVE_OUTCOME",
+  "roles_source": "G2_PROSPECTIVE_SOURCE_DISTINCT_V3_ROLE_FREEZE.json@4c5670f489c9c435f1f47d706f6dca8373d6fa96",
+  "method_authority": "094e2ddc3ba601a00eaf368151172a361e5542da",
+  "python_version": "3.11",
+  "install_precedence": [
+    "pip install editable original pinned source",
+    "PEP 735 dependency group test/tests if declared",
+    "original requirements file test-requirements.txt/requirements-test.txt if declared",
+    "project extra tests/test/dev only if no first two"
+  ],
+  "tools_if_unpinned": [
+    "pytest==9.1.1",
+    "pytest-cov==7.0.0"
+  ],
+  "source_constraint": "fetch TRAINING base commit and changed author test HEAD blob; no repaired HEAD production and NO future repo access",
+  "interpreter_timeout": 180,
+  "allowed_pattern_cap": 8,
+  "training_budget_native_processes_max": 64,
+  "future_read_condition": "verified native training repair double PASS plus withdrawal FAIL and restoration PASS; otherwise no future fetch",
+  "environment_refusal": "If fail/skipped/zero collection because of environment, stop as UNKNOWN_APPARATUS and do not replace role; additional env-only repairs require new version with original failure preserved",
+  "notes": "No target-specific source coordinates or repair code. Toolchain admission choice fixed before inspected source."
+}
