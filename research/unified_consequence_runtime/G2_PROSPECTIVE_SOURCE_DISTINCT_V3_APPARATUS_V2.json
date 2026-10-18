@@ -1,0 +1,34 @@
+{
+  "schema": "UDM_G2_PROSPECTIVE_SOURCE_DISTINCT_V3_APPARATUS_V2",
+  "state": "FROZEN_AFTER_ROLE_AND_TRAINING_SOURCE_INSPECTION_BEFORE_ANY_NATIVE_OUTCOME",
+  "supersedes_pre_native": "9134547d27241b23d7221c8a1155293714274742",
+  "protocol_commit": "6b96a5dcb5fcdd449639ba09aa5fbd600da0524a",
+  "role_freeze_commit": "4c5670f489c9c435f1f47d706f6dca8373d6fa96",
+  "training_runtime_matrix": [
+    "3.11",
+    "pypy3.11"
+  ],
+  "runtime_reason": "PR title metadata explicitly says Python 3.11; run both principal 3.11 implementations rather than choose after outcome",
+  "source_materialization": {
+    "base": "python-trio/trio@ada9c778c86f35c62e68bae8284ca652ea2b23c2",
+    "author_test_only": "src/trio/_tests/test_exports.py from e12547f78849be25ec5c0c1a3df161986be1ae96",
+    "repaired_head_production": "PROHIBITED",
+    "future_source": "UNOPENED"
+  },
+  "source_derived_pre_native_fact": "The only added test logic removes ALG_SET_PUB_KEY from missing_names inside the static-export helper used by repository @slow tests; therefore both default and --run-slow executions are frozen before outcome.",
+  "install": "python -m pip install -e . -r test-requirements.txt",
+  "native_commands": [
+    "python -m pytest -q src/trio/_tests/test_exports.py",
+    "python -m pytest -q --run-slow src/trio/_tests/test_exports.py"
+  ],
+  "admission": {
+    "authentic_failure_requires": "nonempty executed tests and at least one FAIL with zero collection errors; all four runtime/command results retained",
+    "no_failure": "UNKNOWN_NO_AUTHENTIC_TRAINING_PROTECTED_FAILURE; STOP and keep future unopened"
+  },
+  "unchanged_method_gate": {
+    "detector": "exact inherited scan_patterns source-neutral persistent nested-closure pattern",
+    "zero_patterns_with_authentic_fail": "REJECTED_METHOD_INAPPLICABLE_NO_MUTABLE_CLOSURE_PATTERN; STOP",
+    "positive_pattern_with_authentic_fail": "only then invoke inherited observer/repair/class selector; no target-specific method change"
+  },
+  "epistemic_boundary": "No prospective G2 promotion from training alone; Pluggy source/test bodies remain unopened unless training qualifies."
+}
