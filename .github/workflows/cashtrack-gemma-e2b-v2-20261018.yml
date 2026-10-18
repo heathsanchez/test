@@ -1,0 +1,95 @@
+name: Cash-track Gemma 4 E2B V2 reasoning-budget separator
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cashtrack-gemma-e2b-v2-20261018.yml
+      - research/cash_track_20261018/run_gemma_e2b_v2_model.py
+
+permissions:
+  contents: read
+
+jobs:
+  once-cpu-gemma-native:
+    if: github.event.pull_request.number == 126
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout pinned candidate without deploy credentials
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          cache: false
+
+      - name: Preflight freeze ancestry and Python syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 5aa6c078cb78b96e8b2b777fa6ce194b8399ce64^{commit}
+          git merge-base --is-ancestor 5aa6c078cb78b96e8b2b777fa6ce194b8399ce64 HEAD
+          python -m py_compile research/cash_track_20261018/run_gemma_e2b_v2_model.py
+          python -m py_compile research/cash_track_20261018/run_heldout_fern.py
+          mkdir -p research/cash_track_20261018/out_gemma_e2b_v2
+
+      - name: Build pinned Gemma-capable CPU inference runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q --depth 1 --branch b11433 https://github.com/ggml-org/llama.cpp "$RUNNER_TEMP/llama_cpp"
+          git -C "$RUNNER_TEMP/llama_cpp" rev-parse HEAD | tee research/cash_track_20261018/out_gemma_e2b_v2/llama_commit.txt
+          cmake -S "$RUNNER_TEMP/llama_cpp" -B "$RUNNER_TEMP/llama_cpp/build" -DLLAMA_CURL=OFF -DGGML_NATIVE=ON -DLLAMA_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/llama_cpp/build" --target llama-server --parallel 2
+          "$RUNNER_TEMP/llama_cpp/build/bin/llama-server" --version
+
+      - name: Download exact model and check frozen binary digest
+        shell: bash
+        env:
+          HF_HUB_DISABLE_PROGRESS_BARS: "1"
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet 'huggingface_hub[hf_xet]>=0.35,<2'
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi, hf_hub_download
+          repo="ggml-org/gemma-4-E2B-it-GGUF"
+          filename="gemma-4-E2B-it-Q4_0.gguf"
+          commit=HfApi().model_info(repo,files_metadata=False).sha
+          print("HF_MODEL_REPO_REVISION",commit,flush=True)
+          path=hf_hub_download(repo_id=repo,filename=filename,revision=commit,
+                               local_dir=os.path.join(os.environ["RUNNER_TEMP"],"gemma4"))
+          print("MODEL_SOURCE_PATH",path,flush=True)
+          with open("research/cash_track_20261018/out_gemma_e2b_v2/model_repo_commit.txt","w") as f:
+              f.write(commit+"\n")
+          PY
+          echo "8e30dff3ac4c8434c49a7036fa15564bdbb6044e42bf04550bf1a096ad7e6a52  $RUNNER_TEMP/gemma4/gemma-4-E2B-it-Q4_0.gguf" | sha256sum -c
+
+      - name: Exactly one model generation plus protected native oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/cash_track_20261018/run_gemma_e2b_v2_model.py \
+            --model "$RUNNER_TEMP/gemma4/gemma-4-E2B-it-Q4_0.gguf" \
+            --server "$RUNNER_TEMP/llama_cpp/build/bin/llama-server" \
+            --out research/cash_track_20261018/out_gemma_e2b_v2
+
+      - name: Archive raw inference, original Go results, causal test and nonclaims
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cashtrack-gemma4-e2b-v2-one-shot
+          path: |
+            research/cash_track_20261018/GEMMA_E2B_V2_FROZEN_PROTOCOL.md
+            research/cash_track_20261018/heldout_fern_outage_test.go
+            research/cash_track_20261018/out_gemma_e2b_v2/
+          if-no-files-found: warn

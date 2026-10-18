@@ -1,0 +1,59 @@
+name: Cash-track source-distinct Go oracle (read-only external)
+on:
+  push:
+    branches:
+      - research/cashtrack-evidence-resource-20261018
+    paths:
+      - research/cash_track_20261018/HELDOUT_FERN_PROTOCOL.md
+      - research/cash_track_20261018/heldout_fern_outage_test.go
+      - research/cash_track_20261018/run_heldout_fern.py
+      - .github/workflows/cashtrack-heldout-fern-20261018.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - research/cash_track_20261018/HELDOUT_FERN_PROTOCOL.md
+      - research/cash_track_20261018/heldout_fern_outage_test.go
+      - research/cash_track_20261018/run_heldout_fern.py
+      - .github/workflows/cashtrack-heldout-fern-20261018.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-real-go:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          cache: false
+      - name: Confirm pre-source protocol ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 3ec172aa162787d9acc0d7dad3aceeb994dfa6b5^{commit}
+          git merge-base --is-ancestor 3ec172aa162787d9acc0d7dad3aceeb994dfa6b5 HEAD
+      - name: Run exact upstream original source with frozen positive and negative cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/cash_track_20261018/run_heldout_fern.py
+      - name: Archive protocol and exact native output
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cashtrack-heldout-fern-native
+          path: |
+            research/cash_track_20261018/HELDOUT_FERN_PROTOCOL.md
+            research/cash_track_20261018/heldout_fern_outage_test.go
+            research/cash_track_20261018/out_heldout_fern/
+          if-no-files-found: error
