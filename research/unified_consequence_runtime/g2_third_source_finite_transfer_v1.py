@@ -291,7 +291,9 @@ def replay_choices(rows,k):
         "G4":"UNKNOWN"}
 
 
-def main(output):
+def main(output, admission_one=None):
+    if admission_one is None:
+        admission_one=native_pool.one
     output=Path(output).absolute()
     if output.exists():
         raise ValueError("UNKNOWN_NONFRESH_EVIDENCE_DIR")
@@ -308,7 +310,7 @@ def main(output):
         result["frozen_prequery_commit"]=FROZEN_COMMIT
         result["method_sha256"]=source_pins()
         for idx,task in enumerate(p["candidate_order"]):
-            rec=native_pool.one({**task,"order":idx},idx,output/("admission-%02d"%idx))
+            rec=admission_one({**task,"order":idx},idx,output/("admission-%02d"%idx))
             result["source_outcomes"].append(
                 {k:v for k,v in rec.items() if k not in ("provisioning","traceback_tail")})
             (output/"ADMISSION_PROGRESS.json").write_text(
