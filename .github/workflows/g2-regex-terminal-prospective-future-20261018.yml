@@ -1,0 +1,69 @@
+name: G2 regex terminal V1 metadata-first source-distinct native future
+on:
+  push:
+    branches:
+      - research/g2-regex-boundary-genesis-20261018
+    paths:
+      - .github/workflows/g2-regex-terminal-prospective-future-20261018.yml
+permissions:
+  contents: read
+concurrency:
+  group: g2-regex-terminal-prospective-future-20261018
+  cancel-in-progress: false
+jobs:
+  first-admitted-original-native-fail:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify evidence freeze precedes source and test reads
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 32de5bd464208dc14e0f374db31cfaeae72288db HEAD
+          git merge-base --is-ancestor c334208685d25c3f1254b77e2e88d0f7efdd7975 HEAD
+          cmp research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py <(git show d45288833a13b1ddf6afde01c0b89a84bfc7ce32:research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py)
+          python -m py_compile research/unified_consequence_runtime/g2_regex_prospective_future_v1.py
+          python -m py_compile research/unified_consequence_runtime/g2_cross_source_future_probe_v1.py
+      - name: Precommitted first-authentic-failure admission and exact acquired method transfer
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_regex_prospective_future_v1.py "$GITHUB_WORKSPACE/evidence/g2-regex-terminal-prospective-v1"
+      - name: Independently block premature Lean, CLC, FLASH and G2 promotion
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("evidence/g2-regex-terminal-prospective-v1/RESULT.json")
+          if not p.exists():
+              print("UNKNOWN_NO_FUTURE_REPORT")
+          else:
+              r=json.loads(p.read_text())
+              assert r["G2"]=="UNKNOWN"
+              assert r["Lean"]==r["CLC"]==r["FLASH"]=="NOT_EXECUTED"
+              assert r["acquired_method_changed"] is False
+              print("SCIENTIFIC_BOUNDARY",r["status"],"roles",len(r["future_roles"]))
+          PY
+      - name: Preserve every attempted admission and candidate, including negatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-regex-terminal-prospective-native-v1
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-regex-terminal-prospective-v1/
+            research/unified_consequence_runtime/G2_REGEX_BOUNDARY_SOURCE_DISTINCT_V1_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/G2_REGEX_ACQUIRED_OPERATOR_PRE_FUTURE_FREEZE_V1.json
+            research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py
+            research/unified_consequence_runtime/g2_regex_prospective_future_v1.py
